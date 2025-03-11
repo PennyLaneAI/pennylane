@@ -130,7 +130,7 @@ class TestBroadcastExpand:
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         expvals = [qml.expval(ob) for ob in obs]
-        shots = [20000, 20001]
+        shots = [30000, 30001]
         tape = qml.tape.QuantumScript(ops, expvals, shots=shots)
         assert tape.batch_size == size
 
@@ -330,7 +330,7 @@ class TestBroadcastExpand:
             assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
             assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
         else:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
 
     @pytest.mark.slow
     @pytest.mark.tf
@@ -393,6 +393,7 @@ class TestBroadcastExpand:
                 qml.math.stack([jac[i][j] for i in range(len(obs))]) for j in range(len(params))
             )
         else:
-            assert qml.math.allclose(res, exp_fn(*params))
+            assert qml.math.allclose(res[0], exp_fn(*params))
+            jac = jac[0]
 
         assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))

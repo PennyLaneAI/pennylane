@@ -30,9 +30,20 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
+
+    def test_wires_object_as_label(self):
+        """Tests that a Wires object can be used as a label for another Wires object."""
+        assert Wires([0, 1]) == Wires([Wires([0]), Wires([1])])
+        assert Wires(["a", "b", 1]) == Wires([Wires(["a", "b"]), Wires([1])])
+        assert Wires([Wires([(0, 0), (0, 1)])]) == Wires([(0, 0), (0, 1)])
+
+    def test_error_if_wires_none(self):
+        """Tests that a TypeError is raised if None is given as wires."""
+        with pytest.raises(TypeError, match="Must specify a set of wires."):
+            Wires(None)
 
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
     def test_creation_from_common_iterables(self, iterable):
@@ -69,7 +80,7 @@ class TestWires:
         """Tests that a Wires object can be created from a list of Wires."""
 
         wires = Wires([Wires([0]), Wires([1]), Wires([2])])
-        assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
+        assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize(
         "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "ancilla"]]
@@ -143,7 +154,7 @@ class TestWires:
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
 
         assert 0 in wires
-        assert Wires([4, 5]) in wires
+        assert Wires([4, 5]) not in wires
         assert None in wires
         assert Wires([1]) not in wires
         assert Wires([0, 3]) not in wires
@@ -165,7 +176,7 @@ class TestWires:
 
         assert not wires.contains_wires(0)  # wrong type
         assert not wires.contains_wires([0, 1])  # wrong type
-        assert not wires.contains_wires(
+        assert wires.contains_wires(
             Wires([4, 5])
         )  # looks up 4 and 5 in wires, which are not present
 
@@ -204,6 +215,16 @@ class TestWires:
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
         for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
+
+    @pytest.mark.jax
+    def test_jax_array_representation(self):
+        """Tests that Wires object has a JAX array representation."""
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.asarray(wires)
+        assert isinstance(array, jax.numpy.ndarray)
+        for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
     def test_set_of_wires(self):

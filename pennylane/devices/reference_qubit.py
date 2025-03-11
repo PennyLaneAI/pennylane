@@ -57,6 +57,8 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     # 2) apply all the operations
     for op in tape.operations:
         op_mat = op.matrix(wire_order=tape.wires)
+        if qml.math.get_interface(op_mat) != "numpy":
+            raise ValueError("Reference qubit can only work with numpy data.")
         state = qml.math.matmul(op_mat, state)
 
     # 3) perform measurements
@@ -133,7 +135,7 @@ class ReferenceQubit(Device):
         # Here we convert an arbitrary tape into one natively supported by the device
         program = qml.transforms.core.TransformProgram()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
-        program.add_transform(qml.defer_measurements)
+        program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(qml.transforms.split_non_commuting)
         program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(

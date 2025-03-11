@@ -57,6 +57,9 @@ class Hadamard(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
+
     def label(
         self,
         decimals: Optional[int] = None,
@@ -99,8 +102,10 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
+            format=format
+        )
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -241,9 +246,16 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0}
+            )
+        return self._pauli_rep
+
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(
         self,
@@ -288,8 +300,8 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, 1], [1, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -433,9 +445,16 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
+            )
+        return self._pauli_rep
+
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def __repr__(self) -> str:
         """String representation."""
@@ -479,8 +498,8 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, -1j], [1j, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -622,9 +641,16 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
+            )
+        return self._pauli_rep
+
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def __repr__(self) -> str:
         """String representation."""
@@ -668,8 +694,8 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[1, 0], [0, -1]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -814,6 +840,17 @@ class S(Operation):
 
     batch_size = None
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
+                }
+            )
+        return self._pauli_rep
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -933,6 +970,17 @@ class T(Operation):
 
     batch_size = None
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
+                }
+            )
+        return self._pauli_rep
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -1049,6 +1097,17 @@ class SX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
+                }
+            )
+        return self._pauli_rep
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1172,6 +1231,19 @@ class SWAP(Operation):
 
     batch_size = None
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                }
+            )
+        return self._pauli_rep
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1194,6 +1266,38 @@ class SWAP(Operation):
          [0 0 0 1]]
         """
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+    @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SWAP.sparse_matrix`
+
+        Returns:
+            csr_matrix: matrix
+
+        **Example**
+
+        >>> print(qml.SWAP.compute_sparse_matrix())
+        <Compressed Sparse Row sparse matrix of dtype 'int64'
+                with 4 stored elements and shape (4, 4)>
+          Coords        Values
+          (0, 0)        1
+          (1, 2)        1
+          (2, 1)        1
+          (3, 3)        1
+        """
+        # The same as
+        # [[1 0 0 0]
+        #  [0 0 1 0]
+        #  [0 1 0 0]
+        #  [0 0 0 1]]
+        data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
+        return sparse.csr_matrix((data, indices, indptr)).asformat(format=format)
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -1262,6 +1366,17 @@ class ECR(Operation):
     num_params = 0
 
     batch_size = None
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
+                }
+            )
+        return self._pauli_rep
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1391,6 +1506,19 @@ class ISWAP(Operation):
 
     batch_size = None
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({}): 0.5,
+                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                }
+            )
+        return self._pauli_rep
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1507,6 +1635,21 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5
+                    + 0.5 * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
+                    - 0.5 * INV_SQRT2,
+                }
+            )
+        return self._pauli_rep
 
     @staticmethod
     @lru_cache()

@@ -65,17 +65,6 @@ class InfiniteOp(qml.operation.Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
-def test_max_expansion_is_deprecated():
-    """Test that max_expansion argument is deprecated."""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-    ):
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
-        )
-        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
-
-
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
@@ -503,6 +492,22 @@ class TestMidCircuitMeasurements:
 
         with pytest.raises(
             qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+        ):
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+
+    @pytest.mark.parametrize("mcm_method", ["tree-traversal", "one-shot", "deferred"])
+    def test_conditional_mcms_raise_error(self, mcm_method):
+        """Test that an error is raised if a tape contains mid-circuit measurements inside
+        a Conditional"""
+        dev = qml.device("default.qubit", shots=10)
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+
+        m = qml.measure(0)
+        tape = QuantumScript([qml.ops.Conditional(m, qml.measurements.MidMeasureMP(0))], [])
+
+        with pytest.raises(
+            NotImplementedError,
+            match="Conditionally applied mid-circuit measurements are not supported",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 

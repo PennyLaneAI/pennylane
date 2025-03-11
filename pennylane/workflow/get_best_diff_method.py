@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for getting the best differentiation method for a given QNode.
-
-"""
+"""Contains a function for getting the best differentiation method for a given QNode."""
 
 from functools import wraps
 
@@ -64,7 +62,7 @@ def get_best_diff_method(qnode: QNode):
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             transform = new_config.gradient_method
             return handle_return(transform)
 

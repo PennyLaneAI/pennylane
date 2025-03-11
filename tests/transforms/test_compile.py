@@ -14,7 +14,6 @@
 """
 Unit tests for the ``compile`` transform.
 """
-import warnings
 from functools import partial
 
 import pytest
@@ -34,13 +33,6 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 from pennylane.wires import Wires
 
 
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
-
 def build_qfunc(wires):
     def qfunc(x, y, z):
         qml.Hadamard(wires=wires[0])
@@ -56,6 +48,14 @@ def build_qfunc(wires):
         return qml.expval(qml.PauliZ(wires=wires[0]))
 
     return qfunc
+
+
+def test_deprecation_pipeline_None():
+    """Test that specifying `pipeline=None` is deprecated."""
+
+    tape = qml.tape.QuantumScript()
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"):
+        qml.compile(tape, pipeline=None)
 
 
 class TestCompile:
@@ -94,7 +94,6 @@ class TestCompile:
 
         transformed_qfunc = compile(qfunc, pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
-        transformed_qnode(0.3, 0.4, 0.5)
 
         names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
         wires_expected = [
@@ -105,7 +104,8 @@ class TestCompile:
             Wires(wires[2]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     def test_compile_non_commuting_observables(self):
         """Test that compile works with non-commuting observables."""
@@ -149,10 +149,12 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = [op.name for op in qnode.qtape.operations]
-        wires_expected = [op.wires for op in qnode.qtape.operations]
+        tape = qml.workflow.construct_tape(qnode)(0.3, 0.4, 0.5)
+        names_expected = [op.name for op in tape.operations]
+        wires_expected = [op.wires for op in tape.operations]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        transformed_tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(transformed_tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_default_pipeline(self, wires):
@@ -179,7 +181,8 @@ class TestCompileIntegration:
             Wires(wires[2]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_default_pipeline_qnode(self, wires):
@@ -205,6 +208,22 @@ class TestCompileIntegration:
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
         [compiled_tape], _ = qml.compile(tape)
         assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
+    def test_compile_empty_basis_set(self):
+        """Test that compiling with empty basis set decomposes any decomposable operation."""
+        ops = (
+            qml.RX(0.1, 0),
+            qml.H(1),
+            qml.Barrier([0, 1]),
+            qml.CNOT([1, 0]),
+            qml.PauliY(0),
+            qml.CY([0, 1]),
+        )
+        tape = qml.tape.QuantumScript(ops)
+        decomposable_ops = {op.name for op in tape.operations if op.has_decomposition}
+
+        [transformed_tape], _ = qml.compile(tape, basis_set=[])
+        assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
@@ -237,7 +256,8 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     def test_compile_decomposes_state_prep(self):
         """Test that compile decomposes state prep operations"""
@@ -287,7 +307,8 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
@@ -343,7 +364,8 @@ class TestCompileIntegration:
             Wires([]),
         ]
 
-        tansformed_ops = _fuse_global_phases(transformed_qnode.qtape.operations)
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        tansformed_ops = _fuse_global_phases(tape.operations)
         compare_operation_lists(tansformed_ops, names_expected, wires_expected)
 
     def test_compile_template(self):
@@ -383,7 +405,8 @@ class TestCompileIntegration:
             Wires([2, 0]),
         ] * 4
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
 
 def qfunc_emb(x, params):
@@ -439,7 +462,8 @@ class TestCompileInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -471,7 +495,8 @@ class TestCompileInterfaces:
         assert qml.math.allclose(original_params.grad, transformed_params.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -507,7 +532,8 @@ class TestCompileInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -534,7 +560,8 @@ class TestCompileInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(x, params)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax

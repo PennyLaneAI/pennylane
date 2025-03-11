@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
+from collections.abc import Sequence
+
 # pylint: disable=too-many-branches
 from functools import partial
+from warnings import warn
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
@@ -28,12 +31,15 @@ from pennylane.transforms.optimization import (
 )
 from pennylane.typing import PostprocessingFn
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
+default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove_barrier)
 
 
 @transform
 def compile(
-    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1
+    tape: QuantumScript,
+    pipeline: Sequence[TransformDispatcher] = default_pipeline,
+    basis_set=None,
+    num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
@@ -48,13 +54,15 @@ def compile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        pipeline (list[Callable]): A list of
+        pipeline (Sequence[TransformDispatcher]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic.
+            operator arithmetic. If an empty basis set (e.g. ``[]``, ``()``, or
+            ``{}``) is provided, all operations that can be decomposed will be
+            decomposed.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
@@ -164,6 +172,10 @@ def compile(
 
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
+        warn(
+            "Specifying pipeline=None is now deprecated. Please specify a sequence of transforms",
+            qml.PennyLaneDeprecationWarning,
+        )
         pipeline = default_pipeline
     else:
         for p in pipeline:
@@ -180,7 +192,8 @@ def compile(
     # don't queue anything as a result of the expansion or transform pipeline
 
     with QueuingManager.stop_recording():
-        basis_set = basis_set or all_ops
+        if basis_set is None:
+            basis_set = all_ops
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
@@ -200,12 +213,7 @@ def compile(
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
             for transf in pipeline:
-                tapes, _ = transf(expanded_tape)
-                expanded_tape = tapes[0]
-
-    new_tape = type(tape)(
-        expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
-    )
+                [expanded_tape], _ = transf(expanded_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -213,4 +221,4 @@ def compile(
         """
         return results[0]
 
-    return [new_tape], null_postprocessing
+    return [expanded_tape], null_postprocessing

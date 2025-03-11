@@ -16,6 +16,7 @@
 from numpy.random import default_rng
 
 import pennylane as qml
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -23,26 +24,6 @@ from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
 from .utils import QUDIT_DIM
-
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-}
 
 
 def get_final_state(circuit, debugger=None, interface=None, **kwargs):
@@ -67,7 +48,8 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)

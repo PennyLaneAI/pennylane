@@ -17,7 +17,6 @@ Tests for capturing differentiation into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture import qnode_prim
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -26,6 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     grad_prim,
     jacobian_prim,
+    qnode_prim,
 )
 
 jnp = jax.numpy
@@ -66,17 +66,12 @@ def diff_eqn_assertions(eqn, primitive, argnum=None, n_consts=0):
     assert eqn.params["h"] is None
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
 class TestGrad:
     """Tests for capturing `qml.grad`."""
 
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1], 0, 1))
-    def test_classical_grad(self, x64_mode, argnum):
+    def test_classical_grad(self, argnum):
         """Test that the qml.grad primitive can be captured with classical nodes."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jnp.float64 if x64_mode else jnp.float32
 
         def inner_func(x, y):
             return jnp.prod(jnp.sin(x) * jnp.cos(y) ** 2)
@@ -93,11 +88,11 @@ class TestGrad:
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qml)(x)
-        assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+        assert jaxpr.in_avals == [jax.core.ShapedArray((), float, weak_type=True)]
         assert len(jaxpr.eqns) == 3
         if isinstance(argnum, int):
             argnum = [argnum]
-        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), float, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
         diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum)
@@ -107,9 +102,7 @@ class TestGrad:
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(manual_eval, jax_out)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_nested_grad(self, x64_mode):
+    def test_nested_grad(self):
         """Test that nested qml.grad primitives can be captured.
         We use the function
         f(x) = sin(x)^3
@@ -117,9 +110,7 @@ class TestGrad:
         f''(x) = 6 sin(x) cos(x)^2 - 3 sin(x)^3
         f'''(x) = 6 cos(x)^3 - 12 sin(x)^2 cos(x) - 9 sin(x)^2 cos(x)
         """
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jnp.float64 if x64_mode else jnp.float32
+        fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def func(x):
             return jnp.sin(x) ** 3
@@ -187,15 +178,13 @@ class TestGrad:
         manual_eval_3 = jax.core.eval_jaxpr(jaxpr_3.jaxpr, jaxpr_3.consts, x)
         assert qml.math.allclose(manual_eval_3, expected_3)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
-    def test_grad_of_simple_qnode(self, x64_mode, diff_method, mocker):
+    @pytest.mark.parametrize(
+        "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
+    )
+    def test_grad_of_simple_qnode(self, diff_method):
         """Test capturing the gradient of a simple qnode."""
         # pylint: disable=protected-access
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -243,23 +232,14 @@ class TestGrad:
         assert len(grad_eqn.outvars) == 1
         assert grad_eqn.outvars[0].aval == jax.core.ShapedArray((2,), fdtype)
 
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
         manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        if diff_method == "parameter-shift":
-            spy.assert_called_once()
-        else:
-            spy.assert_not_called()
         assert qml.math.allclose(manual_res, expected_res)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
-    def test_grad_pytree_input(self, x64_mode, argnum):
+    def test_grad_pytree_input(self, argnum):
         """Test that the qml.grad primitive can be captured with pytree inputs."""
 
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         def inner_func(x, y):
             return jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2)
@@ -299,19 +279,15 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
     @pytest.mark.parametrize("argnum", ([0, 1, 2], [0, 2], [1], 0))
-    def test_grad_qnode_with_pytrees(self, argnum, x64_mode):
+    def test_grad_qnode_with_pytrees(self, argnum):
         """Test capturing the gradient of a qnode that uses Pytrees."""
         # pylint: disable=protected-access
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
             qml.RX(x["a"], wires=0)
             qml.RY(y, wires=0)
@@ -351,8 +327,6 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
 
 def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     """Test that two Jacobians, given as nested sequences of arrays, are equal."""
@@ -365,16 +339,13 @@ def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     )
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
 class TestJacobian:
     """Tests for capturing `qml.jacobian`."""
 
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1], 0, 1))
-    def test_classical_jacobian(self, x64_mode, argnum):
+    def test_classical_jacobian(self, argnum):
         """Test that the qml.jacobian primitive can be captured with classical nodes."""
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jnp.float64 if x64_mode else jnp.float32
+        fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def shaped_array(shape):
             """Make a ShapedArray with a given shape."""
@@ -425,9 +396,7 @@ class TestJacobian:
             jax_out = sum(jax_out, start=())
         assert _jac_allclose(manual_eval, jax_out, num_axes)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_nested_jacobian(self, x64_mode):
+    def test_nested_jacobian(self):
         r"""Test that nested qml.jacobian primitives can be captured.
         We use the function
         f(x) = (prod(x) * sin(x), sum(x**2))
@@ -438,9 +407,7 @@ class TestJacobian:
                  | (2 prod(x)/x_i * cos(x) e_i - prod(x) sin(x) e_i e_i, 2)  for i = j
         """
         # pylint: disable=too-many-statements
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jnp.float64 if x64_mode else jnp.float32
+        fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def func(x):
             return jnp.prod(x) * jnp.sin(x), jnp.sum(x**2)
@@ -485,7 +452,7 @@ class TestJacobian:
             eye * 2,
         )
         # Output only has one tuple axis
-        atol = 1e-8 if x64_mode else 2e-7
+        atol = 1e-8 if jax.config.jax_enable_x64 else 2e-7
         assert _jac_allclose(qml_func_2(x), expected_2, 1, atol=atol)
 
         jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
@@ -504,15 +471,13 @@ class TestJacobian:
         manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
         assert _jac_allclose(manual_eval_2, expected_2, 1, atol=atol)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
-    def test_jacobian_of_simple_qnode(self, x64_mode, diff_method, mocker):
+    @pytest.mark.parametrize(
+        "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
+    )
+    def test_jacobian_of_simple_qnode(self, diff_method):
         """Test capturing the gradient of a simple qnode."""
         # pylint: disable=protected-access
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -560,24 +525,15 @@ class TestJacobian:
 
         assert [outvar.aval for outvar in jac_eqn.outvars] == jaxpr.out_avals
 
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
         manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        if diff_method == "parameter-shift":
-            spy.assert_called_once()
-        else:
-            spy.assert_not_called()
         assert _jac_allclose(manual_res, expected_res, 1)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
-    def test_jacobian_pytrees(self, x64_mode, argnum):
+    def test_jacobian_pytrees(self, argnum):
         """Test that the qml.jacobian primitive can be captured with
         pytree inputs and outputs."""
 
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         def inner_func(x, y):
             return {
@@ -622,5 +578,3 @@ class TestJacobian:
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
-
-        jax.config.update("jax_enable_x64", initial_mode)

@@ -278,6 +278,20 @@ class TestDeviceSupportedLogic:
         ):
             dev.supports_observable(operation)
 
+    @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
+    @pytest.mark.parametrize("obs_type", [qml.ops.LinearCombination, qml.Hamiltonian])
+    def test_all_multi_term_obs_supported_linear_combination(
+        self, mock_device, supported_multi_term_obs, obs_type
+    ):
+        """Test that LinearCombination is supported when the device supports either
+        LinearCombination or Hamiltonian."""
+        dev = mock_device()
+        dev.observables = dev.observables + [supported_multi_term_obs]
+
+        obs = obs_type([1.0, 2.0], [qml.Z(0), qml.Z(0)])
+        circuit = qml.tape.QuantumScript([], [qml.expval(obs)])
+        assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
+
 
 class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""

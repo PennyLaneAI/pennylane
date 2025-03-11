@@ -31,6 +31,12 @@ def test_repr():
     assert repr(op) == expected
 
 
+def test_work_wire_property():
+    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    expected = qml.wires.Wires((3, 4))
+    assert op.work_wires == expected
+
+
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qml.wires.Wires((3, 4))
@@ -284,3 +290,112 @@ def test_jax_jit():
     jit_circuit = jax.jit(circuit)
 
     assert qml.math.allclose(circuit(), jit_circuit())
+
+
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_disable_plxpr")
+# pylint:disable=protected-access
+class TestDynamicDecomposition:
+    """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
+
+    def test_grover_plxpr(self):
+        """Test that the dynamic decomposition of Grover has the correct plxpr"""
+        import jax
+
+        from pennylane.capture.primitives import for_loop_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        wires = [0, 1, 2]
+        work_wires = np.array([3, 4])
+        gate_set = None
+        max_expansion = 1
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        def circuit(work_wires, wires):
+            qml.GroverOperator(wires=wires, work_wires=work_wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+
+        # Validate Jaxpr
+        jaxpr_eqns = jaxpr.eqns
+        # 2 Hadamard loops
+        hadamard_loops_eqns = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
+        assert len(hadamard_loops_eqns) == 2
+        for hadamard_loop in hadamard_loops_eqns:
+            assert hadamard_loop.primitive == for_loop_prim
+            hadamard_inner_eqns = hadamard_loop.params["jaxpr_body_fn"].eqns
+            assert hadamard_inner_eqns[-1].primitive == qml.Hadamard._primitive
+
+        # 4 remaining operations
+        remaining_ops = [
+            eqn
+            for eqn in jaxpr_eqns
+            if eqn.primitive
+            in (qml.PauliZ._primitive, qml.MultiControlledX._primitive, qml.GlobalPhase._primitive)
+        ]
+        assert len(remaining_ops) == 4
+
+        # Validate Ops
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, work_wires)
+        ops_list = collector.state["ops"]
+
+        tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
+        [decomp_tape], _ = qml.transforms.decompose(
+            tape, max_expansion=max_expansion, gate_set=gate_set
+        )
+        for op1, op2 in zip(ops_list, decomp_tape.operations):
+            if op1.name == "GlobalPhase":
+                # GlobalPhase applied to single wire instead of all wires
+                assert op1.name == op2.name
+                assert qml.math.allclose(op1.parameters, op2.parameters)
+            elif op1.name == "MultiControlledX":
+                # MultiControlledX's work_wire is traced in plxpr but not in tape
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
+                assert op1.control_wires == op2.control_wires
+                assert op1.control_values == op2.control_values
+            else:
+                assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    @pytest.mark.parametrize(
+        "wires, work_wires", [([0, 1, 2], [3, 4]), ([0, 1, 4], [2, 3]), ([0, 2, 4], [1])]
+    )
+    @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase, qml.RZ], None]
+    )
+    def test_grover(
+        self, max_expansion, gate_set, wires, work_wires, autograph
+    ):  # pylint:disable=too-many-arguments
+        """Test that Grover gives correct result after dynamic decomposition."""
+
+        from functools import partial
+
+        import jax
+
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=autograph)
+        def circuit(wires, work_wires):
+            qml.GroverOperator(wires=wires, work_wires=work_wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+
+        with qml.capture.pause():
+
+            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+            def circuit_comparison():
+                qml.GroverOperator(wires=wires, work_wires=work_wires)
+                return qml.state()
+
+            result_comparison = circuit_comparison()
+
+        assert qml.math.allclose(*result, result_comparison)

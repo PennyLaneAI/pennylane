@@ -26,14 +26,15 @@ requirements = [
     "networkx",
     "rustworkx>=0.14.0",
     "autograd",
-    "toml",
+    "tomlkit",
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.39",
+    "pennylane-lightning>=0.40",
     "requests",
     "typing_extensions",
     "packaging",
+    "diastatic-malt",
 ]
 
 info = {

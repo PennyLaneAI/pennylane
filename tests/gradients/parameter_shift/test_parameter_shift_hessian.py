@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
-import warnings
 from itertools import product
 
 import pytest
@@ -25,13 +24,6 @@ from pennylane.gradients.parameter_shift_hessian import (
     _generate_offdiag_tapes,
     _process_argnum,
 )
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestProcessArgnum:
@@ -1507,12 +1499,11 @@ class TestParameterShiftHessianQNode:
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
-        circuit(params)
 
         result = qml.gradients.param_shift_hessian(circuit)(params)
         assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
 
-        tapes, _ = qml.gradients.param_shift_hessian(circuit.qtape)
+        tapes, _ = qml.gradients.param_shift_hessian(qml.workflow.construct_tape(circuit)(params))
         assert tapes == []
 
     @pytest.mark.xfail(reason="Update tracker for new return types")
@@ -1572,7 +1563,7 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (3, 3, 4), (1, 3, 3, 4), (2, 3, 3, 4)]
+        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
         assert all(t == e for t, e in zip(transform, expected))
 
@@ -1602,9 +1593,8 @@ class TestParamShiftHessianWithKwargs:
         x = np.array([0.6, -0.2], requires_grad=True)
 
         expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
-        circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
-            circuit.qtape, diagonal_shifts=diagonal_shifts
+            qml.workflow.construct_tape(circuit)(x), diagonal_shifts=diagonal_shifts
         )
 
         # We expect the following tapes:
@@ -1646,9 +1636,8 @@ class TestParamShiftHessianWithKwargs:
         x = np.array([0.6, -0.2], requires_grad=True)
 
         expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
-        circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
-            circuit.qtape, off_diagonal_shifts=off_diagonal_shifts
+            qml.workflow.construct_tape(circuit)(x), off_diagonal_shifts=off_diagonal_shifts
         )
 
         # We expect the following tapes:

@@ -59,9 +59,7 @@ def _cut_circuit_expand(
             )
 
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
-        new_tape = type(tape)(
-            tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params
-        )
+        new_tape = tape.copy(measurements=[new_meas_op])
 
         tapes, tapes_fn = qml.transforms.split_non_commuting(new_tape, grouping_strategy=None)
 
@@ -355,7 +353,7 @@ def cut_circuit(
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit
         output via a tensor network contraction
 
-        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> results = qml.execute(tapes, dev, diff_method=None)
         >>> qml.qcut.qcut_processing_fn(
         ...     results,
         ...     communication_graph,

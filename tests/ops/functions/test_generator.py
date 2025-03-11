@@ -390,8 +390,6 @@ class TestHamiltonianReturn:
         assert isinstance(gen, qml.Hamiltonian)
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
-    # removed fixture to only run with legacy opmath - not clear why it was added,
-    # but we'll see once things are tidied up enough for tests to run
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])

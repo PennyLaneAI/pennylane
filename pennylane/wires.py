@@ -93,7 +93,8 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    return tuple_of_wires
+    # required to make `Wires` object idempotent
+    return tuple(itertools.chain(*(_flatten_wires_object(x) for x in tuple_of_wires)))
 
 
 class Wires(Sequence):
@@ -120,7 +121,7 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
 
     @classmethod
@@ -129,6 +130,8 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid wire label.")
         if _override:
             self._labels = wires
         else:
@@ -216,6 +219,16 @@ class Wires(Sequence):
             ndarray: array representing Wires object
         """
         return np.array(self._labels)
+
+    def __jax_array__(self):
+        """Defines a JAX numpy array representation of the Wires object.
+
+        Returns:
+            JAX ndarray: array representing Wires object
+        """
+        if jax_available:
+            return jax.numpy.array(self._labels)
+        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
 
     @property
     def labels(self):
@@ -718,6 +731,14 @@ class Wires(Sequence):
 
 
 WiresLike = Union[Wires, Iterable[Hashable], Hashable]
+
+
+def _flatten_wires_object(wire_label):
+    """Converts the input to a tuple of wire labels."""
+    if isinstance(wire_label, Wires):
+        return wire_label.labels
+    return [wire_label]
+
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

@@ -609,6 +609,25 @@ class TestSparseMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_format(self, scalar, op):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, lil_matrix
+
+        sprod_op = SProd(scalar, op)
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
+
+        assert isinstance(sprod_op.sparse_matrix(), csr_matrix)
+        sprod_op_csc = sprod_op.sparse_matrix(format="csc")
+        sprod_op_lil = sprod_op.sparse_matrix(format="lil")
+        sprod_op_coo = sprod_op.sparse_matrix(format="coo")
+        assert isinstance(sprod_op_csc, csc_matrix)
+        assert isinstance(sprod_op_lil, lil_matrix)
+        assert isinstance(sprod_op_coo, coo_matrix)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
@@ -854,53 +873,28 @@ class TestSimplify:
             SProd(2, qml.RX(1.9, wires=1)),
         )
         simplified_op = sprod_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert isinstance(s2, SProd)
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_scalar_equal_to_1(self):
         """Test the simplify method when the scalar is 1."""
         sprod_op = s_prod(1, qml.PauliX(0))
         final_op = qml.PauliX(0)
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.PauliX)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_nested_sprod_scalar_equal_to_1(self):
         """Test the simplify method with nested SProd where the global scalar is 1."""
         sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
         final_op = qml.PauliX(0)
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.PauliX)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
         sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
-
-        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
-        assert simplified_op.name == final_op.name
-        assert repr(simplified_op) == repr(final_op)
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
@@ -925,12 +919,7 @@ class TestSimplify:
         op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
-
-        assert isinstance(simplified_op, type(result))
-        assert result.wires == simplified_op.wires
-        assert result.arithmetic_depth == simplified_op.arithmetic_depth
-        assert qnp.isclose(result.data[0], simplified_op.data[0])
-        assert result.data[1:] == simplified_op.data[1:]
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
     def test_simplify_pauli_rep_torch(self):
@@ -958,13 +947,7 @@ class TestWrapperFunc:
 
         sprod_func_op = s_prod(coeff, op, id=op_id)
         sprod_class_op = SProd(coeff, op, id=op_id)
-
-        assert sprod_class_op.scalar == sprod_func_op.scalar
-        assert sprod_class_op.base == sprod_func_op.base
-        assert np.allclose(sprod_class_op.matrix(), sprod_func_op.matrix())
-        assert sprod_class_op.id == sprod_func_op.id
-        assert sprod_class_op.wires == sprod_func_op.wires
-        assert sprod_class_op.parameters == sprod_func_op.parameters
+        qml.assert_equal(sprod_func_op, sprod_class_op)
 
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `SProd`, even if a simplification exists."""
@@ -1161,14 +1144,7 @@ class TestArithmetic:
         sprod_op = SProd(3, qml.RX(1.23, wires=0))
         final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(pow_op, SProd)
-        assert pow_op.name == final_op.name
-        assert pow_op.wires == final_op.wires
-        assert pow_op.data == final_op.data
-        assert pow_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(pow_op, final_op)
 
     def test_adjoint(self):
         """Test the adjoint method for Sprod Operators."""
@@ -1176,11 +1152,4 @@ class TestArithmetic:
         sprod_op = SProd(3j, qml.RX(1.23, wires=0))
         final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
         adj_op = sprod_op.adjoint()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(adj_op, SProd)
-        assert adj_op.name == final_op.name
-        assert adj_op.wires == final_op.wires
-        assert adj_op.data == final_op.data
-        assert adj_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(adj_op, final_op)

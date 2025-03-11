@@ -113,4 +113,4 @@ def test_quantum_scripts(shots):
     """Test that ``QuantumScript`` can be serialized as Pytrees."""
     script = qml.tape.QuantumScript([qml.X(0)], shots=shots)
 
-    assert qml.equal(DatasetPyTree(script).get_value(), script)
+    qml.assert_equal(DatasetPyTree(script).get_value(), script)

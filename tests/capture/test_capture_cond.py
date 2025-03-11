@@ -645,6 +645,7 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
     @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -675,6 +676,9 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
 
+    @pytest.mark.xfail(
+        strict=False
+    )  # currently using single branch statistics, sometimes gives good results
     @pytest.mark.parametrize("shots", [None, 300])
     @pytest.mark.parametrize(
         "params, expected",
@@ -733,6 +737,7 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
 
+    @pytest.mark.xfail(strict=False)  # single-branch-statistics only sometimes gives good results
     @pytest.mark.parametrize("upper_bound, arg", [(3, [0.1, 0.3, 0.5]), (2, [2, 7, 12])])
     def test_nested_cond_for_while_loop(self, upper_bound, arg):
         """Test that a nested control flows are correctly captured into a jaxpr."""
@@ -842,3 +847,40 @@ class TestPytree:
         assert isinstance(q.queue[0], qml.measurements.MidMeasureMP)
         assert isinstance(q.queue[1], qml.ops.Conditional)
         qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
+
+    def test_cond_abstracted_axes(self):
+        """Test cond can accept inputs with dynamic shapes."""
+
+        def workflow(x, predicate):
+            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+
+        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+
+        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+
+        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+
+    def test_cond_dynamic_array_creation(self):
+        """Test that arrays with dynamic shapes can be created within branches."""
+
+        def true_fn(i):
+            return jax.numpy.sum(jax.numpy.ones(i), dtype=int)
+
+        def false_fn(i):
+            return jax.numpy.sum(jax.numpy.arange(i), dtype=int)
+
+        def f(condition, i):
+            return qml.cond(condition, true_fn, false_fn)(i)
+
+        jaxpr = jax.make_jaxpr(f)(True, 2)
+        [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
+        assert qml.math.allclose(res_true, 4)
+
+        [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
+        assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4

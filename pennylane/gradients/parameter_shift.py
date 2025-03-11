@@ -15,13 +15,14 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.measurements import VarianceMP
+from pennylane.measurements import ExpectationMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -40,7 +41,7 @@ from .gradient_transform import (
     _swap_first_two_axes,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
     reorder_grads,
 )
@@ -372,11 +373,17 @@ def expval_param_shift(
         op, op_idx, _ = tape.get_operation(idx)
 
         if op.name == "LinearCombination":
+            warnings.warn(
+                "Please use qml.gradients.split_to_single_terms so that the ML framework "
+                "can compute the gradients of the coefficients.",
+                UserWarning,
+            )
+
             # operation is a Hamiltonian
-            if tape[op_idx].return_type is not qml.measurements.Expectation:
+            if not isinstance(tape[op_idx], ExpectationMP):
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
+                    f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
@@ -752,6 +759,12 @@ def _param_shift_stopping_condition(op) -> bool:
     return True
 
 
+def _inplace_set_trainable_params(tape):
+    """Update all the trainable params in place."""
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = qml.math.get_trainable_indices(params)
+
+
 def _expand_transform_param_shift(
     tape: QuantumScript,
     argnum=None,
@@ -769,11 +782,21 @@ def _expand_transform_param_shift(
         name="param_shift",
         error=qml.operation.DecompositionUndefinedError,
     )
-    if new_tape is tape:
-        return [tape], postprocessing
-    params = new_tape.get_parameters(trainable_only=False)
-    new_tape.trainable_params = qml.math.get_trainable_indices(params)
-    return [new_tape], postprocessing
+    if any(
+        qml.math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])
+    ):
+        try:
+            batch, postprocessing = qml.transforms.split_to_single_terms(new_tape)
+        except RuntimeError as e:
+            raise ValueError(
+                "Can only differentiate Hamiltonian "
+                f"coefficients for expectations, not {tape.measurements}."
+            ) from e
+    else:
+        batch = [new_tape]
+    if len(batch) > 1 or batch[0] is not tape:
+        _ = [_inplace_set_trainable_params(t) for t in batch]
+    return batch, postprocessing
 
 
 @partial(
@@ -1104,8 +1127,8 @@ def param_shift(
 
     method = "analytic" if fallback_fn is None else "best"
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, method, trainable_params_indices)
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)

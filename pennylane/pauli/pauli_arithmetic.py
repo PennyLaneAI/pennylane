@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 I = "I"
 X = "X"
@@ -504,7 +504,7 @@ class PauliWord(dict):
             current_size *= 2
         return indices
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             return Identity(wires=wire_order)
@@ -540,9 +540,9 @@ class PauliSentence(dict):
     **Examples**
 
     >>> ps = PauliSentence({
-            PauliWord({0:'X', 1:'Y'}): 1.23,
-            PauliWord({2:'Z', 0:'Y'}): -0.45j
-        })
+    ...     PauliWord({0:'X', 1:'Y'}): 1.23,
+    ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
+    ... })
     >>> ps
     1.23 * X(0) @ Y(1)
     + (-0-0.45j) * Z(2) @ Y(0)
@@ -835,11 +835,11 @@ class PauliSentence(dict):
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
                 return np.zeros((2**n, 2**n))
-            return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+            return sparse.csr_matrix((2**n, 2**n), dtype="complex128").asformat(format)
 
         if format == "dense":
             return self._to_dense_mat(wire_order)
-        return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
+        return self._to_sparse_mat(wire_order, buffer_size=buffer_size).asformat(format)
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
@@ -961,16 +961,18 @@ class PauliSentence(dict):
         ml_interface = qml.math.get_interface(coeff)
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
-        data = coeff * data0
+        data = coeff * data0 if qml.math.ndim(coeff) == 0 else qml.math.outer(coeff, data0)
         for pw in pauli_words[1:]:
             coeff = self[pw]
             csr_data = pw._get_csr_data(wire_order, 1)
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            data += self[pw] * csr_data
+            data += (
+                coeff * csr_data if qml.math.ndim(coeff) == 0 else qml.math.outer(coeff, csr_data)
+            )
 
-        return qml.math.einsum("ij,i->ij", base_matrix, data)
+        return qml.math.einsum("ij,...i->...ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
@@ -999,7 +1001,7 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             return qml.s_prod(0, Identity(wires=wire_order))
@@ -1009,7 +1011,9 @@ class PauliSentence(dict):
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
             rep = PauliSentence({pw: coeff})
-            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
+            summands.append(
+                pw_op if qml.math.all(coeff == 1) else SProd(coeff, pw_op, _pauli_rep=rep)
+            )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def simplify(self, tol=1e-8):

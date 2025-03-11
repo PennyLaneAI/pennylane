@@ -138,7 +138,11 @@ def counts(
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+        if not all(
+            qml.math.is_abstract(o)
+            or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            for o in op
+        ):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
@@ -178,6 +182,8 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
+    _shortname = Counts  #! Note: deprecated. Change the value to "counts" in v0.42
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -188,6 +194,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        self._shortname = AllCounts if all_outcomes else Counts
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
@@ -230,10 +237,6 @@ class CountsMP(SampleMeasurement):
         )
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
         self,

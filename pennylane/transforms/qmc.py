@@ -145,7 +145,7 @@ def apply_controlled_Q(
         )
         updated_operations.extend(operations)
 
-    tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    tape = tape.copy(operations=updated_operations)
     return [tape], lambda x: x[0]
 
 
@@ -384,5 +384,5 @@ def quantum_monte_carlo(
                 updated_operations.extend(tape_q.operations)
 
         updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
-    updated_tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    updated_tape = tape.copy(operations=updated_operations)
     return [updated_tape], lambda x: x[0]

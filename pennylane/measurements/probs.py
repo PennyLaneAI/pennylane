@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Probability
+    _shortname = Probability  #! Note: deprecated. Change the value to "probs" in v0.42
 
     @classmethod
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
@@ -264,6 +264,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
+        prob = qml.math.convert_like(prob, density_matrix)
         p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 

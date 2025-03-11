@@ -1061,25 +1061,13 @@ class TestOperatorIntegration:
         """Test the __sum__ dunder method with two operators."""
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
         final_op = qml.sum(qml.PauliX(0), qml.RX(1, 0))
-        #  TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
-        # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sum_scalar_tensor(self):
         """Test the __sum__ dunder method with a scalar tensor."""
@@ -1124,13 +1112,7 @@ class TestOperatorIntegration:
             qml.CNOT(wires=[0, 1]),
             qml.s_prod(5, qml.Identity([0, 1])),
         )
-        # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, Sum)
-        for s1, s2 in zip(sum_op.operands, final_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+        qml.assert_equal(sum_op, final_op)
 
     def test_sub_rsub_and_neg_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
@@ -1154,15 +1136,8 @@ class TestOperatorIntegration:
         sprod_op = 4 * qml.RX(1, 0)
         sprod_op2 = qml.RX(1, 0) * 4
         final_op = qml.s_prod(scalar=4, operator=qml.RX(1, 0))
-        assert isinstance(sprod_op, qml.ops.SProd)
-        assert sprod_op.name == sprod_op2.name
-        assert sprod_op.wires == sprod_op2.wires
-        assert sprod_op.data == sprod_op2.data
-        assert sprod_op.name == final_op.name
-        assert sprod_op.wires == final_op.wires
-        assert sprod_op.data == final_op.data
-        assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
-        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+        qml.assert_equal(final_op, sprod_op2)
+        qml.assert_equal(sprod_op, final_op)
 
     def test_mul_scalar_tensor(self):
         """Test the __mul__ dunder method with a scalar tensor."""
@@ -1823,7 +1798,6 @@ class TestHamiltonianLinearCombinationAlias:
 @pytest.mark.parametrize(
     "op",
     [
-        # pytest.param(qml.CZ(wires=[1, 0]), marks=pytest.mark.xfail),
         qml.CZ(wires=[1, 0]),
         qml.CCZ(wires=[2, 0, 1]),
         qml.SWAP(wires=[1, 0]),

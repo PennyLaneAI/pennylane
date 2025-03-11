@@ -9,10 +9,10 @@ body:
       value: |
           ## Before posting a feature request
           Search existing GitHub issues to make sure the issue does not already exist:
-          https://github.com/xanaduai/pennylane/issues
+          https://github.com/PennyLaneAI/pennylane/issues
 
           For general technical details check out our documentation:
-          https://pennylane.readthedocs.io
+          https://docs.pennylane.ai
 
           # Feature description
           Description of the feature request - include code snippets and screenshots here if relevant.

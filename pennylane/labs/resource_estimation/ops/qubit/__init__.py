@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality. """
+r"""This module contains experimental resource estimation functionality."""
 
 from .non_parametric_ops import *
+from .parametric_ops_multi_qubit import *
 from .parametric_ops_single_qubit import *
+from .qchem_ops import *

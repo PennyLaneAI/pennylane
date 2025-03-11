@@ -17,8 +17,8 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow import SUPPORTED_INTERFACE_NAMES
 
 
 @dataclass
@@ -26,31 +26,22 @@ class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
     mcm_method: Optional[str] = None
-    """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
-    measurements principle and "one-shot" if using finite shots to execute the circuit
-    for each shot separately. If not specified, the device will decide which method to
-    use."""
+    """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
+    measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
+    each shot separately. Any other value will be passed to the device, and the device is
+    expected to handle mid-circuit measurements using the requested method. If not specified,
+    the device will decide which method to use."""
 
     postselect_mode: Optional[str] = None
-    """Configuration for handling shots with mid-circuit measurement postselection. If
-    ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
-    be returned. If ``"fill-shots"``, results corresponding to the original number of
-    shots will be returned. If not specified, the device will decide which mode to use."""
+    """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
+    discarded and only results for valid shots will be returned. In this case, fewer samples
+    may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
+    will be of the same size as the original number of shots. If not specified, the device will
+    decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
+    instead of ``"hw-like"`` when using jax/catalyst"""
 
     def __post_init__(self):
-        """
-        Validate the configured mid-circuit measurement options.
-
-        Note that this hook is automatically called after init via the dataclass integration.
-        """
-        if self.mcm_method not in (
-            "deferred",
-            "one-shot",
-            "single-branch-statistics",
-            "tree-traversal",
-            None,
-        ):
-            raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
+        """Validate the configured mid-circuit measurement options."""
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
@@ -96,14 +87,21 @@ class ExecutionConfig:
     device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: Optional[str] = None
+    interface: Interface = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
+    mcm_config: MCMConfig = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
+
+    convert_to_numpy: bool = True
+    """Whether or not to convert parameters to numpy before execution.
+
+    If ``False`` and using the jax-jit, no pure callback will occur and the device
+    execution itself will be jitted.
+    """
 
     def __post_init__(self):
         """
@@ -111,10 +109,7 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        if self.interface not in SUPPORTED_INTERFACE_NAMES:
-            raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACE_NAMES}, got {self.interface} instead."
-            )
+        self.interface = get_canonical_interface_name(self.interface)
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(
@@ -136,7 +131,8 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            self.mcm_config = MCMConfig(**self.mcm_config)
+            self.mcm_config = MCMConfig(**self.mcm_config)  # pylint: disable=not-a-mapping
+
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 

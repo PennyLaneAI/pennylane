@@ -16,7 +16,6 @@ Tests for the gradients.pulse_gradient module.
 """
 
 import copy
-import warnings
 
 import numpy as np
 import pytest
@@ -29,13 +28,6 @@ from pennylane.gradients.pulse_gradient import (
     _split_evol_tape,
     stoch_pulse_grad,
 )
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 # pylint: disable=too-few-public-methods
@@ -904,13 +896,15 @@ class TestStochPulseGrad:
         dev = qml.device("default.qubit", wires=1)
         # Effective rotation parameter
         p = params[0] * delta_t
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t)
+
+        # note that qml.execute changes trainable params
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         jax.clear_caches()
 
     def test_constant_ry_argnum(self):
@@ -932,14 +926,15 @@ class TestStochPulseGrad:
         dev = qml.device("default.qubit", wires=1)
         # Effective rotation parameter
         p = params[0] * t
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p + y), atol=1e-4)
         num_split_times = 1
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, argnum=0)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p + y) * t)
+
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p + y), atol=1e-4)
         jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
@@ -964,13 +959,13 @@ class TestStochPulseGrad:
         prefactor = np.sqrt(0.85)
         # Effective rotation parameter
         p = params[0] * (delta_t := T[-1] - T[0]) * prefactor
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t * prefactor)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
@@ -999,8 +994,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * theta))
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1010,6 +1003,8 @@ class TestStochPulseGrad:
         exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(res, exp_grad, atol=0.2)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * theta))
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
@@ -1038,9 +1033,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)
-        exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
-        assert qml.math.allclose(r, exp_probs)
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1051,6 +1043,9 @@ class TestStochPulseGrad:
         exp_jac = jnp.tensordot(probs_jac, theta_jac, axes=0)
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(jac, exp_jac, atol=0.2)
+        r = qml.execute([tape], dev, None)
+        exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
+        assert qml.math.allclose(r, exp_probs)
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
@@ -1079,11 +1074,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)[0]
-        exp = (jnp.cos(2 * theta), jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2]))
-        assert isinstance(r, tuple) and len(r) == 2
-        assert qml.math.allclose(r[0], exp[0])
-        assert qml.math.allclose(r[1], exp[1])
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1096,6 +1086,12 @@ class TestStochPulseGrad:
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e, atol=0.2)
+
+        r = qml.execute([tape], dev, None)[0]
+        exp = (jnp.cos(2 * theta), jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2]))
+        assert isinstance(r, tuple) and len(r) == 2
+        assert qml.math.allclose(r[0], exp[0])
+        assert qml.math.allclose(r[1], exp[1])
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
@@ -1114,8 +1110,6 @@ class TestStochPulseGrad:
 
         # Effective rotation parameter
         p = jnp.mean(params[0]) * (T[1] - T[0])
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p))
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=seed)
         assert len(tapes) == 2 * num_split_times
@@ -1126,6 +1120,8 @@ class TestStochPulseGrad:
         assert qml.math.allclose(
             res, -2 * jnp.sin(2 * p) * (T[1] - T[0]) / len(params[0]), atol=0.01
         )
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p))
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6)])
@@ -1144,10 +1140,7 @@ class TestStochPulseGrad:
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
         dev = qml.device("default.qubit", wires=2)
-        r = qml.execute([tape], dev, None)
-        # Effective rotation parameters
         p = [_p * (T[1] - T[0]) for _p in params]
-        assert qml.math.isclose(r, jnp.cos(2 * p[0]) * jnp.cos(2 * p[1]))
         tapes, fn = stoch_pulse_grad(tape)
         assert len(tapes) == 4
 
@@ -1157,6 +1150,10 @@ class TestStochPulseGrad:
             -2 * jnp.sin(2 * p[1]) * jnp.cos(2 * p[0]) * (T[1] - T[0]),
         ]
         assert qml.math.allclose(res, exp_grad)
+        r = qml.execute([tape], dev, None)
+        # Effective rotation parameters
+        exp = jnp.cos(2 * p[0]) * jnp.cos(2 * p[1])
+        assert qml.math.isclose(r, exp)
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1181,17 +1178,17 @@ class TestStochPulseGrad:
             qml.evolve(ham, atol=1e-6)(params, 0.1)
             return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
 
-        qnode.construct((params,), {})
+        tape = qml.workflow.construct_tape(qnode)(params)
 
         num_split_times = 5
-        qnode.tape.trainable_params = [0, 1, 2]
+        tape.trainable_params = [0, 1, 2]
 
         # FIXME: This test case is not updated to use the pytest-rng generated seed because I'm
         #       unable to find a local salt that actually allows this test to pass. The 7123 here
         #       is basically a magic number. Every other seed I tried fails. I believe this test
         #       should be rewritten to use a better testing strategy because this currently goes
         #       against the spirit of seeding.
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7123)
         # Two generating terms with two shifts (X_0 and Z_0), one with eight shifts
         # (Y_0Y_1+0.4 X_1 has eigenvalues [-1.4, -0.6, 0.6, 1.4] yielding frequencies
         # [0.8, 1.2, 2.0, 2.8] and hence 2 * 4 = 8 shifts)
@@ -1262,17 +1259,18 @@ class TestStochPulseGrad:
             qml.evolve(ham_1)(params_1, 0.15)
             return qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
 
-        qnode.construct((params_0, params_1), {})
-
+        tape = qml.workflow.construct_tape(qnode)(params_0, params_1)
         num_split_times = 3
-        qnode.tape.trainable_params = [0, 1, 2]
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=seed)
+        tape.trainable_params = [0, 1, 2]
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=seed)
         assert len(tapes) == 3 * 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
+        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1389,7 +1387,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1419,7 +1420,10 @@ class TestStochPulseGradIntegration:
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
@@ -1448,7 +1452,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1475,7 +1482,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1494,7 +1504,7 @@ class TestStochPulseGradIntegration:
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
         jax.clear_caches()
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail  # TODO: [sc-82874]
     @pytest.mark.parametrize("num_split_times", [1, 2])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     def test_simple_qnode_jit(self, num_split_times, time_interface):
@@ -1508,7 +1518,10 @@ class TestStochPulseGradIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1547,8 +1560,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": num_split_times, "sampler_seed": seed},
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -1556,9 +1568,10 @@ class TestStochPulseGradIntegration:
             grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
-
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 
@@ -1579,8 +1592,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
+            gradient_kwargs={"num_split_times": num_split_times, "use_broadcasting": True},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1624,18 +1636,22 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": True,
+                "sampler_seed": seed,
+            },
         )
         circuit_no_bc = qml.QNode(
             ansatz,
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=False,
-            sampler_seed=seed,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": False,
+                "sampler_seed": seed,
+            },
         )
         params = [jnp.array(0.4)]
         jac_bc = jax.jacobian(circuit_bc)(params)
@@ -1689,9 +1705,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
@@ -1734,9 +1748,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=seed,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
 

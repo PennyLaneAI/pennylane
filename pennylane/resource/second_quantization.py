@@ -15,7 +15,7 @@
 This module contains the functions needed for resource estimation with the double factorization
 method.
 """
-# pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
+# pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
 import numpy as np
 
 from pennylane.operation import AnyWires, Operation
@@ -122,10 +122,12 @@ class DoubleFactorization(Operation):
 
         self.n = two_electron.shape[0] * 2
 
-        self.factors, self.eigvals, self.eigvecs = factorize(
+        self.factors, _, self.eigvecs = factorize(
             self.two_electron, self.tol_factor, self.tol_eigval
         )
 
+        feigvals = np.linalg.eigvalsh(self.factors)
+        self.eigvals = [eigvals[np.where(np.abs(eigvals) > tol_eigval)] for eigvals in feigvals]
         self.lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
 
         if not rank_r:

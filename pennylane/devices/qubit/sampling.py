@@ -79,9 +79,11 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
             mp_other_obs_indices.append([i])
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        _, group_indices = qml.pauli.group_observables(
-            [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
+        part_indices = qml.pauli.compute_partition_indices(
+            [mp.obs for mp in i_to_pauli_mp.values()]
         )
+        coeffs = list(i_to_pauli_mp.keys())
+        group_indices = [[coeffs[idx] for idx in group] for group in part_indices]
         mp_pauli_groups = []
         for indices in group_indices:
             mp_group = [i_to_pauli_mp[i] for i in indices]
@@ -328,7 +330,7 @@ def _measure_with_samples_diagonalizing_gates(
             prng_key=prng_key,
         )
     except ValueError as e:
-        if str(e) != "probabilities contain NaN":
+        if "probabilities contain nan" not in str(e).lower():
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
@@ -578,6 +580,6 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         _, key = jax_random_split(prng_key)
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    powers_of_two = 1 << jnp.arange(num_wires, dtype=jnp.int64)[::-1]
+    powers_of_two = 1 << jnp.arange(num_wires, dtype=int)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(jnp.int64)
+    return (states_sampled_base_ten > 0).astype(int)

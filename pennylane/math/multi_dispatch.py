@@ -17,14 +17,14 @@ import functools
 from collections.abc import Sequence
 
 # pylint: disable=wrong-import-order
-import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, cast_like, get_interface, requires_grad
+from .interface_utils import get_interface
+from .utils import cast, cast_like, requires_grad
 
 
 # pylint:disable=redefined-outer-name
@@ -164,12 +164,11 @@ def kron(*args, like=None, **kwargs):
 
     if like == "torch":
         mats = [
-            ar.numpy.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg
-            for arg in args
+            np.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg for arg in args
         ]
-        return ar.numpy.kron(*mats)
+        return np.kron(*mats)
 
-    return ar.numpy.kron(*args, like=like, **kwargs)
+    return np.kron(*args, like=like, **kwargs)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -308,11 +307,11 @@ def matmul(tensor1, tensor2, like=None):
     """Returns the matrix product of two tensors."""
     if like == "torch":
         if get_interface(tensor1) != "torch":
-            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+            tensor1 = np.asarray(tensor1, like="torch")
         if get_interface(tensor2) != "torch":
-            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+            tensor2 = np.asarray(tensor2, like="torch")
         tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
-    return ar.numpy.matmul(tensor1, tensor2, like=like)
+    return np.matmul(tensor1, tensor2, like=like)
 
 
 @multi_dispatch(argnum=[0, 1])
@@ -873,6 +872,9 @@ def norm(tensor, like=None, **kwargs):
         like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
     ):
         norm = _flat_autograd_norm
+
+    elif like == "scipy":
+        from scipy.sparse.linalg import norm
 
     else:
         from scipy.linalg import norm

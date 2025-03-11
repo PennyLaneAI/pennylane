@@ -37,7 +37,7 @@ def check_op_supported(op, dev):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
-        prog, _ = dev.preprocess()
+        prog = dev.preprocess_transforms()
         tape = qml.tape.QuantumScript([op])
         try:
             prog((tape,))
@@ -678,7 +678,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
-        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
+        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), dev)
 
         @qml.qnode(dev)
         def circuit():

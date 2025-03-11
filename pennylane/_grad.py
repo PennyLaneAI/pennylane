@@ -251,6 +251,21 @@ class grad:
         return grad_value, ans
 
 
+def _error_if_not_array(f):
+    """A function decorator that raises an error if the function output is not an autograd, pennylane, or numpy array."""
+
+    @wraps(f)
+    def new_f(*args, **kwargs):
+        output = f(*args, **kwargs)
+        if output.__class__.__module__.split(".")[0] not in {"autograd", "pennylane", "numpy"}:
+            raise ValueError(
+                f"autograd can only differentiate with respect to arrays, not {type(output)}. Ensure the output class is an autograd array."
+            )
+        return output
+
+    return new_f
+
+
 def jacobian(func, argnum=None, method=None, h=None):
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     This function is compatible with Autograd and :func:`~.qjit`.
@@ -514,7 +529,7 @@ def jacobian(func, argnum=None, method=None, h=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
-        jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        jac = tuple(_jacobian(_error_if_not_array(func), arg)(*args, **kwargs) for arg in _argnum)
 
         return jac[0] if unpack else jac
 

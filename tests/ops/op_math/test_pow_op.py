@@ -486,46 +486,27 @@ class TestSimplify:
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
         final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.Identity)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = qml.s_prod(9, qml.PauliX(0))
+        final_op = qml.s_prod(9, qml.Identity(0))
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
-
-        assert isinstance(simplified_op, ControlledOp)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
         op = Pow(qml.U2(1, 1, 0), z=3)
         simplified_op = op.simplify()
-        assert isinstance(simplified_op, Pow)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, op)
 
 
 class TestMiscMethods:
@@ -878,6 +859,21 @@ class TestSparseMatrix:
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
+
+    def test_sparse_matrix_format(self):
+        """Test the sparse matrix is correct when the base defines a
+        sparse matrix and the exponennt is an int."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+        op = Pow(base, 3)
+
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
 
 
 class TestDecompositionExpand:

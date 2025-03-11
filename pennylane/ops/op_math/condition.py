@@ -20,13 +20,11 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, get_mcm_predicates
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
@@ -235,13 +233,17 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         consts = []
         consts_slices = []
 
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+
         for pred, fn in branches:
             conditions.append(pred)
             if fn is None:
                 jaxpr_branches.append(None)
                 consts_slices.append(slice(0, 0))
             else:
-                jaxpr = jax.make_jaxpr(functools.partial(fn, **kwargs))(*args)
+                jaxpr = jax.make_jaxpr(
+                    functools.partial(fn, **kwargs), abstracted_axes=abstracted_axes
+                )(*args)
                 jaxpr_branches.append(jaxpr.jaxpr)
                 consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
                 consts += jaxpr.consts
@@ -251,6 +253,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         results = cond_prim.bind(
             *conditions,
             *consts,
+            *abstract_shapes,
             *flat_args,
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
@@ -616,7 +619,7 @@ def cond(
                     QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
-            qscript = make_qscript(true_fn)(*args, **kwargs)
+            qscript = qml.tape.make_qscript(true_fn)(*args, **kwargs)
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
@@ -626,7 +629,7 @@ def cond(
 
             if false_fn is not None:
                 # 2. Apply false_fn conditionally
-                else_qscript = make_qscript(false_fn)(*args, **kwargs)
+                else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
                     raise ConditionalTransformError(with_meas_err)
@@ -665,27 +668,16 @@ def _validate_abstract_values(
             )
 
 
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
-
-
 @functools.lru_cache
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    cond_prim = create_non_interpreted_prim()("cond")
+    cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
+    cond_prim.prim_type = "higher_order"
 
     @cond_prim.def_impl
     def _(*all_args, jaxpr_branches, consts_slices, args_slice):
@@ -704,15 +696,16 @@ def _get_cond_qfunc_prim():
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = _get_mcm_predicates(mcm_conditions)
+            conditions = get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
             if jaxpr is None:
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
+
                 with qml.queuing.AnnotatedQueue() as q:
-                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
+                    out = qml.capture.eval_jaxpr(jaxpr, consts, *args)
 
                 if len(out) != 0:
                     raise ConditionalTransformError(
@@ -722,7 +715,7 @@ def _get_cond_qfunc_prim():
                 for wrapped_op in q:
                     Conditional(pred, wrapped_op.obj)
             elif pred:
-                return jax.core.eval_jaxpr(jaxpr, consts, *args)
+                return qml.capture.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 

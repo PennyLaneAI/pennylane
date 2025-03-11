@@ -225,8 +225,6 @@ class TestGroupingUtils:
             ValueError, observables_to_binary_matrix, observables, n_qubits_invalid
         )
 
-    # removed a fixture to only use legacy_opmath because its not clear why it there
-    # we'll see what happens when we are ready to run the tests
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
@@ -482,11 +480,11 @@ class TestGroupingUtils:
         "pauli_word,wire_map,expected_matrix",
         [
             (PauliX(0), {0: 0}, PauliX(0).matrix()),
-            # (
-            #     Identity(0),
-            #     {0: 0},
-            #     np.eye(2),
-            # ),  # TODO update PauliSentence.to_mat to handle Identities better https://github.com/PennyLaneAI/pennylane/issues/5354
+            (
+                Identity(0),
+                {0: 0},
+                np.eye(2),
+            ),
             (
                 PauliZ(0) @ PauliY(1),
                 {0: 0, 1: 1},
@@ -502,7 +500,7 @@ class TestGroupingUtils:
                 {1: 0, 0: 1},
                 np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
-            # (Identity(0), {0: 0, 1: 1}, np.eye(4)), # TODO update PauliSentence.to_mat to handle Identities better https://github.com/PennyLaneAI/pennylane/issues/5354
+            (Identity(0), {0: 0, 1: 1}, np.eye(4)),
             (PauliX(2), None, PauliX(2).matrix()),
             (
                 PauliX(2),
@@ -953,8 +951,6 @@ class TestMeasurementTransformations:
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
 
-# removed a fixture to only use legacy_opmath because its not clear why it there
-# we'll see what happens when we are ready to run the tests
 class TestTapering:
 
     terms_bin_mat_data = [

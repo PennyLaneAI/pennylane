@@ -327,6 +327,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/qsvt.png
 
 .. gallery-item::
+    :description: :doc:`GQSP<../code/api/pennylane.GQSP>`
+    :figure: _static/templates/subroutines/gqsp.png
+
+.. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
     :figure: _static/templates/subroutines/select.png
 
