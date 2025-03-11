@@ -181,7 +181,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     def __str__(self) -> str:
         indices = [f"idx{i}" for i in range(len(self.shape))]
 
-        return self._str(indices)
+        return str(self._str(indices))
 
     def _str(self, indices) -> str:
 
