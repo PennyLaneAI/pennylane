@@ -810,6 +810,63 @@ class TestTransformProgramCall:
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
 
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_call_jaxpr_empty(self):
+        """Test that calling an empty TransformProgram with jaxpr returns untransformed ClosedJaxpr."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        const = jax.numpy.array(3.5)
+
+        def f(x, n):
+            qml.IsingXX(x, [0, 1])
+
+            @qml.for_loop(n)
+            def loop_fn(i):
+                qml.Hadamard(i)
+                qml.RX(const, i)
+
+            loop_fn()
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.5, 5)
+        transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
+        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert transformed_jaxpr.consts == jaxpr.consts
+
+        for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
+            assert eqn1.primitive == eqn2.primitive
+            assert eqn1.params == eqn2.params
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_call_jaxpr_single_transform(self):
+        """Test that calling a TransformProgram with a single transform with jaxpr works correctly."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+        # Create jaxpr, call transform program, check that jaxpr is correctly transformed
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_call_jaxpr_multiple_transforms(self):
+        """Test that calling a TransformProgram with a single transform with jaxpr works correctly."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+        program.add_transform(qml.transforms.defer_measurements, num_wires=5)
+        program.add_transform(
+            qml.transforms.decompose,
+            gate_set=[qml.CNOT, qml.RX, qml.RY, qml.RZ, qml.X, qml.Y, qml.Z],
+        )
+        # Create jaxpr, call transform program, check that jaxpr is correctly transformed
+
 
 class TestTransformProgramIntegration:
     """Test the transform program and its integration with QNodes"""
