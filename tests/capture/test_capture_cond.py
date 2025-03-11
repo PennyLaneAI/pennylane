@@ -790,7 +790,7 @@ class TestPytree:
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-class TestDynamicShapeValdiation:
+class TestDynamicShapeValidation:
 
     def test_different_outval_types(self):
         """Test an error is raised if the outvals have different types."""
