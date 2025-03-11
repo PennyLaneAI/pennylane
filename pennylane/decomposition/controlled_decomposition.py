@@ -44,14 +44,18 @@ class CustomControlledDecomposition(DecompositionRule):
         return _impl
 
     def compute_resources(
-        self, base_params, num_control_wires, num_zero_control_values, num_work_wires
+        self, base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
     ) -> Resources:
-        return Resources(
-            num_zero_control_values * 2 + 1,
-            {
-                resource_rep(self.custom_op_type): 1,
-                resource_rep(qml.X): num_zero_control_values * 2,
-            },
+        return (
+            Resources(
+                num_zero_control_values * 2 + 1,
+                {
+                    resource_rep(self.custom_op_type): 1,
+                    resource_rep(qml.X): num_zero_control_values * 2,
+                },
+            )
+            if num_zero_control_values > 0
+            else Resources(1, {resource_rep(self.custom_op_type): 1})
         )
 
 
@@ -77,7 +81,8 @@ class GeneralControlledDecomposition(DecompositionRule):
             for base_op_rep, count in base_resource_decomp.gate_counts.items()
             if count > 0
         }
-        controlled_resources[resource_rep(qml.X)] = num_zero_control_values * 2
+        if num_zero_control_values > 0:
+            controlled_resources[resource_rep(qml.X)] = num_zero_control_values * 2
         gate_count = sum(controlled_resources.values())
         return Resources(gate_count, controlled_resources)
 

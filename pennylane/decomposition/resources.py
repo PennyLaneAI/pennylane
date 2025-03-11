@@ -36,7 +36,7 @@ class Resources:
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Verify that the gate counts and the number of gates are consistent."""
+        """Remove zero-count gates and verify that num_gates is correct."""
         assert all(v > 0 for v in self.gate_counts.values())
         assert self.num_gates == sum(self.gate_counts.values())
 

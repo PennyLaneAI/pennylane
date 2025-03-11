@@ -14,8 +14,11 @@
 
 """Tests the decomposition rules defined for controlled operations."""
 
+import pytest
+
 import pennylane as qml
 from pennylane.decomposition.controlled_decomposition import (
+    CustomControlledDecomposition,
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
@@ -188,3 +191,75 @@ class TestControlledX:
                 ): 1,
             },
         )
+
+
+class TestCustomControlledOperators:
+    """Tests decompositions involving custom controlled ops."""
+
+    @pytest.mark.parametrize(
+        "op, decomp, resources, custom_op_type",
+        [
+            # Single-qubit controlled on 0
+            (
+                qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[0]),
+                [qml.X(0), qml.CZ(wires=[0, 1]), qml.X(0)],
+                Resources(
+                    num_gates=3,
+                    gate_counts={CompressedResourceOp(qml.CZ): 1, CompressedResourceOp(qml.X): 2},
+                ),
+                qml.ops.CZ,
+            ),
+            # Single-qubit controlled on 1
+            (
+                qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[1]),
+                [qml.CZ(wires=[0, 1])],
+                Resources(
+                    num_gates=1,
+                    gate_counts={CompressedResourceOp(qml.CZ): 1},
+                ),
+                qml.ops.CZ,
+            ),
+            # Two-qubit controlled
+            (
+                qml.ops.Controlled(qml.Z(2), control_wires=[0, 1], control_values=[1, 0]),
+                [qml.X(1), qml.CCZ(wires=[0, 1, 2]), qml.X(1)],
+                Resources(
+                    num_gates=3,
+                    gate_counts={CompressedResourceOp(qml.CCZ): 1, CompressedResourceOp(qml.X): 2},
+                ),
+                qml.ops.CCZ,
+            ),
+            # Parametrized controlled
+            (
+                qml.ops.Controlled(qml.RX(0.5, wires=1), control_wires=[0], control_values=[0]),
+                [qml.X(0), qml.CRX(0.5, wires=[0, 1]), qml.X(0)],
+                Resources(
+                    num_gates=3,
+                    gate_counts={CompressedResourceOp(qml.CRX): 1, CompressedResourceOp(qml.X): 2},
+                ),
+                qml.ops.CRX,
+            ),
+            # Controlled on two qubits
+            (
+                qml.ops.Controlled(qml.SWAP(wires=[1, 2]), control_wires=[0], control_values=[0]),
+                [qml.X(0), qml.CSWAP(wires=[0, 1, 2]), qml.X(0)],
+                Resources(
+                    num_gates=3,
+                    gate_counts={
+                        CompressedResourceOp(qml.CSWAP): 1,
+                        CompressedResourceOp(qml.X): 2,
+                    },
+                ),
+                qml.CSWAP,
+            ),
+        ],
+    )
+    def test_controlled_to_custom_controlled(self, op, decomp, resources, custom_op_type):
+        """Tests that a controlled op decomposes to its corresponding custom op if applicable."""
+
+        decomp_rule = CustomControlledDecomposition(custom_op_type)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == decomp
+        assert decomp_rule.compute_resources(**op.resource_params) == resources
