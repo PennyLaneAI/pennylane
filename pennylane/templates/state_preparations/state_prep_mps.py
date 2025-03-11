@@ -78,13 +78,6 @@ def _validate_mps_shape(mps):
 def right_canonicalize_mps(mps):
     r"""Transform a matrix product state (MPS) into its right-canonical form.
 
-    Args:
-        mps (list[TensorLike]): List of tensors representing the MPS.
-
-    Returns:
-        List of tensors representing the MPS in right-canonical form with the same dimensions as the initial MPS.
-
-
     A right-canonicalized MPS is a matrix product state in which the constituent tensors, :math:`A^{(j)}`, satisfy
     the following orthonormality condition [Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_]:
 
@@ -93,6 +86,13 @@ def right_canonicalize_mps(mps):
         \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}},
 
     where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor and :math:`\delta` is the Kronecker delta.
+
+
+    Args:
+        mps (list[TensorLike]): List of tensors representing the MPS.
+
+    Returns:
+        List of tensors representing the MPS in right-canonical form with the same dimensions as the initial MPS.
 
     .. seealso:: :class:`~.MPSPrep`.
 
