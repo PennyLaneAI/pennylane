@@ -333,7 +333,6 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
         return res
 
     if all(isinstance(op, TensorLike) for op in basis):
-        print("Tensor")
         if not is_orthogonal:
             gram = trace_inner_product(basis, basis).real
             adj_vecs = qml.math.tensordot(
