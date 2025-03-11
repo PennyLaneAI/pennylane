@@ -537,11 +537,7 @@ class DefaultQubit(Device):
 
         gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
-            no_max_workers = (
-                execution_config.device_options.get("max_workers", self._max_workers) is None
-            )
-            gradient_method = "backprop" if no_max_workers else "adjoint"
-            updated_values["gradient_method"] = gradient_method
+            updated_values["gradient_method"] = "backprop"
 
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = gradient_method in {
