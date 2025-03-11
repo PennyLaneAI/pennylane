@@ -503,6 +503,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve a test `tests/math/test_matrix_manipulation.py::TestDenmanBeaversIterations::test_valid_positive_definite` such that it is more robust.
+  [(#7054)](
+
 * Replace `matrix_power` dispatch for `scipy` interface with an in-place implementation.
   [(#7055)](https://github.com/PennyLaneAI/pennylane/pull/7055)
 
