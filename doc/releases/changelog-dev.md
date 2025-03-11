@@ -56,6 +56,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
+  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+
 * `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
   with the default being `'csr'`
   [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
@@ -253,6 +256,12 @@
   
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
+
+* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
+  model for mappings between logical and physical qubits. This representation allows for nesting of
+  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+  abstractions between logical qubits and physical qubits.
+  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -634,6 +643,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
+Joey Carter,
 Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
