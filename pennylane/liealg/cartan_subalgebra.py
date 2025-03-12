@@ -505,7 +505,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
 
 
 def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
-    r"""Helper function to check if all operators in ``ops`` commute.
+    r"""Helper function to check if all operators in ``ops`` commute, i.e., form an Abelian set of operators.
 
     .. warning:: This function is expensive to compute
 
