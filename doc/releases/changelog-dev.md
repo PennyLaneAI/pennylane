@@ -53,6 +53,19 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `default.mixed` device now adheres to the newer device API introduced in 
+  [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
+  This means that `default.mixed` now supports not having to specify the number of wires,
+  more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+
+* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
+  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+
+* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
+  with the default being `'csr'`
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
+
 * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
   handle sparse matrices.
   [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
@@ -247,6 +260,12 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
+  model for mappings between logical and physical qubits. This representation allows for nesting of
+  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+  abstractions between logical qubits and physical qubits.
+  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
@@ -375,6 +394,8 @@
   `jnp.arange`, and `jnp.full`.
   [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
+* `qml.cond` can return arrays with dynamic shapes.
+  [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -389,8 +410,8 @@
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
-* `for_loor`, `while_loop`, `cond`, `adjoint`, `ctrl`, and the QNode can handle accepting dynamically
-  shaped arrays with the abstract shape matches another argument.
+* `for_loor`, `while_loop`, `cond`, `adjoint`, `ctrl`, and the `QNode` can handle accepting dynamically
+  shaped arrays with the abstract shape matching another argument.
   [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
@@ -631,6 +652,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Joey Carter,
 Henry Chang,
 Yushao Chen,
 Isaac De Vlugt,
