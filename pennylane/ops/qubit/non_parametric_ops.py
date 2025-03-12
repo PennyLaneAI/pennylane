@@ -573,7 +573,7 @@ class PauliY(Observable, Operation):
         """
         return [
             qml.RY(np.pi, wires=wires),
-            qml.GlobalPhase(-np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 2, wires=wires)
         ]
 
     def adjoint(self) -> "PauliY":
