@@ -83,16 +83,6 @@ class CustomRot(Operation):
         return {}
 
 
-class CustomGlobalPhase(Operation):
-    r"""Multiplies all components of the state by :math:`e^{-i \phi}`."""
-
-    resource_param_keys = ()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
-
 class CustomPhaseShift(Operation):
     """Phase shift gate."""
 
@@ -161,12 +151,12 @@ def _multi_rz_decomposition(*_, **__):
 decompositions[CustomMultiRZ] = [_multi_rz_decomposition]
 
 
-@qml.register_resources({CustomRZ: 2, CustomRX: 1, CustomGlobalPhase: 1})
+@qml.register_resources({CustomRZ: 2, CustomRX: 1, qml.GlobalPhase: 1})
 def _hadamard_to_rz_rx(*_, **__):
     raise NotImplementedError
 
 
-@qml.register_resources({CustomRZ: 1, CustomRY: 1, CustomGlobalPhase: 1})
+@qml.register_resources({CustomRZ: 1, CustomRY: 1, qml.GlobalPhase: 1})
 def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 

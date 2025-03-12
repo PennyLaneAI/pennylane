@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 from conftest import (
     CustomCZ,
-    CustomGlobalPhase,
     CustomHadamard,
     CustomMultiRZ,
     CustomPhaseShift,
@@ -90,7 +89,7 @@ class TestDecompositionGraph:
 
         op = CustomHadamard(wires=[0])
         graph = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRX", "CustomRZ", "CustomGlobalPhase"}
+            operations=[op], target_gate_set={"CustomRX", "CustomRZ", "GlobalPhase"}
         )
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY)
         assert len(graph._graph.nodes()) == 8
@@ -99,7 +98,7 @@ class TestDecompositionGraph:
 
         # Check that graph construction stops at gates in the target gate set.
         graph2 = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRY", "CustomRZ", "CustomGlobalPhase"}
+            operations=[op], target_gate_set={"CustomRY", "CustomRZ", "GlobalPhase"}
         )
         # 5 ops and 2 decompositions (RY is in the target gate set now)
         assert len(graph2._graph.nodes()) == 7
@@ -113,7 +112,7 @@ class TestDecompositionGraph:
         op = CustomHadamard(wires=[0])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"CustomRX", "CustomRY", "CustomRZ", "CustomGlobalPhase"},
+            target_gate_set={"CustomRX", "CustomRY", "CustomRZ", "GlobalPhase"},
         )
         graph.solve()
 
@@ -123,7 +122,7 @@ class TestDecompositionGraph:
             gate_counts={
                 qml.resource_rep(CustomRZ): 1,
                 qml.resource_rep(CustomRY): 1,
-                qml.resource_rep(CustomGlobalPhase): 1,
+                qml.resource_rep(qml.GlobalPhase): 1,
             },
         )
         assert graph.resource_estimates(op) == expected_resource
@@ -135,7 +134,7 @@ class TestDecompositionGraph:
 
         op = CustomHadamard(wires=[0])
         graph = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRX", "CustomRY", "CustomGlobalPhase"}
+            operations=[op], target_gate_set={"CustomRX", "CustomRY", "GlobalPhase"}
         )
         with pytest.raises(
             DecompositionError, match="Decomposition not found for {'CustomHadamard'}"
@@ -170,7 +169,7 @@ class TestDecompositionGraph:
         op = CustomOp(wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"CustomRX", "CustomRZ", "CustomCZ", "CustomGlobalPhase"},
+            target_gate_set={"CustomRX", "CustomRZ", "CustomCZ", "GlobalPhase"},
         )
         # 10 ops and 7 decompositions (1 for the custom op, 1 for each of the two MultiRZs,
         # 1 for CNOT, 2 for Hadamard, and 1 for RY)
@@ -185,7 +184,7 @@ class TestDecompositionGraph:
                 qml.resource_rep(CustomCZ): 14,
                 qml.resource_rep(CustomRZ): 59,
                 qml.resource_rep(CustomRX): 28,
-                qml.resource_rep(CustomGlobalPhase): 28,
+                qml.resource_rep(qml.GlobalPhase): 28,
             },
         )
         assert graph.decomposition(op).compute_resources(**op.resource_params) == Resources(
@@ -200,6 +199,6 @@ class TestDecompositionGraph:
             gate_counts={
                 qml.resource_rep(CustomRZ): 2,
                 qml.resource_rep(CustomRX): 1,
-                qml.resource_rep(CustomGlobalPhase): 1,
+                qml.resource_rep(qml.GlobalPhase): 1,
             },
         )
