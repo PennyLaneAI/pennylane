@@ -53,7 +53,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `reference.qubit` device now enforce `sum(probs)==1` in `sample_state`.
+* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
 
 * The `default.mixed` device now adheres to the newer device API introduced in
