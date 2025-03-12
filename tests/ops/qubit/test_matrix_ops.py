@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -55,6 +55,14 @@ class TestQubitUnitaryCSR:
         op = qml.QubitUnitary.compute_sparse_matrix(U)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
+
+        # Test that the sparse matrix accepts the format parameter.
+        op_csc = qml.QubitUnitary.compute_sparse_matrix(U, format="csc")
+        op_lil = qml.QubitUnitary.compute_sparse_matrix(U, format="lil")
+        op_coo = qml.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        assert isinstance(op_csc, csc_matrix)
+        assert isinstance(op_lil, lil_matrix)
+        assert isinstance(op_coo, coo_matrix)
 
     def test_generic_sparse_convert_to_csr(self):
         """Test that other generic sparse matrices can be converted to csr_matrix."""
@@ -1281,6 +1289,56 @@ class TestBlockEncode:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert circuit(input_matrix) == output_value
+
+    @pytest.mark.parametrize(
+        "matrix_data",
+        [
+            {
+                "data": [0.1, 0.2, 0.3] * 4,
+                "indices": [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3],
+                "indptr": [0, 3, 6, 9, 12],
+                "shape": (4, 8),
+            },
+            {
+                # A smaller example
+                "data": [1.0, 2.0, 3.0],
+                "indices": [0, 1, 2],
+                "indptr": [0, 3],
+                "shape": (1, 3),
+            },
+            {
+                # A small 2x2 square example
+                "data": [1.0, 2.0],
+                "indices": [0, 1],
+                "indptr": [0, 2, 2],
+                "shape": (2, 2),
+            },
+            {
+                # Another 3x3 square example
+                "data": [0.5, 1.1, 1.2, 0.3],
+                "indices": [0, 2, 1, 2],
+                "indptr": [0, 2, 3, 4],
+                "shape": (3, 3),
+            },
+        ],
+    )
+    @pytest.mark.parametrize("format", ["coo", "csr", "csc", "bsr"])
+    def test_sparse_matrix(self, matrix_data, format):
+        """Test that the BlockEncode works well with various sparse matrices."""
+        data = matrix_data["data"]
+        indices = matrix_data["indices"]
+        indptr = matrix_data["indptr"]
+        shape = matrix_data["shape"]
+
+        num_wires = 5
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape).asformat(format)
+        op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
+
+        # Test the operator is unitary
+        mat = qml.matrix(op)
+        assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
+        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
+        assert qml.math.allclose(mat, mat_dense)
 
 
 class TestInterfaceMatricesLabel:

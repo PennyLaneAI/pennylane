@@ -235,8 +235,6 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     ctrl_prim = NonInterpPrimitive("ctrl_transform")
@@ -245,15 +243,17 @@ def _get_ctrl_qfunc_prim():
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         control_wires = args[-n_control:]
         args = args[n_consts:-n_control]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
+        collector = CollectOpsandMeas()
+        with qml.QueuingManager.stop_recording():
+            collector.eval(jaxpr, consts, *args)
 
-        for op in ops:
+        for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
         return []
 

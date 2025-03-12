@@ -49,7 +49,7 @@ class TestDecompositionRule:
         assert isinstance(multi_rz_decomposition, DecompositionRule)
 
         with qml.queuing.AnnotatedQueue() as q:
-            multi_rz_decomposition.impl(0.5, wires=[0, 1, 2])
+            multi_rz_decomposition(0.5, wires=[0, 1, 2])
 
         assert q.queue == [
             qml.CNOT(wires=[2, 1]),
@@ -87,7 +87,7 @@ class TestDecompositionRule:
         assert isinstance(multi_rz_decomposition, DecompositionRule)
 
         with qml.queuing.AnnotatedQueue() as q:
-            multi_rz_decomposition.impl(0.5, wires=[0, 1, 2])
+            multi_rz_decomposition(0.5, wires=[0, 1, 2])
 
         assert q.queue == [
             qml.CNOT(wires=[2, 1]),
