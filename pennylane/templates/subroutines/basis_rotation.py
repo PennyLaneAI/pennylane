@@ -104,7 +104,7 @@ class BasisRotation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"unitary_matrix": self.hyperparameters["unitary_matrix"]}
+        return {"unitary_matrix": self.data[0]}
 
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
