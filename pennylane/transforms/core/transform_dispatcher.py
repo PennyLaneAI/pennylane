@@ -24,6 +24,18 @@ from copy import copy
 import pennylane as qml
 from pennylane.typing import ResultBatch
 
+# This is needed to avoid autograph conversion.
+# Autograph uses the __module__ field to decide what to transform and what not
+# to transform. If __module__ is something pennylane related, it won't transform
+# it by default. There are some other ones.
+# However, by using functools.wraps and functools.update_wrapper, __module__ is
+# copied over from the wrapped function to the wrapper. This means that if a user
+# provides a function from their module, here, we wrap some pennylane
+# functions here and copy over the __module__ field, then autograph
+# will attempt to transform it. To avoid this, we just remove
+# the __module__ string from the original functools.WRAPPER_ASSIGNMENTS.
+WRAPPER_ASSIGNMENTS = list(filter(lambda x: x != "__module__", functools.WRAPPER_ASSIGNMENTS))
+
 
 class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
@@ -191,7 +203,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                # obj = self.default_qnode_transform(obj, targs, tkwargs)
+                return self._qfunc_transform(obj, targs, tkwargs)
+
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -205,8 +219,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
         if callable(obj):
-            if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -315,47 +327,61 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 plxpr_transform=self._plxpr_transform,
                 is_informative=self._is_informative,
                 final_transform=self._final_transform,
+                primitive=self._primitive,
             )
         )
         return qnode
 
-    def _capture_callable_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function when program capture is enabled"""
-
-        @functools.wraps(qfunc)
-        def qfunc_transformed(*args, **kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
-            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
-
-            n_args = len(args)
-            n_consts = len(jaxpr.consts)
-            args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, n_args + n_consts)
-            targs_slice = slice(n_args + n_consts, None)
-
-            results = self._primitive.bind(
-                *args,
-                *jaxpr.consts,
-                *targs,
-                inner_jaxpr=jaxpr.jaxpr,
-                args_slice=args_slice,
-                consts_slice=consts_slice,
-                targs_slice=targs_slice,
-                tkwargs=tkwargs,
-            )
-
-            assert flat_qfunc.out_tree is not None
-            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
-
-        return qfunc_transformed
-
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
-        @functools.wraps(qfunc)
+        # See top of file for context on why we set manually `assigned`
+        @functools.wraps(qfunc, assigned=WRAPPER_ASSIGNMENTS)
         def qfunc_transformed(*args, **kwargs):
+            if qml.capture.enabled():
+                # pylint: disable=import-outside-toplevel
+                import jax
+                from malt import control_status_ctx
+
+                # We don't want to run autograph on the wrapper function, but if autograph was
+                # being used, we still want to run autograph on the user function, so we check
+                # if autograph is currently being run, and transform the wrapped function if so.
+                # We wrap the user function again before running autograph to cover cases where
+                # multiple transforms are used. In that scenario, the wrapped function will also
+                # be a qfunc_transform wrapper, which we don't want to autograph. We do, however,
+                # want to autograph the wrapped function. Even though the qfunc_transform wrapper's
+                # __module__ is "pennylane", it would be autographed without wrapping it again
+                # since autograph always transforms the entry point, even if it is in a module that
+                # is supposed to be ignored.
+                # pylint: disable=unnecessary-lambda
+                qfunc2 = (
+                    qml.capture.run_autograph(lambda *inner_args: qfunc(*inner_args))
+                    if control_status_ctx().status.name == "ENABLED"
+                    else qfunc
+                )
+                flat_qfunc = qml.capture.flatfn.FlatFn(qfunc2)
+                jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+
+                n_args = len(args)
+                n_consts = len(jaxpr.consts)
+                args_slice = slice(0, n_args)
+                consts_slice = slice(n_args, n_args + n_consts)
+                targs_slice = slice(n_args + n_consts, None)
+
+                results = self._primitive.bind(
+                    *args,
+                    *jaxpr.consts,
+                    *targs,
+                    inner_jaxpr=jaxpr.jaxpr,
+                    args_slice=args_slice,
+                    consts_slice=consts_slice,
+                    targs_slice=targs_slice,
+                    tkwargs=tkwargs,
+                )
+
+                assert flat_qfunc.out_tree is not None
+                return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+
             with qml.queuing.AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
 
@@ -366,7 +392,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if len(transformed_tapes) != 1:
                 raise TransformError(
                     "Impossible to dispatch your transform on quantum function, because more than "
-                    "one tape is returned"
+                    f"one tape is returned. Expected 1 tape, got {len(transformed_tapes)}."
                 )
 
             transformed_tape = transformed_tapes[0]
@@ -496,6 +522,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         is_informative=False,
         final_transform=False,
         use_argnum=False,
+        primitive=None,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
         self._transform = transform
         self._args = args or []
@@ -505,6 +532,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
+        self._primitive = primitive
 
     def __repr__(self):
         return f"<{self._transform.__name__}({self._args}, {self._kwargs})>"
@@ -519,6 +547,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
                 self._plxpr_transform,
                 self._is_informative,
                 self.final_transform,
+                self.primitive,
             )
         )
 
@@ -569,6 +598,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         """``True`` if the transform needs to be executed"""
         return self._final_transform
 
+    @property
+    def primitive(self):
+        """Transform's primitive"""
+        return self._primitive
+
 
 def _create_transform_primitive(name):
     try:
@@ -585,7 +619,9 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        raise NotImplementedError
+        args = all_args[args_slice]
+        consts = all_args[consts_slice]
+        return qml.capture.PlxprInterpreter().eval(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):
