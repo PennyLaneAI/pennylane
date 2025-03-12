@@ -349,8 +349,30 @@ Custom Operator Decomposition
 -----------------------------
 
 PennyLane decomposes gates unknown to the device into other, "lower-level" gates. 
-As a user, you may want to fine-tune this mechanism. For example, you may wish your 
-circuit to use different fundamental gates.
+As a user, you may want to fine-tune this mechanism. The default behaviour in PennyLane
+versus that of the new decompositions system (enabled with ``qml.decompositions.enable_graph``)
+differ in the following ways when it comes to injecting custom decompositions for
+operators:
+
+.. list-table:: 
+   :widths: 25 25 25
+   :header-rows: 1
+
+   * - 
+     - Circuit-level decomposition
+     - Device-level decomposition
+     - Multiple decompositions per operator
+   * - Behaviour with ``qml.decompositions.disable_graph`` (the default setting)
+     - No
+     - Yes
+     - No
+   * - Behaviour with ``qml.decompositions.enable_graph``
+     - Yes
+     - Yes
+     - Yes
+
+Behaviour with ``qml.decompositions.disable_graph``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For example, suppose we would like to implement the following QNode:
 
@@ -398,9 +420,48 @@ to our specifications:
 1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
 2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
 
+If the custom decomposition is only supposed to be used in a specific code context,
+a separate context manager :func:`~.pennylane.transforms.set_decomposition` can 
+be used.
+
 .. note::
-    If the custom decomposition is only supposed to be used in a specific code context,
-    a separate context manager :func:`~.pennylane.transforms.set_decomposition` can be used.
+
+    Device-level custom decompositions **are not applied before other compilation 
+    passes (decorators on QNodes)**. For example, the following circuit has ``cancel_inverses`` 
+    applied to it, and the device was provided a decomposition for ``qml.CNOT``. 
+    The Hadamard gates applied around the ``qml.CNOT`` gate do not get cancelled 
+    with those introduced by the custom decomposition.
+
+    .. code-block:: python
+
+        def custom_cnot(wires, **_):
+            return [
+                qml.H(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.H(wires=wires[1])
+            ]
+
+        dev = qml.device("default.qubit", custom_decomps={qml.CNOT: custom_cnot})
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(1)
+            qml.CNOT([0, 1])
+            qml.H(1)
+            return qml.state()
+
+    >>> print(qml.draw(circuit, level="device")())
+    0: ───────╭●───────┤  State
+    1: ──H──H─╰Z──H──H─┤  State
+
+    To have better control over custom decompositions, consider using the new decompositions
+    system functionality outlined in the next section.
+
+Behaviour with ``qml.decompositions.enable_graph``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 
 Circuit cutting
 ---------------
