@@ -845,18 +845,31 @@ class TestIterativeSolver:
             (generate_polynomial_coeffs(12,0)),
         ]
     )
-    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
+    @pytest.mark.parametrize(
+        "opt_method",
+        [
+            'L-BFGS-B',
+            'Newton-CG',
+        ]
+    )
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis, opt_method):
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
         parity = degree % 2
         if parity:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs)
+        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs, opt_method=opt_method)
         x_point = np.random.uniform(size=1, high=1, low=-1)
         x_point = x_point.item()
+        
+        try: 
+            import jax
+            interface = 'jax'
+        except ModuleNotFoundError:
+            interface=None
         delta = abs(
-            np.real(qsp_iterates(phis, x_point)[0, 0])
+            np.real(qsp_iterates(phis, x_point, interface=interface)[0, 0])
             - poly_func(target_polynomial_coeffs, degree, parity, x_point)
         )
         print(f"delta {delta}")
@@ -883,7 +896,7 @@ class TestIterativeSolver:
         )
 
         assert np.isclose(
-            np.real(qsp_iterates(phis, x_point)[0, 0]),
+            np.real(qsp_iterates(phis, x_point, interface=interface)[0, 0]),
             poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
             atol=tolerance,
         )
@@ -952,7 +965,7 @@ class TestIterativeSolver:
         output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
-=======
+
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
 
