@@ -24,7 +24,7 @@ class QubitMgr:
     are in the |0> state to participate in MCM-based workloads, under the assumption of reset
     upon measurement.
 
-    This class assumes single-producer, single-consumer serialized CRUD operations only, and may 
+    This class assumes single-producer, single-consumer serialized CRUD operations only, and may
     not behave correctly in a concurrent execution environment.
     """
 
@@ -80,7 +80,7 @@ class QubitMgr:
         """
         indices = []
         for _ in range(num_qubits):
-            indices.append(self.get_qubit())
+            indices.append(self.acquire_qubit())
         return indices
 
     def release_qubit(self, idx: int):
@@ -100,7 +100,7 @@ class QubitMgr:
         Return the active qubit indices to the inactive pool.
         """
         for idx in indices:
-            self.free_qubit(idx)
+            self.release_qubit(idx)
 
     def reserve_qubit(self, idx: int):
         """
