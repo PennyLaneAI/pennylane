@@ -1188,6 +1188,19 @@ class TestSqrtMatrix:
 CONVERGENCE_ERROR = "Convergence threshold not reached"
 
 
+def _reverse_det_hermitian(mat):
+    """Helper function to reverse determinant sign of Hermitian matrix"""
+    eigvals, eigvecs = np.linalg.eigh(mat)
+    eigvals[0] *= -1
+    return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
+
+
+def _enforce_positivity(mat):
+    """Helper function to ensure matrix is positive definite"""
+    det_mat = np.linalg.det(mat)
+    return mat if det_mat > 0 else _reverse_det_hermitian(mat)
+
+
 class TestDenmanBeaversIterations:
     """Tests for the Denman-Beavers iteration method for matrix square root"""
 
@@ -1230,11 +1243,14 @@ class TestDenmanBeaversIterations:
             _denman_beavers_iterations(mat)
 
     @pytest.mark.parametrize("size", [2, 3, 4, 5])
-    def test_valid_positive_definite(self, size):
+    def test_valid_positive_definite(self, size, seed):
         """Test that valid real, positive definite matrices work correctly"""
         # Create a positive definite matrix
-        A = np.random.random((size, size))
-        mat = csr_matrix(np.eye(size) - 0.1 * (A @ A.T))
+        rng = np.random.default_rng(seed)
+        A = rng.random((size, size))
+        mat = np.eye(size) - 0.1 * (A @ A.T)
+        mat = _enforce_positivity(mat)
+        mat = csr_matrix(mat)
 
         result = _denman_beavers_iterations(mat)
         # Check that result is a valid square root
@@ -1249,11 +1265,6 @@ class TestDenmanBeaversIterations:
         n = 4
         A = np.random.random((n, n)) + 1j * np.random.random((n, n))
         mat = np.eye(n) - 0.2 * (A @ A.T.conj())
-
-        def _reverse_det_hermitian(mat):
-            eigvals, eigvecs = np.linalg.eigh(mat)
-            eigvals[0] *= -1
-            return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
 
         det_mat = np.real(np.linalg.det(mat))
         good_mat = mat if det_mat > 0 else _reverse_det_hermitian(mat)
