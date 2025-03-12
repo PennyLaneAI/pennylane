@@ -23,6 +23,9 @@ class QubitMgr:
     during execution of a workload. Its purpose is to allow tracking of free qubit indices that
     are in the |0> state to participate in MCM-based workloads, under the assumption of reset
     upon measurement.
+
+    This class assumes single-producer, single-consumer serialized CRUD operations only, and may 
+    not behave correctly in a concurrent execution environment.
     """
 
     def __init__(self, num_qubits: int = 0, start_idx: int = 0):
