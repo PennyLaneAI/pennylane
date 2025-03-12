@@ -603,6 +603,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Remove a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
+
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
   when experimental program capture is enabled.
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
@@ -676,6 +679,7 @@ Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
