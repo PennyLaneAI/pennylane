@@ -603,7 +603,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Remove a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+* Dynamic one-shot workloads are now faster for `null.qubit`.
+  Remove a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
   [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
 
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
