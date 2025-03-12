@@ -30,7 +30,6 @@ from pennylane.wires import Wires
 
 import scipy
 import math
-# from autograd import jacobian, hessian
 
 # pylint: disable=too-many-branches, unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
