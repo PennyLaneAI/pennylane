@@ -183,3 +183,84 @@ class TestDecompositionGraph:
                 qml.resource_rep(qml.GlobalPhase): 1,
             },
         )
+
+
+@patch(
+    "pennylane.decomposition.decomposition_graph.list_decomps",
+    side_effect=lambda x: decompositions[x],
+)
+class TestControlledDecompositions:  # pylint: disable=too-few-public-methods
+    """Tests that the decomposition graph can handle controlled decompositions."""
+
+    def test_general_controlled_op(self, _):
+        """Tests that a general controlled op can be decomposed."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_param_keys = ()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.X: 1, qml.GlobalPhase: 1})
+        def custom_decomp(wires):
+            qml.X(wires[0])
+            qml.GlobalPhase(np.pi, wires=wires)
+
+        @qml.register_resources({qml.Z: 1, qml.GlobalPhase: 1})
+        def second_decomp(wires):
+            qml.Z(wires=wires[0])
+            qml.GlobalPhase(np.pi / 2, wires=wires)
+
+        class CustomControlledOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_param_keys = ()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources(
+            {
+                qml.Z: 1,
+                qml.controlled_resource_rep(
+                    CustomOp,
+                    {},
+                    num_control_wires=1,
+                    num_zero_control_values=0,
+                    num_work_wires=0,
+                ): 1,
+            }
+        )
+        def custom_controlled_decomp(wires):
+            qml.Z(wires=wires[0])
+            qml.ctrl(CustomOp(wires=wires[1]), control=wires[0])
+
+        op1 = qml.ctrl(CustomOp(wires=[0]), control=[1])
+        op2 = qml.ctrl(CustomOp(wires=[0]), control=[1, 2], control_values=[True, False])
+        op3 = qml.ctrl(CustomControlledOp(wires=[0, 1]), control=[2], control_values=[False])
+        graph = DecompositionGraph(
+            operations=[op1, op2, op3],
+            target_gate_set={"CNOT", "Toffoli", "CCZ", "RZ", "RX", "GlobalPhase"},
+            alt_decomps={
+                CustomOp: [custom_decomp, second_decomp],
+                CustomControlledOp: [custom_controlled_decomp],
+            },
+        )
+        # 18 op nodes and 16 decomposition nodes.
+        assert len(graph._graph.nodes()) == 34
+        # 16 edges from decompositions to ops and 36 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 52
+
+        graph.solve()
+
+        # Check that decomposition rules are found for the necessary controlled operators.
+        assert graph.decomposition(op1)
+        assert graph.decomposition(op2)
+        assert graph.decomposition(op3)
+        assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1]))
+        assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
+        assert graph.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))

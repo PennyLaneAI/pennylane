@@ -41,14 +41,14 @@ from .symbolicop import SymbolicOp
 def ctrl(
     op: Operator,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Operator: ...
 @overload
 def ctrl(
     op: Callable,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None):
