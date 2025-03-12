@@ -53,6 +53,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
+  [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
+
 * The `default.mixed` device now adheres to the newer device API introduced in
   [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
   This means that `default.mixed` now supports not having to specify the number of wires,
