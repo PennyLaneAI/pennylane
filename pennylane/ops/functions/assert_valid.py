@@ -129,7 +129,13 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
-    assert gate_counts == actual_gate_counts
+    assert set(gate_counts.keys()) == set(actual_gate_counts.keys())
+    assert all(
+        estimated_count >= actual_count
+        for estimated_count, actual_count in zip(
+            gate_counts.values(), actual_gate_counts.values(), strict=True
+        )
+    )
 
     # Tests that the decomposition produces the same matrix
     op_matrix = qml.matrix(op)

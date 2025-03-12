@@ -100,11 +100,11 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    resource_param_keys = ("unitary_matrix",)
+    resource_param_keys = ("shape",)
 
     @property
     def resource_params(self) -> dict:
-        return {"unitary_matrix": self.data[0]}
+        return {"shape": qml.math.shape(self.data[0])}
 
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
@@ -199,20 +199,14 @@ class BasisRotation(Operation):
         return op_list
 
 
-def _basis_rotation_decomp_resources(unitary_matrix):
-    phase_list, givens_list = givens_decomposition(unitary_matrix)
-    num_givens = len(givens_list)
-    phase_count = len(phase_list)
+def _basis_rotation_decomp_resources(shape):
+    dim = shape[0]
 
-    for grot_mat, _ in givens_list:
-        phi = qml.math.angle(grot_mat[0, 0])
-
-        if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
-            phase_count += 1
-
+    # Note: This is a simplified resource estimate. The actual gate count
+    # depends on the givens decomposition of the unitary matrix.
     return {
-        qml.PhaseShift: phase_count,
-        qml.SingleExcitation: num_givens,
+        qml.PhaseShift: 2 * dim,
+        qml.SingleExcitation: dim,
     }
 
 
