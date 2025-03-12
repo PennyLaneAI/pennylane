@@ -39,11 +39,13 @@ from .parametric_midmeasure import (
 from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep
 from .qubit_graph import QubitGraph
+from .utils import QubitMgr
 
 __all__ = [
     "GraphStatePrep",
     "Lattice",
     "QubitGraph",
+    "QubitMgr",
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",

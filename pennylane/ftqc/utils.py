@@ -68,8 +68,8 @@ class QubitMgr:
             idx = self._inactive.pop()
             self._active.add(idx)
             return idx
-        except:
-            raise RuntimeError("Cannot allocate any additional qubits. Execution aborted.")
+        except Exception as exc:
+            raise RuntimeError("Cannot allocate any additional qubits. Execution aborted.") from exc
 
     def acquire_qubits(self, num_qubits):
         """
@@ -86,8 +86,10 @@ class QubitMgr:
         """
         try:
             self._active.remove(idx)
-        except:
-            raise RuntimeError(f"Qubit index {idx} not found in active set. Execution aborted.")
+        except Exception as exc:
+            raise RuntimeError(
+                f"Qubit index {idx} not found in active set. Execution aborted."
+            ) from exc
         self._inactive.add(idx)
 
     def release_qubits(self, indices: list[int]):
