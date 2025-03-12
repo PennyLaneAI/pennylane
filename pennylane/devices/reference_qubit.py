@@ -35,6 +35,7 @@ def sample_state(state: np.ndarray, shots: int, seed=None):
     num_wires = int(np.log2(len(probs)))
 
     rng = np.random.default_rng(seed)
+    probs /= np.sum(probs)  # Fix: Normalize to prevent sum ≠ 1 errors in NumPy 2.0+
     basis_samples = rng.choice(basis_states, shots, p=probs)
 
     # convert basis state integers to array of booleans
