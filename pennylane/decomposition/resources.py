@@ -113,7 +113,7 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        return self.op_type.__name__
+        return f"{self.op_type.__name__}, {self.params}"
 
 
 def _make_hashable(d) -> tuple:

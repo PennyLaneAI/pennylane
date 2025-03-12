@@ -164,6 +164,19 @@ def _check_sparse_matrix(op):
         l = 2 ** len(op.wires)
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
         assert qml.math.shape(mat) == (l, l), failure_comment
+
+        assert isinstance(
+            op.sparse_matrix(), scipy.sparse.csr_matrix
+        ), "sparse matrix should default to csr format"
+        assert isinstance(
+            op.sparse_matrix(format="csc"), scipy.sparse.csc_matrix
+        ), "sparse matrix should be formatted as csc"
+        assert isinstance(
+            op.sparse_matrix(format="lil"), scipy.sparse.lil_matrix
+        ), "sparse matrix should be formatted as lil"
+        assert isinstance(
+            op.sparse_matrix(format="coo"), scipy.sparse.coo_matrix
+        ), "sparse matrix should be formatted as coo"
     else:
         failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
         _assert_error_raised(
@@ -448,7 +461,6 @@ def assert_valid(
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
-
     _check_decomposition(op, skip_wire_mapping)
     _check_decomposition_new(op)
 
