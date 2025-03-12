@@ -53,6 +53,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
+  [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
+
 * The `default.mixed` device now adheres to the newer device API introduced in
   [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
   This means that `default.mixed` now supports not having to specify the number of wires,
@@ -603,6 +606,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Dynamic one-shot workloads are now faster for `null.qubit`.
+  Remove a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
+
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
   when experimental program capture is enabled.
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
@@ -676,6 +683,7 @@ Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
