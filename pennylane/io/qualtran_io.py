@@ -31,6 +31,7 @@ try:
         Side,
         Soquet,
     )
+    from qualtran.bloqs.bookkeeping import Partition
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
@@ -157,6 +158,26 @@ class FromBloq(Operation):
             }
 
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
+                print(binst.bloq)
+                if isinstance(binst.bloq, Partition):
+                    in_quregs = {}
+                    soq_to_wires_len = 0
+                    for succ in succ_cxns:
+                        soq = succ.left
+                        if soq.reg.side == Side.RIGHT and not soq.reg.name in in_quregs:
+                            total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
+                            ascending_vals = np.arange(
+                                soq_to_wires_len,
+                                total_elements + soq_to_wires_len,
+                                dtype=object,
+                            )
+                            soq_to_wires_len += total_elements
+                            in_quregs[soq.reg.name] = ascending_vals.reshape(
+                                (*soq.reg.shape, soq.reg.bitsize)
+                            )
+                        soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
+                    continue
+
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
@@ -197,13 +218,13 @@ class FromBloq(Operation):
                                 total_elements + soq_to_wires_len,
                                 dtype=object,
                             )
+                            soq_to_wires_len += total_elements
                             in_quregs[soq.reg.name] = ascending_vals.reshape(
                                 (*soq.reg.shape, soq.reg.bitsize)
                             )
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
 
-                total_wires = [w for ws in in_quregs.values() for w in list(ws.ravel())]
-                print(total_wires)
+                total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires]
                 op = binst.bloq.as_pl_op(mapped_wires)
 
