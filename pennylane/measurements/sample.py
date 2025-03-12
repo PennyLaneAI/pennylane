@@ -215,7 +215,6 @@ class SampleMP(SampleMeasurement):
         return tuple(shape), dtype
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         if self.obs is None:
             # Computational basis samples
