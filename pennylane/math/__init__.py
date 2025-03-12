@@ -76,6 +76,7 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
     vn_entanglement_entropy,
     max_entropy,
