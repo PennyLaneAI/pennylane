@@ -63,7 +63,7 @@ def register_resources(
         qml.decompositions.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def cnot_decomp(wires):
+        def my_cnot(wires):
             qml.H(wires=wires[1])
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
