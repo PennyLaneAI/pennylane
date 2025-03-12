@@ -262,13 +262,14 @@ def _check_generator(op):
         )()
 
 
-def _check_copy(op):
+def _check_copy(op, skip_deepcopy):
     """Check that copies and deep copies give identical objects."""
     copied_op = copy.copy(op)
     assert qml.equal(copied_op, op), "copied op must be equal with qml.equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
-    assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
+    if not skip_deepcopy:
+        assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -398,6 +399,7 @@ def _check_wires(op, skip_wire_mapping):
 
 def assert_valid(
     op: qml.operation.Operator,
+    skip_deepcopy=False,
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_differentiation=False,
@@ -409,6 +411,7 @@ def assert_valid(
         op (.Operator): an operator instance to validate
 
     Keyword Args:
+        skip_deepcopy=False: If `True`, deepcopy tests are not run.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
@@ -456,7 +459,7 @@ def assert_valid(
 
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping)
-    _check_copy(op)
+    _check_copy(op, skip_deepcopy)
     _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
