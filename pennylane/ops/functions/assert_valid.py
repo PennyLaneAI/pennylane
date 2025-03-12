@@ -98,7 +98,7 @@ def _check_decomposition(op, skip_wire_mapping):
         )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
-def _check_decomposition_new(op):
+def _check_decomposition_new(op, resources_overestimated=False):
     """Checks involving the new system of decompositions."""
 
     if type(op).resource_params is qml.operation.Operator.resource_params:
@@ -112,10 +112,10 @@ def _check_decomposition_new(op):
     ), "resource_params must have the same keys as specified by resource_param_keys"
 
     for rule in qml.list_decomps(type(op)):
-        _test_decomposition_rule(op, rule)
+        _test_decomposition_rule(op, rule, resources_overestimated)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule):
+def _test_decomposition_rule(op, rule: DecompositionRule, resources_overestimated=False):
     """Tests that a decomposition rule is consistent with the operator."""
 
     # Test that the resource function is correct
@@ -129,13 +129,16 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
-    assert set(gate_counts.keys()) == set(actual_gate_counts.keys())
-    assert all(
-        estimated_count >= actual_count
-        for estimated_count, actual_count in zip(
-            gate_counts.values(), actual_gate_counts.values(), strict=True
+    if resources_overestimated:
+        assert set(gate_counts.keys()) == set(actual_gate_counts.keys())
+        assert all(
+            estimated_count >= actual_count
+            for estimated_count, actual_count in zip(
+                gate_counts.values(), actual_gate_counts.values(), strict=True
+            )
         )
-    )
+    else:
+        assert gate_counts == actual_gate_counts
 
     # Tests that the decomposition produces the same matrix
     op_matrix = qml.matrix(op)
@@ -407,6 +410,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_differentiation=False,
+    resources_overestimated=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
@@ -419,6 +423,8 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
             the operator is parametrized but not differentiable.
+        resources_overestimated: If ``True``, the resources of the decomposition are allowed to be
+            overestimated. This is useful when the decomposition resources are approximate.
 
     **Examples:**
 
@@ -468,7 +474,7 @@ def assert_valid(
         _check_pickle(op)
     _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping)
-    _check_decomposition_new(op)
+    _check_decomposition_new(op, resources_overestimated)
 
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
