@@ -10,7 +10,8 @@ from scipy.sparse import csr_array
 from pennylane.labs.trotter.fragments import vibrational_fragments, vibrational_hamiltonian
 from pennylane.labs.trotter.realspace import HOState
 
-#pylint: disable=no-self-use
+# pylint: disable=no-self-use
+
 
 @pytest.mark.parametrize(
     "n_modes, omegas, phis, gridpoints",

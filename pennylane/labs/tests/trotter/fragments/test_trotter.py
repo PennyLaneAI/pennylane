@@ -1,3 +1,5 @@
+"""Tests for the second order trotter error calculation"""
+
 import numpy as np
 import pytest
 
