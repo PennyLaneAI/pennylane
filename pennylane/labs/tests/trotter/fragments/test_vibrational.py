@@ -50,7 +50,7 @@ class TestHarmonic1Mode:
 
         for i, state1 in enumerate(states):
             for j, state2 in enumerate(states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -77,7 +77,7 @@ class TestHarmonic1Mode:
 
         for i, state1 in enumerate(comb_states):
             for j, state2 in enumerate(comb_states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -109,7 +109,7 @@ class TestHarmonicMultiMode:
         actual = np.zeros((len(states), len(states)), dtype=np.complex128)
         for i, state1 in enumerate(states):
             for j, state2 in enumerate(states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -145,7 +145,7 @@ class TestHarmonicMultiMode:
         actual = np.zeros((len(states), len(states)), dtype=np.complex128)
         for i, state1 in enumerate(comb_states):
             for j, state2 in enumerate(comb_states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 

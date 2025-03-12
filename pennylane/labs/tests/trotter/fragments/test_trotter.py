@@ -52,7 +52,7 @@ def test_epsilon(modes):
         2 * nested_commutator([fragments[2], fragments[1], fragments[2]]),
     ]
 
-    actual = trotter_error(fragments, delta, order=2)
+    actual = trotter_error(fragments, delta)
     expected = scalar * sum(terms, VibronicMatrix(states, modes))
 
     assert actual == expected

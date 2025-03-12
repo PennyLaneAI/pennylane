@@ -9,6 +9,8 @@ import scipy as sp
 from pennylane.labs.trotter.fragments import vibronic_hamiltonian
 from pennylane.labs.trotter.realspace import HOState, VibronicHO
 
+# pylint: disable=no-self-use
+
 
 class Test1Mode:
     """Test a simple one mode, one state vibronic Hamiltonian"""
