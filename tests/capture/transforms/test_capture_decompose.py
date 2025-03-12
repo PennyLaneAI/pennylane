@@ -491,12 +491,12 @@ class TestControlledDecompositions:
         """Test that ctrl_transform that does not need to be decomposed gets changed into
         individually controlled ops"""
 
-        # Not specifying gate set so all ops are considered to be supported
-        @DecomposeInterpreter()
         def inner_f(x):
             qml.RX(x, 0)
             qml.IsingXX(x, [0, 1])
 
+        # C(IsingXX) is not in the default gate set
+        @DecomposeInterpreter(gate_set="C(IsingXX)")
         def f(x):
             qml.ctrl(inner_f, control=[2, 3])(x)
 
@@ -513,11 +513,71 @@ class TestControlledDecompositions:
     def test_ctrl_for_loop(self):
         """Test that a for_loop inside a ctrl_transform is not unrolled."""
 
+        def inner_f(x, n):
+            @qml.for_loop(n)
+            def g(i):
+                qml.RX(x, i)
+
+            g()
+
+        @DecomposeInterpreter()
+        def f(x, n):
+            qml.ctrl(inner_f, control=[4, 5])(x, n)
+
+        args = (1.5, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-2].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
+
     def test_ctrl_while_loop(self):
         """Test that a while_loop inside a ctrl_transform is not unrolled."""
 
+        def inner_f(x, n):
+            @qml.while_loop(lambda i: i < 2 * n)
+            def g(i):
+                qml.RX(x, i)
+                return i + 1
+
+            g(0)
+
+        @DecomposeInterpreter()
+        def f(x, n):
+            qml.ctrl(inner_f, control=[4, 5])(x, n)
+
+        args = (1.5, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-3].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.ops.Controlled._primitive
+        # final primitive is the increment
+        assert inner_jaxpr.eqns[-1].primitive.name == "add"
+
     def test_ctrl_cond(self):
         """Test that a cond inside a ctrl_transform is not unrolled."""
+
+        def inner_f(x):
+            @qml.cond(x > 1)
+            def cond_f():
+                qml.RX(x, 0)
+
+            cond_f()
+
+        @DecomposeInterpreter()
+        def f(x):
+            qml.ctrl(inner_f, control=[4, 5])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        # condition is the first primitive
+        assert jaxpr.eqns[1].primitive == cond_prim
+
+        # True branch
+        branch_jaxpr = jaxpr.eqns[1].params["jaxpr_branches"][0]
+        assert branch_jaxpr.eqns[-2].primitive == qml.RX._primitive
+        assert branch_jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
 
 
 def test_decompose_plxpr_to_plxpr():
