@@ -158,7 +158,6 @@ class FromBloq(Operation):
             }
 
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
-                print(binst.bloq)
                 if isinstance(binst.bloq, Partition):
                     in_quregs = {}
                     soq_to_wires_len = 0
