@@ -52,6 +52,8 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+  
+* `compute_decomposition` of qml.X and qml.Y now uses one GlobalPhase() instead two PhaseShift() in their decomposition. [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
 * The `default.mixed` device now adheres to the newer device API introduced in
   [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
