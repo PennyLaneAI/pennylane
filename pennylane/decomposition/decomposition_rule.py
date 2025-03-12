@@ -54,8 +54,7 @@ def register_resources(
     **Example**
 
     This function can be used as a decorator to bind a quantum function to its required resources
-    so that it can be used as a decomposition rule within the new decomposition system (enabled
-    with ``qml.decompositions.enable_graph()``).
+    so that it can be used as a decomposition rule within the new decomposition system.
 
     .. code-block:: python
 
@@ -74,6 +73,7 @@ def register_resources(
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
+
 
     >>> print(qml.draw(circuit, level="device")())
     0: ────╭●────┤  State
