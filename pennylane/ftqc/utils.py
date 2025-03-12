@@ -79,7 +79,7 @@ class QubitMgr:
         Return num_qubits number of inactive qubits and make them active.
         """
         indices = []
-        for i in range(num_qubits):
+        for _ in range(num_qubits):
             indices.append(self.get_qubit())
         return indices
 
