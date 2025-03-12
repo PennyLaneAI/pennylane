@@ -10,25 +10,25 @@ from scipy.sparse import csr_array
 from pennylane.labs.trotter.fragments import vibrational_fragments, vibrational_hamiltonian
 from pennylane.labs.trotter.realspace import HOState
 
+#pylint: disable=no-self-use
 
-class TestFragments:
-    """Test properties of the fragments"""
+@pytest.mark.parametrize(
+    "n_modes, omegas, phis, gridpoints",
+    [
+        (5, np.random.random(5), [], 2),
+        (5, np.random.random(5), [np.random.random(size=(5,) * i) for i in range(4)], 2),
+    ],
+)
+def test_fragementation_schemes_equal(n_modes, omegas, phis, gridpoints):
+    """Test that harmonic + anharmonic = kinetic + potential"""
 
-    @pytest.mark.parametrize(
-        "n_modes, omegas, phis, gridpoints",
-        [
-            (5, np.random.random(5), [], 2),
-            (5, np.random.random(5), [np.random.random(size=(5,) * i) for i in range(4)], 2),
-        ],
-    )
-    def test_fragementation_schemes_equal(self, n_modes, omegas, phis, gridpoints):
-        harmonic, anharmonic = vibrational_fragments(n_modes, omegas, phis, frags="harmonic")
-        kinetic, potential = vibrational_fragments(n_modes, omegas, phis, frags="kinetic")
+    harmonic, anharmonic = vibrational_fragments(n_modes, omegas, phis, frags="harmonic")
+    kinetic, potential = vibrational_fragments(n_modes, omegas, phis, frags="kinetic")
 
-        mat1 = (harmonic + anharmonic).matrix(gridpoints)
-        mat2 = (kinetic + potential).matrix(gridpoints)
+    mat1 = (harmonic + anharmonic).matrix(gridpoints)
+    mat2 = (kinetic + potential).matrix(gridpoints)
 
-        assert np.allclose(mat1, mat2)
+    assert np.allclose(mat1, mat2)
 
 
 class TestHarmonic1Mode:
@@ -150,6 +150,7 @@ class TestHarmonicMultiMode:
 
 
 class TestExpectation:
+    """Test the expectation values against precomputed expected results"""
 
     phis1 = [np.array(0), np.array([0.0]), np.array([[-0.00306787]]), np.array([[[0.00051144]]])]
     omegas1 = np.array([0.0249722])
