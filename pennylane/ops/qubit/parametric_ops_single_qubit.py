@@ -493,10 +493,6 @@ class PhaseShift(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def label(
         self,
         decimals: Optional[int] = None,
