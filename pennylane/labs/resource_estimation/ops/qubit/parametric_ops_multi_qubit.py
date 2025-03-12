@@ -23,6 +23,9 @@ import pennylane.labs.resource_estimation as re
 class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+
     Resources:
         The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
@@ -172,6 +175,9 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
+    Args:
+        pauli_string (str): a string describing the pauli operators that define the rotation
+    
     Resources:
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).

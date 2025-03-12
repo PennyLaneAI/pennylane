@@ -908,6 +908,11 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     r"""Resource class for the MultiControlledX gate.
 
+    Args:
+        num_ctrl_wires (int): the number of qubits the operation is controlled on
+        num_ctrl_values (int): the number of control qubits, that are controlled when off
+        num_work_wires (int): the number of additional qubits that can be used for decomposition
+
     Resources:
         The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
         without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
@@ -918,10 +923,10 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
 
         * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
-          one :class:`~.ResourceToffoli` gate.
+            one :class:`~.ResourceToffoli` gate.
 
         * If there are more than three control qubits (:math:`n`), the resources are given by
-          :math:`36n - 111` :class:`~.ResourceCNOT` gates.
+            :math:`36n - 111` :class:`~.ResourceCNOT` gates.
 
     .. seealso:: :class:`~.MultiControlledX`
 
