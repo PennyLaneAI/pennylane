@@ -183,10 +183,10 @@ class TestCompressedResourceOp:
         """Tests the repr defined for debugging purposes."""
 
         op = CompressedResourceOp(qml.RX, {})
-        assert repr(op) == "RX"
+        assert repr(op) == "RX, {}"
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
-        assert repr(op) == "MultiRZ"
+        assert repr(op) == "MultiRZ, {'num_wires': 5}"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
