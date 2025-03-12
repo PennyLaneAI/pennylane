@@ -12,7 +12,7 @@ def test_against_10_mode():
     expected = 1.6621227513071748
 
     frags = vibronic_fragments(6, 10, *ten_mode())
-    ep = trotter_error(frags, 1, order=2)
+    ep = trotter_error(frags, 1)
 
     params = {"gridpoints": 4, "sparse": True}
 
