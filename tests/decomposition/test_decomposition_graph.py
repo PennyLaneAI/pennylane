@@ -20,17 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from conftest import (
-    CustomCZ,
-    CustomGlobalPhase,
-    CustomHadamard,
-    CustomMultiRZ,
-    CustomPhaseShift,
-    CustomRX,
-    CustomRY,
-    CustomRZ,
-    decompositions,
-)
+from conftest import decompositions
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph, Resources
@@ -47,60 +37,54 @@ class TestDecompositionGraph:
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
 
-        @qml.register_resources({CustomPhaseShift: 2, CustomRX: 1})
+        @qml.register_resources({qml.PhaseShift: 2, qml.RX: 1})
         def custom_hadamard(wires):
-            CustomPhaseShift(np.pi / 2, wires=wires)
-            CustomRX(np.pi / 2, wires=wires)
-            CustomPhaseShift(np.pi / 2, wires=wires)
+            qml.PhaseShift(np.pi / 2, wires=wires)
+            qml.RX(np.pi / 2, wires=wires)
+            qml.PhaseShift(np.pi / 2, wires=wires)
 
-        @qml.register_resources({CustomPhaseShift: 1, CustomRY: 1})
+        @qml.register_resources({qml.PhaseShift: 1, qml.RY: 1})
         def custom_hadamard_2(wires):
-            CustomPhaseShift(np.pi / 2, wires=wires)
-            CustomRY(np.pi / 2, wires=wires)
+            qml.PhaseShift(np.pi / 2, wires=wires)
+            qml.RY(np.pi / 2, wires=wires)
+
+        graph = DecompositionGraph(operations=[qml.Hadamard(0)], target_gate_set={"RX", "RY", "RZ"})
+        assert graph._get_decompositions(qml.Hadamard) == decompositions[qml.Hadamard]
 
         graph = DecompositionGraph(
-            operations=[CustomHadamard(0)], target_gate_set={"CustomRX", "CustomRY", "CustomRZ"}
+            operations=[qml.Hadamard(0)],
+            target_gate_set={"RX", "RY", "RZ"},
+            fixed_decomps={qml.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(CustomHadamard) == decompositions[CustomHadamard]
+        assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
 
         graph = DecompositionGraph(
-            operations=[CustomHadamard(0)],
-            target_gate_set={"CustomRX", "CustomRY", "CustomRZ"},
-            fixed_decomps={CustomHadamard: custom_hadamard},
-        )
-        assert graph._get_decompositions(CustomHadamard) == [custom_hadamard]
-
-        graph = DecompositionGraph(
-            operations=[CustomHadamard(0)],
-            target_gate_set={"CustomRX", "CustomRY", "CustomRZ"},
-            alt_decomps={CustomHadamard: [custom_hadamard, custom_hadamard_2]},
+            operations=[qml.Hadamard(0)],
+            target_gate_set={"RX", "RY", "RZ"},
+            alt_decomps={qml.Hadamard: [custom_hadamard, custom_hadamard_2]},
         )
         assert (
-            graph._get_decompositions(CustomHadamard)
+            graph._get_decompositions(qml.Hadamard)
             == [
                 custom_hadamard,
                 custom_hadamard_2,
             ]
-            + decompositions[CustomHadamard]
+            + decompositions[qml.Hadamard]
         )
 
     @pytest.mark.unit
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
 
-        op = CustomHadamard(wires=[0])
-        graph = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRX", "CustomRZ", "CustomGlobalPhase"}
-        )
+        op = qml.Hadamard(wires=[0])
+        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY)
         assert len(graph._graph.nodes()) == 8
         # 8 edges from ops to decompositions and 3 from decompositions to ops
         assert len(graph._graph.edges()) == 11
 
         # Check that graph construction stops at gates in the target gate set.
-        graph2 = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRY", "CustomRZ", "CustomGlobalPhase"}
-        )
+        graph2 = DecompositionGraph(operations=[op], target_gate_set={"RY", "RZ", "GlobalPhase"})
         # 5 ops and 2 decompositions (RY is in the target gate set now)
         assert len(graph2._graph.nodes()) == 7
         # 6 edges from ops to decompositions and 2 from decompositions to ops
@@ -110,10 +94,10 @@ class TestDecompositionGraph:
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
 
-        op = CustomHadamard(wires=[0])
+        op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"CustomRX", "CustomRY", "CustomRZ", "CustomGlobalPhase"},
+            target_gate_set={"RX", "RY", "RZ", "GlobalPhase"},
         )
         graph.solve()
 
@@ -121,9 +105,9 @@ class TestDecompositionGraph:
         expected_resource = Resources(
             num_gates=3,
             gate_counts={
-                qml.resource_rep(CustomRZ): 1,
-                qml.resource_rep(CustomRY): 1,
-                qml.resource_rep(CustomGlobalPhase): 1,
+                qml.resource_rep(qml.RZ): 1,
+                qml.resource_rep(qml.RY): 1,
+                qml.resource_rep(qml.GlobalPhase): 1,
             },
         )
         assert graph.resource_estimates(op) == expected_resource
@@ -133,13 +117,9 @@ class TestDecompositionGraph:
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
-        op = CustomHadamard(wires=[0])
-        graph = DecompositionGraph(
-            operations=[op], target_gate_set={"CustomRX", "CustomRY", "CustomGlobalPhase"}
-        )
-        with pytest.raises(
-            DecompositionError, match="Decomposition not found for {'CustomHadamard'}"
-        ):
+        op = qml.Hadamard(wires=[0])
+        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RY", "GlobalPhase"})
+        with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
             graph.solve()
 
     @pytest.mark.unit
@@ -157,8 +137,8 @@ class TestDecompositionGraph:
 
         def _custom_resource(num_wires):
             return {
-                qml.resource_rep(CustomMultiRZ, num_wires=num_wires): 1,
-                qml.resource_rep(CustomMultiRZ, num_wires=num_wires - 1): 2,
+                qml.resource_rep(qml.MultiRZ, num_wires=num_wires): 1,
+                qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
             }
 
         @qml.register_resources(_custom_resource)
@@ -170,7 +150,7 @@ class TestDecompositionGraph:
         op = CustomOp(wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"CustomRX", "CustomRZ", "CustomCZ", "CustomGlobalPhase"},
+            target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
         )
         # 10 ops and 7 decompositions (1 for the custom op, 1 for each of the two MultiRZs,
         # 1 for CNOT, 2 for Hadamard, and 1 for RY)
@@ -182,24 +162,24 @@ class TestDecompositionGraph:
         assert graph.resource_estimates(op) == Resources(
             num_gates=129,
             gate_counts={
-                qml.resource_rep(CustomCZ): 14,
-                qml.resource_rep(CustomRZ): 59,
-                qml.resource_rep(CustomRX): 28,
-                qml.resource_rep(CustomGlobalPhase): 28,
+                qml.resource_rep(qml.CZ): 14,
+                qml.resource_rep(qml.RZ): 59,
+                qml.resource_rep(qml.RX): 28,
+                qml.resource_rep(qml.GlobalPhase): 28,
             },
         )
         assert graph.decomposition(op).compute_resources(**op.resource_params) == Resources(
             num_gates=3,
             gate_counts={
-                qml.resource_rep(CustomMultiRZ, num_wires=4): 1,
-                qml.resource_rep(CustomMultiRZ, num_wires=3): 2,
+                qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
+                qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
             },
         )
-        assert graph.decomposition(CustomHadamard(wires=[0])).compute_resources() == Resources(
+        assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == Resources(
             num_gates=4,
             gate_counts={
-                qml.resource_rep(CustomRZ): 2,
-                qml.resource_rep(CustomRX): 1,
-                qml.resource_rep(CustomGlobalPhase): 1,
+                qml.resource_rep(qml.RZ): 2,
+                qml.resource_rep(qml.RX): 1,
+                qml.resource_rep(qml.GlobalPhase): 1,
             },
         )
