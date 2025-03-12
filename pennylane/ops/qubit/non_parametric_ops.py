@@ -376,11 +376,7 @@ class PauliX(Observable, Operation):
         PhaseShift(1.5707963267948966, wires=[0])]
 
         """
-        return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
-            qml.RX(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        return [qml.RX(np.pi, wires=wires), qml.GlobalPhase(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
@@ -578,9 +574,8 @@ class PauliY(Observable, Operation):
 
         """
         return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 2, wires=wires),
         ]
 
     def adjoint(self) -> "PauliY":
