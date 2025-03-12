@@ -91,9 +91,10 @@ def register_resources(
         where ``op`` is an instance of the operator type that the decomposition is for.
 
         In many cases, the resource requirement of an operator's decomposition is not static; some
-        operators have properties that directly affect their decomposition (the number of gates
-        and/or the type of gates in the decomposition). For example, the number of gates in the
-        decomposition for ``qml.MultiRZ`` changes based on the number of wires it acts on.
+        operators have properties that directly affect the resource estimate of its decompositions,
+        i.e., the types of gates that exists in the decomposition and their number of occurrences.
+        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
+        on the number of wires it acts on.
 
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute:
