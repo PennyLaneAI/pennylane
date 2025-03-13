@@ -230,7 +230,7 @@ class FromBloq(Operation):
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
                 ghost_wires = [
-                    f"allocated_and_freed{val}" for val in total_wires if val >= len(wires)
+                    f"alloc_free{val}" for val in total_wires if val >= len(wires)
                 ]
                 op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
 
