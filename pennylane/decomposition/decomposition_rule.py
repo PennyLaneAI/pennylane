@@ -61,39 +61,6 @@ def register_resources(
 
         import pennylane as qml
 
-        def cnot_decomp(wires):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-    This qfunc is expected to take ``(*op.params, op.wires, **op.hyperparameters)`` as arguments,
-    where ``op`` is an instance of the operator type that this decomposition is for.
-
-    Along with the qfunc implementation of a decomposition, a dictionary mapping operator types to
-    their number of occurrences must be registered:
-
-    .. code-block:: python
-
-        cnot_decomp = qml.register_resources({qml.H: 2, qml.CZ: 1}, cnot_decomp)
-
-    This decomposition rule can then be registered with an operator type:
-
-    .. code-block:: python
-
-        qml.add_decomps(qml.CNOT, cnot_decomp)
-
-    or specified as a fixed decomposition rule to the decompose transform:
-
-    .. code-block:: python
-
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: cnot_decomp})
-        def circuit():
-            ...
-
-    Alternatively, use the decorator syntax:
-
-    .. code-block:: python
-
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot(wires):
             qml.H(wires=wires[1])
