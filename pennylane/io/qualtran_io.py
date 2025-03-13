@@ -120,7 +120,7 @@ class FromBloq(Operation):
 
     """
 
-    def __init__(self, bloq: qt.Bloq, wires: WiresLike):
+    def __init__(self, bloq, wires: WiresLike):
         if not isinstance(bloq, qt.Bloq):
             raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
         self._hyperparameters = {"bloq": bloq}
