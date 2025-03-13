@@ -15,7 +15,7 @@ r"""
 Overview
 --------
 
-This module contains functionality to generate Lie algebras and manipulate them.
+This module contains Lie algebra functionality.
 
 Functions
 ^^^^^^^^^
@@ -33,7 +33,7 @@ Relevant demos
 --------------
 
 Lie algebra functionality in PennyLane.
-Relevant demos to check out:
+Check out the following demos to learn more about Lie algebras in the context of quantum computation:
 
 * :doc:`Introducing (dynamical) Lie algebras for quantum practitioners <demos/tutorial_liealgebra>`
 * :doc:`g-sim: Lie-algebraic classical simulations for variational quantum computing <demos/tutorial_liesim>`

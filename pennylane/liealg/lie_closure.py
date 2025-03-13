@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ def lie_closure(
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
-        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: a basis of either :class:`~.PauliSentence`, :class:`~.Operator`, or ``np.ndarray`` instances that is closed under
-        commutators (Lie closure).
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
+        :class:`~.Operator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
 
     .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
