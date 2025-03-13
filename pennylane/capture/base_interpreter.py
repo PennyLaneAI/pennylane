@@ -555,37 +555,28 @@ def handle_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    abstract_shapes_slice,
 ):
     """Handle a while loop primitive."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
-    abstract_shapes = invals[abstract_shapes_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, consts_body, *abstract_shapes, *init_state
-    )
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
-    )
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
 
     body_consts = slice(0, len(new_jaxpr_body_fn.consts))
     cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
-    abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
     args_slice = slice(abstract_shapes_slice.stop, None)
 
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
         *new_jaxpr_cond_fn.consts,
-        *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
         body_slice=body_consts,
         cond_slice=cond_consts,
         args_slice=args_slice,
-        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -648,17 +639,15 @@ def flatten_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    abstract_shapes_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
-    abstract_shapes = invals[abstract_shapes_slice]
 
     fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes, *fn_res)
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
 
     return fn_res
 
@@ -700,6 +689,11 @@ def flattened_for(
 
 
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
+
+
+@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+def _(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:

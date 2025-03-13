@@ -33,9 +33,7 @@ def _get_letter(ind: int) -> str:
     raise NotImplementedError("we only support up to 702 dynamic axes")  # pragma: no cover
 
 
-def _get_shape_for_array(
-    x, abstract_shapes: list, previous_ints: list, only_new_dynamic_shapes: bool
-) -> dict:
+def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     """
     Populate the dictionary of abstract axes for a single tensorlike.
 
@@ -52,11 +50,7 @@ def _get_shape_for_array(
     ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
-    if (
-        only_new_dynamic_shapes
-        and getattr(x, "shape", None) == ()
-        and "int" in str(getattr(x, "dtype", None))
-    ):
+    if getattr(x, "shape", None) == () and "int" in str(getattr(x, "dtype", None)):
         previous_ints.append(x)
         return {}
 
@@ -85,7 +79,7 @@ def _get_shape_for_array(
     return abstract_axes
 
 
-def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
+def determine_abstracted_axes(args):
     """Computed the abstracted axes and extracting the abstract shapes from the arguments.
 
     Args:
@@ -136,42 +130,6 @@ def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
     The ``"_arg"`` at the end indicates that the corresponding abstract axis
     was already in the argument loop.
 
-    If we do not want to keep the dynamic shape index coupled to the separate argument, such as in ``for_loop``
-    and ``while_loop``, we can set ``only_new_dynamic_shapes=False``. Note that this is a bit complicated at the moment,
-    but we can hopefully improve the implementation in the future.
-
-    .. code-block:: python
-
-        def f(i, x):
-            return x
-
-        def add_abstract_shapes_to_start(f, n_abstract_shapes: int):
-            def new_f(*args, **kwargs):
-                return f(*args[n_abstract_shapes:], **kwargs)
-            return new_f
-
-        def workflow(i):
-            args = (i, jax.numpy.ones((i, )))
-            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args, only_new_dynamic_shapes=False)
-            new_f = add_abstract_shapes_to_start(f, len(abstract_shapes))
-            abstracted_axes = tuple({} for r in abstract_shapes) + abstracted_axes
-
-            print("abstracted_axes: ", abstracted_axes)
-            print("abstract_shapes: ", abstract_shapes)
-            print("jaxpr: ", jax.make_jaxpr(new_f, abstracted_axes=abstracted_axes)(*abstract_shapes, *args))
-
-        jax.make_jaxpr(workflow)(2)
-
-    .. code-block::
-
-        abstracted_axes:  ({}, {}, {0: 'a'})
-        abstract_shapes:  [Traced<ShapedArray(int32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>]
-        jaxpr:  { lambda ; a:i32[] b:i32[] c:f32[a]. let  in (c,) }
-
-    Here, we have forced the found abstract shapes to be new arguments at the start of the function. These
-    added arguments will take priority over the original argument. This will allow the shape for ``c`` to
-    change independently of ``b``.
-
     """
     if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
@@ -184,13 +142,53 @@ def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
     previous_ints = []
     # note: this function in-place mutates abstract_shapes and previous_ints
     # adding any additional abstract shapes found
-    abstracted_axes = [
-        _get_shape_for_array(a, abstract_shapes, previous_ints, only_new_dynamic_shapes)
-        for a in args
-    ]
+    abstracted_axes = [_get_shape_for_array(a, abstract_shapes, previous_ints) for a in args]
 
     if not any(abstracted_axes):
         return None, ()
 
     abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
     return abstracted_axes, abstract_shapes
+
+
+class CalculateAbstractedAxes:
+
+    def __init__(self, allow_array_resizing: bool = False):
+        self.allow_array_resizing = allow_array_resizing
+        self.abstract_shapes = []
+        self.abstracted_axes = []
+        self.shape_recipes = []
+
+    def add_arg(self, x_idx, x):
+        arg_abstracted_axes = {}
+
+        for i, s in enumerate(getattr(x, "shape", ())):
+            if not isinstance(s, int):  #  if not int, then abstract
+                found = False
+                if not self.allow_array_resizing:
+                    for previous_idx, previous_shape in enumerate(self.abstract_shapes):
+                        if s is previous_shape:
+                            arg_abstracted_axes[i] = _get_letter(previous_idx)
+                            found = True
+                            break
+                # haven't encountered it, so add it to abstract_axes
+                # and use new letter designation
+                if not found:
+                    arg_abstracted_axes[i] = _get_letter(len(self.abstract_shapes))
+                    self.shape_recipes.append((x_idx, i))
+                    self.abstract_shapes.append(s)
+        self.abstracted_axes.append(arg_abstracted_axes)
+
+
+def loop_determine_abstracted_axes(args, allow_array_resizing: bool = False):
+    args, structure = jax.tree_util.tree_flatten(args)
+    calculator = CalculateAbstractedAxes(allow_array_resizing=allow_array_resizing)
+    _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
+
+    if not any(calculator.abstracted_axes):
+        return None, (), ()
+
+    abstracted_axes = jax.tree_util.tree_unflatten(structure, calculator.abstracted_axes)
+    # num_abstract_shapes = len(calculator.abstract_shapes)
+    # abstracted_axes = tuple({} for _ in calculator.abstract_shapes) + abstracted_axes
+    return abstracted_axes, calculator.abstract_shapes, calculator.shape_recipes
