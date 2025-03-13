@@ -1,0 +1,28 @@
+name: Code Security Scan
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: code-security-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  determine_runner:
+    # if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+  
+  code_security_scan:
+    needs:
+      - determine_runner
+    uses: XanaduAI/cloud-actions/static-analyse-code/analysis.yml@sc-86314-sec-scanning
+    with:
+      github-repository: ${{ github.repository }}
+      repository-ref: ${{ github.ref }}
+      runner_name: ${{ needs.determine_runner.outputs.runner_name }}
+      
