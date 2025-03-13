@@ -288,7 +288,9 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = {"pauli_word",}
+    resource_keys = {
+        "pauli_word",
+    }
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
