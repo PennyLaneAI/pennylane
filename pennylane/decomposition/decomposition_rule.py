@@ -33,7 +33,7 @@ def register_resources(
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accomodates multiple alternative
+        doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using ``qml.register_resources``
@@ -125,8 +125,10 @@ def register_resources(
                     qml.CNOT(wires=(w0, w1))
 
         Additionally, if a custom decomposition for an operator contains gates that, in turn,
-        have properties that affect their own decompositions, each unique instance must be
-        counted separately in the resources function.
+        have properties that affect their own decompositions, this information must also be
+        included in the resource function. For example, if the decomposition rule produces a
+        ``MultiRZ`` gate, it is not enough to declare the existence of a ``MultiRZ`` in the
+        resource function; the number of wires it acts on must also be specified.
 
         Consider a fictitious operator with the following decomposition:
 
@@ -153,6 +155,10 @@ def register_resources(
 
         where ``qml.resource_rep`` is a utility function that wraps an operator type and any
         additional information relevant to its resource estimate into a compressed data structure.
+        To check what (if any) additional information is required to declare an operator type
+        in a resource function, refer to the ``resource_keys`` attribute of the operator class.
+        Operators with non-empty ``resource_keys`` must be declared using ``qml.resource_rep``,
+        with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
 
@@ -170,12 +176,7 @@ def register_resources(
 
 
 class DecompositionRule:  # pylint: disable=too-few-public-methods
-    """Represents a decomposition rule for an operator.
-
-    Attributes:
-        impl (Callable): the quantum function implementing the decomposition rule
-
-    """
+    """Represents a decomposition rule for an operator."""
 
     def __init__(self, func: Callable, resources: Callable | dict = None):
         self.impl = func

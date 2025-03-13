@@ -28,7 +28,7 @@ class Resources:
 
     Args:
         num_gates (int): the total number of gates.
-        gate_counts (dict): dictionary mapping compressed ops to number of occurrences.
+        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
 
     """
 
@@ -75,21 +75,35 @@ def _scale_dict(dict1: dict, scalar: int):
 
 
 class CompressedResourceOp:
-    """A lightweight class representing an operator to be decomposed.
+    """A lightweight representation of an operator to be decomposed.
 
-    An object of this class represents an operator in the decomposition graph. If the decomposition
-    of this operator is independent of its parameters, e.g., ``Rot`` can be decomposed into two
-    ``RZ`` and an ``RY`` regardless of the angles, then every occurrence of this operator in the
-    circuit is represented by the same ``CompressedOp``.
+    .. note::
 
-    On the other hand, for more complex ops such as ``PauliRot``, for which the numbers of each
-    gate depend on its pauli word, each occurrence of this operator with a different pauli word
-    will be a different ``CompressedOp`` object, thus a new node in the decomposition graph.
+        This class is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        doing decompositions is generally more performant and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using ``qml.register_resources``
+
+    The ``CompressedResourceOp` is a lightweight data structure that contains an operator type
+    and a set of parameters that affects the resource requirement of this operator. If the
+    decomposition of an operator is independent of its parameters, e.g., ``Rot`` can be decomposed
+    into two ``RZ`` gates and an ``RY`` regardless of the angles, then every occurrence of this
+    operator in the circuit is represented by the same ``CompressedResourceOp`` which only
+    specifies the operator type, i.e., ``Rot``.
+
+    On the other hand, for some operators such as ``MultiRZ``, for which the numbers of ``CNOT``
+    gates in its decomposition depends on the number of wires, the resource representation of
+    a ``MultiRZ`` must include this information. To create a ``CompressedResourceOp`` object for
+    an operator, use the ``qml.resource_rep`` function.
 
     Args:
         op_type: the operator type
         params (dict): the parameters of the operator relevant to the resource estimation of
             its decompositions. This should only include parameters that affect the gate counts.
+
+    .. seealso:: :func:`~pennylane.resource_rep`
 
     """
 
@@ -113,7 +127,7 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        return self.op_type.__name__
+        return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
 
 
 def _make_hashable(d) -> tuple:
@@ -145,17 +159,43 @@ def _validate_resource_rep(op_type, params):
 
 
 def resource_rep(op_type, **params) -> CompressedResourceOp:
-    """Creates a ``CompressedResourceOp`` representation of an operator.
+    """Binds an operator type with additional resource parameters.
 
-    When defining the resource function associated with a decomposition rule. The keys of the
-    returned dictionary should be created using this function. The resource rep of an operator
-    is a lightweight data structure containing the minimal information needed to determine the
-    resource estimate of a decomposition.
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        doing decompositions is generally more performant and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using ``qml.register_resources``
 
     Args:
-        op_type: the operator type
-        **params: parameters that are relevant to the resource estimation of the operator's
-            decompositions. This should be consistent with ``op_type.resource_param_keys``.
+        op_type: the operator class to create a resource representation for.
+        **params: parameters relevant to the resource estimate of the operator's decompositions.
+            This should be consistent with ``op_type.resource_param_keys``.
+
+    Returns:
+        CompressedResourceOp: a lightweight representation of the operator.
+
+    **Example**
+
+    The resource parameters of an operator are a minimal set of information required to determine
+    the resource estimate of its decompositions. To check the required set of keyword arguments
+    for an operator type, refer to the ``resource_keys`` attribute of the operator class:
+
+    >>> qml.MultiRZ.resource_keys
+    {'num_wires'}
+
+    When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
+
+    >>> rep = resource_rep(qml.MultiRZ, num_wires=3)
+    >>> rep
+    MultiRZ, {'num_wires': 3}
+    >>> type(rep)
+    <class 'pennylane.decomposition.resources.CompressedResourceOp'>
+
+    .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
 
     """
     _validate_resource_rep(op_type, params)
