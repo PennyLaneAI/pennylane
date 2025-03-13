@@ -15,7 +15,7 @@ r"""
 Overview
 --------
 
-This module contains Lie algebra functionality.
+This module contains functionality to generate Lie algebras and manipulate them.
 
 Functions
 ^^^^^^^^^

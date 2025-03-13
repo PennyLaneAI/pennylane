@@ -36,7 +36,7 @@ def lie_closure(
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
-    .. warning:: ``lie_closure`` has moved to the ``liealg`` module and can be called from there via ``qml.liealg.lie_closure`` or from the top level via ``qml.lie_closure``.
+    .. warning:: :func:`~lie_closure` has moved to the :doc:`~liealg` module and can be called from there via ``qml.liealg.lie_closure`` or from the top level via ``qml.lie_closure``.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
     For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
