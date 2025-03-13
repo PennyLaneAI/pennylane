@@ -22,6 +22,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
+@pytest.mark.skip(reason="Need to merge #1084 in PL-lightning.")
 class TestPreprocess:
     """Unit tests for lightning.qubit preprocessing with program capture."""
 
