@@ -47,6 +47,9 @@
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
+* Created a new ``qml.liealg`` module for Lie algebra functionality.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
@@ -55,6 +58,9 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+
+* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
+  [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
 
 * The `default.mixed` device now adheres to the newer device API introduced in
   [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
@@ -257,12 +263,17 @@
 * A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
 * Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions
   apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for
   the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
   Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
   [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
+
+* The function `cond_measure` is added to the experimental `ftqc` module to apply a mid-circuit 
+  measurement with a measurement basis conditional on the function input.
+  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
   
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
@@ -407,6 +418,7 @@
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -515,6 +527,9 @@
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
+* Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated, as functionality is moved to new ``liealg`` module.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
 <h3>Internal changes ⚙️</h3>
 
 * The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random matrices are guaranteed positive.
@@ -601,6 +616,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Dynamic one-shot workloads are now faster for `null.qubit`.
+  Removed a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
+
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
   when experimental program capture is enabled.
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
@@ -651,10 +670,11 @@
 * The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
   [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
-* Processing mid-circuit measurements inside conditionals is not supported and previously resulted in
-  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when
-  processing the tape.
-  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)
+* Applying mid-circuit measurements inside `qml.cond` is not supported, and previously resulted in 
+  unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
+  calling the function returned by `qml.cond`.
+  [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)  
+  [(#7051)](https://github.com/PennyLaneAI/pennylane/pull/7051)
 
 <h3>Contributors ✍️</h3>
 
@@ -673,6 +693,7 @@ Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,

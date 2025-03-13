@@ -36,6 +36,7 @@ from .parametric_midmeasure import (
     measure_z,
     diagonalize_mcms,
 )
+from .conditional_measure import cond_measure
 from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep
 from .qubit_graph import QubitGraph
@@ -47,6 +48,7 @@ __all__ = [
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",
+    "cond_measure",
     "measure_arbitrary_basis",
     "measure_x",
     "measure_y",
