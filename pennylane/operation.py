@@ -1387,12 +1387,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @classproperty
     def resource_param_keys(self) -> tuple:
-        """The keys to the ``resource_params`` dictionary.
+        """The set of parameters that affects the resource requirement of the operator.
 
-        All decomposition rules registered with an operator class is expected to have a resource
-        function with parameters that are consistent with the operator's ``resource_param_keys``.
-        The ``qml.resource_rep`` function will also expect keyword arguments that match these
-        keys for each operator type.
+        All decomposition rules for this operator class is expected to have a resource function
+        that accepts keyword arguments that match these keys exactly. The ``qml.resource_rep``
+        function will also expect keyword arguments that match these keys when called with this
+        operator type.
 
         .. seealso::
             :meth:`~.Operator.resource_params`
@@ -1404,21 +1404,35 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """A dictionary containing the minimal information needed to compute a
         resource estimate of the operator's decomposition.
 
-        Two instances of the same operator type should have identical ``resource_params`` iff
+        The keys of this dictionary should match the ``resource_param_keys`` attribute of the operator
+        class. Two instances of the same operator type should have identical ``resource_params`` iff
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
-        For most operators with static decompositions, this should just be an empty dictionary,
-        but for gates such as ``MultiRZ`` whose decomposition depends on certain parameters such
-        as the number of wires, the ``resource_params`` should contain this information. Note
-        that the ``resource_params`` should only contain the **minimal** information needed to
-        determine the gate count for an operator's decomposition.
+        **Examples**
+
+        The ``MultiRZ`` has non-empty ``resource_param_keys``:
+
+        >>> qml.MultiRZ.resource_param_keys
+        {"num_wires"}
+
+        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
+
+        >>> op = qml.MultiRZ(0.5, wires=[0, 1])
+        >>> op.resource_params
+        {"num_wires": 2}
+
+        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
+
+        >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
+        >>> op2.resource_params
+        {"num_wires": 2}
 
         """
         # For most operators, this should just be an empty dictionary, but a default
         # implementation is intentionally not provided so that each operator class is
         # forced to explicitly define its resource params.
-        raise NotImplementedError
+        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty

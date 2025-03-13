@@ -147,7 +147,7 @@ class TestDecompositionRule:
             qml.RY(theta, wires=wires[0])
 
         qml.add_decomps(CustomOp, custom_decomp)
-        qml.add_decomps(CustomOp, [custom_decomp2, custom_decomp3])
+        qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
         assert qml.has_decomp(CustomOp)
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
