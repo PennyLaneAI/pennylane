@@ -54,9 +54,10 @@ def get_bloq_registers_info(bloq):
 
     Given a qualtran bloq:
 
-    >>> from qualtran.bloqs.basic_gates import Swap
-    >>> qml.get_bloq_registers_info(Swap(3))
-    {'x': Wires([0, 1, 2]), 'y': Wires([3, 4, 5])}
+    >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+    >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
+    >>> qml.get_bloq_registers_info(textbook_qpe_small)
+    {'qpe_reg': Wires([0, 1, 2]), 'q': Wires([3])}
     """
     if not isinstance(bloq, Bloq):
         raise TypeError(f"bloq must be an instance of {Bloq}.")
