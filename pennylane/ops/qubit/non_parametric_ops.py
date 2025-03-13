@@ -1173,15 +1173,15 @@ class SX(Operation):
         >>> print(qml.SX.compute_decomposition(0))
         [RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
-        RZ(-3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        RZ(-1.5707963267948966, wires=[0]),
+        PhaseShift(-0.7853981633974483, wires=[0])]
 
         """
         return [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
-            qml.RZ(-np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RZ(-np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 4, wires=wires),
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
