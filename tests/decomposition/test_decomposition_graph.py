@@ -188,13 +188,35 @@ class TestDecompositionGraph:
 class TestControlledDecompositions:  # pylint: disable=too-few-public-methods
     """Tests that the decomposition graph can handle controlled decompositions."""
 
+    def test_custom_controlled_op(self, _):
+        """Tests that a general controlled op can be decomposed into a custom op if applicable."""
+
+        op1 = qml.ops.Controlled(qml.X(0), control_wires=[1])
+        op2 = qml.ops.Controlled(qml.H(0), control_wires=[1])
+        graph = DecompositionGraph(
+            operations=[op1, op2],
+            target_gate_set={"CNOT", "CH"},
+        )
+        # 4 op nodes and 2 decomposition nodes.
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
+
+        # Verify the decompositions
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [qml.CNOT(wires=[1, 0]), qml.CH(wires=[1, 0])]
+
     def test_general_controlled_op(self, _):
         """Tests that a general controlled op can be decomposed."""
 
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
-            resource_param_keys = ()
+            resource_keys = set()
 
             @property
             def resource_params(self):
@@ -213,7 +235,7 @@ class TestControlledDecompositions:  # pylint: disable=too-few-public-methods
         class CustomControlledOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
-            resource_param_keys = ()
+            resource_keys = set()
 
             @property
             def resource_params(self):
