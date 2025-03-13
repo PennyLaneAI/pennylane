@@ -116,7 +116,7 @@ def _adjoint_controlled_resource(base_class, base_params):
 
 
 @register_resources(_adjoint_controlled_resource)
-def adjoint_controlled_decomp(*_, base):
+def adjoint_controlled_decomp(*_, base, **__):
     """Decompose the adjoint of a controlled gate whose base has adjoint.
 
     Precondition:

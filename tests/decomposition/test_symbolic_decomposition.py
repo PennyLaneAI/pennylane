@@ -18,7 +18,10 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.resources import Resources
-from pennylane.decomposition.symbolic_decomposition import adjoint_adjoint_decomp
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_adjoint_decomp,
+    adjoint_controlled_decomp,
+)
 
 
 class TestAdjointDecompositionRules:
@@ -58,3 +61,20 @@ class TestAdjointDecompositionRules:
 
         if not capture_enabled:
             qml.capture.disable()
+
+    def test_adjoint_controlled(self):
+        """Tests that the adjoint of a controlled operation is correctly decomposed."""
+
+        op = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=1))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            adjoint_controlled_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.ctrl(qml.U1(-0.5, wires=0), control=1)]
+        assert adjoint_controlled_decomp.compute_resources(**op.resource_params) == Resources(
+            {
+                qml.controlled_resource_rep(
+                    qml.U1, {}, num_control_wires=1, num_zero_control_values=0, num_work_wires=0
+                ): 1
+            }
+        )
