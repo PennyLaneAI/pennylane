@@ -15,10 +15,18 @@
 Pytest configuration file for PennyLane quantum chemistry open fermion test suite.
 """
 import shutil
+import sys
 
+import numpy as np
 import pytest
 
 import pennylane as qml
+
+# NumPy 2.0 compatibility patch: Add np.string_ as an alias for np.bytes_
+if not hasattr(np, "string_"):
+    np.string_ = np.bytes_
+    # Also patch the module to ensure imports like `from numpy import string_` work
+    sys.modules["numpy"].string_ = np.bytes_
 
 
 def cmd_exists(cmd):
