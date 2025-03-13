@@ -42,6 +42,7 @@ class Resources:
 
     @cached_property
     def num_gates(self) -> int:
+        """The total number of gates."""
         return sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
