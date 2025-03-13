@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import inspect
 from collections import defaultdict
+from textwrap import dedent
 from typing import Callable, Type
 
 from pennylane.operation import Operator
@@ -192,7 +193,7 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         return self._impl(*args, **kwargs)
 
     def __str__(self):
-        return self._source
+        return dedent(self._source).strip()
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
