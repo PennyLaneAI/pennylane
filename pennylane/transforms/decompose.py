@@ -93,7 +93,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     control_values=self.control_values,
                     work_wires=self.work_wires,
                 )
-            return super().interpret_operation(ctrl_op)
+            super().interpret_operation(ctrl_op)
 
     class DecomposeInterpreter(qml.capture.PlxprInterpreter):
         """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
