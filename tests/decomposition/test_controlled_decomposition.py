@@ -65,7 +65,7 @@ class TestControlledDecompositionRules:
             {
                 CompressedResourceOp(qml.X): 2,
                 CompressedResourceOp(qml.ControlledPhaseShift): 1,
-            },
+            }
         )
 
     def test_multi_controlled_global_phase(self):
@@ -100,7 +100,7 @@ class TestControlledDecompositionRules:
                         "num_work_wires": 0,
                     },
                 ): 1,
-            },
+            }
         )
 
 
@@ -167,7 +167,7 @@ class TestControlledX:
                         "num_work_wires": 1,
                     },
                 ): 1
-            },
+            }
         )
 
         op = qml.ops.Controlled(
@@ -189,7 +189,7 @@ class TestControlledX:
                         "num_work_wires": 1,
                     },
                 ): 1,
-            },
+            }
         )
 
 
@@ -200,36 +200,28 @@ class TestControlledX:
         (
             qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CZ(wires=[0, 1]), qml.X(0)],
-            Resources(
-                {CompressedResourceOp(qml.CZ): 1, CompressedResourceOp(qml.X): 2},
-            ),
+            Resources({CompressedResourceOp(qml.CZ): 1, CompressedResourceOp(qml.X): 2}),
             qml.ops.CZ,
         ),
         # Single-qubit controlled on 1
         (
             qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[1]),
             [qml.CZ(wires=[0, 1])],
-            Resources(
-                {CompressedResourceOp(qml.CZ): 1},
-            ),
+            Resources({CompressedResourceOp(qml.CZ): 1}),
             qml.ops.CZ,
         ),
         # Two-qubit controlled
         (
             qml.ops.Controlled(qml.Z(2), control_wires=[0, 1], control_values=[1, 0]),
             [qml.X(1), qml.CCZ(wires=[0, 1, 2]), qml.X(1)],
-            Resources(
-                {CompressedResourceOp(qml.CCZ): 1, CompressedResourceOp(qml.X): 2},
-            ),
+            Resources({CompressedResourceOp(qml.CCZ): 1, CompressedResourceOp(qml.X): 2}),
             qml.ops.CCZ,
         ),
         # Parametrized controlled
         (
             qml.ops.Controlled(qml.RX(0.5, wires=1), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CRX(0.5, wires=[0, 1]), qml.X(0)],
-            Resources(
-                {CompressedResourceOp(qml.CRX): 1, CompressedResourceOp(qml.X): 2},
-            ),
+            Resources({CompressedResourceOp(qml.CRX): 1, CompressedResourceOp(qml.X): 2}),
             qml.ops.CRX,
         ),
         # Controlled on two qubits
@@ -240,7 +232,7 @@ class TestControlledX:
                 {
                     CompressedResourceOp(qml.CSWAP): 1,
                     CompressedResourceOp(qml.X): 2,
-                },
+                }
             ),
             qml.CSWAP,
         ),
@@ -357,8 +349,7 @@ class TestGeneralControlledOperator:
 
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
-            num_gates=len(expected_ops),
-            gate_counts={
+            {
                 qml.resource_rep(qml.CNOT): 1,
                 qml.resource_rep(qml.Toffoli): 1,
                 qml.resource_rep(
@@ -396,7 +387,7 @@ class TestGeneralControlledOperator:
                 ): 1,
                 qml.resource_rep(qml.CZ): 1,
                 qml.resource_rep(qml.CCZ): 1,
-            },
+            }
         )
 
     def test_double_control_wire(self):
@@ -456,8 +447,7 @@ class TestGeneralControlledOperator:
 
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
-            num_gates=len(expected_ops),
-            gate_counts={
+            {
                 qml.resource_rep(qml.X): 2,
                 qml.resource_rep(qml.Toffoli): 1,
                 qml.resource_rep(
@@ -501,7 +491,7 @@ class TestGeneralControlledOperator:
                 ): 1,
                 qml.resource_rep(qml.CCZ): 1,
                 qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
-            },
+            }
         )
 
     def test_multi_control_wires(self):
@@ -563,8 +553,7 @@ class TestGeneralControlledOperator:
 
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
-            num_gates=len(expected_ops),
-            gate_counts={
+            {
                 qml.resource_rep(qml.X): 4,
                 qml.resource_rep(
                     qml.MultiControlledX,
@@ -613,5 +602,5 @@ class TestGeneralControlledOperator:
                 ): 1,
                 qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
                 qml.controlled_resource_rep(qml.Z, {}, num_control_wires=4, num_work_wires=1): 1,
-            },
+            }
         )
