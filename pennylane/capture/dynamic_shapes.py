@@ -14,14 +14,22 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
+from collections import namedtuple
 from functools import lru_cache
 from string import ascii_lowercase as letters
+from typing import Any, Callable, Sequence, Union
+
+from pennylane.typing import TensorLike
 
 has_jax = True
 try:
     import jax
+    from jax._src.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
+
+
+AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
 
 
 @lru_cache
@@ -33,7 +41,9 @@ def _get_letter(ind: int) -> str:
     raise NotImplementedError("we only support up to 702 dynamic axes")  # pragma: no cover
 
 
-def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
+def _get_shape_for_array(
+    x, abstract_shapes: list, previous_ints: list, only_new_dynamic_shapes: bool
+) -> dict:
     """
     Populate the dictionary of abstract axes for a single tensorlike.
 
@@ -50,7 +60,11 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
-    if getattr(x, "shape", None) == () and "int" in str(getattr(x, "dtype", None)):
+    if (
+        only_new_dynamic_shapes
+        and getattr(x, "shape", None) == ()
+        and "int" in str(getattr(x, "dtype", None))
+    ):
         previous_ints.append(x)
         return {}
 
@@ -79,7 +93,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     return abstract_axes
 
 
-def determine_abstracted_axes(args):
+def determine_abstracted_axes(args, only_new_dynamic_shapes: bool = True):
     """Computed the abstracted axes and extracting the abstract shapes from the arguments.
 
     Args:
@@ -130,6 +144,42 @@ def determine_abstracted_axes(args):
     The ``"_arg"`` at the end indicates that the corresponding abstract axis
     was already in the argument loop.
 
+    If we do not want to keep the dynamic shape index coupled to the separate argument, such as in ``for_loop``
+    and ``while_loop``, we can set ``only_new_dynamic_shapes=False``. Note that this is a bit complicated at the moment,
+    but we can hopefully improve the implementation in the future.
+
+    .. code-block:: python
+
+        def f(i, x):
+            return x
+
+        def add_abstract_shapes_to_start(f, n_abstract_shapes: int):
+            def new_f(*args, **kwargs):
+                return f(*args[n_abstract_shapes:], **kwargs)
+            return new_f
+
+        def workflow(i):
+            args = (i, jax.numpy.ones((i, )))
+            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args, only_new_dynamic_shapes=False)
+            new_f = add_abstract_shapes_to_start(f, len(abstract_shapes))
+            abstracted_axes = tuple({} for r in abstract_shapes) + abstracted_axes
+
+            print("abstracted_axes: ", abstracted_axes)
+            print("abstract_shapes: ", abstract_shapes)
+            print("jaxpr: ", jax.make_jaxpr(new_f, abstracted_axes=abstracted_axes)(*abstract_shapes, *args))
+
+        jax.make_jaxpr(workflow)(2)
+
+    .. code-block::
+
+        abstracted_axes:  ({}, {}, {0: 'a'})
+        abstract_shapes:  [Traced<ShapedArray(int32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>]
+        jaxpr:  { lambda ; a:i32[] b:i32[] c:f32[a]. let  in (c,) }
+
+    Here, we have forced the found abstract shapes to be new arguments at the start of the function. These
+    added arguments will take priority over the original argument. This will allow the shape for ``c`` to
+    change independently of ``b``.
+
     """
     if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
@@ -142,7 +192,10 @@ def determine_abstracted_axes(args):
     previous_ints = []
     # note: this function in-place mutates abstract_shapes and previous_ints
     # adding any additional abstract shapes found
-    abstracted_axes = [_get_shape_for_array(a, abstract_shapes, previous_ints) for a in args]
+    abstracted_axes = [
+        _get_shape_for_array(a, abstract_shapes, previous_ints, only_new_dynamic_shapes)
+        for a in args
+    ]
 
     if not any(abstracted_axes):
         return None, ()
@@ -151,44 +204,130 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes
 
 
+# pylint: disable=too-few-public-methods
 class CalculateAbstractedAxes:
+    """A helper class for accumulating information about abstract axes for loop functions."""
 
     def __init__(self, allow_array_resizing: bool = False):
         self.allow_array_resizing = allow_array_resizing
         self.abstract_shapes = []
         self.abstracted_axes = []
-        self.shape_recipes = []
+        self.shape_locations = []
 
-    def add_arg(self, x_idx, x):
+    def add_arg(self, x_idx: int, x):
+        """Process a new argument"""
         arg_abstracted_axes = {}
 
-        for i, s in enumerate(getattr(x, "shape", ())):
+        for shape_idx, s in enumerate(getattr(x, "shape", ())):
             if not isinstance(s, int):  #  if not int, then abstract
                 found = False
                 if not self.allow_array_resizing:
                     for previous_idx, previous_shape in enumerate(self.abstract_shapes):
                         if s is previous_shape:
-                            arg_abstracted_axes[i] = _get_letter(previous_idx)
+                            arg_abstracted_axes[shape_idx] = _get_letter(previous_idx)
+                            self.shape_locations[previous_idx].append(
+                                AbstractShapeLocation(x_idx, shape_idx)
+                            )
                             found = True
                             break
                 # haven't encountered it, so add it to abstract_axes
                 # and use new letter designation
                 if not found:
-                    arg_abstracted_axes[i] = _get_letter(len(self.abstract_shapes))
-                    self.shape_recipes.append((x_idx, i))
+                    arg_abstracted_axes[shape_idx] = _get_letter(len(self.abstract_shapes))
+                    self.shape_locations.append([AbstractShapeLocation(x_idx, shape_idx)])
                     self.abstract_shapes.append(s)
         self.abstracted_axes.append(arg_abstracted_axes)
 
 
-def loop_determine_abstracted_axes(args, allow_array_resizing: bool = False):
+def loop_determine_abstracted_axes(
+    args, allow_array_resizing: bool = False
+) -> tuple[Any, list[TensorLike], list[list[AbstractShapeLocation]]]:
+    """Determine the abstract axes for arguments that will be used in a loop context."""
     args, structure = jax.tree_util.tree_flatten(args)
     calculator = CalculateAbstractedAxes(allow_array_resizing=allow_array_resizing)
     _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
 
     if not any(calculator.abstracted_axes):
-        return None, (), ()
+        return None, [], []
 
     abstracted_axes = jax.tree_util.tree_unflatten(structure, calculator.abstracted_axes)
-    # num_abstract_shapes = len(calculator.abstract_shapes)
-    # abstracted_axes = tuple({} for _ in calculator.abstract_shapes) + abstracted_axes
-    return abstracted_axes, calculator.abstract_shapes, calculator.shape_recipes
+    return abstracted_axes, calculator.abstract_shapes, calculator.shape_locations
+
+
+def register_custom_staging_rule(
+    primitive, get_outvars_from_params: Callable[[dict], list["jax.core.Var"]]
+) -> None:
+    """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
+    ``get_outvars_from_params``.
+
+    Args:
+        primitive (jax.core.Primitive): a jax primitive we want to register a custom staging rule for
+        get_outvars_from_params (Callable[[dict], list[jax.core.Var]]): A function that takes in the equations params
+            and returns outvars we need to mimic for the primitives return.
+
+    For example, the ``cond_prim`` will request it's custom stagin rule like:
+
+    .. code-block:: python
+
+        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0].outvars)
+
+    The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
+
+    """
+    # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
+    # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
+    # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
+    # see also capture/intro_to_dynamic_shapes.md
+
+    def _tracer_and_outvar(
+        jaxpr_trace: pe.DynamicJaxprTrace,
+        outvar: jax.core.Var,
+        env: dict[jax.core.Var, jax.core.Var],
+    ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
+        """
+        Create a new tracer and returned var from the true branch outvar
+        returned vars are cached in env for use in future shapes
+        """
+        if not hasattr(outvar.aval, "shape"):
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            return out_tracer, jaxpr_trace.makevar(out_tracer)
+        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
+        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        new_var = jaxpr_trace.makevar(out_tracer)
+
+        if not isinstance(outvar, jax.core.Literal):
+            env[outvar] = new_var
+        return out_tracer, new_var
+
+    def custom_staging_rule(
+        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+        """
+        Add new jaxpr equation to the jaxpr_trace and return new tracers.
+        """
+        if not jax.config.jax_dynamic_shapes:
+            # fallback to normal behavior
+            return jaxpr_trace.default_process_primitive(primitive, tracers, params)
+        outvars = get_outvars_from_params(params)
+
+        env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
+        if outvars:
+            out_tracers, returned_vars = tuple(
+                zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
+            )
+        else:
+            out_tracers, returned_vars = (), ()
+
+        invars = [jaxpr_trace.getvar(x) for x in tracers]
+        eqn = pe.new_jaxpr_eqn(
+            invars,
+            returned_vars,
+            primitive,
+            params,
+            jax.core.no_effects,
+        )
+        jaxpr_trace.frame.add_eqn(eqn)
+        return out_tracers
+
+    pe.custom_staging_rules[primitive] = custom_staging_rule
