@@ -462,13 +462,13 @@ class Controlled(SymbolicOp):
 
     """
 
-    resource_keys = (
+    resource_keys = {
         "base_class",
         "base_params",
         "num_control_wires",
         "num_zero_control_values",
         "num_work_wires",
-    )
+    }
 
     def _flatten(self):
         return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
