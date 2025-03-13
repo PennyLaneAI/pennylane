@@ -68,7 +68,7 @@ class MultiRZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("num_wires",)
+    resource_keys = {"num_wires"}
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -288,7 +288,7 @@ class PauliRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_param_keys = ("pauli_word",)
+    resource_keys = {"pauli_word",}
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -1664,7 +1664,7 @@ class CPhaseShift00(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
@@ -1882,7 +1882,7 @@ class CPhaseShift01(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
@@ -2090,7 +2090,7 @@ class CPhaseShift10(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)

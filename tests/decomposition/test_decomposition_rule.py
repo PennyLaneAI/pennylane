@@ -60,11 +60,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            num_gates=5,
-            gate_counts={
-                CompressedResourceOp(qml.RZ): 1,
-                CompressedResourceOp(qml.CNOT): 4,
-            },
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
         )
 
     def test_decomposition_decorator(self):
@@ -98,11 +94,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            num_gates=5,
-            gate_counts={
-                CompressedResourceOp(qml.RZ): 1,
-                CompressedResourceOp(qml.CNOT): 4,
-            },
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
         )
 
     def test_error_raised_with_no_resource_fn(self):
@@ -147,7 +139,7 @@ class TestDecompositionRule:
             qml.RY(theta, wires=wires[0])
 
         qml.add_decomps(CustomOp, custom_decomp)
-        qml.add_decomps(CustomOp, [custom_decomp2, custom_decomp3])
+        qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
         assert qml.has_decomp(CustomOp)
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
@@ -167,42 +159,44 @@ class TestDecompositionRule:
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = ()
+            resource_keys = set()
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
         assert custom_decomp.compute_resources() == Resources(
-            num_gates=1,
-            gate_counts={
-                CompressedResourceOp(DummyOp): 1,
-            },
+            gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
-        custom_decomp = qml.register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp)
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
 
-        assert custom_decomp.compute_resources() == Resources(
-            num_gates=1,
-            gate_counts={
-                CompressedResourceOp(DummyOp): 1,
-            },
+        custom_decomp_2 = qml.register_resources(
+            {CompressedResourceOp(DummyOp): 1}, custom_decomp_2
+        )
+
+        assert custom_decomp_2.compute_resources() == Resources(
+            gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
     def test_auto_wrap_fails(self):
-        """Tests that an op with non-empty resource_param_keys cannot be auto-wrapped."""
+        """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = {"foo"}
+            resource_keys = {"foo"}
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_param_keys"):
+        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_keys"):
             custom_decomp.compute_resources()
 
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
         with pytest.raises(TypeError, match="must be a subclass of Operator"):
-            custom_decomp = qml.register_resources({int: 1}, custom_decomp)
-            custom_decomp.compute_resources()
+            custom_decomp_2 = qml.register_resources({int: 1}, custom_decomp_2)
+            custom_decomp_2.compute_resources()
