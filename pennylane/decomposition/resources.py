@@ -122,9 +122,11 @@ class CompressedResourceOp:
         return hash((self.op_type, self._hashable_params))
 
     def __eq__(self, other: CompressedResourceOp) -> bool:
-        if not isinstance(other, CompressedResourceOp):
-            return False
-        return self.op_type == other.op_type and self.params == other.params
+        return (
+            isinstance(other, CompressedResourceOp)
+            and self.op_type == other.op_type
+            and self.params == other.params
+        )
 
     def __repr__(self):
         return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
