@@ -169,14 +169,18 @@ class FromBloq(Operation):
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, qt.bloqs.bookkeeping.Partition):
                     in_quregs = {}
-                    soq_to_wires_len = 0
+                    for succ in succ_cxns:
+                        soq = succ.left
+                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                            soq_to_wires_len -= np.prod(soq.reg.shape) * soq.reg.bitsize
+                            
                     for succ in succ_cxns:
                         soq = succ.left
                         if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
                                 soq_to_wires_len,
-                                total_elements + soq_to_wires_len,
+                                soq_to_wires_len + total_elements,
                                 dtype=object,
                             )
                             soq_to_wires_len += total_elements
