@@ -359,16 +359,15 @@ class TestDevicePreprocessing:
 
     def test_non_native_ops_execution(self, dev_name):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev)
         def circuit():
             # QFT not supported on DQ or LQ
-            # Should decompose to just H
-            qml.QFT(wires=[0])
+            qml.QFT(wires=[0, 1])
             return qml.state()
 
-        assert qml.math.allclose(circuit(), [1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
+        assert qml.math.allclose(circuit(), [0.5] * 4)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])
