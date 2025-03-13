@@ -1,8 +1,11 @@
 """Wrapper class for generic fragment objects"""
 
 from __future__ import annotations
+
 from typing import Any, Callable, Dict, List, Sequence
+
 from pennylane.labs.trotter import Fragment
+
 
 def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
     """Wrapper function for GenericFragment"""
