@@ -197,6 +197,50 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
     .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
 
+    .. details::
+        :title: Usage Details
+
+        The same approach applies also to symbolic operators. For example, if the decomposition
+        of an operator contains a controlled operation:
+
+        .. code-block:: python
+
+            def my_decomp(wires):
+                ...
+                qml.ctrl(qml.MultiRZ(wires=wires[:3]), control=wires[3:5], control_values=[0, 1], work_wires=wires[5])
+                ...
+
+        To declare this controlled operator in the resource function, we find the resource keys
+        of ``qml.ops.Controlled``:
+
+        >>> qml.ops.Controlled.resource_keys
+        {'base_class', 'base_params', 'num_control_wires', 'num_zero_control_values', 'num_work_wires'}
+
+        Then the resource representation can be created as follows:
+
+        >>> qml.resource_rep(
+        ...     qml.ops.Controlled,
+        ...     base_class=qml.ops.MultiRZ,
+        ...     base_params={'num_wires': 3},
+        ...     num_control_wires=2,
+        ...     num_zero_control_values=1,
+        ...     num_work_wires=1
+        ... )
+        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+
+        Alternatively, use the helper functions ``controlled_resource_rep``:
+
+        >>> qml.controlled_resource_rep(
+        ...     base_class=qml.ops.MultiRZ,
+        ...     base_params={'num_wires': 3},
+        ...     num_control_wires=2,
+        ...     num_zero_control_values=1,
+        ...     num_work_wires=1
+        ... )
+        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+
+        .. seealso:: :func:`~pennylane.controlled_resource_rep` and :func:`~pennylane.adjoint_resource_rep`
+
     """
     _validate_resource_rep(op_type, params)
     if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
