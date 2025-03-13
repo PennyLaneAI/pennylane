@@ -1692,22 +1692,44 @@ class CRX(ControlledOp):
         ]
 
 
-def _crx_resources():
+def _crx_to_rz_ry_resources():
     return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
 
 
-@register_resources(_crx_resources)
-def _crx(phi, wires, **__):
-    pi_half = qml.math.ones_like(phi) * (np.pi / 2)
-    qml.RZ(pi_half, wires=wires[1])
-    qml.RY(phi / 2, wires=wires[1])
-    qml.CNOT(wires=wires)
-    qml.RY(-phi / 2, wires=wires[1])
-    qml.CNOT(wires=wires)
-    qml.RZ(-pi_half, wires=wires[1])
+@register_resources(_crx_to_rz_ry_resources)
+def _crx_to_rz_ry(phi, wires, **__):
+    qml.RZ(np.pi / 2, wires=wires[1]),
+    qml.RY(phi / 2, wires=wires[1]),
+    qml.CNOT(wires=wires),
+    qml.RY(-phi / 2, wires=wires[1]),
+    qml.CNOT(wires=wires),
+    qml.RZ(-np.pi / 2, wires=wires[1]),
 
 
-add_decomps(CRX, _crx)
+def _crx_to_rx_cz_resources():
+    return {qml.RX: 2, qml.CZ: 2}
+
+
+@register_resources(_crx_to_rx_cz_resources)
+def _crx_to_rx_cz(phi, wires, **__):
+    qml.RX(phi / 2, wires=wires[1]),
+    qml.CZ(wires=wires),
+    qml.RX(-phi / 2, wires=wires[1]),
+    qml.CZ(wires=wires),
+
+
+def _crx_to_h_crz_resources():
+    return {qml.Hadamard: 2, qml.CRZ: 1}
+
+
+@register_resources(_crx_to_h_crz_resources)
+def _crx_to_h_crz(phi, wires, **__):
+    qml.Hadamard(wires=wires[1]),
+    qml.CRZ(phi, wires=wires),
+    qml.Hadamard(wires=wires[1]),
+
+
+add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
 
 
 class CRY(ControlledOp):
