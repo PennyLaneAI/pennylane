@@ -19,8 +19,10 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from functools import cached_property
+from typing import Type
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 
 @dataclass(frozen=True)
@@ -108,7 +110,7 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type, params: dict = None):
+    def __init__(self, op_type: Type[Operator], params: dict = None):
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
@@ -155,7 +157,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type, **params) -> CompressedResourceOp:
+def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -248,7 +250,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
 
 def controlled_resource_rep(
-    base_class,
+    base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int,
@@ -306,7 +308,7 @@ def controlled_resource_rep(
     )
 
 
-def adjoint_resource_rep(base_class, base_params):
+def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import inspect
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Type
 
 from pennylane.operation import Operator
 
@@ -226,7 +226,7 @@ _decompositions = defaultdict(list)
 """dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
 
 
-def add_decomps(op_type, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -289,7 +289,7 @@ def add_decomps(op_type, *decomps: DecompositionRule) -> None:
     _decompositions[op_type].extend(decomps)
 
 
-def list_decomps(op_type) -> list[DecompositionRule]:
+def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -309,7 +309,7 @@ def list_decomps(op_type) -> list[DecompositionRule]:
     return _decompositions[op_type][:]
 
 
-def has_decomp(op_type) -> bool:
+def has_decomp(op_type: Type[Operator]) -> bool:
     """Check whether an operator has decomposition rules defined.
 
     .. note::
