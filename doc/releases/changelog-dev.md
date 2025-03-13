@@ -410,7 +410,7 @@
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
-* `for_loor`, `while_loop`, `cond`, `adjoint`, `ctrl`, and the `QNode` can handle accepting dynamically
+* `cond`, `adjoint`, `ctrl`, and the `QNode` can handle accepting dynamically
   shaped arrays with the abstract shape matching another argument.
   [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
 
