@@ -108,8 +108,6 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type, params: dict = None):
-        if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be a type, got {op_type}")
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
@@ -243,7 +241,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
-    if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
+    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
         return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)

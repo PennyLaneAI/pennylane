@@ -167,29 +167,29 @@ def register_resources(
 
     """
 
-    if qfunc:  # enables the normal syntax
-        return DecompositionRule(qfunc, resources)
-
     def _decorator(_qfunc) -> DecompositionRule:
         return DecompositionRule(_qfunc, resources)
 
-    return _decorator  # enables the decorator syntax
+    return _decorator(qfunc) if qfunc else _decorator
 
 
 class DecompositionRule:  # pylint: disable=too-few-public-methods
     """Represents a decomposition rule for an operator."""
 
     def __init__(self, func: Callable, resources: Callable | dict = None):
-        self.impl = func
+        self._impl = func
         self._source = inspect.getsource(func)
         if isinstance(resources, dict):
-            resource_fn = lambda: resources
+
+            def resource_fn():
+                return resources
+
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
 
     def __call__(self, *args, **kwargs):
-        return self.impl(*args, **kwargs)
+        return self._impl(*args, **kwargs)
 
     def __str__(self):
         return self._source
@@ -224,6 +224,7 @@ def _auto_wrap(op_type):
 
 
 _decompositions = defaultdict(list)
+"""dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
 
 
 def add_decomps(op_type, *decomps: DecompositionRule) -> None:
