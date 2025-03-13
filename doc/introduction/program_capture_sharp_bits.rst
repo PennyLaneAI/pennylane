@@ -8,7 +8,7 @@ Program-capture is PennyLane's new internal representation for hyrbid quantum-cl
 programs that maintains the same familiar feeling frontend that you're used to, 
 while providing better performance, harmonious integration with just-in-time compilation 
 frameworks like `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
-(:func:`~.qjit`) and JAX-jit, and compact representations of programs that preserve 
+(:func:`~.pennylane.qjit`) and JAX-jit, and compact representations of programs that preserve 
 their structure.
 
 Program-capture in PennyLane is propped up by JAX's internal representation of programs 
@@ -33,9 +33,9 @@ features that will help get your existing tape-based code working with program-c
 
 .. note::
 
-    #. From here onwards, ``qml.capture.enable`` is assumed to be present within 
-    the scope of code examples, unless otherwise stated. This ensures that program-capture
-    is enabled.
+    #. From here onwards, :func:`~.pennylane.capture.enable` is assumed to be present 
+    within the scope of code examples, unless otherwise stated. This ensures that 
+    program-capture is enabled.
 
     #. Using program-capture requires that JAX be installed. Please consult the 
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
@@ -71,7 +71,7 @@ functions and QNodes, and positional arguments in PennyLane gate operations. JAX
 types are ``jax.numpy`` arrays and standard Python ``int``\ s and ``float``\ s. 
 
 For example, a ``list`` is not a valid JAX type for the positional argument in 
-:class:`~.MultiRZ`, and will result in an error:
+:class:`~.pennylane.MultiRZ`, and will result in an error:
 
 .. code-block:: python
     dev = qml.device('default.qubit', wires=2)
@@ -126,7 +126,7 @@ Parameter-broadcasting is generally not compatible with program-capture. There a
 cases that magically work, but one shouldn't extrapolate beyond those particular 
 cases.
 
-Instead, it is best practice to use ``jax.vmap``:
+Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
 
 .. code-block:: python
 
@@ -145,13 +145,18 @@ Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
 More information for using ``jax.vmap`` can be found in the 
 `JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
 
-Using custom tape-based transforms with program-capture 
--------------------------------------------------------
+Transforms
+----------
 
-Core features of PennyLane include modularity and transformability, which has allowed
-users to create their own transforms with ease. Consider the following toy example, 
-which shows a tape-based transform that shifts all ``RX`` gates to the end of a 
-circuit.
+One of the core features of PennyLane is modularity, which has allowed users to 
+transform QNodes in a NumPy-like way and to create their own transforms with ease. 
+Your favourite transforms will still work with program-capture enabled (including
+custom transforms), but **decorating QNodes with just ``@transform_name`` will not 
+work** and will give a vague error. Additionally, decorating QNodes with the experimental 
+:func:`~.pennylane.capture.expand_plxpr_transforms` decorator is required.
+
+Consider the following toy example, which shows a tape-based transform that shifts 
+all :class:`~.pennylane.RX`` gates to the end of a circuit.
 
 .. code-block:: python
 
@@ -170,8 +175,7 @@ circuit.
         new_tape = tape.copy(operations=operations)
         return [new_tape], lambda res: res[0]
 
-**Decorating QNodes with just ``@shift_rx_to_end`` will not work**, and will give 
-a vague error:
+Decorating with just ``@shift_rx_to_end`` will not work, and will give a vague error:
 
 .. code-block:: python
 
@@ -183,10 +187,12 @@ a vague error:
         return qml.state()
 
 >>> print(qml.draw(circuit)())
+...
 NotImplementedError: 
 
 A requirement for tape transforms to be compatible with program capture is to further 
-decorate QNodes with the experimental ``@qml.capture.expand_plxpr_transforms`` decorator:
+decorate QNodes with the experimental :func:`~.pennylane.capture.expand_plxpr_transforms` 
+decorator:
 
 .. code-block:: python
 
@@ -201,12 +207,30 @@ decorate QNodes with the experimental ``@qml.capture.expand_plxpr_transforms`` d
 >>> print(qml.draw(circuit)())
 0: ──H──RX(0.10)─┤  State
 
-Additionally, there are a few other restrictions on QNodes and applying tape-based
-transforms:
+Dynamic variables and transforms
+================================
 
-#. Transforms that return multiple tapes cannot be made backwards-compatible.
-#. Transforms that return non-trivial post-processing functions cannot be made backwards-compatible.
-#. Transforms will fail to execute if the transformed quantum function or QNode contains:
+Some transforms in the :module:`~.pennylane.transforms` API have bespoke plxpr implementations
+that *directly* transform jaxpr:
+
+#. :func:`~.pennylane.transforms.merge_rotations`
+#. :func:`~.pennylane.transforms.single_qubit_fusion`
+#. :func:`~.pennylane.transforms.unitary_to_rot`
+#. :func:`~.pennylane.transforms.merge_amplitude_embedding`
+#. :func:`~.pennylane.transforms.commute_controlled`
+#. :func:`~.pennylane.transforms.decompose`
+#. :func:`~.pennylane.map_wires`
+#. :func:`~.pennylane.transforms.cancel_inverses`
+
+**This section applies to any transform not listed above, including custom quantum tape
+transforms**.
+
+There are a few other restrictions on QNodes and applying transforms that do not 
+have a native program-capture implementation:
+
+#. Transforms that return multiple tapes are not backwards-compatible.
+#. Transforms that return non-trivial post-processing functions are not backwards-compatible.
+#. Tape transforms will fail to execute if the transformed quantum function or QNode contains:
     #. ``qml.cond`` with dynamic parameters as predicates.
     #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
     #. ``qml.while_loop``.
