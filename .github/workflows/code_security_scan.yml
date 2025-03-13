@@ -28,3 +28,8 @@ jobs:
       bandit-config-file: pyproject.toml
       scan_directory: pennylane
       
+      # We error out CI if any high severity issues are found
+      # All other errors are still printed to logs
+      semgrep-error-on-severity: HIGH
+      bandit-error-on-severity: HIGH
+      
