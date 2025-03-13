@@ -26,4 +26,5 @@ jobs:
       repository-ref: ${{ github.ref }}
       runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       bandit-config-file: pyproject.toml
+      scan_directory: pennylane
       
