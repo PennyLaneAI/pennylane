@@ -173,7 +173,7 @@ class FromBloq(Operation):
                         soq = succ.left
                         if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
                             soq_to_wires_len -= np.prod(soq.reg.shape) * soq.reg.bitsize
-                            
+
                     for succ in succ_cxns:
                         soq = succ.left
                         if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
