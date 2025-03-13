@@ -537,6 +537,7 @@ class DefaultQubit(Device):
 
         gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
+            gradient_method = "backprop"
             updated_values["gradient_method"] = "backprop"
 
         if execution_config.use_device_gradient is None:
