@@ -2,6 +2,7 @@ pip
 appdirs
 autograd
 autoray
+cachetools
 jax==0.4.28
 jaxlib==0.4.28
 mistune==0.8.4
