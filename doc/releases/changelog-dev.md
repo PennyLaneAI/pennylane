@@ -427,6 +427,7 @@
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
 * Execution interpreters and `qml.capture.eval_jaxpr` can now handle pjit primitives when dynamic shapes are used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
