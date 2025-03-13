@@ -40,6 +40,40 @@ class TestFromBloq:
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
+    def test_wrong_wires_error(self):
+        """Tests that FromBloq validates the length of wires as intended"""
+
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        with pytest.raises(ValueError, match="The length of wires must"):
+            qml.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
+
+    def test_ghost_wires(self):
+        """Tests that FromBloq properly handles bloqs that have allocate and free qubits"""
+
+        from qualtran.bloqs.basic_gates import CZPowGate, ZPowGate
+
+        assert qml.FromBloq(CZPowGate(), wires=range(2)).decomposition()[1] == qml.FromBloq(
+            ZPowGate(), wires=["ghost_wire2"]
+        )
+
+    def test_partition_error(self):
+        """Tests that FromBloq's __init__() functions as intended"""
+
+        from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+
+        data1 = np.arange(5, dtype=int)
+        data2 = np.arange(5, dtype=int) + 1
+        qroam_clean_multi_data = QROAMClean.build_from_data(data1, data2, log_block_sizes=(1,))
+
+        with pytest.raises(
+            NotImplementedError,
+            match="The bloq Partition is not well-supported by FromBloq for now.",
+        ):
+            qml.FromBloq(
+                qroam_clean_multi_data, wires=range(qroam_clean_multi_data.signature.n_qubits())
+            ).decomposition()
+
     def test_composite_bloq_advanced(self):
         """Tests that a composite bloq with higher level abstract bloqs has the correct
         decomposition after wrapped with `FromBloq`"""
