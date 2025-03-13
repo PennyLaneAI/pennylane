@@ -217,7 +217,7 @@ def _auto_wrap(op_type):
         return resource_rep(op_type)
     except TypeError as e:
         raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_param_keys. A resource "
+            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
             f"representation must be explicitly constructed using qml.resource_rep"
         ) from e
 

@@ -242,7 +242,7 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     batch_size = None
 
@@ -645,7 +645,7 @@ class PauliZ(Observable, Operation):
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     _queue_category = "_ops"
 

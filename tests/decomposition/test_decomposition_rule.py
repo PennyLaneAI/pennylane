@@ -159,7 +159,7 @@ class TestDecompositionRule:
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = ()
+            resource_keys = set()
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
@@ -181,17 +181,17 @@ class TestDecompositionRule:
         )
 
     def test_auto_wrap_fails(self):
-        """Tests that an op with non-empty resource_param_keys cannot be auto-wrapped."""
+        """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = {"foo"}
+            resource_keys = {"foo"}
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_param_keys"):
+        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_keys"):
             custom_decomp.compute_resources()
 
         def custom_decomp_2(*_, **__):

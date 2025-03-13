@@ -71,7 +71,7 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "X"
     grad_method = "A"
@@ -286,7 +286,7 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Z"
     grad_method = "A"
@@ -614,7 +614,7 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]

@@ -132,7 +132,9 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("num_wires",)
+    resource_keys = {
+        "num_wires",
+    }
 
     grad_method = None
     """Gradient computation method."""

@@ -137,21 +137,21 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if op_type.resource_param_keys is None:
-        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}")
+    if op_type.resource_keys is None:
+        raise NotImplementedError(f"resource_keys undefined for {op_type.__name__}")
 
-    missing_params = set(op_type.resource_param_keys) - set(params.keys())
+    missing_params = op_type.resource_keys - set(params.keys())
     if missing_params:
         raise TypeError(
             f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
+            f"Expected: {op_type.resource_keys}"
         )
 
-    invalid_params = set(params.keys()) - set(op_type.resource_param_keys)
+    invalid_params = set(params.keys()) - op_type.resource_keys
     if invalid_params:
         raise TypeError(
             f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
+            f"Expected: {op_type.resource_keys}"
         )
 
 
@@ -170,7 +170,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
     Args:
         op_type: the operator class to create a resource representation for.
         **params: parameters relevant to the resource estimate of the operator's decompositions.
-            This should be consistent with ``op_type.resource_param_keys``.
+            This should be consistent with ``op_type.resource_keys``.
 
     Returns:
         CompressedResourceOp: a lightweight representation of the operator.

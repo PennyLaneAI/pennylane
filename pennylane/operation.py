@@ -1386,7 +1386,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_param_keys(self) -> tuple:
+    def resource_keys(self) -> tuple:
         """The set of parameters that affects the resource requirement of the operator.
 
         All decomposition rules for this operator class is expected to have a resource function
@@ -1404,16 +1404,16 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """A dictionary containing the minimal information needed to compute a
         resource estimate of the operator's decomposition.
 
-        The keys of this dictionary should match the ``resource_param_keys`` attribute of the operator
+        The keys of this dictionary should match the ``resource_keys`` attribute of the operator
         class. Two instances of the same operator type should have identical ``resource_params`` iff
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
         **Examples**
 
-        The ``MultiRZ`` has non-empty ``resource_param_keys``:
+        The ``MultiRZ`` has non-empty ``resource_keys``:
 
-        >>> qml.MultiRZ.resource_param_keys
+        >>> qml.MultiRZ.resource_keys
         {"num_wires"}
 
         The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:

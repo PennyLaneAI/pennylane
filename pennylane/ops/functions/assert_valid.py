@@ -108,8 +108,8 @@ def _check_decomposition_new(op):
         return
 
     assert set(op.resource_params.keys()) == set(
-        type(op).resource_param_keys
-    ), "resource_params must have the same keys as specified by resource_param_keys"
+        type(op).resource_keys
+    ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule)
