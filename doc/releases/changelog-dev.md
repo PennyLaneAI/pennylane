@@ -415,6 +415,7 @@
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -609,6 +610,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Dynamic one-shot workloads are now faster for `null.qubit`.
+  Removed a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
+
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
   when experimental program capture is enabled.
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
@@ -682,6 +687,7 @@ Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
