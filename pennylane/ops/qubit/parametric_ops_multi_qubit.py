@@ -1123,18 +1123,17 @@ class IsingYY(Operation):
         return IsingYY(phi, wires=self.wires)
 
 
-def _isingyy_to_cnot_ry_cnot_resources():
-    return {qml.CNOT: 2, RY: 1}
+def _isingyy_to_cy_ry_cy_resources():
+    return {qml.CY: 2, RY: 1}
 
-
-@register_resources(_isingyy_to_cnot_ry_cnot_resources)
-def _isingyy_to_cnot_ry_cnot(phi, wires, **__):
-    qml.CNOT(wires=wires)
+@register_resources(_isingyy_to_cy_ry_cy_resources)
+def _isingyy_to_cy_ry_cy(phi, wires, **__):
+    qml.CY(wires=wires)
     RY(phi, wires=[wires[0]])
-    qml.CNOT(wires=wires)
+    qml.CY(wires=wires)
 
 
-add_decomps(IsingYY, _isingyy_to_cnot_ry_cnot)
+add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
 
 
 class IsingZZ(Operation):
@@ -1323,7 +1322,7 @@ def _isingzz_to_cnot_rz_cnot_resources():
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi, wires, **__):
     qml.CNOT(wires=wires)
-    RZ(phi, wires=[wires[0]])
+    RZ(phi, wires=[wires[1]])
     qml.CNOT(wires=wires)
 
 
