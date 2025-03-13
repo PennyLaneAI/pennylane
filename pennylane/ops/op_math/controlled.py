@@ -462,7 +462,7 @@ class Controlled(SymbolicOp):
 
     """
 
-    resource_param_keys = (
+    resource_keys = (
         "base_class",
         "base_params",
         "num_control_wires",

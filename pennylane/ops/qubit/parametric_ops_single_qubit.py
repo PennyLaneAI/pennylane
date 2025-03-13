@@ -72,12 +72,12 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
@@ -199,7 +199,7 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
@@ -317,7 +317,7 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Z"
     grad_method = "A"
@@ -477,7 +477,7 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Z"
     grad_method = "A"
@@ -676,12 +676,12 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -878,7 +878,7 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -1024,7 +1024,7 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def __init__(
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
@@ -1192,7 +1192,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(

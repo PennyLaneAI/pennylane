@@ -56,7 +56,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -276,7 +276,7 @@ class PauliX(Observable, Operation):
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -490,7 +490,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Y"
 
@@ -705,13 +705,13 @@ class PauliZ(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Z"
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -930,7 +930,7 @@ class S(Operation):
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def pauli_rep(self):
@@ -1078,7 +1078,7 @@ class T(Operation):
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def pauli_rep(self):
@@ -1224,7 +1224,7 @@ class SX(Operation):
 
     basis = "X"
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1376,7 +1376,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
     batch_size = None
 
     @property
@@ -1533,7 +1533,7 @@ class ECR(Operation):
 
     batch_size = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1694,7 +1694,7 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1846,7 +1846,7 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:

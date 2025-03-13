@@ -101,7 +101,7 @@ class QubitCarry(Operation):
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -265,7 +265,7 @@ class QubitSum(Operation):
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def label(
         self,

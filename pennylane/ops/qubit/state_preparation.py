@@ -75,7 +75,7 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    resource_param_keys = ("state", "wires")
+    resource_keys = {"state", "wires"}
 
     @property
     def resource_params(self) -> dict:
