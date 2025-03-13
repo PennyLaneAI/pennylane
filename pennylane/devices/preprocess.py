@@ -49,7 +49,6 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
-    graph=None,
     error: Optional[Type[Exception]] = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
@@ -57,23 +56,11 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
         error = qml.DeviceError
 
     max_depth_reached = False
-    decomp = []
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
     if acceptance_function(op) or max_depth_reached:
         yield op
-    elif graph is not None and graph.check_decomposition(op):
-        if qml.decomposition.enabled_graph_debug():
-            print(f"[DEBUG] Decomposing {op} using decomposition graph")
-            print(f"[DEBUG]     Estimated {graph.resource_estimates(op)}")
-        op_rule = graph.decomposition(op)
-        with qml.queuing.AnnotatedQueue() as decomposed_ops:
-            op_rule.impl(*op.parameters, wires=op.wires, **op.hyperparameters)
-        decomp = decomposed_ops.queue
-        current_depth += 1
     else:
-        if qml.decomposition.enabled_graph_debug():
-            print(f"[DEBUG] Falling back to {op}.compute_decomposition")
         try:
             decomp = decomposer(op)
             current_depth += 1
@@ -82,17 +69,16 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
                 f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
-    for sub_op in decomp:
-        yield from _operator_decomposition_gen(
-            sub_op,
-            acceptance_function,
-            decomposer=decomposer,
-            max_expansion=max_expansion,
-            current_depth=current_depth,
-            name=name,
-            graph=graph,
-            error=error,
-        )
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+                name=name,
+                error=error,
+            )
 
 
 #######################
@@ -337,9 +323,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
     name: str = "device",
-    gate_set: set = None,
-    fixed_decomps: dict = None,
-    alt_decomps: dict = None,
     error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
@@ -362,11 +345,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             ``op.decomposition()`` for any :class:`~.Operator` .
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
-        fixed_decomps (dict, optional): A dictionary mapping operator types to their decomposition
-            rules. If an operator is found in the dictionary, the decomposition will be applied
-            directly without checking the gate set. Defaults to None.
-        alt_decomps (dict, optional): A dictionary mapping operator types to their decomposition
-            rules. Defaults to None.
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``qml.DeviceError``.
 
@@ -439,42 +417,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
 
-    decomp_graph = None
-
-    if qml.decomposition.enabled_graph():
-
-        # TODO(Ali): remove it after merging this with qml.transforms.decompose
-        try:
-            # pylint: disable=import-outside-toplevel
-            from pennylane.decomposition import DecompositionGraph
-
-            # TODO(Ali): remove this when the decomposition graph works stopping_condition
-            target_gate_names = gate_set
-
-            if qml.decomposition.enabled_graph_debug():
-                print(
-                    f"[DEBUG] Constructing the graph with tape operations {tape.operations}\n[DEBUG]     AND the target gate set {target_gate_names}"
-                )
-
-            decomp_graph = DecompositionGraph(
-                tape.operations,
-                target_gate_names,
-                fixed_decomps=fixed_decomps,
-                alt_decomps=alt_decomps,
-            )
-
-            if qml.decomposition.enabled_graph_debug():
-                print(f"[DEBUG] Solving the decomposition graph")
-            decomp_graph.solve()
-
-        except qml.decomposition.DecompositionError as e:
-            warnings.warn(
-                f"Decomposition graph optimization failed: {e}"
-                "\nFalling back to default decomposition.",
-                UserWarning,
-            )
-            decomp_graph = None
-
     try:
 
         new_ops = [
@@ -485,7 +427,6 @@ def decompose(  # pylint: disable = too-many-positional-arguments
                 stopping_condition,
                 decomposer=decomposer,
                 name=name,
-                graph=decomp_graph,
                 error=error,
             )
         ]

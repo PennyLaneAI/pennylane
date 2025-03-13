@@ -1395,10 +1395,14 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The ``qml.resource_rep`` function will also expect keyword arguments that match these
         keys for each operator type.
 
+        The default implementation is an empty tuple, which is suitable for most operators.
+
         .. seealso::
             :meth:`~.Operator.resource_params`
 
         """
+
+        return ()
 
     @property
     def resource_params(self) -> dict:
@@ -1415,12 +1419,16 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         that the ``resource_params`` should only contain the **minimal** information needed to
         determine the gate count for an operator's decomposition.
 
+        The default implementation is an empty dictionary, which is suitable for most operators.
+
         """
         # For most operators, this should just be an empty dictionary, but a default
         # implementation is intentionally not provided so that each operator class is
         # forced to explicitly define its resource params.
-        # raise NotImplementedError
-        raise NotImplementedError(f"Operation {self.name} does not have a resource function")
+        # raise NotImplementedError(f"Operation {self.name} does not have a resource function")
+
+        # To avoid raising an error for most operators, we return an empty dictionary by default.
+        return {}
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
