@@ -359,10 +359,20 @@ class TestDevicePreprocessing:
 
     def test_non_native_ops_execution(self, dev_name):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
+        dev = qml.device(dev_name, wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            # QFT not supported on DQ or LQ
+            # Should decompose to just H
+            qml.QFT(wires=[0])
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), [1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])
-    def test_mcms_execution_deferred(self, dev_name):
+    def test_mcms_execution_deferred(self, dev_name, mcm_method, shots):
         """Test that defer_measurements is reflected in the execution results of a device."""
         # Parametrized over mcm_method because default (None) method is "deferred"
         # Shots tests should check shape and ~vaguely~ validate distribution. Use the following test for inspiration:
@@ -370,19 +380,120 @@ class TestDevicePreprocessing:
         # Use postselection with DQ, not with LQ
         # Use reset with both devices
 
-    def test_mcm_execution_deferred_fill_shots(self, dev_name):
+        dev = qml.device(dev_name, wires=3, shots=shots)
+        postselect = 1 if dev_name == "default.qubit" else None
+
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
+            qml.measure(0, reset=True, postselect=postselect)
+            return {
+                "expval": (qml.expval(qml.Z(0)), qml.expval(qml.Z(1))),
+                "state": qml.sample(wires=[0, 1]) if shots else None,
+            }
+
+        if not shots:
+            outcome = -2 * postselect + 1 if postselect else 0
+            assert qml.math.allclose(circuit()["expval"], [1, outcome])
+        else:
+            shots_res = circuit()["state"]
+            if postselect:
+                # After post selection and reset (on the first bit)
+                # the valid sample is *only* [0, 1] (~shots/2 for bell state)
+                assert all(qml.math.allclose(s, [0, 1]) for s in shots_res)
+                assert qml.math.isclose(len(shots_res), shots / 2, atol=50)
+            else:
+                # No longer postselected so |00> and |01> state are valid
+                assert all(
+                    qml.math.allclose(s, [0, 0]) or qml.math.allclose(s, [0, 1]) for s in shots_res
+                )
+                assert len(shots_res) == shots
+                # Check it's roughly 50/50 by counting the second column of bits
+                counts = qml.numpy.bincount(shots_res[:, 1].astype(int))
+                assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+
+    @pytest.mark.parametrize("mcm_method", [None, "deferred"])
+    def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method):
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
         # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
 
-    def test_mcm_execution_deferred_hw_like(self, dev_name):
+        shots = 1000
+        dev = qml.device(dev_name, wires=3, shots=shots)
+        postselect = 1 if dev_name == "default.qubit" else None
+
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=[0, 1])
+
+        shots_res = circuit()
+        # pylint: disable = not-an-iterable, unsubscriptable-object
+        if postselect:
+            # Only postselecting the |11> state ~shots/2 of the time
+            # Will fill the rest with |11> state
+            assert all(qml.math.allclose(s, [1, 1]) for s in shots_res)
+            assert len(shots_res) == shots
+        else:
+            # No longer postselected so |00> and |11> state are valid
+            assert all(
+                qml.math.allclose(s, [0, 0]) or qml.math.allclose(s, [1, 1]) for s in shots_res
+            )
+            assert len(shots_res) == shots
+            # Check it's roughly 50/50 by counting the second column of bits
+            counts = qml.numpy.bincount(shots_res[:, 1].astype(int))
+            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+
+    @pytest.mark.parametrize("mcm_method", [None, "deferred"])
+    def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method):
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
         # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
 
-    @pytest.mark.parametrize("shots", [None, 1000])
-    def test_mcms_execution_single_branch_statistics(self, dev_name, shots):
+        shots = 1000
+        dev = qml.device(dev_name, wires=2, shots=shots)
+        postselect = 1 if dev_name == "default.qubit" else None
+        n_postselects = 5
+
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
+        def circuit():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.measure(0, postselect=postselect)
+            return qml.sample(wires=[0])
+
+        res = circuit()
+        # pylint: disable = not-an-iterable
+        if postselect:
+            assert all(qml.math.allclose(r, postselect) for r in res)
+            num_of_results = len(res)
+            assert qml.math.allclose(
+                num_of_results,
+                int(1000 / (2**n_postselects)),
+                atol=20,
+            )
+        else:
+            assert len(res) == shots
+            counts = qml.numpy.bincount(res)
+            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+
+    def test_mcms_execution_single_branch_statistics(self, dev_name):
         """Test that single-branch-statistics works as expected."""
         # Apply MCM right before terminal measurements. That will make sure that all samples (for finite shot tests)
         # have the same value.
+
+        shots = 1000
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        def circuit():
+            qml.Hadamard(0)
+            qml.measure(0)
+            return qml.sample(wires=[0])
+
+        # pylint: disable = not-an-iterable
+        assert all(sample == 0 for sample in circuit()) or all(sample == 1 for sample in circuit())
 
 
 class TestDifferentiation:
