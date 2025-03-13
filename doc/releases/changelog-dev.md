@@ -412,6 +412,7 @@
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
