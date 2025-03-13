@@ -1,8 +1,6 @@
 .. role:: html(raw)
    :format: html
 
-.. _intro_ref_program_capture_sharp_bits:
-
 Program-capture sharp bits and debugging tips
 =============================================
 
@@ -22,10 +20,16 @@ In part because of PennyLane's NumPy-like syntax and functionality, quantum prog
 written with PennyLane translate nicely into the language of jaxpr, letting your 
 quantum-classical programs burn the same fuel that powers JAX and just-in-time compilation.
 
-Our goal with program-capture is to support *more* than just the core features of the 
-PennyLane you have come to know and love, but there are some **quirks and restrictions 
-to be aware of while we strive towards that ideal**. In this document, we provide 
-an overview of said constraints.
+The quantum tape/script has been PennyLane's trusty program representation since 
+its inception, but our vision with program-capture is to supplant the quantum tape
+as the default program representation in PennyLane, and to support *more* than just 
+the core features of the PennyLane you have come to know and love. 
+
+There are some **quirks and restrictions to be aware of while we strive towards 
+that ideal**. Additionally, we've added backwards-compatibility features that make 
+the transition from tape-based code to program-capture be a smooth one. In this 
+document, we provide an overview of the constraints, "gotchas" to be aware of, and
+features that will help get your existing tape-based code working with program-capture.
 
 .. note::
 
@@ -37,15 +41,16 @@ an overview of said constraints.
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
     
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
-    Program-capture and plxpr can be considered synonymous and interchangeable. 
+    "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
 
 Device compatibility 
 --------------------
 
 Currently, ``default.qubit`` and ``lightning.qubit`` are compatible with program-capture.
-In addition, ``default.qubit`` requires that ``wires`` be specified. This is in 
-contrast to when program-capture is disabled, where automatic qubit management takes
-place internally.
+With program-capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
+that ``wires`` be specified at device instantiation (this is in contrast to when 
+program-capture is disabled, where automatic qubit management takes place internally
+with ``default.qubit``).
 
 .. code-block:: python
 
@@ -56,8 +61,6 @@ place internally.
 
 >>> circuit()
 NotImplementedError: devices must specify wires for integration with plxpr capture.
-
-.. _valid_data_types:
 
 Valid JAX data types 
 --------------------
@@ -116,8 +119,6 @@ Array(0., dtype=float32)
 
 But, again, using JAX-compatible types wherever possible is recommended.
 
-.. _parameter_broadcasting_vmap:
-
 Parameter broadcasting and ``vmap``
 -----------------------------------
 
@@ -144,7 +145,95 @@ Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
 More information for using ``jax.vmap`` can be found in the 
 `JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
 
-.. _name_of_section:
+Using custom tape-based transforms with program-capture 
+-------------------------------------------------------
+
+Core features of PennyLane include modularity and transformability, which has allowed
+users to create their own transforms with ease. Consider the following toy example, 
+which shows a tape-based transform that shifts all ``RX`` gates to the end of a 
+circuit.
+
+.. code-block:: python
+
+    @qml.transform
+    def shift_rx_to_end(tape):
+        """Transform that moves all RX gates to the end of the operations list."""
+        new_ops, rxs = [], []
+
+        for op in tape.operations:
+            if isinstance(op, qml.RX):
+                rxs.append(op)
+            else:
+                new_ops.append(op)
+        
+        operations = new_ops + rxs
+        new_tape = tape.copy(operations=operations)
+        return [new_tape], lambda res: res[0]
+
+**Decorating QNodes with just ``@shift_rx_to_end`` will not work**, and will give 
+a vague error:
+
+.. code-block:: python
+
+    @shift_rx_to_end
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(0.1, wires=0)
+        qml.H(wires=0)
+        return qml.state()
+
+>>> print(qml.draw(circuit)())
+NotImplementedError: 
+
+A requirement for tape transforms to be compatible with program capture is to further 
+decorate QNodes with the experimental ``@qml.capture.expand_plxpr_transforms`` decorator:
+
+.. code-block:: python
+
+    @qml.capture.expand_plxpr_transforms
+    @shift_rx_to_end
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(0.1, wires=0)
+        qml.H(wires=0)
+        return qml.state()
+
+>>> print(qml.draw(circuit)())
+0: ──H──RX(0.10)─┤  State
+
+Additionally, there are a few other restrictions on QNodes and applying tape-based
+transforms:
+
+#. Transforms that return multiple tapes cannot be made backwards-compatible.
+#. Transforms that return non-trivial post-processing functions cannot be made backwards-compatible.
+#. Transforms will fail to execute if the transformed quantum function or QNode contains:
+    #. ``qml.cond`` with dynamic parameters as predicates.
+    #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
+    #. ``qml.while_loop``.
+
+Here is an example with our toy ``shift_rx_to_end`` transform and a dynamic parameter
+for ``stop`` in ``qml.for_loop``.
+
+.. code-block:: python
+
+    @qml.capture.expand_plxpr_transforms
+    @shift_rx_to_end
+    @qml.qnode(qml.device("default.qubit", wires=4))
+    def circuit(stop):
+
+        @qml.for_loop(0, stop, 1)
+        def loop(i):
+            qml.RX(0.1, wires=i)
+            qml.H(wires=i)
+        
+        loop(stop)
+
+        return qml.state()
+
+>>> circuit(4)
+TracerIntegerConversionError: The __index__() method was called on traced array with shape int32[].
+The error occurred while tracing the function wrapper at /Users/isaac/.virtualenvs/pl-latest/lib/python3.11/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
+See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
 Section title 
 -------------
@@ -152,7 +241,7 @@ Section title
 blah blah blah
 
 .. code-block:: python
-    
+
     # nice code block!!!!!!!!!
 
 >>> print("hello plxpr")
