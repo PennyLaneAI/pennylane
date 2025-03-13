@@ -871,6 +871,22 @@ class TestDynamicShapeValidation:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
+    def test_cond_no_returns(self):
+        """ "Test that cond can have empty returns when dynamic shapes are enabled."""
+
+        def rx(x, w):
+            qml.RX(x, w)
+
+        def ry(x, w):
+            qml.RY(x, w)
+
+        def f(condition):
+            qml.cond(condition == 2, rx, ry)(0.5, 1)
+
+        jaxpr = jax.make_jaxpr(f)(0)
+        [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        qml.assert_equal(op, qml.RY(0.5, 1))
+
     def test_cond_abstracted_axes(self):
         """Test cond can accept inputs with dynamic shapes."""
 
