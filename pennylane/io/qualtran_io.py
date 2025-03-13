@@ -60,11 +60,10 @@ def get_bloq_registers_info(bloq):
     """
     if not isinstance(bloq, Bloq):
         raise TypeError(f"bloq must be an instance of {Bloq}.")
-    cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
 
-    temp_register_dict = {reg.name: reg.bitsize for reg in cbloq.signature.rights()}
+    wire_register_dict = {reg.name: reg.bitsize for reg in bloq.signature.rights()}
 
-    return qml.registers(temp_register_dict)
+    return qml.registers(wire_register_dict)
 
 
 def _get_named_registers(registers):
@@ -147,36 +146,39 @@ class FromBloq(Operation):
         ops = []
         bloq = hyperparameters["bloq"]
 
+        if len(wires) != bloq.signature.n_qubits():
+            raise ValueError(
+                f"The length of wires must match the signature of {Bloq}. Please provide a list of wires of length {bloq.signature.n_qubits()}"
+            )
+
         try:
             # Bloqs need to be decomposed in order to access the connections
             cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
             temp_registers = _get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
-                Soquet(LeftDangle, idx=idx, reg=reg): list(temp_registers[reg.name])[idx[0]] if len(idx) == 1 else list(temp_registers[reg.name])
+                Soquet(LeftDangle, idx=idx, reg=reg): (
+                    list(temp_registers[reg.name])[idx[0]]
+                    if len(idx) == 1
+                    else list(temp_registers[reg.name])
+                )
                 for reg in cbloq.signature.lefts()
                 for idx in reg.all_idxs()
             }
 
+            # This is to track the number of wires defined at the LeftDangle stage
+            # so if we need to add more wires, we know what index to start at
+            soq_to_wires_len = 0
+            if len(soq_to_wires.values()) > 0:
+                soq_to_wires_len = list(soq_to_wires.values())[-1]
+                if not isinstance(soq_to_wires_len, int):
+                    soq_to_wires_len = list(soq_to_wires.values())[-1][-1]
+                soq_to_wires_len += 1
+
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, Partition):
-                    in_quregs = {}
-                    soq_to_wires_len = 0
-                    for succ in succ_cxns:
-                        soq = succ.left
-                        if soq.reg.side == Side.RIGHT and not soq.reg.name in in_quregs:
-                            total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
-                            ascending_vals = np.arange(
-                                soq_to_wires_len,
-                                total_elements + soq_to_wires_len,
-                                dtype=object,
-                            )
-                            soq_to_wires_len += total_elements
-                            in_quregs[soq.reg.name] = ascending_vals.reshape(
-                                (*soq.reg.shape, soq.reg.bitsize)
-                            )
-                        soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
-                    continue
-
+                    raise NotImplementedError(
+                        f"The bloq Partition is not well-supported by FromBloq for now."
+                    )
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.lefts()
@@ -187,15 +189,6 @@ class FromBloq(Operation):
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
                     for reg in binst.bloq.signature.rights()
                 }
-
-                # This is to track the number of wires defined at the LeftDangle stage
-                # so if we need to add more wires, we know what index to start at
-                soq_to_wires_len = 0
-                if len(soq_to_wires.values()) > 0:
-                    soq_to_wires_len = list(soq_to_wires.values())[-1]
-                    if not isinstance(soq_to_wires_len, int):
-                        soq_to_wires_len = list(soq_to_wires.values())[-1][-1]
-                    soq_to_wires_len += 1
 
                 for pred in pred_cxns:
                     soq = pred.right
@@ -224,8 +217,9 @@ class FromBloq(Operation):
                         soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
 
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
-                mapped_wires = [wires[idx] for idx in total_wires]
-                op = binst.bloq.as_pl_op(mapped_wires)
+                mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
+                ghost_wires = [f"ghost_wire{val}" for val in total_wires if val >= len(wires)]
+                op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
 
                 if op:
                     ops.append(op)
