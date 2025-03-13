@@ -703,7 +703,7 @@ FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@PlxprInterpreter.register_primitive(jax._src.pjit.pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
