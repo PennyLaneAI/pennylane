@@ -872,7 +872,7 @@ class TestDynamicShapeValidation:
 class TestDynamicShapes:
 
     def test_cond_no_returns(self):
-        """ "Test that cond can have empty returns when dynamic shapes are enabled."""
+        """Test that cond can have empty returns when dynamic shapes are enabled."""
 
         def rx(x, w):
             qml.RX(x, w)
