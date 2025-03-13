@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
+# pragma: no cover
 import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
@@ -352,7 +353,7 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(dynamic=True, **kwargs)
+        super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)

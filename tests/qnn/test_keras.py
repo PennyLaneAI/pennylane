@@ -18,13 +18,35 @@ from collections import defaultdict
 
 import numpy as np
 import pytest
+from packaging.version import Version
 
 import pennylane as qml
 
 KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
+# Check for Keras 3
+try:
+    # Check TensorFlow version - 2.16+ uses Keras 3 by default
+    USING_KERAS3 = Version(tf.__version__) >= Version("2.16.0")
 
+    # Alternative check using keras.version if available
+    try:
+        import keras
+
+        if hasattr(keras, "version"):
+            USING_KERAS3 = Version(keras.version()) >= Version("3.0.0")
+    except (ImportError, AttributeError):
+        pass
+
+except ImportError:
+    USING_KERAS3 = False
+
+# Skip marker for Keras 3
+requires_keras2 = pytest.mark.skipif(
+    USING_KERAS3,
+    reason="This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented.",
+)
 # pylint: disable=unnecessary-dunder-call
 
 
@@ -97,6 +119,7 @@ def indices_up_to_dm(n_max):
 
 
 # pylint: disable=too-many-public-methods
+@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
@@ -555,6 +578,7 @@ class TestKerasLayer:
         )
 
 
+@requires_keras2
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_invalid_interface_error(interface):
@@ -572,6 +596,7 @@ def test_invalid_interface_error(interface):
         _ = KerasLayer(circuit, weight_shapes, output_dim=2)
 
 
+@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize(
     "interface", ("auto", "tf", "tensorflow", "tensorflow-autograph", "tf-autograph")
@@ -595,6 +620,7 @@ def test_qnode_interface_not_mutated(interface):
     )
 
 
+@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")
@@ -701,6 +727,7 @@ class TestKerasLayerIntegration:
         assert tf.math.reduce_all(res == new_res)
 
 
+@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit_dm", "model_dm")
@@ -814,6 +841,7 @@ def test_no_attribute():
         qml.qnn.random  # pylint: disable=pointless-statement
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
@@ -842,6 +870,7 @@ def test_batch_input_single_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
@@ -871,6 +900,7 @@ def test_batch_input_multi_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_draw():
     """Test that a KerasLayer can be drawn using qml.draw"""
@@ -908,6 +938,7 @@ def test_draw():
     assert actual == expected
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_draw_mpl():
     """Test that a KerasLayer can be drawn using qml.draw_mpl"""
@@ -943,6 +974,7 @@ def test_draw_mpl():
     assert ax.texts[4].get_text() == "StronglyEntanglingLayers"
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_specs():
     """Test that the qml.specs transform works for KerasLayer"""
@@ -979,6 +1011,7 @@ def test_specs():
     assert info["device_name"] == "default.qubit"
 
 
+@requires_keras2
 @pytest.mark.slow
 @pytest.mark.tf
 def test_save_and_load_preserves_weights(tmpdir):
