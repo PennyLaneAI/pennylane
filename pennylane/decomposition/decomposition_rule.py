@@ -46,9 +46,9 @@ def register_resources(
         qfunc (Callable): the quantum function that implements the decomposition.
 
     Returns:
-        DecompositionRule: a data structure that represents a decomposition rule, which contains
-            a PennyLane quantum function representing the decomposition, and the decomposition’s
-            resource function.
+        DecompositionRule:
+            a data structure that represents a decomposition rule, which contains a PennyLane
+            quantum function representing the decomposition, and its resource function.
 
 
     **Example**
@@ -69,7 +69,7 @@ def register_resources(
             qml.H(wires=wires[1])
 
         @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-        @qml.qnode(qml.device(“default.qubit”))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
