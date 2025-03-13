@@ -73,10 +73,7 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 @register_resources(_adjoint_adjoint_resource)
 def adjoint_adjoint_decomp(*_, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    if qml.capture.enabled():
-        qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
-    else:
-        qml.apply(base.base)
+    base.base._unflatten(*base.base._flatten())  # pylint: disable=protected-access
 
 
 def _adjoint_controlled_resource(base_class, base_params):
