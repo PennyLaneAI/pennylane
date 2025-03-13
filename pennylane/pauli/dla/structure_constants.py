@@ -178,8 +178,8 @@ def structure_constants(
 
     """
     warnings.warn(
-        "Calling center via ``qml.pauli.structure_constants`` is deprecated. ``structure_constants`` has moved to ``pennylane.liealg``. "
-        "Please call ``structure_constants`` from top level as ``qml.structure_constants`` or from the liealg module via ``qml.liealg.structure_constants``.",
+        "Calling center via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
+        "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
         qml.PennyLaneDeprecationWarning,
     )
 
