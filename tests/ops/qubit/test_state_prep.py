@@ -14,6 +14,8 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+from collections import defaultdict
+
 # pylint: disable=protected-access
 import numpy as np
 import pytest
@@ -31,6 +33,46 @@ def test_basis_state_input_cast_to_int():
     state = np.array([1.0, 0.0], dtype=np.float64)
     op = qml.BasisState(state, wires=(0, 1))
     assert op.data[0].dtype == np.int64
+
+
+@pytest.mark.jax
+def test_assert_valid():
+    """Tests that BasisState operators are valid"""
+
+    op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+    def abstract_check(state):
+        op = qml.BasisState(state, wires=[0, 1])
+        op_matrices, decomp_matrices = [], []
+        for rule in qml.list_decomps(qml.BasisState):
+            resources = rule.compute_resources(**op.resource_params)
+            gate_counts = resources.gate_counts
+
+            with qml.queuing.AnnotatedQueue() as q:
+                rule(*op.data, wires=op.wires, **op.hyperparameters)
+            tape = qml.tape.QuantumScript.from_queue(q)
+            actual_gate_counts = defaultdict(int)
+            for _op in tape.operations:
+                resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+                actual_gate_counts[resource_rep] += 1
+            assert gate_counts == actual_gate_counts
+
+            # Tests that the decomposition produces the same matrix
+            op_matrix = qml.matrix(op)
+            decomp_matrix = qml.matrix(tape, wire_order=op.wires)
+            op_matrices.append(op_matrix)
+            decomp_matrices.append(decomp_matrix)
+
+        return op_matrices, decomp_matrices
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    op_matrices, decomp_matrices = jax.jit(abstract_check)(np.array([0, 1]))
+    assert qml.math.allclose(
+        op_matrices, decomp_matrices
+    ), "decomposition must produce the same matrix as the operator."
 
 
 @pytest.mark.parametrize(

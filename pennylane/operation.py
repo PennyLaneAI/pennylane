@@ -228,7 +228,7 @@ from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -823,8 +823,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @staticmethod
     def compute_sparse_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> csr_matrix:  # pylint:disable=unused-argument
+        *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
+    ) -> spmatrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -834,6 +834,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
                 attribute
 
@@ -854,7 +855,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -867,16 +868,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
 
         Returns:
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
+            *self.parameters, format="csr", **self.hyperparameters
         )
 
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
@@ -1382,13 +1386,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_param_keys(self) -> tuple:
-        """The keys to the ``resource_params`` dictionary.
+    def resource_keys(self) -> tuple:
+        """The set of parameters that affects the resource requirement of the operator.
 
-        All decomposition rules registered with an operator class is expected to have a resource
-        function with parameters that are consistent with the operator's ``resource_param_keys``.
-        The ``qml.resource_rep`` function will also expect keyword arguments that match these
-        keys for each operator type.
+        All decomposition rules for this operator class is expected to have a resource function
+        that accepts keyword arguments that match these keys exactly. The ``qml.resource_rep``
+        function will also expect keyword arguments that match these keys when called with this
+        operator type.
 
         .. seealso::
             :meth:`~.Operator.resource_params`
@@ -1400,21 +1404,35 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """A dictionary containing the minimal information needed to compute a
         resource estimate of the operator's decomposition.
 
-        Two instances of the same operator type should have identical ``resource_params`` iff
+        The keys of this dictionary should match the ``resource_keys`` attribute of the operator
+        class. Two instances of the same operator type should have identical ``resource_params`` iff
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
-        For most operators with static decompositions, this should just be an empty dictionary,
-        but for gates such as ``MultiRZ`` whose decomposition depends on certain parameters such
-        as the number of wires, the ``resource_params`` should contain this information. Note
-        that the ``resource_params`` should only contain the **minimal** information needed to
-        determine the gate count for an operator's decomposition.
+        **Examples**
+
+        The ``MultiRZ`` has non-empty ``resource_keys``:
+
+        >>> qml.MultiRZ.resource_keys
+        {"num_wires"}
+
+        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
+
+        >>> op = qml.MultiRZ(0.5, wires=[0, 1])
+        >>> op.resource_params
+        {"num_wires": 2}
+
+        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
+
+        >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
+        >>> op2.resource_params
+        {"num_wires": 2}
 
         """
         # For most operators, this should just be an empty dictionary, but a default
         # implementation is intentionally not provided so that each operator class is
         # forced to explicitly define its resource params.
-        raise NotImplementedError
+        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
