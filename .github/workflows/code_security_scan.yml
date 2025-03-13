@@ -24,5 +24,5 @@ jobs:
     with:
       github-repository: ${{ github.repository }}
       repository-ref: ${{ github.ref }}
-      runner_name: ${{ needs.determine_runner.outputs.runner_name }}
+      runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       
