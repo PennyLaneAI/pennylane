@@ -43,9 +43,10 @@ except ImportError:
     USING_KERAS3 = False
 
 # Skip marker for Keras 3
+KERAS3_XFAIL_INFO = "This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented."
 requires_keras2 = pytest.mark.xfail(
     condition=USING_KERAS3,
-    reason="This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented.",
+    reason=KERAS3_XFAIL_INFO,
 )
 # pylint: disable=unnecessary-dunder-call
 
@@ -628,13 +629,13 @@ def test_qnode_interface_not_mutated(interface):
     )
 
 
-@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
     """Integration tests for the pennylane.qnn.keras.KerasLayer class."""
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model(
@@ -651,6 +652,7 @@ class TestKerasLayerIntegration:
 
         model.fit(x, y, batch_size=batch_size, verbose=0)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_model_gradients(
         self, model, output_dim, n_qubits
@@ -667,6 +669,7 @@ class TestKerasLayerIntegration:
         gradients = tape.gradient(loss, model.trainable_variables)
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_model_weights(
         self, get_circuit, n_qubits, output_dim, tmpdir
@@ -709,6 +712,7 @@ class TestKerasLayerIntegration:
 
     # the test is slow since TensorFlow needs to compile the execution graph
     # in order to save the model
+    @requires_keras2
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_whole_model(
@@ -735,7 +739,6 @@ class TestKerasLayerIntegration:
         assert tf.math.reduce_all(res == new_res)
 
 
-@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit_dm", "model_dm")
@@ -743,6 +746,7 @@ class TestKerasLayerIntegrationDM:
     """Integration tests for the pennylane.qnn.keras.KerasLayer class for
     density_matrix() returning circuits."""
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(3))
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model_dm(
@@ -759,6 +763,7 @@ class TestKerasLayerIntegrationDM:
 
         model_dm.fit(x, y, batch_size=batch_size, verbose=0)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_model_gradients_dm(
         self, model_dm, output_dim, n_qubits
@@ -775,6 +780,7 @@ class TestKerasLayerIntegrationDM:
         gradients = tape.gradient(loss, model_dm.trainable_variables)
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_save_model_weights_dm(
         self, get_circuit_dm, n_qubits, output_dim, tmpdir
@@ -824,6 +830,8 @@ class TestKerasLayerIntegrationDM:
     ):  # pylint: disable=redefined-outer-name
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
+        if n_qubits == 1 and USING_KERAS3:
+            pytest.xfail(KERAS3_XFAIL_INFO)
         weights = model_dm.get_weights()
 
         file = str(tmpdir) + "/model"
