@@ -50,7 +50,7 @@ def test_assert_valid():
             gate_counts = resources.gate_counts
 
             with qml.queuing.AnnotatedQueue() as q:
-                rule.impl(*op.data, wires=op.wires, **op.hyperparameters)
+                rule(*op.data, wires=op.wires, **op.hyperparameters)
             tape = qml.tape.QuantumScript.from_queue(q)
             actual_gate_counts = defaultdict(int)
             for _op in tape.operations:
@@ -63,6 +63,7 @@ def test_assert_valid():
             decomp_matrix = qml.matrix(tape, wire_order=op.wires)
             op_matrices.append(op_matrix)
             decomp_matrices.append(decomp_matrix)
+
         return op_matrices, decomp_matrices
 
     # pylint: disable=import-outside-toplevel
