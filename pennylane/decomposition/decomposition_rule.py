@@ -165,29 +165,29 @@ def register_resources(
 
     """
 
-    if qfunc:  # enables the normal syntax
-        return DecompositionRule(qfunc, resources)
-
     def _decorator(_qfunc) -> DecompositionRule:
         return DecompositionRule(_qfunc, resources)
 
-    return _decorator  # enables the decorator syntax
+    return _decorator(qfunc) if qfunc else _decorator
 
 
 class DecompositionRule:  # pylint: disable=too-few-public-methods
     """Represents a decomposition rule for an operator."""
 
     def __init__(self, func: Callable, resources: Callable | dict = None):
-        self.impl = func
+        self._impl = func
         self._source = inspect.getsource(func)
         if isinstance(resources, dict):
-            resource_fn = lambda: resources
+
+            def resource_fn():
+                return resources
+
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
 
     def __call__(self, *args, **kwargs):
-        return self.impl(*args, **kwargs)
+        return self._impl(*args, **kwargs)
 
     def __str__(self):
         return self._source
@@ -196,11 +196,10 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
-        gate_counts: dict = self._compute_resources(*args, **kwargs)
+        gate_counts = self._compute_resources(*args, **kwargs)
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
         gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
-        num_gates = sum(gate_counts.values())
-        return Resources(num_gates, gate_counts)
+        return Resources(gate_counts)
 
 
 def _auto_wrap(op_type):
@@ -222,6 +221,7 @@ def _auto_wrap(op_type):
 
 
 _decompositions = defaultdict(list)
+"""dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
 
 
 def add_decomps(op_type, *decomps: DecompositionRule) -> None:

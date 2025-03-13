@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 from dataclasses import dataclass, field
+from functools import cached_property
 
 import pennylane as qml
 
@@ -27,27 +28,27 @@ class Resources:
     r"""Stores resource estimates.
 
     Args:
-        num_gates (int): the total number of gates.
         gate_counts (dict): dictionary mapping operator types to their number of occurrences.
 
     """
 
-    num_gates: int = 0
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Verify that the gate counts and the number of gates are consistent."""
         assert all(v > 0 for v in self.gate_counts.values())
-        assert self.num_gates == sum(self.gate_counts.values())
+
+    @cached_property
+    def num_gates(self) -> int:
+        return sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
         return Resources(
-            self.num_gates + other.num_gates,
             _combine_dict(self.gate_counts, other.gate_counts),
         )
 
     def __mul__(self, scalar: int):
-        return Resources(self.num_gates * scalar, _scale_dict(self.gate_counts, scalar))
+        return Resources(_scale_dict(self.gate_counts, scalar))
 
     __rmul__ = __mul__
 
@@ -108,8 +109,6 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type, params: dict = None):
-        if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be a type, got {op_type}")
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
@@ -120,11 +119,9 @@ class CompressedResourceOp:
         return hash((self.op_type, self._hashable_params))
 
     def __eq__(self, other: CompressedResourceOp) -> bool:
-        return (
-            isinstance(other, CompressedResourceOp)
-            and (self.op_type == other.op_type)
-            and (self.params == other.params)
-        )
+        if not isinstance(other, CompressedResourceOp):
+            return False
+        return self.op_type == other.op_type and self.params == other.params
 
     def __repr__(self):
         return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
@@ -243,7 +240,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
-    if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
+    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
         return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)

@@ -123,7 +123,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:
-        rule.impl(*op.data, wires=op.wires, **op.hyperparameters)
+        rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qml.tape.QuantumScript.from_queue(q)
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:

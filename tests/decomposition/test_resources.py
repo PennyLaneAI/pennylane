@@ -34,45 +34,24 @@ class TestResources:
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
 
-    def test_inconsistent_gate_counts(self):
-        """Tests that an error is raised of the gate count is inconsistent
-        with the number of gates."""
-        with pytest.raises(AssertionError):
-            Resources(
-                num_gates=2,
-                gate_counts={
-                    CompressedResourceOp(qml.RX, {}): 2,
-                    CompressedResourceOp(qml.RZ, {}): 1,
-                },
-            )
-
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
         with pytest.raises(AssertionError):
             Resources(
-                num_gates=1,
                 gate_counts={
                     CompressedResourceOp(qml.RX, {}): 2,
                     CompressedResourceOp(qml.RZ, {}): -1,
-                },
+                }
             )
 
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
         resources2 = Resources(
-            num_gates=2,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 1,
-                CompressedResourceOp(qml.RY, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1}
         )
 
         resources = resources1 + resources2
@@ -87,11 +66,7 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
 
         resources = resources * 2
@@ -118,9 +93,6 @@ class TestCompressedResourceOp:
 
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op_type is invalid."""
-
-        with pytest.raises(TypeError, match="op_type must be a type"):
-            CompressedResourceOp(qml.RX(0.5, wires=0), {})
 
         with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
