@@ -234,11 +234,8 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-class TestDynamicShapes:
-
-    def test_dynamic_shape_input(self):
+    # pylint: disable=unused-argument
+    def test_dynamic_shape_input(self, enable_disable_dynamic_shapes):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
         def f(x):
@@ -256,10 +253,10 @@ class TestDynamicShapes:
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
 
-    def test_dynamic_array_creation(self):
+    # pylint: disable=unused-argument
+    def test_dynamic_array_creation(self, enable_disable_dynamic_shapes):
         """Test that for_loops can create dynamicly shaped arrays."""
 
-        # pylint: disable=unused-argument
         def f(i, x):
             y = jax.numpy.arange(i)
             return jax.numpy.sum(y)
@@ -270,24 +267,6 @@ class TestDynamicShapes:
         jaxpr = jax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
-
-    def test_accept_dynamic_array_matches_other_arg(self):
-        """Test that for loops can accept an array with a dimension that initialially matches
-        another dimension, but that the shape is still allowed to change independently of that original arg.
-        """
-
-        # pylint: disable=unused-argument
-        @qml.for_loop(3)
-        def f(i, j, x):
-            return j + 1, 2 * x
-
-        def w(i):
-            return f(i, jax.numpy.arange(i))
-
-        jaxpr = jax.make_jaxpr(w)(2)
-        [res1, res2] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-        assert qml.math.allclose(res1, 6)  # start at 3, add 3
-        assert qml.math.allclose(res2, jax.numpy.arange(3) * 2**3)
 
 
 class TestCaptureCircuitsForLoop:

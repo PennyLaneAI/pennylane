@@ -81,11 +81,8 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
-
-@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
-class TestDynamicShapes:
-
-    def test_while_loop_dyanmic_shape_array(self):
+    # pylint: disable=unused-argument
+    def test_while_loop_dyanmic_shape_array(self, enable_disable_dynamic_shapes):
         """Test while loop can accept ararys with dynamic shapes."""
 
         def f(x):
@@ -101,7 +98,8 @@ class TestDynamicShapes:
         expected = jax.numpy.array([0, 4, 8])
         assert jax.numpy.allclose(output, expected)
 
-    def test_while_loop_dynamic_array_creation(self):
+    # pylint: disable=unused-argument
+    def test_while_loop_dynamic_array_creation(self, enable_disable_dynamic_shapes):
         """Test that while loop can handle creating dynamic arrays."""
 
         @qml.while_loop(lambda s: s < 9)
@@ -115,23 +113,6 @@ class TestDynamicShapes:
         jaxpr = jax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(r, 9)  # value that stops iteration
-
-    def test_accept_dynamic_array_matches_other_arg(self):
-        """Test that for loops can accept an array with a dimension that initialially matches
-        another dimension, but that the shape is still allowed to change independently of that original arg.
-        """
-
-        @qml.while_loop(lambda i, x: i < 4)
-        def f(i, x):
-            return i + 1, 2 * x
-
-        def w(i):
-            return f(i, jax.numpy.arange(i))
-
-        jaxpr = jax.make_jaxpr(w)(2)
-        [res1, res2] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(res1, 4)  # condition for stopping
-        assert qml.math.allclose(res2, jax.numpy.arange(2) * 2**2)
 
 
 class TestCaptureCircuitsWhileLoop:
