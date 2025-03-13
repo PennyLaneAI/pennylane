@@ -44,6 +44,7 @@ class TestFromBloq:
         """Tests that FromBloq's matrix raises error as intended"""
 
         from qualtran.bloqs.phase_estimation import RectangularWindowState
+
         from pennylane.operation import MatrixUndefinedError
 
         with pytest.raises(MatrixUndefinedError):
