@@ -93,7 +93,7 @@ class FromBloq(Operation):
 
     >>> from qualtran.bloqs.basic_gates import CNOT
 
-    >>> qualtran_cnot = qml.FromBloq(CNOT(), [0, 1])
+    >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
     >>> qualtran_cnot.matrix()
     array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
@@ -124,7 +124,7 @@ class FromBloq(Operation):
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
-            qml.FromBloq(textbook_qpe, wires=list(range(8)))
+            qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
             return qml.state()
 
     """
