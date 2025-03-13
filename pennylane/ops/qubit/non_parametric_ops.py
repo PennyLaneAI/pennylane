@@ -229,7 +229,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(Hadamard, [_hadamard_to_rz_rx, _hadamard_to_rz_ry])
+add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 
 H = Hadamard
 r"""H(wires)
