@@ -185,8 +185,32 @@ class TestDecompositionGraph:
     "pennylane.decomposition.decomposition_graph.list_decomps",
     side_effect=lambda x: decompositions[x],
 )
-class TestControlledDecompositions:  # pylint: disable=too-few-public-methods
+class TestControlledDecompositions:
     """Tests that the decomposition graph can handle controlled decompositions."""
+
+    def test_controlled_global_phase(self, _):
+        """Tests that a controlled global phase can be decomposed."""
+
+        op1 = qml.ctrl(qml.GlobalPhase(0.5), control=[1])
+        op2 = qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2])
+        graph = DecompositionGraph(
+            [op1, op2], target_gate_set={"ControlledPhaseShift", "PhaseShift"}
+        )
+        # 4 op nodes and 2 decomposition nodes.
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
+
+        # Verify the decompositions
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [
+            qml.PhaseShift(-0.5, wires=[1]),
+            qml.ControlledPhaseShift(-0.5, wires=[1, 2]),
+        ]
 
     def test_custom_controlled_op(self, _):
         """Tests that a general controlled op can be decomposed into a custom op if applicable."""
