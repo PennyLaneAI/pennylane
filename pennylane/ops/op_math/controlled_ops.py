@@ -391,6 +391,16 @@ class CH(ControlledOp):
             qml.RY(+np.pi / 4, wires=wires[1]),
         ]
 
+def _ch_to_ry_cz_ry_resources():
+    return {qml.RY: 2, qml.CZ: 1}
+
+@register_resources(_ch_to_ry_cz_ry_resources)
+def _ch_to_ry_cz_ry(wires, **__):
+    qml.RY(-np.pi / 4, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RY(+np.pi / 4, wires=wires[1])
+
+add_decompose(CH, _ch_to_ry_cz_ry)
 
 class CY(ControlledOp):
     r"""CY(wires)
@@ -508,12 +518,11 @@ class CY(ControlledOp):
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
-
-def _cy_resources():
+def _cy_to_cry_s_resources():
     return {qml.CRY: 1, qml.S: 1}
 
 
-@register_resources(_cy_resources)
+@register_resources(_cy_to_cry_s_resources)
 def _cy(wires, **__):
     qml.CRY(np.pi, wires=wires)
     qml.S(wires=wires[0])
@@ -612,11 +621,11 @@ class CZ(ControlledOp):
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
 
 
-def _cz_resources():
+def _cz_to_cps_resources():
     return {qml.ControlledPhaseShift: 1}
 
 
-@register_resources(_cz_resources)
+@register_resources(_cz_to_cps_resources)
 def _cz(wires, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
@@ -757,11 +766,11 @@ class CSWAP(ControlledOp):
         return decomp_ops
 
 
-def _cswap_resources():
+def _cswap_to_toffoli_resources():
     return {qml.Toffoli: 3}
 
 
-@register_resources(_cswap_resources)
+@register_resources(_cswap_to_toffoli_resources)
 def _cswap(wires, **__):
     qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
     qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
