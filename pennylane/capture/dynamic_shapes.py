@@ -263,9 +263,9 @@ def register_custom_staging_rule(
     Args:
         primitive (jax.core.Primitive): a jax primitive we want to register a custom staging rule for
         get_outvars_from_params (Callable[[dict], list[jax.core.Var]]): A function that takes in the equations params
-            and returns outvars we need to mimic for the primitives return.
+            and returns ``jax.core.Var`` we need to mimic for the primitives return.
 
-    For example, the ``cond_prim`` will request it's custom stagin rule like:
+    For example, the ``cond_prim`` will request it's custom staging rule like:
 
     .. code-block:: python
 

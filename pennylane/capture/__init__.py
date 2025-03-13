@@ -38,9 +38,10 @@ quantum-classical programs.
     ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
-    ~make_plxpr
     ~PlxprInterpreter
     ~FlatFn
+    ~make_plxpr
+    ~register_custom_staging_rule
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -237,6 +238,7 @@ __all__ = (
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
     "expand_plxpr_transforms",
+    "register_custom_staging_rule",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
