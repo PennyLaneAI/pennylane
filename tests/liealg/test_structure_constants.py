@@ -16,13 +16,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pauli import PauliSentence, PauliWord, structure_constants
+from pennylane import structure_constants
+from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
 # TFIM
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-Ising3 = qml.pauli.lie_closure(gens, pauli=True)
+Ising3 = qml.lie_closure(gens, pauli=True)
 
 # XXZ-type DLA, i.e. with true PauliSentences
 gens2 = [
@@ -35,7 +36,7 @@ gens2 = [
     for i in range(2)
 ]
 gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-XXZ3 = qml.pauli.lie_closure(gens2, pauli=True)
+XXZ3 = qml.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
@@ -139,7 +140,7 @@ class TestAdjointRepr:
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.pauli.structure_constants(generators)
+            structure_constants(generators)
 
 
 dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)
