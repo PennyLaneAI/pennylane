@@ -960,16 +960,20 @@ class IsingXX(Operation):
 
         return IsingXX(phi, wires=self.wires)
 
+
 def _isingxx_to_cnot_rx_cnot_resources():
     return {qml.CNOT: 2, qml.RX: 1}
 
+
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
-def _isingxx_to_cnot_rx_cnot(wires: WireLike, phi: float, **__):
+def _isingxx_to_cnot_rx_cnot(wires, phi: float, **__):
     qml.CNOT(wires=wires)
     qml.RX(phi, wires=[wires[0]])
     qml.CNOT(wires=wires)
 
+
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
+
 
 class IsingYY(Operation):
     r"""
@@ -1118,16 +1122,20 @@ class IsingYY(Operation):
 
         return IsingYY(phi, wires=self.wires)
 
+
 def _isingyy_to_cnot_ry_cnot_resources():
     return {qml.CNOT: 2, RY: 1}
 
+
 @register_resources(_isingyy_to_cnot_ry_cnot_resources)
-def _isingyy_to_cnot_ry_cnot(wires: WireLike, phi: float, **__):
+def _isingyy_to_cnot_ry_cnot(wires, phi: float, **__):
     qml.CNOT(wires=wires)
     RY(phi, wires=[wires[0]])
     qml.CNOT(wires=wires)
 
+
 add_decomps(IsingYY, _isingyy_to_cnot_ry_cnot)
+
 
 class IsingZZ(Operation):
     r"""
@@ -1307,16 +1315,20 @@ class IsingZZ(Operation):
 
         return IsingZZ(phi, wires=self.wires)
 
+
 def _isingzz_to_cnot_rz_cnot_resources():
     return {qml.CNOT: 2, RZ: 1}
 
+
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
-def _isingzz_to_cnot_rz_cnot(wires: WireLike, phi: float, **__):
+def _isingzz_to_cnot_rz_cnot(wires, phi: float, **__):
     qml.CNOT(wires=wires)
     RZ(phi, wires=[wires[0]])
     qml.CNOT(wires=wires)
 
-add_decompos(IsingZZ, _isingzz_to_cnot_rz_cnot)
+
+add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+
 
 class IsingXY(Operation):
     r"""
@@ -1524,11 +1536,13 @@ class IsingXY(Operation):
 
         return IsingXY(phi, wires=self.wires)
 
+
 def _isingxy_to_h_cy_resources():
     return {Hadamard: 2, qml.CY: 2, RY: 1, RX: 1}
 
+
 @register_resources(_isingxy_to_h_cy_resources)
-def _isingxy_to_h_cy(wires: WireLike, phi: float, **__):
+def _isingxy_to_h_cy(wires, phi: float, **__):
     Hadamard(wires=[wires[0]])
     qml.CY(wires=wires)
     RY(phi / 2, wires=[wires[0]])
@@ -1536,7 +1550,9 @@ def _isingxy_to_h_cy(wires: WireLike, phi: float, **__):
     qml.CY(wires=wires)
     Hadamard(wires=[wires[0]])
 
+
 add_decomps(IsingXY, _isingxy_to_h_cy)
+
 
 class PSWAP(Operation):
     r"""Phase SWAP gate
@@ -1691,17 +1707,21 @@ class PSWAP(Operation):
 
         return PSWAP(phi, wires=self.wires)
 
+
 def _pswap_to_swap_cnot_phaseshift_cnot_resources():
     return {qml.SWAP: 1, qml.CNOT: 2, PhaseShift: 1}
 
+
 @register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources)
-def _pswap_to_swap_cnot_phaseshift_cnot(wires: WireLike, phi: float, **__):
+def _pswap_to_swap_cnot_phaseshift_cnot(wires, phi: float, **__):
     qml.SWAP(wires=wires)
     qml.CNOT(wires=wires)
     PhaseShift(phi, wires=[wires[1]])
     qml.CNOT(wires=wires)
 
+
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+
 
 class CPhaseShift00(Operation):
     r"""

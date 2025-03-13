@@ -391,8 +391,10 @@ class CH(ControlledOp):
             qml.RY(+np.pi / 4, wires=wires[1]),
         ]
 
+
 def _ch_to_ry_cz_ry_resources():
     return {qml.RY: 2, qml.CZ: 1}
+
 
 @register_resources(_ch_to_ry_cz_ry_resources)
 def _ch_to_ry_cz_ry(wires, **__):
@@ -400,7 +402,9 @@ def _ch_to_ry_cz_ry(wires, **__):
     qml.CZ(wires=wires)
     qml.RY(+np.pi / 4, wires=wires[1])
 
-add_decompose(CH, _ch_to_ry_cz_ry)
+
+add_decomps(CH, _ch_to_ry_cz_ry)
+
 
 class CY(ControlledOp):
     r"""CY(wires)
@@ -517,6 +521,7 @@ class CY(ControlledOp):
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
+
 
 def _cy_to_cry_s_resources():
     return {qml.CRY: 1, qml.S: 1}
