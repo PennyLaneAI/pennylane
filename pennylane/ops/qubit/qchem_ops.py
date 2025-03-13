@@ -173,7 +173,7 @@ class SingleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -365,7 +365,7 @@ class SingleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -524,7 +524,7 @@ class SingleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -707,7 +707,7 @@ class DoubleExcitation(Operation):
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -940,7 +940,7 @@ class DoubleExcitationPlus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1033,7 +1033,7 @@ class DoubleExcitationMinus(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1151,7 +1151,7 @@ class OrbitalRotation(Operation):
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:
@@ -1363,7 +1363,7 @@ class FermionicSWAP(Operation):
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @property
     def resource_params(self) -> dict:

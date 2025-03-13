@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import functools
 from dataclasses import dataclass, field
+from functools import cached_property
+from typing import Type
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 
 @dataclass(frozen=True)
@@ -27,27 +30,27 @@ class Resources:
     r"""Stores resource estimates.
 
     Args:
-        num_gates (int): the total number of gates.
-        gate_counts (dict): dictionary mapping compressed ops to number of occurrences.
+        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
 
     """
 
-    num_gates: int = 0
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Remove zero-count gates and verify that num_gates is correct."""
         assert all(v > 0 for v in self.gate_counts.values())
-        assert self.num_gates == sum(self.gate_counts.values())
+
+    @cached_property
+    def num_gates(self) -> int:
+        return sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
         return Resources(
-            self.num_gates + other.num_gates,
             _combine_dict(self.gate_counts, other.gate_counts),
         )
 
     def __mul__(self, scalar: int):
-        return Resources(self.num_gates * scalar, _scale_dict(self.gate_counts, scalar))
+        return Resources(_scale_dict(self.gate_counts, scalar))
 
     __rmul__ = __mul__
 
@@ -75,27 +78,39 @@ def _scale_dict(dict1: dict, scalar: int):
 
 
 class CompressedResourceOp:
-    """A lightweight class representing an operator to be decomposed.
+    """A lightweight representation of an operator to be decomposed.
 
-    An object of this class represents an operator in the decomposition graph. If the decomposition
-    of this operator is independent of its parameters, e.g., ``Rot`` can be decomposed into two
-    ``RZ`` and an ``RY`` regardless of the angles, then every occurrence of this operator in the
-    circuit is represented by the same ``CompressedOp``.
+    .. note::
 
-    On the other hand, for more complex ops such as ``PauliRot``, for which the numbers of each
-    gate depend on its pauli word, each occurrence of this operator with a different pauli word
-    will be a different ``CompressedOp`` object, thus a new node in the decomposition graph.
+        This class is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        doing decompositions is generally more performant and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using ``qml.register_resources``
+
+    The ``CompressedResourceOp` is a lightweight data structure that contains an operator type
+    and a set of parameters that affects the resource requirement of this operator. If the
+    decomposition of an operator is independent of its parameters, e.g., ``Rot`` can be decomposed
+    into two ``RZ`` gates and an ``RY`` regardless of the angles, then every occurrence of this
+    operator in the circuit is represented by the same ``CompressedResourceOp`` which only
+    specifies the operator type, i.e., ``Rot``.
+
+    On the other hand, for some operators such as ``MultiRZ``, for which the numbers of ``CNOT``
+    gates in its decomposition depends on the number of wires, the resource representation of
+    a ``MultiRZ`` must include this information. To create a ``CompressedResourceOp`` object for
+    an operator, use the ``qml.resource_rep`` function.
 
     Args:
         op_type: the operator type
         params (dict): the parameters of the operator relevant to the resource estimation of
             its decompositions. This should only include parameters that affect the gate counts.
 
+    .. seealso:: :func:`~pennylane.resource_rep`
+
     """
 
-    def __init__(self, op_type, params: dict = None):
-        if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be a type, got {op_type}")
+    def __init__(self, op_type: Type[Operator], params: dict = None):
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
@@ -106,14 +121,12 @@ class CompressedResourceOp:
         return hash((self.op_type, self._hashable_params))
 
     def __eq__(self, other: CompressedResourceOp) -> bool:
-        return (
-            isinstance(other, CompressedResourceOp)
-            and (self.op_type == other.op_type)
-            and (self.params == other.params)
-        )
+        if not isinstance(other, CompressedResourceOp):
+            return False
+        return self.op_type == other.op_type and self.params == other.params
 
     def __repr__(self):
-        return f"{self.op_type.__name__}, {self.params}"
+        return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
 
 
 def _make_hashable(d) -> tuple:
@@ -126,40 +139,110 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if op_type.resource_param_keys is None:
-        raise NotImplementedError(f"resource_param_keys undefined for {op_type.__name__}")
+    if op_type.resource_keys is None:
+        raise NotImplementedError(f"resource_keys undefined for {op_type.__name__}")
 
-    missing_params = set(op_type.resource_param_keys) - set(params.keys())
+    missing_params = op_type.resource_keys - set(params.keys())
     if missing_params:
         raise TypeError(
             f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
+            f"Expected: {op_type.resource_keys}"
         )
 
-    invalid_params = set(params.keys()) - set(op_type.resource_param_keys)
+    invalid_params = set(params.keys()) - op_type.resource_keys
     if invalid_params:
         raise TypeError(
             f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-            f"Expected: {op_type.resource_param_keys}"
+            f"Expected: {op_type.resource_keys}"
         )
 
 
-def resource_rep(op_type, **params) -> CompressedResourceOp:
-    """Creates a ``CompressedResourceOp`` representation of an operator.
+def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
+    """Binds an operator type with additional resource parameters.
 
-    When defining the resource function associated with a decomposition rule. The keys of the
-    returned dictionary should be created using this function. The resource rep of an operator
-    is a lightweight data structure containing the minimal information needed to determine the
-    resource estimate of a decomposition.
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        doing decompositions is generally more performant and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using ``qml.register_resources``
 
     Args:
-        op_type: the operator type
-        **params: parameters that are relevant to the resource estimation of the operator's
-            decompositions. This should be consistent with ``op_type.resource_param_keys``.
+        op_type: the operator class to create a resource representation for.
+        **params: parameters relevant to the resource estimate of the operator's decompositions.
+            This should be consistent with ``op_type.resource_keys``.
+
+    Returns:
+        CompressedResourceOp: a lightweight representation of the operator.
+
+    **Example**
+
+    The resource parameters of an operator are a minimal set of information required to determine
+    the resource estimate of its decompositions. To check the required set of keyword arguments
+    for an operator type, refer to the ``resource_keys`` attribute of the operator class:
+
+    >>> qml.MultiRZ.resource_keys
+    {'num_wires'}
+
+    When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
+
+    >>> rep = resource_rep(qml.MultiRZ, num_wires=3)
+    >>> rep
+    MultiRZ, {'num_wires': 3}
+    >>> type(rep)
+    <class 'pennylane.decomposition.resources.CompressedResourceOp'>
+
+    .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
+
+    .. details::
+        :title: Usage Details
+
+        The same approach applies also to symbolic operators. For example, if the decomposition
+        of an operator contains a controlled operation:
+
+        .. code-block:: python
+
+            def my_decomp(wires):
+                ...
+                qml.ctrl(qml.MultiRZ(wires=wires[:3]), control=wires[3:5], control_values=[0, 1], work_wires=wires[5])
+                ...
+
+        To declare this controlled operator in the resource function, we find the resource keys
+        of ``qml.ops.Controlled``:
+
+        >>> qml.ops.Controlled.resource_keys
+        {'base_class', 'base_params', 'num_control_wires', 'num_zero_control_values', 'num_work_wires'}
+
+        Then the resource representation can be created as follows:
+
+        >>> qml.resource_rep(
+        ...     qml.ops.Controlled,
+        ...     base_class=qml.ops.MultiRZ,
+        ...     base_params={'num_wires': 3},
+        ...     num_control_wires=2,
+        ...     num_zero_control_values=1,
+        ...     num_work_wires=1
+        ... )
+        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+
+        Alternatively, use the helper functions ``controlled_resource_rep``:
+
+        >>> qml.controlled_resource_rep(
+        ...     base_class=qml.ops.MultiRZ,
+        ...     base_params={'num_wires': 3},
+        ...     num_control_wires=2,
+        ...     num_zero_control_values=1,
+        ...     num_work_wires=1
+        ... )
+        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+
+        .. seealso:: :func:`~pennylane.controlled_resource_rep` and :func:`~pennylane.adjoint_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
-    if op_type is qml.ops.Controlled or op_type is qml.ops.ControlledOp:
+    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
         return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
@@ -167,7 +250,7 @@ def resource_rep(op_type, **params) -> CompressedResourceOp:
 
 
 def controlled_resource_rep(
-    base_class,
+    base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int = 0,
@@ -225,7 +308,7 @@ def controlled_resource_rep(
     )
 
 
-def adjoint_resource_rep(base_class, base_params):
+def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:

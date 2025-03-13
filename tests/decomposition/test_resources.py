@@ -35,45 +35,24 @@ class TestResources:
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
 
-    def test_inconsistent_gate_counts(self):
-        """Tests that an error is raised of the gate count is inconsistent
-        with the number of gates."""
-        with pytest.raises(AssertionError):
-            Resources(
-                num_gates=2,
-                gate_counts={
-                    CompressedResourceOp(qml.RX, {}): 2,
-                    CompressedResourceOp(qml.RZ, {}): 1,
-                },
-            )
-
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
         with pytest.raises(AssertionError):
             Resources(
-                num_gates=1,
                 gate_counts={
                     CompressedResourceOp(qml.RX, {}): 2,
                     CompressedResourceOp(qml.RZ, {}): -1,
-                },
+                }
             )
 
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
         resources2 = Resources(
-            num_gates=2,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 1,
-                CompressedResourceOp(qml.RY, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1}
         )
 
         resources = resources1 + resources2
@@ -88,11 +67,7 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
 
         resources = resources * 2
@@ -119,9 +94,6 @@ class TestCompressedResourceOp:
 
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op_type is invalid."""
-
-        with pytest.raises(TypeError, match="op_type must be a type"):
-            CompressedResourceOp(qml.RX(0.5, wires=0), {})
 
         with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
@@ -184,14 +156,14 @@ class TestCompressedResourceOp:
         """Tests the repr defined for debugging purposes."""
 
         op = CompressedResourceOp(qml.RX, {})
-        assert repr(op) == "RX, {}"
+        assert repr(op) == "RX"
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
         assert repr(op) == "MultiRZ, {'num_wires': 5}"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-    resource_param_keys = {"foo", "bar"}
+    resource_keys = {"foo", "bar"}
 
 
 class TestResourceRep:
@@ -213,12 +185,12 @@ class TestResourceRep:
             resource_rep(DummyOp, foo=2, bar=1, hello=3)
 
     def test_undefined_resource_params(self):
-        """Tests that an error is raised if the resource_param_keys are not defined."""
+        """Tests that an error is raised if the resource_keys are not defined."""
 
         class EmptyDummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             pass
 
-        with pytest.raises(NotImplementedError, match="resource_param_keys undefined"):
+        with pytest.raises(NotImplementedError, match="resource_keys undefined"):
             resource_rep(EmptyDummyOp)
 
     def test_resource_rep(self):
