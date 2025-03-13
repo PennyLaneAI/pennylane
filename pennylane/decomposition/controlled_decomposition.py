@@ -107,7 +107,7 @@ class GeneralControlledDecomposition(DecompositionRule):  # pylint: disable=too-
                 if not val:
                     qml.PauliX(w)
             qml.ctrl(
-                self._base_decomposition._impl,
+                self._base_decomposition._impl,  # pylint: disable=protected-access
                 control=control_wires,
                 work_wires=work_wires,
             )(*base.parameters, wires=base.wires, **base.hyperparameters)

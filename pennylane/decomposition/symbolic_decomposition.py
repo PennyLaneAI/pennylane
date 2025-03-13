@@ -64,16 +64,19 @@ def has_adjoint_decomp(*_, base):
     base.adjoint()
 
 
-def _adjoint_adjoint_resource(_, base_params):
+def _adjoint_adjoint_resource(*_, base_params, **__):
     """Resources of the adjoint of the adjoint of a gate."""
     base_class, base_params = base_params["base_class"], base_params["base_params"]
     return {resource_rep(base_class, **base_params): 1}
 
 
 @register_resources(_adjoint_adjoint_resource)
-def adjoint_adjoint_decomp(*_, base):
+def adjoint_adjoint_decomp(*_, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
+    if qml.capture.enabled():
+        qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
+    else:
+        qml.apply(base.base)
 
 
 def _adjoint_controlled_resource(base_class, base_params):
