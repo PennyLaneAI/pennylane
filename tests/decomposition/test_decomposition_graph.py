@@ -103,8 +103,7 @@ class TestDecompositionGraph:
 
         # verify that the better decomposition rule is chosen when both are valid.
         expected_resource = Resources(
-            num_gates=3,
-            gate_counts={
+            {
                 qml.resource_rep(qml.RZ): 1,
                 qml.resource_rep(qml.RY): 1,
                 qml.resource_rep(qml.GlobalPhase): 1,
@@ -129,7 +128,7 @@ class TestDecompositionGraph:
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
-            resource_param_keys = ("num_wires",)
+            resource_keys = {"num_wires"}
 
             @property
             def resource_params(self):
@@ -160,8 +159,7 @@ class TestDecompositionGraph:
 
         graph.solve()
         assert graph.resource_estimates(op) == Resources(
-            num_gates=129,
-            gate_counts={
+            {
                 qml.resource_rep(qml.CZ): 14,
                 qml.resource_rep(qml.RZ): 59,
                 qml.resource_rep(qml.RX): 28,
@@ -169,15 +167,13 @@ class TestDecompositionGraph:
             },
         )
         assert graph.decomposition(op).compute_resources(**op.resource_params) == Resources(
-            num_gates=3,
-            gate_counts={
+            {
                 qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
                 qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
             },
         )
         assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == Resources(
-            num_gates=4,
-            gate_counts={
+            {
                 qml.resource_rep(qml.RZ): 2,
                 qml.resource_rep(qml.RX): 1,
                 qml.resource_rep(qml.GlobalPhase): 1,

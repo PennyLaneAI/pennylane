@@ -132,7 +132,9 @@ class QFT(Operation):
 
     num_wires = AnyWires
     grad_method = None
-    resource_keys = {"num_wires",}
+    resource_keys = {
+        "num_wires",
+    }
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)

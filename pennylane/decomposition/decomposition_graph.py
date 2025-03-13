@@ -237,7 +237,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] == "dummy":
-            self.d[target_idx] = Resources(1, {target_node: 1})
+            self.d[target_idx] = Resources({target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
             self.p[target_idx] = src_idx
             self.d[target_idx] = self.d[src_idx]
