@@ -178,7 +178,7 @@ class FromBloq(Operation):
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, Partition):
                     raise NotImplementedError(
-                        f"The bloq Partition is not well-supported by FromBloq for now."
+                        "The bloq Partition is not well-supported by FromBloq for now."
                     )
                 in_quregs = {
                     reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
