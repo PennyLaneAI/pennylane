@@ -31,7 +31,7 @@ def structure_constants(
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
-    .. warning:: ``structure_constants`` has moved to the ``liealg`` module and can be called from there via ``qml.liealg.structure_constants`` or from the top level via ``qml.structure_constants``.
+    .. warning:: :func:`~structure_constants` has moved to the :doc:`~liealg` module and can be called from there via ``qml.liealg.structure_constants`` or from the top level via ``qml.structure_constants``.
 
     Given a DLA :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
@@ -178,8 +178,8 @@ def structure_constants(
 
     """
     warnings.warn(
-        "Calling center via ``qml.pauli.structure_constants`` is deprecated. ``structure_constants`` has moved to ``pennylane.liealg``. "
-        "Please call ``structure_constants`` from top level as ``qml.structure_constants`` or from the liealg module via ``qml.liealg.structure_constants``.",
+        "Calling center via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
+        "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
         qml.PennyLaneDeprecationWarning,
     )
 

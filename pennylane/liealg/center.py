@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,13 +83,13 @@ def center(
             and vice versa. Default is ``False``.
 
     Returns:
-        List[Union[Operator, PauliSentence]]: Center of ``g``
+        List[Union[Operator, PauliSentence]]: The center of the Lie algebra ``g``.
 
     .. seealso:: :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
 
-    We can compute the center of a DLA ``g``. For that, we compute the DLA via :func:`~lie_closure`.
+    We can compute the center of a DLA ``g``. First we compute the DLA via :func:`~lie_closure`.
 
     >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
     >>> g = qml.lie_closure(generators)
