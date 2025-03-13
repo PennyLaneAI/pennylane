@@ -587,7 +587,6 @@ class TestKerasLayer:
         )
 
 
-@requires_keras2
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_invalid_interface_error(interface):
@@ -843,7 +842,6 @@ class TestKerasLayerIntegrationDM:
         assert tf.math.reduce_all(res == new_res)
 
 
-@requires_keras2
 @pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
@@ -872,7 +870,6 @@ def test_batch_input_single_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
-@requires_keras2
 @pytest.mark.tf
 def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
@@ -902,7 +899,6 @@ def test_batch_input_multi_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
-@requires_keras2
 @pytest.mark.tf
 def test_draw():
     """Test that a KerasLayer can be drawn using qml.draw"""
@@ -940,7 +936,6 @@ def test_draw():
     assert actual == expected
 
 
-@requires_keras2
 @pytest.mark.tf
 def test_draw_mpl():
     """Test that a KerasLayer can be drawn using qml.draw_mpl"""
@@ -976,7 +971,6 @@ def test_draw_mpl():
     assert ax.texts[4].get_text() == "StronglyEntanglingLayers"
 
 
-@requires_keras2
 @pytest.mark.tf
 def test_specs():
     """Test that the qml.specs transform works for KerasLayer"""
