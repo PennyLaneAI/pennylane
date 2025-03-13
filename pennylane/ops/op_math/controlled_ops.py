@@ -1698,12 +1698,12 @@ def _crx_to_rz_ry_resources():
 
 @register_resources(_crx_to_rz_ry_resources)
 def _crx_to_rz_ry(phi, wires, **__):
-    qml.RZ(np.pi / 2, wires=wires[1]),
-    qml.RY(phi / 2, wires=wires[1]),
-    qml.CNOT(wires=wires),
-    qml.RY(-phi / 2, wires=wires[1]),
-    qml.CNOT(wires=wires),
-    qml.RZ(-np.pi / 2, wires=wires[1]),
+    qml.RZ(np.pi / 2, wires=wires[1])
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-np.pi / 2, wires=wires[1])
 
 
 def _crx_to_rx_cz_resources():
@@ -1712,10 +1712,10 @@ def _crx_to_rx_cz_resources():
 
 @register_resources(_crx_to_rx_cz_resources)
 def _crx_to_rx_cz(phi, wires, **__):
-    qml.RX(phi / 2, wires=wires[1]),
-    qml.CZ(wires=wires),
-    qml.RX(-phi / 2, wires=wires[1]),
-    qml.CZ(wires=wires),
+    qml.RX(phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RX(-phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
 
 
 def _crx_to_h_crz_resources():
@@ -1724,9 +1724,9 @@ def _crx_to_h_crz_resources():
 
 @register_resources(_crx_to_h_crz_resources)
 def _crx_to_h_crz(phi, wires, **__):
-    qml.Hadamard(wires=wires[1]),
-    qml.CRZ(phi, wires=wires),
-    qml.Hadamard(wires=wires[1]),
+    qml.Hadamard(wires=wires[1])
+    qml.CRZ(phi, wires=wires)
+    qml.Hadamard(wires=wires[1])
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
