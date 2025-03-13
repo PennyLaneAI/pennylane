@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+from textwrap import dedent
+
 import pytest
 
 import pennylane as qml
@@ -95,6 +97,28 @@ class TestDecompositionRule:
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
             gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+        )
+
+    def test_inspect_decomposition_rule(self):
+        """Tests that the source code for a decomposition rule can be inspected."""
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def my_cz(wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires)
+            qml.H(wires[0])
+
+        assert (
+            str(my_cz)
+            == dedent(
+                """
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def my_cz(wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires)
+            qml.H(wires[0])
+        """
+            ).strip()
         )
 
     def test_error_raised_with_no_resource_fn(self):
