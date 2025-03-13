@@ -98,12 +98,14 @@ class TestQROMStatePreparation:
         dev = qml.device("default.qubit", wires=num_work_wires + num_precision_wires + num_wires)
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                state,
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    state,
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -120,7 +122,8 @@ class TestQROMStatePreparation:
 
         decomposition = qml.QROMStatePreparation.compute_decomposition(
             np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2]),
-            wires=wires["state"],
+            wires=range(8),
+            input_wires=wires["state"],
             work_wires=wires["work"],
             precision_wires=wires["precision"],
         )
@@ -140,12 +143,14 @@ class TestQROMStatePreparation:
         dev = qml.device("default.qubit", wires=6)
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                jnp.array(state),
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    jnp.array(state),
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -154,12 +159,14 @@ class TestQROMStatePreparation:
         output_jax = dev.execute(tape[0])[0]
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                state,
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    state,
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -181,12 +188,14 @@ class TestQROMStatePreparation:
         dev = qml.device("default.qubit", wires=6)
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                torch.tensor(state, dtype=torch.complex64),
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    torch.tensor(state, dtype=torch.complex64),
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -195,12 +204,14 @@ class TestQROMStatePreparation:
         output_torch = dev.execute(tape[0])[0]
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                state,
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    state,
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -222,12 +233,14 @@ class TestQROMStatePreparation:
         dev = qml.device("default.qubit", wires=6)
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                tf.Variable(state),
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    tf.Variable(state),
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 
@@ -236,12 +249,14 @@ class TestQROMStatePreparation:
         output_tf = dev.execute(tape[0])[0]
 
         qs = qml.tape.QuantumScript(
-            qml.QROMStatePreparation.compute_decomposition(
-                state,
-                wires=wires["state"],
-                work_wires=wires["work"],
-                precision_wires=wires["precision"],
-            ),
+            [
+                qml.QROMStatePreparation(
+                    state,
+                    wires=wires["state"],
+                    work_wires=wires["work"],
+                    precision_wires=wires["precision"],
+                )
+            ],
             [qml.state()],
         )
 

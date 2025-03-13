@@ -163,19 +163,9 @@ class QROMStatePreparation(Operation):
             self.state_vector, new_wires, new_precision_wires, new_work_wires
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ, too-many-arguments
-        filtered_hyperparameters = {
-            key: value for key, value in self.hyperparameters.items() if key != "input_wires"
-        }
-        return self.compute_decomposition(
-            self.parameters[0],
-            wires=self.hyperparameters["input_wires"],
-            **filtered_hyperparameters,
-        )
-
     @staticmethod
     def compute_decomposition(
-        state_vector, wires, precision_wires, work_wires
+        state_vector, wires, input_wires, precision_wires, work_wires
     ):  # pylint: disable=arguments-differ
         r"""
         Computes the decomposition operations for the given state vector.
@@ -183,7 +173,8 @@ class QROMStatePreparation(Operation):
         Args:
 
             state_vector (TensorLike): The state vector to prepare.
-            wires (Sequence[int]): The wires on which to prepare the state.
+            wires (Sequence[int]): The wires on which to operator acts on.
+            input_wires (Sequence[int]): The wires on which to prepare the state.
             precision_wires (Sequence[int]): The wires used for storing the binary representations of the
                 amplitudes and phases.
             work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
@@ -226,7 +217,7 @@ class QROMStatePreparation(Operation):
                 qml.QROM(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires[:i],
+                    control_wires=input_wires[:i],
                     work_wires=work_wires,
                     clean=False,
                 )
@@ -242,7 +233,7 @@ class QROMStatePreparation(Operation):
                 qml.adjoint(qml.QROM)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires[:i],
+                    control_wires=input_wires[:i],
                     work_wires=work_wires,
                     clean=False,
                 )
@@ -262,7 +253,7 @@ class QROMStatePreparation(Operation):
                 qml.QROM(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires,
+                    control_wires=input_wires,
                     work_wires=work_wires,
                     clean=False,
                 )
@@ -272,7 +263,7 @@ class QROMStatePreparation(Operation):
                 rotation_angle = 2 ** (-ind - 1)
                 decomp_ops.append(
                     qml.ctrl(
-                        qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=wires[0]),
+                        qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=input_wires[0]),
                         control=wire,
                     )
                 )
@@ -281,7 +272,7 @@ class QROMStatePreparation(Operation):
                 qml.adjoint(qml.QROM)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires,
+                    control_wires=input_wires,
                     work_wires=work_wires,
                     clean=False,
                 )
