@@ -567,7 +567,7 @@ class ResourceX(qml.X, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{X}, \\
+                \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                 \hat{Z} &= \hat{S}^{2}.
             \end{align}
 
@@ -589,7 +589,7 @@ class ResourceX(qml.X, re.ResourceOperator):
             .. math::
 
                 \begin{align}
-                    \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{X}, \\
+                    \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                     \hat{Z} &= \hat{S}^{2}.
                 \end{align}
 

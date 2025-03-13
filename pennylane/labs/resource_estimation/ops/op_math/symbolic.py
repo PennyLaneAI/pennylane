@@ -30,12 +30,159 @@ from pennylane.pauli import PauliSentence
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
-    """Resource class for the Adjoint symbolic operation."""
+    r"""Resource class for the symbolic AdjointOperation.
+
+    A symbolic class used to represent the adjoint of some base operation.
+
+    Args:
+        base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+        base_params (dict): the resource parameters required to extract the cost of the base operator
+
+    Resources:
+        This symbolic operation represents the adjoint of some base operation. The resources are
+        determined as follows. If the base operation class :code:`base_class` implements the
+        :code:`.adjoint_resource_decomp()` method, then the resources are obtained from this.
+
+        Otherwise, the adjoint resources are given as the adjoint of each operation in the
+        base operation's resources (via :code:`.resources()`).
+
+    .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
+
+    **Example**
+
+    The adjoint operation can be constructed like this:
+
+    >>> qft = re.ResourceQFT(wires=range(3))
+    >>> adjoint_qft = re.ResourceAdjoint(qft)
+    >>> adjoint_qft.resources(**adjoint_qft.resource_params)
+    defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
+    Adjoint(ControlledPhaseShift): 3})
+
+    Alternatively, we can call the resources method on from the class:
+
+    >>> re.ResourceAdjoint.resources(
+    ...     base_class = re.ResourceQFT,
+    ...     base_params = {"num_wires": 3},
+    ... )
+    defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
+    Adjoint(ControlledPhaseShift): 3})
+
+    .. details::
+        :title: Usage Details
+
+        We can configure the resources for the adjoint of a base operation by modifying
+        its :code:`.adjoint_resource_decomp(**resource_params)` method. Consider for example this
+        custom PauliZ class, where the adjoint resources are not defined (this is the default
+        for a general :class:`~.ResourceOperator`).
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def adjoint_resource_decomp(cls):
+                    raise re.ResourcesNotDefined
+
+        When this method is not defined, the adjoint resources are computed by taking the
+        adjoint of the resources of the operation.
+
+        >>> CustomZ.resources()
+        {S: 2}
+        >>> re.ResourceAdjoint.resources(CustomZ, {})
+        defaultdict(<class 'int'>, {Adjoint(S): 2})
+
+        We can update the adjoint resources with the observation that the PauliZ gate is self-adjoint,
+        so the resources should just be the same as the base operation:
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def adjoint_resource_decomp(cls):
+                    return {cls.resource_rep(): 1}
+
+        >>> re.ResourceAdjoint.resources(CustomZ, {})
+        {CustomZ: 1}
+
+    """
 
     @classmethod
     def _resource_decomp(
         cls, base_class, base_params, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+
+        Resources:
+            This symbolic operation represents the adjoint of some base operation. The resources are
+            determined as follows. If the base operation class :code:`base_class` implements the
+            :code:`.adjoint_resource_decomp()` method, then the resources are obtained from this.
+
+            Otherwise, the adjoint resources are given as the adjoint of each operation in the
+            base operation's resources (via :code:`.resources()`).
+
+        **Example**
+
+        The adjoint operation can be constructed like this:
+
+        >>> qft = re.ResourceQFT(wires=range(3))
+        >>> adjoint_qft = re.ResourceAdjoint(qft)
+        >>> adjoint_qft.resources(**adjoint_qft.resource_params)
+        defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
+        Adjoint(ControlledPhaseShift): 3})
+
+        Alternatively, we can call the resources method on from the class:
+
+        >>> re.ResourceAdjoint.resources(
+        ...     base_class = re.ResourceQFT,
+        ...     base_params = {"num_wires": 3},
+        ... )
+        defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
+        Adjoint(ControlledPhaseShift): 3})
+
+        .. details::
+            :title: Usage Details
+
+            We can configure the resources for the adjoint of a base operation by modifying
+            its :code:`.adjoint_resource_decomp(**resource_params)` method. Consider for example this
+            custom PauliZ class, where the adjoint resources are not defined (this is the default
+            for a general :class:`~.ResourceOperator`).
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def adjoint_resource_decomp(cls):
+                        raise re.ResourcesNotDefined
+
+            When this method is not defined, the adjoint resources are computed by taking the
+            adjoint of the resources of the operation.
+
+            >>> CustomZ.resources()
+            {S: 2}
+            >>> re.ResourceAdjoint.resources(CustomZ, {})
+            defaultdict(<class 'int'>, {Adjoint(S): 2})
+
+            We can update the adjoint resources with the observation that the PauliZ gate is self-adjoint,
+            so the resources should just be the same as the base operation:
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def adjoint_resource_decomp(cls):
+                        return {cls.resource_rep(): 1}
+
+            >>> re.ResourceAdjoint.resources(CustomZ, {})
+            {CustomZ: 1}
+        """
         try:
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
@@ -49,29 +196,244 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @classmethod
     def resource_rep(cls, base_class, base_params) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
     @staticmethod
     def adjoint_resource_decomp(base_class, base_params) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+
+        Resources:
+            The adjoint of an adjointed operation is just the original operation. The resources
+            are given as one instance of the base operation.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+                values are the counts.
+        """
         return {base_class.resource_rep(**base_params): 1}
 
     @staticmethod
     def tracking_name(base_class, base_params) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_class.tracking_name(**base_params)
         return f"Adjoint({base_name})"
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
-    """Resource class for the Controlled symbolic operation."""
+    r"""Resource class for the symbolic ControlledOp.
+
+    A symbolic class used to represent the application of some base operation controlled on the state
+    of some control qubits.
+
+    Args:
+        base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+        base_params (dict): the resource parameters required to extract the cost of the base operator
+        num_ctrl_wires (int): the number of qubits the operation is controlled on
+        num_ctrl_values (int): the number of control qubits, that are controlled when off
+        num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+    Resources:
+        The resources are determined as follows. If the base operation class :code:`base_class`
+        implements the :code:`.controlled_resource_decomp()` method, then the resources are obtained
+        directly from this.
+
+        Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
+        should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+        cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
+        resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
+        variant of each operation in the resources.
+
+    .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
+
+    **Example**
+
+    The controlled operation can be constructed like this:
+
+    >>> qft = re.ResourceQFT(wires=range(3))
+    >>> controlled_qft = re.ResourceControlled(
+    ...    qft, control_wires=['c0', 'c1', 'c2'], control_values=[1, 1, 1], work_wires=['w1', 'w2'],
+    ... )
+    >>> controlled_qft.resources(**controlled_qft.resource_params)
+    defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
+
+    Alternatively, we can call the resources method on from the class:
+
+    >>> re.ResourceControlled.resources(
+    ...     base_class = re.ResourceQFT,
+    ...     base_params = {"num_wires": 3},
+    ...     num_ctrl_wires = 3,
+    ...     num_ctrl_values = 0,
+    ...     num_work_wires = 2,
+    ... )
+    defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
+
+    .. details::
+        :title: Usage Details
+
+        We can configure the resources for the controlled of a base operation by modifying
+        its :code:`.controlled_resource_decomp(**resource_params)` method. Consider for example this
+        custom PauliZ class, where the controlled resources are not defined (this is the default
+        for a general :class:`~.ResourceOperator`).
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                    raise re.ResourcesNotDefined
+
+        When this method is not defined, the controlled resources are computed by taking the
+        controlled of each operation in the resources of the base operation.
+
+        >>> CustomZ.resources()
+        {S: 2}
+        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+        defaultdict(<class 'int'>, {C(S,2,0,3): 2})
+
+        We can update the controlled resources with the observation that the PauliZ gate when controlled
+        on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+        so we can modify the base operation:
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                    if num_ctrl_wires == 1 and num_ctrl_values == 0:
+                        return {
+                            re.ResourceHadamard.resource_rep(): 2,
+                            re.ResourceCNOT.resource_rep(): 1,
+                        }
+                    raise re.ResourcesNotDefined
+
+        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+        {Hadamard: 2, CNOT: 1}
+
+    """
 
     @classmethod
     def _resource_decomp(
         cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Resources:
+            The resources are determined as follows. If the base operation class :code:`base_class`
+            implements the :code:`.controlled_resource_decomp()` method, then the resources are obtained
+            directly from this.
+
+            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
+            should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+            cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
+            resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
+            variant of each operation in the resources.
+
+        .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
+
+        **Example**
+
+        The controlled operation can be constructed like this:
+
+        >>> qft = re.ResourceQFT(wires=range(3))
+        >>> controlled_qft = re.ResourceControlled(
+        ...    qft, control_wires=['c0', 'c1', 'c2'], control_values=[1, 1, 1], work_wires=['w1', 'w2'],
+        ... )
+        >>> controlled_qft.resources(**controlled_qft.resource_params)
+        defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
+
+        Alternatively, we can call the resources method on from the class:
+
+        >>> re.ResourceControlled.resources(
+        ...     base_class = re.ResourceQFT,
+        ...     base_params = {"num_wires": 3},
+        ...     num_ctrl_wires = 3,
+        ...     num_ctrl_values = 0,
+        ...     num_work_wires = 2,
+        ... )
+        defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
+
+        .. details::
+            :title: Usage Details
+
+            We can configure the resources for the controlled of a base operation by modifying
+            its :code:`.controlled_resource_decomp(**resource_params)` method. Consider for example this
+            custom PauliZ class, where the controlled resources are not defined (this is the default
+            for a general :class:`~.ResourceOperator`).
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                        raise re.ResourcesNotDefined
+
+            When this method is not defined, the controlled resources are computed by taking the
+            controlled of each operation in the resources of the base operation.
+
+            >>> CustomZ.resources()
+            {S: 2}
+            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+            defaultdict(<class 'int'>, {C(S,2,0,3): 2})
+
+            We can update the controlled resources with the observation that the PauliZ gate when controlled
+            on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+            so we can modify the base operation:
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+                            return {
+                                re.ResourceHadamard.resource_rep(): 2,
+                                re.ResourceCNOT.resource_rep(): 1,
+                            }
+                        raise re.ResourcesNotDefined
+
+            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+            {Hadamard: 2, CNOT: 1}
+
+        """
         try:
             return base_class.controlled_resource_decomp(
                 num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
@@ -98,6 +460,18 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -110,6 +484,19 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     def resource_rep(
         cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls,
             {
@@ -133,6 +520,32 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         num_ctrl_values,
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            outer_num_ctrl_wires (int): The number of control qubits to further control the base
+                controlled operation upon.
+            outer_num_ctrl_values (int): The subset of those control qubits, which further control
+                the base controlled operation, which are controlled when off.
+            outer_num_work_wires (int): the number of additional qubits that can be used in the
+                decomposition for the further controlled, base control oepration.
+            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            num_ctrl_wires (int): the number of control qubits of the operation
+            num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
+                when off.
+            num_work_wires (int): The number of additional qubits that can be used for the
+                decomposition of the operation.
+
+        Resources:
+            The resources are derived by simply combining the control qubits, control-values and
+            work qubits into a single instance of :class:`~.ResourceControlled` gate, controlled
+            on the whole set of control-qubits.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+                values are the counts.
+        """
         return {
             cls.resource_rep(
                 base_class,
@@ -145,17 +558,174 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
     @staticmethod
     def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
+        r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_class.tracking_name(**base_params)
         return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{num_work_wires})"
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    """Resource class for the Pow symbolic operation."""
+    r"""Resource class for the symbolic PowOperation.
+
+    A symbolic class used to represent some base operation raised to a power.
+
+    Args:
+        base_class (Type[~.ResourceOperator]): The class type of the base operator to
+            be raised to some power.
+        base_params (dict): the resource parameters required to extract the cost of the base operator
+        z (int): the power that the operator is being raised to
+
+    Resources:
+        The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
+        gate and we have no resources. If the base operation class :code:`base_class` implements the
+        :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+        the resources of the operation raised to the power :math:`z` are given by extracting the base
+        operation's resources (via :code:`.resources()`) and raising each operation to the same power.
+
+    .. seealso:: :class:`~.ops.op_math.pow.PowOperation`
+
+    **Example**
+
+    The operation raised to a power :math:`z` can be constructed like this:
+
+    >>> qft = re.ResourceQFT(wires=range(3))
+    >>> pow_qft = re.ResourcePow(qft, 2)
+    >>> pow_qft.resources(**pow_qft.resource_params)
+    defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+    Alternatively, we can call the resources method on from the class:
+
+    >>> re.ResourcePow.resources(
+    ...     base_class = re.ResourceQFT,
+    ...     base_params = {"num_wires": 3},
+    ...     z = 2,
+    ... )
+    defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+    .. details::
+        :title: Usage Details
+
+        We can configure the resources for the power of a base operation by modifying
+        its :code:`.pow_resource_decomp(**resource_params)` method. Consider for example this
+        custom PauliZ class, where the pow-resources are not defined (this is the default
+        for a general :class:`~.ResourceOperator`).
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def pow_resource_decomp(cls, z):
+                    raise re.ResourcesNotDefined
+
+        When this method is not defined, the resources are computed by taking the power of
+        each operation in the resources of the base operation.
+
+        >>> CustomZ.resources()
+        {S: 2}
+        >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+        defaultdict(<class 'int'>, {Pow(S, 2): 2})
+
+        We can update the resources with the observation that the PauliZ gate is self-inverse,
+        so the resources should when :math:`z mod 2 = 0` should just be the identity operation:
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def pow_resource_decomp(cls, z):
+                    if z%2 == 0:
+                        return {re.ResourceIdentity.resource_rep(): 1}
+                    return {cls.resource_rep(): 1}
+
+        >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+        {Identity: 1}
+        >>> re.ResourcePow.resources(CustomZ, {}, z=3)
+        {CustomZ: 1}
+
+    """
 
     @classmethod
     def _resource_decomp(
         cls, base_class, base_params, z, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to
+                be raised to some power.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            z (int): the power that the operator is being raised to
+
+        Resources:
+            The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
+            gate and we have no resources. If the base operation class :code:`base_class` implements the
+            :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+            the resources of the operation raised to the power :math:`z` are given by extracting the base
+            operation's resources (via :code:`.resources()`) and raising each operation to the same power.
+
+        **Example**
+
+        The operation raised to a power :math:`z` can be constructed like this:
+
+        >>> qft = re.ResourceQFT(wires=range(3))
+        >>> pow_qft = re.ResourcePow(qft, 2)
+        >>> pow_qft.resources(**pow_qft.resource_params)
+        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+        Alternatively, we can call the resources method on from the class:
+
+        >>> re.ResourcePow.resources(
+        ...     base_class = re.ResourceQFT,
+        ...     base_params = {"num_wires": 3},
+        ...     z = 2,
+        ... )
+        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+        .. details::
+            :title: Usage Details
+
+            We can configure the resources for the power of a base operation by modifying
+            its :code:`.pow_resource_decomp(**resource_params)` method. Consider for example this
+            custom PauliZ class, where the pow-resources are not defined (this is the default
+            for a general :class:`~.ResourceOperator`).
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def pow_resource_decomp(cls, z):
+                        raise re.ResourcesNotDefined
+
+            When this method is not defined, the resources are computed by taking the power of
+            each operation in the resources of the base operation.
+
+            >>> CustomZ.resources()
+            {S: 2}
+            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+            defaultdict(<class 'int'>, {Pow(S, 2): 2})
+
+            We can update the resources with the observation that the PauliZ gate is self-inverse,
+            so the resources should when :math:`z mod 2 = 0` should just be the identity operation:
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def pow_resource_decomp(cls, z):
+                        if z%2 == 0:
+                            return {re.ResourceIdentity.resource_rep(): 1}
+                        return {cls.resource_rep(): 1}
+
+            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+            {Identity: 1}
+            >>> re.ResourcePow.resources(CustomZ, {}, z=3)
+            {CustomZ: 1}
+
+        """
         if z == 0:
             return {}
 
@@ -179,6 +749,17 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to
+                be raised to some power.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            z (int): the power that the operator is being raised to
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -187,6 +768,18 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, base_params, z) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to
+                be raised to some power.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            z (int): the power that the operator is being raised to
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls, {"base_class": base_class, "base_params": base_params, "z": z}
         )
@@ -195,10 +788,30 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def pow_resource_decomp(
         cls, z0, base_class, base_params, z
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+        Args:
+            z0 (int): the power that the power-operator is being raised to
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to
+                be raised to some power.
+            base_params (dict): The resource parameters required to extract the cost of the base
+                operator.
+            z (int): the power that the base operator is being raised to
+
+        Resources:
+            The resources are derived by simply adding together the :math:`z` exponent and the
+            :math:`z_{0}` exponent into a single instance of :class:`~.ResourcePow` gate, raising the
+            the base operator to the power :math:`z + z_{0}`.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+                values are the counts.
+        """
         return {cls.resource_rep(base_class, base_params, z0 * z): 1}
 
     @staticmethod
     def tracking_name(base_class, base_params, z) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_class.tracking_name(**base_params)
         return f"Pow({base_name}, {z})"
 
