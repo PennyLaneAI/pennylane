@@ -11,6 +11,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter import Fragment
+from pennylane.labs.trotter.realspace.ho_state import HOState
 from pennylane.labs.trotter.realspace.matrix import (
     _zeros,
     op_norm,
@@ -272,3 +273,15 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
+
+    def apply(self, state: HOState) -> HOState:
+        if not isinstance(state, HOState):
+            raise TypeError
+
+        mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
+
+        return HOState.from_scipy(
+            state.modes,
+            state.gridpoints,
+            mat @ state.vector,
+        )
