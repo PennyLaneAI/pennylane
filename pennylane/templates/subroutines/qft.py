@@ -214,7 +214,7 @@ class QFT(Operation):
         def outer_loop(i):
             qml.Hadamard(wires[i])
 
-            if shift_len != 0:
+            if n_wires > 1:
 
                 @qml.for_loop(shift_len - i)
                 def cphaseshift_loop(j):
