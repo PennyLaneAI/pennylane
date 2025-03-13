@@ -18,7 +18,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
 
 try:
@@ -219,7 +219,9 @@ class FromBloq(Operation):
 
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
-                ghost_wires = [f"ghost_wire{val}" for val in total_wires if val >= len(wires)]
+                ghost_wires = [
+                    f"allocated_and_freed{val}" for val in total_wires if val >= len(wires)
+                ]
                 op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
 
                 if op:
@@ -238,6 +240,9 @@ class FromBloq(Operation):
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
     def compute_matrix(*params, **hyperparams):  # pylint: disable=no-method-argument
+        if not params[0].has_matrix:
+            raise MatrixUndefinedError
+
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
         return matrix

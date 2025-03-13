@@ -40,6 +40,15 @@ class TestFromBloq:
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
+    def test_matrix_error(self):
+        """Tests that FromBloq's matrix raises error as intended"""
+
+        from qualtran.bloqs.phase_estimation import RectangularWindowState
+        from pennylane.operation import MatrixUndefinedError
+
+        with pytest.raises(MatrixUndefinedError):
+            qml.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
+
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
 
@@ -48,13 +57,13 @@ class TestFromBloq:
         with pytest.raises(ValueError, match="The length of wires must"):
             qml.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
 
-    def test_ghost_wires(self):
+    def test_allocated_and_freed_wires(self):
         """Tests that FromBloq properly handles bloqs that have allocate and free qubits"""
 
         from qualtran.bloqs.basic_gates import CZPowGate, ZPowGate
 
         assert qml.FromBloq(CZPowGate(), wires=range(2)).decomposition()[1] == qml.FromBloq(
-            ZPowGate(), wires=["ghost_wire2"]
+            ZPowGate(), wires=["allocated_and_freed2"]
         )
 
     def test_partition_error(self):
