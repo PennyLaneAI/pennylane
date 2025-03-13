@@ -168,17 +168,32 @@ class FromBloq(Operation):
 
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, qt.bloqs.bookkeeping.Partition):
-                    raise NotImplementedError(
-                        "The bloq Partition is not well-supported by FromBloq for now."
-                    )
+                    in_quregs = {}
+                    soq_to_wires_len = 0
+                    for succ in succ_cxns:
+                        soq = succ.left
+                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                            total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
+                            ascending_vals = np.arange(
+                                soq_to_wires_len,
+                                total_elements + soq_to_wires_len,
+                                dtype=object,
+                            )
+                            soq_to_wires_len += total_elements
+                            in_quregs[soq.reg.name] = ascending_vals.reshape(
+                                (*soq.reg.shape, soq.reg.bitsize)
+                            )
+                        soq_to_wires[soq] = in_quregs[soq.reg.name][soq.idx]
+                    continue
+
                 in_quregs = {
-                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
+                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
                     for reg in binst.bloq.signature.lefts()
                 }
                 # The out_quregs inform us of the total # of wires in the circuit to account for
                 # wires that are split or allocated in the cbloq
                 out_quregs = {
-                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object).flatten()
+                    reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
                     for reg in binst.bloq.signature.rights()
                 }
 
@@ -187,7 +202,7 @@ class FromBloq(Operation):
                     soq_to_wires[soq] = soq_to_wires[pred.left]
                     if isinstance(soq_to_wires[soq], list) and len(soq_to_wires[soq]) == 1:
                         soq_to_wires[soq] = soq_to_wires[soq][0]
-                    in_quregs[soq.reg.name][soq.idx] = soq_to_wires[soq]
+                    in_quregs[soq.reg.name][soq.idx] = np.squeeze(soq_to_wires[soq])
 
                 for succ in succ_cxns:
                     soq = succ.left

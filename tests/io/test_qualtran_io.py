@@ -67,8 +67,8 @@ class TestFromBloq:
             ZPowGate(), wires=["allocated_and_freed2"]
         )
 
-    def test_partition_error(self):
-        """Tests that FromBloq's __init__() functions as intended"""
+    def test_partition_bloq(self):
+        """Tests that FromBloq properly handles bloqs with partitions."""
 
         from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 
@@ -76,13 +76,14 @@ class TestFromBloq:
         data2 = np.arange(5, dtype=int) + 1
         qroam_clean_multi_data = QROAMClean.build_from_data(data1, data2, log_block_sizes=(1,))
 
-        with pytest.raises(
-            NotImplementedError,
-            match="The bloq Partition is not well-supported by FromBloq for now.",
-        ):
-            qml.FromBloq(
-                qroam_clean_multi_data, wires=range(qroam_clean_multi_data.signature.n_qubits())
-            ).decomposition()
+        assert (
+            len(
+                qml.FromBloq(
+                    qroam_clean_multi_data, wires=range(qroam_clean_multi_data.signature.n_qubits())
+                ).decomposition()
+            )
+            == 3
+        )
 
     def test_composite_bloq_advanced(self):
         """Tests that a composite bloq with higher level abstract bloqs has the correct
