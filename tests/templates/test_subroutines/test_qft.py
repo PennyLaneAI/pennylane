@@ -148,6 +148,30 @@ class TestQFT:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    def test_qft_one_wire(self):
+        """Test that the dynamic decomposition of QFT on one wire is correct"""
+
+        import jax
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        wires = [0]
+        gate_set = None
+        max_expansion = 1
+
+        @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
+        def circuit(wires):
+            qml.QFT(wires=wires)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(circuit)(wires=wires)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
+        ops_list = collector.state["ops"]
+        expected_ops = [qml.Hadamard(0)]
+        assert ops_list == expected_ops
+
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
@@ -203,7 +227,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])
     def test_qft(
         self, max_expansion, gate_set, n_wires, wires, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that QFT gives correct result after dynamic decomposition."""
 
         from functools import partial
