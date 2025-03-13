@@ -22,16 +22,7 @@ from pennylane.operation import MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
 
 try:
-    from qualtran import (
-        Bloq,
-        CompositeBloq,
-        DecomposeNotImplementedError,
-        DecomposeTypeError,
-        LeftDangle,
-        Side,
-        Soquet,
-    )
-    from qualtran.bloqs.bookkeeping import Partition
+    import qualtran as qt
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
@@ -59,8 +50,8 @@ def get_bloq_registers_info(bloq):
     >>> qml.get_bloq_registers_info(textbook_qpe_small)
     {'qpe_reg': Wires([0, 1, 2]), 'q': Wires([3])}
     """
-    if not isinstance(bloq, Bloq):
-        raise TypeError(f"bloq must be an instance of {Bloq}.")
+    if not isinstance(bloq, qt.Bloq):
+        raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
 
     wire_register_dict = {reg.name: reg.bitsize for reg in bloq.signature.rights()}
 
@@ -129,9 +120,9 @@ class FromBloq(Operation):
 
     """
 
-    def __init__(self, bloq, wires: WiresLike):
-        if not isinstance(bloq, Bloq):
-            raise TypeError(f"bloq must be an instance of {Bloq}.")
+    def __init__(self, bloq: qt.Bloq, wires: WiresLike):
+        if not isinstance(bloq, qt.Bloq):
+            raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
         self._hyperparameters = {"bloq": bloq}
         super().__init__(wires=wires, id=None)
 
@@ -149,15 +140,15 @@ class FromBloq(Operation):
 
         if len(wires) != bloq.signature.n_qubits():
             raise ValueError(
-                f"The length of wires must match the signature of {Bloq}. Please provide a list of wires of length {bloq.signature.n_qubits()}"
+                f"The length of wires must match the signature of {qt.Bloq}. Please provide a list of wires of length {bloq.signature.n_qubits()}"
             )
 
         try:
             # Bloqs need to be decomposed in order to access the connections
-            cbloq = bloq.decompose_bloq() if not isinstance(bloq, CompositeBloq) else bloq
+            cbloq = bloq.decompose_bloq() if not isinstance(bloq, qt.CompositeBloq) else bloq
             temp_registers = _get_named_registers(cbloq.signature.lefts())
             soq_to_wires = {
-                Soquet(LeftDangle, idx=idx, reg=reg): (
+                qt.Soquet(qt.LeftDangle, idx=idx, reg=reg): (
                     list(temp_registers[reg.name])[idx[0]]
                     if len(idx) == 1
                     else list(temp_registers[reg.name])
@@ -176,7 +167,7 @@ class FromBloq(Operation):
                 soq_to_wires_len += 1
 
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
-                if isinstance(binst.bloq, Partition):
+                if isinstance(binst.bloq, qt.bloqs.bookkeeping.Partition):
                     raise NotImplementedError(
                         "The bloq Partition is not well-supported by FromBloq for now."
                     )
@@ -200,7 +191,7 @@ class FromBloq(Operation):
 
                 for succ in succ_cxns:
                     soq = succ.left
-                    if soq.reg.side == Side.RIGHT:
+                    if soq.reg.side == qt.Side.RIGHT:
                         # When in_quregs != out_quregs, it means that there are wires unaccounted
                         # for. We account for these wires and update soq_to_wires and in_quregs
                         # accordingly.
@@ -226,7 +217,7 @@ class FromBloq(Operation):
 
                 if op:
                     ops.append(op)
-        except (DecomposeNotImplementedError, DecomposeTypeError):
+        except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
             pass
 
         return ops
