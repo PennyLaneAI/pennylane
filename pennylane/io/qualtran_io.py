@@ -103,13 +103,10 @@ class FromBloq(Operation):
         nsites = 5
         j_zz = 2
         gamma_x = 0.1
-        dt = 0.01
-        indices = (0, 1, 0)
-        coeffs = (0.5 * gamma_x, j_zz, 0.5 * gamma_x)
-        zz_bloq = IsingZZUnitary(nsites=nsites, angle=2 * dt * j_zz)
-        x_bloq = IsingXUnitary(nsites=nsites, angle=0.5 * 2 * dt * gamma_x)
+        zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
+        x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
         trott_unitary = TrotterizedUnitary(
-            bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+            bloqs=(x_bloq, zz_bloq), indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x), timestep=0.01
         )
 
         # Instantiate the TextbookQPE and pass in our unitary
