@@ -28,7 +28,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 def get_bloq_registers_info(bloq):
-    """Returns a `qml.registers` object associated with all named and unnamed registers and wires
+    """Returns a ``qml.registers`` object associated with all named and unnamed registers and wires
     in the bloq.
 
     Args:
@@ -59,7 +59,7 @@ def get_bloq_registers_info(bloq):
 
 
 def _get_named_registers(registers):
-    """Returns a `qml.registers` object associated with the named registers in the bloq"""
+    """Returns a ``qml.registers`` object associated with the named registers in the bloq"""
 
     temp_register_dict = {reg.name: reg.total_bits() for reg in registers}
 
@@ -91,7 +91,7 @@ class FromBloq(Operation):
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
 
-    A simple example showcasing how to use `qml.FromBloq` inside a device:
+    A simple example showcasing how to use ``qml.FromBloq`` inside a device:
 
     .. code-block::
 
@@ -125,8 +125,8 @@ class FromBloq(Operation):
     .. details::
         :title: Usage Details
 
-        The decomposition of a bloq wrapped in `qml.FromBloq` may use more wires than expected.
-        For example, when we wrap Qualtran's `CZPowGate`, we get
+        The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.
+        For example, when we wrap Qualtran's ``CZPowGate``, we get
 
         >>> from qualtran.bloqs.basic_gates import CZPowGate
         >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
@@ -134,10 +134,10 @@ class FromBloq(Operation):
         FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
 
-        This is not a bug. It is due to the fact that the decomposition of `CZPowGate` as
+        This is not a bug. It is due to the fact that the decomposition of ``CZPowGate`` as
         defined in qualtran allocates and frees a wire all in the same bloq. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
-        named `alloc_free{idx}`, where idx is the total length of wires. For now, due to technical
+        named ``alloc_free{idx}``, where idx is the total length of wires. For now, due to technical
         limitations these wires cannot be accessed manually, or mapped to a different name.
 
     """
