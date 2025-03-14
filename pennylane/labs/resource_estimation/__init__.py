@@ -32,18 +32,6 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~ResourceOperator
 
-Resource Object Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~add_in_series
-    ~add_in_parallel
-    ~mul_in_series
-    ~mul_in_parallel
-    ~substitute
-
 Operators
 ~~~~~~~~~
 
@@ -148,13 +136,17 @@ Tracking Resources
 
     ~get_resources
 
-Exceptions
-~~~~~~~~~~
+Resource Object Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourcesNotDefined
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
