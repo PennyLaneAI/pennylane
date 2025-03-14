@@ -683,6 +683,9 @@
   [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)  
   [(#7051)](https://github.com/PennyLaneAI/pennylane/pull/7051)
 
+* `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
+  [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
