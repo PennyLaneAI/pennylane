@@ -126,8 +126,7 @@ class ResourceTrotterProduct(
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Resources:
             The resources are defined according to the recurrsive formula presented above. Specifically, each
@@ -182,8 +181,7 @@ class ResourceTrotterProduct(
         Resource parameters:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -215,8 +213,7 @@ class ResourceTrotterProduct(
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -317,8 +314,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Resources:
             The resources are defined according to the recurrsive formula presented above. Specifically, each
@@ -355,8 +351,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         Resource parameters:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -395,8 +390,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding
-                to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation

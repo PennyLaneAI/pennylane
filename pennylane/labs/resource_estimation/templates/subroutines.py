@@ -714,8 +714,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
             num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
         Returns:
@@ -734,8 +733,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
             num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
         Returns:

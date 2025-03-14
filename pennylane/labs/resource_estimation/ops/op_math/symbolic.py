@@ -653,8 +653,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to
-                be raised to some power.
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
             z (int): the power that the operator is being raised to
 
@@ -752,8 +751,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to
-                be raised to some power.
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
             z (int): the power that the operator is being raised to
 
@@ -772,8 +770,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to
-                be raised to some power.
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
             z (int): the power that the operator is being raised to
 
@@ -792,10 +789,8 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         Args:
             z0 (int): the power that the power-operator is being raised to
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to
-                be raised to some power.
-            base_params (dict): The resource parameters required to extract the cost of the base
-                operator.
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+            base_params (dict): The resource parameters required to extract the cost of the base operator.
             z (int): the power that the base operator is being raised to
 
         Resources:
