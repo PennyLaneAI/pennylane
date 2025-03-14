@@ -736,7 +736,8 @@ class Controlled(SymbolicOp):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
             return True
-        if _is_single_qubit_special_unitary(self.base):
+        is_su2 = _is_single_qubit_special_unitary(self.base)
+        if not qml.math.is_abstract(is_su2) and is_su2:
             return True
         if self.base.has_decomposition:
             return True
@@ -901,7 +902,8 @@ def _decompose_no_control_values(op: Controlled) -> Optional[list["operation.Ope
     if decomp is not None:
         return decomp
 
-    if _is_single_qubit_special_unitary(op.base):
+    is_su2 = _is_single_qubit_special_unitary(op.base)
+    if not qml.math.is_abstract(is_su2) and is_su2:
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
         return ctrl_decomp_zyz(op.base, op.control_wires, work_wires=op.work_wires)
