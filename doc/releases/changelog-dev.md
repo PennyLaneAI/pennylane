@@ -51,7 +51,7 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-* Added class `qml.FromBloq` that takes Qualtran Bloqs and translates them into equivalent PennyLane operators.
+* Added class ``qml.FromBloq`` that takes Qualtran Bloqs and translates them into equivalent PennyLane operators.
   For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
 
   ```python
@@ -76,7 +76,6 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
-
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
 
