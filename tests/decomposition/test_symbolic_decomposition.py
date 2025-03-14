@@ -21,6 +21,7 @@ from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
+    has_adjoint_decomp,
 )
 
 
@@ -77,4 +78,25 @@ class TestAdjointDecompositionRules:
                     qml.U1, {}, num_control_wires=1, num_zero_control_values=0, num_work_wires=0
                 ): 1
             }
+        )
+
+    def test_adjoint_controlled_x(self):
+        """Tests the adjoint of controlled X operations are correctly decomposed."""
+
+    def test_adjoint_custom(self):
+        """Tests that the adjoint of an operation that has adjoint is correctly decomposed."""
+
+        op1 = qml.adjoint(qml.H(0))
+        op2 = qml.adjoint(qml.RX(0.5, wires=0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            has_adjoint_decomp(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            has_adjoint_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [qml.H(0), qml.RX(-0.5, wires=0)]
+        assert has_adjoint_decomp.compute_resources(**op1.resource_params) == Resources(
+            {qml.resource_rep(qml.H): 1}
+        )
+        assert has_adjoint_decomp.compute_resources(**op2.resource_params) == Resources(
+            {qml.resource_rep(qml.RX): 1}
         )

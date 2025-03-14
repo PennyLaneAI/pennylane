@@ -59,7 +59,7 @@ def _same_type_adjoint_resource(base_class, base_params):
 
 
 @register_resources(_same_type_adjoint_resource)
-def has_adjoint_decomp(*_, base):
+def has_adjoint_decomp(*_, base, **__):
     """Decompose the adjoint of a gate whose adjoint is an instance of its own type."""
     base.adjoint()
 
