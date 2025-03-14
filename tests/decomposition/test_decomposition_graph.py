@@ -109,7 +109,7 @@ class TestDecompositionGraph:
                 qml.resource_rep(qml.GlobalPhase): 1,
             }
         )
-        assert graph.resource_estimates(op) == expected_resource
+        assert graph.resource_estimate(op) == expected_resource
         assert graph.decomposition(op).compute_resources() == expected_resource
 
     @pytest.mark.unit
@@ -158,7 +158,7 @@ class TestDecompositionGraph:
         assert len(graph._graph.edges()) == 23
 
         graph.solve()
-        assert graph.resource_estimates(op) == Resources(
+        assert graph.resource_estimate(op) == Resources(
             {
                 qml.resource_rep(qml.CZ): 14,
                 qml.resource_rep(qml.RZ): 59,
