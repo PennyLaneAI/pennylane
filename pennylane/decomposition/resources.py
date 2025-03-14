@@ -112,6 +112,8 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type: Type[Operator], params: dict = None):
+        if not isinstance(op_type, type):
+            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qml.operation.Operator):
             raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
