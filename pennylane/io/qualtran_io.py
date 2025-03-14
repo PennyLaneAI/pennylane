@@ -122,6 +122,24 @@ class FromBloq(Operation):
     array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
     0.00290337, 0.00526717, 0.02099701])
 
+    .. details::
+        :title: Usage Details
+
+        The decomposition of a bloq wrapped in `qml.FromBloq` may use more wires than expected.
+        For example, when we wrap Qualtran's `CZPowGate`, we get
+
+        >>> from qualtran.bloqs.basic_gates import CZPowGate
+        >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
+        [FromBloq(And, wires=Wires([0, 1, 'alloc_free2'])),
+        FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
+        FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
+
+        This is not a bug. It is due to the fact that the decomposition of `CZPowGate` as
+        defined in qualtran allocates and frees a wire all in the same bloq. In this situation,
+        PennyLane automatically allocates this wire under the hood, and that additional wire is
+        named `alloc_free{idx}`, where idx is the total length of wires. For now, due to technical
+        limitations these wires cannot be accessed manually, or mapped to a different name. 
+
     """
 
     def __init__(self, bloq, wires: WiresLike):
