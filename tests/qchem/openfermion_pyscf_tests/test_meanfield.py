@@ -18,7 +18,7 @@ import os
 
 import numpy as np
 import pytest
-from conftest import xfail_on_numpy2
+from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 from pennylane import qchem
 
