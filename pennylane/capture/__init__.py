@@ -38,9 +38,10 @@ quantum-classical programs.
     ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
-    ~make_plxpr
     ~PlxprInterpreter
     ~FlatFn
+    ~make_plxpr
+    ~register_custom_staging_rule
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -173,7 +174,7 @@ from .capture_measurements import (
 )
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
-from .dynamic_shapes import determine_abstracted_axes
+from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -237,6 +238,7 @@ __all__ = (
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
     "expand_plxpr_transforms",
+    "register_custom_staging_rule",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
