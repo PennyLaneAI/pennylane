@@ -118,7 +118,6 @@ state preparation is typically used as the first operation.
     :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
     :figure: _static/templates/state_preparations/thumbnail_qrom.png
 
-
 .. raw:: html
 
         <div style='clear:both'></div>

@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-Contains the QROMStatePreparation template.
-"""
+r"""Contains the QROMStatePreparation template."""
 
 import numpy as np
 
@@ -87,8 +85,7 @@ class QROMStatePreparation(Operation):
         to store the binary representations of the amplitudes and phases of the target state, and then uses
         controlled rotations to apply these values to the target qubits.
 
-        The input `state_vector` must have a length that is a power of 2. The number of ``wires``
-        must be :math:`\log_2(\text{len}(state\_vector))`. The number of ``precision_wires`` determines the
+        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^N`, and the number of ``wires`` must be :math:`N`. The number of ``precision_wires`` determines the
         precision with which the amplitudes and phases are encoded.
 
         The ``work_wires`` are used as auxiliary qubits in the QROM operation.
@@ -113,7 +110,7 @@ class QROMStatePreparation(Operation):
             norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
             if not qml.math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
-                    f"State vectors have to be of norm 1.0, vector has squared norm {norm}"
+                    f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
                 )
 
         self.state_vector = state_vector
