@@ -26,7 +26,7 @@ def center(
     r"""
     A function to compute the center of a Lie algebra.
 
-    .. warning:: :func:`~center` has moved to the :doc:`~liealg` module and can be called from there via ``qml.liealg.center`` or from the top level via ``qml.center``.
+    .. warning:: :func:`~center` has moved to the :mod:`pennylane.liealg` module and can be called from there via ``qml.liealg.center`` or from the top level via ``qml.center``.
 
     Given a Lie algebra :math:`\mathfrak{g} = \{h_1,.., h_d\}`, the center :math:`\mathfrak{\xi}(\mathfrak{g})`
     is given by all elements in :math:`\mathfrak{g}` that commute with `all` other elements in :math:`\mathfrak{g}`,

@@ -225,12 +225,12 @@ def check_cartan_decomp(
     .. warning:: This function is expensive to compute
 
     Args:
-        k (List[Union[PauliSentence, TensorLike]]): List of operators of the vertical subspace
+        k (List[Union[PauliSentence, TensorLike]]): List of operators of the vertical subspace.
         m (List[Union[PauliSentence, TensorLike]]): List of operators of the horizontal subspace.
-        verbose: Whether failures to meet one of the criteria should be printed
+        verbose: Whether failures to meet one of the criteria should be printed.
 
     Returns:
-        bool: Whether or not all properties are fulfilled
+        bool: Whether or not all of the Cartan commutation relations are fulfilled.
 
     .. seealso:: :func:`~cartan_decomp`
 
