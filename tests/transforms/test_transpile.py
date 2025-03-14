@@ -399,8 +399,9 @@ class TestTranspile:
 
         assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
 
-        original_results = dev.execute(tape)
-        transformed_results = fn(dev.batch_execute(batch))
+        pre, post = dev.preprocess_transforms()((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results, transformed_results)
 
     def test_transpile_probs_sample_filled_in_wires(self):
