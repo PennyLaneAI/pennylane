@@ -453,7 +453,7 @@ class TestDevicePreprocessing:
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots)
         postselect = 1 if dev_name == "default.qubit" else None
-        n_postselects = 5
+        n_postselects = 3
 
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
         def circuit():
@@ -469,7 +469,7 @@ class TestDevicePreprocessing:
             num_of_results = len(res)
             assert qml.math.allclose(
                 num_of_results,
-                int(1000 / (2**n_postselects)),
+                int(1000 / (2**n_postselects)),  # 125
                 atol=20,
             )
         else:
