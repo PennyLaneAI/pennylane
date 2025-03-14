@@ -122,7 +122,7 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("base", "num_control_wires", "num_zero_control_values", "num_work_wires")
+    resource_keys = {"base", "num_control_wires", "num_zero_control_values", "num_work_wires"}
 
     grad_method = None
     """Gradient computation method."""
@@ -301,7 +301,7 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CH"
 
@@ -439,7 +439,7 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CY"
 
@@ -567,7 +567,7 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CZ"
 
@@ -673,7 +673,7 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CSWAP"
 
@@ -832,7 +832,7 @@ class CCZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CCZ"
 
@@ -1004,7 +1004,7 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CNOT"
 
@@ -1136,7 +1136,7 @@ class Toffoli(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "Toffoli"
 
@@ -1359,7 +1359,7 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("num_control_wires", "num_zero_control_values", "num_work_wires")
+    resource_keys = {"num_control_wires", "num_zero_control_values", "num_work_wires"}
 
     name = "MultiControlledX"
 
@@ -1590,7 +1590,7 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
@@ -1706,22 +1706,44 @@ class CRX(ControlledOp):
         ]
 
 
-def _crx_resources():
+def _crx_to_rz_ry_resources():
     return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
 
 
-@register_resources(_crx_resources)
-def _crx(phi, wires, **__):
-    pi_half = qml.math.ones_like(phi) * (np.pi / 2)
-    qml.RZ(pi_half, wires=wires[1])
+@register_resources(_crx_to_rz_ry_resources)
+def _crx_to_rz_ry(phi, wires, **__):
+    qml.RZ(np.pi / 2, wires=wires[1])
     qml.RY(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
     qml.RY(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
-    qml.RZ(-pi_half, wires=wires[1])
+    qml.RZ(-np.pi / 2, wires=wires[1])
 
 
-add_decomps(CRX, _crx)
+def _crx_to_rx_cz_resources():
+    return {qml.RX: 2, qml.CZ: 2}
+
+
+@register_resources(_crx_to_rx_cz_resources)
+def _crx_to_rx_cz(phi, wires, **__):
+    qml.RX(phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RX(-phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
+
+
+def _crx_to_h_crz_resources():
+    return {qml.Hadamard: 2, qml.CRZ: 1}
+
+
+@register_resources(_crx_to_h_crz_resources)
+def _crx_to_h_crz(phi, wires, **__):
+    qml.Hadamard(wires=wires[1])
+    qml.CRZ(phi, wires=wires)
+    qml.Hadamard(wires=wires[1])
+
+
+add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
 
 
 class CRY(ControlledOp):
@@ -1772,7 +1794,7 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
@@ -1951,7 +1973,7 @@ class CRZ(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2162,7 +2184,7 @@ class CRot(ControlledOp):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
@@ -2361,7 +2383,7 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]

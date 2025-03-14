@@ -310,7 +310,7 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     @classmethod
     def _primitive_bind_call(

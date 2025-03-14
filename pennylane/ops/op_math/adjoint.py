@@ -323,7 +323,7 @@ class Adjoint(SymbolicOp):
 
     """
 
-    resource_param_keys = ("base_class", "base_params")
+    resource_keys = {"base_class", "base_params"}
 
     def _flatten(self):
         return (self.base,), tuple()
