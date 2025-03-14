@@ -22,6 +22,8 @@ from packaging.version import Version
 
 import pennylane as qml
 
+__all__ = ["xfail_on_numpy2"]
+
 # NumPy 2.0 compatibility detection
 NUMPY_VERSION = Version(np.__version__)
 IS_NUMPY_2 = NUMPY_VERSION >= Version("2.0.0")
