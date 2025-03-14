@@ -64,9 +64,11 @@
   @qml.qnode(dev)
   def circuit():
       qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
-      return qml.state()
+      return qml.probs(wires=[1, 2, 3])
 
-  circuit()
+  >>> circuit()
+  array([1.00000000e+00, 7.48667061e-34, 6.97132526e-35, 5.17360924e-34,
+       3.48566263e-35, 1.65218669e-34, 6.97132526e-35, 6.76910185e-34])
   ```
   [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
 
