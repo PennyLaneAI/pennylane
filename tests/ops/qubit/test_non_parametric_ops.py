@@ -231,9 +231,8 @@ class TestDecompositions:
         op = qml.SX(wires=0)
         res = op.decomposition()
 
-        # assert len(res) == 4
-
-        # assert all(res[i].wires == Wires([0]) for i in range(4))
+        assert len(res) == 4
+        assert all(res[i].wires == Wires([0]) for i in range(4))
 
         assert res[0].name == "RZ"
         assert res[1].name == "RY"
