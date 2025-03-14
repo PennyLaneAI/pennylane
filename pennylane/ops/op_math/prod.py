@@ -99,7 +99,7 @@ def prod(*ops, id=None, lazy=True):
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
 
 
-    Notice how the order appears reversed in the output. However, this is correct because the operators are applied from right to left.
+    Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
