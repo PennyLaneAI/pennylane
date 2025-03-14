@@ -213,6 +213,21 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
+            if not qml.math.is_abstract(theta):
+                # The following loop simplifies the two cases where for all odd intergers `k`,
+                # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
+                for val_ in [2, 4]:
+                    div_ = qml.math.divide(theta, math.pi / val_)
+                    mod_ = qml.math.mod(theta, math.pi / val_)
+                    if qml.math.allclose(mod_, 0.0, atol=1e-6) and qml.math.allclose(
+                        qml.math.mod(div_, 2), 1.0, atol=1e-6
+                    ):
+                        vop_ = qml.S(wires) if val_ == 2 else qml.T(wires)
+                        sign = qml.math.mod(qml.math.floor_divide(div_, 2), 2)
+                        ops_ = [
+                            vop_ if qml.math.allclose(sign, 0.0, atol=1e-6) else qml.adjoint(vop_)
+                        ]
+                        break
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -454,7 +469,7 @@ def clifford_t_decomposition(
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
+    new_tape = compiled_tape.copy(operations=decomp_ops)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)

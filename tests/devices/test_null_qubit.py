@@ -409,7 +409,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        # TODO: resume from here
+
         x, y = np.array(0.732), np.array(0.488)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
@@ -1273,3 +1273,42 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     res = qml.QNode(circuit, nq)(x)
     target = qml.QNode(circuit, dq)(x)
     assert qml.math.shape(res) == qml.math.shape(target)
+
+
+# pylint: disable=unused-argument
+@pytest.mark.jax
+def test_execute_plxpr(enable_disable_plxpr):
+    """Test that null.qubit can execute plxpr."""
+
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), qml.probs(), 4, qml.var(qml.X(0)), qml.state()
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], jax.numpy.zeros(2**4))
+    assert qml.math.allclose(res[2], 0)  # other values are still just zero
+    assert qml.math.allclose(res[3], 0)
+    assert qml.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
+
+
+@pytest.mark.jax
+def test_execute_plxpr_shots(enable_disable_plxpr):
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), 5, qml.sample(wires=(0, 1))
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4, shots=50)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], 0)
+    assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))

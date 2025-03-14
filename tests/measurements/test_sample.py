@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample
+from pennylane.measurements import MeasurementShapeError
 from pennylane.operation import EigvalsUndefinedError, Operator
 
 # pylint: disable=protected-access, no-member, too-many-public-methods
@@ -105,7 +105,6 @@ class TestSample:
         assert len(result) == 3
         assert result[0].dtype == np.dtype("float")
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_output_type_in_combination(self):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
@@ -121,23 +120,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], float)
-        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
-
-    def test_observable_return_type_is_sample(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.sample(qml.PauliZ(0))
-            assert res.return_type is Sample
-            return res
-
-        circuit()
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))

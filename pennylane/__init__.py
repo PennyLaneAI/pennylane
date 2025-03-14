@@ -21,20 +21,27 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.compiler
+from pennylane.compiler import qjit
 import pennylane.capture
+import pennylane.control_flow
+from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane.pauli import pauli_decompose
+from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
@@ -60,7 +67,6 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.registers import registers
 from pennylane.io import *
@@ -141,12 +147,10 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
-
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
 
 import pennylane.data
 
@@ -171,6 +175,10 @@ class QuantumFunctionError(Exception):
 
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
+
+
+class ExperimentalWarning(UserWarning):
+    """Warning raised to indicate experimental/non-stable feature or support."""
 
 
 def __getattr__(name):

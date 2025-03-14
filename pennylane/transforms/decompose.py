@@ -18,8 +18,10 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator, Iterable
-from typing import Optional
+from collections import ChainMap
+from collections.abc import Generator, Iterable
+from functools import lru_cache, partial
+from typing import Callable, Optional, Sequence
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -60,7 +62,243 @@ def _operator_decomposition_gen(
             )
 
 
-@transform
+@lru_cache
+def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
+    try:
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        from pennylane.capture.primitives import ctrl_transform_prim
+
+    except ImportError:  # pragma: no cover
+        return None, None
+
+    # pylint: disable=redefined-outer-name
+
+    class DecomposeInterpreter(qml.capture.PlxprInterpreter):
+        """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
+        when program capture is enabled.
+        """
+
+        def __init__(self, gate_set=None, max_expansion=None):
+            self.max_expansion = max_expansion
+            self._current_depth = 0
+
+            # We use a ChainMap to store the environment frames,
+            # which allows us to push and pop environments without copying
+            # the interpreter instance when we evaluate a jaxpr of a dynamic decomposition.
+
+            # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
+            self._env_map = ChainMap()
+
+            if gate_set is None:
+                gate_set = set(qml.ops.__all__)
+
+            if isinstance(gate_set, (str, type)):
+                gate_set = set([gate_set])
+
+            if isinstance(gate_set, Iterable):
+                gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+                gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+                self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+            else:
+                self.gate_set = gate_set
+
+        def setup(self) -> None:
+            """Setup the environment for the interpreter by pushing a new environment frame."""
+
+            # This is the local environment for the jaxpr evaluation, on the top of the stack,
+            # from which the interpreter reads and writes variables.
+            # ChainMap writes to the first dictionary in the chain by default.
+            self._env_map = self._env_map.new_child()
+
+        def cleanup(self) -> None:
+            """Cleanup the environment by popping the top-most environment frame."""
+
+            # We delete the top-most environment frame after the evaluation is done.
+            self._env_map = self._env_map.parents
+
+        def read(self, var):
+            """Extract the value corresponding to a variable."""
+            return var.val if isinstance(var, jax.core.Literal) else self._env_map[var]
+
+        def stopping_condition(self, op: qml.operation.Operator) -> bool:
+            """Function to determine whether or not an operator needs to be decomposed or not.
+
+            Args:
+                op (qml.operation.Operator): Operator to check.
+
+            Returns:
+                bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
+                that the operator does not need to be decomposed.
+            """
+
+            if not op.has_decomposition:
+                if not self.gate_set(op):
+                    warnings.warn(
+                        f"Operator {op.name} does not define a decomposition and was not "
+                        f"found in the target gate set. To remove this warning, add the operator name "
+                        f"({op.name}) or type ({type(op)}) to the gate set.",
+                        UserWarning,
+                    )
+                return True
+            return self.gate_set(op)
+
+        def decompose_operation(self, op: qml.operation.Operator):
+            """Decompose a PennyLane operation instance if it does not satisfy the
+            provided gate set.
+
+            Args:
+                op (Operator): a pennylane operator instance
+
+            This method is only called when the operator's output is a dropped variable,
+            so the output will not affect later equations in the circuit.
+
+            See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
+            """
+            if self.gate_set(op):
+                return self.interpret_operation(op)
+
+            max_expansion = (
+                self.max_expansion - self._current_depth if self.max_expansion is not None else None
+            )
+
+            with qml.capture.pause():
+                decomposition = list(
+                    _operator_decomposition_gen(
+                        op,
+                        self.stopping_condition,
+                        max_expansion=max_expansion,
+                    )
+                )
+
+            return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
+
+        def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator):
+            """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
+
+            if self.gate_set(op):
+                return self.interpret_operation(op)
+
+            if self.max_expansion is not None and self._current_depth >= self.max_expansion:
+                return self.interpret_operation(op)
+
+            args = (*op.parameters, *op.wires)
+
+            jaxpr_decomp = qml.capture.make_plxpr(
+                partial(op.compute_qfunc_decomposition, **op.hyperparameters)
+            )(*args)
+
+            self._current_depth += 1
+            # We don't need to copy the interpreter here, as the jaxpr of the decomposition
+            # is evaluated with a new environment frame placed on top of the stack.
+            out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
+            self._current_depth -= 1
+
+            return out
+
+        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+            """
+            Evaluates a jaxpr, which can also be generated by a dynamic decomposition.
+
+            Args:
+                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
+                consts (list[TensorLike]): the constant variables for the jaxpr
+                *args: the arguments to use in the evaluation
+            """
+
+            self.setup()
+
+            for arg, invar in zip(args, jaxpr.invars, strict=True):
+                self._env_map[invar] = arg
+            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+                self._env_map[constvar] = const
+
+            for eq in jaxpr.eqns:
+
+                prim_type = getattr(eq.primitive, "prim_type", "")
+                custom_handler = self._primitive_registrations.get(eq.primitive, None)
+
+                if custom_handler:
+
+                    invals = [self.read(invar) for invar in eq.invars]
+                    outvals = custom_handler(self, *invals, **eq.params)
+
+                elif prim_type == "operator":
+                    outvals = self.interpret_operation_eqn(eq)
+                elif prim_type == "measurement":
+                    outvals = self.interpret_measurement_eqn(eq)
+                else:
+                    invals = [self.read(invar) for invar in eq.invars]
+                    subfuns, params = eq.primitive.get_bind_params(eq.params)
+                    outvals = eq.primitive.bind(*subfuns, *invals, **params)
+
+                if not eq.primitive.multiple_results:
+                    outvals = [outvals]
+
+                for outvar, outval in zip(eq.outvars, outvals, strict=True):
+                    self._env_map[outvar] = outval
+
+            outvals = []
+            for var in jaxpr.outvars:
+                outval = self.read(var)
+                if isinstance(outval, qml.operation.Operator):
+                    outvals.append(self.interpret_operation(outval))
+                else:
+                    outvals.append(outval)
+
+            self.cleanup()
+
+            return outvals
+
+        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+            """Interpret an equation corresponding to an operator.
+
+            If the operator has a dynamic decomposition defined, this method will
+            create and evaluate the jaxpr of the decomposition using the :meth:`~.eval` method.
+
+            Args:
+                eqn (jax.core.JaxprEqn): a jax equation for an operator.
+
+            See also: :meth:`~.interpret_operation`.
+
+            """
+
+            invals = (self.read(invar) for invar in eqn.invars)
+
+            with qml.QueuingManager.stop_recording():
+                op = eqn.primitive.impl(*invals, **eqn.params)
+
+            if not eqn.outvars[0].__class__.__name__ == "DropVar":
+                return op
+
+            if not op.has_plxpr_decomposition:
+                return self.decompose_operation(op)
+
+            return self._evaluate_jaxpr_decomposition(op)
+
+    # pylint: disable=unused-variable,missing-function-docstring
+    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
+    def handle_ctrl_transform(*_, **__):
+        raise NotImplementedError
+
+    def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``decompose`` transform on plxpr."""
+
+        interpreter = DecomposeInterpreter(*targs, **tkwargs)
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return jax.make_jaxpr(wrapper)(*args)
+
+    return DecomposeInterpreter, decompose_plxpr_to_plxpr
+
+
+DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
+
+
+@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
 def decompose(tape, gate_set=None, max_expansion=None):
     """Decomposes a quantum circuit into a user-specified gate set.
 

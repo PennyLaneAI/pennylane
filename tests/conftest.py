@@ -164,8 +164,19 @@ def seed(request):
 def enable_disable_plxpr():
     """enable and disable capture around each test."""
     qml.capture.enable()
-    yield
-    qml.capture.disable()
+    try:
+        yield
+    finally:
+        qml.capture.disable()
+
+
+@pytest.fixture(scope="function")
+def enable_disable_dynamic_shapes():
+    jax.config.update("jax_dynamic_shapes", True)
+    try:
+        yield
+    finally:
+        jax.config.update("jax_dynamic_shapes", False)
 
 
 #######################################################################

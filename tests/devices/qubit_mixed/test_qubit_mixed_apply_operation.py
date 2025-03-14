@@ -17,6 +17,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -31,7 +32,7 @@ from pennylane import (
     ResetError,
     math,
 )
-from pennylane.devices.qubit_mixed import apply_operation
+from pennylane.devices.qubit_mixed import apply_operation, measure
 from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
@@ -688,3 +689,264 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize(
+    "state,shape", [("two_qubit_state", (4, 4)), ("two_qubit_batched_state", (2, 4, 4))]
+)
+class TestSnapshot:
+    """Test that apply_operation works for Snapshot ops"""
+
+    @pytest.mark.usefixtures("two_qubit_state")
+    def test_no_debugger(self, ml_framework, state, shape, request):
+        """Test that nothing happens when there is no debugger"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+    def test_empty_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when there is no tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        new_state = apply_operation(
+            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == shape
+        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, shape))
+
+    def test_provided_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when provided a tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        tag = "dense"
+        new_state = apply_operation(
+            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+        assert debugger.snapshots[tag].shape == shape
+        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, shape))
+
+    def test_snapshot_with_measurement(self, ml_framework, state, shape, request):
+        """Test a snapshot with measurement"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
+
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.PauliZ(0))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            # Expected value for PauliZ measurement would depend on the initial state
+            # This value should be calculated based on your test state
+            expected_value = measure(qml.expval(qml.PauliZ(0)), initial_state)
+            assert math.allclose(debugger.snapshots[tag], expected_value)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            expected_values = measure(
+                qml.expval(qml.PauliZ(0)), initial_state, is_state_batched=True
+            )
+            assert math.allclose(debugger.snapshots[tag], expected_values)
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.sample(wires=[0, 1]),
+            qml.counts(wires=[0, 1]),
+        ],
+    )
+    def test_snapshot_with_shots_and_measurement(
+        self, measurement, ml_framework, state, shape, request
+    ):
+        """Test snapshots with shots for various measurement types."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "measurement_snapshot"
+        is_state_batched = len(shape) != 2
+
+        shots = qml.measurements.Shots(1000)
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=measurement),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=is_state_batched,
+            tape_shots=shots,
+        )
+
+        # Check state is unchanged
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        # Check snapshot was stored
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        snapshot_result = debugger.snapshots[tag]
+
+        # Verify snapshot result based on measurement type
+        if isinstance(measurement, qml.measurements.SampleMP):
+            len_measured_wires = len(measurement.wires)
+            assert (
+                snapshot_result[0].shape == (1000, len_measured_wires)
+                if not is_state_batched
+                else (2, 1000, len_measured_wires)
+            )
+            assert set(np.unique(snapshot_result)) <= {0, 1}
+        elif isinstance(measurement, qml.measurements.CountsMP):
+            snapshot_result = snapshot_result[0]
+            if is_state_batched:
+                snapshot_result = snapshot_result[0]
+            assert isinstance(snapshot_result, dict)
+            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert sum(snapshot_result.values()) == 1000
+
+
+def get_valid_density_matrix(num_wires):
+    """Helper function to create a valid density matrix"""
+    # Create a pure state first
+    state = np.zeros(2**num_wires, dtype=np.complex128)
+    state[0] = 1 / np.sqrt(2)
+    state[-1] = 1 / np.sqrt(2)
+    # Convert to density matrix
+    return np.outer(state, state.conjugate())
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestDensityMatrix:
+    """Test that apply_operation works for QubitDensityMatrix"""
+
+    num_qubits = [1, 2, 3]
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_valid_density_matrix(self, num_q, ml_framework):
+        """Test applying a valid density matrix to the state"""
+        density_matrix = get_valid_density_matrix(num_q)
+        # Convert density matrix to the given ML framework and ensure complex dtype
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)  # ensure complex
+
+        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+
+        # Create the initial state as zeros in the same framework and ensure complex dtype
+        shape = (2,) * (2 * num_q)
+        state = np.zeros(shape, dtype=np.complex128)
+        state = math.asarray(state, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        # Apply operation
+        result = qml.devices.qubit_mixed.apply_operation(op, state)
+
+        # Reshape and cast expected result
+        expected = math.reshape(density_matrix, shape)
+        expected = math.cast(expected, dtype=complex)
+
+        assert math.allclose(result, expected)
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_batched_state(self, num_q, ml_framework):
+        """Test applying density matrix to batched states"""
+        batch_size = 3
+        density_matrix = get_valid_density_matrix(num_q)
+        density_matrix = math.asarray(density_matrix, like=ml_framework)
+        density_matrix = math.cast(density_matrix, dtype=complex)
+
+        op = qml.QubitDensityMatrix(density_matrix, wires=range(num_q))
+
+        shape = (batch_size,) + (2,) * (2 * num_q)
+        state = math.zeros(shape, like=ml_framework)
+        state = math.cast(state, dtype=complex)
+
+        result = qml.devices.qubit_mixed.apply_operation(op, state, is_state_batched=True)
+
+        expected_single = math.reshape(density_matrix, (2,) * (2 * num_q))
+        expected_single = math.cast(expected_single, dtype=complex)
+        # Tile along batch dimension
+        expected = math.stack([expected_single] * batch_size, axis=0)
+
+        assert math.allclose(result, expected)
+
+    def test_partial_trace_single_qubit_update(self, ml_framework):
+        """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires."""
+
+        # Initial 2-qubit state as a (4,4) density matrix representing |00><00|
+        # |00> in vector form = [1,0,0,0]
+        # |00><00| as a 4x4 matrix = diag([1,0,0,0])
+        initial_state = np.zeros((4, 4), dtype=complex)
+        initial_state[0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the single-qubit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
+        plus_state = np.array([[0.5, 0.5], [0.5, 0.5]], dtype=complex)
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first wire (wire=0)
+        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0|
+        # |0><0| = [[1,0],[0,0]]
+        zero_dm = np.array([[1, 0], [0, 0]], dtype=complex)
+        expected = np.kron(plus_state, zero_dm)  # shape (4,4)
+        expected = math.reshape(expected, [2] * 4)
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state)
+
+        assert math.allclose(result, expected, atol=1e-8)
+
+    def test_partial_trace_batched_update(self, ml_framework):
+        """Minimal test for partial tracing when applying QubitDensityMatrix to a subset of wires, batched."""
+
+        batch_size = 3
+
+        # Initial 2-qubit state as a (4,4) density matrix representing |00><00| batched
+        initial_state = np.zeros((batch_size, 4, 4), dtype=complex)
+        for b in range(batch_size):
+            initial_state[b, 0, 0] = 1.0
+        initial_state = math.asarray(initial_state, like=ml_framework)
+
+        # Define the single-qubit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
+        plus_state = np.array([[0.5, 0.5], [0.5, 0.5]], dtype=complex)
+        plus_state = math.asarray(plus_state, like=ml_framework)
+
+        # Apply QubitDensityMatrix on the first wire (wire=0)
+        op = qml.QubitDensityMatrix(plus_state, wires=[0])
+
+        # The expected final state should be |+><+| ⊗ |0><0| for each batch
+        zero_dm = np.array([[1, 0], [0, 0]], dtype=complex)
+        expected_single = np.kron(plus_state, zero_dm)  # shape (4,4)
+        expected = np.stack([expected_single] * batch_size, axis=0)
+        expected = math.reshape(expected, [batch_size] + [2] * 4)
+
+        # Apply the operation
+        result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
+
+        assert math.allclose(result, expected, atol=1e-8)

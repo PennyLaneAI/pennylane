@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
 # pylint: disable=dangerous-default-value,protected-access
 
 _StandardGateSet = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
+    "X",
+    "Y",
+    "Z",
     "Hadamard",
     "SWAP",
     "CNOT",
@@ -54,6 +54,7 @@ DefaultGateSet = {
 }
 
 
+# parameters for further configuration of the decompositions
 resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,

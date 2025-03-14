@@ -14,7 +14,6 @@
 """
 This module contains the qml.sample measurement.
 """
-import functools
 from collections.abc import Sequence
 from typing import Optional, Union
 
@@ -156,6 +155,8 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
         if isinstance(obs, MeasurementValue):
@@ -163,7 +164,9 @@ class SampleMP(SampleMeasurement):
             return
 
         if isinstance(obs, Sequence):
-            if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs):
+            if not all(
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
+            ) and not all(qml.math.is_abstract(o) for o in obs):
                 raise qml.QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
@@ -182,8 +185,6 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-
-    return_type = Sample
 
     @classmethod
     def _abstract_eval(
@@ -213,7 +214,6 @@ class SampleMP(SampleMeasurement):
         return tuple(shape), dtype
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         if self.obs is None:
             # Computational basis samples
@@ -228,6 +228,8 @@ class SampleMP(SampleMeasurement):
             )
         if self.obs:
             num_values_per_shot = 1  # one single eigenvalue
+        elif self.mv is not None:
+            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
             # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires

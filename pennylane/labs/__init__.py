@@ -32,6 +32,6 @@ Modules
 
 from pennylane.labs import dla
 from pennylane.labs import resource_estimation
-
+from pennylane.labs import vibrational
 
 __all__ = []

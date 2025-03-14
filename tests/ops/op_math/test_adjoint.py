@@ -320,6 +320,15 @@ class TestProperties:
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
 
+    def test_pauli_rep(self):
+        """Test pauli_rep works after adjoint operation."""
+        coeffs = [1 - 0.5j, 0.2, -3j]
+        paulis = [qml.X(0), qml.Y(0), qml.Z(0)]
+        op = qml.dot(coeffs, paulis)
+        adjoint_ps = qml.adjoint(op).pauli_rep
+        assert (list(adjoint_ps.values()) == qml.math.conjugate(coeffs)).all()
+        assert (qml.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
+
 
 class TestSimplify:
     """Test Adjoint simplify method and depth property."""
@@ -334,13 +343,7 @@ class TestSimplify:
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
         final_op = qml.RZ(4 * np.pi - 1.32, wires=0)
         simplified_op = adj_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.RZ)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
@@ -349,19 +352,7 @@ class TestSimplify:
             qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.Sum)
-        assert sum_op.data == simplified_op.data
-        assert sum_op.wires == simplified_op.wires
-        assert sum_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        for s1, s2 in zip(sum_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, sum_op)
 
     def test_simplify_adj_of_prod(self):
         """Test that the simplify method converts an adjoint of products to a (reverse) product
@@ -371,26 +362,13 @@ class TestSimplify:
             qml.RZ(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
-
-        assert isinstance(simplified_op, qml.ops.Prod)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_with_adjoint_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.adjoint method."""
         op = Adjoint(qml.T(0))
         simplified_op = op.simplify()
-        assert isinstance(simplified_op, Adjoint)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, op)
 
 
 class TestMiscMethods:

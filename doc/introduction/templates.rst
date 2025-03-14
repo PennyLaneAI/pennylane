@@ -114,6 +114,11 @@ state preparation is typically used as the first operation.
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
+.. gallery-item::
+    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -325,6 +330,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
     :figure: _static/templates/subroutines/qsvt.png
+
+.. gallery-item::
+    :description: :doc:`GQSP<../code/api/pennylane.GQSP>`
+    :figure: _static/templates/subroutines/gqsp.png
 
 .. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`

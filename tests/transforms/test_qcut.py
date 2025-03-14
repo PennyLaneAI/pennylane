@@ -14,14 +14,11 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-# pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
-# pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access, too-few-public-methods, too-many-arguments, too-many-public-methods, comparison-with-callable, unused-argument, no-value-for-parameter, no-member, not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
 import string
 import sys
-import warnings
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -39,14 +36,6 @@ from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.qcut
 
@@ -279,7 +268,7 @@ def compare_tapes(res_tape, expected_tape):
             assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(res_tape.measurements, expected_tape.measurements):
-        assert get_name(meas.return_type) == get_name(exp_meas.return_type)
+        assert (meas._shortname) == (exp_meas._shortname)
         assert get_name(meas.obs) == get_name(exp_meas.obs)
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
@@ -288,7 +277,7 @@ def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
-    assert get_name(meas1.return_type) == get_name(meas2.return_type)
+    assert meas1._shortname == meas2._shortname
     obs1 = meas1.obs
     obs2 = meas2.obs
     assert np.array(get_name(obs1) == get_name(obs2)).all()
@@ -492,12 +481,12 @@ class TestTapeToGraph:
     @pytest.mark.parametrize(
         "measurement,expected_measurement",
         [
-            (qml.expval(qml.PauliZ(wires=[0])), "Expectation"),
-            (qml.sample(qml.PauliZ(wires=[0])), "Sample"),
-            (qml.var(qml.PauliZ(wires=[0])), "Variance"),
-            (qml.probs(wires=0), "Probability"),
-            (qml.state(), "State"),
-            (qml.density_matrix([0]), "State"),
+            (qml.expval(qml.PauliZ(wires=[0])), "expval"),
+            (qml.sample(qml.PauliZ(wires=[0])), "sample"),
+            (qml.var(qml.PauliZ(wires=[0])), "var"),
+            (qml.probs(wires=0), "probs"),
+            (qml.state(), "state"),
+            (qml.density_matrix([0]), "state"),
         ],
     )
     def test_measurement_conversion(self, measurement, expected_measurement):
@@ -517,9 +506,11 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
-        node_observables = [node.obj for node in nodes if hasattr(node.obj, "return_type")]
+        node_observables = [
+            node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)
+        ]
 
-        assert get_name(node_observables[0].return_type) == expected_measurement
+        assert node_observables[0]._shortname.value == expected_measurement
 
     def test_multiple_observables(self):
         """
@@ -585,7 +576,7 @@ class TestTapeToGraph:
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
-                assert node.obj.return_type is qml.measurements.Sample
+                assert isinstance(node.obj, qml.measurements.SampleMP)
                 assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
     def test_sample_tensor_obs(self):
@@ -641,7 +632,7 @@ class TestTapeToGraph:
             assert node.obj.wires == expected_node.wires
 
             if getattr(node.obj, "obs", None) is not None:
-                assert node.obj.return_type is qml.measurements.Sample
+                assert isinstance(node.obj, qml.measurements.SampleMP)
                 assert get_name(node.obj.obs) == get_name(expected_node.obs)
 
 
@@ -1430,7 +1421,7 @@ class TestGraphToTape:
         # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(1), Wires(2)}
 
@@ -1472,7 +1463,7 @@ class TestGraphToTape:
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
         for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas, qml.measurements.SampleMP)
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(0), Wires(3)}
 
@@ -1572,7 +1563,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == len(group)
-        assert out[0].return_type is qml.measurements.Expectation
+        assert isinstance(out[0], qml.measurements.ExpectationMP)
         assert get_name(out[0].obs) == "Identity"
         assert out[0].obs.wires[0] == 0
 
@@ -1584,10 +1575,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == 2
-        assert [o.return_type for o in out] == [
-            qml.measurements.Expectation,
-            qml.measurements.Expectation,
-        ]
+        assert [o._shortname.value for o in out] == ["expval", "expval"]
 
         obs = [o.obs for o in out]
 
@@ -4569,32 +4557,10 @@ class TestCutCircuitExpansion:
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
         cut_transform(circuit, device_wires=[0])(**kwargs)
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
-
-    @pytest.mark.skip("Nested tapes are being deprecated")
-    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
-    def test_expansion(self, mocker, cut_transform, measurement):
-        """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                qml.WireCut(wires=0)
-            qml.RY(0.4, wires=0)
-            qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
-        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
-
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-        cut_transform(tape, device_wires=[0], **kwargs)
-
-        spy.assert_called_once()
-        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
@@ -4608,7 +4574,7 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
             cut_transform(circuit, device_wires=[0])(**kwargs)
 
     def test_expansion_ttn(self, mocker):
@@ -5585,14 +5551,16 @@ class TestCutCircuitWithHamiltonians:
         cut_circuit = qcut.cut_circuit(
             qml.QNode(f, dev_cut), auto_cutter=True, device_wires=qml.wires.Wires(range(3))
         )
+        cut_tape = qml.workflow.construct_tape(cut_circuit, level=0)()
 
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
+
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
-        assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
+        assert cut_tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
     def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""

@@ -9,9 +9,14 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+    branches-ignore:
+      - 'v[0-9]+.[0-9]+.[0-9]+-docs'
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
     - cron: "47 2 * * 1"
+  merge_group:
+    types:
+      - checks_requested
 
 concurrency:
   group: unit-tests-${{ github.ref }}

@@ -15,8 +15,10 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 import pennylane as qml
-from pennylane.devices import ExecutionConfig
+from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow._setup_transform_program import (
     _prune_dynamic_transform,
@@ -124,11 +126,21 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program2) == 1
 
 
+def test_prune_dynamic_transform_warning_raised():
+    """Tests that a warning raised when a user-applied dynamic-one-shot transform is ignored."""
+
+    user_transform_program = TransformProgram()
+    user_transform_program.add_transform(qml.transforms.dynamic_one_shot)
+    device = qml.device("default.qubit")
+    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
+
+    with pytest.warns(UserWarning, match="A dynamic_one_shot transform already exists"):
+        _, __ = _setup_transform_program(user_transform_program, device, config)
+
+
 def test_interface_data_not_supported():
     """Test that convert_to_numpy_parameters transform is correctly added."""
-    config = ExecutionConfig()
-    config.interface = "autograd"
-    config.gradient_method = "adjoint"
+    config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
@@ -140,10 +152,8 @@ def test_interface_data_not_supported():
 
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    config.interface = "autograd"
-    config.gradient_method = None
     device = qml.device("default.mixed", wires=1)
 
     user_transform_program = TransformProgram()
@@ -151,10 +161,8 @@ def test_interface_data_supported():
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    config.interface = "autograd"
-    config.gradient_method = "backprop"
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
@@ -162,15 +170,20 @@ def test_interface_data_supported():
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface=None, gradient_method="backprop")
 
-    config.interface = None
-    config.gradient_method = "backprop"
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+
+    config = ExecutionConfig(
+        convert_to_numpy=False, interface="jax", gradient_method=qml.gradients.param_shift
+    )
+
+    _, inner_tp = _setup_transform_program(TransformProgram(), device, config)
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
 

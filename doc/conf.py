@@ -57,7 +57,7 @@ ogp_social_cards = {
     "site_url": "https://docs.pennylane.ai/",
     "line_color": "#03b2ff",
 }
-ogp_image = "_static/header-tall.png"
+ogp_image = "_static/opengraph.png"
 
 
 # The base URL with a proper language and version.
@@ -260,6 +260,7 @@ html_theme_options = {
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
     "google_analytics_tracking_id": "G-C480Z9JL0D",
+    "search_on_pennylane_ai": True,
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"

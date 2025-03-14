@@ -28,8 +28,7 @@ class TestIQPE:
     def test_compare_qpe(self, mcm_method, phi):
         """Test to check that the results obtained are equivalent to those of QuantumPhaseEstimation"""
 
-        # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
-        dev = qml.device("default.qubit", shots=10000000)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, mcm_method=mcm_method)
         def circuit_iterative():
@@ -39,11 +38,9 @@ class TestIQPE:
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), aux_wire=[1], iters=3)
 
-            return [qml.sample(op=meas) for meas in measurements]
+            return qml.probs(op=measurements)
 
-        sample_list = np.array(circuit_iterative())
-        sample_list = sample_list.T
-        output = qml.probs().process_samples(np.array(sample_list), wire_order=[0, 1, 2])
+        output = circuit_iterative()
 
         @qml.qnode(dev)
         def circuit_qpe():
@@ -240,3 +237,51 @@ class TestIQPE:
             return [qml.expval(op=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())
+
+
+@pytest.mark.slow
+@pytest.mark.jax
+def test_capture_execution(seed):
+    """Test that iterative qpe can be captured and executed.
+
+    While this is a rather bad test:
+    * the captured jaxpr has too many classical instructions for
+    easy verification of its contents
+    * The captured jaxpr cannot be used with CollectOpsandMeas as it converts mcm integers to
+    measurement values, which are incompatible with the scatter operation used in
+    `measurements = measurements.at[iters - i - 1].set(m)`
+    * Evaluating jaxpr currently uses single-branch-statistics, which gives incorrect results for a
+    a single execution.
+
+
+    """
+
+    qml.capture.enable()
+    import jax
+
+    def f(x):
+        qml.X(0)
+        return qml.iterative_qpe(qml.RZ(x, wires=[0]), aux_wire=1, iters=3)
+
+    x = jax.numpy.array(2.0)
+
+    jaxpr = jax.make_jaxpr(f)(1.5)
+
+    dev = qml.device("default.qubit", wires=3, seed=seed)
+
+    # hack for single-branch statistics
+    samples = qml.math.vstack([dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x) for _ in range(5000)])
+    probs_capture = qml.probs(wires=(0, 1, 2)).process_samples(
+        samples, wire_order=qml.wires.Wires((0, 1, 2))
+    )
+
+    qml.capture.disable()
+
+    @qml.qnode(dev)
+    def normal_qnode(x):
+        meas = f(x)
+        return qml.probs(op=meas)
+
+    probs_normal = normal_qnode(x)
+
+    assert qml.math.allclose(probs_capture, probs_normal, atol=0.02)

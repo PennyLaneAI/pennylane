@@ -15,6 +15,7 @@
 This module contains tests for functions needed to compute PES object.
 """
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -23,6 +24,7 @@ import pennylane as qml
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vibrational_class
 
+h5py = pytest.importorskip("h5py")
 # pylint: disable=too-many-arguments, protected-access
 
 
@@ -93,28 +95,31 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "expected_geom"),
+    ("sym", "geom", "unit", "expected_geom"),
     # Expected geometry was obtained using pyscf
     [
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[0.0, 0.0, 0.07497201], [0.0, 0.0, 1.81475336]]),
+            "Angstrom",
+            np.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
         ),
         (
             ["C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.88972613]]),
+            "Bohr",
             np.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_optimize_geometry(sym, geom, expected_geom):
+def test_optimize_geometry(sym, geom, unit, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
-    assert np.allclose(mol_eq[0].coordinates, expected_geom)
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
+    coordinates = vibrational.optimize_geometry(mol)
+    print(coordinates, geom)
+    assert np.allclose(coordinates, expected_geom)
 
 
 @pytest.mark.parametrize(
@@ -137,8 +142,18 @@ def test_optimize_geometry(sym, geom, expected_geom):
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
-    _, displ_vecs = vibrational_class._harmonic_analysis(mol_eq[1])
+    geom_eq = vibrational.optimize_geometry(mol)
+    mol_eq = qml.qchem.Molecule(
+        mol.symbols,
+        geom_eq,
+        unit=mol.unit,
+        basis_name=mol.basis_name,
+        load_data=mol.load_data,
+    )
+
+    scf_result = vibrational_class._single_point(mol_eq)
+
+    _, displ_vecs = vibrational_class._harmonic_analysis(scf_result)
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
     )
@@ -329,7 +344,6 @@ def test_error_mode_localization():
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
-
     freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
@@ -380,3 +394,38 @@ def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
     dipole = vibrational_class._get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)
+
+
+def test_VibrationalPES():
+    r"""Test that VibrationalPES class stores the correct results."""
+
+    pes_file = Path(__file__).resolve().parent / "test_ref_files" / "HF.hdf5"
+    with h5py.File(pes_file, "r+") as f:
+        pes_onebody = np.array(f["V1_PES"][()])
+        dip_onebody = np.array(f["D1_DMS"][()])
+        pes_twobody = np.array(f["V2_PES"][()])
+        dip_twobody = np.array(f["D2_DMS"][()])
+        pes_threebody = np.array(f["V3_PES"][()])
+        dip_threebody = np.array(f["D3_DMS"][()])
+        freqs = np.array(f["freqs"][()])
+        uloc = np.array(f["Uloc"][()])
+
+    pes_data = [pes_onebody, pes_twobody, pes_threebody]
+    dipole_data = [dip_onebody, dip_twobody, dip_threebody]
+
+    grid, gauss_weights = np.polynomial.hermite.hermgauss(pes_onebody.shape[1])
+
+    vib_obj = vibrational.VibrationalPES(
+        freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localized=True, dipole_level=3
+    )
+
+    assert np.allclose(vib_obj.freqs, freqs)
+    assert np.allclose(vib_obj.pes_onemode, pes_onebody)
+    assert np.allclose(vib_obj.pes_twomode, pes_twobody)
+    assert np.allclose(vib_obj.pes_threemode, pes_threebody)
+    assert np.allclose(vib_obj.dipole_onemode, dip_onebody)
+    assert np.allclose(vib_obj.dipole_twomode, dip_twobody)
+    assert np.allclose(vib_obj.dipole_threemode, dip_threebody)
+    assert np.allclose(vib_obj.grid, grid)
+    assert np.allclose(vib_obj.uloc, uloc)
+    assert np.allclose(vib_obj.gauss_weights, gauss_weights)

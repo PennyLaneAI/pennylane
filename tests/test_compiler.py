@@ -14,7 +14,6 @@
 """
 Unit tests for the compiler subpackage.
 """
-import warnings
 
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
@@ -27,14 +26,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -151,9 +142,7 @@ class TestCatalyst:
             return qml.state()
 
         # Check that the compilation happens at definition
-        assert circuit.jaxpr
-        assert circuit.mlir
-        assert circuit.qir
+        assert circuit.compiled_function
 
         result = circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))
         expected = jnp.array(
@@ -248,7 +237,7 @@ class TestCatalyst:
         """Test user-configurable compilation options"""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", keep_intermediate=True)
         @qml.qnode(dev)
         def circuit(x: float):
             qml.RX(x, wires=0)
@@ -258,6 +247,7 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+        circuit.workspace.cleanup()
 
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
@@ -363,45 +353,6 @@ class TestCatalystControlFlow:
         assert circuit(5, 6) == 30  # 5 * 6
         assert circuit(4, 7) == 28  # 4 * 7
 
-    def test_while_loop_python_fallback(self):
-        """Test that qml.while_loop fallsback to
-        Python without qjit"""
-
-        def f(n, m):
-            @qml.while_loop(lambda i, _: i < n)
-            def outer(i, sm):
-                @qml.while_loop(lambda j: j < m)
-                def inner(j):
-                    return j + 1
-
-                return i + 1, sm + inner(0)
-
-            return outer(0, 0)[1]
-
-        assert f(5, 6) == 30  # 5 * 6
-        assert f(4, 7) == 28  # 4 * 7
-
-    def test_fallback_while_loop_qnode(self):
-        """Test that qml.while_loop inside a qnode fallsback to
-        Python without qjit"""
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(n):
-            @qml.while_loop(lambda v: v[0] < v[1])
-            def loop(v):
-                qml.PauliX(wires=0)
-                return v[0] + 1, v[1]
-
-            loop((0, n))
-            return qml.expval(qml.PauliZ(0))
-
-        assert jnp.allclose(circuit(1), -1.0)
-
-        res = circuit.tape.operations
-        expected = [qml.PauliX(0) for i in range(4)]
-        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
-
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
@@ -453,57 +404,6 @@ class TestCatalystControlFlow:
             return qml.state()
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
-
-    def test_for_loop_python_fallback(self):
-        """Test that qml.for_loop fallsback to Python
-        interpretation if Catalyst is not available"""
-        dev = qml.device("lightning.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit(x, n):
-
-            # for loop with dynamic bounds
-            @qml.for_loop(0, n, 1)
-            def loop_fn(i):
-                qml.Hadamard(wires=i)
-
-            # nested for loops.
-            # outer for loop updates x
-            @qml.for_loop(0, n, 1)
-            def loop_fn_returns(i, x):
-                qml.RX(x, wires=i)
-
-                # inner for loop
-                @qml.for_loop(i + 1, n, 1)
-                def inner(j):
-                    qml.CRY(x**2, [i, j])
-
-                inner()
-
-                return x + 0.1
-
-            loop_fn()
-            loop_fn_returns(x)
-
-            return qml.expval(qml.PauliZ(0))
-
-        x = 0.5
-        assert jnp.allclose(circuit(x, 3), qml.qjit(circuit)(x, 3))
-
-        res = circuit.tape.operations
-        expected = [
-            qml.Hadamard(wires=[0]),
-            qml.Hadamard(wires=[1]),
-            qml.Hadamard(wires=[2]),
-            qml.RX(0.5, wires=[0]),
-            qml.CRY(0.25, wires=[0, 1]),
-            qml.CRY(0.25, wires=[0, 2]),
-            qml.RX(0.6, wires=[1]),
-            qml.CRY(0.36, wires=[1, 2]),
-            qml.RX(0.7, wires=[2]),
-        ]
-
-        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
 
     def test_cond(self):
         """Test condition with simple true_fn"""
@@ -870,16 +770,20 @@ class TestCatalystSample:
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
 
-    @pytest.mark.xfail(reason="requires simultaneous catalyst pr")
-    @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
+    @pytest.mark.parametrize(
+        "measure_f",
+        [
+            qml.counts,
+            qml.expval,
+            qml.probs,
+        ],
+    )
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
-    # pylint: disable=too-many-arguments
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
-        if measure_f in (qml.counts, qml.probs, qml.sample) and (
-            not isinstance(meas_obj, list) and not meas_obj == "mcm"
-        ):
+
+        if measure_f in (qml.counts, qml.probs, qml.sample) and isinstance(meas_obj, qml.PauliZ):
             pytest.skip("Can't use observables with counts, probs or sample")
 
         if measure_f in (qml.var, qml.expval) and (isinstance(meas_obj, list)):
@@ -887,6 +791,7 @@ class TestCatalystMCMs:
 
         if measure_f == qml.var and (not isinstance(meas_obj, list) and not meas_obj == "mcm"):
             pytest.xfail("isa<UnrealizedConversionCastOp>")
+
         shots = 8000
 
         dq = qml.device("default.qubit", shots=shots, seed=seed)
@@ -901,15 +806,14 @@ class TestCatalystMCMs:
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
-            if measure_f == qml.counts:
+            if measure_f is qml.counts:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
         dev = qml.device("lightning.qubit", wires=2, shots=shots)
 
         @qml.qjit
-        @catalyst.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)
             m0 = catalyst.measure(0)
@@ -923,16 +827,20 @@ class TestCatalystMCMs:
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
+            if measure_f is qml.counts:
+                kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
         params = jnp.pi / 4 * jnp.ones(2)
         results0 = ref_func(*params)
         results1 = func(*params)
-        if measure_f == qml.counts and isinstance(meas_obj, list):
-            results1 = {
-                format(int(state), f"0{len(meas_obj)}b"): count for state, count in zip(*results1)
-            }
-        if measure_f == qml.sample:
+        if measure_f is qml.counts:
+
+            def fname(x):
+                return format(x, f"0{len(meas_obj)}b") if isinstance(meas_obj, list) else x
+
+            results1 = {fname(int(state)): count for state, count in zip(*results1)}
+        if measure_f is qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
         mcm_utils.validate_measurements(measure_f, shots, results1, results0)

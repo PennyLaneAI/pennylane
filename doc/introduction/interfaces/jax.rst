@@ -176,7 +176,7 @@ Example:
 
         # Device construction should happen inside a `jax.jit` decorated
         # method when using a PRNGKey.
-        dev = qml.device('default.qubit', wires=2, prng_key=key, shots=100)
+        dev = qml.device('default.qubit', wires=2, seed=key, shots=100)
 
 
         @qml.qnode(dev, interface='jax', diff_method=None)

@@ -27,6 +27,7 @@ def test_abstract_resource_decomp():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
@@ -71,6 +72,7 @@ def test_abstract_resource_rep():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return
 
@@ -87,6 +89,7 @@ def test_set_resources():
     class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
+        @property
         def resource_params(self):
             return
 
@@ -113,6 +116,7 @@ def test_resource_rep_from_op():
         def _resource_decomp():
             return
 
+        @property
         def resource_params(self):
             return {"foo": 1, "bar": 2}
 
@@ -120,5 +124,9 @@ def test_resource_rep_from_op():
         def resource_rep(cls, foo, bar):
             return re.CompressedResourceOp(cls, {"foo": foo, "bar": bar})
 
-    op = DummyClass()
-    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
+        @staticmethod
+        def tracking_name(foo, bar):
+            return f"DummyClass({foo}, {bar})"
+
+    op = DummyClass(wires=[1, 2, 3])
+    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params)

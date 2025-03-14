@@ -44,6 +44,10 @@ __all__ = [
 ]
 
 
+class AutoGraphWarning(Warning):
+    """Warnings related to PennyLane's AutoGraph submodule."""
+
+
 class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 
@@ -380,10 +384,15 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
+        # Using qml.ops.op_math.adjoint points to the adjoint function
+        # and importing this at the top of the file creates circular imports
+        # pylint: disable=import-outside-toplevel, protected-access
+        from pennylane.ops.op_math.adjoint import _capture_adjoint_transform
+
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            qml.adjoint,
-            qml.ctrl,
+            _capture_adjoint_transform,
+            qml.ops.op_math.controlled._capture_ctrl_transform,
             qml.grad,
             qml.jacobian,
             qml.vjp,

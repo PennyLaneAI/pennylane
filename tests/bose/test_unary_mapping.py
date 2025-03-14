@@ -517,7 +517,7 @@ def test_n_states_error_unary():
 def test_error_is_raised_for_incompatible_type():
     """Test that an error is raised if the input is not a BoseWord or BoseSentence"""
 
-    with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
+    with pytest.raises(TypeError, match="bose_operator must be a BoseWord or BoseSentence"):
         unary_mapping(X(0))
 
 

@@ -11,13 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for setting up the inner and outer transform programs for execution of a QNode.
+"""Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
 
-"""
+import warnings
 
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane.math import Interface
 from pennylane.transforms.core import TransformProgram
 
 from ._cache_transform import _cache_transform
@@ -45,10 +46,20 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
     if type_to_keep == 0:
         return
 
-    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
-    if dynamic_transform_found:
+    inner_contains_one_shot = inner_transform.prune_dynamic_transform(type_to_keep)
+    if inner_contains_one_shot:
         type_to_keep = 0
+    original_len = len(outer_transform)
     outer_transform.prune_dynamic_transform(type_to_keep)
+    outer_contained_one_shot = len(outer_transform) < original_len
+    if inner_contains_one_shot and outer_contained_one_shot:
+        warnings.warn(
+            "A dynamic_one_shot transform already exists in the preprocessing program of the "
+            "device. Therefore, the dynamic_one_shot applied on the qnode will be ignored. "
+            "See https://docs.pennylane.ai/en/stable/code/api/pennylane.dynamic_one_shot.html "
+            "for more information on the recommended way to use dynamic_one_shot.",
+            UserWarning,
+        )
 
 
 def _setup_transform_program(
@@ -74,7 +85,9 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
+    full_transform_program = qml.transforms.core.TransformProgram(
+        user_transform_program, cotransform_cache=user_transform_program.cotransform_cache
+    )
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary
@@ -102,12 +115,9 @@ def _setup_transform_program(
 
     # changing this set of conditions causes a bunch of tests to break.
     interface_data_supported = (
-        resolved_execution_config.interface is None
+        (not resolved_execution_config.convert_to_numpy)
+        or resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
-        or (
-            getattr(device, "short_name", "") == "default.mixed"
-            and resolved_execution_config.gradient_method is None
-        )
     )
     if not interface_data_supported:
         inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)

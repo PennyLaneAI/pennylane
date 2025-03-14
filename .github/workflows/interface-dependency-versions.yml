@@ -26,7 +26,7 @@ on:
         description: The version of PyTorch to use for testing
         required: false
         type: string
-        default: '2.3.0'
+        default: '2.5.0'
     outputs:
       jax-version:
         description: The version of JAX to use
@@ -63,15 +63,15 @@ jobs:
       
       - name: Nightly Catalyst Version
         id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
+        run: echo "nightly=--index https://test.pypi.org/simple/ --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst" >> $GITHUB_OUTPUT
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
-        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
+        run: echo "latest=--index https://test.pypi.org/simple/ --prerelease=allow --upgrade-package PennyLane-Lightning PennyLane-Lightning" >> $GITHUB_OUTPUT
     
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
       tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }}
+      pytorch-version: torch~=${{ steps.pytorch.outputs.version }}
       catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
       pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}

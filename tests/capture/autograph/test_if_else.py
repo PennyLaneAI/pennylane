@@ -132,10 +132,12 @@ class TestConditionals:
         assert res(2) == 4
         assert res(-3) == -3
 
-    def test_qubit_manipulation_cond(self):
+    @pytest.mark.xfail(raises=NotImplementedError)
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_qubit_manipulation_cond(self, autograph):
         """Test conditional with quantum operation."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def circuit(x):
             if x > 4:
                 qml.PauliX(wires=0)
@@ -259,7 +261,7 @@ class TestConditionals:
             if True:
                 res = measure(wires=0)
 
-            return qml.expval(res)
+            return qml.expval(res)  # pylint: disable=possibly-used-before-assignment
 
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"
@@ -283,11 +285,12 @@ class TestConditionals:
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             run_autograph(circuit)()
 
-    def test_multiple_return_different_measurements(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_multiple_return_different_measurements(self, autograph):
         """Test that different measurements be used in the return in different branches, as
         they are all represented by the AbstractMeasurement class."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f(switch: bool):
             if switch:
                 return qml.expval(qml.PauliY(0))

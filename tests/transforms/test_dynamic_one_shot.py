@@ -14,10 +14,10 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -29,11 +29,25 @@ from pennylane.measurements import (
     SampleMP,
 )
 from pennylane.transforms.dynamic_one_shot import (
+    _supports_one_shot,
     fill_in_value,
+    get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
 
 # pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_get_legacy_capability():
+    dev = DefaultQubitLegacy(wires=[0], shots=1)
+    dev = qml.devices.LegacyDeviceFacade(dev)
+    caps = get_legacy_capabilities(dev)
+    assert caps["model"] == "qubit"
+    assert not "supports_mid_measure" in caps
+    assert not _supports_one_shot(dev)
+
+    dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
+    assert not _supports_one_shot(dev2)
 
 
 @pytest.mark.parametrize(
@@ -98,8 +112,7 @@ def test_postselect_mode_transform(postselect_mode):
     shots = 100
     dev = qml.device("default.qubit", shots=shots)
 
-    @partial(qml.dynamic_one_shot)
-    @qml.qnode(dev, postselect_mode=postselect_mode)
+    @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=1)

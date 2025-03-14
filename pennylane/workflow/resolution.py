@@ -11,19 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the necessary helper functions for setting up the workflow for execution.
-
-"""
-
+"""This module contains the necessary helper functions for setting up the workflow for execution."""
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Literal, get_args
+from importlib.metadata import version
+from importlib.util import find_spec
+from typing import Literal, Optional, Union, get_args
+from warnings import warn
+
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-
-from .execution import _get_interface_name
 
 SupportedDiffMethods = Literal[
     None,
@@ -38,8 +40,89 @@ SupportedDiffMethods = Literal[
 ]
 
 
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
+    abstract.
+    """
+    x = qml.math.asarray([0], like="jax")
+    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
+
+
+# pylint: disable=import-outside-toplevel
+def _use_tensorflow_autograph():
+    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
+    try:  # pragma: no cover
+        import tensorflow as tf
+    except ImportError as e:  # pragma: no cover
+        raise qml.QuantumFunctionError(  # pragma: no cover
+            "tensorflow not found. Please install the latest "  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
+        ) from e  # pragma: no cover
+
+    return not tf.executing_eagerly()
+
+
+def _validate_jax_version():
+    """Checks if the installed version of JAX is supported. If an unsupported version of
+    JAX is installed, a ``RuntimeWarning`` is raised."""
+    if not find_spec("jax"):
+        return
+
+    jax_version = version("jax")
+    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
+        warn(
+            "PennyLane is currently not compatible with versions of JAX > 0.4.28. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+
+
+def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve an interface based on a set of tapes.
+
+    Args:
+        interface (str, Interface): Original interface to use as reference.
+        tapes (list[.QuantumScript]): Quantum tapes
+
+    Returns:
+        Interface: resolved interface
+    """
+    interface = get_canonical_interface_name(interface)
+
+    if interface == Interface.AUTO:
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = get_interface(*params)
+        try:
+            interface = get_canonical_interface_name(interface)
+        except ValueError:
+            # If the interface is not recognized, default to numpy, like networkx
+            interface = Interface.NUMPY
+
+    if interface in (Interface.JAX, Interface.JAX_JIT):
+        _validate_jax_version()
+
+    if interface == Interface.TF and _use_tensorflow_autograph():
+        interface = Interface.TF_AUTOGRAPH
+    if interface == Interface.JAX:
+        # pylint: disable=unused-import
+        try:  # pragma: no cover
+            import jax
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = _get_jax_interface_name()
+
+    return interface
+
+
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
+    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
 ) -> "qml.devices.MCMConfig":
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
@@ -55,7 +138,7 @@ def _resolve_mcm_config(
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if mcm_config.postselect_mode == "hw-like":
@@ -67,7 +150,7 @@ def _resolve_mcm_config(
 
     if (
         finite_shots
-        and "jax" in interface
+        and interface in {Interface.JAX, Interface.JAX_JIT}
         and mcm_config.mcm_method in (None, "one-shot")
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
@@ -138,7 +221,7 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
+    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -154,14 +237,28 @@ def _resolve_execution_config(
     updated_values = {}
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
+        execution_config.gradient_method, Callable
+    ):
+        updated_values["grad_on_execution"] = False
+
     if (
         "lightning" in device.name
+        and transform_program
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    if execution_config.use_device_jacobian_product and not device.supports_vjp(
+        execution_config, tapes[0]
+    ):
+        raise qml.QuantumFunctionError(
+            f"device_vjp=True is not supported for device {device},"
+            f" diff_method {execution_config.gradient_method},"
+            " and the provided circuit."
+        )
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -169,13 +266,16 @@ def _resolve_execution_config(
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
+    interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+        _resolve_interface(Interface.AUTO, tapes)
+        if execution_config.interface == Interface.NUMPY
+        else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
+    updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
 
     execution_config = replace(execution_config, **updated_values)

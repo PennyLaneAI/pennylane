@@ -29,7 +29,6 @@ import numpy as np
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -120,8 +119,8 @@ def _(
     return math.asarray(state, like=interface)
 
 
-def _interface(config: ExecutionConfig) -> str:
-    return INTERFACE_TO_LIKE[config.interface] if config.gradient_method == "backprop" else "numpy"
+def _interface(config: ExecutionConfig):
+    return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
 @simulator_tracking
@@ -405,3 +404,20 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
+
+    # pylint: disable= unused-argument
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+    ) -> list:
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            AbstractMeasurement,
+        )
+
+        def zeros_like(var):
+            if isinstance(var.aval, AbstractMeasurement):
+                shots = self.shots.total_shots
+                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
+                return math.zeros(s, dtype=dtype, like="jax")
+            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
+
+        return [zeros_like(var) for var in jaxpr.outvars]

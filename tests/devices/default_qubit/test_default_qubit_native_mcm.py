@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 from collections.abc import Sequence
-from unittest.mock import patch
 
 import mcm_utils
 import numpy as np
@@ -307,32 +306,6 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         _ = circuit([0.1, 0.2])
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["torch", "tensorflow", "jax", "autograd"])
-@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-def test_finite_diff_in_transform_program(interface, mcm_method, seed):
-    """Test that finite diff is in the transform program of a qnode containing
-    mid-circuit measurements"""
-
-    dev = qml.device("default.qubit", shots=10, seed=seed)
-
-    @qml.qnode(dev, mcm_method=mcm_method, diff_method="finite-diff")
-    def circuit(x):
-        qml.RX(x, 0)
-        qml.measure(0)
-        return qml.expval(qml.Z(0))
-
-    x = qml.math.array(1.5, like=interface)
-    with patch("pennylane.execute") as mock_execute:
-        circuit(x)
-        mock_execute.assert_called()
-        _, kwargs = mock_execute.call_args
-        transform_program = kwargs["transform_program"]
-
-    # pylint: disable=protected-access
-    assert transform_program[0]._transform == qml.gradients.finite_diff.expand_transform
-
-
 # pylint: disable=import-outside-toplevel, not-an-iterable
 @pytest.mark.jax
 class TestJaxIntegration:
@@ -416,11 +389,7 @@ class TestJaxIntegration:
         results1 = func1(*params)
 
         jaxpr = str(jax.make_jaxpr(func)(*params))
-        if diff_method == "best":
-            assert "pure_callback" in jaxpr
-            pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
-        else:
-            assert "pure_callback" not in jaxpr
+        assert "pure_callback" not in jaxpr
 
         func2 = jax.jit(func)
         results2 = func2(*params)

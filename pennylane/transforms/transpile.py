@@ -126,7 +126,7 @@ def transpile(
     """
     if device:
         device_wires = device.wires
-        is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+        is_default_mixed = device.name == "default.mixed"
     else:
         device_wires = None
         is_default_mixed = False
@@ -221,7 +221,7 @@ def transpile(
             list_op_copy = [op.map_wires(wire_map) for op in list_op_copy]
             wire_order = [wire_map[w] for w in wire_order]
             measurements = [m.map_wires(wire_map) for m in measurements]
-    new_tape = type(tape)(gates, measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=gates, measurements=measurements)
 
     # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
     # pylint: disable=unidiomatic-typecheck

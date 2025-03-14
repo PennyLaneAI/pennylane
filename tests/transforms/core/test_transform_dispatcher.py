@@ -17,6 +17,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
@@ -463,25 +464,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
-    def test_default_plxpr_transform_error(self):
-        """Test that an error is raised if attempting to use transform.plxpr_transform without
-        providing it on initialization."""
-
-        dispatched_transform = transform(first_valid_transform)
-        dummy_args = {
-            "primitive": None,
-            "tracers": None,
-            "params": None,
-            "targs": None,
-            "tkwargs": None,
-            "state": None,
-        }
-
-        with pytest.raises(
-            TransformError, match="first_valid_transform cannot be used to transform PLxPR."
-        ):
-            _ = dispatched_transform.plxpr_transform(**dummy_args)
-
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = transform(second_valid_transform)
@@ -666,15 +648,17 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
-        dev = qml.device("default.mixed", wires=2)  # pylint: disable=redefined-outer-name
+        device = qml.devices.LegacyDeviceFacade(
+            DefaultQubitLegacy(wires=2)
+        )  # pylint: disable=redefined-outer-name
 
         dispatched_transform = transform(valid_transform)
-        new_dev = dispatched_transform(dev, index=0)
+        new_dev = dispatched_transform(device, index=0)
 
-        assert new_dev.original_device is dev
+        assert new_dev.original_device is device
         assert repr(new_dev).startswith("Transformed Device")
 
-        program = dev.preprocess_transforms()
+        program = device.preprocess_transforms()
         new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
@@ -717,7 +701,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform_error(self, valid_transform):
         """Test that the old device transform returns errors."""
-        device = qml.device("default.mixed", wires=2)
+        device = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         with pytest.raises(
             TransformError, match="Device transform does not support informative transforms."

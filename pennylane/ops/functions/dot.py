@@ -31,7 +31,7 @@ def dot(
     ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
     pauli=False,
     grouping_type=None,
-    method="rlf",
+    method="lf",
 ) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
@@ -50,8 +50,9 @@ def dot(
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Note that if
             ``pauli=True``, the grouping will be ignored.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
-            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
+            grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+            ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+            This keyword argument is ignored if ``grouping_type`` is ``None``. Defaults to ``'lf'`` if no method is provided.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -129,8 +130,10 @@ def dot(
         ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
-        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
-        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
+        ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+        ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+        To see more details about how these affect grouping, see :ref:`Pauli Graph Colouring<graph_colouring>` and
+        :func:`~pennylane.pauli.compute_partition_indices`.
     """
 
     for t in (Operator, PauliWord, PauliSentence):
@@ -139,10 +142,12 @@ def dot(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
             )
 
-    if len(coeffs) != len(ops):
-        raise ValueError("Number of coefficients and operators does not match.")
-    if len(coeffs) == 0 and len(ops) == 0:
-        raise ValueError("Cannot compute the dot product of an empty sequence.")
+    # tensorflow variables have no len
+    if qml.math.get_interface(coeffs) != "tensorflow":
+        if len(coeffs) != len(ops):
+            raise ValueError("Number of coefficients and operators does not match.")
+        if len(coeffs) == 0 and len(ops) == 0:
+            raise ValueError("Cannot compute the dot product of an empty sequence.")
 
     for t in (Operator, PauliWord, PauliSentence):
         if isinstance(ops, t):

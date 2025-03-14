@@ -17,7 +17,7 @@ This module tests the default qubit interpreter.
 import pytest
 
 jax = pytest.importorskip("jax")
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 
@@ -25,21 +25,15 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 
 # must be below the importorskip
 # pylint: disable=wrong-import-position
+from pennylane.devices import ExecutionConfig
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 def test_initialization():
     """Test that relevant properties are set on initialization."""
     dq = DefaultQubitInterpreter(num_wires=3, shots=None)
     assert dq.num_wires == 3
-    assert dq.shots == qml.measurements.Shots(None)
+    assert dq.original_shots == qml.measurements.Shots(None)
     assert isinstance(dq.initial_key, jax.numpy.ndarray)
     assert dq.stateref is None
 
@@ -57,14 +51,22 @@ def test_setup_and_cleanup():
     dq = DefaultQubitInterpreter(num_wires=2, shots=2, key=key)
     assert dq.stateref is None
 
+    with pytest.raises(AttributeError, match="execution not yet initialized"):
+        _ = dq.state
+
     dq.setup()
     assert isinstance(dq.stateref, dict)
-    assert list(dq.stateref.keys()) == ["state", "key"]
+    assert list(dq.stateref.keys()) == ["state", "shots", "key", "is_state_batched"]
 
     assert dq.stateref["key"] is key
     assert dq.key is key
 
+    assert dq.stateref["shots"] == qml.measurements.Shots(2)
+    assert dq.shots == qml.measurements.Shots(2)
+
     assert dq.state is dq.stateref["state"]
+    assert dq.is_state_batched is False
+    assert dq.stateref["is_state_batched"] is False
     expected = jax.numpy.array([[1.0, 0.0], [0.0, 0.0]], dtype=complex)
     assert qml.math.allclose(dq.state, expected)
 
@@ -72,21 +74,19 @@ def test_setup_and_cleanup():
     assert dq.stateref is None
 
 
-def test_working_state_key_before_setup():
+@pytest.mark.parametrize("name", ("state", "key", "is_state_batched", "shots"))
+def test_working_state_key_before_setup(name):
     """Test that state and key can't be accessed before setup."""
 
     key = jax.random.PRNGKey(9876)
 
     dq = DefaultQubitInterpreter(num_wires=1, key=key)
 
-    assert dq.state is None
-    assert dq.key is key
+    with pytest.raises(AttributeError, match="execution not yet initialized"):
+        setattr(dq, name, [1.0, 0.0])
 
     with pytest.raises(AttributeError, match="execution not yet initialized"):
-        dq.state = [1.0, 0.0]
-
-    with pytest.raises(AttributeError, match="execution not yet initialized"):
-        dq.key = jax.random.PRNGKey(8765)
+        getattr(dq, name)
 
 
 def test_simple_execution():
@@ -152,6 +152,19 @@ def test_mcm_reset():
     assert qml.math.allclose(out, jnp.array([1.0, 0.0]))  # reset into zero state.
 
 
+def test_mcm_postselect_on_opposite_value():
+    """Test that the results are nan's if we postselect on the opposite of the mcm."""
+
+    @DefaultQubitInterpreter(num_wires=1)
+    def f():
+        qml.measure(0, postselect=1)
+        return qml.expval(qml.Z(0)), qml.state()
+
+    expval, state = f()
+    assert jax.numpy.isnan(expval)
+    assert jax.numpy.isnan(state).all()
+
+
 def test_operator_arithmetic():
     """Test that dq can execute operator arithmetic."""
 
@@ -167,13 +180,46 @@ def test_operator_arithmetic():
     assert qml.math.allclose(output, expected)
 
 
+def test_parameter_broadcasting():
+    """Test that DefaultQubit can execute a circuit with parameter broadcasting."""
+
+    @DefaultQubitInterpreter(num_wires=3)
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array([1.2, 2.3, 3.4])
+    output = f(x)
+    expected = jax.numpy.cos(x)
+    assert qml.math.allclose(output, expected)
+
+
+@pytest.mark.parametrize("basis_state", [0, 1])
+def test_projector(basis_state):
+    """Test that Projectors are applied correctly as operations."""
+    config = ExecutionConfig()
+
+    @DefaultQubitInterpreter(num_wires=1, shots=None, execution_config=config)
+    def circuit(x):
+        qml.RX(x, 0)
+        qml.Projector(jnp.array([basis_state]), 0)
+        return qml.state()
+
+    x = 1.5
+    expected_state = qml.math.array([jnp.cos(x / 2), -1j * jnp.sin(x / 2)])
+    expected_state[int(not basis_state)] = 0
+    expected_state = expected_state / qml.math.norm(expected_state)
+
+    assert qml.math.allclose(circuit(x), expected_state)
+
+
 class TestSampling:
     """Test cases for generating samples."""
 
-    def test_known_sampling(self):
+    def test_known_sampling(self, seed):
         """Test sampling output with deterministic sampling output"""
 
-        @DefaultQubitInterpreter(num_wires=2, shots=10)
+        @DefaultQubitInterpreter(num_wires=2, shots=10, key=jax.random.PRNGKey(seed))
         def sampler():
             qml.X(0)
             return qml.sample(wires=(0, 1))
@@ -186,9 +232,9 @@ class TestSampling:
 
         assert qml.math.allclose(results, expected)
 
-    def test_same_key_same_results(self):
+    def test_same_key_same_results(self, seed):
         """Test that two circuits with the same key give identical results."""
-        key = jax.random.PRNGKey(1234)
+        key = jax.random.PRNGKey(seed)
 
         @DefaultQubitInterpreter(num_wires=1, shots=100, key=key)
         def circuit1():
@@ -268,10 +314,10 @@ class TestSampling:
         with pytest.raises(NotImplementedError):
             f()
 
-    def test_mcms_not_all_same_key(self):
+    def test_mcms_not_all_same_key(self, seed):
         """Test that each mid circuit measurement has a different key."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(87665))
+        @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(seed))
         def g():
             qml.Hadamard(0)
             m0 = qml.measure(0, reset=0)
@@ -289,10 +335,10 @@ class TestSampling:
         assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
         # only way we could get different values between the mcms is if they had different seeds
 
-    def test_each_measurement_has_different_key(self):
+    def test_each_measurement_has_different_key(self, seed):
         """Test that each sampling measurement is performed with a different key."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(87665))
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(seed))
         def g():
             qml.Hadamard(0)
             return qml.sample(wires=0), qml.sample(wires=0)
@@ -300,10 +346,10 @@ class TestSampling:
         res1, res2 = g()
         assert not qml.math.allclose(res1, res2)
 
-    def test_more_executions_same_interpreter_different_results(self):
+    def test_more_executions_same_interpreter_different_results(self, seed):
         """Test that if multiple executions occur with the same interpreter, they will have different results."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(76543))
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(seed))
         def f():
             qml.Hadamard(0)
             return qml.sample(wires=0)
@@ -312,30 +358,95 @@ class TestSampling:
         s2 = f()  # should be done with different key, leading to different results.
         assert not qml.math.allclose(s1, s2)
 
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
+    def test_projector_samples_hw_like(self, seed, n_postselects):
+        """Test that hw-like postselect_mode causes the number of samples to change as expected."""
+        config = ExecutionConfig(mcm_config={"postselect_mode": "hw-like"})
 
-class TestQuantumHOP:
-    """Tests for the quantum higher order primitives: adjoint and ctrl."""
+        @DefaultQubitInterpreter(
+            num_wires=1, shots=1000, key=jax.random.PRNGKey(seed), execution_config=config
+        )
+        def f():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.Projector(jnp.array([1]), 0)
+            return qml.sample(wires=0)
 
-    def test_adjoint_transform(self):
-        """Test that the adjoint_transform is not yet implemented."""
+        lens = [len(f()) for _ in range(10)]
+        assert qml.math.allclose(
+            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
+        )
+
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
+    def test_projector_samples_fill_shots(self, seed, n_postselects):
+        """Test that hw-like postselect_mode causes the number of samples to change as expected."""
+        config = ExecutionConfig(mcm_config={"postselect_mode": "fill-shots"})
+
+        @DefaultQubitInterpreter(
+            num_wires=1, shots=1000, key=jax.random.PRNGKey(seed), execution_config=config
+        )
+        def f():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.Projector(jnp.array([1]), 0)
+            return qml.sample(wires=0)
+
+        lens = [len(f()) for _ in range(10)]
+        assert all(l == 1000 for l in lens)
+
+
+class TestCustomPrimitiveRegistrations:
+    """Tests for primitives with custom primitive registrations."""
+
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint_transform(self, lazy):
+        """Test that the adjoint_transform is interpreted correctly."""
 
         @DefaultQubitInterpreter(num_wires=1, shots=None)
         def circuit(x):
-            qml.adjoint(qml.RX)(x, 0)
-            return 1
 
-        with pytest.raises(NotImplementedError):
-            circuit(0.5)
+            def adjoint_fn(y):
+                phi = y * jnp.pi / 2
+                qml.RZ(phi, 0)
+                qml.RX(phi - jnp.pi, 0)
+
+            qml.adjoint(adjoint_fn, lazy=lazy)(x)
+            return qml.state()
+
+        x = 1.5
+        rz_phi = -x * jnp.pi / 2
+        rx_phi = rz_phi + jnp.pi
+        expected_state = jnp.array(
+            [
+                jnp.cos(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2),
+                -1j * jnp.sin(rx_phi / 2) * jnp.exp(rz_phi * 1j / 2),
+            ]
+        )
+        assert jnp.allclose(circuit(x), expected_state)
 
     def test_ctrl_transform(self):
-        """Test that the ctrl_transform is not yet implemented."""
+        """Test that the ctrl_transform is interpreted correctly."""
 
-        @DefaultQubitInterpreter(num_wires=2, shots=None)
-        def circuit():
-            qml.ctrl(qml.X, control=1)(0)
+        @DefaultQubitInterpreter(num_wires=3, shots=None)
+        def circuit(x):
+            qml.X(0)
 
-        with pytest.raises(NotImplementedError):
-            circuit()
+            def ctrl_fn(y):
+                phi = y * jnp.pi / 2
+                qml.RZ(phi, 2)
+                qml.RX(phi - jnp.pi, 2)
+
+            qml.ctrl(ctrl_fn, control=[0, 1], control_values=[1, 0])(x)
+            return qml.state()
+
+        x = 1.5
+        rz_phi = x * jnp.pi / 2
+        rx_phi = rz_phi - jnp.pi
+        expected_state = qml.math.zeros(8, dtype=complex)
+        expected_state[4] = jnp.cos(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
+        expected_state[5] = -1j * jnp.sin(rx_phi / 2) * jnp.exp(-rz_phi * 1j / 2)
+
+        assert jnp.allclose(circuit(x), expected_state)
 
 
 class TestClassicalComponents:
@@ -524,3 +635,39 @@ class TestClassicalComponents:
 
         res2 = circuit(x, y, z, False, False)
         assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
+    """Tests for creating arrays with a dynamic input."""
+
+    @pytest.mark.parametrize(
+        "creation_fn", [jax.numpy.ones, jax.numpy.zeros, lambda s: jax.numpy.full(s, 0.5)]
+    )
+    def test_broadcast_in_dim(self, creation_fn):
+        """Test that DefaultQubitInterpreter can handle jax.numpy.ones and the associated broadcast_in_dim primitive."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            ones = creation_fn((n + 1,))
+            qml.RX(ones, wires=0)
+            return qml.expval(qml.Z(0))
+
+        output = f(3)
+        assert output.shape == (4,)
+        ones = creation_fn(4)
+        assert qml.math.allclose(output, jax.numpy.cos(ones))
+
+    def test_dynamic_shape_arange(self):
+        """Test that DefaultQubitInterpreter can handle jnp.arange."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(n):
+            x = jax.numpy.arange(n)
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        output = f(4)
+        assert output.shape == (4,)
+        x = jax.numpy.arange(4)
+        assert qml.math.allclose(output, jax.numpy.cos(x))

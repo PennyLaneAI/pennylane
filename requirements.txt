@@ -6,7 +6,7 @@ cachetools~=5.0.0
 networkx~=2.8
 rustworkx~=0.15.1
 autograd~=1.4
-toml~=0.10
+tomlkit~=0.13
 appdirs~=1.4
 packaging
 autoray>=0.6.11

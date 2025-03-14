@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+import scipy as sp
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -54,6 +55,21 @@ class HasDiagonalizingGatesOp(qml.operation.Operator):
     @classproperty
     def has_diagonalizing_gates(cls):
         return True
+
+
+# pylint: disable=too-few-public-methods
+class CustomizedSparseOp(qml.operation.Operator):
+
+    def __init__(self, wires):
+        U = sp.sparse.eye(2 ** len(wires))
+        super().__init__(U, wires)
+
+    @property
+    def has_matrix(self) -> bool:
+        return False
+
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument
+        return sp.sparse.eye(2 ** len(self.wires))
 
 
 def test_snapshot_multiprocessing_execute():
@@ -140,6 +156,40 @@ class TestConfigSetup:
             qml.grad(circuit)(qml.numpy.array(0.1))
 
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("interface", ("jax", "jax-jit"))
+    @pytest.mark.parametrize("use_key", (True, False))
+    def test_convert_to_numpy_with_jax(self, interface, use_key):
+        """Test that we will not convert to numpy when working with jax."""
+        # separate test so we can easily update it once we solve the
+        # compilation overhead issue
+        # TODO: [sc-82874]
+        import jax
+
+        key = jax.random.PRNGKey(12354) if use_key else None
+
+        dev = qml.device("default.qubit", seed=key)
+        config = qml.devices.ExecutionConfig(
+            gradient_method=qml.gradients.param_shift, interface=interface
+        )
+        processed = dev.setup_execution_config(config)
+        assert processed.convert_to_numpy != use_key
+
+    def test_convert_to_numpy_with_adjoint(self):
+        """Test that we will convert to numpy with adjoint."""
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint", interface="jax-jit")
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config)
+        assert processed.convert_to_numpy
+
+    @pytest.mark.parametrize("interface", ("autograd", "torch", "tf"))
+    def test_convert_to_numpy_non_jax(self, interface):
+        """Test that other interfaces are still converted to numpy."""
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint", interface=interface)
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config)
+        assert processed.convert_to_numpy
 
 
 # pylint: disable=too-few-public-methods
@@ -246,6 +296,10 @@ class TestPreprocessing:
             (qml.GroverOperator(wires=range(14)), False),
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
+            (qml.QubitUnitary(sp.sparse.csr_matrix(np.eye(8)), wires=range(3)), True),
+            (qml.QubitUnitary(sp.sparse.eye(2), wires=0), True),
+            (qml.adjoint(qml.QubitUnitary(sp.sparse.eye(2), wires=0)), True),
+            (CustomizedSparseOp([0, 1, 2]), True),
         ],
     )
     def test_accepted_operator(self, op, expected):

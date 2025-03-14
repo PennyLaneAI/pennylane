@@ -97,6 +97,9 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
+
+
+    Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
@@ -256,7 +259,8 @@ class Prod(CompositeOp):
         # This is temporary property to smoothen the transition to the new operator arithmetic system.
         # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
         warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
+            "Accessing the terms of a tensor product operator via op.obs is deprecated and will be removed "
+            "in Pennylane v0.42. Instead, please use op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         return self.operands
@@ -304,9 +308,9 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -315,10 +319,12 @@ class Prod(CompositeOp):
 
             wire_order = wire_order or self.wires
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
+                format
+            )
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
 
     @property
     @handle_recursion_error
@@ -482,7 +488,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
+            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
@@ -497,7 +503,7 @@ class Prod(CompositeOp):
 
         .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
-            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
+            "Prod.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
             qml.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()

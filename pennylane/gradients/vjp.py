@@ -25,7 +25,7 @@ import pennylane as qml
 
 def _convert(jac, dy_row):
     """Utility to convert and cast the jacobian as dy_row."""
-    if isinstance(jac, tuple):
+    if isinstance(jac, (tuple, list)):
         jac_new = []
         for j in jac:
             j_ = qml.math.convert_like(j, dy_row)
@@ -120,7 +120,7 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
-    if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
+    if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
             res = qml.math.zeros((1, 0))
@@ -320,7 +320,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     Executing the VJP tapes, and applying the processing function:
 
     >>> dev = qml.device("default.qubit")
-    >>> vjp = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
+    >>> vjp = fn(qml.execute(vjp_tapes, dev, diff_method=qml.gradients.param_shift, interface="torch"))
     >>> vjp
     tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
              2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>)
@@ -474,7 +474,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     Executing the VJP tapes, and applying the processing function:
 
     >>> dev = qml.device("default.qubit")
-    >>> vjps = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
+    >>> vjps = fn(qml.execute(vjp_tapes, dev, diff_method=qml.gradients.param_shift, interface="torch"))
     >>> vjps
     [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
           2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>),

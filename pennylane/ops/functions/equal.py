@@ -28,6 +28,7 @@ from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator
 from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
@@ -38,8 +39,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript],
-    op2: Union[Operator, MeasurementProcess, QuantumScript],
+    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -62,8 +63,8 @@ def equal(
         and ``check_trainability``.
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -353,6 +354,74 @@ def _equal_operators(
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
                 )
 
+    return True
+
+
+# pylint: disable=unused-argument
+@_equal_dispatch.register
+def _equal_pauliword(
+    op1: PauliWord,
+    op2: PauliWord,
+    **kwargs,
+):
+    if op1 != op2:
+        if set(op1) != set(op2):
+            err = "Different wires in Pauli words."
+            diff12 = set(op1).difference(set(op2))
+            diff21 = set(op2).difference(set(op1))
+            if diff12:
+                err += f" op1 has {diff12} not present in op2."
+            if diff21:
+                err += f" op2 has {diff21} not present in op1."
+            return err
+        pauli_diff = {}
+        for wire in op1:
+            if op1[wire] != op2[wire]:
+                pauli_diff[wire] = f"{op1[wire]} != {op2[wire]}"
+        return f"Pauli words agree on wires but differ in Paulis: {pauli_diff}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_paulisentence(
+    op1: PauliSentence,
+    op2: PauliSentence,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if set(op1) != set(op2):
+        err = "Different Pauli words in PauliSentences."
+        diff12 = set(op1).difference(set(op2))
+        diff21 = set(op2).difference(set(op1))
+        if diff12:
+            err += f" op1 has {diff12} not present in op2."
+        if diff21:
+            err += f" op2 has {diff21} not present in op1."
+        return err
+    for pw in op1:
+        param1 = op1[pw]
+        param2 = op2[pw]
+        if check_trainability:
+            param1_train = qml.math.requires_grad(param1)
+            param2_train = qml.math.requires_grad(param2)
+            if param1_train != param2_train:
+                return (
+                    "Parameters have different trainability.\n "
+                    f"{param1} trainability is {param1_train} and {param2} trainability is {param2_train}"
+                )
+
+        if check_interface:
+            param1_interface = qml.math.get_interface(param1)
+            param2_interface = qml.math.get_interface(param2)
+            if param1_interface != param2_interface:
+                return (
+                    "Parameters have different interfaces.\n "
+                    f"{param1} interface is {param1_interface} and {param2} interface is {param2_interface}"
+                )
+        if not qml.math.allclose(param1, param2, rtol=rtol, atol=atol):
+            return f"The coefficients of the PauliSentences for {pw} differ: {param1}; {param2}"
     return True
 
 
@@ -683,39 +752,6 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 @_equal_dispatch.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
-
-
-@_equal_dispatch.register
-# pylint: disable=unused-argument
-def _equal_basis_rotation(
-    op1: qml.BasisRotation,
-    op2: qml.BasisRotation,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    if not qml.math.allclose(
-        op1.hyperparameters["unitary_matrix"],
-        op2.hyperparameters["unitary_matrix"],
-        atol=atol,
-        rtol=rtol,
-    ):
-        return (
-            "The hyperparameter unitary_matrix is not equal for op1 and op2.\n"
-            f"Got {op1.hyperparameters['unitary_matrix']}\n and {op2.hyperparameters['unitary_matrix']}."
-        )
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if check_interface:
-        interface1 = qml.math.get_interface(op1.hyperparameters["unitary_matrix"])
-        interface2 = qml.math.get_interface(op2.hyperparameters["unitary_matrix"])
-        if interface1 != interface2:
-            return (
-                "The hyperparameter unitary_matrix has different interfaces for op1 and op2."
-                f" Got {interface1} and {interface2}."
-            )
-    return True
 
 
 @_equal_dispatch.register

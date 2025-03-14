@@ -23,14 +23,13 @@ from pennylane.labs.dla import (
     adjvec_to_op,
     batched_pauli_decompose,
     change_basis_ad_rep,
+    check_cartan_decomp,
     check_orthonormal,
-    lie_closure_dense,
     op_to_adjvec,
     orthonormalize,
     pauli_coefficients,
-    trace_inner_product,
 )
-from pennylane.pauli import PauliSentence, PauliVSpace
+from pennylane.pauli import PauliSentence, PauliVSpace, trace_inner_product
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -292,21 +291,6 @@ class TestPauliDecompose:
                 assert qml.equal(_op, e)
 
 
-@pytest.mark.parametrize("op1", [X(0), -0.8 * X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
-@pytest.mark.parametrize(
-    "op2", [X(0), X(0) + X(0) @ X(1), 0.2 * X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)]
-)
-def test_trace_inner_product_consistency(op1, op2):
-    """Test that the trace inner product norm for different operators is consistent"""
-    res1 = trace_inner_product(
-        qml.matrix(op1, wire_order=range(3)), qml.matrix(op2, wire_order=range(3))
-    )
-    res2 = trace_inner_product(op1.pauli_rep, op2.pauli_rep)
-    res3 = trace_inner_product(op1, op2)
-    assert np.allclose(res1, res2)
-    assert np.allclose(res1, res3)
-
-
 id_pw = qml.pauli.PauliWord({})
 
 
@@ -359,6 +343,14 @@ def test_orthonormalize(g):
     g = orthonormalize(g)
 
     assert check_orthonormal(g, trace_inner_product)
+
+
+def test_check_cartan_decomp():
+    """Test that check_cartan_decomp correctly checks Ising cartan decomp from fdhs paper (https://arxiv.org/abs/2104.00728)"""
+    k = [Z(0) @ Y(1), Y(0) @ Z(1)]
+    m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
+
+    assert check_cartan_decomp(k, m)
 
 
 class TestChangeBasisAdRep:
@@ -591,7 +583,7 @@ class TestOpToAdjvec:
         """Test that op_to_adjvec yields the same results independently of the input type"""
 
         g = list(qml.pauli.pauli_group(3))  # su(8)
-        g = lie_closure_dense(g)
+        g = qml.lie_closure(g, matrix=True)
 
         m = g[:32]
 

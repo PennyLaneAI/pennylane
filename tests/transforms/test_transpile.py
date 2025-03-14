@@ -2,7 +2,6 @@
 Unit tests for transpiler function.
 """
 
-import warnings
 from math import isclose
 
 import pytest
@@ -10,13 +9,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def build_qfunc_probs(wires):
@@ -230,8 +222,9 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
         qml.assert_equal(transpiled_ops[0], original_ops[0])
         qml.assert_equal(transpiled_ops[1], original_ops[1])
 
@@ -273,8 +266,9 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
-        original_ops = list(transpiled_qnode.qtape)
-        transpiled_ops = list(transpiled_qnode.qtape)
+        tape = qml.workflow.construct_tape(transpiled_qnode)(param)
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
         qml.assert_equal(transpiled_ops[0], original_ops[0])
         qml.assert_equal(transpiled_ops[1], original_ops[1])
 
@@ -405,8 +399,9 @@ class TestTranspile:
 
         assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
 
-        original_results = dev.execute(tape)
-        transformed_results = fn(dev.batch_execute(batch))
+        pre, post = dev.preprocess_transforms()((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results, transformed_results)
 
     def test_transpile_probs_sample_filled_in_wires(self):

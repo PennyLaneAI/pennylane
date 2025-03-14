@@ -17,6 +17,7 @@
 import pytest
 
 from pennylane.devices import MCMConfig
+from pennylane.math import Interface
 from pennylane.workflow import _resolve_mcm_config
 
 
@@ -25,10 +26,12 @@ def test_no_finite_shots():
     mcm_config = MCMConfig(mcm_method="one-shot")
 
     with pytest.raises(ValueError, match="Cannot use the 'one-shot' method"):
-        _resolve_mcm_config(mcm_config, interface="", finite_shots=False)
+        _resolve_mcm_config(mcm_config, interface=Interface.AUTO, finite_shots=False)
 
     mcm_config = MCMConfig(mcm_method=None, postselect_mode="hw-like")
-    resolved_mcm_config = _resolve_mcm_config(mcm_config, interface="", finite_shots=False)
+    resolved_mcm_config = _resolve_mcm_config(
+        mcm_config, interface=Interface.AUTO, finite_shots=False
+    )
     assert resolved_mcm_config.postselect_mode is None
 
 
@@ -39,7 +42,7 @@ def test_single_branch_statistics():
     with pytest.raises(
         ValueError, match="Cannot use mcm_method='single-branch-statistics' without qml.qjit."
     ):
-        _resolve_mcm_config(mcm_config, interface="", finite_shots=True)
+        _resolve_mcm_config(mcm_config, interface=Interface.AUTO, finite_shots=True)
 
 
 def test_resolve_mcm_config_jax_jit_deferred():
@@ -49,10 +52,10 @@ def test_resolve_mcm_config_jax_jit_deferred():
     with pytest.raises(
         ValueError, match="Using postselect_mode='hw-like' is not supported with jax-jit"
     ):
-        _resolve_mcm_config(mcm_config, interface="jax-jit", finite_shots=True)
+        _resolve_mcm_config(mcm_config, interface=Interface.JAX_JIT, finite_shots=True)
 
     mcm_config = MCMConfig(mcm_method="deferred", postselect_mode=None)
-    resolved = _resolve_mcm_config(mcm_config, interface="jax-jit", finite_shots=True)
+    resolved = _resolve_mcm_config(mcm_config, interface=Interface.JAX_JIT, finite_shots=True)
     assert resolved.postselect_mode == "fill-shots"
 
 
@@ -61,6 +64,6 @@ def test_resolve_mcm_config_jax_jit_deferred():
 def test_resolve_mcm_config_finite_shots_pad_invalid_samples(mcm_method, postselect_mode):
     """Test resolution when finite_shots is True and interface is JAX."""
     mcm_config = MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
-    resolved = _resolve_mcm_config(mcm_config, interface="jax", finite_shots=True)
+    resolved = _resolve_mcm_config(mcm_config, interface=Interface.JAX, finite_shots=True)
 
     assert resolved.postselect_mode == "pad-invalid-samples"

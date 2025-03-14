@@ -17,10 +17,11 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import concurrent.futures
 import logging
+import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -28,7 +29,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
@@ -70,6 +71,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
         or op.has_matrix
+        or op.has_sparse_matrix
     )
 
 
@@ -162,6 +164,14 @@ def _conditional_broastcast_expand(tape):
 
 
 @qml.transform
+def no_counts(tape):
+    """Throws an error on counts measurements."""
+    if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+    return (tape,), null_postprocessing
+
+
+@qml.transform
 def adjoint_state_measurements(
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -199,7 +209,7 @@ def adjoint_state_measurements(
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = qml.measurements.StateMP(wires=tape.wires)
-    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    state_tape = tape.copy(measurements=[new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
@@ -535,6 +545,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if config.interface == qml.math.Interface.JAX_JIT:
+            transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
@@ -581,6 +593,26 @@ class DefaultQubit(Device):
         """
         updated_values = {}
 
+        # uncomment once compilation overhead with jitting improved
+        # TODO: [sc-82874]
+        # jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        # updated_values["convert_to_numpy"] = (
+        #    execution_config.interface not in jax_interfaces
+        #    or execution_config.gradient_method == "adjoint"
+        #    # need numpy to use caching, and need caching higher order derivatives
+        #    or execution_config.derivative_order > 1
+        # )
+
+        # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
+        # we assume that if someone provides a PRNGkey, they want to jit end-to-end
+        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+        updated_values["convert_to_numpy"] = not (
+            self._prng_key is not None
+            and execution_config.interface in jax_interfaces
+            and execution_config.gradient_method != "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            and execution_config.derivative_order == 1
+        )
         for option in execution_config.device_options:
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
@@ -616,7 +648,6 @@ class DefaultQubit(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
@@ -626,7 +657,21 @@ class DefaultQubit(Device):
         )
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
+        if (
+            not execution_config.convert_to_numpy
+            and execution_config.interface == qml.math.Interface.JAX_JIT
+            and len(circuits) > 10
+        ):
+            warnings.warn(
+                (
+                    "Jitting executions with many circuits may have substantial classical overhead."
+                    " To disable end-to-end jitting, please specify a integer seed instead of a PRNGKey."
+                ),
+                UserWarning,
+            )
+
         if max_workers is None:
+
             return tuple(
                 _simulate_wrapper(
                     c,
@@ -891,9 +936,10 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel, unused-argument
+    @debug_logger
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -909,9 +955,54 @@ class DefaultQubit(Device):
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
         interpreter = DefaultQubitInterpreter(
-            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+            num_wires=len(self.wires),
+            shots=self.shots.total_shots,
+            key=key,
+            execution_config=execution_config,
         )
         return interpreter.eval(jaxpr, consts, *args)
+
+    def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
+        import jax
+
+        def _make_zero(tan, arg):
+            return (
+                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+            )
+
+        tangents = tuple(map(_make_zero, tangents, args))
+
+        def eval_wrapper(*inner_args):
+            n_consts = len(jaxpr.constvars)
+            consts = inner_args[:n_consts]
+            non_const_args = inner_args[n_consts:]
+            return self.eval_jaxpr(
+                jaxpr, consts, *non_const_args, execution_config=execution_config
+            )
+
+        return jax.jvp(eval_wrapper, args, tangents)
+
+    # pylint :disable=import-outside-toplevel, unused-argument
+    @debug_logger
+    def jaxpr_jvp(
+        self,
+        jaxpr,
+        args: Sequence[TensorLike],
+        tangents: Sequence[TensorLike],
+        execution_config=None,
+    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
+        gradient_method = getattr(execution_config, "gradient_method", "backprop")
+        if gradient_method == "backprop":
+            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
+
+        if gradient_method == "adjoint":
+            from .qubit.jaxpr_adjoint import execute_and_jvp
+
+            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
+
+        raise NotImplementedError(
+            f"DefaultQubit does not support gradient_method={gradient_method}"
+        )
 
 
 def _simulate_wrapper(circuit, kwargs):

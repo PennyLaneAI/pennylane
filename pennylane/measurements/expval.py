@@ -92,7 +92,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Expectation
+    _shortname = Expectation  #! Note: deprecated. Change the value to "expval" in v0.42
 
     @property
     def numeric_type(self):
@@ -162,5 +162,4 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.cast_like(self.eigvals(), 1.0)
-        return qml.math.dot(probabilities, eigvals)
+        return qml.math.dot(probabilities, self.eigvals())

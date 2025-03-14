@@ -14,7 +14,6 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
-from dataclasses import dataclass
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
@@ -38,7 +37,7 @@ class CompressedResourceOp:
         Hadamard(num_wires=1)
     """
 
-    def __init__(self, op_type, params: dict) -> None:
+    def __init__(self, op_type, params: dict, name=None) -> None:
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
@@ -59,10 +58,10 @@ class CompressedResourceOp:
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
 
-        self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
-        self._hashable_params = tuple(params.items())
+        self._hashable_params = _make_hashable(params)
+        self._name = name or op_type.tracking_name(**params)
 
     def __hash__(self) -> int:
         return hash((self._name, self._hashable_params))
@@ -71,13 +70,10 @@ class CompressedResourceOp:
         return (self.op_type == other.op_type) and (self.params == other.params)
 
     def __repr__(self) -> str:
-        op_type_str = self._name + "("
-        params_str = ", ".join([f"{key}={self.params[key]}" for key in self.params]) + ")"
-
-        return op_type_str + params_str
+        return self._name
 
 
-@dataclass
+# @dataclass
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, and gate types.
 
@@ -121,6 +117,15 @@ class Resources:
         """Add two resources objects in series"""
         return add_in_series(self, other)
 
+    def __eq__(self, other: "Resources") -> bool:
+        """Test if two resource objects are equal"""
+        if self.num_wires != other.num_wires:
+            return False
+        if self.num_gates != other.num_gates:
+            return False
+
+        return self.gate_types == other.gate_types
+
     def __mul__(self, scalar: int) -> "Resources":
         """Scale a resources object in series"""
         return mul_in_series(self, scalar)
@@ -149,6 +154,14 @@ class Resources:
         )
         items += "\ngate_types:\n{" + gate_type_str + "}"
         return items
+
+    def __repr__(self):
+        """Compact string representation of the Resources object"""
+        return {
+            "gate_types": self.gate_types,
+            "num_gates": self.num_gates,
+            "num_wires": self.num_wires,
+        }.__repr__()
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
@@ -337,3 +350,9 @@ def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
         combined_dict[k] *= scalar
 
     return combined_dict
+
+
+def _make_hashable(d) -> tuple:
+    if isinstance(d, dict):
+        return tuple((name, _make_hashable(value)) for name, value in d.items())
+    return d

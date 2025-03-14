@@ -17,6 +17,7 @@ Contains the OutPoly template.
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 def _get_polynomial(f, mod, *variable_sizes):
@@ -151,14 +152,15 @@ class OutPoly(Operation):
     Args:
 
         polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function
-                                        must be equal to the number of input registers.
-        input_registers (List[Union[Wires, Sequence[int]]]): List containing the wires (or the wire indices) used to store each variable of the polynomial.
+            must be equal to the number of input registers.
+        input_registers (List[Union[Wires, Sequence[int]]]): List containing the wires (or the wire indices) used to
+            store each variable of the polynomial.
         output_wires (Union[Wires, Sequence[int]]): The wires (or wire indices) used to store the output of the operation.
-        mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided, it defaults
-                             to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation. The
-                    work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires
-                    should be provided. Default is ``None``.
+        mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided,
+            it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
+        work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation.
+            The work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires should be
+            provided. Defaults to empty tuple.
 
     Raises:
         ValueError: If `mod` is not :math:`2^{\text{length(output_wires)}}` and insufficient number of work wires are provided.
@@ -262,9 +264,9 @@ class OutPoly(Operation):
         self,
         polynomial_function,
         input_registers,
-        output_wires,
+        output_wires: WiresLike,
         mod=None,
-        work_wires=None,
+        work_wires: WiresLike = (),
         id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -272,7 +274,8 @@ class OutPoly(Operation):
 
         registers_wires = [*input_registers, output_wires]
 
-        num_work_wires = 0 if not work_wires else len(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        num_work_wires = len(work_wires)
         if mod is None:
             mod = 2 ** len(registers_wires[-1])
         elif mod != 2 ** len(registers_wires[-1]) and num_work_wires != 2:
@@ -299,7 +302,7 @@ class OutPoly(Operation):
 
         self.hyperparameters["polynomial_function"] = polynomial_function
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
+        self.hyperparameters["work_wires"] = work_wires
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
@@ -316,7 +319,7 @@ class OutPoly(Operation):
             coeffs, qml.math.floor(coeffs)
         ), "The polynomial function must have integer coefficients"
 
-        if work_wires:
+        if len(work_wires) != 0:
             all_wires += work_wires
 
         if len(all_wires) != sum(len(register) for register in registers_wires) + num_work_wires:
@@ -345,11 +348,7 @@ class OutPoly(Operation):
 
         new_output_wires = [wire_map[wire] for wire in self.hyperparameters["output_wires"]]
 
-        new_work_wires = (
-            [wire_map[wire] for wire in self.hyperparameters["work_wires"]]
-            if self.hyperparameters.get("work_wires")
-            else None
-        )
+        new_work_wires = [wire_map[wire] for wire in self.hyperparameters["work_wires"]]
 
         return OutPoly(
             polynomial_function=self.hyperparameters["polynomial_function"],
@@ -368,7 +367,12 @@ class OutPoly(Operation):
 
     @staticmethod
     def compute_decomposition(
-        polynomial_function, input_registers, output_wires, mod=None, work_wires=None, **kwargs
+        polynomial_function,
+        input_registers,
+        output_wires: WiresLike,
+        mod=None,
+        work_wires: WiresLike = (),
+        **kwargs,
     ):  # pylint: disable=unused-argument, arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -400,8 +404,8 @@ class OutPoly(Operation):
         """
         registers_wires = [*input_registers, output_wires]
 
-        if not work_wires:
-            work_wires = [None, None]
+        if len(work_wires) == 0:
+            work_wires = [(), ()]
 
         list_ops = []
 

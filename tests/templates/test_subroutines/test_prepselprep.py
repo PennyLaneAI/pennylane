@@ -264,7 +264,7 @@ class TestPrepSelPrep:
         op = qml.PrepSelPrep(lcu, control=0)
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
     @pytest.mark.parametrize(
         ("lcu"),

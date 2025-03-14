@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A module containing utility functions and reduced representation classes for working with Pauli operators. """
+"""A module containing utility functions and reduced representation classes for working with Pauli operators."""
 
 from .pauli_arithmetic import PauliWord, PauliSentence
 
@@ -51,4 +51,8 @@ from .grouping import (
     compute_partition_indices,
 )
 
-from .dla import PauliVSpace, lie_closure, structure_constants, center
+from .dla import lie_closure, structure_constants, center
+
+from .pauli_vspace import PauliVSpace
+
+from .trace_inner_product import trace_inner_product
