@@ -139,11 +139,12 @@ class FromBloq(Operation):
         FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
 
-        This is not a bug. It is due to the fact that the decomposition of ``CZPowGate`` as
-        defined in qualtran allocates and frees a wire all in the same bloq. In this situation,
+        This sharp bit is expected behaviour because the decomposition of ``CZPowGate`` as
+        defined in qualtran allocates and frees a wire all in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
-        named ``alloc_free{idx}``, where idx is the total length of wires. For now, due to technical
-        limitations these wires cannot be accessed manually, or mapped to a different name.
+        named ``alloc_free_{idx}``, where ``idx`` is used for bookkeeping index of all such
+        ghost wires. Due to the current limitations of PennyLane's wire management in dealing
+        with such wires, these cannot be accessed manually or mapped to a different label.
 
     """
 
