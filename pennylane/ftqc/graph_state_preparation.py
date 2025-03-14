@@ -127,8 +127,12 @@ class GraphStatePrep(Operation):
                 )
             super().__init__(wires=wires)
 
-    def label(self) -> str:  # pylint: disable=arguments-differ
+    def label(self, *args, **kwargs) -> str:  # pylint: disable=unused-argument
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
+
+        Args:
+            *args (Optional[Union[int, str]]): positional arguments for decimals and base_label.
+            **kwargs (Optional[dict]): keyword arguments for cache.
 
         Returns:
             str: label to use in drawings
