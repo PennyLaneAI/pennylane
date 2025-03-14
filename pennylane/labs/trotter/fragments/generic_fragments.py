@@ -66,4 +66,4 @@ class GenericFragment(Fragment):
         if self.norm_fn:
             return self.norm_fn(self.fragment, **params)
 
-        raise NotImplementedError
+        raise NotImplementedError("GenericFragment was constructed without specifying the norm function.")
