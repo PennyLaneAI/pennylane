@@ -351,9 +351,7 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
-@pytest.mark.parametrize(
-    "dev_name", ["default.qubit", pytest.param("lightning.qubit", marks=pytest.mark.skip)]
-)
+@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
     """Unit tests for preprocessing and executing qnodes with program capture."""
 
