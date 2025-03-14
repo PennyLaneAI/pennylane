@@ -348,7 +348,7 @@ class KerasLayer(Layer):
 
         if CORRECT_KERAS_VERSION:
             super().__init__(dynamic=True, **kwargs)
-        else: # pragma: no cover
+        else:  # pragma: no cover
             super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
