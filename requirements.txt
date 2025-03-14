@@ -1,4 +1,4 @@
-numpy>=2.1
+numpy>=1.26
 ml_dtypes>=0.4.0
 scipy~=1.8
 cvxpy~=1.2
