@@ -138,7 +138,7 @@ class FromBloq(Operation):
         This sharp bit is expected behaviour because the decomposition of ``CZPowGate`` as
         defined in qualtran allocates and frees a wire all in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
-        named ``alloc_free_{idx}``, where ``idx`` is used for bookkeeping index of all such
+        named ``alloc_free{idx}``, where ``idx`` is used as the bookkeeping index of all such
         ghost wires. Due to the current limitations of PennyLane's wire management in dealing
         with such wires, these cannot be accessed manually or mapped to a different label.
 
