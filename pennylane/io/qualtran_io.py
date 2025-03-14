@@ -99,6 +99,7 @@ class FromBloq(Operation):
         from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
         from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
+        # Parameters for the TrotterizedUnitary
         nsites = 5
         j_zz = 2
         gamma_x = 0.1
@@ -110,8 +111,11 @@ class FromBloq(Operation):
         trott_unitary = TrotterizedUnitary(
             bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
         )
+
+        # Instantiate the TextbookQPE and pass in our unitary
         textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
+        # Execute on device
         dev = qml.device("default.qubit")
         @qml.qnode(dev)
         def circuit():
