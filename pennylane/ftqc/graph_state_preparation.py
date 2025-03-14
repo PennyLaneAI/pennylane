@@ -167,12 +167,11 @@ class GraphStatePrep(Operation):
 
         op_list = []
 
-        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
         nodes = graph.node_labels if isinstance(graph, QubitGraph) else graph.nodes
+        wire_map = dict(zip(nodes, wires))
 
-        if set(wires) != set(nodes):
-            wire_map = dict(zip(nodes, wires))
-            edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
+        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
+        edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
 
         for wire in wires:
             op_list.append(one_qubit_ops(wires=wire))
