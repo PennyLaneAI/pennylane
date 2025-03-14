@@ -76,6 +76,7 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
 

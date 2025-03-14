@@ -14,7 +14,6 @@
 """
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
-# pylint:disable=
 import numpy as np
 
 import pennylane as qml
