@@ -17,6 +17,7 @@ Contains the QSVT template and qsvt wrapper function.
 # pylint: disable=too-many-arguments
 import copy
 from curses import intrflush
+from modulefinder import Module
 from typing import Literal
 
 import numpy as np
@@ -30,6 +31,7 @@ from pennylane.wires import Wires
 
 import scipy
 import math
+from functools import reduce
 
 # pylint: disable=too-many-branches, unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
@@ -810,7 +812,6 @@ def qsp_iterate(phi, x, interface):
     """
     return qml.math.dot(W_of_x(x=x, interface=interface), z_rotation(phi=phi, interface=interface))
 
-
 def qsp_iterates(phis, x, interface):
     r"""
     Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
@@ -821,13 +822,16 @@ def qsp_iterates(phis, x, interface):
     Returns:
         numpy.ndarray: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    
-    mtx = qml.math.eye(2)
-    for phi in phis[::-1][:-1]:
-        mtx = qml.math.dot(qsp_iterate(x=x, phi=phi, interface=interface), mtx)
+    try:
+        from jax import vmap
+        qsp_iterate_list = vmap(qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+    except ModuleNotFoundError:
+        qsp_iterate_list = qml.math.vectorize(qsp_iterate, excluded=(1, 2))(phis[1:], x, interface)
+        
+    mtx = reduce(qml.math.dot, qsp_iterate_list)
     mtx = qml.math.dot(z_rotation(phi=phis[0], interface=interface), mtx)
 
-    return mtx
+    return qml.math.real(mtx[0,0])
 
 try:
     from jax import jit
@@ -877,14 +881,26 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
 
     targets = [poly_func(coeffs=coeffs_target_func, x=x, degree=degree, parity=parity) for x in grid_points]
     targets = qml.math.array(targets, like=interface)
+    
 
     def obj_function(phi):
         # Equation (23)
 
-        obj_func = qml.math.array([qml.math.real(qsp_iterates(phis=phi, x=x, interface=interface)[0, 0]) for x in grid_points], like=interface) - targets
+        try:
+            from jax import vmap
+            obj_func = vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+        except ModuleNotFoundError:
+            obj_func = qml.math.vectorize(qsp_iterates, excluded=(0, 2))(phi, grid_points, interface) - targets
+        
         obj_func = qml.math.dot(obj_func, obj_func)
 
         return 1 / len(grid_points) * obj_func
+
+    try:
+        from jax import jit
+        obj_function = jit(obj_function)
+    except ModuleNotFoundError:
+        pass
 
     opt_kwargs = {}
 
@@ -1075,7 +1091,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
+def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding", **opt_kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
@@ -1173,7 +1189,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         elif angle_solver == "iterative":
-            return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
+            return transform_angles(_compute_qsp_angles_iteratively(poly, **opt_kwargs), "QSP", "QSVT")
 
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
@@ -1181,7 +1197,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         elif angle_solver == "iterative":
-            return _compute_qsp_angles_iteratively(poly)
+            return _compute_qsp_angles_iteratively(poly, **opt_kwargs)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "GQSP":
