@@ -57,8 +57,6 @@ class TestFromBloq:
         from qualtran import BloqBuilder, QUInt
         from qualtran.bloqs.arithmetic import Add, Product
 
-        from pennylane.wires import Wires
-
         bb = BloqBuilder()
 
         w1 = bb.add_register("p1", 3)
