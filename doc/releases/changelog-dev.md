@@ -44,6 +44,7 @@
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
+<<<<<<< HEAD
 * Created a new `qml.liealg` module for Lie algebra functionality.
 
   `qml.liealg.cartan_decomp` allows to perform Cartan decompositions using _involution_ functions that return a boolean value.
@@ -71,6 +72,10 @@
 
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+=======
+* Created a new ``qml.liealg`` module for Lie algebra functionality.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+>>>>>>> 72ae2bab7109b71b6eb7d9532327813502529b87
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
