@@ -877,7 +877,7 @@ def norm(tensor, like=None, **kwargs):
         from scipy.sparse.linalg import norm
 
     else:
-        from scipy.linalg import norm
+        from numpy.linalg import norm
 
     return norm(tensor, **kwargs)
 
