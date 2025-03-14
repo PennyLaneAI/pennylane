@@ -626,7 +626,6 @@ class TransformProgram:
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
-        return cur_jaxpr
 
         return cur_jaxpr
 
