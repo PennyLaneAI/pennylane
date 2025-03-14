@@ -207,7 +207,6 @@ class TestKerasLayer:
         with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword(self):  # pylint: disable=no-self-use
         """Test that variable number of keyword arguments works"""
@@ -277,7 +276,6 @@ class TestKerasLayer:
             "w7": (),
         }
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_non_input_defaults(self):  # pylint: disable=no-self-use
         """Test that everything works when default arguments that are not the input argument are
@@ -323,7 +321,6 @@ class TestKerasLayer:
 
         assert np.allclose(layer_out, circuit_out)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_qnode_weights(self, get_circuit, n_qubits, output_dim):  # pylint: disable=no-self-use
         """Test if the build() method correctly initializes the weights in the qnode_weights
@@ -336,7 +333,6 @@ class TestKerasLayer:
             assert layer.qnode_weights[weight].shape == shape
             assert layer.qnode_weights[weight].name[:-2] == weight
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_qnode_weights_with_spec(
         self, get_circuit, monkeypatch, output_dim, n_qubits
@@ -504,7 +500,6 @@ class TestKerasLayer:
         assert layer.__str__() == "<Quantum Keras Layer: func=circuit>"
         assert layer.__repr__() == "<Quantum Keras Layer: func=circuit>"
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_gradients(self, get_circuit, output_dim, n_qubits):  # pylint: disable=no-self-use
         """Test if the gradients of the KerasLayer are equal to the gradients of the circuit when
@@ -569,7 +564,6 @@ class TestKerasLayer:
         output_shape = layer.compute_output_shape(inputs_shape)
         assert output_shape.as_list() == [None, 1]
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     def test_construct(self, get_circuit, n_qubits, output_dim):
         """Test that the construct method builds the correct tape with correct differentiability"""
@@ -649,7 +643,6 @@ class TestKerasLayerIntegration:
 
         model.fit(x, y, batch_size=batch_size, verbose=0)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_model_gradients(
         self, model, output_dim, n_qubits
@@ -666,7 +659,6 @@ class TestKerasLayerIntegration:
         gradients = tape.gradient(loss, model.trainable_variables)
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_model_weights(
         self, get_circuit, n_qubits, output_dim, tmpdir
@@ -709,7 +701,6 @@ class TestKerasLayerIntegration:
 
     # the test is slow since TensorFlow needs to compile the execution graph
     # in order to save the model
-    @requires_keras2
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_whole_model(
@@ -759,7 +750,6 @@ class TestKerasLayerIntegrationDM:
 
         model_dm.fit(x, y, batch_size=batch_size, verbose=0)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_model_gradients_dm(
         self, model_dm, output_dim, n_qubits
@@ -776,7 +766,6 @@ class TestKerasLayerIntegrationDM:
         gradients = tape.gradient(loss, model_dm.trainable_variables)
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_save_model_weights_dm(
         self, get_circuit_dm, n_qubits, output_dim, tmpdir
@@ -819,7 +808,6 @@ class TestKerasLayerIntegrationDM:
 
     # the test is slow since TensorFlow needs to compile the execution graph
     # in order to save the model
-    # @requires_keras2
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_save_whole_model_dm(
