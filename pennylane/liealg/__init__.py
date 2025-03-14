@@ -15,10 +15,10 @@ r"""
 Overview
 --------
 
-This module contains Lie algebra functionality.
+This module contains functionality to express and manipulate Lie algebras within the context of quantum computing.
 
-Functions
-^^^^^^^^^
+Lie algebra functionality
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.liealg
 
@@ -29,8 +29,22 @@ Functions
     ~structure_constants
     ~center
     ~cartan_decomp
+    ~cartan_subalgebra
+
+Functions
+^^^^^^^^^
+
+.. currentmodule:: pennylane.liealg
+
+.. autosummary::
+    :toctree: api
+
     ~check_cartan_decomp
-    ~check_commutation
+    ~check_commutation_relation
+    ~check_abelian
+    ~adjvec_to_op
+    ~op_to_adjvec
+    ~change_basis_ad_rep
 
 Involutions
 ~~~~~~~~~~~
@@ -65,6 +79,19 @@ eigenbasis of the underlying involution :math:`\theta`.
     ~CI
     ~CII
 
+Lie Algebras and quantum computing
+----------------------------------
+
+In quantum computing, we are typically dealing with the Hilbert space 
+:math:`\mathcal{H} = \mathbb{C}^{2^n}` and for full
+universality we require the available gates to span all of :math:`SU(2^n).` 
+That means when we have all unitaries of :math:`SU(2^n)`
+available to us, we can reach any state in Hilbert space from any other state.
+
+The Lie group :math:`SU(2^n)` has an associated Lie
+algebra to it, called :math:`\mathfrak{su}(2^n)`.
+In some cases, it is more convenient to work with the
+associated Lie algebra rather than the Lie group.
 
 Lie Algebras and quantum computing
 ----------------------------------
@@ -98,7 +125,7 @@ Check out the following demos to learn more about Lie algebras in the context of
 from .structure_constants import structure_constants
 from .center import center
 from .lie_closure import lie_closure
-from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation
+from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation_relation
 from .involutions import (
     even_odd_involution,
     concurrence_involution,
@@ -112,4 +139,11 @@ from .involutions import (
     C,
     CI,
     CII,
+)
+from .cartan_subalgebra import (
+    cartan_subalgebra,
+    adjvec_to_op,
+    op_to_adjvec,
+    change_basis_ad_rep,
+    check_abelian,
 )

@@ -178,7 +178,7 @@ def intersection(wires1, wires2):
     return len(qml.wires.Wires.shared_wires([wires1, wires2])) != 0
 
 
-def check_commutation_two_non_simplified_crot(operation1, operation2):
+def check_commutation_relation_two_non_simplified_crot(operation1, operation2):
     r"""Check commutation for two CRot that were not simplified.
 
     Args:
@@ -213,7 +213,7 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
     return False
 
 
-def check_commutation_two_non_simplified_rotations(operation1, operation2):
+def check_commutation_relation_two_non_simplified_rotations(operation1, operation2):
     r"""Check that the operations are two non simplified operations. If it is the case, then it checks commutation
     for two rotations that were not simplified.
 
@@ -370,7 +370,7 @@ def is_commuting(operation1, operation2):
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
-        return check_commutation_two_non_simplified_crot(operation1, operation2)
+        return check_commutation_relation_two_non_simplified_crot(operation1, operation2)
 
     if "Identity" in (operation1.name, operation2.name):
         return True
@@ -378,7 +378,7 @@ def is_commuting(operation1, operation2):
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
     if operation1.name in op_set and operation2.name in op_set:
-        return check_commutation_two_non_simplified_rotations(operation1, operation2)
+        return check_commutation_relation_two_non_simplified_rotations(operation1, operation2)
 
     ctrl_base_1 = _get_target_name(operation1)
     ctrl_base_2 = _get_target_name(operation2)
