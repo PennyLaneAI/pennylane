@@ -72,8 +72,9 @@ class FromBloq(Operation):
     as a PennyLane :class:`~.Operation`.
 
     Args:
-        bloq (qualtran.Bloq): the bloq to wrap
-        wires (WiresLike): the wires to act on
+        bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
+        wires (WiresLike): The wires the operator acts on. This can be determined by using the
+            signature of the Bloq as shown in the example.
 
     Raises:
         TypeError: bloq must be an instance of :code:`~.Bloq`.
