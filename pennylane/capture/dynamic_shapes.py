@@ -14,12 +14,9 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from collections import namedtuple
 from functools import lru_cache
 from string import ascii_lowercase as letters
-from typing import Any, Callable, Sequence, Union
-
-from pennylane.typing import TensorLike
+from typing import Callable, Sequence, Union
 
 has_jax = True
 try:
@@ -27,9 +24,6 @@ try:
     from jax._src.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
-
-
-AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
 
 
 @lru_cache
@@ -121,56 +115,6 @@ def determine_abstracted_axes(args):
         return None, ()
     abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
     return abstracted_axes, abstract_shapes
-
-
-# pylint: disable=too-few-public-methods
-class CalculateAbstractedAxes:
-    """A helper class for accumulating information about abstract axes for loop functions."""
-
-    def __init__(self, allow_array_resizing: bool = False):
-        self.allow_array_resizing = allow_array_resizing
-        self.abstract_shapes = []
-        self.abstracted_axes = []
-        self.shape_locations = []
-
-    def add_arg(self, x_idx: int, x):
-        """Process a new argument"""
-        arg_abstracted_axes = {}
-
-        for shape_idx, s in enumerate(getattr(x, "shape", ())):
-            if not isinstance(s, int):  #  if not int, then abstract
-                found = False
-                if not self.allow_array_resizing:
-                    for previous_idx, previous_shape in enumerate(self.abstract_shapes):
-                        if s is previous_shape:
-                            arg_abstracted_axes[shape_idx] = _get_letter(previous_idx)
-                            self.shape_locations[previous_idx].append(
-                                AbstractShapeLocation(x_idx, shape_idx)
-                            )
-                            found = True
-                            break
-                # haven't encountered it, so add it to abstract_axes
-                # and use new letter designation
-                if not found:
-                    arg_abstracted_axes[shape_idx] = _get_letter(len(self.abstract_shapes))
-                    self.shape_locations.append([AbstractShapeLocation(x_idx, shape_idx)])
-                    self.abstract_shapes.append(s)
-        self.abstracted_axes.append(arg_abstracted_axes)
-
-
-def loop_determine_abstracted_axes(
-    args, allow_array_resizing: bool = False
-) -> tuple[Any, list[TensorLike], list[list[AbstractShapeLocation]]]:
-    """Determine the abstract axes for arguments that will be used in a loop context."""
-    args, structure = jax.tree_util.tree_flatten(args)
-    calculator = CalculateAbstractedAxes(allow_array_resizing=allow_array_resizing)
-    _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
-
-    if not any(calculator.abstracted_axes):
-        return None, [], []
-
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, calculator.abstracted_axes)
-    return abstracted_axes, calculator.abstract_shapes, calculator.shape_locations
 
 
 def register_custom_staging_rule(

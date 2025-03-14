@@ -20,17 +20,15 @@ import numpy as np
 
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
-from pennylane.capture.dynamic_shapes import (
-    AbstractShapeLocation,
-    loop_determine_abstracted_axes,
-    register_custom_staging_rule,
-)
+from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+
+from ._loop_abstract_axes import AbstractShapeLocation, loop_determine_abstracted_axes
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
     """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
-    used without :func:`~.qjit`, this function will fall back to a standard
+    used without :func:`~.qjit` or program capture, this function will fall back to a standard
     Python for loop.
 
     This decorator provides a functional version of the traditional while loop,
@@ -57,7 +55,8 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     Args:
         cond_fn (Callable): the condition function in the while loop
-        allow_array_resizing (Literal["auto", True, False])
+        allow_array_resizing (Literal["auto", True, False]): How to handle arrays
+            with dynamic shapes that change between iterations
 
     Returns:
         Callable: A wrapper around the while-loop function.
@@ -96,6 +95,78 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     >>> qml.qjit(circuit)(1.6)
     Array(-0.02919952, dtype=float64)
+
+    .. details::
+        :title: Usage Details
+
+        A dynamicly shaped array is an array whose shape depends on an abstract value. This is
+        an experimental jax mode that can be turned on with:
+
+        >>> jax.config.update("jax_dynamic_shapes", True)
+
+        Note that new dynamic dimensions cannot yet be created inside a loop.  Only things
+        that already have a dynamic dimension can have that dynamic dimension change.
+        For example, this is **not** a viable ``while_loop``, as ``x`` is initialized
+        with an array with a concrete size.
+
+        .. code-block:: python
+
+            def w():
+                @qml.while_loop(lambda i, x: i < 5)
+                def f(i, x):
+                    return i + 1, jax.numpy.append(x, i)
+
+                return f(0, jnp.array([]))
+
+        When working with dynamic shapes in a ``while_loop``, we have two possible
+        options. In ``allow_array_resizing=True`` treats every dynamic dimension as indepedent.
+
+        .. code-block:: python
+
+            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_array_resizing=True)
+            def f(a, b):
+                return jax.numpy.hstack([a, b]), 2*b
+
+            def w(i0):
+                a0, b0 = jnp.ones(i0), jnp.ones(i0)
+                return f(a0, b0)
+
+        Even though ``a`` and ``b`` are initialized with the same shape, the shapes no longer match
+        after one iteration. In this circumstance, ``a`` and ``b`` can no longer be combined
+        with operations like ``a * b``, as they do not have matching shapes.
+
+        With ``allow_array_resizing=False``, anything that starts with the same dynamic dimension
+        must keep the same shape throughout the loop.
+
+        .. code-block:: python
+
+            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            def f(x, y):
+                return x * y, 2*y
+
+            def workflow(i0):
+                x0 = jnp.ones(i0)
+                y0 = jnp.ones(i0)
+                return f(x0, y0)
+
+        Note that with ``allow_array_resizing=False``, all arrays can still be resizing together, as
+        long as the pattern still matches:
+
+        .. code-block:: python
+
+            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            def f(x, y):
+                x = jnp.hstack([x, y])
+                return x, 2*x
+
+            def workflow(i0):
+                x0 = jnp.ones(i0)
+                y0 = jnp.ones(i0)
+                return f(x0, y0)
+
+        ``allow_array_resizing="auto"`` will try and choose between these two options, but will
+        add some additional overhead if ``allow_array_resizing=True`` is the best fit.
+
     """
 
     if active_jit := active_compiler():
@@ -235,13 +306,14 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         import jax  # pylint: disable=import-outside-toplevel
 
         flat_args, in_tree = jax.tree_util.tree_flatten(init_state)
-        flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
-        flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
-
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
         )
+
+        flat_body_fn = FlatFn(self.body_fn, in_tree=in_tree)
+        flat_cond_fn = FlatFn(self.cond_fn, in_tree=in_tree)
+
         if abstracted_axes:
             new_body_fn = _add_abstract_shapes(flat_body_fn, shape_locations)
             dummy_init_state = [_get_dummy_arg(arg) for arg in flat_args]
@@ -277,6 +349,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
         out_tree = flat_body_fn.out_tree
+
         return jaxpr_body_fn, jaxpr_cond_fn, abstract_shapes + flat_args, out_tree
 
     def _call_capture_enabled(self, *init_state):
