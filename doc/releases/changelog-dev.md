@@ -44,6 +44,9 @@
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
+* Created a new ``qml.liealg`` module for Lie algebra functionality.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
@@ -362,6 +365,7 @@
   [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
   [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
   [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
+  [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
 
   * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
@@ -412,6 +416,7 @@
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -523,6 +528,9 @@
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
+* Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated, as functionality is moved to new ``liealg`` module.
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+
 <h3>Internal changes ⚙️</h3>
 
 * The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random matrices are guaranteed positive.
@@ -585,6 +593,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
+  [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
+
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
@@ -608,6 +619,13 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
+  [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
+
+* Dynamic one-shot workloads are now faster for `null.qubit`.
+  Removed a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
 
 * `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
   when experimental program capture is enabled.
@@ -670,6 +688,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Daniela Angulo,
 Utkarsh Azad,
 Joey Carter,
 Henry Chang,
@@ -682,6 +701,7 @@ Marcus Gisslén,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
