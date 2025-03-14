@@ -19,12 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Z
-from pennylane.labs.dla import (
-    cartan_decomp,
-    cartan_subalgebra,
-    check_cartan_decomp,
-    even_odd_involution,
-)
+from pennylane.labs.dla import cartan_subalgebra
+from pennylane.liealg import cartan_decomp, check_cartan_decomp, even_odd_involution
 
 
 @pytest.mark.parametrize("n, len_g, len_h, len_mtilde", [(2, 6, 2, 2), (3, 15, 2, 6)])
