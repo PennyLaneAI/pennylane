@@ -138,7 +138,7 @@ class FromBloq(Operation):
         defined in qualtran allocates and frees a wire all in the same bloq. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
         named `alloc_free{idx}`, where idx is the total length of wires. For now, due to technical
-        limitations these wires cannot be accessed manually, or mapped to a different name. 
+        limitations these wires cannot be accessed manually, or mapped to a different name.
 
     """
 

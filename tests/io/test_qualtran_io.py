@@ -64,7 +64,7 @@ class TestFromBloq:
         from qualtran.bloqs.basic_gates import CZPowGate, ZPowGate
 
         assert qml.FromBloq(CZPowGate(), wires=range(2)).decomposition()[1] == qml.FromBloq(
-            ZPowGate(), wires=["alloc_free"]
+            ZPowGate(), wires=["alloc_free2"]
         )
 
     def test_partition_bloq(self):
