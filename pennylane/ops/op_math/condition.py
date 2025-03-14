@@ -736,9 +736,15 @@ def _register_custom_staging_rule(cond_prim):
         true_outvars = params["jaxpr_branches"][0].outvars
 
         env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
-        out_tracers, returned_vars = tuple(
-            zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars), strict=True)
-        )
+        if true_outvars:
+            out_tracers, returned_vars = tuple(
+                zip(
+                    *(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars),
+                    strict=True,
+                )
+            )
+        else:
+            out_tracers, returned_vars = (), ()
 
         invars = [jaxpr_trace.getvar(x) for x in tracers]
         eqn = pe.new_jaxpr_eqn(
