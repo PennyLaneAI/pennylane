@@ -68,7 +68,7 @@ def _get_named_registers(registers):
 
 class FromBloq(Operation):
     r"""
-    An adapter for using `Qualtran bloqs <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    An adapter for using a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
     Args:
