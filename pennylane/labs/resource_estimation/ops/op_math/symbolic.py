@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Union
 
 import pennylane.labs.resource_estimation as re
 from pennylane import math
@@ -298,9 +298,10 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         :title: Usage Details
 
         We can configure the resources for the controlled of a base operation by modifying
-        its :code:`.controlled_resource_decomp(**resource_params)` method. Consider for example this
-        custom PauliZ class, where the controlled resources are not defined (this is the default
-        for a general :class:`~.ResourceOperator`).
+        its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
+        **resource_params)` method. Consider for example this custom PauliZ class, where the
+        controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
+
 
         .. code-block:: python
 
@@ -393,9 +394,9 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             :title: Usage Details
 
             We can configure the resources for the controlled of a base operation by modifying
-            its :code:`.controlled_resource_decomp(**resource_params)` method. Consider for example this
-            custom PauliZ class, where the controlled resources are not defined (this is the default
-            for a general :class:`~.ResourceOperator`).
+            its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
+            **resource_params)` method. Consider for example this custom PauliZ class, where the
+            controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
 
             .. code-block:: python
 
@@ -605,7 +606,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         :title: Usage Details
 
         We can configure the resources for the power of a base operation by modifying
-        its :code:`.pow_resource_decomp(**resource_params)` method. Consider for example this
+        its :code:`.pow_resource_decomp(**resource_params, z)` method. Consider for example this
         custom PauliZ class, where the pow-resources are not defined (this is the default
         for a general :class:`~.ResourceOperator`).
 
@@ -687,7 +688,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
             :title: Usage Details
 
             We can configure the resources for the power of a base operation by modifying
-            its :code:`.pow_resource_decomp(**resource_params)` method. Consider for example this
+            its :code:`.pow_resource_decomp(**resource_params, z)` method. Consider for example this
             custom PauliZ class, where the pow-resources are not defined (this is the default
             for a general :class:`~.ResourceOperator`).
 
@@ -800,7 +801,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         Resources:
             The resources are derived by simply adding together the :math:`z` exponent and the
-            :math:`z_{0}` exponent into a single instance of :class:`~.ResourcePow` gate, raising the
+            :math:`z_{0}` exponent into a single instance of :class:`~.ResourcePow` gate, raising
             the base operator to the power :math:`z + z_{0}`.
 
         Returns:
@@ -817,7 +818,94 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
 
 class ResourceExp(Exp, re.ResourceOperator):
-    """Resource class for Exp"""
+    r"""Resource class for the symbolic Exp operation.
+
+    A symbolic class used to represent the exponential of some base operation.
+
+    Args:
+        base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+            exponentiated.
+        base_params (dict): the resource parameters required to extract the cost of the base operator
+        base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+            combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+        coeff (complex): a scalar value which multiplies the base operator in the exponent
+        num_steps (int): the number of trotter steps to use in approximating the exponential
+
+    Resources:
+        This symbolic operation represents the exponential of some base operation. The resources
+        are determined as follows. If the base operation class :code:`base_class` implements the
+        :code:`.exp_resource_decomp()` method, then the resources are obtained from this.
+
+        Otherwise, the exponetiated operator's resources are computed using the linear combination
+        of Pauli words representation (:code:`base_pauli_rep`). The exponential is approximated by
+        the product of the exponential of each Pauli word in the sum. This product is repeated
+        :code:`num_steps` many times. Specifically, the cost for the exponential of each Pauli word
+        is given by an associated :class:`~.ResourcePauliRot`.
+
+    .. seealso:: :class:`~.ops.op_math.exp.Exp`
+
+    **Example**
+
+    The exponentiated operation can be constructed like this:
+
+    >>> hamiltonian = qml.dot([0.1, -2.3], [qml.X(0)@qml.Y(1), qml.Z(0)])
+    >>> hamiltonian
+    0.1 * (X(0) @ Y(1)) + -2.3 * Z(0)
+    >>> exp_hamiltonian = re.ResourceExp(hamiltonian, 0.1*1j, num_steps=2)
+    >>> exp_hamiltonian.resources(**exp_hamiltonian.resource_params)
+    defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
+
+    Alternatively, we can call the resources method on from the class:
+
+    >>> re.ResourceExp.resources(
+    ...     base_class = qml.ops.Sum,
+    ...     base_params = {},
+    ...     base_pauli_rep = hamiltonian.pauli_rep,
+    ...     coeff = 0.1*1j,
+    ...     num_steps = 2,
+    ... )
+    defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
+
+    .. details::
+        :title: Usage Details
+
+        We can configure the resources for the exponential of a base operation by modifying
+        its :code:`.exp_resource_decomp(scalar, num_steps, **resource_params)` method. Consider
+        for example this custom PauliZ class, where the exponentiated resources are not defined
+        (this is the default for a general :class:`~.ResourceOperator`).
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def exp_resource_decomp(cls, scalar, num_steps):
+                    raise re.ResourcesNotDefined
+
+        When this method is not defined, the resources are computed from the linear combination
+        of Pauli words representation.
+
+        >>> pauli_rep = CustomZ(wires=0).pauli_rep
+        >>> pauli_rep
+        1.0 * Z(0)
+        >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
+        defaultdict(<class 'int'>, {PauliRot: 3})
+
+        We can update the exponential resources with the observation that the PauliZ gate, when
+        exponentiated, produces an RZ rotation:
+
+        .. code-block:: python
+
+            class CustomZ(re.ResourceZ):
+
+                @classmethod
+                def exp_resource_decomp(cls, scalar, num_steps):
+                    return {re.ResourceRZ.resource_rep(): num_steps}
+
+        >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
+        {RZ: 3}
+
+    """
 
     @staticmethod
     def _resource_decomp(
@@ -828,6 +916,91 @@ class ResourceExp(Exp, re.ResourceOperator):
         num_steps: int,
         **kwargs,
     ):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+                exponentiated.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+            coeff (complex): a scalar value which multiplies the base operator in the exponent
+            num_steps (int): the number of trotter steps to use in approximating the exponential
+
+        Resources:
+            This symbolic operation represents the exponential of some base operation. The resources
+            are determined as follows. If the base operation class :code:`base_class` implements the
+            :code:`.exp_resource_decomp()` method, then the resources are obtained from this.
+
+            Otherwise, the exponetiated operator's resources are computed using the linear combination
+            of Pauli words representation (:code:`base_pauli_rep`). The exponential is approximated by
+            the product of the exponential of each Pauli word in the sum. This product is repeated
+            :code:`num_steps` many times. Specifically, the cost for the exponential of each Pauli word
+            is given by an associated :class:`~.ResourcePauliRot`.
+
+        **Example**
+
+        The exponentiated operation can be constructed like this:
+
+        >>> hamiltonian = qml.dot([0.1, -2.3], [qml.X(0)@qml.Y(1), qml.Z(0)])
+        >>> hamiltonian
+        0.1 * (X(0) @ Y(1)) + -2.3 * Z(0)
+        >>> exp_hamiltonian = re.ResourceExp(hamiltonian, 0.1*1j, num_steps=2)
+        >>> exp_hamiltonian.resources(**exp_hamiltonian.resource_params)
+        defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
+
+        Alternatively, we can call the resources method on from the class:
+
+        >>> re.ResourceExp.resources(
+        ...     base_class = qml.ops.Sum,
+        ...     base_params = {},
+        ...     base_pauli_rep = hamiltonian.pauli_rep,
+        ...     coeff = 0.1*1j,
+        ...     num_steps = 2,
+        ... )
+        defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
+
+        .. details::
+            :title: Usage Details
+
+            We can configure the resources for the exponential of a base operation by modifying
+            its :code:`.exp_resource_decomp(scalar, num_steps, **resource_params)` method. Consider
+            for example this custom PauliZ class, where the exponentiated resources are not defined
+            (this is the default for a general :class:`~.ResourceOperator`).
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def exp_resource_decomp(cls, scalar, num_steps):
+                        raise re.ResourcesNotDefined
+
+            When this method is not defined, the resources are computed from the linear combination
+            of Pauli words representation.
+
+            >>> pauli_rep = CustomZ(wires=0).pauli_rep
+            >>> pauli_rep
+            1.0 * Z(0)
+            >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
+            defaultdict(<class 'int'>, {PauliRot: 3})
+
+            We can update the exponential resources with the observation that the PauliZ gate, when
+            exponentiated, produces an RZ rotation:
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def exp_resource_decomp(cls, scalar, num_steps):
+                        return {re.ResourceRZ.resource_rep(): num_steps}
+
+            >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
+            {RZ: 3}
+
+        """
         # Custom exponential operator resources:
         if issubclass(base_class, re.ResourceOperator):
             try:
@@ -845,10 +1018,39 @@ class ResourceExp(Exp, re.ResourceOperator):
 
     @property
     def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+                exponentiated.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+            coeff (complex): a scalar value which multiplies the base operator in the exponent
+            num_steps (int): the number of trotter steps to use in approximating the exponential
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return _extract_exp_params(self.base, self.scalar, self.num_steps)
 
     @classmethod
     def resource_rep(cls, base_class, base_params, base_pauli_rep, coeff, num_steps):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+                exponentiated.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+            coeff (complex): a scalar value which multiplies the base operator in the exponent
+            num_steps (int): the number of trotter steps to use in approximating the exponential
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         name = cls.tracking_name(base_class, base_params, base_pauli_rep, coeff, num_steps)
         return re.CompressedResourceOp(
             cls,
@@ -866,6 +1068,27 @@ class ResourceExp(Exp, re.ResourceOperator):
     def pow_resource_decomp(
         cls, z0, base_class, base_params, base_pauli_rep, coeff, num_steps
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+        Args:
+            z0 (int): the power that the operator is being raised to
+            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+                exponentiated.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+            coeff (complex): a scalar value which multiplies the base operator in the exponent
+            num_steps (int): the number of trotter steps to use in approximating the exponential
+
+        Resources:
+            The resources are derived by simply multiplying together the :math:`z0` exponent and the
+            :code:`coeff` coefficient into a single instance of :class:`~.ResourceExp` gate with
+            coefficient :code:`z0 * coeff`.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+                values are the counts.
+        """
         return {cls.resource_rep(base_class, base_params, base_pauli_rep, z0 * coeff, num_steps): 1}
 
     @staticmethod
@@ -876,6 +1099,7 @@ class ResourceExp(Exp, re.ResourceOperator):
         coeff: complex,
         num_steps: int,
     ):  # pylint: disable=unused-argument
+        r"""Returns the tracking name built with the operator's parameters."""
         base_name = (
             base_class.tracking_name(**base_params)
             if issubclass(base_class, re.ResourceOperator)
@@ -886,10 +1110,68 @@ class ResourceExp(Exp, re.ResourceOperator):
 
 
 class ResourceProd(Prod, re.ResourceOperator):
-    """Resource class for Prod"""
+    r"""Resource class for the symbolic Prod operation.
+
+    A symbolic class used to represent a product of some base operations.
+
+    Args:
+        cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+            representation, corresponding to the factors in the product.
+
+    Resources:
+        This symbolic class represents a product of operations. The resources are defined
+            trivially as the counts for each operation in the product.
+
+    .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+    **Example**
+
+    The product of operations can be constructed as follows. Note, each operation in the
+    product must be a valid :class:`~.ResourceOperator`
+
+    >>> prod_op = re.ResourceProd(
+    ...     re.ResourceQFT(range(3)),
+    ...     re.ResourceZ(0),
+    ...     re.ResourceGlobalPhase(1.23, wires=[1])
+    ... )
+    >>> prod_op
+    ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ ResourceGlobalPhase(1.23, wires=[1])
+    >>> prod_op.resources(**prod_op.resource_params)
+    defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
+
+    """
 
     @staticmethod
     def _resource_decomp(cmpr_factors, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+                representation, corresponding to the factors in the product.
+
+        Resources:
+            This symbolic class represents a product of operations. The resources are defined
+                trivially as the counts for each operation in the product.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        The product of operations can be constructed as follows. Note, each operation in the
+        product must be a valid :class:`~.ResourceOperator`
+
+        >>> prod_op = re.ResourceProd(
+        ...     re.ResourceQFT(range(3)),
+        ...     re.ResourceZ(0),
+        ...     re.ResourceGlobalPhase(1.23, wires=[1])
+        ... )
+        >>> prod_op
+        ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ ResourceGlobalPhase(1.23, wires=[1])
+        >>> prod_op.resources(**prod_op.resource_params)
+        defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
+
+        """
         res = defaultdict(int)
         for factor in cmpr_factors:
             res[factor] += 1
@@ -897,6 +1179,15 @@ class ResourceProd(Prod, re.ResourceOperator):
 
     @property
     def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+                representation, corresponding to the factors in the product.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         try:
             cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
         except AttributeError as error:
@@ -908,6 +1199,16 @@ class ResourceProd(Prod, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, cmpr_factors) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+                representation, corresponding to the factors in the product.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
 
 
