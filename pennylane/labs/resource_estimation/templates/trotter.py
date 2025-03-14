@@ -63,17 +63,16 @@ class ResourceTrotterProduct(
     Args:
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding 
-            to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-    
+        first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
     Resources:
-        The resources are defined according to the recurrsive formula presented above. Specifically, each 
-        operator in the :code:`first_order_expansion` is called a number of times given by the formula: 
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
         .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
-        of the recurrsive formula. Those counts are further simplified by grouping like terms as: 
+        of the recurrsive formula. Those counts are further simplified by grouping like terms as:
 
         .. math::
 
@@ -92,7 +91,7 @@ class ResourceTrotterProduct(
     >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
     >>> re.ResourceTrotterProduct.resources(n, order, first_order_expansion)
     defaultdict(<class 'int'>, {RX: 2, RZ: 1})
-    
+
     """
 
     @staticmethod
@@ -122,22 +121,22 @@ class ResourceTrotterProduct(
 
         .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
-        For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.        
+        For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding 
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding
                 to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-        
+
         Resources:
-            The resources are defined according to the recurrsive formula presented above. Specifically, each 
-            operator in the :code:`first_order_expansion` is called a number of times given by the formula: 
+            The resources are defined according to the recurrsive formula presented above. Specifically, each
+            operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
             .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
             Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
-            of the recurrsive formula. Those counts are further simplified by grouping like terms as: 
+            of the recurrsive formula. Those counts are further simplified by grouping like terms as:
 
             .. math::
 
@@ -154,7 +153,7 @@ class ResourceTrotterProduct(
         >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
         >>> re.ResourceTrotterProduct.resources(n, order, first_order_expansion)
         defaultdict(<class 'int'>, {RX: 2, RZ: 1})
-        
+
         """
         k = order // 2
         gate_types = defaultdict(int, {})
@@ -265,12 +264,11 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
     Args:
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding 
-            to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-            
+        qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
     Resources:
-        The resources are defined according to the recurrsive formula presented above. Specifically, each 
-        operator in the :code:`first_order_expansion` is called a number of times given by the formula: 
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
         .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
@@ -319,12 +317,12 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         Args:
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding 
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding
                 to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-                
+
         Resources:
-            The resources are defined according to the recurrsive formula presented above. Specifically, each 
-            operator in the :code:`first_order_expansion` is called a number of times given by the formula: 
+            The resources are defined according to the recurrsive formula presented above. Specifically, each
+            operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
             .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
@@ -336,7 +334,7 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
             >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
             >>> re.ResourceTrotterizedQfunc.resources(n, order, first_order_expansion)
             defaultdict(<class 'int'>, {RX: 2, RZ: 2})
-        
+
         """
         k = order // 2
         gate_types = defaultdict(int, {})
@@ -442,15 +440,15 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        qfunc (Callable): A function which queues the operations corresponding to the exponentiated 
+        qfunc (Callable): A function which queues the operations corresponding to the exponentiated
             terms of the hamiltonian (:math:`e^{i t O_{j}}`). The operations should be queued according
             to the first order expression.
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-    
+
     Resources:
-        The resources are defined according to the recurrsive formula presented above. Specifically, each 
-        operator in the :code:`first_order_expansion` is called a number of times given by the formula: 
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
         .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
@@ -474,7 +472,7 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
         >>> resource_op = re.resource_trotterize(first_order_expansion, n, order)(time, theta, phi, wires=['a', 'b'])
         >>> resource_op.resources(**resource_op.resource_params)
         defaultdict(<class 'int'>, {RX: 2, RY: 2})
-    
+
     """
 
     @wraps(qfunc)

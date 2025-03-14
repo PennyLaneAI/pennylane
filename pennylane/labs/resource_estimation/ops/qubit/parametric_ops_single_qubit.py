@@ -65,7 +65,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -657,13 +657,13 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`. 
-            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if 
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-            
+
             In the case where multiple controlled wires are provided, the resources are derived
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary 
-            <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following 
+            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
             identities:
 
             .. math::
@@ -673,7 +673,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
                     \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
                 \end{align}
 
-            This identity is applied along with some clever choices for the angle values to combine 
+            This identity is applied along with some clever choices for the angle values to combine
             rotations; the final circuit takes the form:
 
             .. code-block:: bash
@@ -681,11 +681,11 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
                 ctrl: ─────╭●─────────╭●─────────┤
                 trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
 
-            The :code:`CNOT` gates are replaced with multi-controlled X-gates to generalize to the 
+            The :code:`CNOT` gates are replaced with multi-controlled X-gates to generalize to the
             multi-controlled case.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated 
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
         if num_ctrl_wires == 1:

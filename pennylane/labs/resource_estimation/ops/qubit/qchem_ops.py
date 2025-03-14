@@ -35,7 +35,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
             0: ──T†──H───S─╭X──RZ-─╭X──S†──H──T─┤
             1: ──T†──S†──H─╰●──RY──╰●──H───S──T─┤
-    
+
     .. seealso:: :class:`~.SingleExcitation`
 
     """
@@ -272,7 +272,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
             &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
 
-        For the source of this decomposition, see page 17 of `"Local, Expressive, 
+        For the source of this decomposition, see page 17 of `"Local, Expressive,
         Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         The cost for implementing this transformation is given by:
@@ -301,7 +301,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
                 &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
                 &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
 
-            For the source of this decomposition, see page 17 of `"Local, Expressive, 
+            For the source of this decomposition, see page 17 of `"Local, Expressive,
             Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
             The cost for implementing this transformation is given by:
@@ -355,7 +355,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
             &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
             &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
-        
+
         Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
         :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
         and two multi-controlled phase shift gates controlled on 3 qubits.
@@ -377,7 +377,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
                 &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
                 &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
                 &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
-            
+
             Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
             :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
             and two multi-controlled phase shift gates controlled on 3 qubits.
@@ -425,7 +425,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
             &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
             &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
-        
+
         Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
         :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
         and two multi-controlled phase shift gates controlled on 3 qubits.
@@ -447,7 +447,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
                 &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
                 &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
                 &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
-            
+
             Specifically, the resources are given by one :class:`~.ResourceDoubleExcitation`, one
             :class:`~.ResourcePhaseShift` gate, two multi-controlled Z-gates controlled on 3 qubits,
             and two multi-controlled phase shift gates controlled on 3 qubits.
@@ -498,7 +498,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
         two :class:`~.ResourceFermionicSWAP` gates.
 
     .. seealso:: :class:`~.OrbitalRotation`
-        
+
     """
 
     @staticmethod

@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections import defaultdict
-from typing import Dict, Union
+from typing import Dict
 
 import pennylane.labs.resource_estimation as re
 from pennylane import math
@@ -570,8 +570,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_class (Type[~.ResourceOperator]): The class type of the base operator to
-            be raised to some power.
+        base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
         base_params (dict): the resource parameters required to extract the cost of the base operator
         z (int): the power that the operator is being raised to
 
@@ -1021,11 +1020,9 @@ class ResourceExp(Exp, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
-                exponentiated.
+            base_class (Type[ResourceOperator]): The class type of the base operator that is exponentiated.
             base_params (dict): the resource parameters required to extract the cost of the base operator
-            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
-                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
             coeff (complex): a scalar value which multiplies the base operator in the exponent
             num_steps (int): the number of trotter steps to use in approximating the exponential
 

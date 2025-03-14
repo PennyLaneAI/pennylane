@@ -177,12 +177,12 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     Args:
         pauli_string (str): a string describing the pauli operators that define the rotation
-    
+
     Resources:
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation 
+        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
         for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
         in combination with the following identity:
 
@@ -193,10 +193,10 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
                 \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
             \end{align}
 
-        Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of 
-        :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
-        the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by 
-        a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
+        Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
+        :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+        the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
+        a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we
         conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
 
     .. seealso:: :class:`~.PauliRot`
@@ -205,17 +205,17 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(pauli_string, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Args:
             pauli_string (str): a string describing the pauli operators that define the rotation
-        
+
         Resources:
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-            The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation 
+            The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
             for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
             in combination with the following identity:
 
@@ -226,10 +226,10 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
                     \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
                 \end{align}
 
-            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of 
-            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits 
-            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by 
-            a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we 
+            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
+            a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we
             conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
         """
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
@@ -425,7 +425,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -572,12 +572,12 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
             1: ─╰Y───────────╰Y─┤
 
     .. seealso:: :class:`~.IsingYY`
-            
+
     """
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -597,7 +597,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
                 0: ─╭●─────RY────╭●─┤
                 1: ─╰Y───────────╰Y─┤
-    
+
         """
 
         cy = re.ops.ResourceCY.resource_rep()
@@ -723,16 +723,16 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
             0: ──H─╭●─────RY────╭●──H─┤
             1: ────╰Y─────RX────╰Y────┤
-    
+
     .. seealso:: :class:`~.IsingXY`
 
     """
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
-    
+
         Resources:
             IsingXY coupling gate
 
@@ -889,16 +889,16 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
             0: ─╭●───────────╭●─┤
             1: ─╰X─────RZ────╰X─┤
-    
+
     .. seealso:: :class:`~.IsingZZ`
 
     """
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
-    
+
         Resources:
             Ising ZZ coupling gate
 
@@ -1047,9 +1047,9 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
-    
+
         Resources:
             The :code:`PSWAP` gate is defined as:
 

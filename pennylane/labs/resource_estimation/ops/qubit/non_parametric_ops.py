@@ -90,7 +90,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
-            In the case where multiple controlled wires are provided, the resources are derived from 
+            In the case where multiple controlled wires are provided, the resources are derived from
             the following identities (as presented in this `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
 
             .. math::
@@ -100,8 +100,8 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
                     \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
                 \end{align}
 
-            Specifically, the resources are given by two :class:`~.ResourceRY` gates, two 
-            :class:`~.ResourceHadamard` gates and a :class:`~.ResourceX` gate. By replacing the 
+            Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
+            :class:`~.ResourceHadamard` gates and a :class:`~.ResourceX` gate. By replacing the
             :class:`~.ResourceX` gate with :class:`~.ResourceMultiControlledX` gate, we obtain a
             controlled-version of this identity.
 
@@ -271,9 +271,9 @@ class ResourceS(qml.S, re.ResourceOperator):
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     r"""Resource class for the SWAP gate.
-    
+
     Resources:
-        The resources come from the following identity expressing SWAP as the product of 
+        The resources come from the following identity expressing SWAP as the product of
         three CNOT gates:
 
         .. math::
@@ -309,7 +309,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -560,9 +560,9 @@ class ResourceT(qml.T, re.ResourceOperator):
 
 class ResourceX(qml.X, re.ResourceOperator):
     r"""Resource class for the X-gate.
-    
+
     Resources:
-        The X-gate can be decomposed according to the following identities: 
+        The X-gate can be decomposed according to the following identities:
 
         .. math::
 
@@ -571,7 +571,7 @@ class ResourceX(qml.X, re.ResourceOperator):
                 \hat{Z} &= \hat{S}^{2}.
             \end{align}
 
-        Thus the resources for an X-gate are two :class:`~.ResourceS` gates and 
+        Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
         two :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.X`
@@ -580,11 +580,11 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The X-gate can be decomposed according to the following identities: 
+            The X-gate can be decomposed according to the following identities:
 
             .. math::
 
@@ -593,7 +593,7 @@ class ResourceX(qml.X, re.ResourceOperator):
                     \hat{Z} &= \hat{S}^{2}.
                 \end{align}
 
-            Thus the resources for an X-gate are two :class:`~.ResourceS` gates and 
+            Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
         s = re.ResourceS.resource_rep()
@@ -699,9 +699,9 @@ class ResourceX(qml.X, re.ResourceOperator):
 
 class ResourceY(qml.Y, re.ResourceOperator):
     r"""Resource class for the Y-gate.
-    
+
     Resources:
-        The Y-gate can be decomposed according to the following identities: 
+        The Y-gate can be decomposed according to the following identities:
 
         .. math::
 
@@ -712,7 +712,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
                 \hat{S}^{\dagger} &= 3 \hat{S}.
             \end{align}
 
-        Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and 
+        Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
         two :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.Y`
@@ -721,11 +721,11 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The 
+        r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Y-gate can be decomposed according to the following identities: 
+            The Y-gate can be decomposed according to the following identities:
 
             .. math::
 
@@ -736,7 +736,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
                     \hat{S}^{\dagger} &= 3 \hat{S}.
                 \end{align}
 
-            Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and 
+            Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
         s = re.ResourceS.resource_rep()

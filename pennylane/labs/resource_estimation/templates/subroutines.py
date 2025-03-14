@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 from collections import defaultdict
-from typing import Dict, Type
+from typing import Dict
 
 import pennylane as qml
 from pennylane import numpy as qnp
@@ -495,19 +495,19 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
             z (int): the power that the operator is being raised to
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
-                
+
         Resources:
             The resources are derived from the following identity. If an operation :math:`\hat{A}`
             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
             then the operation squared can be expressed as:
 
-            .. math:: 
+            .. math::
 
                 \begin{align}
                     \hat{A}^{2} \ &= \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger} \cdot \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger} \\
                     \hat{A}^{2} \ &= \ \hat{U} \cdot \hat{B} \cdot \hat{B} \cdot \hat{U}^{\dagger} \\
                     \hat{A}^{2} \ &= \ \hat{U} \cdot \hat{B}^{2} \cdot \hat{U}^{\dagger},
-                \end{align}                
+                \end{align}
 
             this holds for any integer power :math:`z`. In general, the resources are given by :math:`z`
             instances of :class:`~.ResourceSelect` conjugated by a pair of :class:`~.ResourceStatePrep`
@@ -660,8 +660,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     r"""Resource class for the Qubitization gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-            corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
         num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
     Resources:
