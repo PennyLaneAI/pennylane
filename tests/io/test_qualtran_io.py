@@ -51,6 +51,31 @@ class TestFromBloq:
         with pytest.raises(MatrixUndefinedError):
             qml.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
 
+    @pytest.mark.xfail(reason="Fails due to overly broad assertion")
+    def test_assert_valid(self):
+        """Tests that FromBloq passes the assert_valid check"""
+        from qualtran import BloqBuilder, QUInt
+        from qualtran.bloqs.arithmetic import Add, Product
+
+        from pennylane.wires import Wires
+
+        bb = BloqBuilder()
+
+        w1 = bb.add_register("p1", 3)
+        w2 = bb.add_register("p2", 3)
+        w3 = bb.add_register("q1", 3)
+        w4 = bb.add_register("q2", 3)
+
+        w1, w2, res1 = bb.add(Product(3, 3), a=w1, b=w2)
+        w3, w4, res2 = bb.add(Product(3, 3), a=w3, b=w4)
+        p1p2, p1p2_plus_q1q2 = bb.add(Add(QUInt(bitsize=6), QUInt(bitsize=6)), a=res1, b=res2)
+
+        cbloq = bb.finalize(p1=w1, p2=w2, q1=w3, q2=w4, p1p2=p1p2, p1p2_plus_q1q2=p1p2_plus_q1q2)
+
+        op = qml.FromBloq(cbloq, wires=range(24))
+
+        qml.ops.functions.assert_valid(op, True, True)
+
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
 
