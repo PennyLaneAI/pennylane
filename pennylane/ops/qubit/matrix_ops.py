@@ -132,6 +132,8 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"num_wires"}
+
     grad_method = None
     """Gradient computation method."""
 
@@ -181,6 +183,10 @@ class QubitUnitary(Operation):
             qml.math.eye(dim),
             atol=1e-6,
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ

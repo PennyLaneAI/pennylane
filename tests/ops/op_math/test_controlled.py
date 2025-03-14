@@ -203,6 +203,23 @@ class TestControlledInit:
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
 
+    def test_resource_params(self):
+        """Tests that a controlled op has the correct resource params."""
+
+        op = Controlled(
+            qml.MultiRZ(0.5, wires=[0, 1, 2]),
+            control_wires=[3, 4],
+            control_values=[True, False],
+            work_wires=[5],
+        )
+        assert op.resource_params == {
+            "base_class": qml.MultiRZ,
+            "base_params": {"num_wires": 3},
+            "num_control_wires": 2,
+            "num_zero_control_values": 1,
+            "num_work_wires": 1,
+        }
+
     def test_data(self):
         """Test that the base data can be get and set through Controlled class."""
 
