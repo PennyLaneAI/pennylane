@@ -347,7 +347,10 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(**kwargs)
+        if CORRECT_KERAS_VERSION:
+            super().__init__(dynamic=True, **kwargs)
+        else:
+            super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)
