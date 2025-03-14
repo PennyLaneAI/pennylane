@@ -16,6 +16,8 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+from curses import intrflush
+from modulefinder import Module
 from typing import Literal
 
 import numpy as np
@@ -27,6 +29,9 @@ from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
+import scipy
+import math
+from functools import reduce
 
 # pylint: disable=too-many-branches, unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
@@ -727,6 +732,211 @@ def _compute_qsp_angle(poly_coeffs):
 
     return rotation_angles
 
+"""
+Implementation of the QSP (Quantum Signal Processing) algorithm proposed in https://arxiv.org/pdf/2002.11649 
+"""
+
+def cheby_pol(x, degree):
+    r"""
+    return the value of the chebychev polynomila cos(degree*arcos(x)) at point x
+    
+    Args:
+        x (float):
+        degree (int)
+    
+    Returns:
+        float: vlaue of cos(degree*arcos(x))
+    """
+    # if np.abs(x) > 1:
+    #     raise ValueError()
+    return qml.math.cos(degree * qml.math.arccos(x))
+
+def poly_func(
+    coeffs, degree, parity, x
+    ):
+    r"""
+    evaluate a polynomial function of degree degree and given parity expressed in the Chebychev basis at value x
+    
+    Args:
+        coeffs (numpy.ndarray): coefficient of the polynomial function in the Chebychev basis
+        degree (int): degree of polynomial
+        parity (int): 0 or 1 for odd/even polynomials respectively
+        x (float): point at which to evaluate the polynomial function
+
+    Returns:
+        float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))
+    """
+    ind = qml.math.arange(len(coeffs))
+    return sum(
+        [coeffs[i] * cheby_pol(x, degree=2 * i + parity) for i in ind]
+    )
+
+def z_rotation(phi, interface):
+    r"""
+    Args:
+        phi (float): angle parameter
+    
+    Returns:
+        numpy.ndarray: Z rotation matrix
+    """
+    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]], like=interface)
+
+def W_of_x(x, interface):
+    r"""
+    W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    
+    Args:
+        x (float):
+    
+    Returns:
+        numpy.ndarray: 2x2 matrix of W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
+
+    return qml.math.array(
+        [
+            [cheby_pol(x=x, degree=1.), 1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2)],
+            [1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2), cheby_pol(x=x, degree=1.)],
+        ], like=interface
+    )
+
+def qsp_iterate(phi, x, interface):
+    r"""
+    defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    
+    Args:
+        phi (float): angle parameter
+        x (float):
+   
+    Returns:
+        numpy.ndarray: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
+    return qml.math.dot(W_of_x(x=x, interface=interface), z_rotation(phi=phi, interface=interface))
+
+def qsp_iterates(phis, x, interface):
+    r"""
+    Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
+ 
+    Args:
+        phis (numpy.ndarray): array of QSP angles implementing a given polynomial
+        x (float):point at which to evaluate the polynomial
+    Returns:
+        numpy.ndarray: 2x2 block-encoding of polynomial implemented by the angles phi
+    """
+    try:
+        from jax import vmap
+        qsp_iterate_list = vmap(qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+    except ModuleNotFoundError:
+        qsp_iterate_list = qml.math.vectorize(qsp_iterate, excluded=(1, 2))(phis[1:], x, interface)
+        
+    mtx = reduce(qml.math.dot, qsp_iterate_list)
+    mtx = qml.math.dot(z_rotation(phi=phis[0], interface=interface), mtx)
+
+    return qml.math.real(mtx[0,0])
+
+try:
+    from jax import jit
+    qsp_iterates = jit(qsp_iterates, static_argnames=['interface'])
+except ModuleNotFoundError:
+    pass
+
+def grid_pts(degree, interface):
+    r"""
+    generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials are evaluated and the optimization is carried defined in page 8
+    
+    Args:
+        degree (int): degree of polynomial function
+    
+    Returns:
+        numpy.ndarray: optimization grid points
+    """
+    d = (degree + 1)// 2 + (degree+1) % 2
+    return qml.math.array([qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)], like=interface)
+
+def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimize, opt_method="Newton-CG", interface=None):
+    r"""
+    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid
+    
+    Args:
+        degree (int): degree of polynomial function
+        coeffs_target_func (numpy.ndarray): coefficients of the polynomial function in ascending index order
+        optimizer: optimization function to be used
+        opt_method (str): specific optimization algorithm. Defaults is "Newton-CG"
+    
+    Returns:
+        tuple[numpy.ndarray, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
+    """
+    parity = degree % 2
+
+    try:
+        from jax import jacobian, hessian
+        interface = 'jax'
+    except ModuleNotFoundError:
+        from autograd import jacobian, hessian
+        interface = None
+
+    grid_points = grid_pts(degree, interface=interface)
+    
+    initial_guess = [qml.numpy.pi / 4] + [0.0] * (degree - 1) + [qml.numpy.pi / 4]
+    initial_guess = qml.math.array(initial_guess, like=interface)
+
+    targets = [poly_func(coeffs=coeffs_target_func, x=x, degree=degree, parity=parity) for x in grid_points]
+    targets = qml.math.array(targets, like=interface)
+    
+
+    def obj_function(phi):
+        # Equation (23)
+
+        try:
+            from jax import vmap
+            obj_func = vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+        except ModuleNotFoundError:
+            obj_func = qml.math.vectorize(qsp_iterates, excluded=(0, 2))(phi, grid_points, interface) - targets
+        
+        obj_func = qml.math.dot(obj_func, obj_func)
+
+        return 1 / len(grid_points) * obj_func
+
+    try:
+        from jax import jit
+        obj_function = jit(obj_function)
+    except ModuleNotFoundError:
+        pass
+
+    opt_kwargs = {}
+
+    opt_kwargs["jac"] = jacobian(obj_function)
+    if opt_method == "Newton-CG":
+        opt_kwargs["hess"] = hessian(obj_function)
+    
+    results = optimizer(
+        fun=obj_function,
+        x0=initial_guess,
+        method=opt_method,
+        **opt_kwargs
+    )
+    phis = results.x
+    cost_func = results.fun
+
+    print(f"cost function {cost_func}")
+    return phis, cost_func
+
+def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method="Newton-CG"):
+    polynomial_coeffs_in_cheby_basis = chebyshev.poly2cheb(polynomial_coeffs_in_cano_basis)
+    degree = len(polynomial_coeffs_in_cheby_basis) - 1
+    
+    coeffs_odd = polynomial_coeffs_in_cheby_basis[1::2]
+    coeffs_even = polynomial_coeffs_in_cheby_basis[0::2]
+
+    if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
+        coeffs_target_func = qml.math.array(coeffs_even)
+    elif np.allclose(coeffs_even, np.zeros_like(coeffs_even)):
+        coeffs_target_func = qml.math.array(coeffs_odd)
+    else:
+        raise ValueError()
+
+    angles, *_ = qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func, opt_method=opt_method)
+    
+    return angles 
 
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
@@ -881,7 +1091,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
+def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding", **opt_kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
@@ -978,11 +1188,16 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
+        elif angle_solver == "iterative":
+            return transform_angles(_compute_qsp_angles_iteratively(poly, **opt_kwargs), "QSP", "QSVT")
+
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
+        elif angle_solver == "iterative":
+            return _compute_qsp_angles_iteratively(poly, **opt_kwargs)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "GQSP":
