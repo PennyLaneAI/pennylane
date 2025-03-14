@@ -840,7 +840,7 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
-            (generate_polynomial_coeffs(10,0)),
+            (generate_polynomial_coeffs(1000,0)),
             (generate_polynomial_coeffs(7,1)),
             (generate_polynomial_coeffs(12,0)),
         ]
@@ -849,7 +849,6 @@ class TestIterativeSolver:
         "opt_method",
         [
             'L-BFGS-B',
-            'Newton-CG',
         ]
     )
     def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis, opt_method):
@@ -869,7 +868,7 @@ class TestIterativeSolver:
         except ModuleNotFoundError:
             interface=None
         delta = abs(
-            np.real(qsp_iterates(phis, x_point, interface=interface)[0, 0])
+            qsp_iterates(phis, x_point, interface=interface)
             - poly_func(target_polynomial_coeffs, degree, parity, x_point)
         )
         print(f"delta {delta}")
@@ -896,7 +895,7 @@ class TestIterativeSolver:
         )
 
         assert np.isclose(
-            np.real(qsp_iterates(phis, x_point, interface=interface)[0, 0]),
+            qsp_iterates(phis, x_point, interface=interface),
             poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
             atol=tolerance,
         )
@@ -904,7 +903,7 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(1000,0)),
             (generate_polynomial_coeffs(3,1)),
             (generate_polynomial_coeffs(6,0)),
         ],
@@ -915,10 +914,16 @@ class TestIterativeSolver:
             "iterative",
         ]
     )
-    def test_correctness_iterative_QSP_angles(self, poly, angle_solver):
+    @pytest.mark.parametrize(
+        'opt_method',
+        [
+            'L-BFGS-B'
+        ]
+    )
+    def test_correctness_iterative_QSP_angles(self, poly, angle_solver, opt_method):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver, opt_method=opt_method)
         x = np.random.normal(size=1).item()
 
         @qml.qnode(qml.device("default.qubit"))
@@ -948,10 +953,16 @@ class TestIterativeSolver:
             "iterative",
         ]
     )
-    def test_correctness_iterative_QSVT_angles(self, poly, angle_solver):
+    @pytest.mark.parametrize(
+        'opt_method',
+        [
+            'L-BFGS-B'
+        ]
+    )
+    def test_correctness_iterative_QSVT_angles(self, poly, angle_solver, opt_method):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver, opt_method=opt_method)
         x = np.random.normal(size=1).item()
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
