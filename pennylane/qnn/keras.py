@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
-# pragma: no cover
 import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
@@ -349,7 +348,7 @@ class KerasLayer(Layer):
 
         if CORRECT_KERAS_VERSION:
             super().__init__(dynamic=True, **kwargs)
-        else:
+        else: # pragma: no cover
             super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
