@@ -405,6 +405,7 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
+# pylint: disable=too-many-arguments
 def assert_valid(
     op: qml.operation.Operator,
     skip_pickle=False,
