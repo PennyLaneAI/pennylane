@@ -134,7 +134,7 @@ class FromBloq(Operation):
         *params,
         wires=None,
         **hyperparameters,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    ):  # pylint: disable=arguments-differ, unused-argument, too-many-branches, too-many-statements
         ops = []
         bloq = hyperparameters["bloq"]
 
