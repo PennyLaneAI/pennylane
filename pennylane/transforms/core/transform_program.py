@@ -622,15 +622,11 @@ class TransformProgram:
         # pylint: disable=import-outside-toplevel
         import jax
 
-        if not self:
-            f = partial(qml.capture.PlxprInterpreter().eval, jaxpr, consts)
-            return jax.make_jaxpr(f)(*args)
-
+        cur_jaxpr = jax.core.ClosedJaxpr(jaxpr, consts)
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
-            cur_jaxpr = plxpr_transform(jaxpr, consts, targs, tkwargs, *args)
-            jaxpr = cur_jaxpr.jaxpr
-            consts = cur_jaxpr.consts
+            cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
+        return cur_jaxpr
 
         return cur_jaxpr
 
