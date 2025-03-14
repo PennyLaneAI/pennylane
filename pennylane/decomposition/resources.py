@@ -249,6 +249,8 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
+    if issubclass(op_type, qml.ops.Pow):
+        return pow_resource_rep(**params)
     return CompressedResourceOp(op_type, params)
 
 
@@ -323,6 +325,24 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
     return CompressedResourceOp(
         qml.ops.Adjoint,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
+    )
+
+
+def pow_resource_rep(base_class, base_params, z):
+    """Creates a ``CompressedResourceOp`` representation of the power of an operator.
+
+    Args:
+        base_class: the base operator type
+        base_params (dict): the resource params of the base operator
+        z (int | float): the power
+
+    """
+    if not isinstance(z, int) or z < 0:
+        raise NotImplementedError(f"Non-integer powers and negative powers are not supported yet.")
+    base_resource_rep = resource_rep(base_class, **base_params)
+    return CompressedResourceOp(
+        qml.ops.Pow,
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
     )
 
 
