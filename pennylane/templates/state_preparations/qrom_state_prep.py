@@ -20,35 +20,36 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def _x_to_binary(n_precision, x):
+def _float_to_binary(val, num_bits):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
 
     Args:
-        n_precision (int): the number of bits to use for the binary representation
-        x (float): The value to convert to binary. Must be in the range [0, 1).
+        val (float): The value to convert to binary. Must be in the range [0, 1).
+        num_bits (int): the number of bits to use for the binary representation
 
     Returns:
         str: The binary representation of the value, with the specified precision.
 
     **Example**
 
-        >>> _x_to_binary(3, 0.5)
+        >>> _float_to_binary(0.5, 3)
         '100'
 
         Expected value as the binary representation of `0.5` is `0.100`.
     """
 
-    binary_rep = bin(int(2 ** (n_precision + 1) + 2 ** (n_precision) * x))
-    if binary_rep[-n_precision - 1] == "1":
-        return "1" * n_precision
+    binary_rep = bin(int(2 ** (num_bits + 1) + 2 ** (num_bits) * val))
+    if binary_rep[-num_bits - 1] == "1":
+        return "1" * num_bits
 
-    return binary_rep[-n_precision:]
+    return binary_rep[-num_bits:]
 
 
 class QROMStatePreparation(Operation):
     r"""Prepares a quantum state using a Quantum Read-Only Memory (QROM) based approach.
 
-    This operation decomposes the state preparation into a sequence of QROM operations and controlled rotations.
+    This operation implements the state preparation method described
+    in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
 
     Args:
         state_vector (TensorLike): the state vector to prepare
@@ -79,8 +80,8 @@ class QROMStatePreparation(Operation):
     .. details::
         :title: Usage Details
 
-        This operation implements the state preparation method described
-        in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_. It uses
+        Following the algorithm described in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
+        this template uses
         a `QROM <https://docs.pennylane.ai/en/stable/code/api/pennylane.QROM.html>`_
         to store the binary representations of the amplitudes and phases of the target state, and then uses
         controlled rotations to apply these values to the target qubits.
@@ -185,6 +186,7 @@ class QROMStatePreparation(Operation):
 
         decomp_ops = []
         num_iterations = int(qml.math.log2(len(probs)))
+        rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
 
         for i in range(num_iterations):
 
@@ -203,9 +205,9 @@ class QROMStatePreparation(Operation):
                 return 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
 
             thetas_binary = [
-                _x_to_binary(
-                    len(precision_wires),
+                _float_to_binary(
                     normalize_angle(probs_numerator[j] / (probs_denominator[j] + eps)),
+                    len(precision_wires),
                 )
                 for j in range(len(probs_numerator))
             ]
@@ -238,11 +240,9 @@ class QROMStatePreparation(Operation):
 
         if not qml.math.allclose(phases, 0.0):
             # Compute the binary representations of the phases
-            def binary_angle(x):
-                return x / (2 * np.pi)
 
             thetas_binary = [
-                _x_to_binary(len(precision_wires), binary_angle(phase)) for phase in phases
+                _float_to_binary(phase / (2 * np.pi), len(precision_wires)) for phase in phases
             ]
 
             # Apply the QROM operation to encode the thetas binary representation
@@ -257,10 +257,11 @@ class QROMStatePreparation(Operation):
             )
 
             for ind, wire in enumerate(precision_wires):
-                rotation_angle = 2 ** (-ind - 1)
                 decomp_ops.append(
                     qml.ctrl(
-                        qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=input_wires[0]),
+                        qml.GlobalPhase(
+                            (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
+                        ),
                         control=wire,
                     )
                 )

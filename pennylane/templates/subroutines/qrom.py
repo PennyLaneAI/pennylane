@@ -209,6 +209,7 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
+            depth = min(depth, len(bitstrings))
 
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))

@@ -21,13 +21,13 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.state_preparations.qrom_state_prep import _x_to_binary
+from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
 
-def test__func_to_binary():
-    """Test _func_to_binary private function"""
+def test_float_to_binary():
+    """Test _float_to_binary private function"""
 
-    output = _x_to_binary(3, 0.5)
+    output = _float_to_binary(0.5, 3)
     assert output == "100"
 
 
@@ -59,7 +59,7 @@ class TestQROMStatePreparation:
             ),
             (
                 np.array([1.0, 1, 0, 0]),
-                "State vectors have to be of norm 1.0",
+                "Input state vectors must have",
             ),
         ],
     )
