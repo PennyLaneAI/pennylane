@@ -10,6 +10,26 @@ from pennylane.labs.trotter import Fragment
 def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
     """Wrapper function for GenericFragment"""
 
+    if len(fragments) > 0:
+        frag_type = type(fragments[0])
+    else:
+        return []
+
+    if not all(isinstance(fragment, frag_type) for fragment in fragments):
+        raise TypeError("All fragments must be of the same type.")
+
+    if not hasattr(frag_type, "__add__"):
+        raise TypeError(f"Fragment type {frag_type} does not implement __add__.")
+
+    if not hasattr(frag_type, "__sub__"):
+        raise TypeError(f"Fragment type {frag_type} does not implement __sub__.")
+
+    if not hasattr(frag_type, "__mul__"):
+        raise TypeError(f"Fragment type {frag_type} does not implement __mul__.")
+
+    if not hasattr(frag_type, "__matmul__"):
+        raise TypeError(f"Fragment type {frag_type} does not implement __matmul__.")
+
     return [GenericFragment(fragment, norm_fn=norm_fn) for fragment in fragments]
 
 
