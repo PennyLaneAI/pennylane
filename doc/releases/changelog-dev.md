@@ -51,6 +51,27 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added class ``qml.FromBloq`` that takes Qualtran Bloqs and translates them into equivalent PennyLane operators.
+  For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+
+  ```python
+  from qualtran.bloqs.basic_gates import ZPowGate
+  from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+  import pennylane as qml
+
+  textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))  
+  dev = qml.device("default.qubit")  
+  @qml.qnode(dev)
+  def circuit():
+      qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
+      return qml.probs(wires=[1, 2, 3])
+
+  >>> circuit()
+  array([1.00000000e+00, 7.48667061e-34, 6.97132526e-35, 5.17360924e-34,
+       3.48566263e-35, 1.65218669e-34, 6.97132526e-35, 6.76910185e-34])
+  ```
+  [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
@@ -701,6 +722,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
