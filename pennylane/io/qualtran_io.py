@@ -18,7 +18,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import MatrixUndefinedError, Operation
+from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
 
 try:
@@ -262,6 +262,9 @@ class FromBloq(Operation):
                     ops.append(op)
         except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
             pass
+
+        if len(ops) == 0:
+            raise DecompositionUndefinedError
 
         return ops
 
