@@ -614,6 +614,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
+  [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
+
 * Dynamic one-shot workloads are now faster for `null.qubit`.
   Removed a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
   [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
