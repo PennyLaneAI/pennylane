@@ -70,7 +70,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
-        from pennylane.capture import PlxprInterpreter
+        from pennylane.capture import PlxprInterpreter, determine_abstracted_axes
         from pennylane.capture.primitives import measure_prim
         from pennylane.operation import Operator
 
@@ -251,7 +251,8 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
 
-        return make_jaxpr(wrapper)(*args)
+        abstracted_axes, _ = determine_abstracted_axes(args)
+        return make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*args)
 
     return CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr
 

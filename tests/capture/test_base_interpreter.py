@@ -751,6 +751,21 @@ class TestHigherOrderPrimitiveRegistrations:
 class TestDynamicShapes:
     """Test that our interpreters can handle dynamic array creation."""
 
+    def test_transform_function_with_dynamic_input(self):
+        """Test that PlxprInterpreter can transform functions with dynamicly shaped inputs."""
+
+        def f(i):
+
+            @qml.capture.PlxprInterpreter()
+            def g(y):
+                return y + 1
+
+            return g(jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(f)(2)
+        [output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 5)
+        assert qml.math.allclose(output, 1 + jnp.arange(5))
+
     @pytest.mark.parametrize("reinterpret", (True, False))
     @pytest.mark.parametrize(
         "creation_fn", [jax.numpy.ones, jax.numpy.zeros, lambda s: jax.numpy.full(s, 0.5)]

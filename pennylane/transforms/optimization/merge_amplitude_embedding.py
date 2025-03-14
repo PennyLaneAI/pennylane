@@ -218,7 +218,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 new_jaxprs.append(None)
                 new_consts_slices.append(slice(0, 0))
             else:
-                new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+                new_jaxpr, _ = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
                 # Update wires we've seen so far so collisions with
                 # newly seen wires from the branches continue to be
