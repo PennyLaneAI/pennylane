@@ -309,7 +309,6 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     **Example**
 
     >>> import pennylane as qml
-    >>> qml.decompositions.enable_graph()
     >>> qml.list_decomps(qml.CRX)
     [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
      <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
