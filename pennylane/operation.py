@@ -349,7 +349,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
         return self
 
 
-def classproperty(func):
+def classproperty(func) -> ClassPropertyDescriptor:
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)

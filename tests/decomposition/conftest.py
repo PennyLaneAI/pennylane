@@ -70,3 +70,35 @@ def _ry_to_rx_rz(*_, **__):
 
 
 decompositions[qml.RY] = [_ry_to_rx_rz]
+
+
+@qml.register_resources({qml.RX: 2, qml.CZ: 2})
+def _crx_to_rx_cz(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[qml.CRX] = [_crx_to_rx_cz]
+
+
+@qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})
+def _cphase_to_rz_cnot(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[qml.ControlledPhaseShift] = [_cphase_to_rz_cnot]
+
+
+@qml.register_resources({qml.RZ: 1, qml.GlobalPhase: 1})
+def _phase_shift_to_rz_gp(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[qml.PhaseShift] = [_phase_shift_to_rz_gp]
+
+
+@qml.register_resources({qml.RX: 1, qml.GlobalPhase: 1})
+def _x_to_rx(*_, **__):
+    raise NotImplementedError
+
+
+decompositions[qml.X] = [_x_to_rx]

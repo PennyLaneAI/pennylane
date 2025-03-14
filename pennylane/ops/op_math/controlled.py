@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-# pylint: disable=too-many-positional-arguments
+
+from __future__ import annotations
+
 import functools
 import warnings
 from collections.abc import Callable, Sequence
@@ -41,14 +44,14 @@ from .symbolicop import SymbolicOp
 def ctrl(
     op: Operator,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Operator: ...
 @overload
 def ctrl(
     op: Callable,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None):
@@ -295,12 +298,8 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
 
 
 @functools.lru_cache()
-def _get_special_ops():
-    """Gets a list of special operations with custom controlled versions.
-
-    This is placed inside a function to avoid circular imports.
-
-    """
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
 
     ops_with_custom_ctrl_ops = {
         (qml.PauliZ, 1): qml.CZ,
@@ -331,7 +330,7 @@ def _get_pauli_x_based_ops():
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
     custom_key = (type(op), len(control))
 
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
