@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implements the DecompositionGraph
+"""Implements the class DecompositionGraph
 
 This module implements a graph-based decomposition algorithm that constructs a graph of operators
 connected by decomposition rules, and then traverses it using Dijkstra's algorithm to find the best
-decomposition pathways.
+decomposition for every operator.
 
 The architecture of this module utilizes design patterns similar to those present in Qiskit's
 implementation of the basis translator, the Boost Graph library, and RustworkX.
@@ -83,9 +83,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """Helper function to get a list of decomposition rules."""
         if op_type in self._fixed_decomps:
             return [self._fixed_decomps[op_type]]
-        if op_type in self._alt_decomps:
-            return self._alt_decomps[op_type] + list_decomps(op_type)
-        return list_decomps(op_type)
+        return self._alt_decomps.get(op_type, []) + list_decomps(op_type)
 
     def _construct_graph(self):
         """Constructs the decomposition graph."""
@@ -125,17 +123,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         """
 
-        resource_decomp = rule.compute_resources(**params)
-        d_node = _DecompositionNode(rule, resource_decomp)
+        decomp_resources = rule.compute_resources(**params)
+        d_node = _DecompositionNode(rule, decomp_resources)
         d_node_idx = self._graph.add_node(d_node)
-        all_ops = [op for op, count in resource_decomp.gate_counts.items() if count > 0]
+        all_ops = [op for op, count in decomp_resources.gate_counts.items() if count > 0]
         for op in all_ops:
             op_node_idx = self._recursively_add_op_node(op)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
         return d_node_idx
 
     def solve(self, lazy=True):
-        """Solves the graph using the dijkstra search algorithm.
+        """Solves the graph using the Dijkstra search algorithm.
 
         Args:
             lazy (bool): If True, the dijkstra search will stop once optimal decompositions are
@@ -162,7 +160,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
 
-    def resource_estimates(self, op) -> Resources:
+    def resource_estimate(self, op) -> Resources:
         """Returns the resource estimates for a given operator.
 
         Args:
@@ -174,7 +172,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """
         op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
-        return self._visitor.d[op_node_idx]
+        return self._visitor.distances[op_node_idx]
 
     def decomposition(self, op) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
@@ -188,18 +186,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """
         op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
-        d_node_idx = self._visitor.p[op_node_idx]
+        d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule
 
 
 class _DecompositionSearchVisitor(DijkstraVisitor):
-    """The visitor used in the dijkstra search for the optimal decomposition."""
+    """The visitor used in the Dijkstra search for the optimal decomposition."""
 
     def __init__(self, graph: rx.PyDiGraph, original_op_indices: set[int], lazy: bool = True):
         self._graph = graph
         self._lazy = lazy
-        self.d: dict[int, Resources] = {}  # maps node indices to the optimal resource estimates
-        self.p: dict[int, int] = {}  # maps operator nodes to the optimal decomposition nodes
+        # maps node indices to the optimal resource estimates
+        self.distances: dict[int, Resources] = {}
+        # maps operator nodes to the optimal decomposition nodes
+        self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
 
@@ -208,36 +208,40 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        return self.d[d_node_idx].num_gates - self.d[op_node_idx].num_gates
+        return self.distances[d_node_idx].num_gates - self.distances[op_node_idx].num_gates
 
     def discover_vertex(self, v, _):
-        """Triggered when a vertex is about to be explored during the dijkstra search."""
+        """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:
             raise StopSearch
 
     def examine_edge(self, edge):
-        """Triggered when an edge is examined during the dijkstra search."""
+        """Triggered when an edge is examined during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         src_node = self._graph[src_idx]
         target_node = self._graph[target_idx]
         if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
-        if target_idx not in self.d:
-            self.d[target_idx] = Resources()  # initialize with empty resource
-        self.d[target_idx] += self.d[src_idx] * target_node.count(src_node)
+        if target_idx not in self.distances:
+            self.distances[target_idx] = Resources()  # initialize with empty resource
+        self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
         if target_idx not in self._num_edges_examined:
             self._num_edges_examined[target_idx] = 0
         self._num_edges_examined[target_idx] += 1
         if self._num_edges_examined[target_idx] < len(target_node.resource_decomp.gate_counts):
+            # Typically in Dijkstra's search, a vertex is discovered from any of its incoming
+            # edges. However, for a decomposition node, it requires all incoming edges to be
+            # examined before it can be discovered (each incoming edge represents a different
+            # operator that this decomposition depends on).
             raise PruneSearch
 
     def edge_relaxed(self, edge):
-        """Triggered when an edge is relaxed during the dijkstra search."""
+        """Triggered when an edge is relaxed during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] == "dummy":
-            self.d[target_idx] = Resources({target_node: 1})
+            self.distances[target_idx] = Resources({target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
-            self.p[target_idx] = src_idx
-            self.d[target_idx] = self.d[src_idx]
+            self.predecessors[target_idx] = src_idx
+            self.distances[target_idx] = self.distances[src_idx]
