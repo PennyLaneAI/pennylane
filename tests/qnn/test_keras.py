@@ -98,6 +98,14 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
     return m
 
 
+@pytest.fixture(autouse=True)
+def reset_keraslayer_input_arg():
+    # Reset for every test so they don't interfere
+    KerasLayer.set_input_argument("inputs")
+    yield
+    KerasLayer.set_input_argument("inputs")
+
+
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
     The output dimension never exceeds the number of qubits."""
@@ -141,7 +149,6 @@ def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disabl
 
 
 # pylint: disable=too-many-public-methods
-@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
@@ -200,6 +207,7 @@ class TestKerasLayer:
         with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_var_keyword(self):  # pylint: disable=no-self-use
         """Test that variable number of keyword arguments works"""
@@ -269,6 +277,7 @@ class TestKerasLayer:
             "w7": (),
         }
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_non_input_defaults(self):  # pylint: disable=no-self-use
         """Test that everything works when default arguments that are not the input argument are
@@ -314,6 +323,7 @@ class TestKerasLayer:
 
         assert np.allclose(layer_out, circuit_out)
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_qnode_weights(self, get_circuit, n_qubits, output_dim):  # pylint: disable=no-self-use
         """Test if the build() method correctly initializes the weights in the qnode_weights
@@ -326,6 +336,7 @@ class TestKerasLayer:
             assert layer.qnode_weights[weight].shape == shape
             assert layer.qnode_weights[weight].name[:-2] == weight
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_qnode_weights_with_spec(
         self, get_circuit, monkeypatch, output_dim, n_qubits
@@ -493,6 +504,7 @@ class TestKerasLayer:
         assert layer.__str__() == "<Quantum Keras Layer: func=circuit>"
         assert layer.__repr__() == "<Quantum Keras Layer: func=circuit>"
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_gradients(self, get_circuit, output_dim, n_qubits):  # pylint: disable=no-self-use
         """Test if the gradients of the KerasLayer are equal to the gradients of the circuit when
@@ -557,6 +569,7 @@ class TestKerasLayer:
         output_shape = layer.compute_output_shape(inputs_shape)
         assert output_shape.as_list() == [None, 1]
 
+    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     def test_construct(self, get_circuit, n_qubits, output_dim):
         """Test that the construct method builds the correct tape with correct differentiability"""
@@ -591,7 +604,6 @@ def test_invalid_interface_error(interface):
         _ = KerasLayer(circuit, weight_shapes, output_dim=2)
 
 
-@requires_keras2
 @pytest.mark.tf
 @pytest.mark.parametrize(
     "interface", ("auto", "tf", "tensorflow", "tensorflow-autograph", "tf-autograph")
@@ -621,7 +633,6 @@ def test_qnode_interface_not_mutated(interface):
 class TestKerasLayerIntegration:
     """Integration tests for the pennylane.qnn.keras.KerasLayer class."""
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model(
@@ -732,7 +743,6 @@ class TestKerasLayerIntegrationDM:
     """Integration tests for the pennylane.qnn.keras.KerasLayer class for
     density_matrix() returning circuits."""
 
-    @requires_keras2
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(3))
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model_dm(
@@ -835,6 +845,7 @@ class TestKerasLayerIntegrationDM:
         assert tf.math.reduce_all(res == new_res)
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
@@ -863,6 +874,7 @@ def test_batch_input_single_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
@@ -892,6 +904,7 @@ def test_batch_input_multi_measure(tol):
     KerasLayer.set_input_argument("inputs")
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_draw():
     """Test that a KerasLayer can be drawn using qml.draw"""
@@ -929,6 +942,7 @@ def test_draw():
     assert actual == expected
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_draw_mpl():
     """Test that a KerasLayer can be drawn using qml.draw_mpl"""
@@ -964,6 +978,7 @@ def test_draw_mpl():
     assert ax.texts[4].get_text() == "StronglyEntanglingLayers"
 
 
+@requires_keras2
 @pytest.mark.tf
 def test_specs():
     """Test that the qml.specs transform works for KerasLayer"""
