@@ -470,7 +470,7 @@ class TestControlledDecompositions:
     def test_ctrl_simple(self):
         """Test that ctrl higher order primitives are correctly interpreted."""
 
-        @DecomposeInterpreter(gate_set=[qml.RX, qml.RY, qml.RZ])
+        @DecomposeInterpreter(gate_set=[qml.CRX, qml.CRY, qml.CRZ])
         def inner_f(x):
             qml.Rot(x, 1.0, 2.0, 0)
 
