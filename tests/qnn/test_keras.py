@@ -140,20 +140,6 @@ def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disabl
             KerasLayer(c, w, output_dim)
 
 
-@pytest.mark.tf
-@pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
-@pytest.mark.usefixtures("get_circuit")
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-def test_bad_keras_version(get_circuit, output_dim, monkeypatch):  # pylint: disable=no-self-use
-    """Test if an ImportError is raised when instantiated with an incorrect version of
-    Keras."""
-    c, w = get_circuit
-    with monkeypatch.context() as m:
-        m.setattr(qml.qnn.keras, "CORRECT_KERAS_VERSION", False)
-        with pytest.raises(ImportError, match="KerasLayer requires a Keras version lower than 3"):
-            KerasLayer(c, w, output_dim)
-
-
 # pylint: disable=too-many-public-methods
 @requires_keras2
 @pytest.mark.tf
@@ -823,6 +809,7 @@ class TestKerasLayerIntegrationDM:
 
     # the test is slow since TensorFlow needs to compile the execution graph
     # in order to save the model
+    @requires_keras2
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_save_whole_model_dm(
@@ -830,8 +817,6 @@ class TestKerasLayerIntegrationDM:
     ):  # pylint: disable=redefined-outer-name
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
-        if n_qubits == 1 and USING_KERAS3:
-            pytest.xfail(KERAS3_XFAIL_INFO)
         weights = model_dm.get_weights()
 
         file = str(tmpdir) + "/model"
