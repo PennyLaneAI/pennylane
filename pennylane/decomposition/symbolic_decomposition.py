@@ -34,8 +34,8 @@ class AdjointDecomp(DecompositionRule):
     def _get_impl(self):
         """The implementation of the adjoint of a gate."""
 
-        def _impl(*_, base):
-            qml.adjoint(self._base_decomposition.impl)(
+        def _impl(*_, base, **__):
+            qml.adjoint(self._base_decomposition._impl)(  # pylint: disable=protected-access
                 *base.parameters, base.wires, **base.hyperparameters
             )
 
@@ -49,7 +49,7 @@ class AdjointDecomp(DecompositionRule):
             adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
             for decomp_op, count in base_gate_counts.items()
         }
-        return Resources(base_resources.num_gates, gate_counts)
+        return Resources(gate_counts)
 
 
 def _same_type_adjoint_resource(base_class, base_params):

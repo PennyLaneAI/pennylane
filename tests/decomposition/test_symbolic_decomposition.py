@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.symbolic_decomposition import (
+    AdjointDecomp,
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     has_adjoint_decomp,
@@ -83,6 +84,38 @@ class TestAdjointDecompositionRules:
     def test_adjoint_controlled_x(self):
         """Tests the adjoint of controlled X operations are correctly decomposed."""
 
+        op1 = qml.adjoint(qml.ops.Controlled(qml.X(1), control_wires=[0]))
+        op2 = qml.adjoint(qml.ops.Controlled(qml.X(2), control_wires=[0, 1]))
+        op3 = qml.adjoint(qml.ops.Controlled(qml.X(3), control_wires=[0, 1, 2]))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            adjoint_controlled_decomp(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            adjoint_controlled_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            adjoint_controlled_decomp(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+
+        assert q.queue == [
+            qml.CNOT(wires=[0, 1]),
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.MultiControlledX(wires=[0, 1, 2, 3]),
+        ]
+
+        assert adjoint_controlled_decomp.compute_resources(**op1.resource_params) == Resources(
+            {qml.resource_rep(qml.CNOT): 1}
+        )
+        assert adjoint_controlled_decomp.compute_resources(**op2.resource_params) == Resources(
+            {qml.resource_rep(qml.Toffoli): 1}
+        )
+        assert adjoint_controlled_decomp.compute_resources(**op3.resource_params) == Resources(
+            {
+                qml.resource_rep(
+                    qml.MultiControlledX,
+                    num_control_wires=3,
+                    num_zero_control_values=0,
+                    num_work_wires=0,
+                ): 1
+            }
+        )
+
     def test_adjoint_custom(self):
         """Tests that the adjoint of an operation that has adjoint is correctly decomposed."""
 
@@ -99,4 +132,46 @@ class TestAdjointDecompositionRules:
         )
         assert has_adjoint_decomp.compute_resources(**op2.resource_params) == Resources(
             {qml.resource_rep(qml.RX): 1}
+        )
+
+    def test_adjoint_general(self):
+        """Tests the adjoint of a general operator can be correctly decomposed."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
+        def custom_decomp(phi, wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires[:2])
+            qml.RX(phi, wires=wires[1])
+            qml.CNOT(wires=wires[1:3])
+            qml.T(wires[2])
+
+        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        rule = AdjointDecomp(custom_decomp)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [
+            qml.adjoint(qml.T(2)),
+            qml.adjoint(qml.CNOT(wires=[1, 2])),
+            qml.adjoint(qml.RX(0.5, wires=1)),
+            qml.adjoint(qml.CNOT(wires=[0, 1])),
+            qml.adjoint(qml.H(wires=0)),
+        ]
+
+        assert rule.compute_resources(**op.resource_params) == Resources(
+            {
+                qml.adjoint_resource_rep(qml.T): 1,
+                qml.adjoint_resource_rep(qml.CNOT): 2,
+                qml.adjoint_resource_rep(qml.RX): 1,
+                qml.adjoint_resource_rep(qml.H): 1,
+            }
         )
