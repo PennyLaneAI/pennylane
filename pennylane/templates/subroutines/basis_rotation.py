@@ -200,14 +200,12 @@ class BasisRotation(Operation):
 
 
 def _basis_rotation_decomp_resources(shape):
-    dim = shape[0]
+    dim_N = shape[0]
 
-    # Note: This is a simplified resource estimate. The actual gate count
-    # depends on the givens decomposition of the unitary matrix.
-    return {
-        qml.PhaseShift: 2 * dim,
-        qml.SingleExcitation: dim,
-    }
+    se_count = dim_N * (dim_N - 1) / 2
+    ps_count = dim_N + se_count
+
+    return {qml.PhaseShift: ps_count, qml.SingleExcitation: se_count}
 
 
 @register_resources(_basis_rotation_decomp_resources)
