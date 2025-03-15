@@ -434,6 +434,9 @@
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
@@ -682,6 +685,9 @@
   calling the function returned by `qml.cond`.
   [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)  
   [(#7051)](https://github.com/PennyLaneAI/pennylane/pull/7051)
+
+* `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
+  [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
 
 <h3>Contributors ✍️</h3>
 
