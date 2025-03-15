@@ -112,7 +112,7 @@ def hadamard_grad(
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
-            ``"standard"``, ``"reversed"``, ``"direct"``, and ``"reversed_direct"``. The default
+            ``"standard"``, ``"reversed"``, ``"direct"``, and ``"reversed-direct"``. The default
             is ``"standard"``.
 
     Returns:
