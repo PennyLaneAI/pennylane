@@ -279,7 +279,7 @@ def hadamard_grad(
         "standard": ("Hadamard test", _hadamard_test),
         "reversed": ("Reversed hadamard test", _reversed_hadamard_test),
         "direct": ("Direct hadamard test", _direct_hadamard_test),
-        "reversed_direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
+        "reversed-direct": ("Reversed direct hadamard test", _reversed_direct_hadamard_test),
     }
     try:
         transform_name, gradient_method = modes[mode]
