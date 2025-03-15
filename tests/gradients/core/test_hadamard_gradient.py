@@ -109,7 +109,7 @@ def cost12(x):
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
@@ -118,7 +118,7 @@ class TestHadamardGrad:
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_error_trainable_obs_probs(self, mode):
         """Test that there's an error if the observable is trainable with a probs."""
 
@@ -127,7 +127,7 @@ class TestHadamardGrad:
         with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_nontrainable_batched_tape(self, mode):
         """Test that no error is raised for a broadcasted/batched tape if the broadcasted
         parameter is not differentiated, and that the results correspond to the stacked
@@ -149,7 +149,7 @@ class TestHadamardGrad:
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
         assert np.allclose(batched_grad, separate_grad)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_tape_with_partitioned_shots_multiple_measurements_raises(self, mode):
         """Test that an error is raised with multiple measurements and partitioned shots."""
         tape = qml.tape.QuantumScript(
@@ -544,7 +544,7 @@ class TestHadamardGrad:
         (cost9, (2,), tuple),
     ]
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
     def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode for
@@ -565,7 +565,7 @@ class TestHadamardGrad:
         (cost3, [2, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_array)
     def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode for
@@ -596,7 +596,7 @@ class TestHadamardGrad:
         (cost12, [8, 3], np.ndarray),
     ]
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
@@ -661,7 +661,7 @@ class TestHadamardGradEdgeCases:
     working_wires = [None, qml.wires.Wires("aux"), "aux"]
     already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("aux_wire", working_wires)
     @pytest.mark.parametrize("device_wires", device_wires)
     def test_aux_wire(self, aux_wire, device_wires, mode):
@@ -684,7 +684,7 @@ class TestHadamardGradEdgeCases:
         tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, mode=mode)
         assert len(tapes) == 2
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("aux_wire", already_used_wires)
     @pytest.mark.parametrize("device_wires", device_wires)
     def test_aux_wire_already_used_wires(self, aux_wire, device_wires, mode):
@@ -705,7 +705,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("device_wires", device_wires_no_aux)
     def test_requested_wire_not_exist(self, device_wires, mode):
         """Test if the aux wire is not on the device an error is raised."""
@@ -725,7 +725,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("aux_wire", [None] + already_used_wires)
     def test_device_not_enough_wires(self, aux_wire, mode):
         """Test that an error is raised when the device cannot accept an auxiliary wire
@@ -742,7 +742,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_device_wire_does_not_exist(self, mode):
         """Test that an error is raised when the device cannot accept an auxiliary wire
         because it does not exist on the device."""
@@ -755,7 +755,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_empty_circuit(self, mode):
         """Test that an empty circuit works correctly"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -766,7 +766,7 @@ class TestHadamardGradEdgeCases:
             tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
         assert not tapes
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_all_parameters_independent(self, mode):
         """Test that a circuit where all parameters do not affect the output"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -777,7 +777,7 @@ class TestHadamardGradEdgeCases:
         tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
         assert not tapes
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_state_non_differentiable_error(self, mode):
         """Test error raised if attempting to differentiate with
         respect to a state"""
@@ -792,7 +792,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(ValueError, match=_match):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_variance_non_differentiable_error(self, mode):
         """Test error raised if attempting to differentiate with respect to a variance"""
 
@@ -832,7 +832,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[0].shape == ()
         assert res_hadamard[1].shape == ()
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -849,7 +849,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -866,7 +866,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -883,7 +883,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -900,7 +900,7 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_no_trainable_params_tape(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1034,7 +1034,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
-    @pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor, mode):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -1056,7 +1056,7 @@ class TestHadamardGradEdgeCases:
         assert np.allclose(result, 0)
 
 
-@pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+@pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
 class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
 
@@ -1219,7 +1219,7 @@ class TestHadamardTestGradDiff:
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
 @pytest.mark.parametrize("interface", ["jax"])
-@pytest.mark.parametrize("mode", ["forward", "reverse", "reverse-direct", "standard"])
+@pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
 @pytest.mark.jax
 class TestJaxArgnums:
     """Class to test the integration of argnums (Jax) and the hadamard grad transform."""
