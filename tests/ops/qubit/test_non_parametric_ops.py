@@ -150,20 +150,15 @@ class TestDecompositions:
         op = qml.PauliX(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 2
 
-        assert res[0].name == "PhaseShift"
-
+        assert res[0].name == "RX"
         assert res[0].wires == Wires([0])
-        assert res[0].data[0] == np.pi / 2
+        assert res[0].data[0] == np.pi
 
-        assert res[1].name == "RX"
+        assert res[1].name == "GlobalPhase"
         assert res[1].wires == Wires([0])
-        assert res[1].data[0] == np.pi
-
-        assert res[2].name == "PhaseShift"
-        assert res[2].wires == Wires([0])
-        assert res[2].data[0] == np.pi / 2
+        assert res[1].data[0] == -np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -173,20 +168,15 @@ class TestDecompositions:
         op = qml.PauliY(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 2
 
-        assert res[0].name == "PhaseShift"
-
+        assert res[0].name == "RY"
         assert res[0].wires == Wires([0])
-        assert res[0].data[0] == np.pi / 2
+        assert res[0].data[0] == np.pi
 
-        assert res[1].name == "RY"
+        assert res[1].name == "GlobalPhase"
         assert res[1].wires == Wires([0])
-        assert res[1].data[0] == np.pi
-
-        assert res[2].name == "PhaseShift"
-        assert res[2].wires == Wires([0])
-        assert res[2].data[0] == np.pi / 2
+        assert res[1].data[0] == -np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -242,18 +232,17 @@ class TestDecompositions:
         res = op.decomposition()
 
         assert len(res) == 4
-
         assert all(res[i].wires == Wires([0]) for i in range(4))
 
         assert res[0].name == "RZ"
         assert res[1].name == "RY"
         assert res[2].name == "RZ"
-        assert res[3].name == "PhaseShift"
+        assert res[3].name == "GlobalPhase"
 
         assert res[0].data[0] == np.pi / 2
         assert res[1].data[0] == np.pi / 2
-        assert res[2].data[0] == -np.pi
-        assert res[3].data[0] == np.pi / 2
+        assert res[2].data[0] == -np.pi / 2
+        assert res[3].data[0] == -np.pi / 4
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
