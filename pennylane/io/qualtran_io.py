@@ -70,6 +70,10 @@ class FromBloq(Operation):
     An adapter for using a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
+    .. note::
+        This class requires the latest version of qualtran. We recommend installing the main
+        branch via git: ``pip install git+https://github.com/quantumlib/Qualtran.git``
+
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
         wires (WiresLike): The wires the operator acts on. This can be determined by using the
@@ -135,10 +139,10 @@ class FromBloq(Operation):
         FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
 
-        This sharp bit is expected behaviour because the decomposition of ``CZPowGate`` as
-        defined in qualtran allocates and frees a wire all in the same ``bloq``. In this situation,
+        This behaviour results from the decomposition of ``CZPowGate`` as defined in qualtran,
+        which allocates and frees a wire all in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
-        named ``alloc_free{idx}``, where ``idx`` is used as the bookkeeping index of all such
+        named ``alloc_free_{idx}``, where ``idx`` is used as the bookkeeping index of all such
         ghost wires. Due to the current limitations of PennyLane's wire management in dealing
         with such wires, these cannot be accessed manually or mapped to a different label.
 
@@ -253,7 +257,7 @@ class FromBloq(Operation):
 
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
-                ghost_wires = [f"alloc_free{val}" for val in total_wires if val >= len(wires)]
+                ghost_wires = [f"alloc_free_{val}" for val in total_wires if val >= len(wires)]
                 op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
 
                 if op:
