@@ -101,7 +101,7 @@ class QROMStatePreparation(Operation):
         self, state_vector, wires, precision_wires, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
-        n_amplitudes = len(state_vector)
+        n_amplitudes = qml.math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(Wires(wires)):
             raise ValueError(
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
@@ -184,7 +184,7 @@ class QROMStatePreparation(Operation):
         phases = qml.math.angle(state_vector) % (2 * np.pi)
 
         decomp_ops = []
-        num_iterations = int(qml.math.log2(len(probs)))
+        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
         rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
 
         for i in range(num_iterations):
@@ -208,7 +208,7 @@ class QROMStatePreparation(Operation):
                     normalize_angle(probs_numerator[j] / (probs_denominator[j] + eps)),
                     len(precision_wires),
                 )
-                for j in range(len(probs_numerator))
+                for j in range(qml.math.shape(probs_numerator)[0])
             ]
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
