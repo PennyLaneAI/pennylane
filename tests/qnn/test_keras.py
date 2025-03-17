@@ -107,12 +107,9 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
 @pytest.fixture(autouse=True)
 def reset_keraslayer_input_arg():
     # Reset for every test so they don't interfere
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
-    ):
-        KerasLayer.set_input_argument("inputs")
-        yield
-        KerasLayer.set_input_argument("inputs")
+    KerasLayer.set_input_argument("inputs")
+    yield
+    KerasLayer.set_input_argument("inputs")
 
 
 def indices_up_to(n_max):
