@@ -64,6 +64,7 @@ class GenericFragment(Fragment):
 
     def norm(self, params: Dict = None) -> float:
         if self.norm_fn:
+            params = params or {}
             return self.norm_fn(self.fragment, **params)
 
         raise NotImplementedError("GenericFragment was constructed without specifying the norm function.")
