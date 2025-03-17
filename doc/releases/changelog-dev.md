@@ -281,6 +281,10 @@
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
+* The `assert_valid` method can now optionally skip the check that a decomposition must not contain 
+  operators of the same class as the `Operation` being decomposed.
+  [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
