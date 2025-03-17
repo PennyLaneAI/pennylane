@@ -148,8 +148,8 @@ def register_custom_staging_rule(
         env: dict[jax.core.Var, jax.core.Var],
     ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
         """
-        Create a new tracer and returned var from the true branch outvar
-        returned vars are cached in env for use in future shapes
+        Create a new tracer and return var from the true branch outvar.
+        Returned vars are cached in env for use in future shapes
         """
         if not hasattr(outvar.aval, "shape"):
             out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
