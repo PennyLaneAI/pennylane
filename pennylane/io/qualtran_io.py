@@ -101,12 +101,12 @@ class FromBloq(Operation):
 
         # Parameters for the TrotterizedUnitary
         nsites = 5
-        j_zz = 2
-        gamma_x = 0.1
+        j_zz, gamma_x = 2, 0.1   
         zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
         x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
         trott_unitary = TrotterizedUnitary(
-            bloqs=(x_bloq, zz_bloq), indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x), timestep=0.01
+            bloqs=(x_bloq, zz_bloq),  timestep=0.01,
+            indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
         )
 
         # Instantiate the TextbookQPE and pass in our unitary
