@@ -858,7 +858,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
