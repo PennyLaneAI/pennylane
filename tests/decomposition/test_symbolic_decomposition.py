@@ -24,6 +24,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_controlled_decomp,
     has_adjoint_decomp,
 )
+from tests.decomposition.conftest import to_resources
 
 
 class TestAdjointDecompositionRules:
@@ -38,8 +39,8 @@ class TestAdjointDecompositionRules:
             adjoint_adjoint_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(0.5, wires=0)]
-        assert adjoint_adjoint_decomp.compute_resources(**op.resource_params) == Resources(
-            {qml.resource_rep(qml.RX): 1}
+        assert adjoint_adjoint_decomp.compute_resources(**op.resource_params) == to_resources(
+            {qml.RX: 1}
         )
 
     @pytest.mark.jax
@@ -127,11 +128,11 @@ class TestAdjointDecompositionRules:
             has_adjoint_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [qml.H(0), qml.RX(-0.5, wires=0)]
-        assert has_adjoint_decomp.compute_resources(**op1.resource_params) == Resources(
-            {qml.resource_rep(qml.H): 1}
+        assert has_adjoint_decomp.compute_resources(**op1.resource_params) == to_resources(
+            {qml.H: 1}
         )
-        assert has_adjoint_decomp.compute_resources(**op2.resource_params) == Resources(
-            {qml.resource_rep(qml.RX): 1}
+        assert has_adjoint_decomp.compute_resources(**op2.resource_params) == to_resources(
+            {qml.RX: 1}
         )
 
     def test_adjoint_general(self):
