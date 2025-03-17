@@ -431,6 +431,9 @@
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
@@ -590,6 +593,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
+  [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
+
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
@@ -677,11 +683,15 @@
   [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)  
   [(#7051)](https://github.com/PennyLaneAI/pennylane/pull/7051)
 
+* `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
+  [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Daniela Angulo,
 Utkarsh Azad,
 Joey Carter,
 Henry Chang,
