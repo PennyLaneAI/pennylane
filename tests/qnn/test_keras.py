@@ -44,10 +44,6 @@ except ImportError:
 
 # Skip marker for Keras 3
 KERAS3_XFAIL_INFO = "This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented."
-requires_keras2 = pytest.mark.xfail(
-    condition=USING_KERAS3,
-    reason=KERAS3_XFAIL_INFO,
-)
 # pylint: disable=unnecessary-dunder-call
 
 
@@ -992,7 +988,10 @@ def test_specs():
     assert info["device_name"] == "default.qubit"
 
 
-@requires_keras2
+@pytest.mark.xfail(
+    condition=USING_KERAS3,
+    reason=KERAS3_XFAIL_INFO,
+)
 @pytest.mark.slow
 @pytest.mark.tf
 def test_save_and_load_preserves_weights(tmpdir):
