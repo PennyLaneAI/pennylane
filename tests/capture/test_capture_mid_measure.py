@@ -323,8 +323,6 @@ class TestMidMeasureExecute:
             qml.measure(0, reset=reset, postselect=postselect)
             return mp_fn(op=qml.Z(0))
 
-        if shots and postselect is None:
-            return
         assert compare_with_capture_disabled(f, phi)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
@@ -350,8 +348,6 @@ class TestMidMeasureExecute:
             m2 = qml.measure(0)
             return mp_fn(op=[m1, m2] if multi_mcm else m1)
 
-        if shots:
-            return
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
@@ -373,8 +369,6 @@ class TestMidMeasureExecute:
             _ = a > m2
             return mp_fn(op=qml.Z(0))
 
-        if shots:
-            return
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
