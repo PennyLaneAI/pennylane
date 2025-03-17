@@ -573,7 +573,7 @@ def diagonalize_mcms(tape):
         dev = qml.device("default.qubit", shots=1000)
 
         @diagonalize_mcms
-        @qml.qnode(dev, method="one-shot")
+        @qml.qnode(dev, mcm_method="one-shot")
         def circuit(x):
             qml.RX(x, wires=0)
             m = measure_y(0)
@@ -591,7 +591,7 @@ def diagonalize_mcms(tape):
     becomes
 
     >>> print(qml.draw(circuit)(np.pi/4))
-    0: ──RY(0.79)──S†──H──┤↗├────┤
+    0: ──RX(0.79)──S†──H──┤↗├────┤
     1: ────────────────────║───X─┤  <Z>
                            ╚═══╝
 
