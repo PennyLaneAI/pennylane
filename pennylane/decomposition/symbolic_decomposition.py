@@ -29,7 +29,7 @@ class AdjointDecomp(DecompositionRule):
 
     def __init__(self, base_decomposition: DecompositionRule):
         self._base_decomposition = base_decomposition
-        super().__init__(self._get_impl())
+        super().__init__(self._get_impl(), self._get_resource_fn())
 
     def _get_impl(self):
         """The implementation of the adjoint of a gate."""
@@ -41,15 +41,17 @@ class AdjointDecomp(DecompositionRule):
 
         return _impl
 
-    def compute_resources(self, base_class, base_params) -> Resources:
-        """Compute the resources of the adjoint of a gate."""
-        base_resources = self._base_decomposition.compute_resources(*base_params)
-        base_gate_counts = base_resources.gate_counts
-        gate_counts = {
-            adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
-            for decomp_op, count in base_gate_counts.items()
-        }
-        return Resources(gate_counts)
+    def _get_resource_fn(self):
+        """The resource function of the adjoint of a gate."""
+
+        def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
+            base_resources = self._base_decomposition.compute_resources(**base_params)
+            return {
+                adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
+                for decomp_op, count in base_resources.gate_counts.items()
+            }
+
+        return _resource_fn
 
 
 def _same_type_adjoint_resource(base_class, base_params):

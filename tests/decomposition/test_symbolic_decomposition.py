@@ -68,18 +68,23 @@ class TestAdjointDecompositionRules:
     def test_adjoint_controlled(self):
         """Tests that the adjoint of a controlled operation is correctly decomposed."""
 
-        op = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=1))
+        op1 = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=1))
+        op2 = qml.adjoint(qml.ops.Controlled(qml.RX(0.5, wires=0), control_wires=[1]))
 
         with qml.queuing.AnnotatedQueue() as q:
-            adjoint_controlled_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            adjoint_controlled_decomp(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            adjoint_controlled_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
-        assert q.queue == [qml.ctrl(qml.U1(-0.5, wires=0), control=1)]
-        assert adjoint_controlled_decomp.compute_resources(**op.resource_params) == Resources(
+        assert q.queue == [qml.ctrl(qml.U1(-0.5, wires=0), control=1), qml.CRX(-0.5, wires=[1, 0])]
+        assert adjoint_controlled_decomp.compute_resources(**op1.resource_params) == Resources(
             {
                 qml.controlled_resource_rep(
                     qml.U1, {}, num_control_wires=1, num_zero_control_values=0, num_work_wires=0
-                ): 1
+                ): 1,
             }
+        )
+        assert adjoint_controlled_decomp.compute_resources(**op2.resource_params) == Resources(
+            {qml.resource_rep(qml.CRX): 1}
         )
 
     def test_adjoint_controlled_x(self):
