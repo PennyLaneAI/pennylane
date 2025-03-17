@@ -959,7 +959,7 @@ def test_error_raised_for_incompatible_type():
 
 def test_error_raised_for_missing_molecule_information():
     r"""Test that molecular_hamiltonian raises an error when symbols, and coordinates
-    informtest_coordinate_units_for_molecular_hamiltonianation is not provided.
+    information is not provided.
     """
 
     with pytest.raises(
