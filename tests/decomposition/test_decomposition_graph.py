@@ -20,10 +20,10 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from conftest import decompositions
+from conftest import decompositions, to_resources
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionGraph, Resources
+from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.decomposition_graph import DecompositionError
 
 
@@ -58,19 +58,22 @@ class TestDecompositionGraph:
         )
         assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
 
+        alt_dec = [custom_hadamard, custom_hadamard_2]
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
             target_gate_set={"RX", "RY", "RZ"},
-            alt_decomps={qml.Hadamard: [custom_hadamard, custom_hadamard_2]},
+            alt_decomps={qml.Hadamard: alt_dec},
         )
-        assert (
-            graph._get_decompositions(qml.Hadamard)
-            == [
-                custom_hadamard,
-                custom_hadamard_2,
-            ]
-            + decompositions[qml.Hadamard]
+        exp_dec = alt_dec + decompositions[qml.Hadamard]
+        assert graph._get_decompositions(qml.Hadamard) == exp_dec
+
+        graph = DecompositionGraph(
+            operations=[qml.Hadamard(0)],
+            target_gate_set={"RX", "RY", "RZ"},
+            alt_decomps={qml.Hadamard: alt_dec},
+            fixed_decomps={qml.Hadamard: custom_hadamard},
         )
+        assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
 
     @pytest.mark.unit
     def test_graph_construction(self, _):
@@ -102,13 +105,7 @@ class TestDecompositionGraph:
         graph.solve()
 
         # verify that the better decomposition rule is chosen when both are valid.
-        expected_resource = Resources(
-            {
-                qml.resource_rep(qml.RZ): 1,
-                qml.resource_rep(qml.RY): 1,
-                qml.resource_rep(qml.GlobalPhase): 1,
-            }
-        )
+        expected_resource = to_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
         assert graph.resource_estimate(op) == expected_resource
         assert graph.decomposition(op).compute_resources() == expected_resource
 
@@ -120,6 +117,54 @@ class TestDecompositionGraph:
         graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
             graph.solve()
+
+    @pytest.mark.unit
+    def test_lazy_solve(self, _):
+        """Tests the lazy keyword argument."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        class AnotherOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """Another custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.RZ: 1, qml.CNOT: 1})
+        def _custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({AnotherOp: 1, qml.CNOT: 1})
+        def _custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.RZ: 2, qml.CNOT: 2})
+        def _another_decomp(*_, **__):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            operations=[CustomOp(wires=[0])],
+            target_gate_set={"CNOT", "RZ"},
+            alt_decomps={
+                CustomOp: [_custom_decomp, _custom_decomp_2],
+                AnotherOp: [_another_decomp],
+            },
+        )
+        graph.solve(lazy=True)
+        assert not graph.is_solved_for(AnotherOp(wires=[0, 1]))
+
+        graph.solve(lazy=False)
+        assert graph.is_solved_for(AnotherOp(wires=[0, 1]))
 
     @pytest.mark.unit
     def test_decomposition_with_resource_params(self, _):
@@ -144,40 +189,30 @@ class TestDecompositionGraph:
         def _custom_decomp(*_, **__):
             raise NotImplementedError
 
-        decompositions[CustomOp] = [_custom_decomp]
-
         op = CustomOp(wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
             target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+            alt_decomps={CustomOp: [_custom_decomp]},
         )
-        # 10 ops and 7 decompositions (1 for the custom op, 1 for each of the two MultiRZs,
-        # 1 for CNOT, 2 for Hadamard, and 1 for RY)
+        # 10 ops (CustomOp, MultiRZ(4), MultiRZ(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
+        # 7 decompositions (1 for CustomOp, 1 for each of the two MultiRZs, 1 for CNOT, 2 for Hadamard, and 1 for RY)
         assert len(graph._graph.nodes()) == 17
         # 16 edges from ops to decompositions and 7 from decompositions to ops
         assert len(graph._graph.edges()) == 23
 
         graph.solve()
-        assert graph.resource_estimate(op) == Resources(
-            {
-                qml.resource_rep(qml.CZ): 14,
-                qml.resource_rep(qml.RZ): 59,
-                qml.resource_rep(qml.RX): 28,
-                qml.resource_rep(qml.GlobalPhase): 28,
-            }
+        assert graph.resource_estimate(op) == to_resources(
+            {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28}
         )
-        assert graph.decomposition(op).compute_resources(**op.resource_params) == Resources(
+        assert graph.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
                 qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
                 qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
             }
         )
-        assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == Resources(
-            {
-                qml.resource_rep(qml.RZ): 2,
-                qml.resource_rep(qml.RX): 1,
-                qml.resource_rep(qml.GlobalPhase): 1,
-            }
+        assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
+            {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
         )
 
 

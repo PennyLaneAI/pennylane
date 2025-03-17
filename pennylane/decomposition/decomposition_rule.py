@@ -38,7 +38,7 @@ def register_resources(
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``
+        declares its required resources using ``qml.register_resources``.
 
     Args:
         resources (dict or Callable): a dictionary mapping unique operators within the given
@@ -56,7 +56,7 @@ def register_resources(
     **Example**
 
     This function can be used as a decorator to bind a quantum function to its required resources
-    so that it can be used as a decomposition rule within the new decomposition system.
+    so that it can be used as a decomposition rule within the new graph-based decomposition system.
 
     .. code-block:: python
 
@@ -86,11 +86,14 @@ def register_resources(
     >>> my_cnot = qml.register_resources({qml.H: 2, qml.CZ: 1}, my_cnot)
 
     .. details::
-        :title: Usage Details
+        :title: Quantum Functions as Decomposition Rules
 
-        Quantum functions representing custom decompositions within the new decomposition system
+        Quantum functions representing decomposition rules within the new decomposition system
         are expected to take ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments,
         where ``op`` is an instance of the operator type that the decomposition is for.
+
+    .. details::
+        :title: Operators with Dynamic Resource Requirements
 
         In many cases, the resource requirement of an operator's decomposition is not static; some
         operators have properties that directly affect the resource estimate of its decompositions,
@@ -129,7 +132,7 @@ def register_resources(
         Additionally, if a custom decomposition for an operator contains gates that, in turn,
         have properties that affect their own decompositions, this information must also be
         included in the resource function. For example, if the decomposition rule produces a
-        ``MultiRZ`` gate, it is not enough to declare the existence of a ``MultiRZ`` in the
+        ``MultiRZ`` gate, it is not sufficient to declare the existence of a ``MultiRZ`` in the
         resource function; the number of wires it acts on must also be specified.
 
         Consider a fictitious operator with the following decomposition:
@@ -237,11 +240,11 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``
+        declares its required resources using :func:`~pennylane.register_resources`
 
     In the new system of decompositions, multiple decomposition rules can be registered for the
-    same operator class. The specified decomposition rules serve as alternative decomposition rules
-    that can be chosen if they lead to a more efficient decomposition of the operator.
+    same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
+    decomposition rules that may be chosen if they lead to a more efficient decomposition.
 
     Args:
         op_type: the operator type for which new decomposition rules are specified.
@@ -253,9 +256,12 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
 
     **Example**
 
+    This example demonstrates adding two new decomposition rules to the ``qml.Hadamard`` operator.
+
     .. code-block:: python
 
         import pennylane as qml
+        import numpy as np
 
         qml.decompositions.enable_graph()
 
@@ -277,7 +283,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     These two new decomposition rules for ``qml.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
     for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the ``decompose`` transform.
+    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose`` transform.
 
     .. seealso:: :func:`~pennylane.transforms.decompose`
 
@@ -309,7 +315,6 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     **Example**
 
     >>> import pennylane as qml
-    >>> qml.decompositions.enable_graph()
     >>> qml.list_decomps(qml.CRX)
     [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
      <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
@@ -344,6 +349,9 @@ def has_decomp(op_type: Type[Operator]) -> bool:
 
     Args:
         op_type: the operator class to check for decomposition rules.
+
+    Returns:
+        bool: whether decomposition rules are defined for the given operator.
 
     """
     return op_type in _decompositions and len(_decompositions[op_type]) > 0
