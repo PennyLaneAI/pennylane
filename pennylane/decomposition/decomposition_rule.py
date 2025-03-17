@@ -19,16 +19,18 @@ from __future__ import annotations
 import inspect
 from collections import defaultdict
 from textwrap import dedent
-from typing import Callable, Type
+from typing import Callable, Optional, Type, overload
 
 from pennylane.operation import Operator
 
 from .resources import CompressedResourceOp, Resources, resource_rep
 
 
-def register_resources(
-    resources: Callable | dict, qfunc: Callable = None
-) -> DecompositionRule | Callable[[Callable], DecompositionRule]:
+@overload
+def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
+def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = None):
     """Bind a quantum function to its required resources.
 
     .. note::
@@ -45,7 +47,8 @@ def register_resources(
             ``qfunc`` to their number of occurrences therein. If a function is provided instead
             of a static dictionary, a dictionary must be returned from the function. For more
             information, see Usage details.
-        qfunc (Callable): the quantum function that implements the decomposition.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
 
     Returns:
         DecompositionRule:
@@ -180,7 +183,7 @@ def register_resources(
 class DecompositionRule:  # pylint: disable=too-few-public-methods
     """Represents a decomposition rule for an operator."""
 
-    def __init__(self, func: Callable, resources: Callable | dict = None):
+    def __init__(self, func: Callable, resources: Callable | dict):
         self._impl = func
         self._source = inspect.getsource(func)
         if isinstance(resources, dict):
