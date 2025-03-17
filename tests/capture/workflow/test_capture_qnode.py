@@ -389,7 +389,7 @@ class TestDevicePreprocessing:
             qml.measure(0, reset=True, postselect=postselect)
             return {
                 "expval": (qml.expval(qml.Z(0)), qml.expval(qml.Z(1))),
-                "state": qml.sample(wires=[0, 1]) if shots else None,
+                "samples": qml.sample(wires=[0, 1]) if shots else None,
             }
 
         if not shots:
