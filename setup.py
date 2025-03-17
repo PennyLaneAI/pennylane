@@ -22,7 +22,6 @@ with open("pennylane/_version.py") as f:
 
 requirements = [
     "numpy",
-    "ml_dtypes",
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
