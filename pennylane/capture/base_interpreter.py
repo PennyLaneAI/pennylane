@@ -566,7 +566,7 @@ def handle_while_loop(
 
     body_consts = slice(0, len(new_jaxpr_body_fn.consts))
     cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
-    args_slice = slice(abstract_shapes_slice.stop, None)
+    args_slice = slice(cond_consts.stop, None)
 
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
@@ -689,11 +689,6 @@ def flattened_for(
 
 
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
-
-
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
-def _(self, *invals, jaxpr, **params):
-    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
