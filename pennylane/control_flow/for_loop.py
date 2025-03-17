@@ -24,7 +24,9 @@ from ._loop_abstract_axes import loop_determine_abstracted_axes
 from .while_loop import _add_abstract_shapes, _get_dummy_arg, _validate_no_resizing_returns
 
 
-def for_loop(start, stop=None, step=1, allow_array_resizing: Literal["auto", True, False] = "auto"):
+def for_loop(
+    start, stop=None, step=1, *, allow_array_resizing: Literal["auto", True, False] = "auto"
+):
     """for_loop([start, ]stop[, step])
     A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
@@ -71,6 +73,10 @@ def for_loop(start, stop=None, step=1, allow_array_resizing: Literal["auto", Tru
         stop (int): upper bound of the iteration index
         step (int, optional): increment applied to the iteration index at the end of
             each iteration. The default step size is ``1``
+
+    Keyword Args:
+        allow_array_resizing (Literal["auto", True, False]): How to handle arrays
+            with dynamic shapes that change between iterations
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -144,6 +150,7 @@ def for_loop(start, stop=None, step=1, allow_array_resizing: Literal["auto", Tru
             start (int): starting value of the iteration index
             stop (int): (exclusive) upper bound of the iteration index
             step (int): increment applied to the iteration index at the end of each iteration
+            allow_array_resizing (Literal["auto", True, False])
 
         Returns:
             Callable: a callable with the same signature as ``body_fn``
@@ -205,6 +212,11 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             argument, which can be used arbitrarily inside the loop body. As the value of the index
             across iterations is handled automatically by the provided loop bounds, it must not be
             returned from the function.
+
+    Keyword Args:
+        allow_array_resizing (Literal["auto", True, False]): How to handle arrays
+            with dynamic shapes that change between iterations
+
     """
 
     def __init__(
