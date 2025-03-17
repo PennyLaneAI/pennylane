@@ -691,12 +691,14 @@ def flattened_for(
     consts = invals[consts_slice]
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]
+    num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
 
     res = init_state
     for i in range(start, stop, step):
         res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
-
-    return res
+        abstract_shapes = res[:num_abstract_shapes]
+        res = res[num_abstract_shapes:]
+    return abstract_shapes + res
 
 
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
