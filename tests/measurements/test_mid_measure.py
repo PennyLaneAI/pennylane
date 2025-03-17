@@ -421,7 +421,7 @@ class TestMeasurementValueManipulation:
         assert new_meas.id == mp1.id
 
     def test_mod(self):
-        """Test the __xor__ dunder method between two measurement values"""
+        """Test the __mod__ dunder method between two measurement values"""
         m1 = MeasurementValue([mp1], lambda v: v)
         mod_val = m1 % 2
         assert mod_val[0] == 0
