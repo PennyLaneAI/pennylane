@@ -76,6 +76,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 2,
         }
 
+    def test_repr(self):
+        """Tests the __repr__ of a Resources object."""
+
+        resources = Resources(
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+        )
+        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+
 
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
