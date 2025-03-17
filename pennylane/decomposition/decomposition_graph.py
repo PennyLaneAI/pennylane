@@ -96,6 +96,24 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
+    **Example**
+
+    .. code-block:: python
+
+        op = qml.CRX(0.5, wires=[0, 1])
+        graph = DecompositionGraph(
+            operations=[op],
+            target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        )
+        graph.solve()
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    >>> q.queue
+    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    >>> graph.resource_estimate(op)
+    num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
+
     """
 
     def __init__(

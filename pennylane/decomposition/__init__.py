@@ -123,8 +123,29 @@ the existence of such an operator must be declared along with the required infor
 where ``qml.resource_rep`` is a utility function that wraps an operator type and any additional
 information relevant to its resource estimate into a compressed data structure.
 
-.. TODO::
-    Add section here explaining the decomposition graph [sc-84329]
+**The Decomposition Graph**
+
+The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
+algorithm is used to explore the graph and find the most efficient decomposition of a given
+operator towards a target gate set.
+
+.. code-block:: python
+
+    op = qml.CRX(0.5, wires=[0, 1])
+    graph = DecompositionGraph(
+        operations=[op],
+        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+    )
+    graph.solve()
+
+.. code-block:: pycon
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    >>> q.queue
+    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    >>> graph.resource_estimate(op)
+    num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
 
 .. TODO::
     Add section here explaining how this new system interacts with the `decompose` transform. [sc-83993]
