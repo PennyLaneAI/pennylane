@@ -2179,7 +2179,7 @@ def _crz_resources():
 
 @register_resources(_crz_resources)
 def _crz(phi: TensorLike, wires: WiresLike, **__):
-    qml.PhaseShift(phi / 2, wires=wires[1])
+    qml.RZ(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
     qml.RZ(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
