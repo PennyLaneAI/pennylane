@@ -105,7 +105,7 @@ class FromBloq(Operation):
 
         # Parameters for the TrotterizedUnitary
         nsites = 5
-        j_zz, gamma_x = 2, 0.1   
+        j_zz, gamma_x = 2, 0.1
         zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
         x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
         trott_unitary = TrotterizedUnitary(
