@@ -193,9 +193,9 @@ class QROMStatePreparation(Operation):
 
             # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
             for itx in range(i + 1):
-                probs_denominator = probs_aux.sum(axis=1)
+                probs_denominator = qml.math.sum(probs_aux, axis=1)
                 probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
-                probs_numerator = probs_aux.sum(axis=1)[::2]
+                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
 
             eps = 1e-8  # Small constant to avoid division by zero
 
