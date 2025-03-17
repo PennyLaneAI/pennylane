@@ -31,6 +31,7 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 from .controlled_decomposition import (
     CustomControlledDecomposition,
@@ -39,8 +40,6 @@ from .controlled_decomposition import (
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
-from pennylane.operation import Operator
-
 from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
 

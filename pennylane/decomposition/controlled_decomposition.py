@@ -16,11 +16,11 @@
 
 from __future__ import annotations
 
+import functools
 from typing import Callable, Type
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.op_math.controlled import base_to_custom_ctrl_op
 
 from .decomposition_rule import DecompositionRule, register_resources
 from .resources import controlled_resource_rep, resource_rep
@@ -217,3 +217,23 @@ def controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **
     for w, val in zip(control_wires, control_values):
         if not val:
             qml.PauliX(w)
+
+
+@functools.lru_cache()
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions."""
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops
