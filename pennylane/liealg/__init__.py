@@ -82,9 +82,9 @@ eigenbasis of the underlying involution :math:`\theta`.
 Lie Algebras and quantum computing
 ----------------------------------
 
-In quantum computing, we are typically dealing with the Hilbert space 
+In quantum computing, we are typically dealing with the Hilbert space
 :math:`\mathcal{H} = \mathbb{C}^{2^n}` and for full
-universality we require the available gates to span all of :math:`SU(2^n).` 
+universality we require the available gates to span all of :math:`SU(2^n).`
 That means when we have all unitaries of :math:`SU(2^n)`
 available to us, we can reach any state in Hilbert space from any other state.
 
