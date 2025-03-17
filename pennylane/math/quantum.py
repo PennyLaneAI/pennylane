@@ -18,8 +18,11 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
+import scipy as sp
+import scipy.sparse.linalg as spla
 from autoray import numpy as np
-from numpy import float64  # pylint:disable=wrong-import-order
+from numpy import float64, sqrt  # pylint:disable=wrong-import-order
+from scipy.sparse import csc_matrix, issparse
 
 import pennylane as qml
 
@@ -970,6 +973,120 @@ def sqrt_matrix(density_matrix):
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
     return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
+
+
+def sqrt_matrix_sparse(sparse_matrix):
+    r"""Compute the square root matrix of a positive-definite Hermitian matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
+
+    Args:
+        sparse_matrix (sparse): 2D sparse matrix of the quantum system.
+
+    Returns:
+       (sparse): Square root of the sparse matrix. Even for data types like `csr_matrix` or `csc_matrix`, the output matrix is not guaranteed to be sparse as well.
+
+    """
+    if not issparse(sparse_matrix):
+        raise TypeError(
+            f"sqrt_matrix_sparse currently only supports scipy.sparse matrices, but received {type(sparse_matrix)}. "
+        )
+    if sparse_matrix.nnz == 0:
+        return sparse_matrix
+    # NOTE: the following steps should be re-visited in the future to establish
+    # better understanding and control over the heuristics we chose
+    # 1. choice of max iteration and tolerance for denman beavers, sc-85713
+    # 2. different methods for sparse matrix square root, sc-85710
+    return _denman_beavers_iterations(sparse_matrix, max_iter=100, tol=1e-10)
+
+
+def _inv_newton(M, guess):
+    """
+    Compute the inverse of a matrix using Newton's method.
+
+    Args:
+        M (array-like): The matrix to be inverted.
+        guess (array-like): An initial guess for the inverse of the matrix.
+
+    Returns:
+        array-like: An improved estimate of the inverse of the matrix.
+    """
+    return 2 * guess - guess @ M @ guess
+
+
+def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
+    """Compute matrix square root using the Denman-Beavers iteration.
+
+    The Denman–Beavers iteration was introduced by E. D. Denman and A. N. Beavers in 1976
+    and stems from Newton-type methods originally used to compute the matrix sign function.
+    In this adaptation for matrix square roots, two matrices (Y and Z) are refined in each
+    step until convergence. This technique is often effective for sparse or structured
+    matrices, particularly those that are positive semidefinite or invertible.
+
+    Args:
+        mat (sparse): Sparse input matrix
+        max_iter (int): Maximum number of iterations
+        tol (float): Convergence tolerance (absolute tolerance). Measured using the Frobenius norm of the difference between input mat and the square of the output.
+
+    Returns:
+        scipy.sparse.spmatrix: Square root of the input matrix
+
+    Raises:
+        LinAlgError: If matrix inversion fails
+        ValueError: If NaN values or overflow are encountered during computation
+    """
+    if mat.shape == (1, 1):
+        return sqrt(mat)
+    try:
+        mat = csc_matrix(mat)
+        Y = mat
+        Z = sp.sparse.eye(mat.shape[0], format="csc")
+
+        # Keep track of previous iteration for convergence check
+        Y_prev = None
+        norm_diff = None
+
+        for iter_num in range(max_iter):
+            # Compute next iteration
+            if iter_num < 2:
+                Zinv = spla.inv(Z) if iter_num > 0 else Z
+                Yinv = spla.inv(Y)
+            else:
+                # Take Newton step
+                Zinv = _inv_newton(Z, Zinv)
+                Yinv = _inv_newton(Y, Yinv)
+
+            Y = 0.5 * (Y + Zinv)
+            Z = 0.5 * (Z + Yinv)
+
+            # Check for NaN or infinite values
+            if not (np.all(np.isfinite(Y.data)) and np.all(np.isfinite(Z.data))):
+                raise ValueError(
+                    "Invalid values encountered during computation: nan or inf"
+                    f"Input matrix: {mat.toarray()}"
+                )
+
+            # Check convergence every 10 iterations
+            if iter_num % 10 == 0 and iter_num > 0:
+                if Y_prev is not None:
+                    # Compute Frobenius norm of difference
+                    diff = Y - Y_prev
+                    norm_diff = spla.norm(diff)
+                    if norm_diff < tol:
+                        break
+                Y_prev = Y.copy()
+
+        numerical_error = spla.norm((Y @ Y - mat))
+        if (norm_diff and norm_diff > tol) or numerical_error > tol:
+            raise ValueError(
+                f"Convergence threshold not reached after {max_iter} iterations, "
+                f"with final norm error {norm_diff} and numerical error {numerical_error}"
+            )
+        return Y
+    except RuntimeError as e:
+        raise ValueError(
+            "Invalid values encountered during matrix multiplication: "
+            f"Input matrix: {mat.toarray()}"
+            f"system error: {e}"
+        ) from e
 
 
 def _compute_relative_entropy(rho, sigma, base=None):

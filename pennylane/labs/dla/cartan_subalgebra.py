@@ -19,7 +19,7 @@ import numpy as np
 from scipy.linalg import null_space
 
 import pennylane as qml
-from pennylane.pauli.dla.center import _intersect_bases
+from pennylane.liealg.center import _intersect_bases
 
 from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 
@@ -173,9 +173,8 @@ def cartan_subalgebra(
         all remaining operators from ``m``.
 
         >>> import numpy as np
-        >>> from pennylane.labs.dla import structure_constants_dense
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
-        >>> adj = structure_constants_dense(g) # compute adjoint representation of g
+        >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
