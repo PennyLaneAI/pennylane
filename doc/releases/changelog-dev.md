@@ -109,6 +109,8 @@
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
     ```
+* Decomposition rules are implemented using the new infrastructure for most PennyLane operators excluding templates.
+  [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 
 <h3>Improvements 🛠</h3>
   
