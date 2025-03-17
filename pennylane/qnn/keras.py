@@ -14,10 +14,13 @@
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
 import inspect
+import warnings
 from collections.abc import Iterable
 from typing import Optional, Text
 
 from packaging.version import Version
+
+import pennylane as qml
 
 try:
     import tensorflow as tf
@@ -308,6 +311,11 @@ class KerasLayer(Layer):
         weight_specs: Optional[dict] = None,
         **kwargs,
     ):
+        warnings.warn(
+            "The 'KerasLayer' class is deprecated and will be removed in v0.42. "
+            "This gradient recipe is not required for the new operator arithmetic system.",
+            qml.PennyLaneDeprecationWarning,
+        )
         # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
             raise ImportError(
