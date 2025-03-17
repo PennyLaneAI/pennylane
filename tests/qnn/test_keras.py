@@ -666,8 +666,11 @@ def test_invalid_interface_error(interface):
         qml.RX(w1, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-    with pytest.raises(ValueError, match="Invalid interface"):
-        _ = KerasLayer(circuit, weight_shapes, output_dim=2)
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+    ):
+        with pytest.raises(ValueError, match="Invalid interface"):
+            _ = KerasLayer(circuit, weight_shapes, output_dim=2)
 
 
 @pytest.mark.tf
