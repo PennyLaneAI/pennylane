@@ -39,7 +39,7 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
-def _check_decomposition(op, skip_wire_mapping):
+def _check_decomposition(op, skip_wire_mapping, decomposition_to_same_class):
     """Checks involving the decomposition."""
     if op.has_decomposition:
         decomp = op.decomposition()
@@ -57,14 +57,27 @@ def _check_decomposition(op, skip_wire_mapping):
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert op.__class__ not in [
-            decomp_op.__class__ for decomp_op in decomp
-        ], "an operator should not be included in its own decomposition"
+        assert op not in decomp, "an operator should not be included in its own decomposition"
 
         for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
+            if not decomposition_to_same_class:
+                try:
+                    assert not isinstance(o1, op.__class__)
+                except AssertionError as e:
+                    raise RuntimeError(
+                        f"The operator {op} provides a decomposition that includes "
+                        f"operators of the same class as {op}. For many operators, "
+                        f"this indicates a problem with the decomposition. However, "
+                        f"for some SymbolicOp operators that have another operator as "
+                        f"their base, the decomposition may focus on decomposing the "
+                        f"base operator, leaving the overall operator class intact. "
+                        f"If this is the case for {op}, this validtion check can be "
+                        f"skipped by adding `decomposition_to_same_class=True` to the "
+                        f"`assert_valid` call"
+                    ) from e
 
         if skip_wire_mapping:
             return
@@ -354,12 +367,14 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
+# pylint: disable = too-many-arguments, too-many-positional-arguments
 def assert_valid(
     op: qml.operation.Operator,
     skip_deepcopy=False,
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_differentiation=False,
+    decomposition_to_same_class=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
@@ -421,7 +436,7 @@ def assert_valid(
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
-    _check_decomposition(op, skip_wire_mapping)
+    _check_decomposition(op, skip_wire_mapping, decomposition_to_same_class)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
