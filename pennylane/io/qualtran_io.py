@@ -72,8 +72,11 @@ class FromBloq(Operation):
 
     .. note::
         This class requires the latest version of qualtran. We recommend installing the main
-        branch via git:
-        ``pip install git+https://github.com/quantumlib/Qualtran.git``
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install git+https://github.com/quantumlib/Qualtran.git
 
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
