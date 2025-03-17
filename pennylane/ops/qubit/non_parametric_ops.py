@@ -1174,7 +1174,7 @@ class SX(Operation):
         [RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
         RZ(-1.5707963267948966, wires=[0]),
-        PhaseShift(-0.7853981633974483, wires=[0])]
+        GlobalPhase(-0.7853981633974483, wires=[0])]
 
         """
         return [
