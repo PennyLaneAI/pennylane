@@ -1389,8 +1389,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def resource_keys(self) -> tuple:
         """The set of parameters that affects the resource requirement of the operator.
 
-        All decomposition rules for this operator class is expected to have a resource function
-        that accepts keyword arguments that match these keys exactly. The ``qml.resource_rep``
+        All decomposition rules for this operator class are expected to have a resource function
+        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
         function will also expect keyword arguments that match these keys when called with this
         operator type.
 

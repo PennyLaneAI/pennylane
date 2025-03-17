@@ -392,6 +392,20 @@ class CH(ControlledOp):
         ]
 
 
+def _ch_to_ry_cz_ry_resources():
+    return {qml.RY: 2, qml.CZ: 1}
+
+
+@register_resources(_ch_to_ry_cz_ry_resources)
+def _ch_to_ry_cz_ry(wires: WiresLike, **__):
+    qml.RY(-np.pi / 4, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RY(+np.pi / 4, wires=wires[1])
+
+
+add_decomps(CH, _ch_to_ry_cz_ry)
+
+
 class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
@@ -509,12 +523,12 @@ class CY(ControlledOp):
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
 
-def _cy_resources():
+def _cy_to_cry_s_resources():
     return {qml.CRY: 1, qml.S: 1}
 
 
-@register_resources(_cy_resources)
-def _cy(wires, **__):
+@register_resources(_cy_to_cry_s_resources)
+def _cy(wires: WiresLike, **__):
     qml.CRY(np.pi, wires=wires)
     qml.S(wires=wires[0])
 
@@ -612,12 +626,12 @@ class CZ(ControlledOp):
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
 
 
-def _cz_resources():
+def _cz_to_cps_resources():
     return {qml.ControlledPhaseShift: 1}
 
 
-@register_resources(_cz_resources)
-def _cz(wires, **__):
+@register_resources(_cz_to_cps_resources)
+def _cz(wires: WiresLike, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
 
@@ -757,12 +771,12 @@ class CSWAP(ControlledOp):
         return decomp_ops
 
 
-def _cswap_resources():
+def _cswap_to_toffoli_resources():
     return {qml.Toffoli: 3}
 
 
-@register_resources(_cswap_resources)
-def _cswap(wires, **__):
+@register_resources(_cswap_to_toffoli_resources)
+def _cswap(wires: WiresLike, **__):
     qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
     qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
     qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
@@ -938,7 +952,7 @@ def _ccz_resources():
 
 
 @register_resources(_ccz_resources)
-def _ccz(wires, **__):
+def _ccz(wires: WiresLike, **__):
     qml.CNOT(wires=[wires[1], wires[2]])
     qml.adjoint(qml.T(wires=wires[2]))
     qml.CNOT(wires=[wires[0], wires[2]])
@@ -1077,7 +1091,7 @@ def _cnot_cz_h_resources():
 
 
 @register_resources(_cnot_cz_h_resources)
-def _cnot_to_cz_h(wires, **__):
+def _cnot_to_cz_h(wires: WiresLike, **__):
     qml.H(wires[1])
     qml.CZ(wires=wires)
     qml.H(wires[1])
@@ -1269,7 +1283,7 @@ def _toffoli_resources():
 
 
 @register_resources(_toffoli_resources)
-def _toffoli(wires, **__):
+def _toffoli(wires: WiresLike, **__):
     qml.Hadamard(wires=wires[2])
     CNOT(wires=[wires[1], wires[2]])
     qml.adjoint(qml.T(wires=wires[2]))
@@ -1664,7 +1678,7 @@ class CRX(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (Tensorlike): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -1697,7 +1711,7 @@ def _crx_to_rz_ry_resources():
 
 
 @register_resources(_crx_to_rz_ry_resources)
-def _crx_to_rz_ry(phi, wires, **__):
+def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
     qml.RZ(np.pi / 2, wires=wires[1])
     qml.RY(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
@@ -1711,7 +1725,7 @@ def _crx_to_rx_cz_resources():
 
 
 @register_resources(_crx_to_rx_cz_resources)
-def _crx_to_rx_cz(phi, wires, **__):
+def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
     qml.RX(phi / 2, wires=wires[1])
     qml.CZ(wires=wires)
     qml.RX(-phi / 2, wires=wires[1])
@@ -1723,7 +1737,7 @@ def _crx_to_h_crz_resources():
 
 
 @register_resources(_crx_to_h_crz_resources)
-def _crx_to_h_crz(phi, wires, **__):
+def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
     qml.Hadamard(wires=wires[1])
     qml.CRZ(phi, wires=wires)
     qml.Hadamard(wires=wires[1])
@@ -1896,7 +1910,7 @@ def _cry_resources():
 
 
 @register_resources(_cry_resources)
-def _cry(phi, wires, **__):
+def _cry(phi: TensorLike, wires: WiresLike, **__):
     qml.RY(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
     qml.RY(-phi / 2, wires=wires[1])
@@ -2083,7 +2097,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
-            phi (Tensorlike): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -2111,7 +2125,7 @@ def _crz_resources():
 
 
 @register_resources(_crz_resources)
-def _crz(phi, wires, **__):
+def _crz(phi: TensorLike, wires: WiresLike, **__):
     qml.PhaseShift(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
     qml.PhaseShift(-phi / 2, wires=wires[1])
@@ -2320,7 +2334,7 @@ def _crot_resources():
 
 
 @register_resources(_crot_resources)
-def _crot(phi, theta, omega, wires, **__):
+def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike, **__):
     qml.RZ((phi - omega) / 2, wires=wires[1])
     qml.CNOT(wires=wires)
     qml.RZ(-(phi + omega) / 2, wires=wires[1])
@@ -2520,7 +2534,7 @@ def _cphase_rz_resource():
 
 
 @register_resources(_cphase_rz_resource)
-def _cphase_to_rz_cnot(phi, wires, **__):
+def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qml.RZ(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
     qml.RZ(-phi / 2, wires=wires[1])

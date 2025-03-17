@@ -76,6 +76,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 2,
         }
 
+    def test_repr(self):
+        """Tests the __repr__ of a Resources object."""
+
+        resources = Resources(
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+        )
+        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+
 
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
@@ -93,6 +101,9 @@ class TestCompressedResourceOp:
 
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op_type is invalid."""
+
+        with pytest.raises(TypeError, match="op_type must be an Operator type"):
+            CompressedResourceOp("RX", {})
 
         with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
