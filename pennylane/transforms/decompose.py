@@ -79,10 +79,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         """Interpreter for replacing control transforms with individually controlled ops."""
 
         def __init__(self, control_wires, control_values=None, work_wires=None):
+            super().__init__()
             self.control_wires = control_wires
             self.control_values = control_values
             self.work_wires = work_wires
-            super().__init__()
 
         def interpret_operation(self, op):
             """Interpret operation."""
