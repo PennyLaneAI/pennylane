@@ -281,9 +281,10 @@ class FromBloq(Operation):
     def compute_matrix(
         *params, **hyperparams
     ):  # pylint: disable=no-method-argument, no-self-argument
-        if not params[0].has_matrix:
-            raise MatrixUndefinedError
-
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
+
+        if matrix.shape != (2 ** len(params[0].wires), 2 ** len(params[0].wires)):
+            raise MatrixUndefinedError
+
         return matrix
