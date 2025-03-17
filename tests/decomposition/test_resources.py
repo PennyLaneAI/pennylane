@@ -77,6 +77,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 2,
         }
 
+    def test_repr(self):
+        """Tests the __repr__ of a Resources object."""
+
+        resources = Resources(
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+        )
+        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+
 
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
@@ -94,6 +102,9 @@ class TestCompressedResourceOp:
 
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op_type is invalid."""
+
+        with pytest.raises(TypeError, match="op_type must be an Operator type"):
+            CompressedResourceOp("RX", {})
 
         with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
@@ -175,6 +186,17 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = {}
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        with pytest.raises(TypeError, match="CustomOp.resource_keys must be a set"):
+            resource_rep(CustomOp)
+
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
@@ -183,15 +205,6 @@ class TestResourceRep:
 
         with pytest.raises(TypeError, match="Invalid resource parameters"):
             resource_rep(DummyOp, foo=2, bar=1, hello=3)
-
-    def test_undefined_resource_params(self):
-        """Tests that an error is raised if the resource_keys are not defined."""
-
-        class EmptyDummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-            pass
-
-        with pytest.raises(NotImplementedError, match="resource_keys undefined"):
-            resource_rep(EmptyDummyOp)
 
     def test_resource_rep(self):
         """Tests creating a resource rep."""

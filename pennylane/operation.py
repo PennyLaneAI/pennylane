@@ -1386,11 +1386,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_keys(self) -> tuple:
+    def resource_keys(self) -> set:  # pylint: disable=no-self-use
         """The set of parameters that affects the resource requirement of the operator.
 
-        All decomposition rules for this operator class is expected to have a resource function
-        that accepts keyword arguments that match these keys exactly. The ``qml.resource_rep``
+        All decomposition rules for this operator class are expected to have a resource function
+        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
         function will also expect keyword arguments that match these keys when called with this
         operator type.
 
@@ -1398,6 +1398,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             :meth:`~.Operator.resource_params`
 
         """
+        return set()
 
     @property
     def resource_params(self) -> dict:

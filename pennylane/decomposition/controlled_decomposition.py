@@ -13,12 +13,14 @@
 # limitations under the License.
 
 """This module contains special logic of decomposing controlled operations."""
+
 from __future__ import annotations
 
 import functools
-from typing import Callable
+from typing import Callable, Type
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, register_resources
 from .resources import controlled_resource_rep, resource_rep
@@ -27,7 +29,7 @@ from .resources import controlled_resource_rep, resource_rep
 class CustomControlledDecomposition(DecompositionRule):  # pylint: disable=too-few-public-methods
     """A decomposition rule applicable to an operator with a custom controlled decomposition."""
 
-    def __init__(self, custom_op_type):
+    def __init__(self, custom_op_type: Type[Operator]):
         self.custom_op_type = custom_op_type
         super().__init__(self._get_impl(), self._get_resource_fn())
 
@@ -35,13 +37,12 @@ class CustomControlledDecomposition(DecompositionRule):  # pylint: disable=too-f
         """The implementation of a controlled op that decomposes to a custom controlled op."""
 
         def _impl(*params, wires, control_wires, control_values, **_):
-            for w, val in zip(control_wires, control_values):
-                if not val:
-                    qml.PauliX(w)
+            wires_0_ctrl_vals = [w for w, val in zip(control_wires, control_values) if not val]
+            for w in wires_0_ctrl_vals:
+                qml.PauliX(w)
             self.custom_op_type(*params, wires=wires)
-            for w, val in zip(control_wires, control_values):
-                if not val:
-                    qml.PauliX(w)
+            for w in wires_0_ctrl_vals:
+                qml.PauliX(w)
 
         return _impl
 

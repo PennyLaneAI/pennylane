@@ -29,6 +29,7 @@ from pennylane.decomposition.resources import (
     controlled_resource_rep,
     resource_rep,
 )
+from tests.decomposition.conftest import to_resources
 
 
 class TestControlledDecompositionRules:
@@ -46,9 +47,9 @@ class TestControlledDecompositionRules:
             controlled_global_phase_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.PhaseShift(-0.5, wires=[2])]
-        assert controlled_global_phase_decomp.compute_resources(**op.resource_params) == Resources(
-            {CompressedResourceOp(qml.PhaseShift): 1}
-        )
+        assert controlled_global_phase_decomp.compute_resources(
+            **op.resource_params
+        ) == to_resources({qml.PhaseShift: 1})
 
     def test_double_controlled_global_phase(self):
         """Tests global phase controlled on two wires."""
@@ -61,12 +62,9 @@ class TestControlledDecompositionRules:
             controlled_global_phase_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.X(2), qml.ControlledPhaseShift(-0.5, wires=[2, 3]), qml.X(2)]
-        assert controlled_global_phase_decomp.compute_resources(**op.resource_params) == Resources(
-            {
-                CompressedResourceOp(qml.X): 2,
-                CompressedResourceOp(qml.ControlledPhaseShift): 1,
-            }
-        )
+        assert controlled_global_phase_decomp.compute_resources(
+            **op.resource_params
+        ) == to_resources({qml.X: 2, qml.ControlledPhaseShift: 1})
 
     def test_multi_controlled_global_phase(self):
         """Tests GlobalPhase controlled on multiple wires."""
@@ -115,8 +113,8 @@ class TestControlledX:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.CNOT(wires=[1, 0])]
-        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
-            {CompressedResourceOp(qml.CNOT): 1}
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
+            {qml.CNOT: 1}
         )
 
         op = qml.ops.Controlled(qml.X(0), control_wires=[1], control_values=[0])
@@ -124,8 +122,8 @@ class TestControlledX:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.PauliX(1), qml.CNOT(wires=[1, 0]), qml.PauliX(1)]
-        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
-            {CompressedResourceOp(qml.CNOT): 1, CompressedResourceOp(qml.PauliX): 2},
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
+            {qml.CNOT: 1, qml.PauliX: 2},
         )
 
     def test_double_controlled_x(self):
@@ -136,8 +134,8 @@ class TestControlledX:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.Toffoli(wires=[1, 2, 0])]
-        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
-            {CompressedResourceOp(qml.Toffoli): 1}
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
+            {qml.Toffoli: 1}
         )
 
         op = qml.ops.Controlled(qml.X(0), control_wires=[1, 2], control_values=[0, 1])
@@ -145,8 +143,8 @@ class TestControlledX:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.PauliX(1), qml.Toffoli(wires=[1, 2, 0]), qml.PauliX(1)]
-        assert controlled_x_decomp.compute_resources(**op.resource_params) == Resources(
-            {CompressedResourceOp(qml.Toffoli): 1, CompressedResourceOp(qml.PauliX): 2},
+        assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
+            {qml.Toffoli: 1, qml.PauliX: 2},
         )
 
     def test_multi_controlled_x(self):
@@ -200,40 +198,35 @@ class TestControlledX:
         (
             qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CZ(wires=[0, 1]), qml.X(0)],
-            Resources({CompressedResourceOp(qml.CZ): 1, CompressedResourceOp(qml.X): 2}),
+            to_resources({qml.CZ: 1, qml.X: 2}),
             qml.ops.CZ,
         ),
         # Single-qubit controlled on 1
         (
             qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[1]),
             [qml.CZ(wires=[0, 1])],
-            Resources({CompressedResourceOp(qml.CZ): 1}),
+            to_resources({qml.CZ: 1}),
             qml.ops.CZ,
         ),
         # Two-qubit controlled
         (
             qml.ops.Controlled(qml.Z(2), control_wires=[0, 1], control_values=[1, 0]),
             [qml.X(1), qml.CCZ(wires=[0, 1, 2]), qml.X(1)],
-            Resources({CompressedResourceOp(qml.CCZ): 1, CompressedResourceOp(qml.X): 2}),
+            to_resources({qml.CCZ: 1, qml.X: 2}),
             qml.ops.CCZ,
         ),
         # Parametrized controlled
         (
             qml.ops.Controlled(qml.RX(0.5, wires=1), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CRX(0.5, wires=[0, 1]), qml.X(0)],
-            Resources({CompressedResourceOp(qml.CRX): 1, CompressedResourceOp(qml.X): 2}),
+            to_resources({qml.CRX: 1, qml.X: 2}),
             qml.ops.CRX,
         ),
         # Controlled on two qubits
         (
             qml.ops.Controlled(qml.SWAP(wires=[1, 2]), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CSWAP(wires=[0, 1, 2]), qml.X(0)],
-            Resources(
-                {
-                    CompressedResourceOp(qml.CSWAP): 1,
-                    CompressedResourceOp(qml.X): 2,
-                }
-            ),
+            to_resources({qml.CSWAP: 1, qml.X: 2}),
             qml.CSWAP,
         ),
     ],
