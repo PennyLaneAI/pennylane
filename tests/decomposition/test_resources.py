@@ -206,15 +206,6 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="Invalid resource parameters"):
             resource_rep(DummyOp, foo=2, bar=1, hello=3)
 
-    def test_undefined_resource_params(self):
-        """Tests that an error is raised if the resource_keys are not defined."""
-
-        class EmptyDummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-            pass
-
-        with pytest.raises(NotImplementedError, match="resource_keys undefined"):
-            resource_rep(EmptyDummyOp)
-
     def test_resource_rep(self):
         """Tests creating a resource rep."""
 

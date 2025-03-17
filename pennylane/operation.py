@@ -1386,7 +1386,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_keys(self) -> tuple:
+    def resource_keys(self) -> set:  # pylint: disable=no-self-use
         """The set of parameters that affects the resource requirement of the operator.
 
         All decomposition rules for this operator class are expected to have a resource function
@@ -1398,6 +1398,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             :meth:`~.Operator.resource_params`
 
         """
+        return set()
 
     @property
     def resource_params(self) -> dict:

@@ -54,10 +54,72 @@
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-* Added a new infrastructure for gate-set targeted decompositions.
+<h4>Gate-set targeted decompositions</h4>
+
+* A new module called `qml.decomposition` that contains PennyLane's new experimental graph-based 
+  gate-set-targeted decomposition system has been added.
   [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 
+  * A decomposition rule in the new system is defined as a quantum function that declares its own
+    resource requirements using `qml.register_resources`.
+    ```python
+    import pennylane as qml
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(wires):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
+    ```
+
+  * Operators with dynamic resource requirements must be declared in a resource estimate using `qml.resource_rep`.
+    ```python
+    import pennylane as qml
+
+    def _resource_fn(num_wires):
+        return {
+            qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 1,
+            qml.resource_rep(qml.MultiRZ, num_wires=3): 2
+        }
+    
+    @qml.register_resources(_resource_fn)
+    def my_decomp(thata, wires):
+        qml.MultiRZ(theta, wires=wires[:3])
+        qml.MultiRZ(theta, wires=wires[1:])
+        qml.MultiRZ(theta, wires=wires[:3])
+    ```
+
+  * The new system allows multiple decomposition rules to be registered for the same operator. 
+    Use `qml.add_decomps` to register a decomposition with an operator; use `qml.list_decomps`
+    to inspect all known decompositions for an operator.
+    ```pycon
+    >>> import pennylane as qml
+    >>> qml.list_decomps(qml.CRX)
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+    >>> print(qml.list_decomps(qml.CRX)[0])
+    @register_resources(_crx_to_rx_cz_resources)
+    def _crx_to_rx_cz(phi, wires, **__):
+        qml.RX(phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+        qml.RX(-phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+    ```
+* Decomposition rules are implemented using the new infrastructure for most PennyLane operators excluding templates.
+  [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+
+* A graph-based decomposition solver has been implemented that solves for the optimal decomposition
+  rule to use for an operator towards a target gate set.
+  [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+
 <h3>Improvements 🛠</h3>
+  
+* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
+  [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)

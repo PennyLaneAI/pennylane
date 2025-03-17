@@ -19,7 +19,7 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Type
+from typing import Optional, Type
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -114,7 +114,7 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: Type[Operator], params: dict = None):
+    def __init__(self, op_type: Type[Operator], params: Optional[dict] = None):
         if not isinstance(op_type, type):
             raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qml.operation.Operator):
