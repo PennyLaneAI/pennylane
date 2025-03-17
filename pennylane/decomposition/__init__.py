@@ -34,7 +34,6 @@ This module implements the infrastructure for PennyLane's new graph-based decomp
     ~list_decomps
     ~has_decomp
     ~Resources
-    ~CompressedResourceOp
     ~DecompositionRule
 
 .. TODO::
@@ -134,7 +133,7 @@ information relevant to its resource estimate into a compressed data structure.
 
 from .resources import (
     Resources,
-    CompressedResourceOp,
+    # TODO: add CompressedResourceOp once the conflict with labs is resolved.
     resource_rep,
     controlled_resource_rep,
     adjoint_resource_rep,
