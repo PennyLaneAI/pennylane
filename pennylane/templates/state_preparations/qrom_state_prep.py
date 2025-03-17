@@ -107,12 +107,11 @@ class QROMStatePreparation(Operation):
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        if not qml.math.is_abstract(state_vector[0]):
-            norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
-            if not qml.math.allclose(norm, 1.0, atol=1e-3):
-                raise ValueError(
-                    f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
-                )
+        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+        if not qml.math.allclose(norm, 1.0, atol=1e-3):
+            raise ValueError(
+                f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
+            )
 
         self.state_vector = state_vector
         self.hyperparameters["input_wires"] = qml.wires.Wires(wires)

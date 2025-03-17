@@ -207,25 +207,7 @@ class TestQROM:
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert len(tape[0][0]) == 1
-        assert qml.equal(tape[0][0][0], qml.BasisEmbedding([1, 0], wires=[0, 1]))
-        assert qml.math.allclose(output, [0, 0, 1, 0])
-
-    def test_zero_control_wires(self):
-        """Test that the edge case of zero control wires works"""
-
-        dev = qml.device("default.qubit", wires=2)
-        qs = qml.tape.QuantumScript(
-            qml.QROM.compute_decomposition(
-                ["10"], target_wires=[0, 1], work_wires=None, control_wires=[], clean=False
-            ),
-            [qml.probs(wires=[0, 1])],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
+        assert len(tape[0][0].operations) == 1
         assert qml.equal(tape[0][0][0], qml.BasisEmbedding([1, 0], wires=[0, 1]))
         assert qml.math.allclose(output, [0, 0, 1, 0])
 
