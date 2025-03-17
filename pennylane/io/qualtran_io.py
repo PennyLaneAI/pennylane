@@ -142,7 +142,7 @@ class FromBloq(Operation):
         which allocates and frees a wire all in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
         named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
-        signature. For example, for CZPowGate, the indexing starts at 2. Due to the current
+        signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
         limitations of PennyLane, these wires cannot be accessed manually or mapped.
 
     """
