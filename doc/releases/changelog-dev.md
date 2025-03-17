@@ -56,9 +56,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Update the signature of the `label` method of `qml.ftqc.GraphStatePrep` to better support `MPLDrawer`.
-  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
-
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
 
@@ -416,6 +413,7 @@
 
 * A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
   [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
+  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
