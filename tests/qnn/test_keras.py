@@ -845,22 +845,17 @@ def test_batch_input_single_measure(tol):
         qml.RY(weights[1], wires=1)
         return qml.probs(op=qml.PauliZ(1))
 
-    try:
-        KerasLayer.set_input_argument("x")
-        layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
-        layer.build((None, 2))
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
+    layer.build((None, 2))
 
-        x = tf.constant(np.random.uniform(0, 1, (10, 4)))
-        res = layer(x)
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
 
-        assert res.shape == (10, 2)
+    assert res.shape == (10, 2)
 
-        for x_, r in zip(x, res):
-            assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
-
-    finally:
-        # reset back to the old name
-        KerasLayer.set_input_argument("inputs")
+    for x_, r in zip(x, res):
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
 
 
 @pytest.mark.tf
@@ -875,23 +870,18 @@ def test_batch_input_multi_measure(tol):
         qml.RY(weights[1], wires=1)
         return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
 
-    try:
-        KerasLayer.set_input_argument("x")
-        layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
-        layer.build((None, 4))
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
+    layer.build((None, 4))
 
-        x = tf.constant(np.random.uniform(0, 1, (10, 4)))
-        res = layer(x)
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
 
-        assert res.shape == (10, 5)
+    assert res.shape == (10, 5)
 
-        for x_, r in zip(x, res):
-            exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
-            assert qml.math.allclose(r, exp, atol=tol)
-
-    finally:
-        # reset back to the old name
-        KerasLayer.set_input_argument("inputs")
+    for x_, r in zip(x, res):
+        exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, exp, atol=tol)
 
 
 @pytest.mark.tf
