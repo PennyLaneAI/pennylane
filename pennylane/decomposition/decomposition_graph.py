@@ -30,6 +30,8 @@ from dataclasses import dataclass
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
+from pennylane.operation import Operator
+
 from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
 
@@ -52,6 +54,41 @@ class _DecompositionNode:
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     """A graph that models a decomposition problem.
+
+    The decomposition graph contains two types of nodes: operator nodes and decomposition nodes.
+    Each decomposition node is a :class:`pennylane.decomposition.DecompositionRule`, and each
+    operator node is a :class:`~pennylane.decomposition.resources.CompressedResourceOp` which
+    contains an operator type and any additional parameters that affects the resource requirements
+    of the operator. Essentially, two instances of the same operator type is represented by the
+    same node in the graph if they're expected to have the same decompositions.
+
+    There are also two types of directed edges: edges that connect operators to the decomposition
+    rules that contain them, and edges that connect decomposition rules to the operators that they
+    decompose. The edge weights represent the difference in the gate count between the two states.
+    Edges that connects decomposition rules to operators have a weight of 0 because an operator can
+    be replaced with its decomposition at no additional cost.
+
+    On the other hand, edges that connect operators to the decomposition rule that contains them
+    will have a weight that is the total resource estimate of the decomposition minus the resource
+    estimate of the operator. For example the edge that connects a ``qml.CNOT`` to the following
+    decomposition rule:
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def my_cz(wires):
+            qml.H(wires=wires[1])
+            qml.CNOT(wires=wires)
+            qml.H(wires=wires[1])
+
+    will have a weight of 2, because the decomposition rule contains 2 additional ``H`` gates.
+    Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't supported
+    and is in turn decomposed to two ``RZ`` gates and a ``RX`` gate, the weight of this edge
+    becomes 2 * 3 = 6. This way, the total distance from a basis gate to a high-level gate is
+    conveniently the total number of basis gates required to decompose this high-level gate, which
+    allows us to use Dijkstra's algorithm to find the most efficient decomposition.
 
     Args:
         operations (list[Operator]): The list of operations to find decompositions for.
@@ -136,8 +173,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
-            lazy (bool): If True, the dijkstra search will stop once optimal decompositions are
-                found for all operations that we originally want to decompose. Otherwise, the
+            lazy (bool): If True, the Dijkstra search will stop once optimal decompositions are
+                found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
 
         """
@@ -160,21 +197,50 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 f"Decomposition not found for {op_names} to the gate set {self._target_gate_set}"
             )
 
+    def is_solved_for(self, op):
+        """Tests whether the decomposition graph is solved for a given operator."""
+        op_node = resource_rep(type(op), **op.resource_params)
+        return (
+            op_node in self._op_node_indices
+            and self._op_node_indices[op_node] in self._visitor.distances
+        )
+
     def resource_estimate(self, op) -> Resources:
-        """Returns the resource estimates for a given operator.
+        """Returns the resource estimate for a given operator.
 
         Args:
             op (Operator): The operator for which to return the resource estimates.
 
         Returns:
-            Resources: The resource estimates.
+            Resources: The resource estimate.
+
+        **Example**
+
+        The resource estimate is a gate count in terms of the target gate set, not the immediate
+        set of gates that the operator decomposes to.
+
+        .. code-block:: python
+
+            op = qml.CRX(0.5, wires=[0, 1])
+            graph = DecompositionGraph(
+                operations=[op],
+                target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+            )
+            graph.solve()
+
+        >>> with qml.queuing.AnnotatedQueue() as q:
+        ...     graph.decomposition(op)(0.5, wires=[0, 1])
+        >>> q.queue
+        [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+        >>> graph.resource_estimate(op)
+        num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
 
         """
         op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.distances[op_node_idx]
 
-    def decomposition(self, op) -> DecompositionRule:
+    def decomposition(self, op: Operator) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:
@@ -182,6 +248,26 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             DecompositionRule: The optimal decomposition.
+
+        **Example**
+
+        The decomposition rule is a quantum function that takes ``(*op.parameters, wires=op.wires, **op.hyperparameters)``
+        as arguments.
+
+        .. code-block:: python
+
+            op = qml.CRX(0.5, wires=[0, 1])
+            graph = DecompositionGraph(
+                operations=[op],
+                target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+            )
+            graph.solve()
+            rule = graph.decomposition(op)
+
+        >>> with qml.queuing.AnnotatedQueue() as q:
+        ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        >>> q.queue
+        [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
 
         """
         op_node = resource_rep(type(op), **op.resource_params)

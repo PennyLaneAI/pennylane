@@ -150,6 +150,11 @@ def _validate_resource_rep(op_type, params):
     if op_type.resource_keys is None:
         raise NotImplementedError(f"resource_keys undefined for {op_type.__name__}")
 
+    if not isinstance(op_type.resource_keys, set):
+        raise TypeError(
+            f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
+        )
+
     missing_params = op_type.resource_keys - set(params.keys())
     if missing_params:
         raise TypeError(

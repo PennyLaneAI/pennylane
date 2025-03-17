@@ -14,13 +14,20 @@
 
 """A fixed set of decomposition rules for testing purposes."""
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,protected-access
 
 from collections import defaultdict
 
 import pennylane as qml
+from pennylane.decomposition import Resources
+from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
+
+
+def to_resources(gate_count: dict) -> Resources:
+    """Wrap a dictionary of gate counts in a Resources object."""
+    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count > 0})
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
@@ -32,11 +39,11 @@ decompositions[qml.CZ] = [_cz_to_cnot]
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CZ: 1})
-def _cnot_to_cz_h(*_, **__):
+def _cnot_to_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CNOT] = [_cnot_to_cz_h]
+decompositions[qml.CNOT] = [_cnot_to_cz]
 
 
 def _multi_rz_decomposition_resources(num_wires):

@@ -185,6 +185,17 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = {}
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        with pytest.raises(TypeError, match="CustomOp.resource_keys must be a set"):
+            resource_rep(CustomOp)
+
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
