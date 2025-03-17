@@ -24,6 +24,11 @@ from pennylane.queuing import QueuingManager, apply
 import pennylane.compiler
 from pennylane.compiler import qjit
 import pennylane.capture
+import pennylane.control_flow
+from pennylane.control_flow import for_loop, while_loop
+import pennylane.kernels
+import pennylane.math
+import pennylane.operation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -34,11 +39,6 @@ from pennylane.decomposition import (
     controlled_resource_rep,
     adjoint_resource_rep,
 )
-import pennylane.control_flow
-from pennylane.control_flow import for_loop, while_loop
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
