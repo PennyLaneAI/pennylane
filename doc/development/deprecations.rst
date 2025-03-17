@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``KerasLayer`` in the ``pennylane.qnn.keras`` module is deprecated. Instead, consider using other machine learning frameworks than TensorFlow.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
 
   - Deprecated in v0.41

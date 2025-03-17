@@ -490,6 +490,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `KerasLayer` in the `pennylane.qnn.keras` module is deprecated. Instead, consider using other machine learning frameworks than TensorFlow.
+  [(#7097)](https://github.com/PennyLaneAI/pennylane/pull/7097)
+
 * Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
   transforms should always be specified.
   [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
