@@ -88,7 +88,7 @@ class CompressedResourceOp:
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``
+        declares its required resources using :func:`~pennylane.register_resources`.
 
     The ``CompressedResourceOp` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
@@ -100,7 +100,7 @@ class CompressedResourceOp:
     On the other hand, for some operators such as ``MultiRZ``, for which the numbers of ``CNOT``
     gates in its decomposition depends on the number of wires, the resource representation of
     a ``MultiRZ`` must include this information. To create a ``CompressedResourceOp`` object for
-    an operator, use the ``qml.resource_rep`` function.
+    an operator, use the :func:`~pennylane.resource_rep` function.
 
     Args:
         op_type: the operator type
@@ -172,7 +172,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``
+        declares its required resources using :func:`~pennylane.register_resources`.
 
     Args:
         op_type: the operator class to create a resource representation for.
@@ -210,9 +210,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         .. code-block:: python
 
             def my_decomp(wires):
-                ...
                 qml.ctrl(qml.MultiRZ(wires=wires[:3]), control=wires[3:5], control_values=[0, 1], work_wires=wires[5])
-                ...
 
         To declare this controlled operator in the resource function, we find the resource keys
         of ``qml.ops.Controlled``:
@@ -232,7 +230,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
 
-        Alternatively, use the helper functions ``controlled_resource_rep``:
+        Alternatively, use the helper functions :func:`~pennylane.controlled_resource_rep`:
 
         >>> qml.controlled_resource_rep(
         ...     base_class=qml.ops.MultiRZ,
