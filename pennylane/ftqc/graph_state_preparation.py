@@ -127,7 +127,7 @@ class GraphStatePrep(Operation):
                 )
             super().__init__(wires=wires)
 
-    def label(self) -> str:  # pylint: disable=arguments-differ
+    def label(self, *args, **kwargs) -> str:  # pylint: disable=arguments-differ
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
         Returns:
