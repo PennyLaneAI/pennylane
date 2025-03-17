@@ -64,16 +64,19 @@ class QROMStatePreparation(Operation):
 
         dev = qml.device("default.qubit", wires=6)
         state_vector = np.array([1/2,-1/2,1/2,1/2])
-        wires = [0, 1]
-        precision_wires = [2, 3, 4]
-        work_wires = [5]
+        wires = [4, 5]
+        precision_wires = [1, 2, 3]
+        work_wires = [0]
 
         @qml.qnode(dev)
         def circuit():
             qml.QROMStatePreparation(state_vector, wires, precision_wires, work_wires)
             return qml.state()
 
-        print(circuit())
+    .. code-block:: pycon
+
+        >>> print(circuit()[:4].real)
+        [ 0.5 -0.5  0.5  0.5]
 
     .. seealso:: :class:`~.QROM`
 
