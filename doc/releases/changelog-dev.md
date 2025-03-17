@@ -56,7 +56,7 @@
 
 <h3>Improvements 🛠</h3>
   
-* The decompositions of `qml.SX`, `qml.X` and `qml.Y` to use `qml.GlobalPhase` instead of `qml.PhaseShift`.
+* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
