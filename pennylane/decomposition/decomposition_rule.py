@@ -46,7 +46,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
         resources (dict or Callable): a dictionary mapping unique operators within the given
             ``qfunc`` to their number of occurrences therein. If a function is provided instead
             of a static dictionary, a dictionary must be returned from the function. For more
-            information, see Usage details.
+            information, consult the Quantum Functions as Decomposition Rules section below.
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
 
