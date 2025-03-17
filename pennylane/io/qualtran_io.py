@@ -87,7 +87,6 @@ class FromBloq(Operation):
     Given a qualtran bloq:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
-
     >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
     >>> qualtran_cnot.matrix()
     array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
