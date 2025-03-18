@@ -191,9 +191,7 @@ qnode_prim.prim_type = "higher_order"
 # pylint: disable=too-many-arguments, unused-argument
 @debug_logger
 @qnode_prim.def_impl
-def _(
-    *args, qnode, shots, device, resolved_execution_config, qfunc_jaxpr, n_consts, batch_dims=None
-):
+def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
     if shots != device.shots:
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
@@ -202,7 +200,7 @@ def _(
     consts = args[:n_consts]
     non_const_args = args[n_consts:]
 
-    device_program = device.preprocess_transforms(resolved_execution_config)
+    device_program = device.preprocess_transforms(execution_config)
     if batch_dims is not None:
         temp_all_args = []
         for a, d in zip(args, batch_dims, strict=True):
@@ -222,7 +220,7 @@ def _(
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=resolved_execution_config
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
