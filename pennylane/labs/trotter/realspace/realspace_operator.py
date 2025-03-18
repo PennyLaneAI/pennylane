@@ -272,3 +272,10 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
+
+    def get_coefficients(self, threshold: float = 0.0):
+        coeffs = {}
+        for op in self.ops:
+            coeffs[op.ops] = op.get_coefficients(threshold)
+
+        return coeffs
