@@ -14,6 +14,8 @@
 """
 Test the ResourceStatePrep class
 """
+import math
+
 import pytest
 
 import pennylane.labs.resource_estimation as re
@@ -98,3 +100,301 @@ class TestStatePrep:
     def test_tracking_name(self, params, expected_name):
         """Test that the tracking name is correct."""
         assert re.ResourceStatePrep.tracking_name(**params) == expected_name
+
+
+class TestResourceBasisState:
+    """Test the ResourceBasisState class"""
+
+    @pytest.mark.parametrize(
+        "num_wires, num_rx, num_phase_shift",
+        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
+    )
+    def test_resources(self, num_wires, num_rx, num_phase_shift):
+        expected = {}
+        rx = re.CompressedResourceOp(re.ResourceRX, {})
+        phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
+        expected[rx] = num_rx
+        expected[phase_shift] = num_phase_shift
+
+        assert re.ResourceBasisState.resources(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "state, wires",
+        [
+            (
+                qnp.array([1, 1]),
+                range(2),
+            ),
+        ],
+    )
+    def test_resource_params(self, state, wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceBasisState(state=state, wires=wires)
+
+        assert op.resource_params == {"num_wires": len(wires)}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceBasisState,
+            {"num_wires": num_wires},
+        )
+        assert expected == re.ResourceBasisState.resource_rep(num_wires)
+
+    @pytest.mark.parametrize(
+        "num_wires, num_rx, num_phase_shift",
+        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
+    )
+    def test_resources_from_rep(self, num_wires, num_rx, num_phase_shift):
+        """Test that computing the resources from a compressed representation works"""
+        rep = re.ResourceBasisState.resource_rep(num_wires)
+        actual = rep.op_type.resources(**rep.params)
+        expected = {}
+        rx = re.CompressedResourceOp(re.ResourceRX, {})
+        phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
+        expected[rx] = num_rx
+        expected[phase_shift] = num_phase_shift
+
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_tracking_name(self, num_wires):
+        """Test that the tracking name is correct."""
+        assert re.ResourceBasisState.tracking_name(num_wires) == f"BasisState({num_wires})"
+
+
+class TestResourceSuperposition:
+    """Test the ResourceSuperposition class"""
+
+    @pytest.mark.parametrize(
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
+    )
+    def test_resources(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        expected = {}
+        msp = re.CompressedResourceOp(
+            re.ResourceMottonenStatePreparation, {"num_wires": num_stateprep_wires}
+        )
+        expected[msp] = 1
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        num_zero_ctrls = size_basis_state // 2
+        multi_x = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": size_basis_state,
+                "num_ctrl_values": num_zero_ctrls,
+                "num_work_wires": 0,
+            },
+        )
+
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
+        if num_permutes:
+            expected[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            expected[multi_x] = 2 * num_permutes  # for compute and uncompute
+
+        assert (
+            re.ResourceSuperposition.resources(
+                num_stateprep_wires, num_basis_states, size_basis_state
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "coeffs, bases, wires, work_wire",
+        [
+            (
+                qnp.sqrt(qnp.array([1 / 3, 1 / 3, 1 / 3])),
+                qnp.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                [0, 1, 2],
+                [3],
+            ),
+        ],
+    )
+    def test_resource_params(self, coeffs, bases, wires, work_wire):
+        """Test that the resource params are correct"""
+        op = re.ResourceSuperposition(coeffs, bases, wires, work_wire)
+
+        num_basis_states = len(bases)
+        size_basis_state = len(bases[0])  # assuming they are all the same size
+        num_stateprep_wires = math.ceil(math.log2(len(coeffs)))
+
+        assert op.resource_params == {
+            "num_stateprep_wires": num_stateprep_wires,
+            "num_basis_states": num_basis_states,
+            "size_basis_state": size_basis_state,
+        }
+
+    @pytest.mark.parametrize(
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
+    )
+    def test_resource_rep(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceSuperposition,
+            {
+                "num_stateprep_wires": num_stateprep_wires,
+                "num_basis_states": num_basis_states,
+                "size_basis_state": size_basis_state,
+            },
+        )
+        assert expected == re.ResourceSuperposition.resource_rep(
+            num_stateprep_wires, num_basis_states, size_basis_state
+        )
+
+    @pytest.mark.parametrize(
+        "num_stateprep_wires, num_basis_states, size_basis_state",
+        [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
+    )
+    def test_resources_from_rep(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        """Test that computing the resources from a compressed representation works"""
+        expected = {}
+        rep = re.ResourceSuperposition.resource_rep(
+            num_stateprep_wires, num_basis_states, size_basis_state
+        )
+        actual = rep.op_type.resources(**rep.params)
+
+        expected = {}
+        msp = re.CompressedResourceOp(
+            re.ResourceMottonenStatePreparation, {"num_wires": num_stateprep_wires}
+        )
+        expected[msp] = 1
+
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        num_zero_ctrls = size_basis_state // 2
+        multi_x = re.CompressedResourceOp(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": size_basis_state,
+                "num_ctrl_values": num_zero_ctrls,
+                "num_work_wires": 0,
+            },
+        )
+
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
+        if num_permutes:
+            expected[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            expected[multi_x] = 2 * num_permutes  # for compute and uncompute
+
+        assert actual == expected
+
+    def test_tracking_name(self):
+        """Test that the tracking name is correct."""
+        assert re.ResourceSuperposition.tracking_name() == f"Superposition"
+
+
+class TestResourceMottonenStatePreparation:
+    """Test the ResourceMottonenStatePreparation class"""
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources(self, num_wires):
+        expected = {}
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+        if r_count:
+            expected[rz] = r_count
+
+        if cnot_count:
+            expected[cnot] = cnot_count
+        assert re.ResourceMottonenStatePreparation.resources(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "state_vector, wires",
+        [
+            (
+                qnp.array(
+                    [
+                        0.070014 + 0.0j,
+                        0.0 + 0.14002801j,
+                        0.21004201 + 0.0j,
+                        0.0 + 0.28005602j,
+                        0.35007002 + 0.0j,
+                        0.0 + 0.42008403j,
+                        0.49009803 + 0.0j,
+                        0.0 + 0.56011203j,
+                    ]
+                ),
+                range(3),
+            ),
+        ],
+    )
+    def test_resource_params(self, state_vector, wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceMottonenStatePreparation(state_vector=state_vector, wires=wires)
+
+        assert op.resource_params == {"num_wires": len(wires)}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceMottonenStatePreparation,
+            {"num_wires": num_wires},
+        )
+        assert expected == re.ResourceMottonenStatePreparation.resource_rep(num_wires)
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources_from_rep(self, num_wires):
+        """Test that computing the resources from a compressed representation works"""
+        rep = re.ResourceMottonenStatePreparation.resource_rep(num_wires)
+        actual = rep.op_type.resources(**rep.params)
+
+        expected = {}
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+        if r_count:
+            expected[rz] = r_count
+
+        if cnot_count:
+            expected[cnot] = cnot_count
+
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_tracking_name(self, num_wires):
+        """Test that the tracking name is correct."""
+        assert (
+            re.ResourceMottonenStatePreparation.tracking_name(num_wires)
+            == f"MottonenStatePrep({num_wires})"
+        )

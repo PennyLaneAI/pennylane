@@ -1110,38 +1110,3 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "fixed_point": fixed_point,
         }
         return CompressedResourceOp(cls, params)
-
-
-class ResourceBasisState(qml.BasisState, ResourceOperator):
-    """Resource class for the BasisState template."""
-
-    @staticmethod
-    def _resource_decomp(
-        num_wires,
-        **kwargs,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources for BasisState are according to the decomposition found
-        in qml.BasisState.
-        """
-        gate_types = {}
-
-        rx = re.ResourceRX.resource_rep()
-        phase_shift = re.ResourcePhaseShift.resource_rep()
-
-        gate_types[rx] = num_wires
-        gate_types[phase_shift] = num_wires * 2
-
-        return gate_types
-
-    @property
-    def resource_params(self) -> Dict:
-        return {"num_wires": len(self.wires)}
-
-    @classmethod
-    def resource_rep(cls, wires) -> CompressedResourceOp:
-        params = {"num_wires": wires}
-        return CompressedResourceOp(cls, params)
-
-    @classmethod
-    def tracking_name(cls, num_wires) -> str:
-        return f"BasisState({num_wires})"

@@ -102,6 +102,7 @@ Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceAmplitudeAmplification
     ~ResourceBasisRotation
     ~ResourcePrepSelPrep
     ~ResourceQFT
@@ -124,6 +125,7 @@ State Preparation Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceBasisState
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
