@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-# pylint: disable=too-many-positional-arguments
+
+from __future__ import annotations
+
 import functools
 import warnings
 from collections.abc import Callable, Sequence
@@ -30,6 +33,7 @@ import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.compiler import compiler
+from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl_op
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -41,14 +45,14 @@ from .symbolicop import SymbolicOp
 def ctrl(
     op: Operator,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Operator: ...
 @overload
 def ctrl(
     op: Callable,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None):
@@ -67,8 +71,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
-        control_values (bool or list[bool]): The value(s) the control wire(s) should take.
-            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        control_values (bool or list[bool] or int or list[int]): The value(s) the control wire(s)
+            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     Returns:
@@ -235,8 +239,6 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     ctrl_prim = NonInterpPrimitive("ctrl_transform")
@@ -245,15 +247,17 @@ def _get_ctrl_qfunc_prim():
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         control_wires = args[-n_control:]
         args = args[n_consts:-n_control]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
+        collector = CollectOpsandMeas()
+        with qml.QueuingManager.stop_recording():
+            collector.eval(jaxpr, consts, *args)
 
-        for op in ops:
+        for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
         return []
 
@@ -295,30 +299,6 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
 
 
 @functools.lru_cache()
-def _get_special_ops():
-    """Gets a list of special operations with custom controlled versions.
-
-    This is placed inside a function to avoid circular imports.
-
-    """
-
-    ops_with_custom_ctrl_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliZ, 2): qml.CCZ,
-        (qml.PauliY, 1): qml.CY,
-        (qml.CZ, 1): qml.CCZ,
-        (qml.SWAP, 1): qml.CSWAP,
-        (qml.Hadamard, 1): qml.CH,
-        (qml.RX, 1): qml.CRX,
-        (qml.RY, 1): qml.CRY,
-        (qml.RZ, 1): qml.CRZ,
-        (qml.Rot, 1): qml.CRot,
-        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
-    }
-    return ops_with_custom_ctrl_ops
-
-
-@functools.lru_cache()
 def _get_pauli_x_based_ops():
     """Gets a list of pauli-x based operations
 
@@ -331,7 +311,7 @@ def _get_pauli_x_based_ops():
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
     custom_key = (type(op), len(control))
 
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
@@ -462,13 +442,13 @@ class Controlled(SymbolicOp):
 
     """
 
-    resource_param_keys = (
+    resource_keys = {
         "base_class",
         "base_params",
         "num_control_wires",
         "num_zero_control_values",
         "num_work_wires",
-    )
+    }
 
     def _flatten(self):
         return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
@@ -878,7 +858,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:

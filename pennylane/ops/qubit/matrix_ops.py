@@ -27,7 +27,17 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.math import (
+    cast,
+    conj,
+    eye,
+    norm,
+    sqrt,
+    sqrt_matrix,
+    sqrt_matrix_sparse,
+    transpose,
+    zeros,
+)
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -122,7 +132,7 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ("num_wires",)
+    resource_keys = {"num_wires"}
 
     grad_method = None
     """Gradient computation method."""
@@ -207,7 +217,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -224,7 +234,7 @@ class QubitUnitary(Operation):
             with 2 stored elements in Compressed Sparse Row format>
         """
         if sp.sparse.issparse(U):
-            return U.tocsr()
+            return U.asformat(format)
         raise qml.operation.SparseMatrixUndefinedError(
             "U is a dense matrix. Use matrix method instead"
         )
@@ -671,6 +681,8 @@ class BlockEncode(Operation):
         n, m, k = hyperparams["subspace"]
         shape_a = qml.math.shape(A)
 
+        sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+
         def _stack(lst, h=False, like=None):
             if like == "tensorflow":
                 axis = 1 if h else 0
@@ -686,12 +698,12 @@ class BlockEncode(Operation):
         else:
             d1, d2 = shape_a
             col1 = _stack(
-                [A, sqrt_matrix(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+                [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
                 like=interface,
             )
             col2 = _stack(
                 [
-                    sqrt_matrix(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                    sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
                     -transpose(conj(A)),
                 ],
                 like=interface,

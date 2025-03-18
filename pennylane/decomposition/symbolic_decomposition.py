@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This module contains special logic of decomposing symbolic operations."""
+
 from __future__ import annotations
 
 import functools
@@ -21,35 +22,37 @@ import pennylane as qml
 
 from .controlled_decomposition import base_to_custom_ctrl_op
 from .decomposition_rule import DecompositionRule, register_resources
-from .resources import Resources, adjoint_resource_rep, resource_rep
+from .resources import adjoint_resource_rep, resource_rep
 
 
-class AdjointDecomp(DecompositionRule):
+class AdjointDecomp(DecompositionRule):  # pylint: disable=too-few-public-methods
     """The adjoint version of a decomposition rule."""
 
     def __init__(self, base_decomposition: DecompositionRule):
         self._base_decomposition = base_decomposition
-        super().__init__(self._get_impl())
+        super().__init__(self._get_impl(), self._get_resource_fn())
 
     def _get_impl(self):
         """The implementation of the adjoint of a gate."""
 
-        def _impl(*_, base):
-            qml.adjoint(self._base_decomposition.impl)(
+        def _impl(*_, base, **__):
+            qml.adjoint(self._base_decomposition._impl)(  # pylint: disable=protected-access
                 *base.parameters, base.wires, **base.hyperparameters
             )
 
         return _impl
 
-    def compute_resources(self, base_class, base_params) -> Resources:
-        """Compute the resources of the adjoint of a gate."""
-        base_resources = self._base_decomposition.compute_resources(*base_params)
-        base_gate_counts = base_resources.gate_counts
-        gate_counts = {
-            adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
-            for decomp_op, count in base_gate_counts.items()
-        }
-        return Resources(base_resources.num_gates, gate_counts)
+    def _get_resource_fn(self):
+        """The resource function of the adjoint of a gate."""
+
+        def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
+            base_resources = self._base_decomposition.compute_resources(**base_params)
+            return {
+                adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
+                for decomp_op, count in base_resources.gate_counts.items()
+            }
+
+        return _resource_fn
 
 
 def _same_type_adjoint_resource(base_class, base_params):
@@ -59,21 +62,21 @@ def _same_type_adjoint_resource(base_class, base_params):
 
 
 @register_resources(_same_type_adjoint_resource)
-def has_adjoint_decomp(*_, base):
+def has_adjoint_decomp(*_, base, **__):
     """Decompose the adjoint of a gate whose adjoint is an instance of its own type."""
     base.adjoint()
 
 
-def _adjoint_adjoint_resource(_, base_params):
+def _adjoint_adjoint_resource(*_, base_params, **__):
     """Resources of the adjoint of the adjoint of a gate."""
     base_class, base_params = base_params["base_class"], base_params["base_params"]
     return {resource_rep(base_class, **base_params): 1}
 
 
 @register_resources(_adjoint_adjoint_resource)
-def adjoint_adjoint_decomp(*_, base):
+def adjoint_adjoint_decomp(*_, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    qml.pytrees.unflatten(*qml.pytrees.flatten(base.base))
+    base.base._unflatten(*base.base._flatten())  # pylint: disable=protected-access
 
 
 def _adjoint_controlled_resource(base_class, base_params):
@@ -113,7 +116,7 @@ def _adjoint_controlled_resource(base_class, base_params):
 
 
 @register_resources(_adjoint_controlled_resource)
-def adjoint_controlled_decomp(*_, base):
+def adjoint_controlled_decomp(*_, base, **__):
     """Decompose the adjoint of a controlled gate whose base has adjoint.
 
     Precondition:
