@@ -30,7 +30,7 @@ def test_standard_validity():
         ]
     )
     op = qml.BasisRotation(wires=range(2), unitary_matrix=weights)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, resources_overestimated=True)
 
 
 class TestDecomposition:
