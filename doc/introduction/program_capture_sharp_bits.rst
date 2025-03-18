@@ -350,6 +350,25 @@ As a workaround, use a regular Python function:
 >>> circuit()
 Array([1.+0.j, 0.+0.j], dtype=complex64)
 
+Calculating operator matrices in QNodes
+---------------------------------------
+
+The matrix of an operator cannot be computed with :func:`~.pennylane.matirx` within
+a QNode, and will raise an error:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        mat = qml.matrix(qml.X(0))
+        return qml.state()
+
+>>> circuit()
+...
+TransformError: Input is not an Operator, tape, QNode, or quantum function
+
 Section title 
 -------------
 
