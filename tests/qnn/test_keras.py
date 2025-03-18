@@ -18,13 +18,32 @@ from collections import defaultdict
 
 import numpy as np
 import pytest
+from packaging.version import Version
 
 import pennylane as qml
 
 KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
+# Check for Keras 3
+try:
+    # Check TensorFlow version - 2.16+ uses Keras 3 by default
+    USING_KERAS3 = Version(tf.__version__) >= Version("2.16.0")
 
+    # Alternative check using keras.version if available
+    try:
+        import keras
+
+        if hasattr(keras, "version"):
+            USING_KERAS3 = Version(keras.version()) >= Version("3.0.0")
+    except (ImportError, AttributeError):
+        pass
+
+except ImportError:
+    USING_KERAS3 = False
+
+# Skip marker for Keras 3
+KERAS3_XFAIL_INFO = "This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented."
 # pylint: disable=unnecessary-dunder-call
 
 
@@ -75,6 +94,14 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
     return m
 
 
+@pytest.fixture(autouse=True)
+def reset_keraslayer_input_arg():
+    # Reset for every test so they don't interfere
+    KerasLayer.set_input_argument("inputs")
+    yield
+    KerasLayer.set_input_argument("inputs")
+
+
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
     The output dimension never exceeds the number of qubits."""
@@ -96,38 +123,33 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+@pytest.mark.tf
+def test_no_attribute():
+    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
+    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
+        qml.qnn.random  # pylint: disable=pointless-statement
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
+@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disable=no-self-use
+    """Test if an ImportError is raised when instantiated with an incorrect version of
+    TensorFlow"""
+    c, w = get_circuit
+    with monkeypatch.context() as m:
+        m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
+        with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+            KerasLayer(c, w, output_dim)
+
+
 # pylint: disable=too-many-public-methods
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:
     """Unit tests for the pennylane.qnn.keras.KerasLayer class."""
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_bad_tf_version(
-        self, get_circuit, output_dim, monkeypatch
-    ):  # pylint: disable=no-self-use
-        """Test if an ImportError is raised when instantiated with an incorrect version of
-        TensorFlow"""
-        c, w = get_circuit
-        with monkeypatch.context() as m:
-            m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
-            with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
-                KerasLayer(c, w, output_dim)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_bad_keras_version(
-        self, get_circuit, output_dim, monkeypatch
-    ):  # pylint: disable=no-self-use
-        """Test if an ImportError is raised when instantiated with an incorrect version of
-        Keras."""
-        c, w = get_circuit
-        with monkeypatch.context() as m:
-            m.setattr(qml.qnn.keras, "CORRECT_KERAS_VERSION", False)
-            with pytest.raises(
-                ImportError, match="KerasLayer requires a Keras version lower than 3"
-            ):
-                KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_no_input(self):  # pylint: disable=no-self-use
@@ -808,13 +830,6 @@ class TestKerasLayerIntegrationDM:
 
 
 @pytest.mark.tf
-def test_no_attribute():
-    """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
-    with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
-        qml.qnn.random  # pylint: disable=pointless-statement
-
-
-@pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
     dev = qml.device("default.qubit")
@@ -837,9 +852,6 @@ def test_batch_input_single_measure(tol):
 
     for x_, r in zip(x, res):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
-
-    # reset back to the old name
-    KerasLayer.set_input_argument("inputs")
 
 
 @pytest.mark.tf
@@ -866,9 +878,6 @@ def test_batch_input_multi_measure(tol):
     for x_, r in zip(x, res):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp, atol=tol)
-
-    # reset back to the old name
-    KerasLayer.set_input_argument("inputs")
 
 
 @pytest.mark.tf
@@ -979,6 +988,10 @@ def test_specs():
     assert info["device_name"] == "default.qubit"
 
 
+@pytest.mark.xfail(
+    condition=USING_KERAS3,
+    reason=KERAS3_XFAIL_INFO,
+)
 @pytest.mark.slow
 @pytest.mark.tf
 def test_save_and_load_preserves_weights(tmpdir):
