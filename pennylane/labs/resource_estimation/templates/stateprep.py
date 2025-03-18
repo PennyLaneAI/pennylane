@@ -123,6 +123,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 

@@ -234,4 +234,6 @@ from .templates import (
     ResourceSuperposition,
     ResourceQROMStatePreparation,
     ResourceQubitUnitary,
+    ResourceQSVT,
+    ResourcePCPhase
 )

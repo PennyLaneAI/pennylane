@@ -929,7 +929,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
           :math:`36n - 111` :code:`CNOT` gates if there is one work wire. Otherwise, we use
           the waterfall construction described in `Encoding Electronic Spectra in Quantum
           Circuits with Linear T Complexity <https://arxiv.org/pdf/1805.03662>`_. The resources
-          are given as :math:`2n - 3` :code:`Toffoli` gates  if there are :math:`n - 2` work wires.
+          are given as :math:`2n - 3` :code:`Toffoli` gates  if there is one clean work wire.
     """
 
     @staticmethod
@@ -962,7 +962,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             * If there are more than three control qubits (:math:`n`), the resources are given by
             :math:`36n - 111` :class:`~.ResourceCNOT` gates.
         """
-        gate_types = {}
+        gate_types = defaultdict(int)
 
         x = re.ResourceX.resource_rep()
         if num_ctrl_values:
@@ -986,15 +986,20 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 3
             return gate_types
 
-        if num_ctrl_wires > 3:
-            if num_work_wires >= (num_ctrl_wires - 2):
-                gate_types[toffoli] = 2 * num_ctrl_wires - 3
-                return gate_types
+        if num_ctrl_wires > 3 and num_work_wires >= 1:
+            # if num_work_wires >= (num_ctrl_wires - 2):  
+            #     gate_types[toffoli] = 2 * num_ctrl_wires - 3
+            #     return gate_types
 
-            gate_types[cnot] = 36 * num_ctrl_wires - 111
+            # gate_types[cnot] = 36 * num_ctrl_wires - 111
+            # return gate_types
+            
+            gate_types[toffoli] = 2 * num_ctrl_wires - 3  # rise of conditionally clean ancilla 
             return gate_types
 
-        raise re.ResourcesNotDefined
+        gate_types[cnot] = 36 * num_ctrl_wires - 111
+        return gate_types
+        # raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:

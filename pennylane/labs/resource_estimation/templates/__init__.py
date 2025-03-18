@@ -32,6 +32,8 @@ from .subroutines import (
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
 
+from .qsvt import ResourcePCPhase, ResourceQSVT
+
 from .stateprep import (
     ResourceSuperposition,
     ResourceStatePrep,
