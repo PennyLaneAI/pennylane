@@ -26,23 +26,40 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
-def get_bloq_registers_info(bloq):
-    """Returns a ``qml.registers`` object associated with all named and unnamed registers and wires
-    in the bloq.
+def bloq_registers(bloq):
+    """Returns a ``qml.registers`` object that assigns wires to registers according to the input
+    bloq's signature.
+
+    .. note::
+        This function requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install git+https://github.com/quantumlib/Qualtran.git
+
+    By default, the keys of the ``qml.registers`` object are the default Qualtran register names
+    and the values are ``Wires`` objects with a length of the total bitsize of its respective
+    register. The wires are indexed in ascending order, starting from 0.
+
+    This function is best used for when one wants to manually access the wires that a Bloq acts on.
+    For example, typically one wants to measure the estimation wires of QPE. To find the wires that
+    the represent those wires, one can use this function as shown in the example.
 
     Args:
         bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
 
     Returns:
-        dict: A dictionary that has all the named and un-named registers with default wire
-        ordering.
+        dict: A dictionary built with information from the bloq's signature. The dictionary keys
+            are strings that come from the names of the bloq's registers. The values are ``Wires``
+            objects that are determined by the bitsizes of those same registers.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
 
     **Example**
 
-    Given a qualtran bloq:
+    Given a Qualtran bloq:
 
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
     >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
@@ -71,7 +88,7 @@ class FromBloq(Operation):
     as a PennyLane :class:`~.Operation`.
 
     .. note::
-        This class requires the latest version of qualtran. We recommend installing the main
+        This class requires the latest version of Qualtran. We recommend installing the main
         branch via ``pip``:
 
         .. code-block:: console
@@ -81,14 +98,14 @@ class FromBloq(Operation):
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
         wires (WiresLike): The wires the operator acts on. The number of wires required can be determined by using the
-            signature of the ``Bloq``, ``bloq.signature.n_qubits()``.
+            signature of the ``bloq``, ``bloq.signature.n_qubits()``.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
 
     **Example**
 
-    Given a qualtran bloq:
+    Given a Qualtran bloq:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
     >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
@@ -142,7 +159,7 @@ class FromBloq(Operation):
         FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
 
-        This behaviour results from the decomposition of ``CZPowGate`` as defined in qualtran,
+        This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
         which allocates and frees a wire all in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
         named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
