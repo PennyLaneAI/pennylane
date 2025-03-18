@@ -403,6 +403,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_differentiation=False,
+    skip_new_decomp=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
@@ -416,6 +417,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
             the operator is parametrized but not differentiable.
+        skip_new_decomp: If ``True``, the new decomposition tests are not run.
 
     **Examples:**
 
@@ -465,8 +467,8 @@ def assert_valid(
         _check_pickle(op)
     _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping)
-    _check_decomposition_new(op)
-
+    if not skip_new_decomp:
+        _check_decomposition_new(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

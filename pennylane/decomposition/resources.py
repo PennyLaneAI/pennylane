@@ -345,7 +345,7 @@ def pow_resource_rep(base_class, base_params, z):
 
     """
     if not isinstance(z, int) or z < 0:
-        raise NotImplementedError(f"Non-integer powers and negative powers are not supported yet.")
+        raise NotImplementedError("Non-integer powers and negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,
