@@ -14,6 +14,8 @@
 """
 Integration tests for the capture of pennylane operations into jaxpr.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
@@ -132,7 +134,19 @@ def test_hybrid_capture_parametrization():
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
 @pytest.mark.parametrize(
-    "w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}, jax.numpy.array(0), jax.numpy.array([0]))
+    "w",
+    (
+        0,
+        (0,),
+        [0],
+        range(1),
+        qml.wires.Wires(0),
+        {0},
+        jax.numpy.array(0),
+        jax.numpy.array([0]),
+        np.array(0),
+        np.array([0]),
+    ),
 )
 def test_different_wires(w, as_kwarg):
     """Test that wires can be passed positionally and as a keyword in a variety of different types."""
@@ -172,14 +186,15 @@ def test_different_wires(w, as_kwarg):
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-def test_ndarray_multiple_wires(as_kwarg):
+@pytest.mark.parametrize("interface", ("numpy", "jax"))
+def test_ndarray_multiple_wires(as_kwarg, interface):
     """Test that wires can be provided as an ndarray."""
 
     def qfunc():
         if as_kwarg:
-            qml.GroverOperator(wires=jax.numpy.arange(4))
+            qml.GroverOperator(wires=qml.math.arange(4, like=interface))
         else:
-            qml.GroverOperator(jax.numpy.arange(4))
+            qml.GroverOperator(qml.math.arange(4, like=interface))
 
     jaxpr = jax.make_jaxpr(qfunc)()
 

@@ -697,14 +697,23 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         import jax  # pylint: disable=import-outside-toplevel
 
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set, jax.numpy.ndarray)
+        array_types = (jax.numpy.ndarray, np.ndarray)
+        iterable_wires_types = (
+            list,
+            tuple,
+            qml.wires.Wires,
+            range,
+            set,
+            jax.numpy.ndarray,
+            np.ndarray,
+        )
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
         # Stick `n_wires` as a keyword argument so we have enough information to repack them during
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            if isinstance(wires, jax.numpy.ndarray) and wires.shape == ():
+            if isinstance(wires, array_types) and wires.shape == ():
                 wires = (wires,)
             elif isinstance(wires, iterable_wires_types):
                 wires = tuple(wires)
@@ -712,7 +721,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
-        elif args and isinstance(args[-1], jax.numpy.ndarray) and args[-1].shape == ():
+        elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
             wires = tuple(args[-1])
