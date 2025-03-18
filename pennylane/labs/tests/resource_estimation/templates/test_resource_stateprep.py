@@ -300,7 +300,7 @@ class TestResourceSuperposition:
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourceSuperposition.tracking_name() == f"Superposition"
+        assert re.ResourceSuperposition.tracking_name() == "Superposition"
 
 
 class TestResourceMottonenStatePreparation:

@@ -322,7 +322,7 @@ class TestPhaseAdder:
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourcePhaseAdder.tracking_name() == f"PhaseAdder"
+        assert re.ResourcePhaseAdder.tracking_name() == "PhaseAdder"
 
 
 class TestResourceMultiplier:
@@ -472,7 +472,7 @@ class TestResourceMultiplier:
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourceMultiplier.tracking_name() == f"Multiplier"
+        assert re.ResourceMultiplier.tracking_name() == "Multiplier"
 
 
 class TestResourceModExp:
@@ -584,7 +584,7 @@ class TestResourceModExp:
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourceModExp.tracking_name() == f"ModExp"
+        assert re.ResourceModExp.tracking_name() == "ModExp"
 
 
 class TestResourceQROM:
@@ -1061,5 +1061,5 @@ class TestResourceAmplitudeAmplification:
             re.ResourceAmplitudeAmplification.tracking_name(
                 U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
             )
-            == f"AmplitudeAmplification"
+            == "AmplitudeAmplification"
         )

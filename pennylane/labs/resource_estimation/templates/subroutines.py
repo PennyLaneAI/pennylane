@@ -538,7 +538,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
         return gate_types
 
     @staticmethod
-    def resources_for_ui(cmpr_ops, **kwargs):
+    def resources_for_ui(cmpr_ops, **kwargs): # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
         The resources are based on the analysis in https://arxiv.org/pdf/1805.03662 section III.A, 'Unary Iteration and Indexed
         Operations'. See Figures 4, 6, and 7.
@@ -937,7 +937,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         size_bitstring,
         clean,
         **kwargs,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]: # pylint: disable=too-many-arguments
         r"""The resources for QROM are taken from the following two papers:
         (https://arxiv.org/pdf/1812.00954, figure 1.c) and
         (https://arxiv.org/pdf/1902.02134, figure 4).
@@ -1014,7 +1014,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     @classmethod
     def resource_rep(
         cls, num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
-    ) -> CompressedResourceOp:
+    ) -> CompressedResourceOp: # pylint: disable=too-many-arguments
         params = {
             "num_bitstrings": num_bitstrings,
             "num_bit_flips": num_bit_flips,
@@ -1040,7 +1040,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         num_ref_wires,
         fixed_point,
         **kwargs,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]: # pylint: disable=too-many-arguments
         r"""The resources for Amplitude Amplifcation are according to the decomposition found
         in qml.AmplitudeAmplification.
         """
@@ -1098,7 +1098,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     @classmethod
     def resource_rep(
         cls, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
-    ) -> CompressedResourceOp:
+    ) -> CompressedResourceOp: # pylint: disable=too-many-arguments
         params = {
             "U_op": U_op,
             "U_params": U_params,

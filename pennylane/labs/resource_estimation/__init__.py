@@ -126,7 +126,6 @@ State Preparation Templates
     :toctree: api
 
     ~ResourceBasisState
-    ~ResourceBasisState
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
