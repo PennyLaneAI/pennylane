@@ -208,7 +208,7 @@ class FromBloq(Operation):
     @staticmethod
     def compute_decomposition(
         wires, bloq
-    ):  # pylint: disable=arguments-differ, unused-argument, too-many-branches, too-many-statements
+    ):  # pylint: disable=arguments-differ, unused-argument, too-many-statements
         ops = []
 
         if len(wires) != bloq.signature.n_qubits():
