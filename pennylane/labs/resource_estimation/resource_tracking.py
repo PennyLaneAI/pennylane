@@ -154,20 +154,28 @@ def get_resources(
 
 
 @get_resources.register
+def resources_from_resource_op(
+    obj: ResourceOperator, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+) -> Resources:
+    """Get resources from an operation"""
+    cp_rep = obj.resource_rep_from_op()
+
+    gate_counts_dict = defaultdict(int)
+    _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
+    gate_types = _clean_gate_counts(gate_counts_dict)
+
+    n_gates = sum(gate_types.values())
+    return Resources(num_wires=len(obj.wires), num_gates=n_gates, gate_types=gate_types)
+
+
+@get_resources.register
 def resources_from_operation(
     obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from an operation"""
 
     if isinstance(obj, ResourceOperator):
-        cp_rep = obj.resource_rep_from_op()
-
-        gate_counts_dict = defaultdict(int)
-        _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
-        gate_types = _clean_gate_counts(gate_counts_dict)
-
-        n_gates = sum(gate_types.values())
-        return Resources(num_wires=len(obj.wires), num_gates=n_gates, gate_types=gate_types)
+        return resources_from_resource_op(obj, gate_set=gate_set, config=config)
 
     res = Resources()  # TODO: Add implementation here!
     return res

@@ -15,7 +15,9 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict
+from typing import TYPE_CHECKING, Callable, Dict, Literal
+
+from pennylane.queuing import QueuingManager
 
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
@@ -140,6 +142,25 @@ class ResourceOperator(ABC):
     def tracking_name_from_op(self) -> str:
         """Returns the tracking name built with the operator's parameters."""
         return self.__class__.tracking_name(**self.resource_params)
+
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.append(self)
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+
+    @property
+    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Options are:
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
+        """
+        return "_ops"
 
 
 class ResourcesNotDefined(Exception):
