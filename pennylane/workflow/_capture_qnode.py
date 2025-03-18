@@ -202,7 +202,7 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
 
     device_program, config = device.preprocess(execution_config)
     if device_program:
-        if batch_dims:
+        if batch_dims is not None:
             temp_all_args = []
             for a, d in zip(args, batch_dims, strict=True):
                 if d is not None:
