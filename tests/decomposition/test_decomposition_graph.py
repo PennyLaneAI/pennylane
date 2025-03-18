@@ -25,6 +25,7 @@ from conftest import decompositions, to_resources
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.decomposition_graph import DecompositionError
+from pennylane.decomposition.symbolic_decomposition import pow_decomp
 
 
 @patch(
@@ -367,7 +368,27 @@ class TestSymbolicDecompositions:
         assert q.queue == [qml.RX(0.5, wires=[0])]
         assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
 
-    def test_custom_adjoint(self, _):
+    def test_adjoint_pow(self, _):
+        """tests that an adjoint of a power of am operator that has adjoint is decomposed."""
+
+        op = qml.adjoint(qml.pow(qml.H(0), z=3))
+
+        graph = DecompositionGraph(operations=[op], target_gate_set={"Hadamard"})
+        # 3 operator nodes: Adjoint(Pow(H)), Pow(H), and H
+        # 2 decomposition nodes for Adjoint(Pow(H)) and Pow(H)
+        assert len(graph._graph.nodes()) == 5
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.pow(qml.H(0), z=3)]
+        # TODO: There should just be a single `H` after we have full support of Pow decompositions.
+        assert graph.resource_estimate(op) == to_resources({qml.H: 3})
+
+    def test_adjoint_custom(self, _):
         """Tests adjoint of an operator that defines its own adjoint."""
 
         op = qml.adjoint(qml.RX(0.5, wires=[0]))
@@ -384,7 +405,7 @@ class TestSymbolicDecompositions:
         assert q.queue == [qml.RX(-0.5, wires=[0])]
         assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
 
-    def test_controlled_adjoint(self, _):
+    def test_adjoint_controlled(self, _):
         """Tests that the adjoint of a controlled operator is decomposed properly."""
 
         op = qml.adjoint(qml.ops.Controlled(qml.RX(0.5, wires=[0]), control_wires=1))
@@ -459,3 +480,28 @@ class TestSymbolicDecompositions:
         assert graph.resource_estimate(op) == to_resources(
             {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1}
         )
+
+    def test_pow_pow(self, _):
+        """Tests nested power decompositions."""
+
+        op = qml.pow(qml.pow(qml.H(0), 3), 2)
+        graph = DecompositionGraph(operations=[op], target_gate_set={"Hadamard"})
+        # 3 operator nodes: Pow(Pow(H)), Pow(H), and H
+        # 2 decomposition nodes for Pow(Pow(H)) and Pow(H)
+        assert len(graph._graph.nodes()) == 5
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.pow(qml.H(0), 6)]
+        assert graph.resource_estimate(op) == to_resources({qml.H: 6})
+
+        op2 = qml.pow(qml.H(0), 6)
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [qml.H(0), qml.H(0), qml.H(0), qml.H(0), qml.H(0), qml.H(0)]
+        assert graph.resource_estimate(op2) == to_resources({qml.H: 6})

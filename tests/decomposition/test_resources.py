@@ -20,8 +20,10 @@ import pennylane as qml
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,
+    pow_resource_rep,
     resource_rep,
 )
 
@@ -369,7 +371,7 @@ class TestSymbolicResourceRep:
     def test_adjoint_resource_rep(self):
         """Tests creating the resource rep of the adjoint of an operator."""
 
-        rep = qml.adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
+        rep = adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
         assert rep == CompressedResourceOp(
             qml.ops.Adjoint, {"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
         )
@@ -387,12 +389,12 @@ class TestSymbolicResourceRep:
         """Tests that an error is raised when base op and base params mismatch."""
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
-            qml.adjoint_resource_rep(DummyOp, {})
+            adjoint_resource_rep(DummyOp, {})
 
     def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
         """Tests that the adjoint of a nested controlled op is flattened."""
 
-        rep = qml.adjoint_resource_rep(
+        rep = adjoint_resource_rep(
             qml.ops.Adjoint,
             {
                 "base_class": qml.ops.Controlled,
@@ -426,7 +428,7 @@ class TestSymbolicResourceRep:
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = qml.adjoint_resource_rep(base_class=op_type, base_params={})
+            rep = adjoint_resource_rep(base_class=op_type, base_params={})
             assert rep == CompressedResourceOp(
                 qml.ops.Adjoint,
                 {
@@ -434,3 +436,20 @@ class TestSymbolicResourceRep:
                     "base_params": {},
                 },
             )
+
+    def test_pow_resource_rep(self):
+        """Tests the pow_resource_rep utility function."""
+
+        rep = pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3)
+        assert rep == CompressedResourceOp(
+            qml.ops.Pow, {"base_class": qml.MultiRZ, "base_params": {"num_wires": 3}, "z": 3}
+        )
+
+        op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
+        assert op.resource_params == rep.params
+
+    def test_non_integer_pow_not_supported(self):
+        """Tests that non-integer power is not supported yet."""
+
+        with pytest.raises(NotImplementedError, match="Non-integer powers"):
+            pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)

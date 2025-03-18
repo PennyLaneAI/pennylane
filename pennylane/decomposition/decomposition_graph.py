@@ -218,7 +218,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             rule = adjoint_adjoint_decomp
             return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
 
-        if issubclass(base_class, qml.ops.Pow):
+        if issubclass(base_class, qml.ops.Pow) and base_params["base_class"] in has_adjoint_ops():
             rule = adjoint_pow_decomp
             return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
 

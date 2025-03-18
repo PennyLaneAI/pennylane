@@ -17,12 +17,15 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.resources import Resources
+from pennylane.decomposition.resources import Resources, pow_resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     AdjointDecomp,
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
+    adjoint_pow_decomp,
     has_adjoint_decomp,
+    pow_decomp,
+    pow_pow_decomp,
 )
 from tests.decomposition.conftest import to_resources
 
@@ -181,3 +184,70 @@ class TestAdjointDecompositionRules:
                 qml.adjoint_resource_rep(qml.H): 1,
             }
         )
+
+    def test_adjoint_pow(self):
+        """Tests decomposing the adjoint of a Pow of an operator that has adjoint."""
+
+        op = qml.adjoint(qml.pow(qml.H(0), 3))
+        with qml.queuing.AnnotatedQueue() as q:
+            adjoint_pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.pow(qml.H(0), 3)]
+        assert adjoint_pow_decomp.compute_resources(**op.resource_params) == to_resources(
+            {pow_resource_rep(qml.H, {}, 3): 1}
+        )
+
+
+class TestPowDecomposition:
+    """Tests the decomposition rule defined for Pow."""
+
+    def test_pow_pow(self):
+        """Test the decomposition rule for nested powers."""
+
+        op = qml.pow(qml.pow(qml.H(0), 3), 2)
+        with qml.queuing.AnnotatedQueue() as q:
+            pow_pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.pow(qml.H(0), 6)]
+        assert pow_pow_decomp.compute_resources(**op.resource_params) == to_resources(
+            {pow_resource_rep(qml.H, {}, 6): 1}
+        )
+
+    def test_pow_general(self):
+        """Tests repeating the same op z number of times."""
+
+        op = qml.pow(qml.H(0), 3)
+        with qml.queuing.AnnotatedQueue() as q:
+            pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.H(0), qml.H(0), qml.H(0)]
+        assert pow_decomp.compute_resources(**op.resource_params) == to_resources({qml.H: 3})
+
+    @pytest.mark.jax
+    def test_pow_general_capture(self):
+        """Tests that the general pow decomposition works with capture."""
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        op = qml.pow(qml.H(0), 3)
+
+        capture_enabled = qml.capture.enabled()
+        qml.capture.enable()
+
+        def circuit():
+            pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        plxpr = qml.capture.make_plxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [qml.H(0), qml.H(0), qml.H(0)]
+
+        if not capture_enabled:
+            qml.capture.disable()
+
+    def test_non_integer_pow_not_implemented(self):
+        """Tests that NotImplementedError is raised when z isn't a positive integer."""
+
+        op = qml.pow(qml.H(0), 0.5)
+        with pytest.raises(NotImplementedError, match="Non-integer or negative powers"):
+            pow_decomp.compute_resources(**op.resource_params)

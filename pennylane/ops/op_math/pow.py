@@ -131,7 +131,7 @@ class Pow(ScalarSymbolicOp):
 
     """
 
-    resource_param_keys = ("base_class", "base_params", "z")
+    resource_keys = {"base_class", "base_params", "z"}
 
     def _flatten(self):
         return (self.base, self.z), tuple()
