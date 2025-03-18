@@ -258,8 +258,8 @@ class TestFromBloq:
             ),
         )
 
-    def test_get_bloq_registers_info(self):
-        """Tests that get_bloq_registers_info returns the expected dictionary with the correct
+    def test_bloq_registers(self):
+        """Tests that bloq_registers returns the expected dictionary with the correct
         registers and wires."""
 
         from qualtran import BloqBuilder, QUInt
@@ -268,7 +268,7 @@ class TestFromBloq:
         from pennylane.wires import Wires
 
         with pytest.raises(TypeError, match="bloq must be an instance of"):
-            qml.get_bloq_registers_info("123")
+            qml.bloq_registers("123")
 
         bb = BloqBuilder()
 
@@ -293,6 +293,6 @@ class TestFromBloq:
             "p1p2": Wires([12, 13, 14, 15, 16, 17]),
             "p1p2_plus_q1q2": Wires([18, 19, 20, 21, 22, 23]),
         }
-        actual = qml.get_bloq_registers_info(circuit_bloq)
+        actual = qml.bloq_registers(circuit_bloq)
 
         assert actual == expected
