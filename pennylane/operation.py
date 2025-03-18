@@ -694,19 +694,30 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set, jax.numpy.ndarray)
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
         # Stick `n_wires` as a keyword argument so we have enough information to repack them during
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            if isinstance(wires, jax.numpy.ndarray) and wires.shape == ():
+                wires = (wires,)
+            elif isinstance(wires, iterable_wires_types):
+                wires = tuple(wires)
+            else:
+                wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+        elif args and isinstance(args[-1], jax.numpy.ndarray) and args[-1].shape == ():
+            kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
-            kwargs["n_wires"] = len(args[-1])
-            args = args[:-1] + tuple(args[-1])
+            wires = tuple(args[-1])
+            kwargs["n_wires"] = len(wires)
+            args = args[:-1] + wires
         else:
             kwargs["n_wires"] = 1
         return cls._primitive.bind(*args, **kwargs)

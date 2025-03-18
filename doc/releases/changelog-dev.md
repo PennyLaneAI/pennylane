@@ -284,6 +284,8 @@
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
+* Improves support for specifying wires as jax numpy arrays when program capture is enabled.
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
