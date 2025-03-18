@@ -231,9 +231,9 @@ def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
 
-        Alternatively, use the helper functions :func:`~pennylane.controlled_resource_rep`:
+        Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
-        >>> qml.controlled_resource_rep(
+        >>> qml.decomposition.controlled_resource_rep(
         ...     base_class=qml.ops.MultiRZ,
         ...     base_params={'num_wires': 3},
         ...     num_control_wires=2,
@@ -242,7 +242,7 @@ def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
 
-        .. seealso:: :func:`~pennylane.controlled_resource_rep` and :func:`~pennylane.adjoint_resource_rep`
+        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep` and :func:`~pennylane.decomposition.adjoint_resource_rep`
 
     """
     _validate_resource_rep(op, params)

@@ -34,10 +34,7 @@ from pennylane.decomposition import (
     register_resources,
     add_decomps,
     list_decomps,
-    has_decomp,
     resource_rep,
-    controlled_resource_rep,
-    adjoint_resource_rep,
 )
 import pennylane.qnn
 import pennylane.templates
