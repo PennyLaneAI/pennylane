@@ -341,3 +341,121 @@ class TestControlledDecompositions:
         assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1]))
         assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
         assert graph.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))
+
+
+@patch(
+    "pennylane.decomposition.decomposition_graph.list_decomps",
+    side_effect=lambda x: decompositions[x],
+)
+class TestSymbolicDecompositions:
+    """Tests decompositions of symbolic ops."""
+
+    def test_adjoint_adjoint(self, _):
+        """Tests that a nested adjoint operator is flattened properly."""
+
+        op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=[0])))
+
+        graph = DecompositionGraph(operations=[op], target_gate_set={"RX"})
+        # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
+        assert len(graph._graph.nodes()) == 3
+        assert len(graph._graph.edges()) == 2
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.RX(0.5, wires=[0])]
+        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+
+    def test_custom_adjoint(self, _):
+        """Tests adjoint of an operator that defines its own adjoint."""
+
+        op = qml.adjoint(qml.RX(0.5, wires=[0]))
+
+        graph = DecompositionGraph(operations=[op], target_gate_set={"RX"})
+        # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node.
+        assert len(graph._graph.nodes()) == 3
+        assert len(graph._graph.edges()) == 2
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.RX(-0.5, wires=[0])]
+        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+
+    def test_controlled_adjoint(self, _):
+        """Tests that the adjoint of a controlled operator is decomposed properly."""
+
+        op = qml.adjoint(qml.ops.Controlled(qml.RX(0.5, wires=[0]), control_wires=1))
+        op2 = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=[1]))
+
+        graph = DecompositionGraph(
+            operations=[op, op2], target_gate_set={"ControlledPhaseShift", "CRX"}
+        )
+        # 5 operator nodes: Adjoint(C(RX)), Adjoint(C(U1)), CRX, C(U1), ControlledPhaseShift
+        # 3 decomposition nodes leading into Adjoint(C(RX)), Adjoint(C(U1)), and C(U1)
+        assert len(graph._graph.nodes()) == 8
+        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 6
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [qml.CRX(-0.5, wires=[1, 0]), qml.ctrl(qml.U1(-0.5, wires=0), control=1)]
+
+        op3 = qml.ctrl(qml.U1(-0.5, wires=0), control=1)
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+
+        assert q.queue == [qml.ControlledPhaseShift(-0.5, wires=[1, 0])]
+        assert graph.resource_estimate(op2) == to_resources({qml.ControlledPhaseShift: 1})
+
+    def test_adjoint_general(self, _):
+        """Tests decomposition of a generalized adjoint operation."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
+        def custom_decomp(phi, wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires[:2])
+            qml.RX(phi, wires=wires[1])
+            qml.CNOT(wires=wires[1:3])
+            qml.T(wires[2])
+
+        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        graph = DecompositionGraph(
+            operations=[op],
+            target_gate_set={"Hadamard", "CNOT", "RX", "PhaseShift"},
+            alt_decomps={CustomOp: [custom_decomp]},
+        )
+        # 10 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX, A(PhaseShift), PhaseShift
+        # 6 decomposition nodes for: A(CustomOp), A(H), A(CNOT), A(RX), A(T), A(PhaseShift)
+        assert len(graph._graph.nodes()) == 16
+        # 9 edges from ops to decompositions and 6 edges from decompositions to ops.
+        assert len(graph._graph.edges()) == 15
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [
+            qml.adjoint(qml.T(2)),
+            qml.adjoint(qml.CNOT(wires=[1, 2])),
+            qml.adjoint(qml.RX(0.5, wires=1)),
+            qml.adjoint(qml.CNOT(wires=[0, 1])),
+            qml.adjoint(qml.H(wires=0)),
+        ]
+        assert graph.resource_estimate(op) == to_resources(
+            {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1}
+        )
