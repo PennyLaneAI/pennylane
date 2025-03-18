@@ -1145,7 +1145,7 @@ class MultiControlledX(ControlledOp):
         work_wire_type (str): whether the work wires are 'clean' or 'dirty'. 'clean' indicates that
             the work wires are in the state :math:`|0\rangle`, while 'dirty' indicates that the
             work wires are in an arbitrary state. Defaults to 'clean'.
-        
+
 
 
     .. note::
@@ -1195,13 +1195,24 @@ class MultiControlledX(ControlledOp):
 
     @classmethod
     def _unflatten(cls, _, metadata):
-        return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2], work_wire_type=metadata[3])
+        return cls(
+            wires=metadata[0],
+            control_values=metadata[1],
+            work_wires=metadata[2],
+            work_wire_type=metadata[3],
+        )
 
     # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None):
+    def _primitive_bind_call(
+        cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None
+    ):
         return cls._primitive.bind(
-            *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires, work_wire_type=work_wire_type
+            *wires,
+            n_wires=len(wires),
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
 
     @staticmethod
@@ -1366,7 +1377,9 @@ class MultiControlledX(ControlledOp):
         return flips1 + decomp + flips2
 
     def decomposition(self):
-        return self.compute_decomposition(self.wires, self.work_wires, self.control_values)
+        return self.compute_decomposition(
+            self.wires, self.work_wires, self.control_values, self.work_wire_type
+        )
 
 
 class CRX(ControlledOp):
