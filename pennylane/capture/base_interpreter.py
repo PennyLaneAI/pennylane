@@ -437,7 +437,7 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+        return PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
     subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
     return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
