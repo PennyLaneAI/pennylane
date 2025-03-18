@@ -11,8 +11,6 @@ concurrency:
 
 jobs: 
   code_security_scan:
-    needs:
-      - determine_runner
     uses: XanaduAI/cloud-actions/.github/workflows/static_code_vulnerability_analysis.yml@sc-86314-sec-scanning
     with:
       github-repository: ${{ github.repository }}
