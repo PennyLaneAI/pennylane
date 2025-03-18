@@ -71,7 +71,10 @@ a list of known decomposition rules for a given operator.
 Graph-based Decomposition Solver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**The Decomposition Graph**
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionGraph
 
 The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
 algorithm is used to explore the graph and find the most efficient decomposition of a given
