@@ -33,4 +33,4 @@ jobs:
       semgrep-error-on-impact: HIGH
       semgrep-error-on-severity: ERROR
       bandit-error-on-severity: HIGH
-      
+
