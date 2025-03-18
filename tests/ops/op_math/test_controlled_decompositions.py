@@ -1126,7 +1126,7 @@ class TestMCXDecomposition:
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
     def test_decomposition_with_one_dirty_worker_kg24(self, n_ctrl_wires):
-        """Test that the decomposed MCX gate using 1 cirty ancilla performs the same unitary as the
+        """Test that the decomposed MCX gate using 1 dirty ancilla performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
 
