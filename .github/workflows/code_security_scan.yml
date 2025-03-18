@@ -30,7 +30,7 @@ jobs:
       
       # We error out CI if any high severity issues are found
       # All other errors are still printed to logs
-      semgrep-error-on-impact: LOW
-      semgrep-error-on-severity: WARNING
-      bandit-error-on-severity: LOW
+      semgrep-error-on-impact: HIGH
+      semgrep-error-on-severity: ERROR
+      bandit-error-on-severity: HIGH
       
