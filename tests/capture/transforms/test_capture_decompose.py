@@ -304,7 +304,7 @@ class TestDecomposeInterpreter:
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
-        gate_set = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
+        gate_set = [qml.RX, qml.RY, qml.RZ, qml.GlobalPhase, qml.PhaseShift]
 
         @DecomposeInterpreter(gate_set=gate_set)
         def f(x):
@@ -334,22 +334,20 @@ class TestDecomposeInterpreter:
         # True branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
         expected_primitives = [
-            qml.PhaseShift._primitive,
             qml.RX._primitive,
-            qml.PhaseShift._primitive,
+            qml.GlobalPhase._primitive,
             qml.Z._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
-        )
+        ), f"Expected: {expected_primitives}, got: {[eqn.primitive for eqn in branch.eqns]}"
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
         expected_primitives = [
-            qml.PhaseShift._primitive,
             qml.RY._primitive,
-            qml.PhaseShift._primitive,
+            qml.GlobalPhase._primitive,
             qml.Y._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
