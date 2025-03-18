@@ -146,21 +146,6 @@ def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disabl
     c, w = get_circuit
     with monkeypatch.context() as m:
         m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
-        with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
-            KerasLayer(c, w, output_dim)
-
-
-# pylint: disable=too-many-public-methods
-@pytest.mark.tf
-@pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
-@pytest.mark.usefixtures("get_circuit")
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disable=no-self-use
-    """Test if an ImportError is raised when instantiated with an incorrect version of
-    TensorFlow"""
-    c, w = get_circuit
-    with monkeypatch.context() as m:
-        m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
