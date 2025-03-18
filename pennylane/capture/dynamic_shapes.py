@@ -16,10 +16,12 @@ Contains a utility for handling inputs with dynamically shaped arrays.
 """
 from functools import lru_cache
 from string import ascii_lowercase as letters
+from typing import Callable, Sequence, Union
 
 has_jax = True
 try:
     import jax
+    from jax._src.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -113,3 +115,82 @@ def determine_abstracted_axes(args):
         return None, ()
     abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
     return abstracted_axes, abstract_shapes
+
+
+def register_custom_staging_rule(
+    primitive, get_outvars_from_params: Callable[[dict], list["jax.core.Var"]]
+) -> None:
+    """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
+    ``get_outvars_from_params``.
+
+    Args:
+        primitive (jax.core.Primitive): a jax primitive we want to register a custom staging rule for
+        get_outvars_from_params (Callable[[dict], list[jax.core.Var]]): A function that takes in the equation's ``params``
+            and returns ``jax.core.Var`` we need to mimic for the primitives return.
+
+    For example, the ``cond_prim`` will request its custom staging rule like:
+
+    .. code-block:: python
+
+        register_custom_staging_rule(cond_prim, lambda params: params['jaxpr_branches'][0].outvars)
+
+    The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
+
+    """
+    # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
+    # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
+    # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
+    # see also capture/intro_to_dynamic_shapes.md
+
+    def _tracer_and_outvar(
+        jaxpr_trace: pe.DynamicJaxprTrace,
+        outvar: jax.core.Var,
+        env: dict[jax.core.Var, jax.core.Var],
+    ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
+        """
+        Create a new tracer and return var from the true branch outvar.
+        Returned vars are cached in env for use in future shapes
+        """
+        if not hasattr(outvar.aval, "shape"):
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            return out_tracer, jaxpr_trace.makevar(out_tracer)
+        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
+        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        new_var = jaxpr_trace.makevar(out_tracer)
+
+        if not isinstance(outvar, jax.core.Literal):
+            env[outvar] = new_var
+        return out_tracer, new_var
+
+    def custom_staging_rule(
+        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+        """
+        Add new jaxpr equation to the jaxpr_trace and return new tracers.
+        """
+        if not jax.config.jax_dynamic_shapes:
+            # fallback to normal behavior
+            return jaxpr_trace.default_process_primitive(primitive, tracers, params)
+        outvars = get_outvars_from_params(params)
+
+        env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
+        if outvars:
+            out_tracers, returned_vars = tuple(
+                zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
+            )
+        else:
+            out_tracers, returned_vars = (), ()
+
+        invars = [jaxpr_trace.getvar(x) for x in tracers]
+        eqn = pe.new_jaxpr_eqn(
+            invars,
+            returned_vars,
+            primitive,
+            params,
+            jax.core.no_effects,
+        )
+        jaxpr_trace.frame.add_eqn(eqn)
+        return out_tracers
+
+    pe.custom_staging_rules[primitive] = custom_staging_rule

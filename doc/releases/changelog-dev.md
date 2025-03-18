@@ -112,6 +112,9 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+  
+* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
+  [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
@@ -490,6 +493,10 @@
 * A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
+  that return new dynamically shaped arrays.
+  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
 
 * Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
   [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
