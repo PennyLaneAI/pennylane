@@ -91,6 +91,34 @@ def _get_named_registers(registers):
     return qml.registers(temp_register_dict)
 
 
+def _preprocess_bloq(bloq):
+    """Processes a bloq's information to prepare for decomposition"""
+
+    # Bloqs need to be decomposed in order to access the connections
+    cbloq = bloq.decompose_bloq() if not isinstance(bloq, qt.CompositeBloq) else bloq
+    temp_registers = _get_named_registers(cbloq.signature.lefts())
+    soq_to_wires = {
+        qt.Soquet(qt.LeftDangle, idx=idx, reg=reg): (
+            list(temp_registers[reg.name])[idx[0]]
+            if len(idx) == 1
+            else list(temp_registers[reg.name])
+        )
+        for reg in cbloq.signature.lefts()
+        for idx in reg.all_idxs()
+    }
+
+    # This is to track the number of wires defined at the LeftDangle stage
+    # so if we need to add more wires, we know what index to start at
+    soq_to_wires_len = 0
+    if len(soq_to_wires.values()) > 0:
+        soq_to_wires_len = list(soq_to_wires.values())[-1]
+        if not isinstance(soq_to_wires_len, int):
+            soq_to_wires_len = list(soq_to_wires.values())[-1][-1]
+        soq_to_wires_len += 1
+
+    return cbloq, soq_to_wires, soq_to_wires_len
+
+
 class FromBloq(Operation):
     r"""
     An adapter for using a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
@@ -206,9 +234,7 @@ class FromBloq(Operation):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
 
     @staticmethod
-    def compute_decomposition(
-        wires, bloq
-    ):  # pylint: disable=arguments-differ, unused-argument, too-many-statements
+    def compute_decomposition(wires, bloq):
         ops = []
 
         if len(wires) != bloq.signature.n_qubits():
@@ -217,28 +243,7 @@ class FromBloq(Operation):
             )
 
         try:
-            # Bloqs need to be decomposed in order to access the connections
-            cbloq = bloq.decompose_bloq() if not isinstance(bloq, qt.CompositeBloq) else bloq
-            temp_registers = _get_named_registers(cbloq.signature.lefts())
-            soq_to_wires = {
-                qt.Soquet(qt.LeftDangle, idx=idx, reg=reg): (
-                    list(temp_registers[reg.name])[idx[0]]
-                    if len(idx) == 1
-                    else list(temp_registers[reg.name])
-                )
-                for reg in cbloq.signature.lefts()
-                for idx in reg.all_idxs()
-            }
-
-            # This is to track the number of wires defined at the LeftDangle stage
-            # so if we need to add more wires, we know what index to start at
-            soq_to_wires_len = 0
-            if len(soq_to_wires.values()) > 0:
-                soq_to_wires_len = list(soq_to_wires.values())[-1]
-                if not isinstance(soq_to_wires_len, int):
-                    soq_to_wires_len = list(soq_to_wires.values())[-1][-1]
-                soq_to_wires_len += 1
-
+            cbloq, soq_to_wires, soq_to_wires_len = _preprocess_bloq(bloq)
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, qt.bloqs.bookkeeping.Partition):
                     in_quregs = {}
