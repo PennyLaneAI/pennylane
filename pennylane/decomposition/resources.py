@@ -134,7 +134,8 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
+        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
+        return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
 def _make_hashable(d) -> tuple:

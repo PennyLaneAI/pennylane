@@ -85,6 +85,10 @@ class TestResources:
         assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
 
 
+class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+    resource_keys = {"foo", "bar"}
+
+
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
@@ -169,11 +173,10 @@ class TestCompressedResourceOp:
         assert repr(op) == "RX"
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
-        assert repr(op) == "MultiRZ, {'num_wires': 5}"
+        assert repr(op) == "MultiRZ(num_wires=5)"
 
-
-class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-    resource_keys = {"foo", "bar"}
+        op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
+        assert repr(op) == "DummyOp(foo=2, bar=1)"
 
 
 class TestResourceRep:
