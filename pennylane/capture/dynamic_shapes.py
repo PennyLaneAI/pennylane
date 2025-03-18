@@ -52,7 +52,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
-    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(getattr(x, "dtype", None), "int")
+    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(getattr(x, "dtype", None), "int"):
         previous_ints.append(x)
         return {}
 
