@@ -262,6 +262,14 @@ class VibronicMatrix(Fragment):
             ho_states=ho_states,
         )
 
+    def get_coefficients(self, threshold: float = 0.0):
+        """Return the coefficients in a dictionary"""
+        d = {}
+        for i, j in product(range(self.states), repeat=2):
+            d[(i, j)] = self.block(i, j).get_coefficients(threshold)
+
+        return d
+
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
