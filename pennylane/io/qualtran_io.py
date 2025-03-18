@@ -207,12 +207,9 @@ class FromBloq(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params,
-        wires=None,
-        **hyperparameters,
+        wires, bloq
     ):  # pylint: disable=arguments-differ, unused-argument, too-many-branches, too-many-statements
         ops = []
-        bloq = hyperparameters["bloq"]
 
         if len(wires) != bloq.signature.n_qubits():
             raise ValueError(
