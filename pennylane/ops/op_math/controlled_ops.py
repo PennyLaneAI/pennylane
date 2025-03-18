@@ -1142,15 +1142,20 @@ class MultiControlledX(ControlledOp):
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
+        work_wire_type (str): whether the work wires are 'clean' or 'dirty'. 'clean' indicates that
+            the work wires are in the state :math:`|0\rangle`, while 'dirty' indicates that the
+            work wires are in an arbitrary state. Defaults to 'clean'.
+        
 
 
     .. note::
 
         If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
-        three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 and 7.3 of
-        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. These methods
-        require at least one work wire.
+        three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 of
+        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ and Sec 5 of `Khattar and Gidney
+         <https://arxiv.org/abs/2407.17966>`__  will be used. These methods require at least one
+        work wire.
 
         The number of work wires provided determines the decomposition method used and the resulting
         number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
@@ -1158,8 +1163,10 @@ class MultiControlledX(ControlledOp):
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
-        #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
-           will be applied using only the first work wire.
+        #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
+           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
+        #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
+           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
@@ -1184,17 +1191,17 @@ class MultiControlledX(ControlledOp):
     name = "MultiControlledX"
 
     def _flatten(self):
-        return (), (self.wires, tuple(self.control_values), self.work_wires)
+        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
 
     @classmethod
     def _unflatten(cls, _, metadata):
-        return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
+        return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2], work_wire_type=metadata[3])
 
     # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, id=None):
+    def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None):
         return cls._primitive.bind(
-            *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
+            *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires, work_wire_type=work_wire_type
         )
 
     @staticmethod
@@ -1217,9 +1224,11 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike = (),
         control_values: Union[bool, List[bool], int, List[int]] = None,
         work_wires: WiresLike = (),
+        work_wire_type: Literal["clean", "dirty"] = "clean",
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+        self.work_wire_type = work_wire_type
 
         self._validate_control_values(control_values)
 
@@ -1245,6 +1254,7 @@ class MultiControlledX(ControlledOp):
             control_values=control_values,
             work_wires=work_wires,
         )
+        self._hyperparameters["work_wire_type"] = work_wire_type
 
     def __repr__(self):
         return (
