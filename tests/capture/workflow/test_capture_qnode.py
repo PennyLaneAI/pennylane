@@ -396,7 +396,7 @@ class TestDevicePreprocessing:
             outcome = -2 * postselect + 1 if postselect else 0
             assert qml.math.allclose(circuit()["expval"], [1, outcome])
         else:
-            shots_res = circuit()["state"]
+            shots_res = circuit()["samples"]
             if postselect:
                 # After post selection and reset (on the first bit)
                 # the valid sample is *only* [0, 1] (~shots/2 for bell state)
