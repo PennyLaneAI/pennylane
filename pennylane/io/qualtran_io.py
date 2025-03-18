@@ -64,12 +64,20 @@ def bloq_registers(bloq):
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
     >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
     >>> qml.get_bloq_registers_info(textbook_qpe_small)
-    {'qpe_reg': Wires([0, 1, 2]), 'q': Wires([3])}
+    {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
     """
+    from collections import defaultdict
+
     if not isinstance(bloq, qt.Bloq):
         raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
 
-    wire_register_dict = {reg.name: reg.bitsize for reg in bloq.signature.rights()}
+    wire_register_dict = defaultdict()
+
+    for reg in bloq.signature.lefts():
+        wire_register_dict[reg.name] = reg.bitsize
+
+    for reg in bloq.signature.rights():
+        wire_register_dict[reg.name] = reg.bitsize
 
     return qml.registers(wire_register_dict)
 
