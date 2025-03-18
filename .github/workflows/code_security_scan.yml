@@ -11,6 +11,7 @@ concurrency:
 
 jobs: 
   code_security_scan:
+    if: github.event.pull_request.draft == false
     uses: XanaduAI/cloud-actions/.github/workflows/static_code_vulnerability_analysis.yml@sc-86314-sec-scanning
     with:
       github-repository: ${{ github.repository }}
