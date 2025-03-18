@@ -21,7 +21,7 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qml
 from pennylane import math
@@ -326,7 +326,8 @@ class StatePrep(StatePrepBase):
         validate_norm: bool = True,
     ):
         self.is_sparse = False
-        if isinstance(state, csr_matrix):
+        if sp.sparse.issparse(state):
+            state = state.tocsr()
             state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
             self.is_sparse = True
         else:
@@ -379,11 +380,10 @@ class StatePrep(StatePrepBase):
     def state_vector(self, wire_order: Optional[WiresLike] = None):
 
         if self.is_sparse:
-            return (
-                _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
-                if wire_order
-                else self.parameters[0]
+            op_vector = _sparse_statevec_permute_and_embed(
+                self.parameters[0], self.wires, wire_order
             )
+            return csr_array(op_vector)
 
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires

@@ -16,6 +16,7 @@
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
+import scipy as sp
 
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -56,12 +57,88 @@ def allequal(tensor1, tensor2, **kwargs):
     return np.all(t1 == t2, **kwargs)
 
 
+def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
+    """Compare two sparse matrices for approximate equality.
+
+    Args:
+        a, b: scipy sparse matrices to compare
+        rtol (float): relative tolerance
+        atol (float): absolute tolerance
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    if (a != b).nnz == 0:
+        return True
+
+    diff = abs(a - b)
+
+    # Handle cases where the matrix might be empty
+    max_diff = diff.data.max() if diff.nnz > 0 else 0
+    max_b = abs(b).data.max() if b.nnz > 0 else 0
+
+    return max_diff <= atol + rtol * max_b
+
+
+def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
+    """Helper function for comparing dense and sparse matrices with correct tolerance reference.
+
+    Args:
+        a: first matrix (dense or sparse)
+        b: second matrix (sparse or dense)
+        rtol: relative tolerance
+        atol: absolute tolerance
+        b_is_sparse: True if b is sparse matrix, False if a is sparse matrix
+
+    Returns:
+        bool: True if matrices are approximately equal
+    """
+    sparse = b if b_is_sparse else a
+    dense = a if b_is_sparse else b
+
+    if sparse.nnz == 0:
+        return np.allclose(dense, 0, rtol=rtol, atol=atol)
+
+    if dense.shape != sparse.shape:
+        return False
+
+    SIZE_THRESHOLD = 10000
+    if np.prod(dense.shape) < SIZE_THRESHOLD:
+        # Use dense comparison but maintain b as reference
+        if b_is_sparse:
+            return np.allclose(a, sparse.toarray(), rtol=rtol, atol=atol)
+        return np.allclose(sparse.toarray(), b, rtol=rtol, atol=atol)
+
+    dense_coords = dense.nonzero()
+    sparse_coords = sparse.nonzero()
+
+    coord_diff = set(zip(*dense_coords)) ^ set(zip(*sparse_coords))
+    if coord_diff:
+        return False
+
+    # Maintain asymmetric comparison with correct reference
+    if b_is_sparse:
+        a_data = dense[dense_coords]
+        b_data = sparse.data
+    else:
+        a_data = sparse.data
+        b_data = dense[sparse_coords]
+    return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
     try:
         # Some frameworks may provide their own allclose implementation.
         # Try and use it if available.
+        if sp.sparse.issparse(a) and sp.sparse.issparse(b):
+            return _allclose_sparse(a, b, rtol=rtol, atol=atol)
+        if sp.sparse.issparse(a):
+            # pylint: disable=arguments-out-of-order
+            return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=False)
+        if sp.sparse.issparse(b):
+            return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=True)
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
     except (TypeError, AttributeError, ImportError, RuntimeError):
         # Otherwise, convert the input to NumPy arrays.
@@ -173,6 +250,9 @@ def convert_like(tensor1, tensor2):
     if interface == "torch":
         dev = tensor2.device
         return np.asarray(tensor1, device=dev, like=interface)
+
+    if interface == "scipy":
+        return sp.sparse.csr_matrix(tensor1)
 
     return np.asarray(tensor1, like=interface)
 

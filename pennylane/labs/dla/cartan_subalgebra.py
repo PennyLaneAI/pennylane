@@ -19,7 +19,7 @@ import numpy as np
 from scipy.linalg import null_space
 
 import pennylane as qml
-from pennylane.pauli.dla.center import _intersect_bases
+from pennylane.liealg.center import _intersect_bases
 
 from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 
@@ -76,7 +76,7 @@ def cartan_subalgebra(
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
     Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK decomposition  theory(demo) <https://pennylane.ai/qml/demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
         g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
@@ -151,13 +151,13 @@ def cartan_subalgebra(
         We start by computing these ingredients using :func:`~cartan_decomp` and :func:`~structure_constants`.
         As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_{i+1}, Y_i Y_{i+1}, Z_i Z_{i+1}\}`.
 
-        >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomp
+        >>> from pennylane.labs.dla import cartan_decomp
         >>> from pennylane import X, Y, Z
         >>> n = 3
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
-        >>> g = lie_closure_dense(gens)
+        >>> g = qml.lie_closure(gens, matrix=True)
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
@@ -173,9 +173,8 @@ def cartan_subalgebra(
         all remaining operators from ``m``.
 
         >>> import numpy as np
-        >>> from pennylane.labs.dla import structure_constants_dense
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
-        >>> adj = structure_constants_dense(g) # compute adjoint representation of g
+        >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 

@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestAdjointQfunc:
@@ -154,7 +155,6 @@ class TestAdjointQfunc:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim
@@ -198,6 +198,24 @@ class TestAdjointQfunc:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
         qml.assert_equal(tape[0], expected)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
+
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
+
+        def w(i):
+            qml.adjoint(f)(i)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.adjoint(qml.RX(jax.numpy.arange(3), 3))
+        qml.assert_equal(expected, collector.state["ops"][0])
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_complicated_dynamic_shape_input(self):
@@ -369,7 +387,6 @@ class TestCtrlQfunc:
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim
@@ -414,6 +431,24 @@ class TestCtrlQfunc:
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
         qml.assert_equal(tape[0], expected)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
+
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
+
+        def w(i):
+            qml.ctrl(f, 4)(i)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.ctrl(qml.RX(jax.numpy.arange(3), 3), 4)
+        qml.assert_equal(expected, collector.state["ops"][0])
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

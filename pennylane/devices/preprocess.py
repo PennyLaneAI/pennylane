@@ -41,7 +41,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
+def _operator_decomposition_gen(  # pylint: disable = too-many-positional-arguments
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
@@ -294,7 +294,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(
+def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,

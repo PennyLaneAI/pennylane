@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane state preparation templates."""
-import math
 import itertools
-
-from typing import Dict
+import math
 from collections import defaultdict
+from typing import Dict
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import Operation
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+from pennylane.operation import Operation
 
 # pylint: disable=arguments-differ, protected-access
+
 
 def sum_by_prefix(vector, prefix):
     r"""Calculates the sum of elements in a vector whose index, when represented in binary, starts with a given prefix.
@@ -60,7 +60,8 @@ def sum_by_prefix(vector, prefix):
             sum_result += value
     return sum_result
 
-def get_basis_state_list(n_wires, add_zero = False):
+
+def get_basis_state_list(n_wires, add_zero=False):
     r"""Generates a list of binary strings representing basis states.
 
     Args:
@@ -80,12 +81,13 @@ def get_basis_state_list(n_wires, add_zero = False):
     """
 
     if add_zero:
-      return [''.join(map(str, bits)) + '0' for bits in itertools.product([0, 1], repeat=n_wires)]
+        return ["".join(map(str, bits)) + "0" for bits in itertools.product([0, 1], repeat=n_wires)]
     else:
-      return [''.join(map(str, bits)) for bits in itertools.product([0, 1], repeat=n_wires)]
+        return ["".join(map(str, bits)) for bits in itertools.product([0, 1], repeat=n_wires)]
 
-def func_to_binary(n_precision, x , func):
-  r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
+
+def func_to_binary(n_precision, x, func):
+    r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
 
     This function applies a given transformation function (`func`) to the input value `x` and then converts
     the result to a binary string. The transformation function should map values from the interval [0, 1) to
@@ -107,7 +109,7 @@ def func_to_binary(n_precision, x , func):
 
     """
 
-  return bin(int(2**(n_precision) + 2**(n_precision)*func(x)))[-n_precision:]
+    return bin(int(2 ** (n_precision) + 2 ** (n_precision) * func(x)))[-n_precision:]
 
 
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
@@ -136,8 +138,8 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 
 class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOperator):
     """Resource class for the MottonenStatePreparation template.
-    
-    Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010. 
+
+    Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
     """
 
     @staticmethod
@@ -173,24 +175,26 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     """Resource class for the Superposition template."""
 
     @staticmethod
-    def _resource_decomp(num_stateprep_wires, num_basis_states, size_basis_state, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        num_stateprep_wires, num_basis_states, size_basis_state, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         r"""The resources are computed following the PennyLane decomposition of
-        the class. This class was designed based on the method described in 
-        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339. 
+        the class. This class was designed based on the method described in
+        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
 
         We use the following (somewhat naive) assumptions to approximate the
-        resources: 
-        
+        resources:
+
         -  The MottonenStatePreparation routine is assumed for the state prep
-        component. 
-        -  The permutation block requires 2 multi-controlled X gates and a 
-        series of CNOT gates. On average we will be controlling on and flipping 
+        component.
+        -  The permutation block requires 2 multi-controlled X gates and a
+        series of CNOT gates. On average we will be controlling on and flipping
         half the number of bits in :code:`size_basis`. (i.e for any given basis
-        state, half will be ones and half will be zeros). 
+        state, half will be ones and half will be zeros).
         -  If the number of basis states provided spans the set of all basis states,
         then we don't need to permute. In general, there is a probability associated
-        with not needing to permute wires if the basis states happen to match, we 
-        estimate this quantity aswell. 
+        with not needing to permute wires if the basis states happen to match, we
+        estimate this quantity aswell.
         """
         gate_types = {}
         msp = re.ResourceMottonenStatePreparation.resource_rep(num_stateprep_wires)
@@ -199,19 +203,23 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         cnot = re.ResourceCNOT.resource_rep()
         num_zero_ctrls = size_basis_state // 2
         multi_x = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=size_basis_state, num_ctrl_values=num_zero_ctrls, num_work_wires=0,
+            num_ctrl_wires=size_basis_state,
+            num_ctrl_values=num_zero_ctrls,
+            num_work_wires=0,
         )
 
-        basis_size = 2 ** size_basis_state
+        basis_size = 2**size_basis_state
         prob_matching_basis_states = num_basis_states / basis_size
-        num_permutes =  round(num_basis_states * (1 - prob_matching_basis_states))
-        
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
         if num_permutes:
-            gate_types[cnot] = num_permutes * (size_basis_state // 2)  # average number of bits to flip
+            gate_types[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
             gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
 
         return gate_types
-    
+
     def resource_params(self) -> Dict:
         bases = self.hyperparameters["bases"]
         num_basis_states = len(bases)
@@ -219,15 +227,17 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         num_stateprep_wires = math.ceil(math.log2(len(self.coeffs)))
 
         return {
-            "num_stateprep_wires": num_stateprep_wires, 
+            "num_stateprep_wires": num_stateprep_wires,
             "num_basis_states": num_basis_states,
             "size_basis_state": size_basis_state,
         }
-    
+
     @classmethod
-    def resource_rep(cls, num_stateprep_wires, num_basis_states, size_basis_state) -> CompressedResourceOp:
+    def resource_rep(
+        cls, num_stateprep_wires, num_basis_states, size_basis_state
+    ) -> CompressedResourceOp:
         params = {
-            "num_stateprep_wires": num_stateprep_wires, 
+            "num_stateprep_wires": num_stateprep_wires,
             "num_basis_states": num_basis_states,
             "size_basis_state": size_basis_state,
         }
@@ -237,75 +247,85 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
     r"""Prepares a quantum state using a Quantum Read-Only Memory (QROM) based approach.
 
-        This operation decomposes the state preparation into a sequence of QROM operations and controlled rotations.
+    This operation decomposes the state preparation into a sequence of QROM operations and controlled rotations.
 
-        Args:
-            state_vector (TensorLike): The state vector to prepare.
-            wires (Sequence[int]): The wires on which to prepare the state.
-            precision_wires (Sequence[int]): The wires used for storing the binary representations of the
-                amplitudes and phases.
-            work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+    Args:
+        state_vector (TensorLike): The state vector to prepare.
+        wires (Sequence[int]): The wires on which to prepare the state.
+        precision_wires (Sequence[int]): The wires used for storing the binary representations of the
+            amplitudes and phases.
+        work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
-        **Example**
+    **Example**
 
-        .. code-block::
+    .. code-block::
 
-            dev = qml.device("default.qubit", wires=6)
-            state_vector = np.array([1,0,0,0]) / 2.0
-            wires = [0, 1]
-            precision_wires = [2, 3, 4]
-            work_wires = [5]
+        dev = qml.device("default.qubit", wires=6)
+        state_vector = np.array([1,0,0,0]) / 2.0
+        wires = [0, 1]
+        precision_wires = [2, 3, 4]
+        work_wires = [5]
 
-            @qml.qnode(dev)
-            def circuit():
-                qml.QROMStatePreparation(state_vector, wires, precision_wires, work_wires)
-                return qml.state()
+        @qml.qnode(dev)
+        def circuit():
+            qml.QROMStatePreparation(state_vector, wires, precision_wires, work_wires)
+            return qml.state()
 
-            print(circuit())
+        print(circuit())
 
-        .. details::
-            :title: Usage Details
+    .. details::
+        :title: Usage Details
 
-            This operation implements the state preparation method described in
-            `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`.  It uses a QROM to store
-            the binary representations of the amplitudes and phases of the target state, and then uses
-            controlled rotations to apply these values to the target qubits.
+        This operation implements the state preparation method described in
+        `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`.  It uses a QROM to store
+        the binary representations of the amplitudes and phases of the target state, and then uses
+        controlled rotations to apply these values to the target qubits.
 
-            The input `state_vector` must have a length that is a power of 2. The number of `wires`
-            must be at least :math:`\log_2(\text{len}(state\_vector))`. The number of `precision_wires` determines the
-            precision with which the amplitudes and phases are encoded.
+        The input `state_vector` must have a length that is a power of 2. The number of `wires`
+        must be at least :math:`\log_2(\text{len}(state\_vector))`. The number of `precision_wires` determines the
+        precision with which the amplitudes and phases are encoded.
 
-            The `work_wires` are used as auxiliary qubits in the QROM operation. They should be distinct
-            from the `wires` and `precision_wires`.
+        The `work_wires` are used as auxiliary qubits in the QROM operation. They should be distinct
+        from the `wires` and `precision_wires`.
 
-            The decomposition involves encoding the probabilities and phases of the state vector using
-            QROMs and then applying controlled rotations based on the values stored in the `precision_wires`.
-            The decomposition applies CRY rotations for amplitude encoding and controlled GlobalPhase rotations for the phase encoding.
+        The decomposition involves encoding the probabilities and phases of the state vector using
+        QROMs and then applying controlled rotations based on the values stored in the `precision_wires`.
+        The decomposition applies CRY rotations for amplitude encoding and controlled GlobalPhase rotations for the phase encoding.
 
-            The user must ensure that the number of precision wires is enough to store the values. The relation between the number of precision wires `n_p` and the precision `p` is given by :math:`p = 2^{-n_p}`.
+        The user must ensure that the number of precision wires is enough to store the values. The relation between the number of precision wires `n_p` and the precision `p` is given by :math:`p = 2^{-n_p}`.
     """
 
-    def __init__(self, state_vector, wires, precision_wires, work_wires = None, id = None):
+    def __init__(self, state_vector, wires, precision_wires, work_wires=None, id=None):
 
         self.state_vector = state_vector
         self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["precision_wires"] = qml.wires.Wires(precision_wires)
-        self.hyperparameters["work_wires"] = qml.wires.Wires(() if work_wires is None else work_wires)
+        self.hyperparameters["work_wires"] = qml.wires.Wires(
+            () if work_wires is None else work_wires
+        )
 
-        all_wires = self.hyperparameters["input_wires"] + self.hyperparameters["precision_wires"] + self.hyperparameters["work_wires"]
+        all_wires = (
+            self.hyperparameters["input_wires"]
+            + self.hyperparameters["precision_wires"]
+            + self.hyperparameters["work_wires"]
+        )
 
-        super().__init__(state_vector, wires= all_wires, id=id)
+        super().__init__(state_vector, wires=all_wires, id=id)
 
     def decomposition(self):  # pylint: disable=arguments-differ
         filtered_hyperparameters = {
             key: value for key, value in self.hyperparameters.items() if key != "input_wires"
         }
         return self.compute_decomposition(
-            self.parameters[0], wires=self.hyperparameters["input_wires"], **filtered_hyperparameters
+            self.parameters[0],
+            wires=self.hyperparameters["input_wires"],
+            **filtered_hyperparameters,
         )
 
     @staticmethod
-    def compute_decomposition(state_vector, wires, precision_wires, work_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        state_vector, wires, precision_wires, work_wires
+    ):  # pylint: disable=arguments-differ
         """
         Computes the decomposition operations for the given state vector.
 
@@ -327,18 +347,22 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
         for i in range(num_iterations):
 
             # Calculation of the numerator and denominator of the function f (Eq.5 [arXiv:quant-ph/0208112])
-            prefixes = get_basis_state_list(n_wires = i)
+            prefixes = get_basis_state_list(n_wires=i)
             probs_denominator = qml.math.array([sum_by_prefix(probs, prefix=p) for p in prefixes])
 
-            prefixes_with_zero = get_basis_state_list(n_wires = i, add_zero=True)
-            probs_numerator = qml.math.array([sum_by_prefix(probs, prefix=p) for p in prefixes_with_zero])
+            prefixes_with_zero = get_basis_state_list(n_wires=i, add_zero=True)
+            probs_numerator = qml.math.array(
+                [sum_by_prefix(probs, prefix=p) for p in prefixes_with_zero]
+            )
 
             eps = 1e-8  # Small constant to avoid division by zero
 
             # Compute the binary representations of the angles θi
-            func = lambda x: 2 * qml.math.arccos(qml.math.sqrt(x))/np.pi
+            func = lambda x: 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
             thetas_binary = [
-                func_to_binary(len(precision_wires), probs_numerator[j] / (probs_denominator[j] + eps), func)
+                func_to_binary(
+                    len(precision_wires), probs_numerator[j] / (probs_denominator[j] + eps), func
+                )
                 for j in range(len(probs_numerator))
             ]
 
@@ -347,7 +371,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
                 qml.QROM(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires[: i],
+                    control_wires=wires[:i],
                     work_wires=work_wires,
                     clean=False,
                 )
@@ -355,7 +379,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
 
             # Turn binary representation into proper rotation
             for ind, wire in enumerate(precision_wires):
-                rotation_angle = 2 ** (- ind - 1)
+                rotation_angle = 2 ** (-ind - 1)
                 decomp_ops.append(qml.CRY(np.pi * rotation_angle, wires=[wire, wires[i]]))
 
             # Clean wires used to store the theta values
@@ -363,7 +387,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
                 qml.adjoint(qml.QROM)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
-                    control_wires=wires[: i],
+                    control_wires=wires[:i],
                     work_wires=work_wires,
                     clean=False,
                 )
@@ -371,10 +395,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
 
         # Compute the binary representations of the phases
         func = lambda x: (x) / (2 * np.pi)
-        thetas_binary = [
-            func_to_binary(len(precision_wires), phase, func)
-            for phase in phases
-        ]
+        thetas_binary = [func_to_binary(len(precision_wires), phase, func) for phase in phases]
 
         # Apply the QROM operation to encode the thetas binary representation
         decomp_ops.append(
@@ -389,8 +410,12 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
 
         # Turn binary representation into proper rotation
         for ind, wire in enumerate(precision_wires):
-            rotation_angle = 2 ** (- ind - 1)
-            decomp_ops.append(qml.ctrl(qml.GlobalPhase((2 * np.pi)*(-rotation_angle), wires=wires[0]), control = wire))
+            rotation_angle = 2 ** (-ind - 1)
+            decomp_ops.append(
+                qml.ctrl(
+                    qml.GlobalPhase((2 * np.pi) * (-rotation_angle), wires=wires[0]), control=wire
+                )
+            )
 
         # Clean wires used to store the theta values
         decomp_ops.append(
@@ -406,18 +431,20 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
         return decomp_ops
 
     @staticmethod
-    def _resource_decomp(num_state_qubits, num_precision_wires, num_work_wires, positive_and_real, **kwargs):
+    def _resource_decomp(
+        num_state_qubits, num_precision_wires, num_work_wires, positive_and_real, **kwargs
+    ):
         """The resources associated with a single QROMPrep"""
         gate_types = defaultdict(int)
 
         for j in range(num_state_qubits):
             num_bitstrings = 2**j
-            num_bit_flips = 2**(j-1)
+            num_bit_flips = 2 ** (j - 1)
             num_control_wires = j
-            
+
             gate_types[
                 re.ResourceQROM.resource_rep(
-                    num_bitstrings, 
+                    num_bitstrings,
                     num_bit_flips,
                     num_control_wires,
                     num_work_wires,
@@ -428,7 +455,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
 
             gate_types[
                 re.ResourceAdjoint.resource_rep(
-                    base_class=re.ResourceQROM, 
+                    base_class=re.ResourceQROM,
                     base_params={
                         "num_bitstrings": num_bitstrings,
                         "num_bit_flips": num_bit_flips,
@@ -436,7 +463,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
                         "num_work_wires": num_work_wires,
                         "size_bitstring": num_precision_wires,
                         "clean": False,
-                    }
+                    },
                 )
             ] += 1
 
@@ -449,7 +476,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
             gate_types[
                 re.ResourceQROM.resource_rep(
                     2**num_state_qubits,
-                    2**(num_state_qubits - 1),
+                    2 ** (num_state_qubits - 1),
                     num_state_qubits,
                     num_work_wires,
                     num_precision_wires,
@@ -458,18 +485,18 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
             ] += 1
 
             gate_types[c_gp] = num_precision_wires
-            
+
             gate_types[
                 re.ResourceAdjoint.resource_rep(
-                    base_class=re.ResourceQROM, 
+                    base_class=re.ResourceQROM,
                     base_params={
                         "num_bitstrings": 2**num_state_qubits,
-                        "num_bit_flips": 2**(num_state_qubits - 1),
+                        "num_bit_flips": 2 ** (num_state_qubits - 1),
                         "num_control_wires": num_state_qubits,
                         "num_work_wires": num_work_wires,
                         "size_bitstring": num_precision_wires,
                         "clean": False,
-                    }
+                    },
                 )
             ] += 1
 
@@ -479,16 +506,16 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
         """The key parameters required to expand the resources of QROMPrep."""
         state_vector = self.state_vector
         positive_and_real = True
-        
+
         for c in state_vector:
             if c.imag != 0 or c.real < 0:
                 positive_and_real = False
                 break
-        
+
         num_state_qubits = int(math.log2(len(self.state_vector)))
         num_precision_wires = len(self.hyperparameters["precision_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
-        
+
         return {
             "num_state_qubits": num_state_qubits,
             "num_precision_wires": num_precision_wires,

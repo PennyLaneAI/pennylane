@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
@@ -61,6 +66,11 @@ Pending deprecations
 
   - Deprecated in v0.36
   - Will be removed in v0.42
+
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
+
+ - Deprecated in v0.40
+ - Will be removed in v0.41
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

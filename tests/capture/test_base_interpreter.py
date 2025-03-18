@@ -143,7 +143,6 @@ def test_default_operator_handling():
 @pytest.mark.parametrize(
     "op_class, args, kwargs",
     [
-        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
         (qml.CH, ([0, 1],), {}),
         (qml.CY, ([0, 1],), {}),
         (qml.CZ, ([0, 1],), {}),
@@ -208,6 +207,31 @@ def test_measurement_handling():
     m1, m2 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
     qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
     qml.assert_equal(m2, qml.probs(wires=0))
+
+
+def test_call_with_pytree_arguments():
+    """Test that pytree arguments are correctly flattened when calling a
+    decorated function"""
+
+    @PlxprInterpreter()
+    def f(angles):
+        qml.Rot(*angles["1"], 0)
+        qml.Rot(*angles["2"], 0)
+        return qml.state()
+
+    args = ({"1": (1.0, 2.0, 3.0), "2": (4.0, 5.0, 6.0)},)
+    jaxpr = jax.make_jaxpr(f)(*args)
+
+    assert len(jaxpr.jaxpr.invars) == 6
+    expected_primitives = [
+        qml.Rot._primitive,
+        qml.Rot._primitive,
+        qml.measurements.StateMP._wires_primitive,
+    ]
+    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+
+    assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
+    assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]
 
 
 def test_overriding_measurements():
@@ -644,8 +668,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
 
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "backprop"
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
+        assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
+        assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
         assert jaxpr.eqns[0].params["device"] == dev
 
         res1 = f()
@@ -771,3 +795,17 @@ class TestDynamicShapes:
         assert len(output) == 2  # shape and array
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
+
+    def test_hstack(self):
+        """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
+        which currently does not work with dynamic shapes."""
+
+        def f(i):
+            x = jnp.zeros(i, int)
+            y = jnp.ones(i, int)
+            return jnp.hstack((x, y))
+
+        jaxpr = jax.make_jaxpr(f)(2)
+        [shape, res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert qml.math.allclose(shape, 8)
+        assert qml.math.allclose(res, jnp.hstack((jnp.zeros(4), jnp.ones(4))))

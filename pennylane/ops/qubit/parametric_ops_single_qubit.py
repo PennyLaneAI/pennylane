@@ -21,6 +21,7 @@ import functools
 from typing import Optional, Union
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -112,6 +113,15 @@ class RX(Operation):
         c = (1 + 0j) * c
         js = -1j * s
         return qml.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
+
+    @staticmethod
+    def compute_sparse_matrix(theta, format="csr"):
+        return sp.sparse.csr_matrix(
+            [
+                [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
+        ).asformat(format)
 
     def adjoint(self) -> "RX":
         return RX(-self.data[0], wires=self.wires)
@@ -208,6 +218,15 @@ class RY(Operation):
         c = (1 + 0j) * c
         s = (1 + 0j) * s
         return qml.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
+
+    @staticmethod
+    def compute_sparse_matrix(theta, format="csr"):
+        return sp.sparse.csr_matrix(
+            [
+                [qml.math.cos(theta / 2), -qml.math.sin(theta / 2)],
+                [qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
+        ).asformat(format)
 
     def adjoint(self) -> "RY":
         return RY(-self.data[0], wires=self.wires)
@@ -306,6 +325,12 @@ class RZ(Operation):
 
         diags = qml.math.exp(qml.math.outer(arg, signs))
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
+
+    @staticmethod
+    def compute_sparse_matrix(theta, format="csr"):
+        return sp.sparse.csr_matrix(
+            [[np.exp(-1j * theta / 2), 0], [0, np.exp(1j * theta / 2)]]
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ

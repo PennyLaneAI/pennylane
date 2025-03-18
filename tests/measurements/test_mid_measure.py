@@ -401,7 +401,7 @@ class TestMeasurementValueManipulation:
         )
 
     def test_repr(self):
-        """Test that the output of the __repr__ dubder method is as expected."""
+        """Test that the output of the __repr__ dunder method is as expected."""
         m = qml.measure(0)
         assert repr(m) == "MeasurementValue(wires=[0])"
 
@@ -420,6 +420,23 @@ class TestMeasurementValueManipulation:
         assert new_meas.wires == Wires(["b"])
         assert new_meas.id == mp1.id
 
+    def test_mod(self):
+        """Test the __mod__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        mod_val = m1 % 2
+        assert mod_val[0] == 0
+        assert mod_val[1] == 1
+
+    def test_xor(self):
+        """Test the __xor__ dunder method between two measurement values"""
+        m1 = MeasurementValue([mp1], lambda v: v)
+        m2 = MeasurementValue([mp2], lambda v: v)
+        compared = m1 ^ m2
+        assert compared[0] == 0
+        assert compared[1] == 1
+        assert compared[2] == 1
+        assert compared[3] == 0
+
 
 unary_dunders = ["__invert__"]
 
@@ -431,6 +448,7 @@ measurement_value_binary_dunders = [
     "__rmul__",
     "__rsub__",
     "__sub__",
+    "__mod__",
 ]
 
 boolean_binary_dunders = [
@@ -442,6 +460,7 @@ boolean_binary_dunders = [
     "__lt__",
     "__ne__",
     "__or__",
+    "__xor__",
 ]
 
 binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
@@ -538,7 +557,7 @@ class TestMeasurementValueItems:
         output at all."""
         mp = MidMeasureMP(0, postselect=postselect)
         mv = MeasurementValue([mp], func)
-        items = list(mv._items())
+        items = list(mv.items())
         assert items == [((0,), expected[0]), ((1,), expected[1])]
 
     funcs_and_expected_multi = [
@@ -563,7 +582,7 @@ class TestMeasurementValueItems:
             (1, 1, 1),
         ]
         mv = MeasurementValue([MP0, MP1, MP2], func)
-        items = list(mv._items())
+        items = list(mv.items())
         assert len(items) == len(branches3) == len(expected)
         for item, branch, exp in zip(items, branches3, expected):
             assert item == (branch, exp)
@@ -574,7 +593,7 @@ class TestMeasurementValueItems:
         """Test the full items."""
         mp = MidMeasureMP(0, postselect=postselect)
         mv = MeasurementValue([mp], func)
-        items = list(mv._postselected_items())
+        items = list(mv.postselected_items())
         if postselect is None:
             assert items == [((0,), expected[0]), ((1,), expected[1])]
         else:
@@ -609,7 +628,7 @@ class TestMeasurementValueItems:
         MP2 = MidMeasureMP(2, postselect=postselects[2])
 
         mv = MeasurementValue([MP0, MP1, MP2], func)
-        items = list(mv._postselected_items())
+        items = list(mv.postselected_items())
         assert len(items) == len(branches)
         for item, branch in zip(items, branches):
             pruned_branch = tuple(b for i, b in enumerate(branch) if postselects[i] is None)

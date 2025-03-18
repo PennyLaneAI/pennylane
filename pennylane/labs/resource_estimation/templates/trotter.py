@@ -61,103 +61,99 @@ class ResourceTrotterProduct(
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination
-            of operators with known matrix exponentials.
-        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
-        n (int): An integer representing the number of Trotter steps to perform
-        order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
+        n (int): an integer representing the number of Trotter steps to perform
+        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
-    Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
-        ValueError: The ``hamiltonian`` must have atleast two terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
-        ValueError: The ``order`` is not one or a positive even integer.
+    Resources:
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+        Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
+        of the recurrsive formula. Those counts are further simplified by grouping like terms as:
+
+        .. math::
+
+            \begin{align}
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+            \end{align}
+
+    .. seealso:: :class:`~.TrotterProduct`
 
     **Example**
 
-    .. code-block:: python3
+    The arguments can be provided directly to the :code:`resources()` function to extract the cost:
 
-        coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
+    >>> n, order = (1, 2)
+    >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
+    >>> re.ResourceTrotterProduct.resources(n, order, first_order_expansion)
+    defaultdict(<class 'int'>, {RX: 2, RZ: 1})
 
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev)
-        def my_circ():
-            # Prepare some state
-            qml.Hadamard(0)
-
-            # Evolve according to H
-            qml.TrotterProduct(H, time=2.4, order=2)
-
-            # Measure some quantity
-            return qml.state()
-
-    >>> my_circ()
-    array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
-
-    .. warning::
-
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
-        mathematically identical :class:`~.LinearCombination` objects may undergo different time
-        evolutions due to the order in which those observables are stored. The order of observables
-        can be queried using the :meth:`~.Sum.terms` method.
-
-    .. warning::
-
-        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
-        for a more fine-grained control over the decomposition but also risking an increased
-        runtime and number of gates required. Simplification can be performed manually by
-        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
-
-    .. details::
-        :title: Usage Details
-
-        An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
-        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
-
-        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm-bound")
-        SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator-bound")
-        SpectralNormError(6.166666666666668e-06)
-
-        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
-        of :class:`~.ApproxTimeEvolution` by taking the adjoint:
-
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
-
-        We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
-        evolution time:
-
-        .. code-block:: python3
-
-            @qml.qnode(dev)
-            def my_circ(c1, c2, time):
-                # Prepare H:
-                H = qml.dot([c1, c2], [qml.X(0), qml.Z(0)])
-
-                # Prepare some state
-                qml.Hadamard(0)
-
-                # Evolve according to H
-                qml.TrotterProduct(H, time, order=2)
-
-                # Measure some quantity
-                return qml.expval(qml.Z(0) @ qml.Z(1))
-
-        >>> args = np.array([1.23, 4.5, 0.1])
-        >>> qml.grad(my_circ)(*tuple(args))
-        (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
     @staticmethod
     def _resource_decomp(
         n, order, first_order_expansion, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+        Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+        the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+        symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+        :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+        .. math::
+
+            \begin{align}
+                S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+                S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+                &\vdots \\
+                S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+            \end{align}
+
+        where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+        :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+        .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+        For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+        Args:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Resources:
+            The resources are defined according to the recurrsive formula presented above. Specifically, each
+            operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+            .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+            Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
+            of the recurrsive formula. Those counts are further simplified by grouping like terms as:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+        **Example**
+
+        The arguments can be provided directly to the :code:`resources()` function to extract the cost:
+
+        >>> n, order = (1, 2)
+        >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
+        >>> re.ResourceTrotterProduct.resources(n, order, first_order_expansion)
+        defaultdict(<class 'int'>, {RX: 2, RZ: 1})
+
+        """
         k = order // 2
         gate_types = defaultdict(int, {})
 
@@ -178,7 +174,18 @@ class ResourceTrotterProduct(
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         n = self.hyperparameters["n"]
         base = self.hyperparameters["base"]
         order = self.hyperparameters["order"]
@@ -200,6 +207,17 @@ class ResourceTrotterProduct(
 
     @classmethod
     def resource_rep(cls, n, order, first_order_expansion) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {
             "n": n,
             "order": order,
@@ -209,18 +227,111 @@ class ResourceTrotterProduct(
 
     @classmethod
     def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns a dictionary containing the counts of each operator type used to
-        compute the resources of the operator."""
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts."""
         return cls._resource_decomp(*args, **kwargs)
 
 
 class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
-    """An internal class which facilitates :code:`qml.resource_trotterize`."""
+    r"""Generates higher order Suzuki-Trotter product formulas from a set of
+    operations defined in a function.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Args:
+        n (int): an integer representing the number of Trotter steps to perform
+        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+    Resources:
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+    .. seealso:: :class:`~.TrotterizedQfunc`
+
+    **Example**
+
+    The arguments can be provided directly to the :code:`resources()` function to extract the cost:
+
+        >>> n, order = (1, 2)
+        >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
+        >>> re.ResourceTrotterizedQfunc.resources(n, order, first_order_expansion)
+        defaultdict(<class 'int'>, {RX: 2, RZ: 2})
+
+    """
 
     @staticmethod
     def _resource_decomp(
         n, order, qfunc_compressed_reps, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+        Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+        the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+        symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+        :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+        .. math::
+
+            \begin{align}
+                S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+                S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+                &\vdots \\
+                S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+            \end{align}
+
+        where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+        :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+        .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+        For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+        Args:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Resources:
+            The resources are defined according to the recurrsive formula presented above. Specifically, each
+            operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+            .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+        **Example**
+
+        The arguments can be provided directly to the :code:`resources()` function to extract the cost:
+
+            >>> n, order = (1, 2)
+            >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
+            >>> re.ResourceTrotterizedQfunc.resources(n, order, first_order_expansion)
+            defaultdict(<class 'int'>, {RX: 2, RZ: 2})
+
+        """
         k = order // 2
         gate_types = defaultdict(int, {})
 
@@ -233,7 +344,18 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
             gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         with qml.QueuingManager.stop_recording():
             with qml.queuing.AnnotatedQueue() as q:
                 base_hyper_params = ("n", "order", "qfunc", "reverse")
@@ -262,6 +384,17 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
 
     @classmethod
     def resource_rep(cls, n, order, qfunc_compressed_reps, name=None) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {
             "n": n,
             "order": order,
@@ -270,8 +403,8 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
         return CompressedResourceOp(cls, params, name=name)
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
-        """Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params(), name=self._name)
+        r"""Returns a compressed representation directly from the operator"""
+        return self.__class__.resource_rep(**self.resource_params, name=self._name)
 
 
 def resource_trotterize(qfunc, n=1, order=2, reverse=False):
@@ -300,65 +433,39 @@ def resource_trotterize(qfunc, n=1, order=2, reverse=False):
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
-    Suppose we have direct access to the operators which represent the exponentiated terms of
-    a hamiltonian:
-
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
-
-    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
-    first order expansion :math:`S_{1}(t)`; this function expands it to any higher order Suzuki-Trotter product.
-
-    .. warning::
-
-        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call
-        signature. The first argument should be a time parameter which will be modified according to the
-        Suzuki-Trotter product formula. The wires required by the circuit should be either the last
-        explicit argument or the first keyword argument.
-        :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
-
     Args:
-        qfunc (Callable): the first-order expansion given as a callable function which queues operations
+        qfunc (Callable): A function which queues the operations corresponding to the exponentiated
+            terms of the hamiltonian (:math:`e^{i t O_{j}}`). The operations should be queued according
+            to the first order expression.
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
-        name (str): an optional name for the instance
-        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
 
-    Returns:
-        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of
-            :class:`~.TrotterizedQfunc`
+    Resources:
+        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+    .. seealso:: :class:`~.trotterize`
 
     **Example**
 
+    First we define a function which queues the first-order expansion:
+
     .. code-block:: python3
 
-        def first_order_expansion(time, theta, phi, wires, flip=False):
+        def first_order_expansion(time, theta, phi, wires):
             "This is the first order expansion (U_1)."
-            ResourceRX(time*theta, wires[0])
-            ResourceRY(time*phi, wires[1])
-            if flip:
-                ResourceCNOT(wires=wires[:2])
+            re.ResourceRX(time*theta, wires[0])
+            re.ResourceRY(time*phi, wires[1])
 
-        @qml.qnode(qml.device("default.qubit"))
-        def my_circuit(time, theta, phi, num_trotter_steps):
-            resource_trotterize(
-                first_order_expansion,
-                n=num_trotter_steps,
-                order=2,
-            )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
-            return qml.state()
+    The arguments can be provided directly to the :code:`resources()` function to extract the cost:
 
-    We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
-
-        >>> time = 0.1
-        >>> theta, phi = (0.12, -3.45)
-        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))
-        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-        >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
-        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+        >>> n, order = (1, 2)
+        >>> time, theta, phi = (0.1, 0.2, 0.3)
+        >>> resource_op = re.resource_trotterize(first_order_expansion, n, order)(time, theta, phi, wires=['a', 'b'])
+        >>> resource_op.resources(**resource_op.resource_params)
+        defaultdict(<class 'int'>, {RX: 2, RY: 2})
 
     """
 

@@ -235,8 +235,6 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     ctrl_prim = NonInterpPrimitive("ctrl_transform")
@@ -245,15 +243,17 @@ def _get_ctrl_qfunc_prim():
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         control_wires = args[-n_control:]
         args = args[n_consts:-n_control]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
+        collector = CollectOpsandMeas()
+        with qml.QueuingManager.stop_recording():
+            collector.eval(jaxpr, consts, *args)
 
-        for op in ops:
+        for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
         return []
 
@@ -681,11 +681,12 @@ class Controlled(SymbolicOp):
         wire_order = wire_order or self.wires
         return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
+    @property
+    def has_sparse_matrix(self):
+        return self.base.has_sparse_matrix or self.base.has_matrix
+
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
-        if wire_order is not None:
-            raise NotImplementedError("wire_order argument is not yet implemented.")
-
         try:
             target_mat = self.base.sparse_matrix()
         except operation.SparseMatrixUndefinedError as e:
@@ -704,6 +705,9 @@ class Controlled(SymbolicOp):
         m = sparse.eye(total_states, format="lil", dtype=target_mat.dtype)
 
         m[start_ind:end_ind, start_ind:end_ind] = target_mat
+
+        wire_order = wire_order or self.wires
+        m = qml.math.expand_matrix(m, wires=self.wires, wire_order=wire_order)
 
         return m.asformat(format=format)
 
