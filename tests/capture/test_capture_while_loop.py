@@ -82,6 +82,16 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
+    def test_error_during_body_fn(self):
+        """Test that an error in the body function is reraised."""
+
+        @qml.while_loop(lambda i: i < 5)
+        def w(i):
+            raise AttributeError("my random error")
+
+        with pytest.raises(AttributeError, match="my random error"):
+            _ = jax.make_jaxpr(w)(0)
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
@@ -364,7 +374,7 @@ class TestCaptureWhileLoopDynamicShapes:
         with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
             jax.make_jaxpr(w)(1)
 
-    def test_error_is_combining_independent_shapes(self):
+    def test_error_if_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
@@ -437,3 +447,24 @@ class TestCaptureWhileLoopDynamicShapes:
         x_expected = jnp.array([1, 1, 2, 2, 2, 2, 4, 4])
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 2 * x_expected)
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
+    def test_independent_resizing(self, allow_array_resizing):
+        """Test that two arrays can be resized independently of each other."""
+
+        @qml.while_loop(
+            lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
+        )
+        def f(a, b):
+            return jnp.hstack((a, b)), b + 1
+
+        def w(i0):
+            return f(jnp.zeros(i0), jnp.zeros(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [s1, s2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(s1, 15)  # 3 * 5
+        assert jnp.allclose(s2, 3)
+        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        assert jnp.allclose(a, expected)
+        assert jnp.allclose(b, jnp.array([4, 4, 4]))

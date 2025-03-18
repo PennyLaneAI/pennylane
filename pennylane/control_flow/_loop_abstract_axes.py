@@ -21,22 +21,11 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 """
 
 from collections import namedtuple
-from functools import lru_cache
-from string import ascii_lowercase as letters
 from typing import Any
 
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
-
-
-@lru_cache
-def _get_letter(ind: int) -> str:
-    if ind < 26:
-        return letters[ind]
-    if ind < 702:
-        return letters[ind // 26 - 1] + letters[ind % 26]
-    raise NotImplementedError("we only support up to 702 dynamic axes")  # pragma: no cover
 
 
 # pylint: disable=too-few-public-methods
@@ -59,7 +48,7 @@ class CalculateAbstractedAxes:
                 if not self.allow_array_resizing:
                     for previous_idx, previous_shape in enumerate(self.abstract_shapes):
                         if s is previous_shape:
-                            arg_abstracted_axes[shape_idx] = _get_letter(previous_idx)
+                            arg_abstracted_axes[shape_idx] = previous_idx
                             self.shape_locations[previous_idx].append(
                                 AbstractShapeLocation(x_idx, shape_idx)
                             )
@@ -68,7 +57,7 @@ class CalculateAbstractedAxes:
                 # haven't encountered it, so add it to abstract_axes
                 # and use new letter designation
                 if not found:
-                    arg_abstracted_axes[shape_idx] = _get_letter(len(self.abstract_shapes))
+                    arg_abstracted_axes[shape_idx] = len(self.abstract_shapes)
                     self.shape_locations.append([AbstractShapeLocation(x_idx, shape_idx)])
                     self.abstract_shapes.append(s)
         self.abstracted_axes.append(arg_abstracted_axes)

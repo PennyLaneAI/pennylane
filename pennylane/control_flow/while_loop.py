@@ -343,7 +343,6 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         validation = _validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
         if validation:
             if allow_array_resizing == "auto":
-                # didn't work, so try with array resizing.
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(validation)
 

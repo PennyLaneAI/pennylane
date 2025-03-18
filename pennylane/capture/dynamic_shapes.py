@@ -14,8 +14,6 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from functools import lru_cache
-from string import ascii_lowercase as letters
 from typing import Callable, Sequence, Union
 
 has_jax = True
@@ -26,28 +24,19 @@ except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
-@lru_cache
-def _get_letter(ind: int) -> str:
-    if ind < 26:
-        return letters[ind]
-    if ind < 702:
-        return letters[ind // 26 - 1] + letters[ind % 26]
-    raise NotImplementedError("we only support up to 702 dynamic axes")  # pragma: no cover
-
-
 def _get_shape_for_array(x, abstract_shapes: list) -> dict:
     """
     Populate the dictionary of abstract axes for a single tensorlike.
 
-    This dictionary has dimensions as keys, and a string marker as the value.
+    This dictionary has dimensions as keys, and an integer as the value.
 
     Examples of shape -> abstract axes:
 
     * ``(3,4) -> {}``
-    * ``(tracer1, ) -> {0: "a"}``
-    * ``(tracer1, tracer1) -> {0: "a", 1: "a"}``
-    * ``(3, tracer1) -> {1: "a"}``
-    * ``(tracer1, 2, tracer2) -> {0: "a", 2: "b"}``
+    * ``(tracer1, ) -> {0: 0}``
+    * ``(tracer1, tracer1) -> {0: 0, 1: 0}``
+    * ``(3, tracer1) -> {1: 0}``
+    * ``(tracer1, 2, tracer2) -> {0: 0, 2: 1}``
 
     ``abstract_shapes`` contains all the tracers found in shapes.
 
@@ -59,13 +48,13 @@ def _get_shape_for_array(x, abstract_shapes: list) -> dict:
             # check if the shape tracer is one we have already encountered
             for previous_idx, previous_shape in enumerate(abstract_shapes):
                 if s is previous_shape:
-                    abstract_axes[i] = _get_letter(previous_idx)
+                    abstract_axes[i] = previous_idx
                     found = True
                     break
             # haven't encountered it, so add it to abstract_axes
             # and use new letter designation
             if not found:
-                abstract_axes[i] = _get_letter(len(abstract_shapes))
+                abstract_axes[i] = len(abstract_shapes)
                 abstract_shapes.append(s)
 
     return abstract_axes
