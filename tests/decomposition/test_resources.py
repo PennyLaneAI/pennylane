@@ -203,10 +203,10 @@ class TestResourceRep:
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             resource_rep(DummyOp, foo=2)
 
-        with pytest.raises(TypeError, match="Invalid resource parameters"):
+        with pytest.raises(TypeError, match="Unexpected keyword arguments"):
             resource_rep(DummyOp, foo=2, bar=1, hello=3)
 
     def test_resource_rep(self):
@@ -287,7 +287,7 @@ class TestControlledResourceRep:
     def test_controlled_resource_op_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             controlled_resource_rep(DummyOp, {}, 1, 1, 1)
 
     def test_controlled_resource_op_flatten_x(self):
@@ -386,7 +386,7 @@ class TestSymbolicResourceRep:
     def test_adjoint_resource_rep_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             qml.adjoint_resource_rep(DummyOp, {})
 
     def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):

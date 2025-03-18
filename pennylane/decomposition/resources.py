@@ -147,27 +147,24 @@ def _validate_resource_rep(op_type, params):
 
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op must be a type of Operator, got {op_type}")
-
-    if op_type.resource_keys is None:
-        raise NotImplementedError(f"resource_keys undefined for {op_type.__name__}")
-
+    
     if not isinstance(op_type.resource_keys, set):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
 
-    missing_params = op_type.resource_keys - set(params.keys())
-    if missing_params:
+    unexpected_arguments = set(params.keys()) - op_type.resource_keys
+    if unexpected_arguments:
         raise TypeError(
-            f"Missing resource parameters for {op_type.__name__}: {list(missing_params)}. "
-            f"Expected: {op_type.resource_keys}"
+            f"Unexpected keyword arguments for resource_rep({op_type.__name__}): "
+            f"{list(unexpected_arguments)}). Expected: {list(op_type.resource_keys)}"
         )
 
-    invalid_params = set(params.keys()) - op_type.resource_keys
-    if invalid_params:
+    missing_arguments = op_type.resource_keys - set(params.keys())
+    if missing_arguments:
         raise TypeError(
-            f"Invalid resource parameters for {op_type.__name__}: {list(invalid_params)}. "
-            f"Expected: {op_type.resource_keys}"
+            f"Missing keyword arguments for resource_rep({op_type.__name__}): "
+            f"{list(missing_arguments)}. Expected: {list(op_type.resource_keys)}"
         )
 
 
