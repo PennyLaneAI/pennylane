@@ -234,7 +234,7 @@ class FromBloq(Operation):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
 
     @staticmethod
-    def compute_decomposition(wires, bloq):
+    def compute_decomposition(wires, bloq):  # pylint: disable=arguments-differ, too-many-branches
         ops = []
 
         if len(wires) != bloq.signature.n_qubits():
@@ -244,6 +244,7 @@ class FromBloq(Operation):
 
         try:
             cbloq, soq_to_wires, soq_to_wires_len = _preprocess_bloq(bloq)
+
             for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
                 if isinstance(binst.bloq, qt.bloqs.bookkeeping.Partition):
                     in_quregs = {}
