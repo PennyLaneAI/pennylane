@@ -323,7 +323,7 @@ def _numpy_to_dict(arr, threshold):
     d = {}
 
     for index in zip(*nz):
-        if abs(nz[index]) > threshold:
+        if abs(nz[slice(*index)]) > threshold:
             d[index] = arr[index]
 
     return d
