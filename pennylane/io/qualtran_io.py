@@ -31,14 +31,14 @@ def get_bloq_registers_info(bloq):
     in the bloq.
 
     Args:
-        bloq (Bloq): the bloq to get the registers info of
+        bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
 
     Returns:
         dict: A dictionary that has all the named and un-named registers with default wire
         ordering.
 
     Raises:
-        TypeError: bloq must be an instance of :code:`~.Bloq`.
+        TypeError: bloq must be an instance of ``Bloq``.
 
     **Example**
 
@@ -81,10 +81,10 @@ class FromBloq(Operation):
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
         wires (WiresLike): The wires the operator acts on. The number of wires required can be determined by using the
-            signature of the Bloq, ``bloq.signature.n_qubits()``.
+            signature of the ``Bloq``, ``bloq.signature.n_qubits()``.
 
     Raises:
-        TypeError: bloq must be an instance of :code:`~.Bloq`.
+        TypeError: bloq must be an instance of ``Bloq``.
 
     **Example**
 
