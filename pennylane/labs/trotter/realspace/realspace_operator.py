@@ -140,6 +140,10 @@ class RealspaceOperator:
         """Returns a RealspaceOperator representing 0"""
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs.tensor_node(np.array(0)))
 
+    def get_coefficients(self, threshold: float = 0.0):
+        """Return the coefficients in a dictionary"""
+        return self.coeffs.get_coefficients(threshold)
+
 
 class RealspaceSum(Fragment):
     """The RealspaceSum class"""
