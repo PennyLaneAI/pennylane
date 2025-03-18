@@ -416,6 +416,7 @@
 
 * A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
   [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
+  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
