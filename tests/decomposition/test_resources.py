@@ -106,10 +106,10 @@ class TestCompressedResourceOp:
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op_type is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be an Operator type"):
+        with pytest.raises(TypeError, match="op must be an Operator type"):
             CompressedResourceOp("RX", {})
 
-        with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
+        with pytest.raises(TypeError, match="op must be a subclass of Operator"):
             CompressedResourceOp(int, {})
 
     def test_hash(self):
