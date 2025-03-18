@@ -55,6 +55,9 @@
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
 <h3>Improvements 🛠</h3>
+  
+* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
+  [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
 * The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
   [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
@@ -413,6 +416,7 @@
 
 * A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
   [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
+  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
@@ -430,6 +434,17 @@
 * A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* `cond`, `adjoint`, `ctrl`, and the `QNode` can now handle accepting dynamically
+  shaped arrays with the abstract shape matching another argument.
+  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
+
+* Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
+  that return new dynamically shaped arrays.
+  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
+
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -590,6 +605,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
+  [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
+
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
@@ -677,11 +695,15 @@
   [(#7027)](https://github.com/PennyLaneAI/pennylane/pull/7027)  
   [(#7051)](https://github.com/PennyLaneAI/pennylane/pull/7051)
 
+* `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
+  [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Daniela Angulo,
 Utkarsh Azad,
 Joey Carter,
 Henry Chang,
