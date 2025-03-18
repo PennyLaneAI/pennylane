@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This module contains special logic of decomposing symbolic operations."""
+
 from __future__ import annotations
 
 import functools
@@ -21,10 +22,10 @@ import pennylane as qml
 
 from .controlled_decomposition import base_to_custom_ctrl_op
 from .decomposition_rule import DecompositionRule, register_resources
-from .resources import Resources, adjoint_resource_rep, resource_rep
+from .resources import adjoint_resource_rep, resource_rep
 
 
-class AdjointDecomp(DecompositionRule):
+class AdjointDecomp(DecompositionRule):  # pylint: disable=too-few-public-methods
     """The adjoint version of a decomposition rule."""
 
     def __init__(self, base_decomposition: DecompositionRule):
