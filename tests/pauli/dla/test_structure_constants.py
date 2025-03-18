@@ -84,13 +84,14 @@ class TestAdjointRepr:
 
     @pytest.mark.parametrize("ortho_dla", [Ising3, XXZ3])
     @pytest.mark.parametrize("matrix", [False, True])
-    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, matrix):
+    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, matrix, seed):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with
         non-orthogonal bases.
         """
         d = len(ortho_dla)
 
-        coeffs = np.random.random((d, d)) + 0.5
+        rng = np.random.default_rng(seed)
+        coeffs = rng.uniform(0.5, 1.5, size=(d, d))
         dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
         ad_rep = structure_constants(dla, pauli=True, matrix=matrix, is_orthogonal=False)
         for alpha in range(d):

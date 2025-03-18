@@ -262,6 +262,71 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         return True
 
+def get_coefficients(self, threshold: float = 0.0):
+
+    match self.node_type:
+        case NodeType.TENSOR:
+            return _numpy_to_dict(self.tensor, threshold)
+        case NodeType.FLOAT:
+            return { (): self.value }
+        case NodeType.SCALAR:
+            return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
+        case NodeType.SUM:
+            return _add_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+        case NodeType.OUTER:
+            return _mul_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+        case _:
+            raise ValueError(
+                f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
+            )
+
+
+def _add_dicts(d1, d2, threshold):
+    add_dict = {}
+
+    d1_keys = {d1.keys()}
+    d2_keys = {d2.keys()}
+
+    for key in d1_keys.intersection(d2_keys):
+        if abs(d1[key] + d2[key]) > threshold:
+            add_dict[key] = d1[key] + d2[key]
+
+    for key in d1_keys.difference(d2_keys):
+        add_dict[key] = d1[key]
+
+    for key in d2_keys.difference(d1_keys):
+        add_dict[key] = d2[key]
+
+    return add_dict
+
+
+def _mul_dicts(d1, d2, threshold):
+    mul_dict = {}
+
+    for key1, key2 in product(d1.keys(), d2.keys()):
+        if abs(d1[key1] * d2[key2]) > threshold:
+            mul_dict[key1 + key2] = d1[key1]*d2[key2]
+
+    return mul_dict
+
+def _scale_dict(scalar, d, threshold):
+    scaled = {}
+    for key in d.keys():
+        if abs(scalar * d[key]) > threshold:
+            scaled[key] = scalar * d[key]
+
+    return scaled
+
+def _numpy_to_dict(arr, threshold):
+    nz = arr.nonzero()
+    d = {}
+
+    for index in zip(*nz):
+        if abs(nz[index]) > threshold:
+            d[index] = arr[index]
+
+    return d
+
 
 def _flatten_product(iter1: Iterator[Tuple], iter2: Iterator[Tuple]) -> Iterator[Tuple]:
     for a, b in product(iter1, iter2):
