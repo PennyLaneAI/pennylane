@@ -262,23 +262,24 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         return True
 
-def get_coefficients(self, threshold: float = 0.0):
+    def get_coefficients(self, threshold: float = 0.0):
+        """Return the coefficients in a dictionary."""  
 
-    match self.node_type:
-        case NodeType.TENSOR:
-            return _numpy_to_dict(self.tensor, threshold)
-        case NodeType.FLOAT:
-            return { (): self.value }
-        case NodeType.SCALAR:
-            return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
-        case NodeType.SUM:
-            return _add_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
-        case NodeType.OUTER:
-            return _mul_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
-        case _:
-            raise ValueError(
-                f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
-            )
+        match self.node_type:
+            case NodeType.TENSOR:
+                return _numpy_to_dict(self.tensor, threshold)
+            case NodeType.FLOAT:
+                return { (): self.value }
+            case NodeType.SCALAR:
+                return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
+            case NodeType.SUM:
+                return _add_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+            case NodeType.OUTER:
+                return _mul_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+            case _:
+                raise ValueError(
+                    f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
+                )
 
 
 def _add_dicts(d1, d2, threshold):
