@@ -414,7 +414,7 @@ class TestExecutionFiniteShots:
             shape = qml.math.shape(res[0])
             # Other tests have verified that the _number_ of samples
             # will be consisent with the expected behaviour of hw-like
-            # exectuion, so we only verify the n_mcms dimension
+            # execution, so we only verify the n_mcms dimension
             if n_iters == 1:
                 assert len(shape) == 1
             else:

@@ -353,11 +353,11 @@ def test_qnode_pytree_output():
 
 @pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
-    """Unit tests for preprocessing and executing qnodes with program capture."""
+    """Integration tests for preprocessing and executing qnodes with program capture."""
 
-    def test_non_native_ops_execution(self, dev_name):
+    def test_non_native_ops_execution(self, dev_name, seed):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=2, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
@@ -369,7 +369,7 @@ class TestDevicePreprocessing:
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])
-    def test_mcms_execution_deferred(self, dev_name, mcm_method, shots):
+    def test_mcms_execution_deferred(self, dev_name, mcm_method, shots, seed):
         """Test that defer_measurements is reflected in the execution results of a device."""
         # Parametrized over mcm_method because default (None) method is "deferred"
         # Shots tests should check shape and ~vaguely~ validate distribution. Use the following test for inspiration:
@@ -377,7 +377,7 @@ class TestDevicePreprocessing:
         # Use postselection with DQ, not with LQ
         # Use reset with both devices
 
-        dev = qml.device(dev_name, wires=3, shots=shots)
+        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
         @qml.qnode(dev, mcm_method=mcm_method)
@@ -387,14 +387,14 @@ class TestDevicePreprocessing:
             qml.measure(0, reset=True, postselect=postselect)
             return {
                 "expval": (qml.expval(qml.Z(0)), qml.expval(qml.Z(1))),
-                "state": qml.sample(wires=[0, 1]) if shots else None,
+                "samples": qml.sample(wires=[0, 1]) if shots else None,
             }
 
         if not shots:
             outcome = -2 * postselect + 1 if postselect else 0
             assert qml.math.allclose(circuit()["expval"], [1, outcome])
         else:
-            shots_res = circuit()["state"]
+            shots_res = circuit()["samples"]
             if postselect:
                 # After post selection and reset (on the first bit)
                 # the valid sample is *only* [0, 1] (~shots/2 for bell state)
@@ -411,12 +411,12 @@ class TestDevicePreprocessing:
                 assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
-    def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method):
+    def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method, seed):
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
         # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
 
         shots = 1000
-        dev = qml.device(dev_name, wires=3, shots=shots)
+        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
@@ -444,14 +444,14 @@ class TestDevicePreprocessing:
             assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
-    def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method):
+    def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method, seed):
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
         # Use tests from tests/capture/transforms/test_mcm_execution.py for reference
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
-        n_postselects = 5
+        n_postselects = 3
 
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
         def circuit():
@@ -467,7 +467,7 @@ class TestDevicePreprocessing:
             num_of_results = len(res)
             assert qml.math.allclose(
                 num_of_results,
-                int(1000 / (2**n_postselects)),
+                int(1000 / (2**n_postselects)),  # 125
                 atol=20,
             )
         else:
@@ -475,13 +475,13 @@ class TestDevicePreprocessing:
             counts = qml.numpy.bincount(res)
             assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
 
-    def test_mcms_execution_single_branch_statistics(self, dev_name):
+    def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""
         # Apply MCM right before terminal measurements. That will make sure that all samples (for finite shot tests)
         # have the same value.
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev, mcm_method="single-branch-statistics")
         def circuit():
@@ -577,6 +577,23 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
     expected = jnp.cos(0 + 1 + 2)
     assert jnp.allclose(expected, output)
+
+
+# pylint: disable=unused-argument
+def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
+
+    @qml.qnode(qml.device("default.qubit", wires=4))
+    def circuit(i, x):
+        qml.RX(jax.numpy.sum(x), i)
+        return qml.expval(qml.Z(i))
+
+    def w(i):
+        return circuit(i, jnp.arange(i))
+
+    jaxpr = jax.make_jaxpr(w)(2)
+    [res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+    expected = jax.numpy.cos(0 + 1 + 2)
+    assert qml.math.allclose(res, expected)
 
 
 # pylint: disable=too-many-public-methods
