@@ -13,6 +13,7 @@ from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace import RealspaceSum
 from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
 
+# pylint: disable=protected-access
 
 class VibronicMatrix(Fragment):
     """The VibronicMatrix class"""
@@ -93,10 +94,11 @@ class VibronicMatrix(Fragment):
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
 
-        return self._norm(params)
+        padded = VibronicMatrix(_next_pow_2(self.states), self.modes, self.blocks_)
+
+        return padded._norm(params)
 
     def _norm(self, params: Dict) -> float:
-        # pylint: disable=protected-access
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
