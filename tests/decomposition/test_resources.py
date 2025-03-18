@@ -34,45 +34,24 @@ class TestResources:
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
 
-    def test_inconsistent_gate_counts(self):
-        """Tests that an error is raised of the gate count is inconsistent
-        with the number of gates."""
-        with pytest.raises(AssertionError):
-            Resources(
-                num_gates=2,
-                gate_counts={
-                    CompressedResourceOp(qml.RX, {}): 2,
-                    CompressedResourceOp(qml.RZ, {}): 1,
-                },
-            )
-
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
         with pytest.raises(AssertionError):
             Resources(
-                num_gates=1,
                 gate_counts={
                     CompressedResourceOp(qml.RX, {}): 2,
                     CompressedResourceOp(qml.RZ, {}): -1,
-                },
+                }
             )
 
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
         resources2 = Resources(
-            num_gates=2,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 1,
-                CompressedResourceOp(qml.RY, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1}
         )
 
         resources = resources1 + resources2
@@ -87,11 +66,7 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            num_gates=3,
-            gate_counts={
-                CompressedResourceOp(qml.RX, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 1,
-            },
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
 
         resources = resources * 2
@@ -100,6 +75,18 @@ class TestResources:
             CompressedResourceOp(qml.RX, {}): 4,
             CompressedResourceOp(qml.RZ, {}): 2,
         }
+
+    def test_repr(self):
+        """Tests the __repr__ of a Resources object."""
+
+        resources = Resources(
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+        )
+        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+
+
+class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+    resource_keys = {"foo", "bar"}
 
 
 class TestCompressedResourceOp:
@@ -117,12 +104,12 @@ class TestCompressedResourceOp:
         assert op.params == {}
 
     def test_invalid_op_type(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be a type"):
-            CompressedResourceOp(qml.RX(0.5, wires=0), {})
+        with pytest.raises(TypeError, match="op must be an Operator type"):
+            CompressedResourceOp("RX", {})
 
-        with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
+        with pytest.raises(TypeError, match="op must be a subclass of Operator"):
             CompressedResourceOp(int, {})
 
     def test_hash(self):
@@ -186,39 +173,29 @@ class TestCompressedResourceOp:
         assert repr(op) == "RX"
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
-        assert repr(op) == "MultiRZ"
+        assert repr(op) == "MultiRZ(num_wires=5)"
 
-
-class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-    resource_param_keys = {"foo", "bar"}
+        op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
+        assert repr(op) == "DummyOp(foo=2, bar=1)"
 
 
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
     def test_resource_rep_fail(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
+        with pytest.raises(TypeError, match="op must be a type of Operator"):
             resource_rep(int)
 
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             resource_rep(DummyOp, foo=2)
 
-        with pytest.raises(TypeError, match="Invalid resource parameters"):
+        with pytest.raises(TypeError, match="Unexpected keyword arguments"):
             resource_rep(DummyOp, foo=2, bar=1, hello=3)
-
-    def test_undefined_resource_params(self):
-        """Tests that an error is raised if the resource_param_keys are not defined."""
-
-        class EmptyDummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-            pass
-
-        with pytest.raises(NotImplementedError, match="resource_param_keys undefined"):
-            resource_rep(EmptyDummyOp)
 
     def test_resource_rep(self):
         """Tests creating a resource rep."""
@@ -298,7 +275,7 @@ class TestControlledResourceRep:
     def test_controlled_resource_op_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             controlled_resource_rep(DummyOp, {}, 1, 1, 1)
 
     def test_controlled_resource_op_flatten_x(self):
@@ -390,7 +367,7 @@ class TestSymbolicResourceRep:
     def test_adjoint_resource_rep_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
-        with pytest.raises(TypeError, match="Missing resource parameters"):
+        with pytest.raises(TypeError, match="Missing keyword arguments"):
             qml.adjoint_resource_rep(DummyOp, {})
 
     def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):

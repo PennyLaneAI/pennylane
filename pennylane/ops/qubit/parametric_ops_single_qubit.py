@@ -72,12 +72,12 @@ class RX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "X"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
@@ -154,6 +154,18 @@ class RX(Operation):
         return [pi_half, self.data[0], -pi_half]
 
 
+def _rx_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_rx_to_rot_resources)
+def _rx_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
+
+
+add_decomps(RX, _rx_to_rot)
+
+
 class RY(Operation):
     r"""
     The single qubit Y rotation
@@ -187,7 +199,7 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
@@ -263,6 +275,18 @@ class RY(Operation):
         return [0.0, self.data[0], 0.0]
 
 
+def _ry_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_ry_to_rot_resources)
+def _ry_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(0, phi, 0, wires=wires)
+
+
+add_decomps(RY, _ry_to_rot)
+
+
 class RZ(Operation):
     r"""
     The single qubit Z rotation
@@ -293,7 +317,7 @@ class RZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     basis = "Z"
     grad_method = "A"
@@ -411,6 +435,18 @@ class RZ(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
+def _rz_to_rot_resources():
+    return {qml.Rot: 1}
+
+
+@register_resources(_rz_to_rot_resources)
+def _rz_to_rot(phi, wires: WiresLike, **__):
+    qml.Rot(0, 0, phi, wires=wires)
+
+
+add_decomps(RZ, _rz_to_rot)
+
+
 class PhaseShift(Operation):
     r"""
     Arbitrary single qubit local phase shift
@@ -441,21 +477,21 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_param_keys = ()
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -587,17 +623,17 @@ class PhaseShift(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
-def _phaseshift_rz_globph_resources():
+def _phaseshift_to_rz_gp_resources():
     return {qml.RZ: 1, qml.GlobalPhase: 1}
 
 
-@register_resources(_phaseshift_rz_globph_resources)
-def _phaseshift_rz_globph(phi, wires, **__):
+@register_resources(_phaseshift_to_rz_gp_resources)
+def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     RZ(phi, wires=wires)
     qml.GlobalPhase(-phi / 2)
 
 
-add_decomps(PhaseShift, _phaseshift_rz_globph)
+add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 
 
 class Rot(Operation):
@@ -640,10 +676,12 @@ class Rot(Operation):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
+
+    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -789,6 +827,20 @@ class Rot(Operation):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
+def _rot_to_rz_ry_rz_resources():
+    return {qml.RZ: 2, qml.RY: 1}
+
+
+@register_resources(_rot_to_rz_ry_rz_resources)
+def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
+    RZ(phi, wires=wires)
+    RY(theta, wires=wires)
+    RZ(omega, wires=wires)
+
+
+add_decomps(Rot, _rot_to_rz_ry_rz)
+
+
 class U1(Operation):
     r"""
     U1 gate.
@@ -826,7 +878,7 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -972,7 +1024,7 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     def __init__(
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
@@ -1140,7 +1192,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_param_keys = ()
+    resource_keys = set()
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
