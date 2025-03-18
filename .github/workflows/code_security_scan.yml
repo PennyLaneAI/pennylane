@@ -9,14 +9,7 @@ concurrency:
   group: code-security-scan-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  determine_runner:
-    # if: github.event.pull_request.draft == false
-    name: Determine runner type to use
-    uses: ./.github/workflows/determine-workflow-runner.yml
-    with:
-      default_runner: ubuntu-latest
-  
+jobs: 
   code_security_scan:
     needs:
       - determine_runner
@@ -24,7 +17,7 @@ jobs:
     with:
       github-repository: ${{ github.repository }}
       repository-ref: ${{ github.ref }}
-      runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      runner_name: ubuntu-latest
       bandit-config-file: pyproject.toml
       scan_directory: pennylane
       
