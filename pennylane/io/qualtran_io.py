@@ -175,6 +175,7 @@ class FromBloq(Operation):
         array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
         0.00290337, 0.00526717, 0.02099701])
 
+    .. details::
         :title: Usage Details
 
         The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.
