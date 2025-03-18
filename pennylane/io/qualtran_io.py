@@ -80,7 +80,7 @@ class FromBloq(Operation):
 
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
-        wires (WiresLike): The wires the operator acts on. This can be determined by using the
+        wires (WiresLike): The wires the operator acts on. The number of wires required can be determined by using the
             signature of the Bloq, ``bloq.signature.n_qubits()``.
 
     Raises:
