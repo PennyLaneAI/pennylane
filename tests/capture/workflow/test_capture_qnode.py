@@ -355,7 +355,7 @@ def test_qnode_pytree_output():
     "dev_name", ["default.qubit", pytest.param("lightning.qubit", marks=pytest.mark.skip)]
 )
 class TestDevicePreprocessing:
-    """Unit tests for preprocessing and executing qnodes with program capture."""
+    """Integration tests for preprocessing and executing qnodes with program capture."""
 
     def test_non_native_ops_execution(self, dev_name, seed):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
