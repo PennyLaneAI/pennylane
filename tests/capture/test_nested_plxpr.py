@@ -256,9 +256,9 @@ class TestAdjointDynamicShapes:
 
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
         op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
         qml.assert_equal(op1, tape[0])
-        assert len(tape) == 1
 
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
@@ -268,9 +268,9 @@ class TestAdjointDynamicShapes:
 
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
         op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
         qml.assert_equal(op1, tape[0])
-        assert len(tape) == 1
 
 
 class TestCtrlQfunc:
@@ -458,6 +458,7 @@ class TestCtrlQfunc:
 
         jaxpr = jax.make_jaxpr(f)({"a": 0.5, "wire": 0})
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
+        assert len(tape) == 1
         expected = qml.ctrl(qml.RX(0.5, 0), [1])
         qml.assert_equal(tape[0], expected)
 
@@ -505,9 +506,9 @@ class TestCtrlDynamicShapeInput:
 
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
         op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 2)
         qml.assert_equal(op1, tape[0])
-        assert len(tape) == 1
 
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
@@ -517,6 +518,6 @@ class TestCtrlDynamicShapeInput:
 
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
         op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 6)
         qml.assert_equal(op1, tape[0])
-        assert len(tape) == 1

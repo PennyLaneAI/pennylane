@@ -50,7 +50,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
-    if getattr(x, "shape", None) == () and "int" in str(getattr(x, "dtype", None)):
+    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(getattr(x, "dtype", None), "int")
         previous_ints.append(x)
         return {}
 
@@ -126,7 +126,7 @@ def determine_abstracted_axes(args):
     demonstrated by the fact that we do not have any additional ``abstract_shapes``, as it is already
     present in the call signature.  The abstracted axis is also `"a_arg"` instead of `"a"`.
     The ``"_arg"`` at the end indicates that the corresponding abstract axis
-    was already in the argument loop.∂
+    was already in the argument loop.
 
     """
     if not has_jax:  # pragma: no cover
