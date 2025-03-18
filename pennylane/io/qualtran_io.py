@@ -119,7 +119,7 @@ class FromBloq(Operation):
 
     .. code-block::
 
-        from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+        from qualtran.bloqs.basic_gates import CNOT
         from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
         from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
@@ -148,6 +148,40 @@ class FromBloq(Operation):
     0.00290337, 0.00526717, 0.02099701])
 
     .. details::
+        :title: Advanced Example
+
+        An example showcasing how to use ``qml.FromBloq`` inside a device:
+
+        .. code-block::
+
+            from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+            from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
+            from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+
+            # Parameters for the TrotterizedUnitary
+            nsites = 5
+            j_zz, gamma_x = 2, 0.1
+            zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
+            x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
+            trott_unitary = TrotterizedUnitary(
+                bloqs=(x_bloq, zz_bloq),  timestep=0.01,
+                indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
+            )
+
+            # Instantiate the TextbookQPE and pass in our unitary
+            textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
+
+            # Execute on device
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev)
+            def circuit():
+                qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+                return qml.probs(wires=[5, 6, 7])
+
+        >>> circuit()
+        array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
+        0.00290337, 0.00526717, 0.02099701])
+
         :title: Usage Details
 
         The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.

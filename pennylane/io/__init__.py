@@ -26,4 +26,4 @@ from .io import (
     from_quil_file,
     plugin_converters,
 )
-from .qualtran_io import FromBloq, get_bloq_registers_info
+from .qualtran_io import FromBloq, bloq_registers
