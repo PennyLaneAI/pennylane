@@ -40,13 +40,13 @@ def bloq_registers(bloq):
 
             pip install git+https://github.com/quantumlib/Qualtran.git
 
-    By default, the keys of the ``qml.registers`` object are the default Qualtran register names
-    and the values are ``Wires`` objects with a length of the total bitsize of its respective
-    register. The wires are indexed in ascending order, starting from 0.
+    The register names in the Qualtran bloq are used for the keys of the dictionary. The values
+    are ``Wires`` objects with a length of the total bitsize of its respective register. The
+    wires are indexed in ascending order, starting from 0.
 
     This function is best used for when one wants to manually access the wires that a Bloq acts on.
-    For example, typically one wants to measure the estimation wires of QPE. To find the wires that
-    the represent those wires, one can use this function as shown in the example.
+    For example, to find the estimation wires of a textbook Quantum Phase Estimation bloq, one can
+    use this function as shown in the example.
 
     Args:
         bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
