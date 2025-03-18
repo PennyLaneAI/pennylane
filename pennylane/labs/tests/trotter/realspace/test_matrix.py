@@ -13,7 +13,7 @@ from pennylane.labs.trotter.realspace import (
 )
 from pennylane.labs.trotter.realspace.matrix import op_norm
 
-# pylint: disable=too-many-arguments,no-self-use
+# pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
 
 
 def _coeffs(states: int, modes: int, order: int):

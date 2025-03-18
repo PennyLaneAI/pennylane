@@ -285,3 +285,10 @@ class RealspaceSum(Fragment):
             state.gridpoints,
             mat @ state.vector,
         )
+
+    def get_coefficients(self, threshold: float = 0.0):
+        coeffs = {}
+        for op in self.ops:
+            coeffs[op.ops] = op.get_coefficients(threshold)
+
+        return coeffs
