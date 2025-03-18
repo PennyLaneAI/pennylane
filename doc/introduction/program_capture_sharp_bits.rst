@@ -43,8 +43,8 @@ features that will help get your existing tape-based code working with program-c
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
     "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
 
-Device compatibility 
---------------------
+Device wires 
+------------
 
 Currently, ``default.qubit`` and ``lightning.qubit`` are compatible with program-capture.
 With program-capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
@@ -70,8 +70,8 @@ use JAX-compatible types whenever possible**, in particular for arguments to qua
 functions and QNodes, and positional arguments in PennyLane gate operations. JAX-compatible 
 types are ``jax.numpy`` arrays and standard Python ``int``\ s and ``float``\ s. 
 
-For example, a ``list`` is not a valid JAX type for the positional argument in 
-:class:`~.pennylane.MultiRZ`, and will result in an error:
+For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for 
+the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
 .. code-block:: python
     dev = qml.device('default.qubit', wires=2)
@@ -118,6 +118,43 @@ JAX-incompatible types, like Python ``range``\ s, are acceptable as keyword argu
 Array(0., dtype=float32)
 
 But, again, using JAX-compatible types wherever possible is recommended.
+
+Positional arguments
+====================
+
+Positional arguments **must** be acceptable JAX types. For instance, consider this
+example with ``qml.RZ``:
+
+.. code-block:: python
+
+    import jax.numpy as jnp
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circui(angle):
+        qml.RX(phi=angle, wires=0)
+        return qml.expval(qml.Z(0))
+
+>>> angle = jnp.array(0.1)
+>>> circuit1(angle)
+...
+UnexpectedTracerError: Encountered an unexpected tracer. A function transformed by JAX had a side effect, allowing for a reference to an intermediate value with type float32[] wrapped in a DynamicJaxprTracer to escape the scope of the transformation.
+...
+
+But, when the angle is passed as a positional argument, the circuit executes as 
+expected:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circui(angle):
+        qml.RX(angle, wires=0)
+        return qml.expval(qml.Z(0))
+
+>>> angle = jnp.array(0.1)
+>>> circuit1(angle)
+Array(0.9950042, dtype=float32)
 
 Parameter broadcasting and ``vmap``
 -----------------------------------
