@@ -192,7 +192,7 @@ def resources_from_qfunc(
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
 
-        operations = tuple(op for op in q.queue if isinstance(op, Operation))
+        operations = tuple(op for op in q.queue if isinstance(op, (Operation, ResourceOperator)))
         compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
         initial_gate_set = set.union(gate_set, _StandardGateSet)
