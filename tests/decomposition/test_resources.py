@@ -104,7 +104,7 @@ class TestCompressedResourceOp:
         assert op.params == {}
 
     def test_invalid_op_type(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
         with pytest.raises(TypeError, match="op must be an Operator type"):
             CompressedResourceOp("RX", {})
@@ -183,9 +183,9 @@ class TestResourceRep:
     """Tests the resource_rep utility function."""
 
     def test_resource_rep_fail(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
+        with pytest.raises(TypeError, match="op must be a type of Operator"):
             resource_rep(int)
 
     def test_params_mismatch(self):
