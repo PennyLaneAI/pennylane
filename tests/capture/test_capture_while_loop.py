@@ -87,9 +87,9 @@ class TestCaptureWhileLoop:
 
         @qml.while_loop(lambda i: i < 5)
         def w(i):
-            raise AttributeError("my random error")
+            raise ValueError("my random error")
 
-        with pytest.raises(AttributeError, match="my random error"):
+        with pytest.raises(ValueError, match="my random error"):
             _ = jax.make_jaxpr(w)(0)
 
 
