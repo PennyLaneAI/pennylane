@@ -296,6 +296,60 @@ TracerIntegerConversionError: The __index__() method was called on traced array 
 The error occurred while tracing the function wrapper at /Users/isaac/.virtualenvs/pl-latest/lib/python3.11/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
+``while`` loops 
+---------------
+
+While loops written with :func:`~.pennylane.while_loop` cannot accept a ``lambda``
+function:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+
+        @qml.while_loop(lambda a: a > 3)
+        def loop(a):
+            a += 1
+            return a
+
+        a = 0
+        loop(a)
+
+        qml.RX(0, wires=0)
+        return qml.state()
+
+>>> circuit()
+...
+KeyError: <gast.gast.Lambda object at 0x136ff82b0>
+
+As a workaround, use a regular Python function:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=1)
+
+    def func(x):
+        return x > 3
+
+    @qml.qnode(dev)
+    def circuit():
+
+        @qml.while_loop(func)
+        def loop(a):
+            a += 1
+            return a
+
+        a = 0
+        loop(a)
+        
+        qml.RX(0, wires=0)
+        return qml.state()
+
+>>> circuit()
+Array([1.+0.j, 0.+0.j], dtype=complex64)
+
 Section title 
 -------------
 
