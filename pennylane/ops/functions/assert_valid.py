@@ -456,7 +456,7 @@ def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
 
     if len(op.wires) <= 26:
         _check_wires(op, kwargs.get("skip_wire_mapping", False))
-    _check_copy(op, kwargs.get("skip_deep_copy", False))
+    _check_copy(op, kwargs.get("skip_deepcopy", False))
     _check_pytree(op)
     if not kwargs.get("skip_pickle", False):
         _check_pickle(op)
