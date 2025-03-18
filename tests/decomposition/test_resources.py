@@ -85,6 +85,10 @@ class TestResources:
         assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
 
 
+class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+    resource_keys = {"foo", "bar"}
+
+
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
@@ -100,12 +104,12 @@ class TestCompressedResourceOp:
         assert op.params == {}
 
     def test_invalid_op_type(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be an Operator type"):
+        with pytest.raises(TypeError, match="op must be an Operator type"):
             CompressedResourceOp("RX", {})
 
-        with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
+        with pytest.raises(TypeError, match="op must be a subclass of Operator"):
             CompressedResourceOp(int, {})
 
     def test_hash(self):
@@ -169,20 +173,19 @@ class TestCompressedResourceOp:
         assert repr(op) == "RX"
 
         op = CompressedResourceOp(qml.MultiRZ, {"num_wires": 5})
-        assert repr(op) == "MultiRZ, {'num_wires': 5}"
+        assert repr(op) == "MultiRZ(num_wires=5)"
 
-
-class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-    resource_keys = {"foo", "bar"}
+        op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
+        assert repr(op) == "DummyOp(foo=2, bar=1)"
 
 
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
     def test_resource_rep_fail(self):
-        """Tests that an error is raised if the op_type is invalid."""
+        """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
+        with pytest.raises(TypeError, match="op must be a type of Operator"):
             resource_rep(int)
 
     def test_params_mismatch(self):
