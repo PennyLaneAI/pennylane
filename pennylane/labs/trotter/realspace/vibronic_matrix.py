@@ -94,7 +94,7 @@ class VibronicMatrix(Fragment):
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
 
-        padded = VibronicMatrix(_next_pow_2(self.states), self.modes, self.blocks_)
+        padded = VibronicMatrix(_next_pow_2(self.states), self.modes, self._blocks)
 
         return padded._norm(params)
 
