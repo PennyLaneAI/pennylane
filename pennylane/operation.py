@@ -704,8 +704,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             qml.wires.Wires,
             range,
             set,
-            jax.numpy.ndarray,
-            np.ndarray,
+            *array_types,
         )
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.

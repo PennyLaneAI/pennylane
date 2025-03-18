@@ -284,7 +284,7 @@
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
-* Improves support for specifying wires as jax numpy arrays when program capture is enabled.
+* Improves support when specifying wires as type `jax.numpy.ndarray` if program capture is enabled.
   [(#7108)](https://github.com/PennyLaneAI/pennylane/pull/7108)
 
 <h4>Capturing and representing hybrid programs</h4>
