@@ -172,7 +172,6 @@ def has_adjoint_ops():
         qml.BlockEncode,
         qml.SpecialUnitary,
         # custom controlled ops
-        qml.ControlledQubitUnitary,
         qml.CH,
         qml.CY,
         qml.CZ,
