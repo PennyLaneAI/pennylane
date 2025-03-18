@@ -29,8 +29,8 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 def bloq_registers(bloq):
-    """Returns a ``qml.registers`` object that assigns wires to registers according to the input
-    bloq's signature.
+    """Reads a Qualtran bloq's signature and returns a ``qml.registers`` object with wires
+    assigned to registers according to the bloq's signature.
 
     .. note::
         This function requires the latest version of Qualtran. We recommend installing the main
@@ -53,8 +53,8 @@ def bloq_registers(bloq):
 
     Returns:
         dict: A dictionary built with information from the bloq's signature. The dictionary keys
-            are strings that come from the names of the bloq's registers. The values are ``Wires``
-            objects that are determined by the bitsizes of those same registers.
+        are strings that come from the names of the bloq's registers. The values are ``Wires``
+        objects that are determined by the bitsizes of those same registers.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
