@@ -14,6 +14,8 @@
 """
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
+from collections import defaultdict
+
 import numpy as np
 
 import pennylane as qml
@@ -66,7 +68,6 @@ def bloq_registers(bloq):
     >>> qml.get_bloq_registers_info(textbook_qpe_small)
     {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
     """
-    from collections import defaultdict
 
     if not isinstance(bloq, qt.Bloq):
         raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
