@@ -106,7 +106,7 @@ class CompressedResourceOp:
     an operator, use the :func:`~pennylane.resource_rep` function.
 
     Args:
-        op_type: the operator type
+        op: the operator type
         params (dict): the parameters of the operator relevant to the resource estimation of
             its decompositions. This should only include parameters that affect the gate counts.
 
@@ -114,12 +114,12 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: Type[Operator], params: Optional[dict] = None):
-        if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
-        if not issubclass(op_type, qml.operation.Operator):
-            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
-        self.op_type = op_type
+    def __init__(self, op: Type[Operator], params: Optional[dict] = None):
+        if not isinstance(op, type):
+            raise TypeError(f"op must be an Operator type, got {type(op)}")
+        if not issubclass(op, qml.operation.Operator):
+            raise TypeError(f"op must be a subclass of Operator, got {op}")
+        self.op_type = op
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
 
@@ -134,7 +134,8 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
-        return f"{self.op_type.__name__}, {self.params}" if self.params else self.op_type.__name__
+        params = ", ".join(f"{k}={v}" for k, v in self.params.items())
+        return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
 def _make_hashable(d) -> tuple:
@@ -145,7 +146,7 @@ def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
     if not issubclass(op_type, qml.operation.Operator):
-        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
+        raise TypeError(f"op must be a type of Operator, got {op_type}")
 
     if op_type.resource_keys is None:
         raise NotImplementedError(f"resource_keys undefined for {op_type.__name__}")
@@ -170,7 +171,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
+def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -183,9 +184,9 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         declares its required resources using :func:`~pennylane.register_resources`.
 
     Args:
-        op_type: the operator class to create a resource representation for.
+        op: the operator class to create a resource representation for.
         **params: parameters relevant to the resource estimate of the operator's decompositions.
-            This should be consistent with ``op_type.resource_keys``.
+            This should be consistent with ``op.resource_keys``.
 
     Returns:
         CompressedResourceOp: a lightweight representation of the operator.
@@ -252,14 +253,14 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         .. seealso:: :func:`~pennylane.controlled_resource_rep` and :func:`~pennylane.adjoint_resource_rep`
 
     """
-    _validate_resource_rep(op_type, params)
-    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+    _validate_resource_rep(op, params)
+    if op in (qml.ops.Controlled, qml.ops.ControlledOp):
         return controlled_resource_rep(**params)
-    if issubclass(op_type, qml.ops.Adjoint):
+    if issubclass(op, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
-    if issubclass(op_type, qml.ops.Pow):
+    if issubclass(op, qml.ops.Pow):
         return pow_resource_rep(**params)
-    return CompressedResourceOp(op_type, params)
+    return CompressedResourceOp(op, params)
 
 
 def controlled_resource_rep(

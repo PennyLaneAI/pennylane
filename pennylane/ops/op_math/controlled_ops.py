@@ -256,13 +256,6 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
 
-    def adjoint(self) -> "ControlledQubitUnitary":
-        if self.base.has_matrix:
-            U = qml.math.moveaxis(qml.math.conj(self.base.matrix()), -2, -1)
-            return ControlledQubitUnitary(U, wires=self.wires)
-        U = self.sparse_matrix().conjugate().transpose()
-        return ControlledQubitUnitary(U, wires=self.wires)
-
     @property
     def has_decomposition(self):
         if not super().has_decomposition:
