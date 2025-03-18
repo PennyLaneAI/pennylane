@@ -371,16 +371,11 @@ class PauliX(Observable, Operation):
         **Example:**
 
         >>> print(qml.X.compute_decomposition(0))
-        [PhaseShift(1.5707963267948966, wires=[0]),
-        RX(3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        [RX(3.141592653589793, wires=[0]),
+        GlobalPhase(-1.5707963267948966, wires=[0])]
 
         """
-        return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
-            qml.RX(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        return [qml.RX(np.pi, wires=wires), qml.GlobalPhase(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
@@ -572,16 +567,11 @@ class PauliY(Observable, Operation):
         **Example:**
 
         >>> print(qml.Y.compute_decomposition(0))
-        [PhaseShift(1.5707963267948966, wires=[0]),
-        RY(3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        [RY(3.141592653589793, wires=[0]),
+        GlobalPhase(-1.5707963267948966, wires=[0])]
 
         """
-        return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
-            qml.RY(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        return [qml.RY(np.pi, wires=wires), qml.GlobalPhase(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
@@ -1183,15 +1173,15 @@ class SX(Operation):
         >>> print(qml.SX.compute_decomposition(0))
         [RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
-        RZ(-3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        RZ(-1.5707963267948966, wires=[0]),
+        GlobalPhase(-0.7853981633974483, wires=[0])]
 
         """
         return [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
-            qml.RZ(-np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RZ(-np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 4, wires=wires),
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:

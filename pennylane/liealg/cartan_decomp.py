@@ -41,7 +41,7 @@ def cartan_decomp(
     .. math:: [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} \text{ ; } [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} \text{ ; } [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k}
 
     Args:
-        g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose
+        g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose.
         involution (callable): Involution function :math:`\Theta(\cdot)` to act on the input operator, should return ``0/1`` or ``False/True``.
             E.g., :func:`~even_odd_involution` or :func:`~concurrence_involution`.
 
@@ -113,15 +113,15 @@ def check_commutation_relation(
 ):
     r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
-    .. warning:: This function is expensive to compute
+    .. warning:: This function is expensive to compute.
 
     Args:
-        ops1 (List[Union[PauliSentence, TensorLike]]): First set of operators
-        ops2 (List[Union[PauliSentence, TensorLike]]): Second set of operators
-        vspace (Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]]): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
+        ops1 (List[Union[PauliSentence, TensorLike]]): First set of operators.
+        ops2 (List[Union[PauliSentence, TensorLike]]): Second set of operators.
+        vspace (Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]]): The vector space in form of a :class:`~PauliVSpace` that the operators should map to.
 
     Returns:
-        bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+        bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
     **Example**
 
