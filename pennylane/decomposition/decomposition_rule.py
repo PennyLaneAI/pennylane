@@ -46,7 +46,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
         resources (dict or Callable): a dictionary mapping unique operators within the given
             ``qfunc`` to their number of occurrences therein. If a function is provided instead
             of a static dictionary, a dictionary must be returned from the function. For more
-            information, see Usage details.
+            information, consult the Quantum Functions as Decomposition Rules section below.
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
 
@@ -233,7 +233,7 @@ _decompositions = defaultdict(list)
 """dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
 
 
-def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
+def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -250,8 +250,8 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     decomposition rules that may be chosen if they lead to a more efficient decomposition.
 
     Args:
-        op_type: the operator type for which new decomposition rules are specified.
-        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
+        op: the operator type for which new decomposition rules are specified.
+        decomps (DecompositionRule): new decomposition rules to add to the given ``op``.
             A decomposition is a quantum function registered with a resource estimate using
             ``qml.register_resources``.
 
@@ -296,10 +296,10 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    _decompositions[op_type].extend(decomps)
+    _decompositions[op].extend(decomps)
 
 
-def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
+def list_decomps(op: Type[Operator]) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -310,7 +310,7 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
         decomposition rules for an operator.
 
     Args:
-        op_type: the operator class to retrieve decomposition rules for.
+        op: the operator class to retrieve decomposition rules for.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -337,10 +337,10 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return _decompositions[op_type][:]
+    return _decompositions[op][:]
 
 
-def has_decomp(op_type: Type[Operator]) -> bool:
+def has_decomp(op: Type[Operator]) -> bool:
     """Check whether an operator has decomposition rules defined.
 
     .. note::
@@ -351,10 +351,10 @@ def has_decomp(op_type: Type[Operator]) -> bool:
         decomposition rules for an operator.
 
     Args:
-        op_type: the operator class to check for decomposition rules.
+        op: the operator class to check for decomposition rules.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    return op_type in _decompositions and len(_decompositions[op_type]) > 0
+    return op in _decompositions and len(_decompositions[op]) > 0
