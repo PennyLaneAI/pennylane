@@ -277,8 +277,6 @@ class FromBloq(Operation):
                 for pred in pred_cxns:
                     soq = pred.right
                     soq_to_wires[soq] = soq_to_wires[pred.left]
-                    if isinstance(soq_to_wires[soq], list) and len(soq_to_wires[soq]) == 1:
-                        soq_to_wires[soq] = soq_to_wires[soq][0]
                     in_quregs[soq.reg.name][soq.idx] = np.squeeze(soq_to_wires[soq])
 
                 for succ in succ_cxns:
