@@ -124,7 +124,7 @@ class PhaseAdder(Operation):
 
     grad_method = None
 
-    resource_param_keys = ("num_x_wires", "mod")
+    resource_keys = ("num_x_wires", "mod")
 
     def __init__(
         self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
@@ -256,11 +256,6 @@ class PhaseAdder(Operation):
 
 
 def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
-
-    # wires = qml.math.array(x_wires, like="jax")
-    # work_wire = qml.math.array(work_wire, like="jax")
-    # n_wires = len(wires)
-
     if mod == 2**num_x_wires:
         return {qml.PhaseShift: num_x_wires}
 
@@ -268,9 +263,22 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         qml.PhaseShift: 2 * num_x_wires,
         qml.adjoint_resource_rep(qml.PhaseShift, {}): 2 * num_x_wires,
         qml.adjoint_resource_rep(qml.QFT, {"num_wires": num_x_wires}): 2,
-        qml.controlled_resource_rep(qml.PauliX, {}, 1, 1, 1): 2,
         qml.resource_rep(qml.QFT, num_wires=num_x_wires): 2,
-        qml.CNOT: num_x_wires,
+        qml.controlled_resource_rep(
+            base_class=qml.PauliX,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=1,
+            num_work_wires=0,
+        ): 1,
+        qml.controlled_resource_rep(
+            base_class=qml.PhaseShift,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=1,
+            num_work_wires=0,
+        ): num_x_wires,.
+        qml.CNOT: 1,
     }
 
 
