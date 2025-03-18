@@ -44,10 +44,6 @@ except ImportError:
 
 # Skip marker for Keras 3
 KERAS3_XFAIL_INFO = "This test requires Keras 2. Skipping for Keras 3 (TF >= 2.16) until proper support is implemented."
-requires_keras2 = pytest.mark.xfail(
-    condition=USING_KERAS3,
-    reason=KERAS3_XFAIL_INFO,
-)
 # pylint: disable=unnecessary-dunder-call
 
 
@@ -140,6 +136,21 @@ def test_no_attribute():
         qml.qnn.random  # pylint: disable=pointless-statement
 
 
+@pytest.mark.tf
+@pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
+@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disable=no-self-use
+    """Test if an ImportError is raised when instantiated with an incorrect version of
+    TensorFlow"""
+    c, w = get_circuit
+    with monkeypatch.context() as m:
+        m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
+        with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+            KerasLayer(c, w, output_dim)
+
+
+# pylint: disable=too-many-public-methods
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
@@ -1097,7 +1108,10 @@ def test_specs():
     assert info["device_name"] == "default.qubit"
 
 
-@requires_keras2
+@pytest.mark.xfail(
+    condition=USING_KERAS3,
+    reason=KERAS3_XFAIL_INFO,
+)
 @pytest.mark.slow
 @pytest.mark.tf
 def test_save_and_load_preserves_weights(tmpdir):
