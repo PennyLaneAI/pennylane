@@ -52,7 +52,7 @@ class TestGraphToggle:
         assert not qml.decomposition.enabled_graph()
 
 
-class TestDecompositionGraph:
+class TestTransformDecompose:
 
     @pytest.mark.unit
     def test_valueerror_graph_disabled_fixed(self):
