@@ -43,8 +43,8 @@ class TestIndividualGates:
     correct results.
     """
 
-    @pytest.mark.parametrize("initial_state", generate_random_states(2, n_qubit=1))
-    @pytest.mark.parametrize("rz_angle", generate_random_rotation_angles(3))
+    @pytest.mark.parametrize("initial_state", generate_random_states(2, n_qubit=1, seed=1))
+    @pytest.mark.parametrize("rz_angle", generate_random_rotation_angles(3, seed=2))
     def test_rz_in_mbqc_representation(self, initial_state, rz_angle):
         """Test that the RZ gate in the MBQC representation gives correct results."""
         dev = qml.device("default.qubit")
@@ -94,7 +94,7 @@ class TestIndividualGates:
 
         assert np.allclose(result_ref, result_mbqc)
 
-    @pytest.mark.parametrize("initial_state", generate_random_states(1, n_qubit=2))
+    @pytest.mark.parametrize("initial_state", generate_random_states(1, n_qubit=2, seed=3))
     def test_cnot_in_mbqc_representation(self, initial_state):
         """Test that the CNOT gate in the MBQC representation gives correct results."""
         dev = qml.device("default.qubit")
