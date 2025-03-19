@@ -297,10 +297,6 @@ def _equal_operators(
     atol=1e-9,
 ):
     """Default function to determine whether two Operator objects are equal."""
-    if not isinstance(
-        op2, type(op1)
-    ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}"
 
     if isinstance(op1, qml.Identity):
         # All Identities are equivalent, independent of wires.
