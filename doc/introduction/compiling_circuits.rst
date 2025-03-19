@@ -355,23 +355,13 @@ versus that of the new decompositions system (enabled with ``qml.decompositions.
 differ in the following ways when it comes to injecting custom decompositions for
 operators:
 
-.. list-table:: 
-   :widths: 25 25 25
-   :header-rows: 1
-
-   * - 
-     - Circuit-level decomposition
-     - Device-level decomposition
-     - Multiple decompositions per operator
-   * - Behaviour with ``qml.decompositions.disable_graph`` (the default setting)
-     - No
-     - Yes
-     - No
-   * - Behaviour with ``qml.decompositions.enable_graph``
-     - Yes
-     - Yes
-     - Yes
-
++-------------------+------------------------------+-----------------------------+--------------------------------------+
+|                   | QNode-level decomposition    | Device-level decomposition  | Multiple decompositions per operator |
++===================+==============================+=============================+======================================+
+| ``disable_graph`` | No                           | Yes                         | No                                   |
++-------------------+------------------------------+-----------------------------+--------------------------------------+
+| ``enable_graph``  | Yes                          | Yes                         | Yes                                  |
++-------------------+------------------------------+-----------------------------+--------------------------------------+
 
 Behaviour with ``qml.decompositions.disable_graph``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -459,6 +449,7 @@ be used.
 
     To have better control over custom decompositions, consider using the new decompositions
     system functionality outlined in the next section.
+
 
 Behaviour with ``qml.decompositions.enable_graph``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
