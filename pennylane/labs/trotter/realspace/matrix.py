@@ -1,4 +1,17 @@
-"""Functions for transforming a VibronicMatrix into a scipy csr matrix"""
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Private helper functions for converting RealspaceOperator objects to matrices"""
 
 from __future__ import annotations
 
@@ -11,7 +24,7 @@ if TYPE_CHECKING:
     from pennylane.labs.trotter.realspace import RealspaceOperator, RealspaceSum
 
 
-def position_operator(
+def _position_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Returns a discretization of the position operator"""
@@ -43,7 +56,7 @@ def _harmonic_position(gridpoints: int) -> np.ndarray:
     return 1 / np.sqrt(2) * matrix
 
 
-def momentum_operator(
+def _momentum_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Returns a discretization of the momentum operator"""
@@ -82,7 +95,7 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
     return (1j / np.sqrt(2)) * matrix
 
 
-def creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
+def _creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
     """Return a matrix representation of the creation operator"""
     rows = np.array(range(0, gridpoints - 1))
     cols = np.array(range(1, gridpoints))
@@ -94,7 +107,7 @@ def creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray
     return sp.sparse.csr_array(matrix) if sparse else matrix
 
 
-def annihilation_operator(
+def _annihilation_operator(
     gridpoints: int, sparse: bool = False
 ) -> Union[np.ndarray, sp.sparse.array]:
     """Return a matrix representation of the annihilation operator"""
@@ -108,14 +121,14 @@ def annihilation_operator(
     return sp.sparse.csr_array(matrix) if sparse else matrix
 
 
-def string_to_matrix(
+def _string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Return a csr matrix representation of a Vibronic op"""
 
     matrix = _identity(gridpoints, sparse=sparse)
-    p = momentum_operator(gridpoints, basis=basis, sparse=sparse)
-    q = position_operator(gridpoints, basis=basis, sparse=sparse)
+    p = _momentum_operator(gridpoints, basis=basis, sparse=sparse)
+    q = _position_operator(gridpoints, basis=basis, sparse=sparse)
 
     for char in op:
         if char == "P":
@@ -131,7 +144,7 @@ def string_to_matrix(
     return matrix
 
 
-def tensor_with_identity(
+def _tensor_with_identity(
     modes: int,
     gridpoints: int,
     index: Tuple[int],
@@ -178,6 +191,6 @@ def _zeros(shape: Tuple[int], sparse: bool = False) -> Union[np.ndarray, sp.spar
     return np.zeros(shape)
 
 
-def op_norm(gridpoints: int) -> float:
+def _op_norm(gridpoints: int) -> float:
     """The norm of P and Q"""
     return np.sqrt(gridpoints * np.pi / 2)

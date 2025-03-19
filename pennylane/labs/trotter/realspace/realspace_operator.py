@@ -1,3 +1,16 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """The RealspaceOperator class"""
 
 from __future__ import annotations
@@ -14,9 +27,9 @@ from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace.ho_state import HOState
 from pennylane.labs.trotter.realspace.matrix import (
     _zeros,
-    op_norm,
-    string_to_matrix,
-    tensor_with_identity,
+    _op_norm,
+    _string_to_matrix,
+    _tensor_with_identity,
 )
 
 from .realspace_coefficients import RealspaceCoeffs
@@ -35,7 +48,7 @@ class RealspaceOperator:
     ) -> Union[np.ndarray, sp.sparse.csr_array]:
         """Return a matrix representation of the operator"""
 
-        matrices = [string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops]
+        matrices = [_string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops]
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
 
         if sparse:
@@ -44,7 +57,7 @@ class RealspaceOperator:
             indices = product(range(self.modes), repeat=len(self.ops))
 
         for index in indices:
-            matrix = self.coeffs[index] * tensor_with_identity(
+            matrix = self.coeffs[index] * _tensor_with_identity(
                 self.modes, gridpoints, index, matrices, sparse=sparse
             )
             final_matrix = final_matrix + matrix
@@ -267,14 +280,14 @@ class RealspaceSum(Fragment):
         norm = 0
 
         for op in self.ops:
-            term_op_norm = math.prod(map(lambda op: op_norm(gridpoints) ** len(op), op.ops))
+            term__op_norm = math.prod(map(lambda op: _op_norm(gridpoints) ** len(op), op.ops))
 
             indices = (
                 op.coeffs.nonzero() if sparse else product(range(self.modes), repeat=len(op.ops))
             )
             coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
 
-            norm += coeff_sum * term_op_norm
+            norm += coeff_sum * term__op_norm
 
         return norm
 
