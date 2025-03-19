@@ -21,8 +21,35 @@ This module implements the infrastructure for PennyLane's new graph-based decomp
 
     This module is experimental and is subject to change in the future.
 
-.. TODO::
-    Add section here explaining how to enable and disable the new decomposition system. [sc-83993]
+To activate and deactivate the new experimental graph-based decomposition
+system, use the switches ``qml.decomposition.enable_graph`` and
+``qml.decomposition.disable_graph``.
+
+Whether or not the graph-based decomposition is currently being used can be
+queried with ``qml.decomposition.enabled_graph``.
+By default, the mechanism is disabled.
+
+.. currentmodule:: pennylane.decomposition
+
+.. autosummary::
+    :toctree: api
+
+    ~enable_graph
+    ~disable_graph
+    ~enabled_graph
+
+.. code-block:: pycon
+
+    >>> import pennylane as qml
+    >>> qml.decomposition.enabled_enabled()
+    False
+    >>> qml.decomposition.enabled_enable()
+    >>> qml.decomposition.enabled_enabled()
+    True
+    >>> qml.decomposition.enabled_disable()
+    >>> qml.decomposition.enabled_enabled()
+    False
+
 
 Defining Decomposition Rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,35 +127,6 @@ operator towards a target gate set.
 
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To activate and deactivate the new experimental graph-based decomposition
-system, use the switches ``qml.decomposition.enable_graph`` and
-``qml.decomposition.disable_graph``.
-
-Whether or not the graph-based decomposition is currently being used can be
-queried with ``qml.decomposition.enabled_graph``.
-By default, the mechanism is disabled.
-
-.. currentmodule:: pennylane.decomposition
-
-.. autosummary::
-    :toctree: api
-
-    ~enable_graph
-    ~disable_graph
-    ~enabled_graph
-
-.. code-block:: pycon
-
-    >>> import pennylane as qml
-    >>> qml.decomposition.enabled_enabled()
-    False
-    >>> qml.decomposition.enabled_enable()
-    >>> qml.decomposition.enabled_enabled()
-    True
-    >>> qml.decomposition.enabled_disable()
-    >>> qml.decomposition.enabled_enabled()
-    False
 
 For workflows that just involve targeting a specific gate set with
 ``qml.transforms.decompose(circuit, gate_set={...})``, the UI is the exact same,

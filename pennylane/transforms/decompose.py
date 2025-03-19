@@ -604,31 +604,31 @@ def decompose(
             "Please enable the decomposition graph with qml.decomposition.enable_graph()."
         )
 
-    # Get the list of all ops in fixed_decomps and alt_decomps.
-    # The runtime cost is negligible when the graph is disabled.
-    graph_gate_types = set(fixed_decomps.keys()) | set(alt_decomps.keys())
-    graph_gate_names = set(op.name for op in graph_gate_types)
-    # We remove these gates from target_gate_types and target_gate_names
-    # to be able to decompose the ops using the given rules in the graph.
+    # We remove these gates from target_gate_types
+    # to decompose the ops using the given rules in the graph.
 
     if isinstance(gate_set, (str, type)):
-        gate_set = set([gate_set]) - graph_gate_names
+        gate_set = set([gate_set])
 
     if isinstance(gate_set, Iterable):
         target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        target_gate_names = (
-            set(gate for gate in gate_set if isinstance(gate, str)) - graph_gate_names
-        )
+        target_gate_names = set(gate for gate in gate_set if isinstance(gate, str))
         gate_set = lambda op: (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
     # If the gate_set is None, we don't need to iterate over
     # all the ops to construct `target_gate_types` or `target_gate_names`
     if gate_set is None:
         target_gate_types = tuple()
-        target_gate_names = set(qml.ops.__all__) - graph_gate_names
+        target_gate_names = set(qml.ops.__all__)
         gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
+        if fixed_decomps and isinstance(op, tuple(fixed_decomps.keys())):
+            return False
+
+        if alt_decomps and isinstance(op, tuple(alt_decomps.keys())):
+            return False
+
         if not op.has_decomposition:
             if not gate_set(op):
                 warnings.warn(
@@ -649,34 +649,31 @@ def decompose(
 
     if qml.decomposition.enabled_graph():
 
-        try:
-            # pylint: disable=import-outside-toplevel
-            from pennylane.decomposition import DecompositionGraph
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition import DecompositionGraph
 
-            if target_gate_types:
-                raise ValueError(
-                    f"The decomposition graph does not support target gate types: {target_gate_types}"
-                    "Please use target gate names instead."
-                )
-
-            target_gate_names = target_gate_names
-
-            decomp_graph = DecompositionGraph(
-                tape.operations,
-                target_gate_names,
-                fixed_decomps=fixed_decomps,
-                alt_decomps=alt_decomps,
+        if target_gate_types:
+            raise ValueError(
+                f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
             )
 
-            decomp_graph.solve()
+        # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
+        target_gate_names -= set(
+            op.name if isinstance(op, type) else op for op in fixed_decomps.keys()
+        )
+        target_gate_names -= set(
+            op.name if isinstance(op, type) else op for op in alt_decomps.keys()
+        )
 
-        except qml.decomposition.DecompositionError as e:
-            warnings.warn(
-                f"Decomposition graph optimization failed: {e}"
-                "\nFalling back to default decomposition.",
-                UserWarning,
-            )
-            decomp_graph = None
+        decomp_graph = DecompositionGraph(
+            tape.operations,
+            target_gate_names,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
+        )
+
+        decomp_graph.solve()
+
     try:
         new_ops = [
             final_op
