@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, too-many-arguments, protected-access
 
 
 class TestQFT:
@@ -483,6 +483,7 @@ class TestResourceModExp:
         [(7, 5, 5, 3), (8, 5, 5, 3)],
     )
     def test_resources(self, mod, num_output_wires, num_work_wires, num_x_wires):
+        """Test that the resources are correct"""
         mult_resources = re.ResourceMultiplier._resource_decomp(
             mod, num_work_wires, num_output_wires
         )
@@ -814,7 +815,7 @@ class TestResourceQROM:
 
     def test_tracking_name(self):
         """Test that the tracking name is correct."""
-        assert re.ResourceQROM.tracking_name() == f"QROM"
+        assert re.ResourceQROM.tracking_name() == "QROM"
 
 
 class TestResourceStatePrep:
@@ -825,6 +826,7 @@ class TestResourceStatePrep:
         [(4), (5), (6)],
     )
     def test_resources(self, num_wires):
+        """Test that the resources are correct"""
         expected = {
             re.CompressedResourceOp(
                 re.ResourceMottonenStatePreparation, {"num_wires": num_wires}
@@ -897,6 +899,7 @@ class TestResourceAmplitudeAmplification:
     def test_resources(
         self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
     ):
+        """Test that the resources are correct"""
         expected = {}
         reflection = re.ResourceReflection.resource_rep(
             base_class=U_op, base_params=U_params, num_ref_wires=num_ref_wires

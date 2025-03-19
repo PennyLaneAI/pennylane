@@ -36,19 +36,16 @@ class TestStatePrep:
 
     resource_data = (
         {
-            re.ResourceRZ.resource_rep(): 3,
+            re.ResourceMottonenStatePreparation.resource_rep(1): 1,
         },
         {
-            re.ResourceRZ.resource_rep(): 27,
-            re.ResourceCNOT.resource_rep(): 16,
+            re.ResourceMottonenStatePreparation.resource_rep(3): 1,
         },
         {
-            re.ResourceRZ.resource_rep(): 59,
-            re.ResourceCNOT.resource_rep(): 44,
+            re.ResourceMottonenStatePreparation.resource_rep(4): 1,
         },
         {
-            re.ResourceRZ.resource_rep(): 123,
-            re.ResourceCNOT.resource_rep(): 104,
+            re.ResourceMottonenStatePreparation.resource_rep(5): 1,
         },
     )
 
@@ -110,6 +107,7 @@ class TestResourceBasisState:
         [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
     )
     def test_resources(self, num_wires, num_rx, num_phase_shift):
+        """Test that the resources are correct"""
         expected = {}
         rx = re.CompressedResourceOp(re.ResourceRX, {})
         phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
@@ -179,6 +177,7 @@ class TestResourceSuperposition:
         [(4, 2, 2), (4, 5, 2), (4, 5, 0)],
     )
     def test_resources(self, num_stateprep_wires, num_basis_states, size_basis_state):
+        """Test that the resources are correct"""
         expected = {}
         msp = re.CompressedResourceOp(
             re.ResourceMottonenStatePreparation, {"num_wires": num_stateprep_wires}
@@ -311,6 +310,7 @@ class TestResourceMottonenStatePreparation:
         [(4), (5), (6)],
     )
     def test_resources(self, num_wires):
+        """Test that the resources are correct"""
         expected = {}
         rz = re.CompressedResourceOp(re.ResourceRZ, {})
         cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
