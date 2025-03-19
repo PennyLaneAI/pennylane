@@ -26,7 +26,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
     Args:
-        num_wires(int):
+        num_wires(int): the number of wires that StatePrep acts on
 
     Resources:
         Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -38,7 +38,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires (int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Resources:
             Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -50,7 +50,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_wires(int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -63,7 +63,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires(int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -80,7 +80,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
     """Resource class for the MottonenStatePreparation template.
 
     Args:
-        num_wires (int):
+        num_wires(int): the number of wires that StatePrep acts on
 
     Resources:
         Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
@@ -92,7 +92,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires (int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Resources:
             Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
@@ -116,7 +116,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_wires (int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -129,7 +129,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires (int):
+            num_wires(int): the number of wires that StatePrep acts on
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -146,12 +146,28 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     """Resource class for the Superposition template.
 
     Args:
-        num_stateprep_wires (int):
-        num_basis_states (int):
-        size_basis_state (int):
+        num_stateprep_wires (int): the number of wires used for the operation
+        num_basis_states (int): the number of basis states of the superposition
+        size_basis_state (int): the size of each basis state
 
     Resources:
-        The resources are computed following the PennyLane decomposition of the class
+        The resources are computed following the PennyLane decomposition of
+        the class. This class was designed based on the method described in
+        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
+
+        We use the following (somewhat naive) assumptions to approximate the
+        resources:
+
+        -  The MottonenStatePreparation routine is assumed for the state prep
+        component.
+        -  The permutation block requires 2 multi-controlled X gates and a
+        series of CNOT gates. On average we will be controlling on and flipping
+        half the number of bits in :code:`size_basis`. (i.e for any given basis
+        state, half will be ones and half will be zeros).
+        -  If the number of basis states provided spans the set of all basis states,
+        then we don't need to permute. In general, there is a probability associated
+        with not needing to permute wires if the basis states happen to match, we
+        estimate this quantity aswell.
     """
 
     @staticmethod
@@ -162,9 +178,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_stateprep_wires (int):
-            num_basis_states (int):
-            size_basis_state (int):
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
 
         Resources:
             The resources are computed following the PennyLane decomposition of
@@ -214,9 +230,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_stateprep_wires (int):
-            num_basis_states (int):
-            size_basis_state (int):
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -240,9 +256,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_stateprep_wires (int):
-            num_basis_states (int):
-            size_basis_state (int):
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -259,11 +275,10 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     """Resource class for the BasisState template.
 
     Args:
-        state (list):
+        state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
 
     Resources:
-        The resources are computed following the PennyLane decomposition of the class
-    """
+        The resources for BasisState are according to the decomposition found in qml.BasisState."""
 
     @staticmethod
     def _resource_decomp(
@@ -274,7 +289,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            state (list):
+            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -292,7 +307,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            state (list):
+            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -306,7 +321,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            state (list):
+            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
