@@ -7,10 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR and label
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ '${{ github.event.pull_request.head.repo.fork}}'=='false' ]; then 
-              gh pr edit ${{github.event.pull_request.html_url}} --add-label "external"; 
-          fi 
+        if: ${{ github.event.pull_request.head.repo.fork}}=='false'
+        uses: XanaduAI/cloud-actions/label-external-pull-request@sc-86563-external-label-forks
+        with:
+          github_token: ${{github.token}}
         
