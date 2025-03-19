@@ -509,6 +509,7 @@
 
 * Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
   [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -778,6 +779,10 @@
 
 * `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
   [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
+
+* Comparing an adjoint of an `Observable` with another `Operation` using `qml.equal` no longer incorrectly 
+  skips the check ensuring that the operator types match.
+  [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
 <h3>Contributors ✍️</h3>
 
