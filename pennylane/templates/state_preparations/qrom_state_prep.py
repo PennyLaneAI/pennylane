@@ -49,11 +49,11 @@ class QROMStatePreparation(Operation):
     r"""Prepares a quantum state using a Quantum Read-Only Memory (QROM) based approach.
 
     This operation implements the state preparation method described
-    in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+    in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
 
     Args:
-        state_vector (TensorLike): the state vector to prepare
-        wires (Sequence[int]): the wires on which to prepare the state
+        state_vector (TensorLike): The state vector to prepare.
+        wires (Sequence[int]): The wires on which to prepare the state.
         precision_wires (Sequence[int]): The wires used for storing the binary representations of the
             amplitudes and phases.
         work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
@@ -62,8 +62,8 @@ class QROMStatePreparation(Operation):
 
     .. code-block::
 
-        dev = qml.device("default.qubit", wires=6)
-        state_vector = np.array([1/2,-1/2,1/2,1/2])
+        dev = qml.device("default.qubit")
+        state_vector = np.array([0.5, -0.5, 0.5, 0.5])
         wires = [4, 5]
         precision_wires = [1, 2, 3]
         work_wires = [0]
@@ -87,12 +87,13 @@ class QROMStatePreparation(Operation):
         this template uses
         a :class:`~.QROM`
         to store the binary representations of the amplitudes and phases of the target state, and then uses
-        controlled rotations to apply these values to the target qubits.
+        controlled rotations :class:`~.CRY` to apply these values to the target qubits.
 
-        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`. The number of ``precision_wires`` determines the
-        precision with which the amplitudes and phases are encoded.
+        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`.
+        The ``precision_wires`` are used as the target wires in the underlying QROM operations.
+        The number of ``precision_wires`` determines the precision with which the amplitudes and phases are encoded.
 
-        The ``work_wires`` are used as auxiliary qubits in the QROM operation.
+        The ``work_wires`` are used as auxiliary qubits in the underlying QROM operations.
 
         The decomposition involves encoding the probabilities and phases of the state vector using
         QROMs and then applying controlled rotations based on the values stored in the ``precision_wires``.
@@ -173,7 +174,7 @@ class QROMStatePreparation(Operation):
         Args:
 
             state_vector (TensorLike): The state vector to prepare.
-            wires (Sequence[int]): The wires on which to operator acts on.
+            wires (Sequence[int]): The wires which the operator acts on.
             input_wires (Sequence[int]): The wires on which to prepare the state.
             precision_wires (Sequence[int]): The wires used for storing the binary representations of the
                 amplitudes and phases.
