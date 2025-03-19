@@ -95,32 +95,6 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
     return (1j / np.sqrt(2)) * matrix
 
 
-def _creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
-    """Return a matrix representation of the creation operator"""
-    rows = np.array(range(0, gridpoints - 1))
-    cols = np.array(range(1, gridpoints))
-    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
-
-    matrix = np.zeros(shape=(gridpoints, gridpoints))
-    matrix[rows, cols] = vals
-
-    return sp.sparse.csr_array(matrix) if sparse else matrix
-
-
-def _annihilation_operator(
-    gridpoints: int, sparse: bool = False
-) -> Union[np.ndarray, sp.sparse.array]:
-    """Return a matrix representation of the annihilation operator"""
-    rows = np.array(range(1, gridpoints))
-    cols = np.array(range(0, gridpoints - 1))
-    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
-
-    matrix = np.zeros(shape=(gridpoints, gridpoints))
-    matrix[rows, cols] = vals
-
-    return sp.sparse.csr_array(matrix) if sparse else matrix
-
-
 def _string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
