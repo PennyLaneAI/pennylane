@@ -87,7 +87,7 @@ class CompressedResourceOp:
     .. note::
 
         This class is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -174,7 +174,7 @@ def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule

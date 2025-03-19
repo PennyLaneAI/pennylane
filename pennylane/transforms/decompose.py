@@ -369,6 +369,13 @@ def decompose(
 ):
     """Decomposes a quantum circuit into a user-specified gate set.
 
+    .. note::
+
+        When `qml.decomposition.enable_graph()` is present, the new experimental
+        graph-based decompositions system is enabled. This new way of doing decompositions
+        is generally more performant and allows for specifying custom decompositions.
+        The `fixed_decomps` and `alt_decomps` arguments are only functional with this toggle present.
+
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
@@ -377,11 +384,18 @@ def decompose(
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
-        fixed_decomps (dict, optional): A dictionary mapping operator types to their decomposition
-            rules. If an operator is found in the dictionary, the decomposition will be applied
-            directly without checking the gate set. Defaults to None.
-        alt_decomps (dict, optional): A dictionary mapping operator types to their decomposition
-            rules. Defaults to None.
+        fixed_decomps (Dict[Operator: DecompositionRule]): A dictionary mapping PennyLane operators to
+            user-specified decompositions. Note that user-specified decompositions must be PennyLane
+            quantum functions with resources specified via `qml.register_resources`.
+            This feature is experimental and only functions with `qml.decomposition.enable_graph()`.
+            With this enabled, the new experimental graph-based decomposition algorithm will always
+            choose the decomposition rules specified in this dictionary.
+        alt_decomps (Dict[Operator: List(DecompositionRule)]): A dictionary mapping PennyLane operators
+            to user-specified decompositions. Note that user-specified decompositions must be PennyLane
+            quantum functions with resources specified via `qml.register_resources`. This feature is
+            experimental and only functions with `qml.decomposition.enable_graph()`. With this enabled,
+            the experimental graph-based decomposition algorithm will add the decomposition rules specified
+            in this dictionary as potential options for how to decompose given operators.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -400,6 +414,67 @@ def decompose(
         :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` for a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
+
+    .. details::
+        :title: Use with new decompositions system
+
+        With `qml.decomposition.enable_graph()` present, the new experimental graph-based decompositions
+        system is enabled. For workflows that just involve targeting a specific gate set with
+        `qml.transforms.decompose(circuit, gate_set={...})`, the UI is the exact same, but you can expect
+        better performance.
+
+        **Custom decompositions**
+
+        Additionally, the `fixed_decomps` and `alt_decomps` arguments are functional with the new system enabled.
+        These two keyword arguments allow for customizing how gates get decomposed; decompositions in `alt_decomps`
+        are optional for the algorithm to choose if it's the most resource-efficient, and decompositions in
+        `fixed_decomps` force the algorithm to choose those decompositions, regardless of their efficiency.
+
+        Creating custom decompositions that the system can use involves a quantum function that represents
+        the decomposition and a resource data structure that tracks gate counts in the custom decomposition.
+
+        See also: :func:`register_resources`
+
+        ```python
+        import pennylane as qml
+
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(wires):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+        ```
+
+        ``` pycon
+        >>> print(qml.draw(circuit, level="device")())
+        0: ────╭●────┤  State
+        1: ──H─╰Z──H─┤  State
+        ```
+
+        The `alt_decomps` argument can handle multiple options per operator:
+
+        ```python
+        @partial(
+            qml.transforms.decompose,
+            fixed_decomps={qml.CNOT: [my_cnot1, my_cnot2, my_cnot3]}
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+        ```
+
+        Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
+
+        See also: :func:`add_decomps`
 
     **Example**
 
@@ -537,7 +612,6 @@ def decompose(
 
     if qml.decomposition.enabled_graph():
 
-        # FIXME(Ali): remove this after the decomposition graph is fully implemented.
         try:
             # pylint: disable=import-outside-toplevel
             from pennylane.decomposition import DecompositionGraph

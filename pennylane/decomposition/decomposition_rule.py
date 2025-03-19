@@ -36,7 +36,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -65,7 +65,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
 
         import pennylane as qml
 
-        qml.decompositions.enable_graph()
+        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot(wires):
@@ -239,7 +239,7 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -266,7 +266,7 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
         import pennylane as qml
         import numpy as np
 
-        qml.decompositions.enable_graph()
+        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
         def my_hadamard1(wires):
@@ -305,7 +305,7 @@ def list_decomps(op: Type[Operator]) -> list[DecompositionRule]:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator.
 
@@ -346,7 +346,7 @@ def has_decomp(op: Type[Operator]) -> bool:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more performant and accommodates multiple alternative
         decomposition rules for an operator.
 

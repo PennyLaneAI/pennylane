@@ -23,19 +23,43 @@ class DecompositionError(Exception):
 
 
 def toggle_graph_decomposition():
-    """A closure that toggles the graph-based decomposition on and off."""
+    """A closure that toggles the experimental graph-based decomposition on and off."""
 
     _GRAPH_DECOMPOSITION = False
 
     def enable():
+        """
+        A global toggle for enabling the experimental graph-based decomposition system
+        in PennyLane (introduced in v0.41). This new way of doing decompositions is
+        generally more performant and allows for specifying custom decompositions.
+
+        When this is enabled, `qml.transforms.decompose` will use the new decompositions system.
+        """
+
         nonlocal _GRAPH_DECOMPOSITION
         _GRAPH_DECOMPOSITION = True
 
     def disable() -> None:
+        """
+        A global toggle for disabling the experimental graph-based decomposition
+        system in PennyLane (introduced in v0.41). The experimental graph-based
+        decomposition system is disabled by default in PennyLane.
+
+        See also: :func:`decomposition.enable_graph`
+        """
+
         nonlocal _GRAPH_DECOMPOSITION
         _GRAPH_DECOMPOSITION = False
 
     def status() -> bool:
+        """
+        A global toggle for checking the status of the experimental graph-based
+        decomposition system in PennyLane (introduced in v0.41). The experimental
+        graph-based decomposition system is disabled by default in PennyLane.
+
+        See also: :func:`decomposition.enable_graph`
+        """
+
         nonlocal _GRAPH_DECOMPOSITION
         return _GRAPH_DECOMPOSITION
 
