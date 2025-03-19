@@ -179,7 +179,7 @@ def pow_pow_decomp(*_, base, z, **__):
 
 
 @functools.lru_cache(maxsize=1)
-def has_adjoint_ops():
+def same_type_adjoint_ops():
     """A set of operators whose adjoint is an instance of its own type."""
     return frozenset(
         {

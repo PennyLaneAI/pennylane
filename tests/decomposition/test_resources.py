@@ -20,10 +20,8 @@ import pennylane as qml
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
-    adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,
-    pow_resource_rep,
     resource_rep,
 )
 
@@ -440,7 +438,7 @@ class TestSymbolicResourceRep:
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""
 
-        rep = pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3)
+        rep = qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3)
         assert rep == CompressedResourceOp(
             qml.ops.Pow, {"base_class": qml.MultiRZ, "base_params": {"num_wires": 3}, "z": 3}
         )
@@ -452,7 +450,7 @@ class TestSymbolicResourceRep:
         """Tests that non-integer power is not supported yet."""
 
         with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
+            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
 
         with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)
+            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)
