@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.controlled_decomposition import (
+    ControlledBaseDecomposition,
     CustomControlledDecomposition,
-    GeneralControlledDecomposition,
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
@@ -50,6 +50,19 @@ class TestControlledDecompositionRules:
         assert controlled_global_phase_decomp.compute_resources(
             **op.resource_params
         ) == to_resources({qml.PhaseShift: 1})
+
+    def test_single_controlled_global_phase_on_0(self):
+        """Tests GlobalPhase controlled on a single wire with control value being 0."""
+
+        op = qml.ctrl(qml.GlobalPhase(0.5, wires=[0, 1]), control=[2], control_values=[0])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_global_phase_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.PhaseShift(0.5, wires=[2]), qml.GlobalPhase(0.5)]
+        assert controlled_global_phase_decomp.compute_resources(
+            **op.resource_params
+        ) == to_resources({qml.GlobalPhase: 1, qml.PhaseShift: 1})
 
     def test_double_controlled_global_phase(self):
         """Tests global phase controlled on two wires."""
@@ -121,9 +134,9 @@ class TestControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.PauliX(1), qml.CNOT(wires=[1, 0]), qml.PauliX(1)]
+        assert q.queue == [qml.CNOT(wires=[1, 0]), qml.PauliX(0)]
         assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.CNOT: 1, qml.PauliX: 2},
+            {qml.CNOT: 1, qml.PauliX: 1},
         )
 
     def test_double_controlled_x(self):
@@ -208,7 +221,7 @@ class TestControlledX:
             to_resources({qml.CZ: 1}),
             qml.ops.CZ,
         ),
-        # Two-qubit controlled
+        # Controlled on two qubits
         (
             qml.ops.Controlled(qml.Z(2), control_wires=[0, 1], control_values=[1, 0]),
             [qml.X(1), qml.CCZ(wires=[0, 1, 2]), qml.X(1)],
@@ -222,7 +235,7 @@ class TestControlledX:
             to_resources({qml.CRX: 1, qml.X: 2}),
             qml.ops.CRX,
         ),
-        # Controlled on two qubits
+        # Two-qubit controlled
         (
             qml.ops.Controlled(qml.SWAP(wires=[1, 2]), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CSWAP(wires=[0, 1, 2]), qml.X(0)],
@@ -294,13 +307,13 @@ def custom_decomp(*params, wires, **_):
     qml.CZ(wires=wires[:2])
 
 
-class TestGeneralControlledOperator:
-    """Tests the controlled decomposition of a general operator."""
+class TestControlledBaseDecomposition:
+    """Tests applying control on the decomposition of the base operator."""
 
     def test_single_control_wire(self):
         """Tests a single control wire."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -359,20 +372,22 @@ class TestGeneralControlledOperator:
                 ): 1,
                 qml.resource_rep(qml.CRX): 1,
                 qml.resource_rep(qml.CRot): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=1,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=1,
@@ -386,7 +401,7 @@ class TestGeneralControlledOperator:
     def test_double_control_wire(self):
         """Tests two control wires."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -461,36 +476,44 @@ class TestGeneralControlledOperator:
                     num_zero_control_values=1,
                     num_work_wires=2,
                 ): 1,
-                qml.controlled_resource_rep(qml.RX, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Rot, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RX, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Rot, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
                 qml.resource_rep(qml.CCZ): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
             }
         )
 
     def test_multi_control_wires(self):
-        """Tests with multiple control wires."""
+        """Tests with multiple (more than 2) control wires."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -572,28 +595,38 @@ class TestGeneralControlledOperator:
                     num_zero_control_values=1,
                     num_work_wires=2,
                 ): 1,
-                qml.controlled_resource_rep(qml.RX, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Rot, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=4, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RX, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Rot, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=4, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=4,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=4, num_work_wires=1): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=4, num_work_wires=1
+                ): 1,
             }
         )

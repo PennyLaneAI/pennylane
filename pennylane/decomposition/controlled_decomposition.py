@@ -51,8 +51,8 @@ class CustomControlledDecomposition(DecompositionRule):  # pylint: disable=too-f
 
         def _resource_fn(*_, num_zero_control_values, **__):
             return {
-                resource_rep(self.custom_op_type): 1,
-                resource_rep(qml.PauliX): num_zero_control_values * 2,
+                self.custom_op_type: 1,
+                qml.PauliX: num_zero_control_values * 2,
             }
 
         return _resource_fn
@@ -61,11 +61,12 @@ class CustomControlledDecomposition(DecompositionRule):  # pylint: disable=too-f
 def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
     """Returns the resource rep of a controlled op, dispatches to a custom op if possible."""
 
-    if (base_op_rep.op_type, num_control_wires) in base_to_custom_ctrl_op():
-        return resource_rep(base_to_custom_ctrl_op()[(base_op_rep.op_type, num_control_wires)])
+    custom_ctrl = base_to_custom_ctrl_op().get((base_op_rep.op_type, num_control_wires))
+    if custom_ctrl is not None:
+        return resource_rep(custom_ctrl)
 
     if base_op_rep.op_type in (qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX):
-        # First call controlled_resource_rep to get flatten any nested structures
+        # First call controlled_resource_rep to flatten any nested structures
         rep = controlled_resource_rep(
             base_class=base_op_rep.op_type,
             base_params=base_op_rep.params,
@@ -93,8 +94,8 @@ def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
     )
 
 
-class GeneralControlledDecomposition(DecompositionRule):  # pylint: disable=too-few-public-methods
-    """A decomposition rule for a controlled operation with a decomposition."""
+class ControlledBaseDecomposition(DecompositionRule):  # pylint: disable=too-few-public-methods
+    """Applying control on the decomposition of the target (base) operator."""
 
     def __init__(self, base_decomposition: DecompositionRule):
         self._base_decomposition = base_decomposition
@@ -104,17 +105,16 @@ class GeneralControlledDecomposition(DecompositionRule):  # pylint: disable=too-
         """The default implementation of a controlled decomposition."""
 
         def _impl(*_, control_wires, control_values, work_wires, base, **__):
-            for w, val in zip(control_wires, control_values):
-                if not val:
-                    qml.PauliX(w)
+            zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+            for w in zero_control_wires:
+                qml.PauliX(w)
             qml.ctrl(
                 self._base_decomposition._impl,  # pylint: disable=protected-access
                 control=control_wires,
                 work_wires=work_wires,
             )(*base.parameters, wires=base.wires, **base.hyperparameters)
-            for w, val in zip(control_wires, control_values):
-                if not val:
-                    qml.PauliX(w)
+            for w in zero_control_wires:
+                qml.PauliX(w)
 
         return _impl
 
@@ -129,6 +129,8 @@ class GeneralControlledDecomposition(DecompositionRule):  # pylint: disable=too-
                 _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
                 for base_op_rep, count in base_resource_decomp.gate_counts.items()
             }
+            # None of the other gates in gate_counts will be X, because they are all
+            # controlled operations. So we can safely set the X gate counts here.
             gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
             return gate_counts
 
@@ -138,20 +140,20 @@ class GeneralControlledDecomposition(DecompositionRule):  # pylint: disable=too-
 def _controlled_g_phase_resource(
     *_, num_control_wires, num_zero_control_values, num_work_wires, **__
 ):
+    if num_control_wires == 1 and num_zero_control_values == 1:
+        return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
+
     if num_control_wires == 1:
-        return {
-            resource_rep(qml.PauliX): num_zero_control_values * 2,
-            resource_rep(qml.PhaseShift): 1,
-        }
+        return {qml.PhaseShift: 1}
 
     if num_control_wires == 2:
         return {
-            resource_rep(qml.PauliX): num_zero_control_values * 2,
-            resource_rep(qml.ControlledPhaseShift): 1,
+            qml.X: num_zero_control_values * 2,
+            qml.ControlledPhaseShift: 1,
         }
 
     return {
-        resource_rep(qml.PauliX): num_zero_control_values * 2,
+        qml.X: num_zero_control_values * 2,
         controlled_resource_rep(
             qml.PhaseShift,
             base_params={},
@@ -166,25 +168,30 @@ def _controlled_g_phase_resource(
 def controlled_global_phase_decomp(*_, control_wires, control_values, work_wires, base, **__):
     """The decomposition rule for a controlled global phase."""
 
-    for w, val in zip(control_wires, control_values):
-        if not val:
-            qml.PauliX(w)
-    if len(control_wires) == 1:
+    if len(control_wires) == 1 and control_values[0]:
         qml.PhaseShift(-base.data[0], wires=control_wires[-1])
-    else:
-        qml.ctrl(
-            qml.PhaseShift(-base.data[0], wires=control_wires[-1]),
-            control=control_wires[:-1],
-            work_wires=work_wires,
-        )
-    for w, val in zip(control_wires, control_values):
-        if not val:
-            qml.PauliX(w)
+        return
+
+    if len(control_wires) == 1 and not control_values[0]:
+        qml.PhaseShift(base.data[0], wires=control_wires[-1])
+        qml.GlobalPhase(base.data[0])
+        return
+
+    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    for w in zero_control_wires:
+        qml.PauliX(w)
+    qml.ctrl(
+        qml.PhaseShift(-base.data[0], wires=control_wires[-1]),
+        control=control_wires[:-1],
+        work_wires=work_wires,
+    )
+    for w in zero_control_wires:
+        qml.PauliX(w)
 
 
 def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires, **__):
     if num_control_wires == 1:
-        return {qml.CNOT: 1, qml.PauliX: num_zero_control_values * 2}
+        return {qml.CNOT: 1, qml.PauliX: num_zero_control_values}
     if num_control_wires == 2:
         return {qml.Toffoli: 1, qml.PauliX: num_zero_control_values * 2}
     return {
@@ -201,25 +208,28 @@ def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_w
 def controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **__):
     """The decomposition rule for a controlled PauliX."""
 
+    if len(control_wires) == 1 and not control_values[0]:
+        qml.CNOT(wires=wires)
+        qml.X(wires[1])
+        return
+
+    if len(control_wires) == 1:
+        qml.CNOT(wires=wires)
+        return
+
     if len(control_wires) > 2:
         qml.MultiControlledX(wires=wires, control_values=control_values, work_wires=work_wires)
         return
 
-    for w, val in zip(control_wires, control_values):
-        if not val:
-            qml.PauliX(w)
-
-    if len(control_wires) == 1:
-        qml.CNOT(wires=wires)
-    else:
-        qml.Toffoli(wires=wires)
-
-    for w, val in zip(control_wires, control_values):
-        if not val:
-            qml.PauliX(w)
+    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    for w in zero_control_wires:
+        qml.PauliX(w)
+    qml.Toffoli(wires=wires)
+    for w in zero_control_wires:
+        qml.PauliX(w)
 
 
-@functools.lru_cache()
+@functools.lru_cache(maxsize=1)
 def base_to_custom_ctrl_op():
     """A dictionary mapping base op types to their custom controlled versions.
 

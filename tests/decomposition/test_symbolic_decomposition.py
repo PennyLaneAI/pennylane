@@ -23,7 +23,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
-    has_adjoint_decomp,
+    same_type_adjoint_decomp,
     pow_decomp,
     pow_pow_decomp,
 )
@@ -81,7 +81,7 @@ class TestAdjointDecompositionRules:
         assert q.queue == [qml.ctrl(qml.U1(-0.5, wires=0), control=1), qml.CRX(-0.5, wires=[1, 0])]
         assert adjoint_controlled_decomp.compute_resources(**op1.resource_params) == Resources(
             {
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.U1, {}, num_control_wires=1, num_zero_control_values=0, num_work_wires=0
                 ): 1,
             }
@@ -125,21 +125,22 @@ class TestAdjointDecompositionRules:
             }
         )
 
-    def test_adjoint_custom(self):
-        """Tests that the adjoint of an operation that has adjoint is correctly decomposed."""
+    def test_same_type_adjoint(self):
+        """Tests that the adjoint of an operation that has adjoint of same
+        type is correctly decomposed."""
 
         op1 = qml.adjoint(qml.H(0))
         op2 = qml.adjoint(qml.RX(0.5, wires=0))
 
         with qml.queuing.AnnotatedQueue() as q:
-            has_adjoint_decomp(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            has_adjoint_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            same_type_adjoint_decomp(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            same_type_adjoint_decomp(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [qml.H(0), qml.RX(-0.5, wires=0)]
-        assert has_adjoint_decomp.compute_resources(**op1.resource_params) == to_resources(
+        assert same_type_adjoint_decomp.compute_resources(**op1.resource_params) == to_resources(
             {qml.H: 1}
         )
-        assert has_adjoint_decomp.compute_resources(**op2.resource_params) == to_resources(
+        assert same_type_adjoint_decomp.compute_resources(**op2.resource_params) == to_resources(
             {qml.RX: 1}
         )
 
@@ -178,10 +179,10 @@ class TestAdjointDecompositionRules:
 
         assert rule.compute_resources(**op.resource_params) == Resources(
             {
-                qml.adjoint_resource_rep(qml.T): 1,
-                qml.adjoint_resource_rep(qml.CNOT): 2,
-                qml.adjoint_resource_rep(qml.RX): 1,
-                qml.adjoint_resource_rep(qml.H): 1,
+                qml.decomposition.adjoint_resource_rep(qml.T): 1,
+                qml.decomposition.adjoint_resource_rep(qml.CNOT): 2,
+                qml.decomposition.adjoint_resource_rep(qml.RX): 1,
+                qml.decomposition.adjoint_resource_rep(qml.H): 1,
             }
         )
 

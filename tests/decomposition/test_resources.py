@@ -85,7 +85,7 @@ class TestResources:
         resources = Resources(
             {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
-        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -371,7 +371,7 @@ class TestSymbolicResourceRep:
     def test_adjoint_resource_rep(self):
         """Tests creating the resource rep of the adjoint of an operator."""
 
-        rep = adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
+        rep = qml.decomposition.adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
         assert rep == CompressedResourceOp(
             qml.ops.Adjoint, {"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
         )
@@ -389,12 +389,12 @@ class TestSymbolicResourceRep:
         """Tests that an error is raised when base op and base params mismatch."""
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
-            adjoint_resource_rep(DummyOp, {})
+            qml.decomposition.adjoint_resource_rep(DummyOp, {})
 
     def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
         """Tests that the adjoint of a nested controlled op is flattened."""
 
-        rep = adjoint_resource_rep(
+        rep = qml.decomposition.adjoint_resource_rep(
             qml.ops.Adjoint,
             {
                 "base_class": qml.ops.Controlled,
@@ -428,7 +428,7 @@ class TestSymbolicResourceRep:
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = adjoint_resource_rep(base_class=op_type, base_params={})
+            rep = qml.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
             assert rep == CompressedResourceOp(
                 qml.ops.Adjoint,
                 {

@@ -269,8 +269,8 @@ class TestControlledDecompositions:
 
         assert q.queue == [qml.CNOT(wires=[1, 0]), qml.CH(wires=[1, 0])]
 
-    def test_general_controlled_op(self, _):
-        """Tests that a general controlled op can be decomposed."""
+    def test_controlled_base_decomposition(self, _):
+        """Tests applying control on the decomposition of the target operator."""
 
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
@@ -303,7 +303,7 @@ class TestControlledDecompositions:
         @qml.register_resources(
             {
                 qml.Z: 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     CustomOp,
                     {},
                     num_control_wires=1,
