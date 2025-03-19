@@ -11,6 +11,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ '${{ github.event.pull_request.head.repo.fork}}'=='false' ]; then 
-              gh pr edit ${{github.pull_request.pulls_url}} --add-label "external"; 
+              gh pr edit ${{github.event.pull_request.html_url}} --add-label "external"; 
           fi 
         
