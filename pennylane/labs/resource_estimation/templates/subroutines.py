@@ -1084,7 +1084,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
 
 class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperator):
-    """Resource class for the AmplitudeAmplification template.
+    r"""Resource class for the AmplitudeAmplification template.
 
     Args:
         U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
