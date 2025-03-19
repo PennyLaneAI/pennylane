@@ -274,7 +274,6 @@ class TestDynamicShapes:
         ):
             jax.make_jaxpr(f, abstracted_axes={1: "a"})(jnp.zeros((2, 2)))
 
-    # pylint: disable=unused-argument
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 

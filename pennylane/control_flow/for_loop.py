@@ -285,7 +285,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                     "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
                 ) from e
             raise e
-
         _validate_static_shapes_dtypes(
             jaxpr_body_fn.jaxpr, abstracted_axes, offset=len(abstract_shapes), is_for=True
         )
