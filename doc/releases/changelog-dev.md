@@ -457,6 +457,9 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``Amplitude`` ``Amplification``, ``QROM``, ``SuperPosition``, ``Mottonen``, ``StatePrep``, ``BasisState`` templates.
+  [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
