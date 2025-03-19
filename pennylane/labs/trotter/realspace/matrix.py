@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 def _position_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
-    """Returns a discretization of the position operator"""
+    """Returns a matrix representation of the position operator"""
 
     if basis == "realspace":
         matrix = _realspace_position(gridpoints)
@@ -41,11 +41,13 @@ def _position_operator(
 
 
 def _realspace_position(gridpoints: int) -> np.ndarray:
+    """Return a matrix representation of the position operator in the realspace basis"""
     values = (np.arange(gridpoints) - gridpoints / 2) * (np.sqrt(2 * np.pi / gridpoints))
     return np.diag(values)
 
 
 def _harmonic_position(gridpoints: int) -> np.ndarray:
+    """Return a matrix representation of the position operator in the harmonic basis"""
     rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
     cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
     vals = np.array([np.sqrt(i) for i in range(1, gridpoints)] * 2)
@@ -59,7 +61,7 @@ def _harmonic_position(gridpoints: int) -> np.ndarray:
 def _momentum_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
-    """Returns a discretization of the momentum operator"""
+    """Returns a matrix representation of the momentum operator"""
 
     if basis == "realspace":
         matrix = _realspace_momentum(gridpoints)
@@ -73,6 +75,7 @@ def _momentum_operator(
 
 
 def _realspace_momentum(gridpoints: int) -> np.ndarray:
+    """Returns a matrix representation of the momenumt operator in the realspace basis"""
     values = np.arange(gridpoints)
     values[gridpoints // 2 :] -= gridpoints
     values = values * (np.sqrt(2 * np.pi / gridpoints))
@@ -83,6 +86,7 @@ def _realspace_momentum(gridpoints: int) -> np.ndarray:
 
 
 def _harmonic_momentum(gridpoints: int) -> np.ndarray:
+    """Returns a matrix representation of the momenumt operator in the harmonic basis"""
     rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
     cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
     vals = np.array(
@@ -95,36 +99,10 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
     return (1j / np.sqrt(2)) * matrix
 
 
-def _creation_operator(gridpoints: int, sparse: bool = False) -> Union[np.ndarray, sp.sparse.array]:
-    """Return a matrix representation of the creation operator"""
-    rows = np.array(range(0, gridpoints - 1))
-    cols = np.array(range(1, gridpoints))
-    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
-
-    matrix = np.zeros(shape=(gridpoints, gridpoints))
-    matrix[rows, cols] = vals
-
-    return sp.sparse.csr_array(matrix) if sparse else matrix
-
-
-def _annihilation_operator(
-    gridpoints: int, sparse: bool = False
-) -> Union[np.ndarray, sp.sparse.array]:
-    """Return a matrix representation of the annihilation operator"""
-    rows = np.array(range(1, gridpoints))
-    cols = np.array(range(0, gridpoints - 1))
-    vals = np.array([np.sqrt(i) for i in range(1, gridpoints)])
-
-    matrix = np.zeros(shape=(gridpoints, gridpoints))
-    matrix[rows, cols] = vals
-
-    return sp.sparse.csr_array(matrix) if sparse else matrix
-
-
 def _string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
-    """Return a csr matrix representation of a Vibronic op"""
+    """Transforms a string of P's and Q's into a matrix representing the product of position and momenutm operators"""
 
     matrix = _identity(gridpoints, sparse=sparse)
     p = _momentum_operator(gridpoints, basis=basis, sparse=sparse)
@@ -168,6 +146,7 @@ def _tensor_with_identity(
 
 
 def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:
+    """Return a matrix representation of the identity operator"""
     if sparse:
         return sp.sparse.eye_array(dim, format="csr")
 
@@ -175,6 +154,7 @@ def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:
 
 
 def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.sparse.csr_array]):
+    """Return the Kronecker product of two matrices"""
     if isinstance(a, np.ndarray) and isinstance(b, np.ndarray):
         return np.kron(a, b)
 
@@ -185,6 +165,7 @@ def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.spa
 
 
 def _zeros(shape: Tuple[int], sparse: bool = False) -> Union[np.ndarray, sp.sparse.csr_array]:
+    """Return a matrix representation of the zero operator"""
     if sparse:
         return sp.sparse.csr_array(shape)
 
