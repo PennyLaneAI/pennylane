@@ -144,7 +144,7 @@ class HOState:
 
 
 class VibronicHO:
-    """Class representing a vibronic state"""
+    """Class representing a harmonic oscilator vibronic state"""
 
     def __init__(self, states: int, modes: int, gridpoints: int, ho_states: Sequence[HOState]):
 

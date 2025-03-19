@@ -13,4 +13,4 @@
 # limitations under the License.
 """Module containing functions for computing Trotter error"""
 
-from .abstract import Fragment, State, commutator, nested_commutator
+from .abstract import Fragment, AbstractState, commutator, nested_commutator

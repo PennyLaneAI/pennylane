@@ -43,11 +43,11 @@ class Fragment(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def apply(self, state: State) -> State:
+    def apply(self, state: AbstractState) -> AbstractState:
         """Apply to a state on the right"""
         raise NotImplementedError
 
-    def expectation(self, left: State, right: State) -> float:
+    def expectation(self, left: AbstractState, right: AbstractState) -> float:
         """Return the expectation value of a state"""
         return left.dot(self.apply(right))
 
@@ -71,27 +71,27 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
     return commutator(head, nested_commutator(tail))
 
 
-class State(ABC):
-    """Abstract class specifying which methods a State class should implement"""
+class AbstractState(ABC):
+    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value"""
 
     @abstractmethod
-    def __add__(self, other: State) -> State:
+    def __add__(self, other: AbstractState) -> AbstractState:
         raise NotImplementedError
 
-    def __sub__(self, other: State) -> State:
+    def __sub__(self, other: AbstractState) -> AbstractState:
         return self + (-1) * other
 
     @abstractmethod
-    def __mul__(self, scalar: float) -> State:
+    def __mul__(self, scalar: float) -> AbstractState:
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def zero_state(cls) -> State:
+    def zero_state(cls) -> AbstractState:
         """Return a representation of the zero state"""
         raise NotImplementedError
 
     @abstractmethod
-    def dot(self, other: State):
+    def dot(self, other: AbstractState):
         """Return the dot product of two states"""
         raise NotImplementedError
