@@ -55,7 +55,7 @@ class KerasLayer(Layer):
     creating quantum and hybrid models.
 
     .. warning::
-        This class is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of TensorFlow/Keras 2.
+        This class is deprecated because Keras 2 is no longer actively maintained.  Please consider using torch instead of TensorFlow/Keras 2.
 
     .. note::
 
