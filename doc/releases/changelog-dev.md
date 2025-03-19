@@ -44,8 +44,65 @@
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
 
-* Created a new ``qml.liealg`` module for Lie algebra functionality.
+* Created a new `qml.liealg` module for Lie algebra functionality.
+
+  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
+  A variety of typically encountered involution functions are included in the module, in particular the following:
+
+  ```
+  even_odd_involution
+  concurrence_involution
+  A
+  AI
+  AII
+  AIII
+  BD
+  BDI
+  DIII
+  C
+  CI
+  CII
+  ```
+
+  ```pycon
+  >>> g = qml.lie_closure([X(0) @ X(1), Y(0), Y(1)])
+  >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
+  >>> g, k, m
+  ([X(0) @ X(1), Y(0), Y(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)],
+   [Y(0), Y(1)],
+   [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
+  ```
+
+  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
+
+  ```pycon
+  >>> qml.liealg.check_cartan_decomp(k, m) # check Cartan commutation relations
+  True
+  ```
+
+  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
+
+  ```pycon
+  >>> newg, k, mtilde, a, new_adj = qml.liealg.cartan_subalgebra(k, m)
+  ```
+
+  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
+
+  ```pycon
+  >>> qml.liealg.check_abelian(a)
+  True
+  ```
+
+  The following functions have also been added:
+  * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
+  map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
+
+  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to their adjoint vector representations and back.
+
+  * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
+
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -336,6 +393,9 @@
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
+* `qml.pauli.PauliVSpace` is now iterable.
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+
 * A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
   model for mappings between logical and physical qubits. This representation allows for nesting of
   lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
@@ -493,6 +553,10 @@
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
 
+* `cond`, `adjoint`, `ctrl`, and the `QNode` can now handle accepting dynamically
+  shaped arrays with the abstract shape matching another argument.
+  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
+
 * Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
   that return new dynamically shaped arrays.
   [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
@@ -510,6 +574,17 @@
 
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
+
+* `pennylane.labs.khaneja_glaser_involution` is removed.
+  `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
+  `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
+  All involution functions are moved to `qml.liealg`.
+  `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
+  `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
+  `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
+  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.cartan_subalgebra`.
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
 <h3>Breaking changes 💔</h3>
 
