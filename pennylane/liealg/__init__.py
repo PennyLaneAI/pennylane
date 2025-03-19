@@ -96,14 +96,14 @@ associated Lie algebra rather than the Lie group.
 Lie Algebras and quantum computing
 ----------------------------------
 
-In quantum computing, we are typically dealing with the Hilbert space
-:math:`\mathcal{H} = \mathbb{C}^{2^n}` and for full
-universality we require the available gates to span all of :math:`SU(2^n).`
-That means when we have all unitaries of :math:`SU(2^n)`
-available to us, we can reach any state in Hilbert space from any other state.
+In quantum computing, we are typically dealing with vectors in the Hilbert space
+:math:`\mathcal{H} = \mathbb{C}^{2^n}` that are manipulated by unitary gates from
+the special unitary group :math:`SU(2^n).`
+For full universality, we require the available gates to span all of :math:`SU(2^n)`
+in order to reach any state in Hilbert space from any other state.
 
-The Lie group :math:`SU(2^n)` has an associated Lie
-algebra to it, called :math:`\mathfrak{su}(2^n)`.
+:math:`SU(2^n)` is a Lie group and has an associated :doc:`Lie algebra <demos/tutorial_liealgebra>`
+to it, called :math:`\mathfrak{su}(2^n)`.
 In some cases, it is more convenient to work with the
 associated Lie algebra rather than the Lie group.
 
