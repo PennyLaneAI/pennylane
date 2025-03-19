@@ -221,13 +221,14 @@ by their name, type, or by a set of rules they must follow.
 
 .. note::
 
-    With :func:`~.pennylane.decompositions.enable_graph`, PennyLane's new experimental 
-    decomposition algorithm is enabled (introduced in v0.41). This new system uses 
-    a graph-based approach, which provides better overall performance and versatility. 
-    By default, this new system is *not* enabled globally. 
+    Using :func:`~.pennylane.decompositions.enable_graph` enables PennyLane's new 
+    experimental decomposition algorithm is enabled (introduced in v0.41). This 
+    new system uses a graph-based approach, which provides better overall performance 
+    and versatility. By default, this new system is *not* enabled globally. 
     
     Unless otherwise indicated, features outlined below work with the current, default 
     system or when the new decomposition system is enabled globally with :func:`~.pennylane.decompositions.enable_graph`.
+    The new decompositions system can be disabled with :func:`~.pennylane.decompositions.disable_graph`.
 
 Using a gate set
 ****************
@@ -370,6 +371,7 @@ operators:
      - Yes
      - Yes
      - Yes
+
 
 Behaviour with ``qml.decompositions.disable_graph``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
