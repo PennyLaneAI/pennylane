@@ -679,11 +679,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
-    _decompositions: Optional["List"] = None
-    """
-    Optional[List]
-    """
-
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
