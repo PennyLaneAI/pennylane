@@ -319,7 +319,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
     def test_graph_state_invariant_under_internal_ordering_1d_chain_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
@@ -349,7 +349,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
     def test_graph_state_invariant_under_internal_ordering_1d_chain_diff_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
@@ -379,7 +379,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
     def test_graph_state_invariant_under_internal_ordering_2d_grid_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
@@ -429,7 +429,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             ),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
     def test_graph_state_invariant_under_internal_ordering_2d_grid_diff_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
@@ -546,7 +546,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             ),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
     def test_graph_state_invariant_under_internal_ordering_3d_grid_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
