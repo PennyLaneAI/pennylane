@@ -55,8 +55,12 @@ class QROMStatePreparation(Operation):
         state_vector (TensorLike): The state vector to prepare.
         wires (Sequence[int]): The wires on which to prepare the state.
         precision_wires (Sequence[int]): The wires used for storing the binary representations of the
-            amplitudes and phases.
+            rotations used in the template.
         work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+
+    Raises:
+        ValueError: If the array does not contain :math:`2^n` elements for some integer :math:`n`, or if
+        its norm is not equal to one.
 
     **Example**
 
@@ -91,7 +95,9 @@ class QROMStatePreparation(Operation):
 
         The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`.
         The ``precision_wires`` are used as the target wires in the underlying QROM operations.
-        The number of ``precision_wires`` determines the precision with which the amplitudes and phases are encoded.
+        The number of ``precision_wires`` determines the precision with which the rotation angles of the
+        template are encoded. This means that we truncate the binary representation of the angle up to
+        the :math:`m`-th digit, where :math:`m` is the number of precision wires given.
 
         The ``work_wires`` are used as auxiliary qubits in the underlying QROM operations.
 
@@ -186,6 +192,7 @@ class QROMStatePreparation(Operation):
 
         probs = qml.math.abs(state_vector) ** 2
         phases = qml.math.angle(state_vector) % (2 * np.pi)
+        eps = 1e-15  # Small constant to avoid division by zero
 
         decomp_ops = []
         num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
@@ -201,15 +208,14 @@ class QROMStatePreparation(Operation):
                 probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
                 probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
 
-            eps = 1e-8  # Small constant to avoid division by zero
-
             # Compute the binary representations of the angles θi
-            def normalize_angle(x):
-                return 2 * qml.math.arccos(qml.math.sqrt(x)) / np.pi
-
             thetas_binary = [
                 _float_to_binary(
-                    normalize_angle(probs_numerator[j] / (probs_denominator[j] + eps)),
+                    2
+                    / np.pi
+                    * qml.math.arccos(
+                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                    ),
                     len(precision_wires),
                 )
                 for j in range(qml.math.shape(probs_numerator)[0])

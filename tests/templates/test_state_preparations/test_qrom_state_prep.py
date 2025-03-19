@@ -24,11 +24,19 @@ from pennylane import numpy as np
 from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
 
-def test_float_to_binary():
+@pytest.mark.parametrize(
+    ("val", "num_bits", "expected"),
+    [
+        (0.25, 4, "0100"),
+        (0.5, 3, "100"),
+        (0.125, 5, "00100"),
+    ],
+)
+def test_float_to_binary(val, num_bits, expected):
     """Test _float_to_binary private function"""
 
-    output = _float_to_binary(0.5, 3)
-    assert output == "100"
+    output = _float_to_binary(val, num_bits)
+    assert output == expected
 
 
 class TestQROMStatePreparation:
