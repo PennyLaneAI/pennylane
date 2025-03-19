@@ -82,7 +82,7 @@ class TestResources:
         resources = Resources(
             {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
         )
-        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods

@@ -56,7 +56,7 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"num_gates={self.num_gates}, gate_counts={self.gate_counts}"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -73,12 +73,7 @@ def _combine_dict(dict1: dict, dict2: dict):
 def _scale_dict(dict1: dict, scalar: int):
     r"""Scales the values in a dictionary with a scalar."""
 
-    scaled_dict = dict1.copy()
-
-    for k in scaled_dict:
-        scaled_dict[k] *= scalar
-
-    return scaled_dict
+    return {key: scalar * value for key, value in dict1.items()}
 
 
 class CompressedResourceOp:
@@ -327,7 +322,7 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache(maxsize=1)
 def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
