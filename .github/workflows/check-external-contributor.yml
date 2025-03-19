@@ -1,0 +1,11 @@
+name: External Fork check
+on:
+  pull_request:
+  types:
+    - opened
+  
+jobs:
+  check-external:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
