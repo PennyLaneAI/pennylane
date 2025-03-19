@@ -236,7 +236,10 @@ class TestCaptureForLoop:
 
     @pytest.mark.parametrize(
         "array, expected",
-        [(jax.numpy.array([0.0]), 0), (jax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)],
+        [
+            (jax.numpy.array([0.0], dtype=jnp.float32), 0),
+            (jax.numpy.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float32), 1.0),
+        ],
     )
     def test_for_loop_dynamic_array(self, array, expected):
         """Test for-loops with dynamic array inputs."""
