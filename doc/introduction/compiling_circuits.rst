@@ -456,6 +456,78 @@ Behaviour with ``qml.decomposition.enable_graph``
 With the new graph-based system enabled, custom decompositions for operators in PennyLane
 can be added in a few ways depending on the application. 
 
+The :func:`~.pennylane.transforms.decompose` transform offers the ability to inject
+custom decompositions via two keyword arguments:
+
+* ``fixed_decomps``: any operator with a decomposition listed here will automatically 
+  be chosen by the new algorithm, regardless of how efficient it may or may not 
+  be.
+* ``alt_decomps``: any operator with a decomposition list here is added as a possible 
+  decomposition the algorithm can choose based on its resources.
+
+Both keyword arguments above require a dictionary mapping PennyLane operators to 
+custom decompositions. Creating custom decompositions that the system can use involves 
+a PennyLane quantum function that represents the decomposition and a registering 
+resource data to it that tracks gate counts in the custom decomposition via :func:`~.pennylane.register_resources`.
+
+Consider this example where we add a fixed decomposition to ``CNOT`` gates:
+
+.. code-block:: python
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(wires, **__):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
+
+The :func:`~.pennylane.register_resources` accepts a dictionary mapping operators 
+within the custom decomposition to the number of times they occur in the decomposition. 
+With the resources registered, this can be used with ``fixed_decomps`` or ``alt_decomps``:
+
+.. code-block:: python
+
+    @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
+
+>>> print(qml.draw(circuit, level="device")())
+0: ────╭●────┤  State
+1: ──H─╰Z──H─┤  State
+
+Note that the ``alt_decomps`` argument can handle multiple options per operator:
+
+.. code-block:: python
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot1(wires, **__):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
+
+    @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+    def my_cnot2(wires, **__):
+        qml.RY(np.pi/2, wires[1])
+        qml.Z(wires[1])
+        qml.CZ(wires=wires)
+        qml.RY(np.pi/2, wires[1])
+        qml.Z(wires[1])
+
+    @partial(
+        qml.transforms.decompose,
+        alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]}
+    )
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
+
+The decomposition that the algorithm chooses internally will be the most resource
+efficient (less gates).
+
+## TODO: add_decomps
+
 Circuit cutting
 ---------------
 
