@@ -445,7 +445,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
-    return qfunc_jaxpr, flat_fn
+    return qfunc_jaxpr, flat_fn.out_tree
 
 
 def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
@@ -538,7 +538,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     # pylint: disable=protected-access
     if cached_value:
         qfunc_jaxpr, config, out_tree = cached_value
-        flat_fn = None
     else:
         config = construct_execution_config(
             qnode, resolve=False
@@ -550,7 +549,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             # as the original dynamic arguments
             abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
 
-        qfunc_jaxpr, flat_fn = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
@@ -565,8 +564,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     )
 
     if not cached_value:
-        assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
-        out_tree = flat_fn.out_tree
+        assert out_tree is not None, "out_tree should be set by call to flat_fn"
         qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
