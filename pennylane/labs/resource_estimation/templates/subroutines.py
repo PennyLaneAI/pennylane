@@ -929,22 +929,20 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     """Resource class for the QROM template.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        num_bitstrings (int):
+        num_bit_flips (int):
+        num_control_wires (int):
+        num_work_wires (int):
+        size_bitstring (int):
+        clean (bool):
 
     Resources:
-        The resources are obtained from the definition of the operation as described in (section III. C)
-        `Simulating key properties of lithium-ion batteries with a fault-tolerant quantum computer
-        <https://arxiv.org/abs/2204.11890>`_:
+        The resources for QROM are taken from the following two papers:
+            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
+            (https://arxiv.org/pdf/1902.02134, figure 4).
 
-        .. math::
-
-            Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
-
-        Specifically, the resources are given by one :class:`~.ResourcePrepSelPrep` gate and one
-        :class:`~.ResourceReflection` gate.
-
-    .. seealso:: :class:`~.Qubitization`
+        We use the one-auxillary qubit version of select, instead of the built-in select
+        resources.
     """
 
     # pylint: disable=too-many-arguments
@@ -962,9 +960,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            num_bitstrings (int):
+            num_bit_flips (int):
+            num_control_wires (int):
+            num_work_wires (int):
+            size_bitstring (int):
+            clean (bool):
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1022,8 +1023,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_bitstrings (int):
+            num_bit_flips (int):
+            num_control_wires (int):
+            num_work_wires (int):
+            size_bitstring (int):
+            clean (bool):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -1057,8 +1062,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_bitstrings (int):
+            num_bit_flips (int):
+            num_control_wires (int):
+            num_work_wires (int):
+            size_bitstring (int):
+            clean (bool):
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1078,22 +1087,17 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     """Resource class for the AmplitudeAmplification template.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        U_op (Operator):
+        U_params (dict):
+        O_op (Operator):
+        O_params (dict):
+        iters (int):
+        num_work_wires (int):
+        num_ref_wires (int):
+        fixed_point (bool):
 
     Resources:
-        The resources are obtained from the definition of the operation as described in (section III. C)
-        `Simulating key properties of lithium-ion batteries with a fault-tolerant quantum computer
-        <https://arxiv.org/abs/2204.11890>`_:
-
-        .. math::
-
-            Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
-
-        Specifically, the resources are given by one :class:`~.ResourcePrepSelPrep` gate and one
-        :class:`~.ResourceReflection` gate.
-
-    .. seealso:: :class:`~.Qubitization`
+        The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
     """
 
     # pylint: disable=too-many-arguments
@@ -1113,9 +1117,14 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            U_op (Operator):
+            U_params (dict):
+            O_op (Operator):
+            O_params (dict):
+            iters (int):
+            num_work_wires (int):
+            num_ref_wires (int):
+            fixed_point (bool):
 
         Resources:
             The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
@@ -1155,8 +1164,14 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            U_op (Operator):
+            U_params (dict):
+            O_op (Operator):
+            O_params (dict):
+            iters (int):
+            num_work_wires (int):
+            num_ref_wires (int):
+            fixed_point (bool):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -1189,9 +1204,15 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
-
+            U_op (Operator):
+            U_params (dict):
+            O_op (Operator):
+            O_params (dict):
+            iters (int):
+            num_work_wires (int):
+            num_ref_wires (int):
+            fixed_point (bool):
+            
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """

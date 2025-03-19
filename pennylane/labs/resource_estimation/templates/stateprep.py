@@ -26,8 +26,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        num_wires(int): 
 
     Resources:
         Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -39,17 +38,10 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            num_wires (int): 
 
         Resources:
-            The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
-
-            We use the one-auxillary qubit version of select, instead of the built-in select
-            resources.
+            Uses the resources as defined in the ResourceMottonenStatePreperation template.
         """
         return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
 
@@ -58,8 +50,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_wires(int): 
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -72,8 +63,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_wires(int): 
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -90,8 +80,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
     """Resource class for the MottonenStatePreparation template.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        num_wires (int): 
 
     Resources:
         Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
@@ -103,17 +92,10 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            num_wires (int): 
 
         Resources:
-            The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
-
-            We use the one-auxillary qubit version of select, instead of the built-in select
-            resources.
+            Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
         """
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
@@ -134,8 +116,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_wires (int): 
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -148,8 +129,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_wires (int): 
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -166,8 +146,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     """Resource class for the Superposition template.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        num_stateprep_wires (int):
+        num_basis_states (int):
+        size_basis_state (int):
 
     Resources:
         The resources are computed following the PennyLane decomposition of the class
@@ -181,9 +162,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            num_stateprep_wires (int):
+            num_basis_states (int):
+            size_basis_state (int):
 
         Resources:
             The resources are computed following the PennyLane decomposition of
@@ -233,8 +214,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_stateprep_wires (int):
+            num_basis_states (int):
+            size_basis_state (int):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -258,8 +240,9 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            num_stateprep_wires (int):
+            num_basis_states (int):
+            size_basis_state (int):
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -276,8 +259,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     """Resource class for the BasisState template.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        state (list):
 
     Resources:
         The resources are computed following the PennyLane decomposition of the class
@@ -292,13 +274,10 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctr
+            state (list):
 
         Resources:
-            The resources for BasisState are according to the decomposition found
-        in qml.BasisState.
+            The resources for BasisState are according to the decomposition found in qml.BasisState.
         """
         gate_types = {}
 
@@ -313,8 +292,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            state (list):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -328,8 +306,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+            state (list):
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
