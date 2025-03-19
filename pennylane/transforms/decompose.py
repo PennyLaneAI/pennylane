@@ -51,7 +51,7 @@ def _operator_decomposition_gen(
 
     if acceptance_function(op) or max_depth_reached:
         yield op
-    elif graph is not None and graph.check_decomposition(op):
+    elif graph is not None and graph.is_solved_for(op):
         op_rule = graph.decomposition(op)
         with qml.queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -120,7 +120,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 )
 
                 if qml.decomposition.enabled_graph():
-                    # TODO(Ali): merge this with decompose
                     self._target_gate_names = target_gate_names | set(
                         [gate.name for gate in target_gate_types]
                     )

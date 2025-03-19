@@ -118,15 +118,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._alt_decomps = alt_decomps or {}
         self._visitor = None
 
-        # TODO(Ali): This is a temporary fix to make the resource_params property available
-        #  for arbitrary operators in the decomposition graph.
-        for op, _ in self._fixed_decomps.items():
-            op.resource_params = property(lambda self: {})
-            op.resource_param_keys = ()
-        for op, _ in self._alt_decomps.items():
-            op.resource_params = property(lambda self: {})
-            op.resource_param_keys = ()
-
         # Construct the decomposition graph
         self._construct_graph()
 
@@ -296,18 +287,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule
-
-    def check_decomposition(self, op: Operator) -> bool:
-        """Checks if an operation exists in the graph.
-
-        Args:
-            op (Operator): The operator to check for.
-
-        Returns:
-            bool: True if the operator exists in the graph, False otherwise.
-        """
-        op_node = resource_rep(type(op), **op.resource_params)
-        return op_node in self._op_node_indices
 
 
 class _DecompositionSearchVisitor(DijkstraVisitor):
