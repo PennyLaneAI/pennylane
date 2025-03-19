@@ -501,7 +501,7 @@ class TestControlledBaseDecomposition:
         )
 
     def test_multi_control_wires(self):
-        """Tests with multiple control wires."""
+        """Tests with multiple (more than 2) control wires."""
 
         rule = ControlledBaseDecomposition(custom_decomp)
 

@@ -298,7 +298,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     return new_qfunc
 
 
-@functools.lru_cache()
+@functools.lru_cache(maxsize=1)
 def _get_pauli_x_based_ops():
     """Gets a list of pauli-x based operations
 
