@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``KerasLayer`` in the ``pennylane.qnn.keras`` module is deprecated due to lack of ongoing support for Keras 2. Instead, consider using other machine learning frameworks than TensorFlow.
+* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
