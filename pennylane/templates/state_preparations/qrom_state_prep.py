@@ -88,10 +88,9 @@ class QROMStatePreparation(Operation):
         :title: Usage Details
 
         Following the algorithm described in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
-        this template uses
-        a :class:`~.QROM`
-        to store the binary representations of the amplitudes and phases of the target state, and then uses
-        controlled rotations :class:`~.CRY` to apply these values to the target qubits.
+        this template uses a :class:`~.QROM`
+        to store the binary representation of the rotation angles used, and then applies
+        controlled rotations :class:`~.CRY` to rotate these angles in the target qubits.
 
         The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`.
         The ``precision_wires`` are used as the target wires in the underlying QROM operations.
@@ -100,11 +99,6 @@ class QROMStatePreparation(Operation):
         the :math:`m`-th digit, where :math:`m` is the number of precision wires given.
 
         The ``work_wires`` are used as auxiliary qubits in the underlying QROM operations.
-
-        The decomposition involves encoding the probabilities and phases of the state vector using
-        QROMs and then applying controlled rotations based on the values stored in the ``precision_wires``.
-        The decomposition applies :class:`~.CRY` rotations for amplitude encoding and controlled :class:`~.GlobalPhase`
-        rotations for the phase encoding.
     """
 
     def __init__(
