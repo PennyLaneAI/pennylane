@@ -6,4 +6,7 @@ jobs:
   check-external:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - name: Check PR and label
+        shell: bash
+        run: if github.event.pull_request.head.repo.fork==false; then 
+            gh pr edit $GITHUB_EVENT_PATH --add-label "External"; fi
