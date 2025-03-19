@@ -948,7 +948,12 @@ class CCZ(ControlledOp):
 
 
 def _ccz_resources():
-    return {qml.CNOT: 6, qml.adjoint_resource_rep(qml.T, {}): 3, qml.T: 4, qml.Hadamard: 2}
+    return {
+        qml.CNOT: 6,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
+        qml.T: 4,
+        qml.Hadamard: 2,
+    }
 
 
 @register_resources(_ccz_resources)
@@ -1279,7 +1284,12 @@ def _check_and_convert_control_values(control_values, control_wires):
 
 
 def _toffoli_resources():
-    return {qml.Hadamard: 2, qml.CNOT: 6, qml.T: 4, qml.adjoint_resource_rep(qml.T, {}): 3}
+    return {
+        qml.Hadamard: 2,
+        qml.CNOT: 6,
+        qml.T: 4,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
+    }
 
 
 @register_resources(_toffoli_resources)
