@@ -180,7 +180,7 @@ class TestTransformDecompose:
             resource_params = set()
 
             @property
-            def resource_params(self):
+            def resource_params(self):  # pylint: disable=function-redefined
                 return {}
 
         @qml.register_resources({qml.RZ: 2, qml.CNOT: 1})

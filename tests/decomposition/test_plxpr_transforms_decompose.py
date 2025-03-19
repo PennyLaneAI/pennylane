@@ -91,3 +91,98 @@ class TestPLxPRTransformDecompose:
 
         qml.decomposition.disable_graph()
         qml.capture.disable()
+
+    def test_fixed_decomps(self):
+        """Test the fixed_decomps argument with the new decomposition system."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        obj = CollectOpsandMeas()
+        obj(circuit)()
+        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
+        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
+        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
+        assert len(obj.state["ops"]) == 3
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()
+
+    def test_alt_decomps_single(self):
+        """Test the alt_decomps argument with a single decomposition rules."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        obj = CollectOpsandMeas()
+        obj(circuit)()
+        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
+        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
+        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
+        assert len(obj.state["ops"]) == 3
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()
+
+    def test_alt_decomps_multiple(self):
+        """Test the alt_decomps argument with multiple decomposition rules."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot1(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+        def my_cnot2(wires, **__):
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+            qml.CZ(wires=wires)
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]})
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        obj = CollectOpsandMeas()
+        obj(circuit)()
+        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
+        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
+        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
+        assert len(obj.state["ops"]) == 3
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()

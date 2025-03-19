@@ -96,6 +96,7 @@ def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps)
         alt_decomps=alt_decomps,
     )
 
+    # Solve the decomposition graph to find the efficient decomposition pathways
     graph.solve()
 
     return graph
@@ -200,6 +201,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 that the operator does not need to be decomposed.
             """
 
+            print("op: ", op)
+            if (self._fixed_decomps and isinstance(op, tuple(self._fixed_decomps.keys()))) or (
+                self._alt_decomps and isinstance(op, tuple(self._alt_decomps.keys()))
+            ):
+                return False
+
             if not op.has_decomposition:
                 if not self.gate_set(op):
                     warnings.warn(
@@ -223,7 +230,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
-            if self.gate_set(op):
+            if self.gate_set(op) and not (self._fixed_decomps or self._alt_decomps):
                 return self.interpret_operation(op)
 
             max_expansion = (
@@ -299,6 +306,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 # Skip the graph creation if there are
                 # no concrete operations in the closed PLxPR:
+                print("operations: ", operations)
                 if operations:
                     self._graph_decomp = _get_decomp_graph(
                         operations,
