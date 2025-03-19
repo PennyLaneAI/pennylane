@@ -312,10 +312,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         import jax  # pylint: disable=import-outside-toplevel
 
         if "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes:
-            if any(
-                _has_dynamic_shape(i.cell_contents)
-                for i in self.body_fn.__closure__ + self.cond_fn.__closure__
-            ):
+            closures = (self.body_fn.__closure__ or ()) + (self.cond_fn.__closure__ or ())
+            if any(_has_dynamic_shape(i.cell_contents) for i in closures):
                 msg = (
                     "Detected an attempt to combine arrays with different dynamic shapes. "
                     "\nThis also may be due to a closure variable with a dynamic shape."
