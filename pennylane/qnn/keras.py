@@ -312,8 +312,7 @@ class KerasLayer(Layer):
         **kwargs,
     ):
         warnings.warn(
-            "The 'KerasLayer' class is deprecated and will be removed in v0.42. "
-            "This gradient recipe is not required for the new operator arithmetic system.",
+            "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
             qml.PennyLaneDeprecationWarning,
         )
         # pylint: disable=too-many-arguments
