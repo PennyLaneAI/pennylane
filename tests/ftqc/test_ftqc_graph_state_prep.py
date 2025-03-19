@@ -307,20 +307,9 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
     graph structure should not affect the state returned by GraphStatePrep.
     """
 
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
-    def test_graph_state_invariant_under_internal_ordering_same_wires_indices(
-        self, one_qubit_op, two_qubit_op
-    ):
-        """Test that the state returned by GraphStatePrep is invariant under the internal ordering
-        of the nodes and edges in the graph.
-
-        The set of node and wire labels are the same in this test.
-        """
-        # All the graphs below have the same graph structure: (0) -- (1) -- (2) -- (3)
-        graphs = [
-            # "Baseline" graph
-            nx.Graph([(0, 1), (1, 2), (2, 3)]),
+    @pytest.mark.parametrize(
+        "graph",
+        [
             # Permute the edges
             nx.Graph([(1, 2), (2, 3), (0, 1)]),
             nx.Graph([(2, 3), (0, 1), (1, 2)]),
@@ -330,24 +319,30 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph([(0, 1), (2, 1), (2, 3)]),
             nx.Graph([(0, 1), (1, 2), (3, 2)]),
             nx.Graph([(0, 1), (2, 1), (3, 2)]),
-        ]
-
-        self._check_graphs_yield_same_state(graphs, one_qubit_op, two_qubit_op)
-
+            nx.Graph([(1, 0), (2, 1), (3, 2)]),
+        ],
+    )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
-    def test_graph_state_invariant_under_internal_ordering_diff_wires_indices(
-        self, one_qubit_op, two_qubit_op
+    def test_graph_state_invariant_under_internal_ordering_same_wires_indices(
+        self, graph, one_qubit_op, two_qubit_op
     ):
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The set of node and wire labels are different in this test.
+        The set of node and wire labels are the same in this test.
         """
-        # All the graphs below have the same graph structure: (a) -- (b) -- (c) -- (d)
-        graphs = [
-            # "Baseline" graph
-            nx.Graph([("a", "b"), ("b", "c"), ("c", "d")]),
+        # Graph structure: (0) -- (1) -- (2) -- (3)
+        graph_ref = nx.Graph([(0, 1), (1, 2), (2, 3)])
+
+        # The sequence of wires is constant
+        wires = [0, 1, 2, 3]
+
+        self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
+
+    @pytest.mark.parametrize(
+        "graph",
+        [
             # Permute the edges
             nx.Graph([("b", "c"), ("c", "d"), ("a", "b")]),
             nx.Graph([("c", "d"), ("a", "b"), ("b", "c")]),
@@ -357,26 +352,40 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph([("a", "b"), ("c", "b"), ("c", "d")]),
             nx.Graph([("a", "b"), ("b", "c"), ("d", "c")]),
             nx.Graph([("a", "b"), ("c", "b"), ("d", "c")]),
-        ]
+            nx.Graph([("b", "a"), ("c", "b"), ("d", "c")]),
+        ],
+    )
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    def test_graph_state_invariant_under_internal_ordering_diff_wires_indices(
+        self, graph, one_qubit_op, two_qubit_op
+    ):
+        """Test that the state returned by GraphStatePrep is invariant under the internal ordering
+        of the nodes and edges in the graph.
 
-        self._check_graphs_yield_same_state(graphs, one_qubit_op, two_qubit_op)
+        The set of node and wire labels are different in this test.
+        """
+        # Graph structure: (a) -- (b) -- (c) -- (d)
+        graph_ref = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])
+
+        # The sequence of wires is constant
+        wires = [0, 1, 2, 3]
+
+        self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
 
     @staticmethod
-    def _check_graphs_yield_same_state(graphs, one_qubit_op, two_qubit_op):
+    def _check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op):
         """Helper function for the above tests.
 
         Creates a minimal circuit that returns the state resulting from GraphStatePrep. It then
-        executes this circuit for each of the input graphs and asserts that the resulting states are
-        all equal.
+        executes this circuit using the input graphs and asserts that the resulting states are
+        equal. ``graph_ref`` is the assumed to be the reference graph that yields the state that is
+        known to be correct.
         """
-        # Sanity check: ensure that all of these graphs have the same adjacency list
-        for graph in graphs[1:]:
-            assert (
-                graphs[0].adj == graph.adj
-            ), "Internal error: all graphs defined in this test should have the same adjacency list"
-
-        # The sequence of wires is constant
-        wires = list(range(len(graphs[0].nodes)))
+        # Sanity check: ensure that the graphs have the same adjacency list
+        assert (
+            graph.adj == graph_ref.adj
+        ), "Internal error: all graphs defined in this test should have the same adjacency list"
 
         dev = qml.device("default.qubit")
 
@@ -387,7 +396,6 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             )
             return qml.state()
 
-        result_baseline = circuit(graphs[0])
-        for graph in graphs[1:]:
-            result = circuit(graph)
-            assert np.all(result_baseline == result)
+        result_ref = circuit(graph_ref)
+        result = circuit(graph)
+        assert np.all(result_ref == result)
