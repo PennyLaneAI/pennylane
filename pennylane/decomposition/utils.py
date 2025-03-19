@@ -18,6 +18,10 @@ This module implements utility functions for the decomposition module.
 """
 
 
+class DecompositionError(Exception):
+    """Base class for decomposition errors."""
+
+
 def toggle_graph_decomposition():
     """A closure that toggles the graph-based decomposition on and off."""
 
@@ -45,31 +49,3 @@ The following functions are used to enable and disable the graph-based decomposi
 - enabled_graph: Returns the current status of the graph-based decomposition algorithm.
 """
 enable_graph, disable_graph, enabled_graph = toggle_graph_decomposition()
-
-
-# FIXME(remove)
-def toggle_graph_decomposition_debug():
-    """A closure that toggles the graph-based decomposition debug info on and off."""
-
-    _GRAPH_DECOMPOSITION_DEBUG = False
-
-    def enable():
-        nonlocal _GRAPH_DECOMPOSITION_DEBUG
-        _GRAPH_DECOMPOSITION_DEBUG = True
-
-    def disable() -> None:
-        nonlocal _GRAPH_DECOMPOSITION_DEBUG
-        _GRAPH_DECOMPOSITION_DEBUG = False
-
-    def status() -> bool:
-        nonlocal _GRAPH_DECOMPOSITION_DEBUG
-        return _GRAPH_DECOMPOSITION_DEBUG
-
-    return enable, disable, status
-
-
-enable_graph_debug, disable_graph_debug, enabled_graph_debug = toggle_graph_decomposition_debug()
-
-
-class DecompositionError(Exception):
-    """Base class for decomposition errors."""

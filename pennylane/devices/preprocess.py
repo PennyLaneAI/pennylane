@@ -20,7 +20,6 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from functools import lru_cache
 from itertools import chain
 from typing import Optional, Type
 
@@ -197,11 +196,6 @@ def mid_circuit_measurements(
     if mcm_method is None:
         mcm_method = "one-shot" if tape.shots else "deferred"
 
-    if _includes_conditional_mcms(tape):
-        raise NotImplementedError(
-            "Conditionally applied mid-circuit measurements are not supported"
-        )
-
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method == "tree-traversal":
@@ -209,20 +203,6 @@ def mid_circuit_measurements(
     return qml.defer_measurements(
         tape, allow_postselect=isinstance(device, qml.devices.DefaultQubit)
     )
-
-
-def _is_conditional_mcm(operation: qml.operation.Operator) -> bool:
-    """Returns True if the operation is a mid-circuit measurement nested inside a Conditional,
-    and False otherwise."""
-    if isinstance(operation, qml.ops.Conditional):
-        if isinstance(operation.base, qml.measurements.MidMeasureMP):
-            return True
-    return False
-
-
-@lru_cache(maxsize=2)
-def _includes_conditional_mcms(tape: QuantumScript) -> bool:
-    return any(_is_conditional_mcm(op) for op in tape.operations)
 
 
 @transform

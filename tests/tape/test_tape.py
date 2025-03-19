@@ -526,10 +526,9 @@ class TestResourceEstimation:
         assert tape.specs["resources"] == expected_resources
 
         assert tape.specs["num_observables"] == 1
-        assert tape.specs["num_diagonalizing_gates"] == 0
         assert tape.specs["num_trainable_params"] == 0
 
-        assert len(tape.specs) == 5
+        assert len(tape.specs) == 4
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -537,7 +536,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 5
+        assert len(specs) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -546,7 +545,6 @@ class TestResourceEstimation:
         )
         assert specs["resources"] == expected_resources
         assert specs["num_observables"] == 2
-        assert specs["num_diagonalizing_gates"] == 1
         assert specs["num_trainable_params"] == 5
 
     def test_specs_add_to_tape(self, make_extendible_tape):
@@ -555,7 +553,7 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 5
+        assert len(specs1) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -566,7 +564,6 @@ class TestResourceEstimation:
         assert specs1["resources"] == expected_resoures
 
         assert specs1["num_observables"] == 0
-        assert specs1["num_diagonalizing_gates"] == 0
         assert specs1["num_trainable_params"] == 5
 
         with tape as tape:
@@ -577,7 +574,7 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 5
+        assert len(specs2) == 4
 
         gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
@@ -588,7 +585,6 @@ class TestResourceEstimation:
         assert specs2["resources"] == expected_resoures
 
         assert specs2["num_observables"] == 2
-        assert specs2["num_diagonalizing_gates"] == 1
         assert specs2["num_trainable_params"] == 6
 
 
@@ -894,14 +890,13 @@ class TestExpand:
 
         new_tape = tape.expand()
 
-        assert len(new_tape.operations) == 3
+        assert len(new_tape.operations) == 2
 
-        assert new_tape.operations[0].name == "PhaseShift"
-        assert new_tape.operations[1].name == "RX"
-        assert new_tape.operations[2].name == "PhaseShift"
+        assert new_tape.operations[0].name == "RX"
+        assert new_tape.operations[1].name == "GlobalPhase"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.num_params == 2
+        assert new_tape.get_parameters() == [np.pi, -np.pi / 2]
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -935,7 +930,7 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2)
-        assert len(new_tape.operations) == 11
+        assert len(new_tape.operations) == 9
 
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(

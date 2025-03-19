@@ -57,7 +57,6 @@ def _builtins_shape(x):
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
 ar.register_function("builtins", "coerce", lambda x: x)
-ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
 ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
@@ -65,6 +64,7 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "coerce", lambda x: x)
+ar.register_function("scipy", "array", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
 ar.register_function("scipy", "dot", np.dot)
 ar.register_function("scipy", "conj", np.conj)
@@ -128,10 +128,57 @@ def _permutation_parity(perm):
     return parity
 
 
+def sparse_matrix_power(A, n):
+    """Dispatch to the appropriate sparse matrix power function."""
+    try:  # pragma: no cover
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
+
+        # added in scipy 1.12.0
+
+        return matrix_power(A, n)
+    except ImportError:  # pragma: no cover
+        return _sparse_matrix_power_bruteforce(A, n)
+
+
+def _sparse_matrix_power_bruteforce(A, n):
+    """
+    Compute the power of a sparse matrix using brute-force matrix multiplication.
+    Supports only non-negative integer exponents.
+
+    Parameters:
+    A : scipy.sparse matrix
+        The sparse matrix to be exponentiated.
+    n : int
+        The exponent (must be non-negative).
+
+    Returns:
+    scipy.sparse matrix
+        The matrix A raised to the power n.
+    """
+
+    if n < 0:
+        raise ValueError("This function only supports non-negative integer exponents.")
+
+    if n == 0:
+        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+
+    try:
+        matmul_range = range(n - 1)
+    except Exception as e:
+        raise ValueError("exponent must be an integer") from e
+
+    result = A.copy()
+    for _ in matmul_range:
+        result = result @ A  # Native matmul operation
+
+    return result
+
+
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
-ar.register_function("scipy", "linalg.matrix_power", sp.sparse.linalg.matrix_power)
+ar.register_function("scipy", "linalg.matrix_power", sparse_matrix_power)
 ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
 ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
@@ -144,6 +191,10 @@ ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shap
 ar.register_function("scipy", "real", lambda x: x.real)
 ar.register_function("scipy", "imag", lambda x: x.imag)
 ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
+ar.register_function("scipy", "eye", sp.sparse.eye)
+ar.register_function("scipy", "zeros", sp.sparse.csr_matrix)
+ar.register_function("scipy", "hstack", sp.sparse.hstack)
+ar.register_function("scipy", "vstack", sp.sparse.vstack)
 
 # -------------------------------- NumPy --------------------------------- #
 

@@ -15,6 +15,7 @@
 import functools
 from collections.abc import Callable
 
+from pennylane import capture
 from pennylane.capture import FlatFn, determine_abstracted_axes, enabled
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
@@ -117,8 +118,6 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     while_loop_prim = NonInterpPrimitive("while_loop")
@@ -143,10 +142,8 @@ def _get_while_loop_qfunc_prim():
         abstract_shapes = args[abstract_shapes_slice]
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
-        while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
-            fn_res = jax.core.eval_jaxpr(
-                jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res
-            )
+        while capture.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *abstract_shapes, *fn_res)[0]:
+            fn_res = capture.eval_jaxpr(jaxpr_body_fn, jaxpr_consts_body, *abstract_shapes, *fn_res)
 
         return fn_res
 
