@@ -432,17 +432,6 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
 
 
-# pylint: disable=protected-access
-@PlxprInterpreter.register_primitive(jax._src.pjit.pjit_p)
-def _(self, *invals, jaxpr, **params):
-    if jax.config.jax_dynamic_shapes:
-        # just evaluate it so it doesn't throw dynamic shape errors
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
-
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
-
-
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
 def _(self, *dyn_shape, dimension, dtype, shape):
@@ -648,6 +637,17 @@ class FlattenedInterpreter(PlxprInterpreter):
     ``for_prim``, ``while_prim``, and ``cond_prim``. Useful for evaluating, instead
     of just transforming.
     """
+
+
+# pylint: disable=protected-access
+@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+def _(self, *invals, jaxpr, **params):
+    if jax.config.jax_dynamic_shapes:
+        # just evaluate it so it doesn't throw dynamic shape errors
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+
+    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
