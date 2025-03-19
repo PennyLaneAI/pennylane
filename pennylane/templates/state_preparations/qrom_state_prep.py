@@ -54,8 +54,8 @@ class QROMStatePreparation(Operation):
     Args:
         state_vector (TensorLike): The state vector to prepare.
         wires (Sequence[int]): The wires on which to prepare the state.
-        precision_wires (Sequence[int]): The wires used for storing the binary representations of the
-            rotations used in the template.
+        precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
+            rotation angles utilized in the template.
         work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
     Raises:
@@ -88,9 +88,8 @@ class QROMStatePreparation(Operation):
         :title: Usage Details
 
         Following the algorithm described in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
-        this template uses a :class:`~.QROM`
-        to store the binary representation of the rotation angles used, and then applies
-        controlled rotations :class:`~.CRY` to rotate these angles in the target qubits.
+        this template employs :class:`~.QROM` to encode the binary representation of the rotation angles
+        and subsequently applies controlled rotations :class:`~.CRY` to implement these angles on the target qubits.
 
         The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`.
         The ``precision_wires`` are used as the target wires in the underlying QROM operations.
@@ -176,9 +175,9 @@ class QROMStatePreparation(Operation):
             state_vector (TensorLike): The state vector to prepare.
             wires (Sequence[int]): The wires which the operator acts on.
             input_wires (Sequence[int]): The wires on which to prepare the state.
-            precision_wires (Sequence[int]): The wires used for storing the binary representations of the
-                amplitudes and phases.
-            work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+            precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
+                rotation angles utilized in the template.
+            work_wires (Sequence[int]):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
         Returns:
             list: List of decomposition operations.
