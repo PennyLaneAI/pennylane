@@ -307,8 +307,8 @@ def custom_decomp(*params, wires, **_):
     qml.CZ(wires=wires[:2])
 
 
-class TestGeneralControlledOperator:
-    """Tests the controlled decomposition of a general operator."""
+class TestControlledBaseDecomposition:
+    """Tests applying control on the decomposition of the base operator."""
 
     def test_single_control_wire(self):
         """Tests a single control wire."""
