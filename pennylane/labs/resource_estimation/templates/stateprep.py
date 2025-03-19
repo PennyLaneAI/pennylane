@@ -162,7 +162,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        num_wires,
+        state,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""The resources for BasisState are according to the decomposition found
@@ -171,22 +171,21 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         gate_types = {}
 
         rx = re.ResourceRX.resource_rep()
-        phase_shift = re.ResourcePhaseShift.resource_rep()
 
-        gate_types[rx] = num_wires
-        gate_types[phase_shift] = num_wires * 2
+        gate_types[rx] = sum(1 for basis in state if basis == 1)
 
         return gate_types
 
     @property
     def resource_params(self) -> Dict:
-        return {"num_wires": len(self.wires)}
+        state = self.parameters[0]
+        return {"state": state}
 
     @classmethod
-    def resource_rep(cls, wires) -> CompressedResourceOp:
-        params = {"num_wires": wires}
+    def resource_rep(cls, state) -> CompressedResourceOp:
+        params = {"state": state}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def tracking_name(cls, num_wires) -> str:
-        return f"BasisState({num_wires})"
+    def tracking_name(cls, state) -> str:
+        return f"BasisState({state})"

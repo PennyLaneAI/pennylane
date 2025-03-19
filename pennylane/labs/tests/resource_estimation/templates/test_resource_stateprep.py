@@ -103,24 +103,22 @@ class TestResourceBasisState:
     """Test the ResourceBasisState class"""
 
     @pytest.mark.parametrize(
-        "num_wires, num_rx, num_phase_shift",
-        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
+        "state, num_rx",
+        [([1, 1, 1, 1, 0, 0], 4), ([0, 1, 1, 1, 1, 1], 5), ([1, 1, 1, 1, 1, 1], 6)],
     )
-    def test_resources(self, num_wires, num_rx, num_phase_shift):
+    def test_resources(self, state, num_rx):
         """Test that the resources are correct"""
         expected = {}
         rx = re.CompressedResourceOp(re.ResourceRX, {})
-        phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
         expected[rx] = num_rx
-        expected[phase_shift] = num_phase_shift
 
-        assert re.ResourceBasisState.resources(num_wires) == expected
+        assert re.ResourceBasisState.resources(state) == expected
 
     @pytest.mark.parametrize(
         "state, wires",
         [
             (
-                qnp.array([1, 1]),
+                [1, 1],
                 range(2),
             ),
         ],
@@ -129,44 +127,42 @@ class TestResourceBasisState:
         """Test that the resource params are correct"""
         op = re.ResourceBasisState(state=state, wires=wires)
 
-        assert op.resource_params == {"num_wires": len(wires)}
+        assert list(op.resource_params["state"]) == state
 
     @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
+        "state",
+        [([1, 1, 1, 1, 0, 0]), ([1, 1, 1, 1, 1, 0]), ([1, 1, 1, 1, 1, 1])],
     )
-    def test_resource_rep(self, num_wires):
+    def test_resource_rep(self, state):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(
             re.ResourceBasisState,
-            {"num_wires": num_wires},
+            {"state": state},
         )
-        assert expected == re.ResourceBasisState.resource_rep(num_wires)
+        assert expected == re.ResourceBasisState.resource_rep(state)
 
     @pytest.mark.parametrize(
-        "num_wires, num_rx, num_phase_shift",
-        [(4, 4, 8), (5, 5, 10), (6, 6, 12)],
+        "state, num_rx",
+        [([1, 1, 1, 1, 0, 0], 4), ([0, 1, 1, 1, 1, 1], 5), ([1, 1, 1, 1, 1, 1], 6)],
     )
-    def test_resources_from_rep(self, num_wires, num_rx, num_phase_shift):
+    def test_resources_from_rep(self, state, num_rx):
         """Test that computing the resources from a compressed representation works"""
-        rep = re.ResourceBasisState.resource_rep(num_wires)
+        rep = re.ResourceBasisState.resource_rep(state)
         actual = rep.op_type.resources(**rep.params)
         expected = {}
         rx = re.CompressedResourceOp(re.ResourceRX, {})
-        phase_shift = re.CompressedResourceOp(re.ResourcePhaseShift, {})
         expected[rx] = num_rx
-        expected[phase_shift] = num_phase_shift
 
         assert actual == expected
 
     @pytest.mark.parametrize(
-        "num_wires",
-        [(4), (5), (6)],
+        "state",
+        [([1, 1, 1, 1, 0, 0]), ([0, 1, 1, 1, 1, 1]), ([1, 1, 1, 1, 1, 1])],
     )
-    def test_tracking_name(self, num_wires):
+    def test_tracking_name(self, state):
         """Test that the tracking name is correct."""
-        assert re.ResourceBasisState.tracking_name(num_wires) == f"BasisState({num_wires})"
+        assert re.ResourceBasisState.tracking_name(state) == f"BasisState({state})"
 
 
 class TestResourceSuperposition:
