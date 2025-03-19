@@ -131,11 +131,13 @@ def test_simple_qnode():
     assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_config = qml.devices.ExecutionConfig(
-        gradient_method="best",
+        gradient_method="backprop",
+        use_device_gradient=True,
         gradient_keyword_arguments={},
         use_device_jacobian_product=False,
         interface="jax",
         grad_on_execution=False,
+        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
     )
     assert eqn0.params["execution_config"] == expected_config
 
@@ -286,11 +288,13 @@ def test_capture_qnode_kwargs():
     assert jaxpr.eqns[0].primitive == qnode_prim
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="parameter-shift",
+        use_device_gradient=False,
         grad_on_execution=False,
         derivative_order=2,
         use_device_jacobian_product=False,
         mcm_config=qml.devices.MCMConfig(mcm_method=None, postselect_mode=None),
         interface=qml.math.Interface.JAX,
+        device_options={"max_workers": None, "rng": dev._rng, "prng_key": None},
     )
     assert jaxpr.eqns[0].params["execution_config"] == expected_config
 
@@ -396,7 +400,7 @@ class TestDifferentiation:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(NotImplementedError, match=r"diff_method adjoint not yet implemented"):
+        with pytest.raises(NotImplementedError, match=r"does not yet support PLXPR jvps."):
             jax.grad(circuit)(0.5)
 
 
@@ -427,6 +431,23 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
     [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
     expected = jnp.cos(0 + 1 + 2)
     assert jnp.allclose(expected, output)
+
+
+# pylint: disable=unused-argument
+def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
+
+    @qml.qnode(qml.device("default.qubit", wires=4))
+    def circuit(i, x):
+        qml.RX(jax.numpy.sum(x), i)
+        return qml.expval(qml.Z(i))
+
+    def w(i):
+        return circuit(i, jnp.arange(i))
+
+    jaxpr = jax.make_jaxpr(w)(2)
+    [res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+    expected = jax.numpy.cos(0 + 1 + 2)
+    assert qml.math.allclose(res, expected)
 
 
 # pylint: disable=too-many-public-methods

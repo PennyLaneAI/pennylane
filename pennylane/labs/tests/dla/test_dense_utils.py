@@ -23,7 +23,6 @@ from pennylane.labs.dla import (
     adjvec_to_op,
     batched_pauli_decompose,
     change_basis_ad_rep,
-    check_cartan_decomp,
     check_orthonormal,
     op_to_adjvec,
     orthonormalize,
@@ -343,14 +342,6 @@ def test_orthonormalize(g):
     g = orthonormalize(g)
 
     assert check_orthonormal(g, trace_inner_product)
-
-
-def test_check_cartan_decomp():
-    """Test that check_cartan_decomp correctly checks Ising cartan decomp from fdhs paper (https://arxiv.org/abs/2104.00728)"""
-    k = [Z(0) @ Y(1), Y(0) @ Z(1)]
-    m = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
-
-    assert check_cartan_decomp(k, m)
 
 
 class TestChangeBasisAdRep:

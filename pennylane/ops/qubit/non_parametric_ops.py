@@ -102,8 +102,10 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
+            format=format
+        )
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -298,8 +300,8 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, 1], [1, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -369,16 +371,11 @@ class PauliX(Observable, Operation):
         **Example:**
 
         >>> print(qml.X.compute_decomposition(0))
-        [PhaseShift(1.5707963267948966, wires=[0]),
-        RX(3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        [RX(3.141592653589793, wires=[0]),
+        GlobalPhase(-1.5707963267948966, wires=[0])]
 
         """
-        return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
-            qml.RX(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        return [qml.RX(np.pi, wires=wires), qml.GlobalPhase(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
@@ -496,8 +493,8 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[0, -1j], [1j, 0]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -570,16 +567,11 @@ class PauliY(Observable, Operation):
         **Example:**
 
         >>> print(qml.Y.compute_decomposition(0))
-        [PhaseShift(1.5707963267948966, wires=[0]),
-        RY(3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        [RY(3.141592653589793, wires=[0]),
+        GlobalPhase(-1.5707963267948966, wires=[0])]
 
         """
-        return [
-            qml.PhaseShift(np.pi / 2, wires=wires),
-            qml.RY(np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        return [qml.RY(np.pi, wires=wires), qml.GlobalPhase(-np.pi / 2, wires=wires)]
 
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
@@ -692,8 +684,8 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
-        return sparse.csr_matrix([[1, 0], [0, -1]])
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1181,15 +1173,15 @@ class SX(Operation):
         >>> print(qml.SX.compute_decomposition(0))
         [RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
-        RZ(-3.141592653589793, wires=[0]),
-        PhaseShift(1.5707963267948966, wires=[0])]
+        RZ(-1.5707963267948966, wires=[0]),
+        GlobalPhase(-0.7853981633974483, wires=[0])]
 
         """
         return [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
-            qml.RZ(-np.pi, wires=wires),
-            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RZ(-np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 4, wires=wires),
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
@@ -1267,7 +1259,7 @@ class SWAP(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1295,7 +1287,7 @@ class SWAP(Operation):
         #  [0 1 0 0]
         #  [0 0 0 1]]
         data, indices, indptr = [1, 1, 1, 1], [0, 2, 1, 3], [0, 1, 2, 3, 4]
-        return sparse.csr_matrix((data, indices, indptr))
+        return sparse.csr_matrix((data, indices, indptr)).asformat(format=format)
 
     @staticmethod
     def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:

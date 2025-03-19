@@ -19,16 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import (
-    cartan_decomp,
-    cartan_subalgebra,
-    check_cartan_decomp,
-    concurrence_involution,
-    orthonormalize,
-    structure_constants_dense,
-    validate_kak,
-    variational_kak_adj,
-)
+from pennylane.labs.dla import cartan_subalgebra, orthonormalize, validate_kak, variational_kak_adj
+from pennylane.liealg import cartan_decomp, check_cartan_decomp, concurrence_involution
 
 
 @pytest.mark.parametrize("dense", [False, True])
@@ -54,7 +46,7 @@ def test_kak_Ising(n, dense):
         adj = qml.structure_constants(g)
     else:
         g = np.vstack([k, m])
-        adj = structure_constants_dense(g)
+        adj = qml.structure_constants(g, matrix=True)
 
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
@@ -92,7 +84,7 @@ def test_kak_Heisenberg(n, dense):
         adj = qml.structure_constants(g)
     else:
         g = np.vstack([k, m])
-        adj = structure_constants_dense(g)
+        adj = qml.structure_constants(g, matrix=True)
 
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
@@ -132,7 +124,7 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
         adj = qml.structure_constants(g, is_orthogonal=is_orthogonal)
     else:
         g = np.vstack([k, m])
-        adj = structure_constants_dense(g, is_orthonormal=is_orthogonal)
+        adj = qml.structure_constants(g, matrix=True, is_orthogonal=is_orthogonal)
 
     g, k, mtilde, h, adj = cartan_subalgebra(
         g, k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal

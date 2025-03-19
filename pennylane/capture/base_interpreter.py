@@ -432,6 +432,17 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
 
 
+# pylint: disable=protected-access
+@PlxprInterpreter.register_primitive(jax._src.pjit.pjit_p)
+def _(self, *invals, jaxpr, **params):
+    if jax.config.jax_dynamic_shapes:
+        # just evaluate it so it doesn't throw dynamic shape errors
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+
+    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+
+
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
 def _(self, *dyn_shape, dimension, dtype, shape):
@@ -632,6 +643,14 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     )
 
 
+class FlattenedInterpreter(PlxprInterpreter):
+    """A variant of PlxprInterpreter that flattens out the control flow for
+    ``for_prim``, ``while_prim``, and ``cond_prim``. Useful for evaluating, instead
+    of just transforming.
+    """
+
+
+@FlattenedInterpreter.register_primitive(while_loop_prim)
 def flatten_while_loop(
     self,
     *invals,
@@ -658,6 +677,7 @@ def flatten_while_loop(
 FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
+@FlattenedInterpreter.register_primitive(cond_prim)
 def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
     n_branches = len(jaxpr_branches)
@@ -674,6 +694,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
+@FlattenedInterpreter.register_primitive(for_loop_prim)
 def flattened_for(
     self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
 ):
@@ -690,3 +711,31 @@ def flattened_for(
 
 
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
+
+
+def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+    """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
+
+    Args:
+        jaxpr (jax.core.Jaxpr): a jaxpr
+        consts (list[TensorLike]): the constants for the jaxpr
+        *args (TensorLike): the arguments for the jaxpr
+
+    Returns:
+        list[TensorLike]
+
+    This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
+    of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
+
+    >>> import jax
+    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> def f(i):
+    ...     return jax.numpy.arange(i)
+    >>> jaxpr = jax.make_jaxpr(f)(3)
+    >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+    [Array([0, 1], dtype=int32)]
+    >>>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+    XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO
+
+    """
+    return FlattenedInterpreter().eval(jaxpr, consts, *args)

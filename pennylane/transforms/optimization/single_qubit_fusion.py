@@ -34,7 +34,9 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
+        from pennylane.capture.primitives import measure_prim
         from pennylane.operation import Operator
+
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -223,12 +225,15 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             self.cleanup()
             return outvals
 
-    def single_qubit_fusion_plxpr_to_plxpr(
-        jaxpr, consts, targs, tkwargs, *args
-    ):  # pylint: disable=unused-argument
-        interpreter = SingleQubitFusionInterpreter(
-            atol=tkwargs.get("atol", 1e-8), exclude_gates=tkwargs.get("exclude_gates", None)
-        )
+    @SingleQubitFusionInterpreter.register_primitive(measure_prim)
+    def _(_, *invals, **params):
+        subfuns, params = measure_prim.get_bind_params(params)
+        return measure_prim.bind(*subfuns, *invals, **params)
+
+    def single_qubit_fusion_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``single_qubit_fusion`` transform on plxpr."""
+
+        interpreter = SingleQubitFusionInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)

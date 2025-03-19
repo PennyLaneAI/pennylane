@@ -115,13 +115,13 @@ class RX(Operation):
         return qml.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta):
+    def compute_sparse_matrix(theta, format="csr"):
         return sp.sparse.csr_matrix(
             [
-                [np.cos(theta / 2), -1j * np.sin(theta / 2)],
-                [-1j * np.sin(theta / 2), np.cos(theta / 2)],
+                [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
             ]
-        )
+        ).asformat(format)
 
     def adjoint(self) -> "RX":
         return RX(-self.data[0], wires=self.wires)
@@ -220,10 +220,13 @@ class RY(Operation):
         return qml.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta):
+    def compute_sparse_matrix(theta, format="csr"):
         return sp.sparse.csr_matrix(
-            [[np.cos(theta / 2), -np.sin(theta / 2)], [np.sin(theta / 2), np.cos(theta / 2)]]
-        )
+            [
+                [qml.math.cos(theta / 2), -qml.math.sin(theta / 2)],
+                [qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+            ]
+        ).asformat(format)
 
     def adjoint(self) -> "RY":
         return RY(-self.data[0], wires=self.wires)
@@ -324,8 +327,10 @@ class RZ(Operation):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_sparse_matrix(theta):
-        return sp.sparse.csr_matrix([[np.exp(-1j * theta / 2), 0], [0, np.exp(1j * theta / 2)]])
+    def compute_sparse_matrix(theta, format="csr"):
+        return sp.sparse.csr_matrix(
+            [[np.exp(-1j * theta / 2), 0], [0, np.exp(1j * theta / 2)]]
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
