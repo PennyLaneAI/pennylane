@@ -453,3 +453,6 @@ class TestSymbolicResourceRep:
 
         with pytest.raises(NotImplementedError, match="Non-integer powers"):
             pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
+
+        with pytest.raises(NotImplementedError, match="Non-integer powers"):
+            pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)

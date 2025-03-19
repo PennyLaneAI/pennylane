@@ -336,11 +336,11 @@ def pow_resource_rep(base_class, base_params, z):
     Args:
         base_class: the base operator type
         base_params (dict): the resource params of the base operator
-        z (int | float): the power
+        z (int or float): the power
 
     """
     if not isinstance(z, int) or z < 0:
-        raise NotImplementedError("Non-integer powers and negative powers are not supported yet.")
+        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,

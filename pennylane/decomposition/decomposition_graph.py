@@ -47,10 +47,10 @@ from .symbolic_decomposition import (
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
-    same_type_adjoint_decomp,
-    same_type_adjoint_ops,
     pow_decomp,
     pow_pow_decomp,
+    same_type_adjoint_decomp,
+    same_type_adjoint_ops,
 )
 
 
@@ -217,8 +217,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             rule = adjoint_adjoint_decomp
             self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
-        
-        if issubclass(base_class, qml.ops.Pow) and base_params["base_class"] in same_type_adjoint_ops():
+
+        if (
+            issubclass(base_class, qml.ops.Pow)
+            and base_params["base_class"] in same_type_adjoint_ops()
+        ):
             rule = adjoint_pow_decomp
             self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx

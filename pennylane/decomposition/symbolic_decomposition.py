@@ -135,8 +135,9 @@ def adjoint_controlled_decomp(*_, base, **__):
 
 
 def _adjoint_pow_resource(base_class, base_params):  # pylint: disable=unused-argument
-    """Resources of the adjoint of the power of a gate."""
+    """Resources of the adjoint of the power of a gate whose adjoint is of the same type."""
     base, base_params, z = base_params["base_class"], base_params["base_params"], base_params["z"]
+    # The adjoint of the base is assumed to be of the same type as the base.
     return {pow_resource_rep(base, base_params, z): 1}
 
 

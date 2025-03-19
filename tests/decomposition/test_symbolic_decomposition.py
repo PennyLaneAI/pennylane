@@ -23,9 +23,9 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
-    same_type_adjoint_decomp,
     pow_decomp,
     pow_pow_decomp,
+    same_type_adjoint_decomp,
 )
 from tests.decomposition.conftest import to_resources
 
@@ -250,5 +250,8 @@ class TestPowDecomposition:
         """Tests that NotImplementedError is raised when z isn't a positive integer."""
 
         op = qml.pow(qml.H(0), 0.5)
+        with pytest.raises(NotImplementedError, match="Non-integer or negative powers"):
+            pow_decomp.compute_resources(**op.resource_params)
+        op = qml.pow(qml.H(0), -1)
         with pytest.raises(NotImplementedError, match="Non-integer or negative powers"):
             pow_decomp.compute_resources(**op.resource_params)
