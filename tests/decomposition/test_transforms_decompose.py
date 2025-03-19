@@ -71,6 +71,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
+        qml.decomposition.disable_graph()
+
     def test_gate_types_gateset(self):
         """Test that the PennyLane's Operators does not work with the new decomposition system."""
 
@@ -92,6 +94,8 @@ class TestTransformDecompose:
         ):
             circuit()
 
+        qml.decomposition.disable_graph()
+
     def test_fixed_decomps(self):
         """Test the fixed_decomps argument with the new decomposition system."""
 
@@ -112,6 +116,8 @@ class TestTransformDecompose:
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
+        qml.decomposition.disable_graph()
+
     def test_alt_decomps_single(self):
         """Test the alt_decomps argument with a single decomposition rules."""
 
@@ -131,6 +137,8 @@ class TestTransformDecompose:
 
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
+
+        qml.decomposition.disable_graph()
 
     def test_alt_decomps_multiple(self):
         """Test the alt_decomps argument with multiple decomposition rules."""
@@ -160,7 +168,9 @@ class TestTransformDecompose:
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-    def test_custom_op(self):
+        qml.decomposition.disable_graph()
+
+    def test_alt_decomps_custom_op(self):
         """Test the custom operator with the new decomposition system."""
 
         qml.decomposition.enable_graph()
@@ -200,6 +210,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 2, "CNOT": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
+        qml.decomposition.disable_graph()
+
     def test_qft_template(self):
         """Test the QFT template with the new decomposition system."""
 
@@ -216,6 +228,8 @@ class TestTransformDecompose:
 
         expected_resources = {"RZ": 57, "RX": 6, "GlobalPhase": 21, "CNOT": 39}
         assert qml.specs(circuit)([*range(6)])["resources"].gate_types == expected_resources
+
+        qml.decomposition.disable_graph()
 
     @pytest.mark.unit
     def test_valueerror_graph_disabled_fixed(self):
@@ -241,6 +255,8 @@ class TestTransformDecompose:
         ):
             circuit()
 
+        qml.decomposition.disable_graph()
+
     @pytest.mark.unit
     def test_valueerror_graph_disabled_alt(self):
         """Test that a ValueError is raised when the graph-based decomposition and alt_decomps is used."""
@@ -264,6 +280,8 @@ class TestTransformDecompose:
             match="The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition.",
         ):
             circuit()
+
+        qml.decomposition.disable_graph()
 
     @pytest.mark.unit
     def test_valueerror_graph_disabled_decomps(self):
@@ -292,3 +310,5 @@ class TestTransformDecompose:
             match="The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition.",
         ):
             circuit()
+
+        qml.decomposition.disable_graph()

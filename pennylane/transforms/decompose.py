@@ -24,6 +24,7 @@ from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence
 
 import pennylane as qml
+from pennylane.decomposition import DecompositionGraph
 from pennylane.transforms.core import transform
 
 
@@ -71,6 +72,35 @@ def _operator_decomposition_gen(
         )
 
 
+def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
+    """Check the keyword arguments for the decompose transform for the graph-based decomposition."""
+
+    if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
+        raise ValueError(
+            "The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition."
+            "Please enable the decomposition graph with qml.decomposition.enable_graph()."
+        )
+
+
+def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
+    """Create and solve a DecompositionGraph instance to optimize the decomposition."""
+
+    # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
+    target_gate_names -= set(op.name if isinstance(op, type) else op for op in fixed_decomps.keys())
+    target_gate_names -= set(op.name if isinstance(op, type) else op for op in alt_decomps.keys())
+
+    graph = DecompositionGraph(
+        operations,
+        target_gate_names,
+        fixed_decomps=fixed_decomps,
+        alt_decomps=alt_decomps,
+    )
+
+    graph.solve()
+
+    return graph
+
+
 @lru_cache
 def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
     try:
@@ -88,7 +118,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         when program capture is enabled.
         """
 
-        def __init__(self, gate_set=None, max_expansion=None, fixed_decomps=None, alt_decomps=None):
+        def __init__(
+            self, gate_set=None, max_expansion=None, fixed_decomps=dict(), alt_decomps=dict()
+        ):
+
+            _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
 
             self.max_expansion = max_expansion
             self._current_depth = 0
@@ -119,6 +153,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 )
 
                 if qml.decomposition.enabled_graph():
+
+                    if target_gate_types:
+                        raise ValueError(
+                            f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
+                        )
+
                     self._target_gate_names = target_gate_names | set(
                         gate.name for gate in target_gate_types
                     )
@@ -170,27 +210,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     )
                 return True
             return self.gate_set(op)
-
-        def _create_decomp_graph(self, operations):
-            """Create a DecompositionGraph instance to optimize the decomposition."""
-
-            try:
-                # pylint: disable=import-outside-toplevel
-                from pennylane.decomposition import DecompositionGraph
-
-                if qml.decomposition.enabled_graph():
-
-                    self._graph_decomp = DecompositionGraph(
-                        operations,
-                        self._target_gate_names,
-                        fixed_decomps=self._fixed_decomps,
-                        alt_decomps=self._alt_decomps,
-                    )
-
-                    self._graph_decomp.solve()
-
-            except ImportError:
-                return
 
         def decompose_operation(self, op: qml.operation.Operator):
             """Decompose a PennyLane operation instance if it does not satisfy the
@@ -281,7 +300,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 # Skip the graph creation if there are
                 # no concrete operations in the closed PLxPR:
                 if operations:
-                    self._create_decomp_graph(operations)
+                    self._graph_decomp = _get_decomp_graph(
+                        operations,
+                        self._target_gate_names,
+                        self._fixed_decomps,
+                        self._alt_decomps,
+                    )
 
             for eq in jaxpr.eqns:
 
@@ -598,14 +622,7 @@ def decompose(
     ──────╰●────────────────────────────┤
     """
 
-    if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
-        raise ValueError(
-            "The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition."
-            "Please enable the decomposition graph with qml.decomposition.enable_graph()."
-        )
-
-    # We remove these gates from target_gate_types
-    # to decompose the ops using the given rules in the graph.
+    _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
 
     if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
@@ -623,10 +640,9 @@ def decompose(
         gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
-        if fixed_decomps and isinstance(op, tuple(fixed_decomps.keys())):
-            return False
-
-        if alt_decomps and isinstance(op, tuple(alt_decomps.keys())):
+        if (fixed_decomps and isinstance(op, tuple(fixed_decomps.keys()))) or (
+            alt_decomps and isinstance(op, tuple(alt_decomps.keys()))
+        ):
             return False
 
         if not op.has_decomposition:
@@ -649,30 +665,14 @@ def decompose(
 
     if qml.decomposition.enabled_graph():
 
-        # pylint: disable=import-outside-toplevel
-        from pennylane.decomposition import DecompositionGraph
-
         if target_gate_types:
             raise ValueError(
                 f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
             )
 
-        # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
-        target_gate_names -= set(
-            op.name if isinstance(op, type) else op for op in fixed_decomps.keys()
+        decomp_graph = _get_decomp_graph(
+            tape.operations, target_gate_names, fixed_decomps=fixed_decomps, alt_decomps=alt_decomps
         )
-        target_gate_names -= set(
-            op.name if isinstance(op, type) else op for op in alt_decomps.keys()
-        )
-
-        decomp_graph = DecompositionGraph(
-            tape.operations,
-            target_gate_names,
-            fixed_decomps=fixed_decomps,
-            alt_decomps=alt_decomps,
-        )
-
-        decomp_graph.solve()
 
     try:
         new_ops = [
