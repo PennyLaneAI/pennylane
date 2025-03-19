@@ -17,6 +17,8 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
+from dataclasses import dataclass
+from functools import lru_cache
 from typing import Iterable, Optional, Union
 
 import numpy as np
@@ -25,6 +27,47 @@ import pennylane as qml
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.wires import Wires
+
+
+@dataclass(frozen=True)
+class Basis:
+    plane: str = "ZX"
+    angle: float = 0
+
+
+x_basis = Basis("XY", 0)
+y_basis = Basis("XY", np.pi/2)
+z_basis = Basis()
+
+
+@lru_cache
+def _create_mid_measure_primitive(measurement_class, basis):
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    mid_measure_p = NonInterpPrimitive("measure")
+
+    @mid_measure_p.def_impl
+    def _(wires, reset=False, postselect=None):
+        return _measure_impl(wires, measurement_class=measurement_class, basis=basis, reset=reset, postselect=postselect)
+
+    @mid_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return mid_measure_p
 
 
 def measure_arbitrary_basis(
@@ -126,11 +169,14 @@ def measure_arbitrary_basis(
         result will return a binary sequence of samples.
         See :ref:`here <mid_circuit_measurements_statistics>` for more details.
     """
+    basis = Basis(plane, angle)
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive(ParametricMidMeasureMP, basis)
+        return primitive.bind(wires, basis=basis, reset=reset, postselect=postselect)
 
     return _measure_impl(
-        wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
+        wires, ParametricMidMeasureMP, basis=basis, reset=reset, postselect=postselect
     )
 
 
@@ -172,9 +218,11 @@ def measure_x(
 
     """
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive(XMidMeasureMP, x_basis)
+        return primitive.bind(wires, basis=x_basis, reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
+    return _measure_impl(wires, x_basis, reset=reset, postselect=postselect)
 
 
 def measure_y(
@@ -215,9 +263,11 @@ def measure_y(
 
     """
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive(YMidMeasureMP, y_basis)
+        return primitive.bind(wires, basis=y_basis, reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
+    return _measure_impl(wires, y_basis, reset=reset, postselect=postselect)
 
 
 def measure_z(
@@ -249,6 +299,10 @@ def measure_z(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    if qml.capture.enabled():
+        primitive = qml.measurements.mid_measure._create_mid_measure_primitive()
+        return primitive.bind(wires, reset=reset, postselect=postselect)
+
     return measure(wires, reset=reset, postselect=postselect)
 
 
