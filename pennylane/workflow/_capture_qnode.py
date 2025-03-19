@@ -422,7 +422,8 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
     return hash(serialized)
 
 
-def _process_qfunc(qnode, abstracted_axes, *args, **kwargs):
+def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
+    """Process the quantum function of a QNode to create a Jaxpr."""
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     # pylint: disable=protected-access
@@ -549,7 +550,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             # as the original dynamic arguments
             abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
 
-        qfunc_jaxpr, flat_fn = _process_qfunc(qnode, abstracted_axes, *args, **kwargs)
+        qfunc_jaxpr, flat_fn = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
