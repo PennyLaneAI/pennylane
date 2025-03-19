@@ -36,7 +36,7 @@ class Basis:
 
 
 x_basis = Basis("XY", 0)
-y_basis = Basis("XY", np.pi/2)
+y_basis = Basis("XY", np.pi / 2)
 z_basis = Basis()
 
 
@@ -60,7 +60,13 @@ def _create_mid_measure_primitive(measurement_class, basis):
 
     @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):
-        return _measure_impl(wires, measurement_class=measurement_class, basis=basis, reset=reset, postselect=postselect)
+        return _measure_impl(
+            wires,
+            measurement_class=measurement_class,
+            basis=basis,
+            reset=reset,
+            postselect=postselect,
+        )
 
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
