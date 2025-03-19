@@ -698,7 +698,7 @@
 * `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
   [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
 
-* Comparing an adjoint of an `Observables` with another `Operation` using `qml.equal` no longer incorrectly 
+* Comparing an adjoint of an `Observable` with another `Operation` using `qml.equal` no longer incorrectly 
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
