@@ -351,7 +351,7 @@ Custom Operator Decomposition
 
 PennyLane decomposes gates unknown to the device into other, "lower-level" gates. 
 As a user, you may want to fine-tune this mechanism. The default behaviour in PennyLane
-versus that of the new decompositions system (enabled with ``qml.decompositions.enable_graph``)
+versus that of the new decompositions system (enabled with ``qml.decomposition.enable_graph``)
 differ in the following ways when it comes to injecting custom decompositions for
 operators:
 
@@ -363,8 +363,8 @@ operators:
 | ``enable_graph``  | Yes                          | Yes                         | Yes                                  |
 +-------------------+------------------------------+-----------------------------+--------------------------------------+
 
-Behaviour with ``qml.decompositions.disable_graph``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Behaviour with ``qml.decomposition.disable_graph``
+**************************************************
 
 For example, suppose we would like to implement the following QNode:
 
@@ -450,11 +450,11 @@ be used.
     To have better control over custom decompositions, consider using the new decompositions
     system functionality outlined in the next section.
 
+Behaviour with ``qml.decomposition.enable_graph``
+*************************************************
 
-Behaviour with ``qml.decompositions.enable_graph``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
+With the new graph-based system enabled, custom decompositions for operators in PennyLane
+can be added in a few ways depending on the application. 
 
 Circuit cutting
 ---------------
