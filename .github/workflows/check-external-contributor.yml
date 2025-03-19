@@ -8,4 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check PR and label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: if ${{ github.event.pull_request.head.repo.fork}}=='false'; then gh pr edit $GITHUB_HEAD_REF --add-label "External"; fi 
