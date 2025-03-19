@@ -713,7 +713,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
+
+* Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
+  differ depending if equivalent gate generators are defined using
+  different PennyLane operators. This was resolved by updating
+  `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
   [(#7121)])(https://github.com/PennyLaneAI/pennylane/pull/7121)
 
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
