@@ -286,6 +286,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Adds validation for the shape and dtype of the arguments and outputs of `qml.while_loop`
+  when capture is enabled.
+
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
 

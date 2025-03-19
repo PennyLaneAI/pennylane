@@ -278,6 +278,34 @@ def _validate_no_resizing_returns(
     return None
 
 
+def _validate_static_shapes_dtypes(jaxpr, abstracted_axes, offset=0, is_for=False) -> None:
+    if abstracted_axes:
+        abstracted_axes = abstracted_axes[is_for:]
+    else:
+        abstracted_axes = (() for _ in jaxpr.invars[offset + is_for :])
+    for invar, outvar, aa in zip(
+        jaxpr.invars[offset + is_for :], jaxpr.outvars[offset:], abstracted_axes, strict=True
+    ):
+        if getattr(invar.aval, "dtype", ()) != getattr(outvar.aval, "dtype", ()):
+            raise ValueError(
+                "dtype of the output variable must match the dtype of the corresponding input."
+                f" Got {invar.aval.dtype} for the input variable and {outvar.aval.dtype} for the output variable."
+            )
+        shape1 = getattr(invar.aval, "shape", ())
+        shape2 = getattr(outvar.aval, "shape", ())
+        if len(shape1) != len(shape2):
+            raise ValueError(
+                "The shape of the output variable must match the shape of the input variable."
+                f" Got {shape1} and {shape2} for corresponding variables."
+            )
+        for i, (s1, s2) in enumerate(zip(shape1, shape2)):
+            if i not in aa and s1 != s2:
+                raise ValueError(
+                    "The shape of the output variable must match the shape of the input variable."
+                    f" Got {shape1} and {shape2} for corresponding variables."
+                )
+
+
 class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
@@ -358,6 +386,9 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         except ValueError as e:
             self._handle_error(e)
 
+        _validate_static_shapes_dtypes(
+            jaxpr_body_fn.jaxpr, abstracted_axes, offset=len(abstract_shapes)
+        )
         validation = _validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
         if validation:
             if allow_array_resizing == "auto":

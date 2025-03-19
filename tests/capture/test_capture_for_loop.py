@@ -26,6 +26,7 @@ import pennylane as qml
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
@@ -33,6 +34,28 @@ from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-
 
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
+
+    def test_shape_validation(self):
+        """Test that an error is raised if static shapes change over the iteration."""
+
+        @qml.for_loop(3)
+        def f(i, a):  # pylint: disable=unused-argument
+            return jnp.append(a, 2)
+
+        with pytest.raises(ValueError, match="shape of the output variable must match the shape"):
+            jax.make_jaxpr(f)(jnp.array([0]))
+
+    def test_dtype_validation(self):
+        """Test that an error is raised if the dtype is changed over the iteration."""
+
+        @qml.for_loop(3)
+        def f(j, i):  # pylint: disable=unused-argument
+            return i + 0.5
+
+        with pytest.raises(
+            ValueError, match="dtype of the output variable must match the dtype of"
+        ):
+            jax.make_jaxpr(f)(0)
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_identity(self, array):
@@ -212,7 +235,8 @@ class TestCaptureForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "array, expected", [(jax.numpy.array([0]), 0), (jax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)]
+        "array, expected",
+        [(jax.numpy.array([0.0]), 0), (jax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)],
     )
     def test_for_loop_dynamic_array(self, array, expected):
         """Test for-loops with dynamic array inputs."""
@@ -223,7 +247,7 @@ class TestCaptureForLoop:
             def loop_body(i, array, sum_val):
                 return array, sum_val + array[i]
 
-            sum_val = 0
+            sum_val = jnp.array(0.0, dtype=jax.numpy.float32)
             _, res = loop_body(array, sum_val)
             return res
 
@@ -234,8 +258,24 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestDynamicShapes:
+
+    def test_static_shape_validation_with_other_dynamic_shape(self):
+        """Test that an informative error is raised when a static shape changes and dynamic shapes are present."""
+
+        @qml.for_loop(3)
+        def f(j, a):  # pylint: disable=unused-argument
+            return jnp.vstack((a, jnp.ones(a.shape[1])))
+
+        with pytest.raises(
+            ValueError, match="output variable must match the shape of the input variable"
+        ):
+            jax.make_jaxpr(f, abstracted_axes={1: "a"})(jnp.zeros((2, 2)))
+
     # pylint: disable=unused-argument
-    def test_dynamic_shape_input(self, enable_disable_dynamic_shapes):
+    def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
         def f(x):
@@ -249,12 +289,13 @@ class TestCaptureForLoop:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
 
-        [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
+        assert qml.math.allclose(shape, 3)
 
     # pylint: disable=unused-argument
-    def test_dynamic_array_creation(self, enable_disable_dynamic_shapes):
+    def test_dynamic_array_creation(self):
         """Test that for_loops can create dynamicly shaped arrays."""
 
         def f(i, x):
@@ -267,6 +308,93 @@ class TestCaptureForLoop:
         jaxpr = jax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
+
+    def test_error_if_resizing_when_forbidden(self):
+        """Test that a useful error is raised if the shape pattern changes with
+        allow_array_resizing=False"""
+
+        @qml.for_loop(3, allow_array_resizing=False)
+        def f(i, a, b):
+            return jax.numpy.hstack([a, b]), 2 * b
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
+            jax.make_jaxpr(w)(1)
+
+    def test_error_is_combining_independent_shapes(self):
+        """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
+
+        @qml.for_loop(3, allow_array_resizing=True)
+        def f(i, a, b):
+            return a * b, 2 * b
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        with pytest.raises(
+            ValueError, match="attempt to combine arrays with two different dynamic shapes."
+        ):
+            jax.make_jaxpr(w)(2)
+
+    def test_array_initialized_with_size_of_other_arg(self):
+        """Test that one argument can have a shape that matches another argument, but
+        can be resized indepdently of that arg."""
+
+        @qml.for_loop(3)
+        def f(i, j, a):
+            return j + i, 2 * a
+
+        def w(i0):
+            return f(i0, jnp.ones(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [a_size, final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(a_size, 2)  # what it was initialized with
+        assert qml.math.allclose(final_j, 5)  # 2 +3
+        assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
+    def test_loop_with_argument_combinding(self, allow_array_resizing):
+        """Test that arguments with dynamic shapes can be combined if allow_array_resizing=auto or False."""
+
+        @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
+        def f(i, a, b):
+            return a + i, a + b
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [s, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(s, 2)  # the initial size
+        assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
+        assert qml.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
+    def test_loop_args_resized_together(self, allow_array_resizing):
+        """Test that arrays can be resized as long as they are resized together."""
+
+        @qml.for_loop(2, allow_array_resizing=allow_array_resizing)
+        def f(i, x, y):
+            x = jnp.hstack([x, y])
+            return x, (i + 2) * x
+
+        def workflow(i0):
+            x0 = jnp.ones(i0)
+            y0 = jnp.ones(i0)
+            return f(x0, y0)
+
+        jaxpr = jax.make_jaxpr(workflow)(2)
+        [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(s, 8)
+        x_expected = jnp.array([1, 1, 1, 1, 2, 2, 2, 2])
+        assert qml.math.allclose(x, x_expected)
+        assert qml.math.allclose(y, 3 * x_expected)
 
 
 class TestCaptureCircuitsForLoop:
@@ -390,7 +518,7 @@ class TestCaptureCircuitsForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12.0, 0.2653001)]
     )
     def test_for_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested for loop is correctly captured into a jaxpr."""
@@ -435,7 +563,7 @@ class TestCaptureCircuitsForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12.0, 0.2653001)]
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_nested_for_and_while_loop(self, upper_bound, arg, expected, autograph):
