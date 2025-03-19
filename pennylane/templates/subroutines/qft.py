@@ -214,11 +214,13 @@ class QFT(Operation):
         def outer_loop(i):
             qml.Hadamard(wires[i])
 
-            @qml.for_loop(shift_len - i)
-            def cphaseshift_loop(j):
-                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+            if n_wires > 1:
 
-            cphaseshift_loop()
+                @qml.for_loop(shift_len - i)
+                def cphaseshift_loop(j):
+                    qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+
+                cphaseshift_loop()
 
         outer_loop()
 
