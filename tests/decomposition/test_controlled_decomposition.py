@@ -134,9 +134,9 @@ class TestControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             controlled_x_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.PauliX(1), qml.CNOT(wires=[1, 0]), qml.PauliX(1)]
+        assert q.queue == [qml.CNOT(wires=[1, 0]), qml.PauliX(0)]
         assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.CNOT: 1, qml.PauliX: 2},
+            {qml.CNOT: 1, qml.PauliX: 1},
         )
 
     def test_double_controlled_x(self):
@@ -372,20 +372,22 @@ class TestControlledBaseDecomposition:
                 ): 1,
                 qml.resource_rep(qml.CRX): 1,
                 qml.resource_rep(qml.CRot): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=1,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=1,
@@ -474,29 +476,37 @@ class TestControlledBaseDecomposition:
                     num_zero_control_values=1,
                     num_work_wires=2,
                 ): 1,
-                qml.controlled_resource_rep(qml.RX, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Rot, {}, num_control_wires=2, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RX, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Rot, {}, num_control_wires=2, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=2,
                     num_work_wires=1,
                 ): 1,
                 qml.resource_rep(qml.CCZ): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
             }
         )
 
@@ -585,28 +595,38 @@ class TestControlledBaseDecomposition:
                     num_zero_control_values=1,
                     num_work_wires=2,
                 ): 1,
-                qml.controlled_resource_rep(qml.RX, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Rot, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.RZ, {}, num_control_wires=4, num_work_wires=1): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
+                    qml.RX, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Rot, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.RZ, {}, num_control_wires=4, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 6},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.MultiRZ,
                     {"num_wires": 5},
                     num_control_wires=4,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     qml.PauliRot,
                     {"pauli_word": "XYX"},
                     num_control_wires=3,
                     num_work_wires=1,
                 ): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=3, num_work_wires=1): 1,
-                qml.controlled_resource_rep(qml.Z, {}, num_control_wires=4, num_work_wires=1): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=3, num_work_wires=1
+                ): 1,
+                qml.decomposition.controlled_resource_rep(
+                    qml.Z, {}, num_control_wires=4, num_work_wires=1
+                ): 1,
             }
         )

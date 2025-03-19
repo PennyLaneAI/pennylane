@@ -290,8 +290,8 @@ class SingleExcitation(Operation):
 
 def _single_excit_resources():
     return {
-        qml.adjoint_resource_rep(qml.T, {}): 2,
-        qml.adjoint_resource_rep(qml.S, {}): 2,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
+        qml.decomposition.adjoint_resource_rep(qml.S, {}): 2,
         qml.Hadamard: 4,
         qml.S: 2,
         qml.CNOT: 2,

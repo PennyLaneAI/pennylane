@@ -303,7 +303,7 @@ class TestControlledDecompositions:
         @qml.register_resources(
             {
                 qml.Z: 1,
-                qml.controlled_resource_rep(
+                qml.decomposition.controlled_resource_rep(
                     CustomOp,
                     {},
                     num_control_wires=1,

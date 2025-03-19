@@ -21,7 +21,7 @@ on:
         description: The version of TensorFlow to use for testing
         required: false
         type: string
-        default: '2.16.0'
+        default: '2.18.0'
       torch_version:
         description: The version of PyTorch to use for testing
         required: false
