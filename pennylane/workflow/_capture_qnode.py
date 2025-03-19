@@ -445,6 +445,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
+    assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree
 
 
@@ -564,7 +565,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     )
 
     if not cached_value:
-        assert out_tree is not None, "out_tree should be set by call to flat_fn"
         qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
