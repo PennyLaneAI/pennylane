@@ -7,33 +7,24 @@ import numpy as np
 from pennylane.labs.trotter.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 
 
-def vibrational_hamiltonian(
-    modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
-) -> RealspaceSum:
-    """Return a RealspaceSum representing the vibrational Hamiltonian."""
-    _validate_input(modes, omegas, phis)
-
-    return harmonic_fragment(modes, omegas) + anharmonic_fragment(modes, phis)
-
-
 def vibrational_fragments(
     modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray], frags="harmonic"
 ) -> List[RealspaceSum]:
     """Return a list of fragments"""
 
     if frags == "harmonic":
-        return [harmonic_fragment(modes, omegas), anharmonic_fragment(modes, phis)]
+        return [_harmonic_fragment(modes, omegas), _anharmonic_fragment(modes, phis)]
 
     if frags == "kinetic":
-        return [kinetic_fragment(modes, omegas), potential_fragment(modes, omegas, phis)]
+        return [_kinetic_fragment(modes, omegas), _potential_fragment(modes, omegas, phis)]
 
     if frags == "position":
-        return [position_fragment(modes, omegas, phis), momentum_fragment(modes, omegas)]
+        return [_position_fragment(modes, omegas, phis), _momentum_fragment(modes, omegas)]
 
     raise ValueError(f"{frags} is not a valid fragmentation scheme.")
 
 
-def harmonic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _harmonic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the harmonic part."""
     _validate_omegas(modes, omegas)
 
@@ -44,7 +35,7 @@ def harmonic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
     return RealspaceSum(modes, [momentum, position])
 
 
-def anharmonic_fragment(modes: int, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _anharmonic_fragment(modes: int, phis: Sequence[np.ndarray]) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the anharmonic part."""
     _validate_phis(modes, phis)
 
@@ -58,7 +49,7 @@ def anharmonic_fragment(modes: int, phis: Sequence[np.ndarray]) -> RealspaceSum:
     return RealspaceSum(modes, ops)
 
 
-def kinetic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _kinetic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the kinetic part"""
     _validate_omegas(modes, omegas)
 
@@ -68,7 +59,7 @@ def kinetic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
     return RealspaceSum(modes, [kinetic])
 
 
-def potential_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _potential_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the potential part"""
     _validate_input(modes, omegas, phis)
 
@@ -88,15 +79,15 @@ def potential_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray
     return RealspaceSum(modes, ops)
 
 
-def position_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _position_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
     """Return the position term of the Hamiltonian"""
     coeffs = RealspaceCoeffs.tensor_node(omegas / 2, label=("omegas", omegas / 2))
     position = RealspaceOperator(modes, ("QQ",), coeffs)
 
-    return RealspaceSum(modes, [position]) + anharmonic_fragment(modes, phis)
+    return RealspaceSum(modes, [position]) + _anharmonic_fragment(modes, phis)
 
 
-def momentum_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _momentum_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
     """Return the momentum term of the Hamiltonian"""
     _validate_omegas(modes, omegas)
 

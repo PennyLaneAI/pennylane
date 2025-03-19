@@ -1,3 +1,16 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Test the VibrationalHamiltonian class"""
 
 import itertools
@@ -7,10 +20,15 @@ import pytest
 import scipy as sp
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter.fragments import vibrational_fragments, vibrational_hamiltonian
-from pennylane.labs.trotter.realspace import HOState
+from pennylane.labs.trotter.fragments import vibrational_fragments
+from pennylane.labs.trotter.realspace import HOState, RealspaceSum
 
 # pylint: disable=no-self-use
+
+
+def _vibrational_hamiltonian(modes, freqs, taylor_coeffs):
+    frags = vibrational_fragments(modes, freqs, taylor_coeffs)
+    return sum(frags, RealspaceSum.zero(modes))
 
 
 @pytest.mark.parametrize(
@@ -38,7 +56,7 @@ class TestHarmonic1Mode:
     freq = 1.2345
     n_states = 5
     omegas = np.array([freq])
-    ham = vibrational_hamiltonian(1, omegas, [])
+    ham = _vibrational_hamiltonian(1, omegas, [])
     states = [HOState.from_dict(1, 10, {(i,): 1}) for i in range(n_states)]
 
     @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
@@ -87,7 +105,7 @@ class TestHarmonicMultiMode:
 
     n_states = 3
     omegas = np.array([1, 2.3])
-    ham = vibrational_hamiltonian(2, omegas, [])
+    ham = _vibrational_hamiltonian(2, omegas, [])
     states = [
         HOState.from_dict(2, 10, {(i, j): 1})
         for i, j in itertools.product(range(n_states), repeat=2)
@@ -281,7 +299,7 @@ class TestExpectation:
     def test_matrix(self, phis, omegas, expected):
         """Test the matrix"""
 
-        ham = vibrational_hamiltonian(len(omegas), omegas, phis)
+        ham = _vibrational_hamiltonian(len(omegas), omegas, phis)
         actual = ham.matrix(2, basis="harmonic")
 
         assert np.allclose(actual, expected)
@@ -295,7 +313,7 @@ class TestExpectation:
         n_modes = len(omegas)
         eigvals, eigvecs = np.linalg.eig(expected)
 
-        ham = vibrational_hamiltonian(n_modes, omegas, phis)
+        ham = _vibrational_hamiltonian(n_modes, omegas, phis)
 
         for i, eigval in enumerate(eigvals):
             eigvec = eigvecs[:, i]

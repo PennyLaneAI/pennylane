@@ -286,6 +286,11 @@ class VibronicMatrix(Fragment):
 
         return d
 
+    @classmethod
+    def zero(cls, states, modes) -> VibronicMatrix:
+        """Return a VibronicMatrix representation of the zero operator"""
+        return cls(states, modes, {})
+
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""

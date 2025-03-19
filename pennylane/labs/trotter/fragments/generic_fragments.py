@@ -8,7 +8,15 @@ from pennylane.labs.trotter import Fragment
 
 
 def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
-    """Wrapper function for GenericFragment"""
+    """Wrapper function used to instantiate GenericFragment objects
+
+    Args:
+        fragments (Sequence[Any]): A sequence of Python objects of the same type
+        norm_fn (Callable): A function that computes the norm of the fragments.
+
+    Returns:
+        List[GenericFragment]: A list of GenericFragment objects instantiated from `fragments`.
+    """
 
     if len(fragments) > 0:
         frag_type = type(fragments[0])
@@ -34,7 +42,15 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
 
 class GenericFragment(Fragment):
-    """Wrapper class to support any Python object implementing arithmetic dunder methods."""
+    """This class allows users to use any Python object implementing arithmetic dunder methods to be used
+    in the Trotter error workflow.
+
+    Args:
+        fragment (Any): Any Python object. The object is assumed to implement the following methods:
+            __add__, __sub__, __mul__, and __matmul__.
+        norm_fn (Callable): Optional argument. This is a function used to compute the norm of `fragment`, which is
+            needed for some Trotter error functionality.
+    """
 
     def __init__(self, fragment: Any, norm_fn: Callable = None):
         self.fragment = fragment
@@ -67,4 +83,6 @@ class GenericFragment(Fragment):
             params = params or {}
             return self.norm_fn(self.fragment, **params)
 
-        raise NotImplementedError("GenericFragment was constructed without specifying the norm function.")
+        raise NotImplementedError(
+            "GenericFragment was constructed without specifying the norm function."
+        )

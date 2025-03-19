@@ -4,10 +4,10 @@ from typing import List, Sequence
 
 import numpy as np
 
-from pennylane.labs.trotter import Fragment, State, nested_commutator
+from pennylane.labs.trotter import AbstractState, Fragment, nested_commutator
 
 
-class AdditiveIdentity:
+class _AdditiveIdentity:
     """Only used to initialize accumulators for summing Fragments"""
 
     def __add__(self, other):
@@ -19,7 +19,7 @@ class AdditiveIdentity:
 
 def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     """Return the second order trotter error"""
-    eff = AdditiveIdentity()
+    eff = _AdditiveIdentity()
     n_frags = len(fragments)
     scalar = -(delta**2) / 24
 
@@ -33,7 +33,9 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     return eff
 
 
-def pt_error(fragments: List[Fragment], states: List[State], delta: float = 1) -> np.ndarray:
+def perturbation_error(
+    fragments: List[Fragment], states: List[AbstractState], delta: float = 1
+) -> np.ndarray:
     """Return the perturbation theory error"""
 
     error = trotter_error(fragments, delta)

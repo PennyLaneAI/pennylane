@@ -1,3 +1,16 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Tests for Vibronic Hamiltonian"""
 
 from itertools import product
@@ -6,10 +19,15 @@ import numpy as np
 import pytest
 import scipy as sp
 
-from pennylane.labs.trotter.fragments import vibronic_hamiltonian
-from pennylane.labs.trotter.realspace import HOState, VibronicHO
+from pennylane.labs.trotter.fragments import vibronic_fragments
+from pennylane.labs.trotter.realspace import HOState, VibronicHO, VibronicMatrix
 
 # pylint: disable=no-self-use
+
+
+def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
+    frags = vibronic_fragments(states, modes, freqs, taylor_coeffs)
+    return sum(frags, VibronicMatrix.zero(states, modes))
 
 
 class Test1Mode:
@@ -18,7 +36,7 @@ class Test1Mode:
     freq = 1.2345
     n_states = 5
     omegas = np.array([freq])
-    ham = vibronic_hamiltonian(1, 1, omegas, [])
+    ham = _vibronic_hamiltonian(1, 1, omegas, [])
     states = [VibronicHO(1, 1, 10, [HOState.from_dict(1, 10, {(i,): 1})]) for i in range(n_states)]
 
     @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
@@ -30,7 +48,7 @@ class Test1Mode:
 
         for i, state1 in enumerate(states):
             for j, state2 in enumerate(states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -59,7 +77,7 @@ class Test1Mode:
 
         for i, state1 in enumerate(comb_states):
             for j, state2 in enumerate(comb_states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -69,7 +87,7 @@ class TestHarmonic:
 
     n_states = 3
     omegas = np.array([1, 2.3])
-    ham = vibronic_hamiltonian(1, 2, omegas, [])
+    ham = _vibronic_hamiltonian(1, 2, omegas, [])
     states = [
         VibronicHO(1, 2, 10, [HOState.from_dict(2, 10, {(i, j): 1})])
         for i, j in product(range(n_states), repeat=2)
@@ -92,7 +110,7 @@ class TestHarmonic:
         actual = np.zeros((len(states), len(states)), dtype=np.complex128)
         for i, state1 in enumerate(states):
             for j, state2 in enumerate(states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)
 
@@ -128,6 +146,6 @@ class TestHarmonic:
         actual = np.zeros((len(states), len(states)), dtype=np.complex128)
         for i, state1 in enumerate(comb_states):
             for j, state2 in enumerate(comb_states):
-                actual[i, j] = state1.dot(ham.apply(state2))
+                actual[i, j] = ham.expectation(state1, state2)
 
         assert np.allclose(actual, expected)

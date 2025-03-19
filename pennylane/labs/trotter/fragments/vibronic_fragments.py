@@ -15,19 +15,6 @@ from pennylane.labs.trotter.realspace import (
 from pennylane.labs.trotter.realspace.vibronic_matrix import _next_pow_2
 
 
-def vibronic_hamiltonian(
-    states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
-) -> VibronicMatrix:
-    """Return a VibronicMatrix representation of a vibronic Hamiltonian"""
-    _validate_input(states, modes, omegas, phis)
-
-    ham = _momentum_fragment(states, modes, omegas)
-    for i in range(states):
-        ham += _position_fragment(i, states, modes, omegas, phis)
-
-    return ham
-
-
 def vibronic_fragments(
     states: int, modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]
 ) -> List[VibronicMatrix]:
