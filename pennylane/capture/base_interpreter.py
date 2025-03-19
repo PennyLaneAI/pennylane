@@ -726,6 +726,7 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
 
     This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
     of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
+
     >>> import jax
     >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(i):

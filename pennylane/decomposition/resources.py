@@ -56,7 +56,7 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"num_gates={self.num_gates}, gate_counts={self.gate_counts}"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -73,12 +73,7 @@ def _combine_dict(dict1: dict, dict2: dict):
 def _scale_dict(dict1: dict, scalar: int):
     r"""Scales the values in a dictionary with a scalar."""
 
-    scaled_dict = dict1.copy()
-
-    for k in scaled_dict:
-        scaled_dict[k] *= scalar
-
-    return scaled_dict
+    return {key: scalar * value for key, value in dict1.items()}
 
 
 class CompressedResourceOp:
@@ -236,9 +231,9 @@ def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
 
-        Alternatively, use the helper functions :func:`~pennylane.controlled_resource_rep`:
+        Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
-        >>> qml.controlled_resource_rep(
+        >>> qml.decomposition.controlled_resource_rep(
         ...     base_class=qml.ops.MultiRZ,
         ...     base_params={'num_wires': 3},
         ...     num_control_wires=2,
@@ -247,7 +242,7 @@ def resource_rep(op: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
 
-        .. seealso:: :func:`~pennylane.controlled_resource_rep` and :func:`~pennylane.adjoint_resource_rep`
+        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep` and :func:`~pennylane.decomposition.adjoint_resource_rep`
 
     """
     _validate_resource_rep(op, params)
@@ -332,7 +327,7 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache(maxsize=1)
 def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 

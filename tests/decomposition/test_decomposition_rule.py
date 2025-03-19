@@ -142,7 +142,7 @@ class TestDecompositionRule:
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not qml.has_decomp(CustomOp)
+        assert not qml.decomposition.has_decomp(CustomOp)
 
         @qml.register_resources({qml.RZ: 2, qml.CNOT: 1})
         def custom_decomp(theta, wires, **__):
@@ -165,7 +165,7 @@ class TestDecompositionRule:
         qml.add_decomps(CustomOp, custom_decomp)
         qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
-        assert qml.has_decomp(CustomOp)
+        assert qml.decomposition.has_decomp(CustomOp)
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
 
         def custom_decomp4(theta, wires, **__):

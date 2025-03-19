@@ -96,7 +96,7 @@ operator towards a target gate set.
     >>> q.queue
     [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
     >>> graph.resource_estimate(op)
-    num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
+    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
 
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
