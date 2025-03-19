@@ -926,7 +926,26 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
 
 
 class ResourceQROM(qml.QROM, ResourceOperator):
-    """Resource class for the QROM template."""
+    """Resource class for the QROM template.
+
+    Args:
+        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+    Resources:
+        The resources are obtained from the definition of the operation as described in (section III. C)
+        `Simulating key properties of lithium-ion batteries with a fault-tolerant quantum computer
+        <https://arxiv.org/abs/2204.11890>`_:
+
+        .. math::
+
+            Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
+
+        Specifically, the resources are given by one :class:`~.ResourcePrepSelPrep` gate and one
+        :class:`~.ResourceReflection` gate.
+
+    .. seealso:: :class:`~.Qubitization`
+    """
 
     # pylint: disable=too-many-arguments
     @staticmethod
@@ -939,12 +958,21 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         clean,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources for QROM are taken from the following two papers:
-        (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-        (https://arxiv.org/pdf/1902.02134, figure 4).
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
 
-        We use the one-auxillary qubit version of select, instead of the built-in select
-        resources.
+        Args:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
+                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctr
+
+        Resources:
+            The resources for QROM are taken from the following two papers:
+            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
+            (https://arxiv.org/pdf/1902.02134, figure 4).
+
+            We use the one-auxillary qubit version of select, instead of the built-in select
+            resources.
         """
         gate_types = {}
         x = re.ResourceX.resource_rep()
@@ -991,6 +1019,15 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
     @property
     def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         bitstrings = self.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
 
@@ -1016,6 +1053,16 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     def resource_rep(
         cls, num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
     ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {
             "num_bitstrings": num_bitstrings,
             "num_bit_flips": num_bit_flips,
@@ -1028,7 +1075,26 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
 
 class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperator):
-    """Resource class for the AmplitudeAmplification template."""
+    """Resource class for the AmplitudeAmplification template.
+
+    Args:
+        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+    Resources:
+        The resources are obtained from the definition of the operation as described in (section III. C)
+        `Simulating key properties of lithium-ion batteries with a fault-tolerant quantum computer
+        <https://arxiv.org/abs/2204.11890>`_:
+
+        .. math::
+
+            Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
+
+        Specifically, the resources are given by one :class:`~.ResourcePrepSelPrep` gate and one
+        :class:`~.ResourceReflection` gate.
+
+    .. seealso:: :class:`~.Qubitization`
+    """
 
     # pylint: disable=too-many-arguments
     @staticmethod
@@ -1043,8 +1109,16 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         fixed_point,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources for Amplitude Amplifcation are according to the decomposition found
-        in qml.AmplitudeAmplification.
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
+                corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctr
+
+        Resources:
+            The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
         """
         gate_types = {}
         ctrl = re.ResourceControlled.resource_rep(
@@ -1078,6 +1152,15 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
 
     @property
     def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         U_op = self.hyperparameters["U"]
         O_op = self.hyperparameters["O"]
         U_params = U_op.resource_params if hasattr(U_op, "resource_params") else {}
@@ -1102,6 +1185,16 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     def resource_rep(
         cls, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
     ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {
             "U_op": U_op,
             "U_params": U_params,
