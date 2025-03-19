@@ -1087,14 +1087,13 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     """Resource class for the AmplitudeAmplification template.
 
     Args:
-        U_op (Operator):
-        U_params (dict):
-        O_op (Operator):
-        O_params (dict):
-        iters (int):
-        num_work_wires (int):
-        num_ref_wires (int):
-        fixed_point (bool):
+        U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        U_params (dict): the parameters for the U operator
+        O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        O_params (dict): the parameters for the O operator
+        iters (int): the number of iterations of the amplitude amplification subroutine
+        num_ref_wires (int): the number of wires used for the reflection
+        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
 
     Resources:
         The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
@@ -1108,7 +1107,6 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         O_op,
         O_params,
         iters,
-        num_work_wires,
         num_ref_wires,
         fixed_point,
         **kwargs,
@@ -1117,14 +1115,14 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         keys are the operators and the associated values are the counts.
 
         Args:
-            U_op (Operator):
-            U_params (dict):
-            O_op (Operator):
-            O_params (dict):
-            iters (int):
-            num_work_wires (int):
-            num_ref_wires (int):
-            fixed_point (bool):
+            U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+            U_params (dict): the parameters for the U operator
+            O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+            O_params (dict): the parameters for the O operator
+            iters (int): the number of iterations of the amplitude amplification subroutine
+            num_ref_wires (int): the number of wires used for the reflection
+            fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
+
 
         Resources:
             The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
@@ -1133,7 +1131,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         ctrl = re.ResourceControlled.resource_rep(
             base_class=O_op,
             base_params=O_params,
-            num_ctrl_wires=num_work_wires,
+            num_ctrl_wires=1,
             num_ctrl_values=0,
             num_work_wires=0,
         )
@@ -1164,14 +1162,13 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            U_op (Operator):
-            U_params (dict):
-            O_op (Operator):
-            O_params (dict):
-            iters (int):
-            num_work_wires (int):
-            num_ref_wires (int):
-            fixed_point (bool):
+            U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+            U_params (dict): the parameters for the U operator
+            O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+            O_params (dict): the parameters for the O operator
+            iters (int): the number of iterations of the amplitude amplification subroutine
+            num_ref_wires (int): the number of wires used for the reflection
+            fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -1190,7 +1187,6 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "O_op": type(O_op),
             "O_params": O_params,
             "iters": iters,
-            "num_work_wires": 1,
             "num_ref_wires": num_ref_wires,
             "fixed_point": fixed_point,
         }
@@ -1198,20 +1194,19 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     # pylint: disable=too-many-arguments
     @classmethod
     def resource_rep(
-        cls, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+        cls, U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            U_op (Operator):
-            U_params (dict):
-            O_op (Operator):
-            O_params (dict):
-            iters (int):
-            num_work_wires (int):
-            num_ref_wires (int):
-            fixed_point (bool):
+            U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+            U_params (dict): the parameters for the U operator
+            O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+            O_params (dict): the parameters for the O operator
+            iters (int): the number of iterations of the amplitude amplification subroutine
+            num_ref_wires (int): the number of wires used for the reflection
+            fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1222,7 +1217,6 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "O_op": O_op,
             "O_params": O_params,
             "iters": iters,
-            "num_work_wires": num_work_wires,
             "num_ref_wires": num_ref_wires,
             "fixed_point": fixed_point,
         }

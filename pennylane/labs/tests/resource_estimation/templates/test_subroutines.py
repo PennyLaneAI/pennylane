@@ -894,12 +894,10 @@ class TestResourceAmplitudeAmplification:
     """Test the ResourceAmplitudeAmplification class"""
 
     @pytest.mark.parametrize(
-        "U_op, U_params, O_op,O_params,iters, num_work_wires,num_ref_wires,fixed_point",
-        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, 3, True)],
+        "U_op, U_params, O_op,O_params,iters,num_ref_wires,fixed_point",
+        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, True)],
     )
-    def test_resources(
-        self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
-    ):
+    def test_resources(self, U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point):
         """Test that the resources are correct"""
         expected = {}
         reflection = re.ResourceReflection.resource_rep(
@@ -918,7 +916,6 @@ class TestResourceAmplitudeAmplification:
                     O_op,
                     O_params,
                     iters,
-                    num_work_wires,
                     num_ref_wires,
                     fixed_point,
                 )
@@ -928,7 +925,7 @@ class TestResourceAmplitudeAmplification:
         ctrl = re.ResourceControlled.resource_rep(
             base_class=O_op,
             base_params=O_params,
-            num_ctrl_wires=num_work_wires,
+            num_ctrl_wires=1,
             num_ctrl_values=0,
             num_work_wires=0,
         )
@@ -942,7 +939,7 @@ class TestResourceAmplitudeAmplification:
 
         assert (
             re.ResourceAmplitudeAmplification.resources(
-                U_op, U_params, O_op, O_params, 5, num_work_wires, num_ref_wires, fixed_point
+                U_op, U_params, O_op, O_params, 5, num_ref_wires, fixed_point
             )
             == expected
         )
@@ -964,7 +961,6 @@ class TestResourceAmplitudeAmplification:
             "O_op": type(O),
             "O_params": {},
             "iters": 5,
-            "num_work_wires": 1,
             "num_ref_wires": 3,
             "fixed_point": True,
         }
@@ -974,12 +970,10 @@ class TestResourceAmplitudeAmplification:
         assert op.resource_params == expected
 
     @pytest.mark.parametrize(
-        "U_op, U_params, O_op,O_params,iters, num_work_wires,num_ref_wires,fixed_point",
-        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, 3, True)],
+        "U_op, U_params, O_op,O_params,iters, num_ref_wires,fixed_point",
+        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, True)],
     )
-    def test_resource_rep(
-        self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
-    ):
+    def test_resource_rep(self, U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(
@@ -990,25 +984,24 @@ class TestResourceAmplitudeAmplification:
                 "O_op": O_op,
                 "O_params": O_params,
                 "iters": iters,
-                "num_work_wires": num_work_wires,
                 "num_ref_wires": num_ref_wires,
                 "fixed_point": fixed_point,
             },
         )
         assert expected == re.ResourceAmplitudeAmplification.resource_rep(
-            U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+            U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point
         )
 
     @pytest.mark.parametrize(
-        "U_op, U_params, O_op,O_params,iters, num_work_wires,num_ref_wires,fixed_point",
-        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, 3, True)],
+        "U_op, U_params, O_op,O_params,iters,num_ref_wires,fixed_point",
+        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, True)],
     )
     def test_resources_from_rep(
-        self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+        self, U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point
     ):
         """Test that computing the resources from a compressed representation works"""
         rep = re.ResourceAmplitudeAmplification.resource_rep(
-            U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+            U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point
         )
         actual = rep.op_type.resources(**rep.params)
 
@@ -1029,7 +1022,6 @@ class TestResourceAmplitudeAmplification:
                     O_op,
                     O_params,
                     iters,
-                    num_work_wires,
                     num_ref_wires,
                     fixed_point,
                 )
@@ -1039,7 +1031,7 @@ class TestResourceAmplitudeAmplification:
         ctrl = re.ResourceControlled.resource_rep(
             base_class=O_op,
             base_params=O_params,
-            num_ctrl_wires=num_work_wires,
+            num_ctrl_wires=1,
             num_ctrl_values=0,
             num_work_wires=0,
         )
@@ -1054,16 +1046,14 @@ class TestResourceAmplitudeAmplification:
         assert actual == expected
 
     @pytest.mark.parametrize(
-        "U_op, U_params, O_op,O_params,iters, num_work_wires,num_ref_wires,fixed_point",
-        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, 3, True)],
+        "U_op, U_params, O_op,O_params,iters,num_ref_wires,fixed_point",
+        [(re.ResourceHadamard, {}, re.ResourceRX, {}, 5, 3, True)],
     )
-    def test_tracking_name(
-        self, U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
-    ):
+    def test_tracking_name(self, U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point):
         """Test that the tracking name is correct."""
         assert (
             re.ResourceAmplitudeAmplification.tracking_name(
-                U_op, U_params, O_op, O_params, iters, num_work_wires, num_ref_wires, fixed_point
+                U_op, U_params, O_op, O_params, iters, num_ref_wires, fixed_point
             )
             == "AmplitudeAmplification"
         )
