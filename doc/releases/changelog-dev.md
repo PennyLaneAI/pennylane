@@ -713,6 +713,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
+
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
   [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
 
