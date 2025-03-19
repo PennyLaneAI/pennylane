@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from enum import Enum
 from itertools import product
-from typing import Any, Iterator, Tuple, Union
+from typing import Any, Dict, Iterator, Tuple, Union
 
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
@@ -63,19 +63,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         self.is_zero = is_zero
         self.label = label
 
-        match node_type:
-            case _NodeType.SUM:
-                self.shape = l_child.shape
-            case _NodeType.OUTER:
-                self.shape = l_child.shape + r_child.shape
-            case _NodeType.SCALAR:
-                self.shape = l_child.shape
-            case _NodeType.TENSOR:
-                self.shape = tensor.shape
-            case _NodeType.FLOAT:
-                self.shape = ()
-            case _:
-                raise ValueError(f"{node_type} is not a valid _NodeType.")
+        if node_type == _NodeType.SUM:
+            self.shape = l_child.shape
+        if node_type == _NodeType.OUTER:
+            self.shape = l_child.shape + r_child.shape
+        if node_type == _NodeType.SCALAR:
+            self.shape = l_child.shape
+        if node_type == _NodeType.TENSOR:
+            self.shape = tensor.shape
+        if node_type == _NodeType.FLOAT:
+            self.shape = ()
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
@@ -84,7 +81,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Construct a SUM node"""
+        """Returns a `RealspaceCoefs` with node type `SUM`.
+
+        Args:
+            l_child (RealspaceCoeffs): the left child
+            r_child (RealspaceCOeffs): the right child
+
+        Returns:
+            RealspaceCoeffs: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
+        """
+
         if l_child.shape != r_child.shape:
             raise ValueError(
                 f"Cannot add RealspaceCoeffs of shape {l_child.shape} with RealspaceCoeffs of shape {r_child.shape}."
@@ -105,7 +111,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         l_child: RealspaceCoeffs,
         r_child: RealspaceCoeffs,
     ) -> RealspaceCoeffs:
-        """Construct a OUTER node"""
+        """Returns a `RealspaceCoefs` with node type `OUTER`.
+
+        Args:
+            l_child (RealspaceCoeffs): the left child
+            r_child (RealspaceCOeffs): the right child
+
+        Returns:
+            RealspaceCoeffs: a `RealspaceCoeff` object representing the outer product of `l_child` and `r_child`
+        """
 
         return cls(
             node_type=_NodeType.OUTER,
@@ -118,7 +132,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Construct a TENSOR node"""
+        """Returns a `RealspaceCoefs` with node type `TENSOR` or `FLOAT` when the input tensor is a scalar.
+
+        Args:
+            tensor (ndarray): a tensor of coefficients
+            label (string): a label for the tensor to be used when displaying the `RealspaceCoeff` object as an expression
+
+        Returns:
+            RealspaceCoeffs: a `RealspaceCoeff` object representing containing the tensor
+        """
 
         if len(tensor.shape):
             return cls(
@@ -136,7 +158,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Construct a SCALAR node"""
+        """Returns a `RealspaceCoefs` with node type `SCALAR`.
+
+        Args:
+            scalar (float): a scalar to multiply `child` by
+            child (RealspaceCoeffs): the `RealspaceCoeff` object to be multiplied by `scalar`
+
+        Returns:
+            RealspaceCoeffs: a `RealspaceCoeff` object representing the coefficients of `child` multiplied by `scalar`
+        """
 
         return cls(
             node_type=_NodeType.SCALAR,
@@ -199,21 +229,20 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     def _str(self, indices) -> str:
 
-        match self.node_type:
-            case _NodeType.TENSOR:
+            if self.node_type == _NodeType.TENSOR:
                 return f"{self.label}[{','.join(indices)}]"
-            case _NodeType.FLOAT:
+            if _NodeType.FLOAT:
                 return f"{self.value}"
-            case _NodeType.SCALAR:
+            if self.node_type == _NodeType.SCALAR:
                 return f"{self.scalar} * ({self.l_child._str(indices)})"
-            case _NodeType.OUTER:
+            if self.node_type == _NodeType.OUTER:
                 l_indices = indices[: len(self.l_shape)]
                 r_indices = indices[len(self.l_shape) :]
 
                 return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
-            case _NodeType.SUM:
+            if self.node_type == _NodeType.SUM:
                 return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
-            case _:
+            if self.node_type == _:
                 raise ValueError(
                     f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
                 )
@@ -224,23 +253,22 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if not self._validate_index(index):
             raise ValueError(f"Given index {index} is not compatible with shape {self.shape}")
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return self.tensor[index]
-            case _NodeType.FLOAT:
-                return self.value
-            case _NodeType.SCALAR:
-                return self.scalar * self.l_child.compute(index)
-            case _NodeType.SUM:
-                return self.l_child.compute(index) + self.r_child.compute(index)
-            case _NodeType.OUTER:
-                l_index = index[: len(self.l_shape)]
-                r_index = index[len(self.l_shape) :]
-                return self.l_child.compute(l_index) * self.r_child.compute(r_index)
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        if self.node_type == _NodeType.TENSOR:
+            return self.tensor[index]
+        if self.node_type == _NodeType.FLOAT:
+            return self.value
+        if self.node_type == _NodeType.SCALAR:
+            return self.scalar * self.l_child.compute(index)
+        if self.node_type == _NodeType.SUM:
+            return self.l_child.compute(index) + self.r_child.compute(index)
+        if self.node_type == _NodeType.OUTER:
+            l_index = index[: len(self.l_shape)]
+            r_index = index[len(self.l_shape) :]
+            return self.l_child.compute(l_index) * self.r_child.compute(r_index)
+
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
     def __getitem__(self, index):
         return self.compute(index)
@@ -248,21 +276,20 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     def nonzero(self) -> Iterator[Tuple[int]]:
         """Compute the nonzero indices"""
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return zip(*self.tensor.nonzero())
-            case _NodeType.FLOAT:
-                return iter(((),)) if self.value else iter(())
-            case _NodeType.SCALAR:
-                return self.l_child.nonzero() if self.scalar else iter(())
-            case _NodeType.SUM:
-                return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
-            case _NodeType.OUTER:
-                return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        if self.node_type == _NodeType.TENSOR:
+            return zip(*self.tensor.nonzero())
+        if self.node_type == _NodeType.FLOAT:
+            return iter(((),)) if self.value else iter(())
+        if self.node_type == _NodeType.SCALAR:
+            return self.l_child.nonzero() if self.scalar else iter(())
+        if self.node_type == _NodeType.SUM:
+            return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
+        if self.node_type == _NodeType.OUTER:
+            return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
+
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
     def _validate_index(self, index: Tuple[int]) -> bool:
         if len(index) != len(self.shape):
@@ -280,32 +307,31 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     def get_coefficients(self, threshold: float = 0.0):
         """Return the coefficients in a dictionary."""
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return _numpy_to_dict(self.tensor, threshold)
-            case _NodeType.FLOAT:
-                return {(): self.value}
-            case _NodeType.SCALAR:
-                return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
-            case _NodeType.SUM:
-                return _add_dicts(
-                    self.l_child.get_coefficients(threshold),
-                    self.r_child.get_coefficients(threshold),
-                    threshold,
-                )
-            case _NodeType.OUTER:
-                return _mul_dicts(
-                    self.l_child.get_coefficients(threshold),
-                    self.r_child.get_coefficients(threshold),
-                    threshold,
-                )
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        if self.node_type == _NodeType.TENSOR:
+            return _numpy_to_dict(self.tensor, threshold)
+        if self.node_type == _NodeType.FLOAT:
+            return {(): self.value}
+        if self.node_type == _NodeType.SCALAR:
+            return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
+        if self.node_type == _NodeType.SUM:
+            return _add_dicts(
+                self.l_child.get_coefficients(threshold),
+                self.r_child.get_coefficients(threshold),
+                threshold,
+            )
+        if self.node_type == _NodeType.OUTER:
+            return _mul_dicts(
+                self.l_child.get_coefficients(threshold),
+                self.r_child.get_coefficients(threshold),
+                threshold,
+            )
+
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
 
-def _add_dicts(d1, d2, threshold):
+def _add_dicts(d1: Dict, d2: Dict, threshold: float):
     add_dict = {}
 
     d1_keys = {d1.keys()}
