@@ -327,7 +327,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The graph structure is a 1D chain and the set of node and wire labels are the same.
+        The graph structure is a 1D chain and the sets of node and wire labels are the same.
         """
         # Graph structure: (0) -- (1) -- (2) -- (3)
         graph_ref = nx.Graph({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
@@ -357,7 +357,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The graph structure is a 1D chain and the set of node and wire labels are different.
+        The graph structure is a 1D chain and the sets of node and wire labels are different.
         """
         # Graph structure: ("a") -- ("b") -- ("c") -- ("d")
         graph_ref = nx.Graph({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
@@ -554,7 +554,7 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The graph structure is a 3D chain and the set of node and wire labels are the same.
+        The graph structure is a 3D chain and the sets of node and wire labels are the same.
         """
         # Graph structure:    (4)-----(5)
         #                     /|      /|
