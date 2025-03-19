@@ -28,11 +28,61 @@ Functions
     ~lie_closure
     ~structure_constants
     ~center
+    ~cartan_decomp
+    ~check_cartan_decomp
+    ~check_commutation
+
+Involutions
+~~~~~~~~~~~
+
+A map :math:`\theta: \mathfrak{g} \rightarrow \mathfrak{g}` from the Lie algebra :math:`\mathfrak{g}` to itself is called an involution
+if it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is compatible with commutators,
+:math:`[\theta(g), \theta(g')]=\theta([g, g']).` Involutions are used to construct a :func:`~cartan_decomp`. There are seven canonical
+Cartan involutions of classical real simple Lie algebras (``AI, AII, AIII, BDI, DIII, CI, CII``)
+and one canonical involution for each real semisimple Lie algebra made up of two isomorphic
+classical simple components (``A, BD, C``).
+See, for example, Tab. 4 in `Edelman and Jeong <https://arxiv.org/abs/2104.08669>`__.
+Note that the functions implemented here do not represent the mathematical involutions directly,
+but return a boolean value that indicates whether or not the input is in the :math:`+1` eigenspace
+of :math:`\theta`. When using them, it is usually assumed that we apply them to operators in the
+eigenbasis of the underlying involution :math:`\theta`.
+
+.. currentmodule:: pennylane.liealg
+
+.. autosummary::
+    :toctree: api
+
+    ~even_odd_involution
+    ~concurrence_involution
+    ~A
+    ~AI
+    ~AII
+    ~AIII
+    ~BD
+    ~BDI
+    ~DIII
+    ~C
+    ~CI
+    ~CII
+
+
+Lie Algebras and quantum computing
+----------------------------------
+
+In quantum computing, we are typically dealing with the Hilbert space
+:math:`\mathcal{H} = \mathbb{C}^{2^n}` and for full
+universality we require the available gates to span all of :math:`SU(2^n).`
+That means when we have all unitaries of :math:`SU(2^n)`
+available to us, we can reach any state in Hilbert space from any other state.
+
+The Lie group :math:`SU(2^n)` has an associated Lie
+algebra to it, called :math:`\mathfrak{su}(2^n)`.
+In some cases, it is more convenient to work with the
+associated Lie algebra rather than the Lie group.
 
 Relevant demos
 --------------
 
-Lie algebra functionality in PennyLane.
 Check out the following demos to learn more about Lie algebras in the context of quantum computation:
 
 * :doc:`Introducing (dynamical) Lie algebras for quantum practitioners <demos/tutorial_liealgebra>`
@@ -48,3 +98,18 @@ Check out the following demos to learn more about Lie algebras in the context of
 from .structure_constants import structure_constants
 from .center import center
 from .lie_closure import lie_closure
+from .cartan_decomp import cartan_decomp, check_cartan_decomp, check_commutation
+from .involutions import (
+    even_odd_involution,
+    concurrence_involution,
+    A,
+    AI,
+    AII,
+    AIII,
+    BD,
+    BDI,
+    DIII,
+    C,
+    CI,
+    CII,
+)
