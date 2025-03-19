@@ -25,10 +25,10 @@ import scipy as sp
 
 from pennylane.labs.trotter import Fragment
 from pennylane.labs.trotter.realspace.matrix import (
-    _zeros,
     _op_norm,
     _string_to_matrix,
     _tensor_with_identity,
+    _zeros,
 )
 
 from .realspace_coefficients import RealspaceCoeffs
@@ -47,7 +47,9 @@ class RealspaceOperator:
     ) -> Union[np.ndarray, sp.sparse.csr_array]:
         """Return a matrix representation of the operator"""
 
-        matrices = [_string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops]
+        matrices = [
+            _string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops
+        ]
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
 
         if sparse:

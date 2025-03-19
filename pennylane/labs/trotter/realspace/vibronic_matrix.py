@@ -28,6 +28,7 @@ from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access
 
+
 class VibronicMatrix(Fragment):
     """The VibronicMatrix class"""
 

@@ -276,19 +276,27 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         return True
 
     def get_coefficients(self, threshold: float = 0.0):
-        """Return the coefficients in a dictionary."""  
+        """Return the coefficients in a dictionary."""
 
         match self.node_type:
             case NodeType.TENSOR:
                 return _numpy_to_dict(self.tensor, threshold)
             case NodeType.FLOAT:
-                return { (): self.value }
+                return {(): self.value}
             case NodeType.SCALAR:
                 return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
             case NodeType.SUM:
-                return _add_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+                return _add_dicts(
+                    self.l_child.get_coefficients(threshold),
+                    self.r_child.get_coefficients(threshold),
+                    threshold,
+                )
             case NodeType.OUTER:
-                return _mul_dicts(self.l_child.get_coefficients(threshold), self.r_child.get_coefficients(threshold), threshold)
+                return _mul_dicts(
+                    self.l_child.get_coefficients(threshold),
+                    self.r_child.get_coefficients(threshold),
+                    threshold,
+                )
             case _:
                 raise ValueError(
                     f"RealspaceCoeffs was constructed with invalid NodeType {self.node_type}."
@@ -319,9 +327,10 @@ def _mul_dicts(d1, d2, threshold):
 
     for key1, key2 in product(d1.keys(), d2.keys()):
         if abs(d1[key1] * d2[key2]) > threshold:
-            mul_dict[key1 + key2] = d1[key1]*d2[key2]
+            mul_dict[key1 + key2] = d1[key1] * d2[key2]
 
     return mul_dict
+
 
 def _scale_dict(scalar, d, threshold):
     scaled = {}
@@ -330,6 +339,7 @@ def _scale_dict(scalar, d, threshold):
             scaled[key] = scalar * d[key]
 
     return scaled
+
 
 def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
