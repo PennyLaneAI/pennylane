@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=no-name-in-module, no-self-use, protected-access
-"""MBQC integration tests"""
+"""Tests for expressing gates in the MBQC representation"""
 
 from functools import partial
 
@@ -37,10 +37,10 @@ def generate_random_rotation_angles(n, lo=0, hi=4 * np.pi, seed=None):
     return rng.uniform(lo, hi, n)
 
 
-@pytest.mark.integration
+@pytest.mark.system
 class TestIndividualGates:
-    """Integration tests to check that individual gates expressed in the MBQC formalism give correct
-    results.
+    """System-level tests to check that individual gates expressed in the MBQC formalism give
+    correct results.
     """
 
     @pytest.mark.parametrize("initial_state", generate_random_states(2, n_qubit=1))
