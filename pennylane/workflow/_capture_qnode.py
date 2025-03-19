@@ -534,10 +534,9 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     flat_static_args = jax.tree_util.tree_leaves(static_args)
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
     cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
-    cached_value = qnode.capture_cache.get(cache_key, None)
 
     # pylint: disable=protected-access
-    if cached_value:
+    if cached_value := qnode.capture_cache.get(cache_key, None):
         qfunc_jaxpr, config, out_tree = cached_value
     else:
         config = construct_execution_config(
@@ -552,6 +551,8 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
         qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
+        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
+
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *abstract_shapes,
@@ -563,8 +564,5 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
         n_consts=len(qfunc_jaxpr.consts),
     )
-
-    if not cached_value:
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
     return jax.tree_util.tree_unflatten(out_tree, res)
