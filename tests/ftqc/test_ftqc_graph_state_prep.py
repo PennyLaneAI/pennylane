@@ -367,6 +367,219 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
 
         self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
 
+    @pytest.mark.parametrize(
+        "graph",
+        [
+            # Permute the node order in the adjacency list
+            nx.Graph({1: {0, 3}, 2: {0, 3}, 3: {1, 2}, 0: {1, 2}}),
+            nx.Graph({2: {0, 3}, 3: {1, 2}, 0: {1, 2}, 1: {0, 3}}),
+            nx.Graph({3: {1, 2}, 0: {1, 2}, 1: {0, 3}, 2: {0, 3}}),
+            nx.Graph({0: {1, 2}, 1: {0, 3}, 3: {1, 2}, 2: {0, 3}}),
+            nx.Graph({0: {1, 2}, 2: {0, 3}, 1: {0, 3}, 3: {1, 2}}),
+            nx.Graph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
+        ],
+    )
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    def test_graph_state_invariant_under_internal_ordering_2d_grid_same_wires_indices(
+        self, graph, one_qubit_op, two_qubit_op
+    ):
+        """Test that the state returned by GraphStatePrep is invariant under the internal ordering
+        of the nodes and edges in the graph.
+
+        The graph structure is a 2D grid and the sets of node and wire labels are the same.
+        """
+        # Graph structure: (0) -- (1)
+        #                   |      |
+        #                  (2) -- (3)
+        graph_ref = nx.Graph({0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}})
+
+        # The sequence of wires is constant
+        wires = [0, 1, 2, 3]
+
+        self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
+
+    @pytest.mark.parametrize(
+        "graph",
+        [
+            # Permute the node order in the adjacency list
+            nx.Graph(
+                {
+                    (0, 1): {(0, 0), (1, 1)},
+                    (1, 0): {(0, 0), (1, 1)},
+                    (1, 1): {(0, 1), (1, 0)},
+                    (0, 0): {(1, 0), (0, 1)},
+                }
+            ),
+            nx.Graph(
+                {
+                    (1, 0): {(0, 0), (1, 1)},
+                    (1, 1): {(0, 1), (1, 0)},
+                    (0, 0): {(1, 0), (0, 1)},
+                    (0, 1): {(0, 0), (1, 1)},
+                }
+            ),
+            nx.Graph(
+                {
+                    (1, 1): {(0, 1), (1, 0)},
+                    (0, 0): {(1, 0), (0, 1)},
+                    (0, 1): {(0, 0), (1, 1)},
+                    (1, 0): {(0, 0), (1, 1)},
+                }
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    def test_graph_state_invariant_under_internal_ordering_2d_grid_diff_wires_indices(
+        self, graph, one_qubit_op, two_qubit_op
+    ):
+        """Test that the state returned by GraphStatePrep is invariant under the internal ordering
+        of the nodes and edges in the graph.
+
+        The graph structure is a 2D grid and the sets of node and wire labels are different.
+        """
+        # Graph structure: (0,0) -- (0,1)
+        #                    |        |
+        #                  (1,0) -- (1,1)
+        graph_ref = nx.Graph(
+            {
+                (0, 0): {(1, 0), (0, 1)},
+                (0, 1): {(0, 0), (1, 1)},
+                (1, 0): {(0, 0), (1, 1)},
+                (1, 1): {(0, 1), (1, 0)},
+            }
+        )
+
+        # The sequence of wires is constant
+        wires = [0, 1, 2, 3]
+
+        self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
+
+    @pytest.mark.parametrize(
+        "graph",
+        [
+            # Permute the node order in the adjacency list
+            nx.Graph(
+                {
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                }
+            ),
+            nx.Graph(
+                {
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                }
+            ),
+            nx.Graph(
+                {
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                }
+            ),
+            nx.Graph(
+                {
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                }
+            ),
+            nx.Graph(
+                {
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                }
+            ),
+            nx.Graph(
+                {
+                    6: {2, 4, 7},
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                }
+            ),
+            nx.Graph(
+                {
+                    7: {3, 5, 6},
+                    0: {1, 2, 4},
+                    1: {0, 3, 5},
+                    2: {0, 3, 6},
+                    3: {1, 2, 7},
+                    4: {0, 5, 6},
+                    5: {1, 4, 7},
+                    6: {2, 4, 7},
+                }
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    def test_graph_state_invariant_under_internal_ordering_3d_grid_same_wires_indices(
+        self, graph, one_qubit_op, two_qubit_op
+    ):
+        """Test that the state returned by GraphStatePrep is invariant under the internal ordering
+        of the nodes and edges in the graph.
+
+        The graph structure is a 3D chain and the set of node and wire labels are the same.
+        """
+        # Graph structure:    (4)-----(5)
+        #                     /|      /|
+        #                  (0)-----(1) |
+        #                   | (6)---|-(7)
+        #                   | /     | /
+        #                  (2)-----(3)
+        graph_ref = nx.Graph(
+            {
+                0: {1, 2, 4},
+                1: {0, 3, 5},
+                2: {0, 3, 6},
+                3: {1, 2, 7},
+                4: {0, 5, 6},
+                5: {1, 4, 7},
+                6: {2, 4, 7},
+                7: {3, 5, 6},
+            }
+        )
+
+        # The sequence of wires is constant
+        wires = [0, 1, 2, 3, 4, 5, 6, 7]
+
+        self._check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op)
+
     @staticmethod
     def _check_graphs_yield_same_state(graph, graph_ref, wires, one_qubit_op, two_qubit_op):
         """Helper function for the above tests.
