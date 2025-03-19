@@ -119,11 +119,11 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 return f(0, jnp.array([]))
 
         When working with dynamic shapes in a ``while_loop``, we have two possible
-        options. In ``allow_array_resizing=True`` treats every dynamic dimension as indepedent.
+        options. In ``allow_array_resizing=True`` treats every dynamic dimension as independent.
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_array_resizing=True)
+            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=True)
             def f(a, b):
                 return jax.numpy.hstack([a, b]), 2*b
 
@@ -324,7 +324,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             else:
                 msg = (
                     "Detected an attempt to combine arrays with two different dynamic shapes. "
-                    "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
+                    "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.while_loop``."
                 )
             raise ValueError(msg) from e
         raise e
@@ -365,9 +365,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             raise ValueError(validation)
 
         assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
-        out_tree = flat_body_fn.out_tree
-
-        return jaxpr_body_fn, jaxpr_cond_fn, abstract_shapes + flat_args, out_tree
+        return jaxpr_body_fn, jaxpr_cond_fn, abstract_shapes + flat_args, flat_body_fn.out_tree
 
     def _call_capture_enabled(self, *init_state):
 
