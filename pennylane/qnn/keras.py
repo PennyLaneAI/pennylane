@@ -20,7 +20,7 @@ from typing import Optional, Text
 
 from packaging.version import Version
 
-import pennylane as qml
+from pennylane import PennyLaneDeprecationWarning
 
 try:
     import tensorflow as tf
@@ -53,6 +53,9 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
+
+    .. warning::
+        This class is deprecated and will be removed in v0.42. Instead, consider using other machine learning frameworks than TensorFlow.
 
     .. note::
 
@@ -313,7 +316,7 @@ class KerasLayer(Layer):
     ):
         warnings.warn(
             "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
