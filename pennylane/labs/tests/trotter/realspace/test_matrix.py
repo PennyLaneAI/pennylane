@@ -1,3 +1,16 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Test matrix operations"""
 
 from typing import Dict, Tuple
@@ -11,7 +24,7 @@ from pennylane.labs.trotter.realspace import (
     RealspaceSum,
     VibronicMatrix,
 )
-from pennylane.labs.trotter.realspace.matrix import op_norm
+from pennylane.labs.trotter.realspace.matrix import _op_norm
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
 
@@ -70,18 +83,18 @@ class TestMatrix:
     """Test properties of the VibronicMatrix class"""
 
     params = [
-        (blocks2, 2, 2, 2, False, 6 * op_norm(2) ** 2),
-        (blocks2, 4, 2, 2, False, 6 * op_norm(4) ** 2),
-        (blocks2, 2, 2, 2, True, 6 * op_norm(2) ** 2),
-        (blocks2, 4, 2, 2, True, 6 * op_norm(4) ** 2),
-        (blocks3, 2, 2, 2, False, np.sqrt(18 * op_norm(2) ** 3)),
-        (blocks3, 4, 2, 2, False, np.sqrt(18 * op_norm(4) ** 3)),
-        (blocks3, 2, 2, 2, True, np.sqrt(18 * op_norm(2) ** 3)),
-        (blocks3, 4, 2, 2, True, np.sqrt(18 * op_norm(4) ** 3)),
-        (blocks4, 2, 2, 2, False, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
-        (blocks4, 4, 2, 2, False, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
-        (blocks4, 2, 2, 2, True, 6 * op_norm(2) ** 2 + np.sqrt(18 * op_norm(2) ** 3)),
-        (blocks4, 4, 2, 2, True, 6 * op_norm(4) ** 2 + np.sqrt(18 * op_norm(4) ** 3)),
+        (blocks2, 2, 2, 2, False, 6 * _op_norm(2) ** 2),
+        (blocks2, 4, 2, 2, False, 6 * _op_norm(4) ** 2),
+        (blocks2, 2, 2, 2, True, 6 * _op_norm(2) ** 2),
+        (blocks2, 4, 2, 2, True, 6 * _op_norm(4) ** 2),
+        (blocks3, 2, 2, 2, False, np.sqrt(18 * _op_norm(2) ** 3)),
+        (blocks3, 4, 2, 2, False, np.sqrt(18 * _op_norm(4) ** 3)),
+        (blocks3, 2, 2, 2, True, np.sqrt(18 * _op_norm(2) ** 3)),
+        (blocks3, 4, 2, 2, True, np.sqrt(18 * _op_norm(4) ** 3)),
+        (blocks4, 2, 2, 2, False, 6 * _op_norm(2) ** 2 + np.sqrt(18 * _op_norm(2) ** 3)),
+        (blocks4, 4, 2, 2, False, 6 * _op_norm(4) ** 2 + np.sqrt(18 * _op_norm(4) ** 3)),
+        (blocks4, 2, 2, 2, True, 6 * _op_norm(2) ** 2 + np.sqrt(18 * _op_norm(2) ** 3)),
+        (blocks4, 4, 2, 2, True, 6 * _op_norm(4) ** 2 + np.sqrt(18 * _op_norm(4) ** 3)),
     ]
 
     @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse, expected", params)
