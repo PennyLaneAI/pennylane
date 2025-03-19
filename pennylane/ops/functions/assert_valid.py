@@ -102,7 +102,7 @@ def _check_decomposition_new(op):
     """Checks involving the new system of decompositions."""
 
     if type(op).resource_params is qml.operation.Operator.resource_params:
-        assert not qml.has_decomp(
+        assert not qml.decomposition.has_decomp(
             type(op)
         ), "resource_params must be defined for operators with decompositions"
         return
