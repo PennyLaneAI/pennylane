@@ -426,7 +426,7 @@ class TestSymbolicResourceRep:
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
         for op_type in custom_ctrl_op_to_base():
-            rep = qml.adjoint_resource_rep(base_class=op_type, base_params={})
+            rep = qml.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
             assert rep == CompressedResourceOp(
                 qml.ops.Adjoint,
                 {
