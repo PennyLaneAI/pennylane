@@ -445,6 +445,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
+    assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree
 
 
@@ -551,7 +552,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
         qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
-    assert out_tree is not None, "out_tree should be set by call to flat_fn"
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *abstract_shapes,
