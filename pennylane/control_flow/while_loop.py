@@ -242,6 +242,10 @@ def _add_abstract_shapes(f, shape_locations):
     return new_f
 
 
+def _has_dynamic_shape(val):
+    return any(not isinstance(s, int) for s in getattr(val, "shape", ()))
+
+
 def _get_dummy_arg(arg):
     """If any axes are abstract, replace with an empty numpy array."""
     if all(isinstance(s, int) for s in arg.shape):
@@ -302,6 +306,29 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         return fn_res
 
+    def _handle_error(self, e: ValueError):
+        """Handle any ValueError's raised by the creation of the jaxpr, adding information to any error
+        about 'Incompatible shapes for broadcasting'."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        if "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes:
+            closures = (self.body_fn.__closure__ or ()) + (self.cond_fn.__closure__ or ())
+            if any(_has_dynamic_shape(i.cell_contents) for i in closures):
+                msg = (
+                    "Detected an attempt to combine arrays with different dynamic shapes. "
+                    "\nThis also may be due to a closure variable with a dynamic shape."
+                    " Try promoting the closure variable with the dynamic shape to being an explicit argument. "
+                )
+                if self.allow_array_resizing is True:
+                    msg += "\nThis may also be due to allow_array_resizing=True. Try with allow_array_resizing=False instead."
+            else:
+                msg = (
+                    "Detected an attempt to combine arrays with two different dynamic shapes. "
+                    "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
+                )
+            raise ValueError(msg) from e
+        raise e
+
     def _get_jaxprs(self, init_state, allow_array_resizing):
         import jax  # pylint: disable=import-outside-toplevel
 
@@ -329,21 +356,11 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
                 *dummy_init_state
             )
         except ValueError as e:
-            if (
-                "Incompatible shapes for broadcasting" in str(e)
-                and allow_array_resizing is True
-                and jax.config.jax_dynamic_shapes
-            ):
-                raise ValueError(
-                    "Detected an attempt to combine arrays with two different dynamic shapes. "
-                    "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
-                ) from e
-            raise e
+            self._handle_error(e)
 
         validation = _validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
         if validation:
             if allow_array_resizing == "auto":
-                # didn't work, so try with array resizing.
                 return self._get_jaxprs(init_state, allow_array_resizing=True)
             raise ValueError(validation)
 

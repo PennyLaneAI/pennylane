@@ -82,6 +82,16 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
+    def test_error_during_body_fn(self):
+        """Test that an error in the body function is reraised."""
+
+        @qml.while_loop(lambda i: i < 5)
+        def w(i):
+            raise ValueError("my random error")
+
+        with pytest.raises(ValueError, match="my random error"):
+            _ = jax.make_jaxpr(w)(0)
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
@@ -317,8 +327,8 @@ def test_pytree_input_output():
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCaptureWhileLoopDynamicShapes:
 
-    def test_while_loop_dyanmic_shape_array(self):
-        """Test while loop can accept ararys with dynamic shapes."""
+    def test_while_loop_dynamic_shape_array(self):
+        """Test while loop can accept arrays with dynamic shapes."""
 
         def f(x):
             @qml.while_loop(lambda res: jax.numpy.sum(res) < 10)
@@ -364,7 +374,7 @@ class TestCaptureWhileLoopDynamicShapes:
         with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
             jax.make_jaxpr(w)(1)
 
-    def test_error_is_combining_independent_shapes(self):
+    def test_error_if_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
@@ -397,8 +407,26 @@ class TestCaptureWhileLoopDynamicShapes:
         assert qml.math.allclose(final_i, 5)  # loop condition
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**(5-2)
 
+    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
+    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
+        """Test that if a broadcasting error is raised when a dynamically shaped closure variable
+        is present, the error mentions it may be due to the clousre variable with a dynamic shape.
+        """
+
+        def w(i0):
+            c = jnp.arange(i0)
+
+            @qml.while_loop(lambda a: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing)
+            def f(a):
+                return c * a
+
+            return f(jnp.arange(i0))
+
+        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
+            jax.make_jaxpr(w)(3)
+
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
-    def test_loop_with_argument_combinding(self, allow_array_resizing):
+    def test_loop_with_argument_combining(self, allow_array_resizing):
         """Test that arguments with dynamic shapes can be combined if allow_array_resizing=auto or False."""
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 20, allow_array_resizing=allow_array_resizing)
@@ -437,3 +465,24 @@ class TestCaptureWhileLoopDynamicShapes:
         x_expected = jnp.array([1, 1, 2, 2, 2, 2, 4, 4])
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 2 * x_expected)
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
+    def test_independent_resizing(self, allow_array_resizing):
+        """Test that two arrays can be resized independently of each other."""
+
+        @qml.while_loop(
+            lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
+        )
+        def f(a, b):
+            return jnp.hstack((a, b)), b + 1
+
+        def w(i0):
+            return f(jnp.zeros(i0), jnp.zeros(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [s1, s2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(s1, 15)  # 3 * 5
+        assert jnp.allclose(s2, 3)
+        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        assert jnp.allclose(a, expected)
+        assert jnp.allclose(b, jnp.array([4, 4, 4]))
