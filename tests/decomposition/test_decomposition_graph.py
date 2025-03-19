@@ -23,8 +23,7 @@ import pytest
 from conftest import decompositions, to_resources
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionGraph
-from pennylane.decomposition.decomposition_graph import DecompositionError
+from pennylane.decomposition import DecompositionError, DecompositionGraph
 
 
 @patch(

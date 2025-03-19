@@ -152,8 +152,9 @@ See also: :func:`register_resources`
 
     qml.decomposition.enable_graph()
 
+
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
-    def my_cnot(wires):
+    def my_cnot(wires, **__):
         qml.H(wires=wires[1])
         qml.CZ(wires=wires)
         qml.H(wires=wires[1])
@@ -174,14 +175,29 @@ The ``alt_decomps`` argument can handle multiple options per operator:
 
 .. code-block:: python
 
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot1(wires, **__):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
+
+    @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+    def my_cnot2(wires, **__):
+        qml.RY(np.pi/2, wires[1])
+        qml.Z(wires[1])
+        qml.CZ(wires=wires)
+        qml.RY(np.pi/2, wires[1])
+        qml.Z(wires[1])
+
     @partial(
         qml.transforms.decompose,
-        fixed_decomps={qml.CNOT: [my_cnot1, my_cnot2, my_cnot3]}
+        alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]}
     )
     @qml.qnode(qml.device("default.qubit"))
     def circuit():
         qml.CNOT(wires=[0, 1])
         return qml.state()
+
 
 Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
 
