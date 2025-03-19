@@ -60,7 +60,7 @@ class QROMStatePreparation(Operation):
 
     Raises:
         ValueError: If the array does not contain :math:`2^n` elements for some integer :math:`n`, or if
-        its norm is not equal to one.
+            its norm is not equal to one.
 
     **Example**
 
