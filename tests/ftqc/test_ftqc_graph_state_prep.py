@@ -310,30 +310,27 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
     @pytest.mark.parametrize(
         "graph",
         [
-            # Permute the edges
-            nx.Graph([(1, 2), (2, 3), (0, 1)]),
-            nx.Graph([(2, 3), (0, 1), (1, 2)]),
-            nx.Graph([(0, 1), (2, 3), (1, 2)]),
-            # Permute the nodes within an edge
-            nx.Graph([(1, 0), (1, 2), (2, 3)]),
-            nx.Graph([(0, 1), (2, 1), (2, 3)]),
-            nx.Graph([(0, 1), (1, 2), (3, 2)]),
-            nx.Graph([(0, 1), (2, 1), (3, 2)]),
-            nx.Graph([(1, 0), (2, 1), (3, 2)]),
+            # Permute the node order in the adjacency list
+            nx.Graph({1: {0, 2}, 2: {1, 3}, 3: {2}, 0: {1}}),
+            nx.Graph({2: {1, 3}, 3: {2}, 0: {1}, 1: {0, 2}}),
+            nx.Graph({3: {2}, 0: {1}, 1: {0, 2}, 2: {1, 3}}),
+            nx.Graph({0: {1}, 1: {0, 2}, 3: {2}, 2: {1, 3}}),
+            nx.Graph({0: {1}, 2: {1, 3}, 1: {0, 2}, 3: {2}}),
+            nx.Graph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
-    def test_graph_state_invariant_under_internal_ordering_same_wires_indices(
+    def test_graph_state_invariant_under_internal_ordering_1d_chain_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The set of node and wire labels are the same in this test.
+        The graph structure is a 1D chain and the set of node and wire labels are the same.
         """
         # Graph structure: (0) -- (1) -- (2) -- (3)
-        graph_ref = nx.Graph([(0, 1), (1, 2), (2, 3)])
+        graph_ref = nx.Graph({0: {1}, 1: {0, 2}, 2: {1, 3}, 3: {2}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
@@ -343,30 +340,27 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
     @pytest.mark.parametrize(
         "graph",
         [
-            # Permute the edges
-            nx.Graph([("b", "c"), ("c", "d"), ("a", "b")]),
-            nx.Graph([("c", "d"), ("a", "b"), ("b", "c")]),
-            nx.Graph([("a", "b"), ("c", "d"), ("b", "c")]),
-            # Permute the nodes within an edge
-            nx.Graph([("b", "a"), ("b", "c"), ("c", "d")]),
-            nx.Graph([("a", "b"), ("c", "b"), ("c", "d")]),
-            nx.Graph([("a", "b"), ("b", "c"), ("d", "c")]),
-            nx.Graph([("a", "b"), ("c", "b"), ("d", "c")]),
-            nx.Graph([("b", "a"), ("c", "b"), ("d", "c")]),
+            # Permute the node order in the adjacency list
+            nx.Graph({"b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}, "a": {"b"}}),
+            nx.Graph({"c": {"b", "d"}, "d": {"c"}, "a": {"b"}, "b": {"a", "c"}}),
+            nx.Graph({"d": {"c"}, "a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}}),
+            nx.Graph({"a": {"b"}, "b": {"a", "c"}, "d": {"c"}, "c": {"b", "d"}}),
+            nx.Graph({"a": {"b"}, "c": {"b", "d"}, "b": {"a", "c"}, "d": {"c"}}),
+            nx.Graph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
         ],
     )
     @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S])
     @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
-    def test_graph_state_invariant_under_internal_ordering_diff_wires_indices(
+    def test_graph_state_invariant_under_internal_ordering_1d_chain_diff_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
         """Test that the state returned by GraphStatePrep is invariant under the internal ordering
         of the nodes and edges in the graph.
 
-        The set of node and wire labels are different in this test.
+        The graph structure is a 1D chain and the set of node and wire labels are different.
         """
-        # Graph structure: (a) -- (b) -- (c) -- (d)
-        graph_ref = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])
+        # Graph structure: ("a") -- ("b") -- ("c") -- ("d")
+        graph_ref = nx.Graph({"a": {"b"}, "b": {"a", "c"}, "c": {"b", "d"}, "d": {"c"}})
 
         # The sequence of wires is constant
         wires = [0, 1, 2, 3]
