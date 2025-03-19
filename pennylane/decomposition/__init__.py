@@ -146,42 +146,42 @@ the decomposition and a resource data structure that tracks gate counts in the c
 
 See also: :func:`register_resources`
 
-```python
-import pennylane as qml
+.. code-block:: python
 
-qml.decomposition.enable_graph()
+    import pennylane as qml
 
-@qml.register_resources({qml.H: 2, qml.CZ: 1})
-def my_cnot(wires):
-    qml.H(wires=wires[1])
-    qml.CZ(wires=wires)
-    qml.H(wires=wires[1])
+    qml.decomposition.enable_graph()
 
-@partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-@qml.qnode(qml.device("default.qubit"))
-def circuit():
-    qml.CNOT(wires=[0, 1])
-    return qml.state()
-```
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(wires):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
 
-``` pycon
->>> print(qml.draw(circuit, level="device")())
-0: ────╭●────┤  State
-1: ──H─╰Z──H─┤  State
-```
+    @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
+
+.. code-block:: pycon
+
+    >>> print(qml.draw(circuit, level="device")())
+    0: ────╭●────┤  State
+    1: ──H─╰Z──H─┤  State
 
 The ``alt_decomps`` argument can handle multiple options per operator:
 
-```python
-@partial(
-    qml.transforms.decompose,
-    fixed_decomps={qml.CNOT: [my_cnot1, my_cnot2, my_cnot3]}
-)
-@qml.qnode(qml.device("default.qubit"))
-def circuit():
-    qml.CNOT(wires=[0, 1])
-    return qml.state()
-```
+.. code-block:: python
+
+    @partial(
+        qml.transforms.decompose,
+        fixed_decomps={qml.CNOT: [my_cnot1, my_cnot2, my_cnot3]}
+    )
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
 
 Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
 
@@ -189,7 +189,7 @@ See also: :func:`add_decomps`
 
 """
 
-from .utils import enable_graph, disable_graph, enabled_graph
+from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
 
 from .decomposition_graph import DecompositionGraph
 from .resources import (

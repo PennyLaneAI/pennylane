@@ -1407,8 +1407,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return set()
 
-        return ()
-
     @property
     def resource_params(self) -> dict:
         """A dictionary containing the minimal information needed to compute a
