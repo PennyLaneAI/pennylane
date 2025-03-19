@@ -317,12 +317,6 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
-        if not CORRECT_KERAS_VERSION:
-            raise ImportError(
-                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
-                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
-            )
-
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
@@ -352,7 +346,10 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(dynamic=True, **kwargs)
+        if CORRECT_KERAS_VERSION:
+            super().__init__(dynamic=True, **kwargs)
+        else:  # pragma: no cover
+            super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)
