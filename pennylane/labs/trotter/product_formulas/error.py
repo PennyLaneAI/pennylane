@@ -35,16 +35,13 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
 
 def perturbation_error(
     fragments: List[Fragment], states: List[AbstractState], delta: float = 1
-) -> np.ndarray:
+) -> List[float]:
     """Return the perturbation theory error"""
 
     error = trotter_error(fragments, delta)
+    expectations = []
 
-    n_states = len(states)
-    expectations = np.zeros(shape=(n_states, n_states))
-
-    for i, left in enumerate(states):
-        for j, right in enumerate(states):
-            expectations[i, j] = error.expectation(left, right)
+    for state in states:
+        expectations.append(error.expectation(state, state))
 
     return expectations
