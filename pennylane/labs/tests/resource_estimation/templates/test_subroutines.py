@@ -604,6 +604,7 @@ class TestResourceQROM:
         size_bitstring,
         clean,
     ):
+        """Test that the resources are correct"""
         expected = {}
         x = re.CompressedResourceOp(re.ResourceX, {})
 
