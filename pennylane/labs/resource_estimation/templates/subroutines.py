@@ -929,12 +929,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     """Resource class for the QROM template.
 
     Args:
-        num_bitstrings (int):
-        num_bit_flips (int):
-        num_control_wires (int):
-        num_work_wires (int):
-        size_bitstring (int):
-        clean (bool):
+        num_bitstrings (int): the number of bitstrings that are to be encoded
+        num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+        num_control_wires (int): the number of control wires where in the indexes are specified
+        num_work_wires (int): the number of auxiliary wires used for QROM computation
+        size_bitstring (int): the length of each bitstring
+        clean (bool): if True, the work wires are not altered by the QROM operator
 
     Resources:
         The resources for QROM are taken from the following two papers:
@@ -960,12 +960,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_bitstrings (int):
-            num_bit_flips (int):
-            num_control_wires (int):
-            num_work_wires (int):
-            size_bitstring (int):
-            clean (bool):
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+            num_control_wires (int): the number of control wires where in the indexes are specified
+            num_work_wires (int): the number of auxiliary wires used for QROM computation
+            size_bitstring (int): the length of each bitstring
+            clean (bool): if True, the work wires are not altered by the QROM operator
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1023,12 +1023,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_bitstrings (int):
-            num_bit_flips (int):
-            num_control_wires (int):
-            num_work_wires (int):
-            size_bitstring (int):
-            clean (bool):
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+            num_control_wires (int): the number of control wires where in the indexes are specified
+            num_work_wires (int): the number of auxiliary wires used for QROM computation
+            size_bitstring (int): the length of each bitstring
+            clean (bool): if True, the work wires are not altered by the QROM operator
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -1062,12 +1062,12 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_bitstrings (int):
-            num_bit_flips (int):
-            num_control_wires (int):
-            num_work_wires (int):
-            size_bitstring (int):
-            clean (bool):
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+            num_control_wires (int): the number of control wires where in the indexes are specified
+            num_work_wires (int): the number of auxiliary wires used for QROM computation
+            size_bitstring (int): the length of each bitstring
+            clean (bool): if True, the work wires are not altered by the QROM operator
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1212,7 +1212,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             num_work_wires (int):
             num_ref_wires (int):
             fixed_point (bool):
-            
+
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """

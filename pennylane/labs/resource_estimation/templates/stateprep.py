@@ -26,7 +26,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
     Args:
-        num_wires(int): 
+        num_wires(int):
 
     Resources:
         Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -38,7 +38,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires (int): 
+            num_wires (int):
 
         Resources:
             Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -50,7 +50,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_wires(int): 
+            num_wires(int):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -63,7 +63,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires(int): 
+            num_wires(int):
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -80,7 +80,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
     """Resource class for the MottonenStatePreparation template.
 
     Args:
-        num_wires (int): 
+        num_wires (int):
 
     Resources:
         Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
@@ -92,7 +92,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires (int): 
+            num_wires (int):
 
         Resources:
             Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
@@ -116,7 +116,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_wires (int): 
+            num_wires (int):
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -129,7 +129,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires (int): 
+            num_wires (int):
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
