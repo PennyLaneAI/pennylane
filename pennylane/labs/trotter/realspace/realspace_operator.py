@@ -268,6 +268,8 @@ class RealspaceSum(Fragment):
         return final_matrix
 
     def norm(self, params: Dict) -> float:
+        """Return the spectral norm of the operator"""
+
         try:
             gridpoints = params["gridpoints"]
         except KeyError as e:
@@ -293,6 +295,8 @@ class RealspaceSum(Fragment):
         return norm
 
     def get_coefficients(self, threshold: float = 0.0):
+        """Return a dictionary containing the coefficients of the realspace operator"""
+
         coeffs = {}
         for op in self.ops:
             coeffs[op.ops] = op.get_coefficients(threshold)
