@@ -27,6 +27,7 @@ Modules
 
     dla
     resource_estimation
+    trotter
 
 """
 
