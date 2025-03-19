@@ -399,3 +399,22 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         result_ref = circuit(graph_ref)
         result = circuit(graph)
         assert np.all(result_ref == result)
+
+    def test_unsortable_graph_node_labels_raise_type_error(self):
+        """Test that using a graph with unsortable node labels (in this case, the node labels are a
+        mix of integers and strings) as input to GraphStatePrep raises a TypeError.
+        """
+        # Graph structure: (0) -- (a) -- (1)
+        graph = nx.Graph({0: {"a"}, "a": (0, 1), 1: {"a"}})
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            GraphStatePrep(graph=graph, wires=[0, 1, 2])
+            return qml.state()
+
+        with pytest.raises(
+            TypeError,
+            match="GraphStatePrep requires the node labels of the input graph to be sortable",
+        ):
+            circuit()

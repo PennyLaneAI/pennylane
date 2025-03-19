@@ -48,7 +48,7 @@ class GraphStatePrep(Operation):
 
     Args:
         graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit
-            to wires.
+            to wires. The node labels of ``graph`` must be sortable.
         one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Defaults to
             :class:`~.pennylane.Hadamard`.
         two_qubit_ops (Operation): Operator to entangle nearest qubits. Defaults to
@@ -242,7 +242,17 @@ class GraphStatePrep(Operation):
         op_list = []
 
         nodes = graph.node_labels if isinstance(graph, QubitGraph) else graph.nodes
-        wire_map = dict(zip(sorted(nodes), wires))
+        try:
+            sorted_nodes = sorted(nodes)
+        except TypeError as e:
+            # Attempting to sort a list with a mix of incompatible types results in a TypeError:
+            # >>> sorted([0, 'a'])
+            # TypeError: '<' not supported between instances of 'str' and 'int'
+            raise TypeError(
+                "GraphStatePrep requires the node labels of the input graph to be sortable"
+            ) from e
+
+        wire_map = dict(zip(sorted_nodes, wires))
 
         edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
         edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
