@@ -1,8 +1,6 @@
 name: External Fork check
 on:
-  pull_request:
-    types:
-      - opened
+  pull_request: {}
   
 jobs:
   check-external:
