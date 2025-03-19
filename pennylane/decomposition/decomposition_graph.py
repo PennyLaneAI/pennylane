@@ -46,8 +46,8 @@ from .symbolic_decomposition import (
     AdjointDecomp,
     adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
-    has_adjoint_decomp,
-    has_adjoint_ops,
+    same_type_adjoint_decomp,
+    same_type_adjoint_ops,
 )
 
 
@@ -209,18 +209,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         if issubclass(base_class, qml.ops.Adjoint):
             rule = adjoint_adjoint_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
-        if base_class in has_adjoint_ops():
-            rule = has_adjoint_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+        if base_class in same_type_adjoint_ops():
+            rule = same_type_adjoint_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         if (
             issubclass(base_class, qml.ops.Controlled)
-            and base_params["base_class"] in has_adjoint_ops()
+            and base_params["base_class"] in same_type_adjoint_ops()
         ):
             rule = adjoint_controlled_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         for base_decomposition in self._get_decompositions(base_class):
             rule = AdjointDecomp(base_decomposition)

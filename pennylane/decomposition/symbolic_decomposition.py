@@ -62,13 +62,16 @@ def _same_type_adjoint_resource(base_class, base_params):
 
 
 @register_resources(_same_type_adjoint_resource)
-def has_adjoint_decomp(*_, base, **__):
+def same_type_adjoint_decomp(*_, base, **__):
     """Decompose the adjoint of a gate whose adjoint is an instance of its own type."""
     base.adjoint()
 
 
 def _adjoint_adjoint_resource(*_, base_params, **__):
     """Resources of the adjoint of the adjoint of a gate."""
+    # The base of a nested adjoint is an adjoint, so the base of the base is
+    # the original gate, and the "base_params" of base_params is the parameters
+    # of the original gate.
     base_class, base_params = base_params["base_class"], base_params["base_params"]
     return {resource_rep(base_class, **base_params): 1}
 
@@ -103,8 +106,8 @@ def _adjoint_controlled_resource(base_class, base_params):
     # Handle custom controlled gates. The adjoint of a general controlled operator that
     # is equivalent to a custom controlled operator should just be the custom controlled
     # operator given that its base has_adjoint.
-    if (controlled_base_class, num_control_wires) in base_to_custom_ctrl_op():
-        custom_op_type = base_to_custom_ctrl_op()[(controlled_base_class, num_control_wires)]
+    custom_op_type = base_to_custom_ctrl_op().get((controlled_base_class, num_control_wires))
+    if custom_op_type is not None:
         # All gates in base_to_custom_ctrl_op do not have resource params.
         return {resource_rep(custom_op_type): 1}
 
@@ -131,72 +134,74 @@ def adjoint_controlled_decomp(*_, base, **__):
     )
 
 
-@functools.lru_cache()
-def has_adjoint_ops():
+@functools.lru_cache(maxsize=1)
+def same_type_adjoint_ops():
     """A set of operators whose adjoint is an instance of its own type."""
-    return {
-        # identity
-        qml.Identity,
-        qml.GlobalPhase,
-        # non-parametric gates
-        qml.H,
-        qml.X,
-        qml.Y,
-        qml.Z,
-        qml.SWAP,
-        qml.ECR,
-        # single-qubit parametric gates
-        qml.Rot,
-        qml.U1,
-        qml.U2,
-        qml.U3,
-        qml.RX,
-        qml.RY,
-        qml.RZ,
-        qml.PhaseShift,
-        # multi-qubit parametric gates
-        qml.MultiRZ,
-        qml.PauliRot,
-        qml.PCPhase,
-        qml.IsingXX,
-        qml.IsingYY,
-        qml.IsingZZ,
-        qml.IsingXY,
-        qml.PSWAP,
-        qml.CPhaseShift00,
-        qml.CPhaseShift01,
-        qml.CPhaseShift10,
-        # matrix gates
-        qml.QubitUnitary,
-        qml.DiagonalQubitUnitary,
-        qml.BlockEncode,
-        qml.SpecialUnitary,
-        # custom controlled ops
-        qml.CH,
-        qml.CY,
-        qml.CZ,
-        qml.CNOT,
-        qml.CSWAP,
-        qml.CCZ,
-        qml.Toffoli,
-        qml.MultiControlledX,
-        qml.CRX,
-        qml.CRY,
-        qml.CRZ,
-        qml.CRot,
-        qml.ControlledPhaseShift,
-        # arithmetic ops
-        qml.QubitSum,
-        qml.IntegerComparator,
-        # qchem ops
-        qml.SingleExcitation,
-        qml.SingleExcitationMinus,
-        qml.SingleExcitationPlus,
-        qml.DoubleExcitation,
-        qml.DoubleExcitationPlus,
-        qml.DoubleExcitationMinus,
-        qml.OrbitalRotation,
-        qml.FermionicSWAP,
-        # templates
-        qml.CommutingEvolution,
-    }
+    return frozenset(
+        {
+            # identity
+            qml.Identity,
+            qml.GlobalPhase,
+            # non-parametric gates
+            qml.H,
+            qml.X,
+            qml.Y,
+            qml.Z,
+            qml.SWAP,
+            qml.ECR,
+            # single-qubit parametric gates
+            qml.Rot,
+            qml.U1,
+            qml.U2,
+            qml.U3,
+            qml.RX,
+            qml.RY,
+            qml.RZ,
+            qml.PhaseShift,
+            # multi-qubit parametric gates
+            qml.MultiRZ,
+            qml.PauliRot,
+            qml.PCPhase,
+            qml.IsingXX,
+            qml.IsingYY,
+            qml.IsingZZ,
+            qml.IsingXY,
+            qml.PSWAP,
+            qml.CPhaseShift00,
+            qml.CPhaseShift01,
+            qml.CPhaseShift10,
+            # matrix gates
+            qml.QubitUnitary,
+            qml.DiagonalQubitUnitary,
+            qml.BlockEncode,
+            qml.SpecialUnitary,
+            # custom controlled ops
+            qml.CH,
+            qml.CY,
+            qml.CZ,
+            qml.CNOT,
+            qml.CSWAP,
+            qml.CCZ,
+            qml.Toffoli,
+            qml.MultiControlledX,
+            qml.CRX,
+            qml.CRY,
+            qml.CRZ,
+            qml.CRot,
+            qml.ControlledPhaseShift,
+            # arithmetic ops
+            qml.QubitSum,
+            qml.IntegerComparator,
+            # qchem ops
+            qml.SingleExcitation,
+            qml.SingleExcitationMinus,
+            qml.SingleExcitationPlus,
+            qml.DoubleExcitation,
+            qml.DoubleExcitationPlus,
+            qml.DoubleExcitationMinus,
+            qml.OrbitalRotation,
+            qml.FermionicSWAP,
+            # templates
+            qml.CommutingEvolution,
+        }
+    )
