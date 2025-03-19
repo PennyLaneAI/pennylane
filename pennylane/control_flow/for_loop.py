@@ -21,7 +21,12 @@ from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
 from ._loop_abstract_axes import loop_determine_abstracted_axes
-from .while_loop import _add_abstract_shapes, _get_dummy_arg, _validate_no_resizing_returns
+from .while_loop import (
+    _add_abstract_shapes,
+    _get_dummy_arg,
+    _validate_no_resizing_returns,
+    _validate_static_shapes_dtypes,
+)
 
 
 def for_loop(
@@ -280,7 +285,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                     "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
                 ) from e
             raise e
-
+        _validate_static_shapes_dtypes(
+            jaxpr_body_fn.jaxpr, abstracted_axes, offset=len(abstract_shapes), is_for=True
+        )
         validation = _validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
         if validation:
             if allow_array_resizing == "auto":

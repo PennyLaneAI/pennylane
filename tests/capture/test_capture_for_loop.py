@@ -35,6 +35,28 @@ from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
 
+    def test_shape_validation(self):
+        """Test that an error is raised if static shapes change over the iteration."""
+
+        @qml.for_loop(3)
+        def f(i, a):  # pylint: disable=unused-argument
+            return jnp.append(a, 2)
+
+        with pytest.raises(ValueError, match="shape of the output variable must match the shape"):
+            jax.make_jaxpr(f)(jnp.array([0]))
+
+    def test_dtype_validation(self):
+        """Test that an error is raised if the dtype is changed over the iteration."""
+
+        @qml.for_loop(3)
+        def f(j, i):  # pylint: disable=unused-argument
+            return i + 0.5
+
+        with pytest.raises(
+            ValueError, match="dtype of the output variable must match the dtype of"
+        ):
+            jax.make_jaxpr(f)(0)
+
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_identity(self, array):
         """Test simple for-loop primitive vs dynamic dimensions."""
@@ -213,7 +235,11 @@ class TestCaptureForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "array, expected", [(jax.numpy.array([0]), 0), (jax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)]
+        "array, expected",
+        [
+            (jax.numpy.array([0.0], dtype=jnp.float32), 0),
+            (jax.numpy.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float32), 1.0),
+        ],
     )
     def test_for_loop_dynamic_array(self, array, expected):
         """Test for-loops with dynamic array inputs."""
@@ -224,7 +250,7 @@ class TestCaptureForLoop:
             def loop_body(i, array, sum_val):
                 return array, sum_val + array[i]
 
-            sum_val = 0
+            sum_val = jnp.array(0.0, dtype=jax.numpy.float32)
             _, res = loop_body(array, sum_val)
             return res
 
@@ -239,7 +265,18 @@ class TestCaptureForLoop:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
-    # pylint: disable=unused-argument
+    def test_static_shape_validation_with_other_dynamic_shape(self):
+        """Test that an informative error is raised when a static shape changes and dynamic shapes are present."""
+
+        @qml.for_loop(3)
+        def f(j, a):  # pylint: disable=unused-argument
+            return jnp.vstack((a, jnp.ones(a.shape[1])))
+
+        with pytest.raises(
+            ValueError, match="output variable must match the shape of the input variable"
+        ):
+            jax.make_jaxpr(f, abstracted_axes={1: "a"})(jnp.zeros((2, 2)))
+
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
@@ -483,7 +520,7 @@ class TestCaptureCircuitsForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12.0, 0.2653001)]
     )
     def test_for_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested for loop is correctly captured into a jaxpr."""
@@ -528,7 +565,7 @@ class TestCaptureCircuitsForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12.0, 0.2653001)]
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_nested_for_and_while_loop(self, upper_bound, arg, expected, autograph):

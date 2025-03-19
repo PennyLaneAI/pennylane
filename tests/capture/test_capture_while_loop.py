@@ -92,6 +92,28 @@ class TestCaptureWhileLoop:
         with pytest.raises(ValueError, match="my random error"):
             _ = jax.make_jaxpr(w)(0)
 
+    def test_shape_validation(self):
+        """Test that an error is raised if static shapes change over the iteration."""
+
+        @qml.while_loop(lambda a: jnp.sum(a) < 10)
+        def f(a):
+            return jnp.append(a, 2)
+
+        with pytest.raises(ValueError, match="shape of the output variable must match the shape"):
+            jax.make_jaxpr(f)(jnp.array([0]))
+
+    def test_dtype_validation(self):
+        """Test that an error is raised if the dtype is changed over the iteration."""
+
+        @qml.while_loop(lambda i: i < 5)
+        def f(i):
+            return i + 0.5
+
+        with pytest.raises(
+            ValueError, match="dtype of the output variable must match the dtype of"
+        ):
+            jax.make_jaxpr(f)(0)
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
@@ -180,7 +202,7 @@ class TestCaptureCircuitsWhileLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12.0, 0.2653001)]
     )
     @pytest.mark.parametrize("autograph", [True, False])
     def test_while_loop_nested(self, upper_bound, arg, expected, autograph):
@@ -215,8 +237,8 @@ class TestCaptureCircuitsWhileLoop:
 
                 return x + 0.1, i + 1
 
-            loop_fn(0)
-            loop_fn_returns(arg, 0)
+            loop_fn(0.0)
+            loop_fn_returns(arg, 0.0)
 
             return qml.expval(qml.Z(0))
 
@@ -326,6 +348,18 @@ def test_pytree_input_output():
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestCaptureWhileLoopDynamicShapes:
+
+    def test_static_shape_validation_with_other_dynamic_shape(self):
+        """Test that an informative error is raised when a static shape changes and dynamic shapes are present."""
+
+        @qml.while_loop(lambda a: jnp.sum(a) < 10)
+        def f(a):
+            return jnp.vstack((a, jnp.ones(a.shape[1])))
+
+        with pytest.raises(
+            ValueError, match="output variable must match the shape of the input variable"
+        ):
+            jax.make_jaxpr(f, abstracted_axes={1: "a"})(jnp.zeros((2, 2)))
 
     def test_while_loop_dynamic_shape_array(self):
         """Test while loop can accept arrays with dynamic shapes."""

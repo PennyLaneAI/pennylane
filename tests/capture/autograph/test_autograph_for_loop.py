@@ -701,7 +701,10 @@ class TestErrors:
 
             return x
 
-        with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
+        with pytest.raises(
+            ValueError,
+            match="dtype of the output variable must match the dtype of the corresponding input.",
+        ):
             run_autograph(f)()
 
 
