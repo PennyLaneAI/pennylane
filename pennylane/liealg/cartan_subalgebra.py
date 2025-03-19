@@ -384,7 +384,7 @@ def op_to_adjvec(
     basis: Union[PauliSentence, Operator, TensorLike],
     is_orthogonal: bool = True,
 ):
-    r"""Decompose a batch of operators onto a given operator basis.
+    r"""Decompose a batch of operators into a given operator basis.
 
     The adjoint vector representation is provided by the coefficients :math:`c_j` in a given operator
     basis of the operator :math:`\hat{b}_j` such that the input operator can be written as
@@ -467,16 +467,18 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     r"""Apply a ``basis_change`` between bases of operators to the adjoint representation ``adj``.
 
     Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
-    :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
+    :math:`\text{ad}^\mu_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
     We can represent the adjoint representation in terms of a new basis :math:`c_i = \sum_j T_{ij} b_j`
     with the basis transformation matrix :math:`T` using ``change_basis_ad_rep``.
 
     Args:
-        adj (numpy.ndarray): Adjoint representation in old basis.
-        basis_change (numpy.ndarray): Basis change matrix from old to new basis.
+        adj (TensorLike): Adjoint representation in old basis.
+        basis_change (TensorLike): Basis change matrix from old to new basis.
 
     Returns:
-        numpy.ndarray: Adjoint representation in new basis.
+        TensorLike: Adjoint representation in new basis.
+
+    .. seealso: :func:`~liealg.structure_constants`
 
     **Example**
 
