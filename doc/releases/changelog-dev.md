@@ -622,6 +622,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Clean up logic in `_capture_qnode.py`.
+  [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
+
 * The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random matrices are guaranteed positive.
   [(#7071)](https://github.com/PennyLaneAI/pennylane/pull/7071)
 
