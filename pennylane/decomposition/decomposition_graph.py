@@ -34,8 +34,8 @@ import pennylane as qml
 from pennylane.operation import Operator
 
 from .controlled_decomposition import (
+    ControlledBaseDecomposition,
     CustomControlledDecomposition,
-    GeneralControlledDecomposition,
     base_to_custom_ctrl_op,
     controlled_global_phase_decomp,
     controlled_x_decomp,
@@ -173,7 +173,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._target_gate_indices.add(op_node_idx)
             return op_node_idx
 
-        if op_node.op_type is qml.ops.Controlled or op_node.op_type is qml.ops.ControlledOp:
+        if op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
             # This branch only applies to general controlled operators
             return self._add_controlled_decomp_node(op_node, op_node_idx)
 
@@ -186,12 +186,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def _add_special_decomp_rule_to_op(
         self, rule: DecompositionRule, op_node: CompressedResourceOp, op_node_idx: int
-    ) -> int:
+    ):
         """Adds a special decomposition rule to the graph."""
         decomp_resource = rule.compute_resources(**op_node.params)
         d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
         self._graph.add_edge(d_node_idx, op_node_idx, 0)
-        return op_node_idx
 
     def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
         """Adds a controlled decomposition node to the graph."""
@@ -202,22 +201,25 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # Handle controlled global phase
         if base_class is qml.GlobalPhase:
             rule = controlled_global_phase_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         # Handle controlled-X gates
         if base_class is qml.X:
             rule = controlled_x_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         # Handle custom controlled ops
         if (base_class, num_control_wires) in base_to_custom_ctrl_op():
             custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
             rule = CustomControlledDecomposition(custom_op_type)
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         # General case
         for base_decomposition in self._get_decompositions(base_class):
-            rule = GeneralControlledDecomposition(base_decomposition)
+            rule = ControlledBaseDecomposition(base_decomposition)
             self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
 
         return op_node_idx

@@ -37,7 +37,7 @@ class Resources:
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Remove zero-count gates and verify that num_gates is correct."""
+        """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
 
     @cached_property

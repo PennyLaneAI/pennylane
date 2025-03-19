@@ -71,7 +71,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
-        control_values (bool or list[bool] or int or list[int]): The value(s) the control wire(s)
+        control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 

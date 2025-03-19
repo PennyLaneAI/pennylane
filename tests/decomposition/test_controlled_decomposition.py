@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.controlled_decomposition import (
+    ControlledBaseDecomposition,
     CustomControlledDecomposition,
-    GeneralControlledDecomposition,
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
@@ -50,6 +50,19 @@ class TestControlledDecompositionRules:
         assert controlled_global_phase_decomp.compute_resources(
             **op.resource_params
         ) == to_resources({qml.PhaseShift: 1})
+
+    def test_single_controlled_global_phase_on_0(self):
+        """Tests GlobalPhase controlled on a single wire with control value being 0."""
+
+        op = qml.ctrl(qml.GlobalPhase(0.5, wires=[0, 1]), control=[2], control_values=[0])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            controlled_global_phase_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.PhaseShift(0.5, wires=[2]), qml.GlobalPhase(0.5)]
+        assert controlled_global_phase_decomp.compute_resources(
+            **op.resource_params
+        ) == to_resources({qml.GlobalPhase: 1, qml.PhaseShift: 1})
 
     def test_double_controlled_global_phase(self):
         """Tests global phase controlled on two wires."""
@@ -208,7 +221,7 @@ class TestControlledX:
             to_resources({qml.CZ: 1}),
             qml.ops.CZ,
         ),
-        # Two-qubit controlled
+        # Controlled on two qubits
         (
             qml.ops.Controlled(qml.Z(2), control_wires=[0, 1], control_values=[1, 0]),
             [qml.X(1), qml.CCZ(wires=[0, 1, 2]), qml.X(1)],
@@ -222,7 +235,7 @@ class TestControlledX:
             to_resources({qml.CRX: 1, qml.X: 2}),
             qml.ops.CRX,
         ),
-        # Controlled on two qubits
+        # Two-qubit controlled
         (
             qml.ops.Controlled(qml.SWAP(wires=[1, 2]), control_wires=[0], control_values=[0]),
             [qml.X(0), qml.CSWAP(wires=[0, 1, 2]), qml.X(0)],
@@ -300,7 +313,7 @@ class TestGeneralControlledOperator:
     def test_single_control_wire(self):
         """Tests a single control wire."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -386,7 +399,7 @@ class TestGeneralControlledOperator:
     def test_double_control_wire(self):
         """Tests two control wires."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
@@ -490,7 +503,7 @@ class TestGeneralControlledOperator:
     def test_multi_control_wires(self):
         """Tests with multiple control wires."""
 
-        rule = GeneralControlledDecomposition(custom_decomp)
+        rule = ControlledBaseDecomposition(custom_decomp)
 
         # Single control wire controlled on 1
         op = qml.ctrl(
