@@ -29,7 +29,7 @@ Lie algebra functionality
     ~structure_constants
     ~center
     ~cartan_decomp
-    ~cartan_subalgebra
+    ~horizontal_cartan_subalgebra
 
 Functions
 ^^^^^^^^^
@@ -126,8 +126,8 @@ from .involutions import (
     CI,
     CII,
 )
-from .cartan_subalgebra import (
-    cartan_subalgebra,
+from .horizontal_cartan_subalgebra import (
+    horizontal_cartan_subalgebra,
     adjvec_to_op,
     op_to_adjvec,
     change_basis_ad_rep,

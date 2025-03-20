@@ -69,14 +69,14 @@ def _orthogonal_complement_basis(a, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
-def cartan_subalgebra(
+def horizontal_cartan_subalgebra(
     k, m, adj=None, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
     Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
 
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
-    Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
+    Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/horizontal_cartan_subalgebra>`__.
 
     The final decomposition yields
 
@@ -115,7 +115,7 @@ def cartan_subalgebra(
     >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
     >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
     >>> g = k + m # re-order g to separate k and m
-    >>> newg, k, mtilde, a, new_adj = qml.liealg.cartan_subalgebra(k, m)
+    >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
     >>> newg == k + mtilde + a
     True
     >>> a
@@ -129,7 +129,7 @@ def cartan_subalgebra(
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
     The adjoint vectors for the Cartan subalgebra are in ``np_a``.
 
-    >>> np_newg, np_k, np_mtilde, np_a, new_adj = qml.liealg.cartan_subalgebra(k, m, return_adjvec=True)
+    >>> np_newg, np_k, np_mtilde, np_a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m, return_adjvec=True)
 
     We can reconstruct an operator by computing :math:`\hat{O}_v = \sum_i v_i g_i` for an adjoint vector :math:`v` and :math:`g_i \in \mathfrak{g}`.
 
@@ -182,7 +182,7 @@ def cartan_subalgebra(
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
-        >>> newg, k, mtilde, a, new_adj = cartan_subalgebra(k, m, adj, start_idx=3)
+        >>> newg, k, mtilde, a, new_adj = horizontal_cartan_subalgebra(k, m, adj, start_idx=3)
 
         The new DLA ``newg`` is just the concatenation of ``k``, ``mtilde``, ``a``. Each component is returned in the original input format.
         Here we obtain collections of :math:`8\times 8` matrices (``numpy`` arrays), as this is what we started from.
@@ -193,7 +193,7 @@ def cartan_subalgebra(
         We can also let the function return what we call adjoint representation vectors.
 
         >>> kwargs = {"start_idx": 3, "return_adjvec": True}
-        >>> np_newg, np_k, np_mtilde, np_a, new_adj = cartan_subalgebra(k, m, adj, **kwargs)
+        >>> np_newg, np_k, np_mtilde, np_a, new_adj = horizontal_cartan_subalgebra(k, m, adj, **kwargs)
         >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_a.shape, new_adj.shape
         ((15, 15), (6, 15), (6, 15), (3, 15), (15, 15, 15))
 

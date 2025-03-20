@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/cartan_subalgebra.py functionality"""
+"""Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 import numpy as np
 
 # pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments
@@ -23,21 +23,21 @@ from pennylane import X, Y, Z
 from pennylane.liealg import (
     adjvec_to_op,
     cartan_decomp,
-    cartan_subalgebra,
     change_basis_ad_rep,
     check_cartan_decomp,
     even_odd_involution,
+    horizontal_cartan_subalgebra,
     op_to_adjvec,
 )
 from pennylane.pauli import PauliSentence
 
 
 class TestCartanSubalgebra:
-    """Tests for qml.liealg.cartan_subalgebra"""
+    """Tests for qml.liealg.horizontal_cartan_subalgebra"""
 
     @pytest.mark.parametrize("n, len_g, len_h, len_mtilde", [(2, 6, 2, 2), (3, 15, 2, 6)])
     @pytest.mark.parametrize("provide_adj", [True, False])
-    def test_cartan_subalgebra_Ising(self, n, len_g, len_h, len_mtilde, provide_adj):
+    def test_horizontal_cartan_subalgebra_Ising(self, n, len_g, len_h, len_mtilde, provide_adj):
         """Test Cartan subalgebra of 2 qubit Ising model"""
         gens = [X(w) @ X(w + 1) for w in range(n - 1)] + [Z(w) for w in range(n)]
         gens = [op.pauli_rep for op in gens]
@@ -54,7 +54,7 @@ class TestCartanSubalgebra:
         else:
             adj = None
 
-        newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, adj, start_idx=0)
+        newg, k, mtilde, h, new_adj = horizontal_cartan_subalgebra(k, m, adj, start_idx=0)
         assert len(h) == len_h
         assert len(mtilde) == len_mtilde
         assert len(h) + len(mtilde) == len(m)
@@ -64,14 +64,14 @@ class TestCartanSubalgebra:
         assert np.allclose(new_adj_re, new_adj)
 
     @pytest.mark.parametrize("start_idx", [0, 2])
-    def test_cartan_subalgebra_matrix_input(self, start_idx):
-        """Test cartan_subalgebra with matrix inputs"""
+    def test_horizontal_cartan_subalgebra_matrix_input(self, start_idx):
+        """Test horizontal_cartan_subalgebra with matrix inputs"""
         k = [1.0 * Z(0), 1.0 * Z(1)]
         m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         k = np.array([qml.matrix(op, wire_order=range(2)) for op in k])
         m = np.array([qml.matrix(op, wire_order=range(2)) for op in m])
 
-        newg, k, mtilde, h, new_adj = cartan_subalgebra(k, m, start_idx=start_idx)
+        newg, k, mtilde, h, new_adj = horizontal_cartan_subalgebra(k, m, start_idx=start_idx)
         assert len(h) + len(mtilde) == len(m)
 
         new_adj_re = qml.structure_constants(newg, matrix=True)
@@ -79,12 +79,12 @@ class TestCartanSubalgebra:
         assert np.allclose(new_adj_re, new_adj)
         assert qml.liealg.check_abelian(h)
 
-    def test_cartan_subalgebra_adjvec_output(self):
-        """Test cartan_subalgebra with adjvec outputs"""
+    def test_horizontal_cartan_subalgebra_adjvec_output(self):
+        """Test horizontal_cartan_subalgebra with adjvec outputs"""
         k = [1.0 * Z(0), 1.0 * Z(1)]
         m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
 
-        np_newg, _, np_mtilde, np_h, new_adj = qml.liealg.cartan_subalgebra(
+        np_newg, _, np_mtilde, np_h, new_adj = qml.liealg.horizontal_cartan_subalgebra(
             k, m, return_adjvec=True, start_idx=0
         )
         assert len(np_h) + len(np_mtilde) == len(m)
@@ -96,11 +96,11 @@ class TestCartanSubalgebra:
         h = adjvec_to_op(np_h, k + m)
         assert qml.liealg.check_abelian(h)
 
-    def test_cartan_subalgebra_verbose(self, capsys):
-        """Test verbose outputs during cartan_subalgebra computation"""
+    def test_horizontal_cartan_subalgebra_verbose(self, capsys):
+        """Test verbose outputs during horizontal_cartan_subalgebra computation"""
         k = [1.0 * Z(0), 1.0 * Z(1)]
         m = [1.0 * X(0) @ X(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
-        _ = qml.liealg.cartan_subalgebra(k, m, verbose=True)
+        _ = qml.liealg.horizontal_cartan_subalgebra(k, m, verbose=True)
         captured = capsys.readouterr()
         assert "iteration 1: Found 1 independent Abelian operators." in captured.out
         assert "iteration 2: Found 2 independent Abelian operators." in captured.out
