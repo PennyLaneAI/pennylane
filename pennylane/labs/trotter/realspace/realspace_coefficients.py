@@ -81,7 +81,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a `RealspaceCoefs` with node type ``SUM``.
+        """Returns a ``RealspaceCoeffs`` with node type ``SUM``.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -132,7 +132,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``TENSOR`` or ``FLOAT`` when the input tensor is a scalar.
+        """Returns a ``RealspaceCoefs`` with node type ``TENSOR``, or ``FLOAT`` when the input tensor is a scalar.
 
         Args:
             tensor (ndarray): a tensor of coefficients
