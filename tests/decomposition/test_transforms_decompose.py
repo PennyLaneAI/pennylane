@@ -116,7 +116,7 @@ class TestTransformDecompose:
         qml.decomposition.disable_graph()
 
     def test_gate_types_gateset(self):
-        """Test that the PennyLane's Operators does not work with the new decomposition system."""
+        """Test that the PennyLane's Operator does not work with the new decomposition system."""
 
         qml.decomposition.enable_graph()
 
@@ -149,7 +149,9 @@ class TestTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @partial(
+            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, fixed_decomps={qml.CNOT: my_cnot}
+        )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -171,7 +173,9 @@ class TestTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot]})
+        @partial(
+            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, alt_decomps={qml.CNOT: [my_cnot]}
+        )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -201,7 +205,11 @@ class TestTransformDecompose:
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
 
-        @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]})
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"CZ", "Hadamard", "RY"},
+            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+        )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])

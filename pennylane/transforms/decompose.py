@@ -81,21 +81,16 @@ def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
             "Please enable the decomposition graph with qml.decomposition.enable_graph()."
         )
 
+    _fixed_decomps = fixed_decomps if fixed_decomps is not None else {}
+    _alt_decomps = alt_decomps if alt_decomps is not None else {}
+
+    return _fixed_decomps, _alt_decomps
+
 
 def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
-    # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
-    # This is to avoid the algorithm from trying to decompose these supported gatas.
-    if fixed_decomps:
-        target_gate_names -= set(
-            op.name if isinstance(op, type) else op for op in fixed_decomps.keys()
-        )
-    if alt_decomps:
-        target_gate_names -= set(
-            op.name if isinstance(op, type) else op for op in alt_decomps.keys()
-        )
-
+    # Create the decomposition graph
     graph = DecompositionGraph(
         operations,
         target_gate_names,
@@ -103,7 +98,7 @@ def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps)
         alt_decomps=alt_decomps,
     )
 
-    # Solve the decomposition graph to find the efficient decomposition pathways
+    # Find the efficient pathways to the target gate set
     graph.solve()
 
     return graph
@@ -128,15 +123,14 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def __init__(self, gate_set=None, max_expansion=None, fixed_decomps=None, alt_decomps=None):
 
-            _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
-
             self.max_expansion = max_expansion
             self._current_depth = 0
 
             self._graph_decomp = None
             self._target_gate_names = None
-            self._fixed_decomps = fixed_decomps
-            self._alt_decomps = alt_decomps
+            self._fixed_decomps, self._alt_decomps = _graph_decomps_kwargs_checks(
+                fixed_decomps, alt_decomps
+            )
 
             # We use a ChainMap to store the environment frames,
             # which allows us to push and pop environments without copying
@@ -234,7 +228,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
-            if self.gate_set(op) and not (self._fixed_decomps or self._alt_decomps):
+            if self.gate_set(op):
                 return self.interpret_operation(op)
 
             max_expansion = (
@@ -303,10 +297,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 for eq in jaxpr.eqns:
 
                     # Create the graph creation if eq
-                    # - hasn't been registered yet
-                    # - is a primitive operator
-                    # - has a DropVar output
-                    # - has no Var inputs (skip parametric ops)
+                    # - hasn't been registered yet,
+                    # - is a primitive operator, or
+                    # - has a DropVar output/invars
                     if (
                         not self._primitive_registrations.get(eq.primitive, None)
                         and getattr(eq.primitive, "prim_type", "") == "operator"
@@ -647,7 +640,7 @@ def decompose(
     ──────╰●────────────────────────────┤
     """
 
-    _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
+    _fixed_decomps, _alt_decomps = _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
 
     if isinstance(gate_set, (str, type)):
         gate_set = {gate_set}
@@ -665,8 +658,8 @@ def decompose(
         gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
-        if (isinstance(fixed_decomps, dict) and isinstance(op, tuple(fixed_decomps.keys()))) or (
-            isinstance(alt_decomps, dict) and isinstance(op, tuple(alt_decomps.keys()))
+        if (_fixed_decomps and isinstance(op, tuple(_fixed_decomps.keys()))) or (
+            _alt_decomps and isinstance(op, tuple(_alt_decomps.keys()))
         ):
             return False
 
@@ -696,7 +689,10 @@ def decompose(
             )
 
         decomp_graph = _get_decomp_graph(
-            tape.operations, target_gate_names, fixed_decomps=fixed_decomps, alt_decomps=alt_decomps
+            tape.operations,
+            target_gate_names,
+            fixed_decomps=_fixed_decomps,
+            alt_decomps=_alt_decomps,
         )
 
     try:

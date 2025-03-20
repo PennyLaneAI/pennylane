@@ -36,6 +36,32 @@ from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-po
 
 class TestPLxPRTransformDecompose:
 
+    def test_plxpr_with_callable(self):
+        """Test the new decomposition system with a Callable gate_set."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(
+            qml.transforms.decompose,
+            gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"},
+        )
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            TypeError,
+            match="A Callable gate_set is not supported with the enabled decomposition graph",
+        ):
+            circuit()
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()
+
     def test_plxpr_gate_names_gateset(self):
         """Test that the string representation of the gate_set works with the new decomposition system."""
 
@@ -66,7 +92,7 @@ class TestPLxPRTransformDecompose:
         qml.decomposition.disable_graph()
         qml.capture.disable()
 
-    def test_gateset_with_custom_rules(self):
+    def test_plxpr_gateset_with_custom_rules(self):
         """Test the gate_set argument with custom decomposition rules."""
 
         qml.capture.enable()
@@ -148,6 +174,33 @@ class TestPLxPRTransformDecompose:
         qml.decomposition.disable_graph()
         qml.capture.disable()
 
+    def test_plxpr_fixed_decomps_corner_case(self):
+        """Test the fixed_decomps argument with an op in the gate-set."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        obj = CollectOpsandMeas()
+        obj(circuit)()
+        qml.assert_equal(obj.state["ops"][0], qml.CNOT([0, 1]))
+        assert len(obj.state["ops"]) == 1
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()
+
     def test_plxpr_fixed_decomps(self):
         """Test the fixed_decomps argument with the new decomposition system."""
 
@@ -161,7 +214,9 @@ class TestPLxPRTransformDecompose:
             qml.H(wires=wires[1])
 
         @qml.capture.expand_plxpr_transforms
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @partial(
+            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, fixed_decomps={qml.CNOT: my_cnot}
+        )
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -190,7 +245,9 @@ class TestPLxPRTransformDecompose:
             qml.H(wires=wires[1])
 
         @qml.capture.expand_plxpr_transforms
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @partial(
+            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, alt_decomps={qml.CNOT: [my_cnot]}
+        )
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -227,7 +284,11 @@ class TestPLxPRTransformDecompose:
             qml.Z(wires[1])
 
         @qml.capture.expand_plxpr_transforms
-        @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]})
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"CZ", "Hadamard", "RY"},
+            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+        )
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
             qml.CNOT(wires=[0, 1])
