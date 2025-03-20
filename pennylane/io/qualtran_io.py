@@ -41,7 +41,7 @@ def bloq_registers(bloq):
             pip install git+https://github.com/quantumlib/Qualtran.git
 
     The register names in the Qualtran bloq are used for the keys of the dictionary. The values
-    are ``Wires`` objects with a length of the total bitsize of its respective register. The
+    are :class:`~.Wires` objects with a length of the total bitsize of its respective register. The
     wires are indexed in ascending order, starting from 0.
 
     This function is best used for when one wants to manually access the wires that a Bloq acts on.
@@ -53,7 +53,7 @@ def bloq_registers(bloq):
 
     Returns:
         dict: A dictionary built with information from the bloq's signature. The dictionary keys
-        are strings that come from the names of the bloq's registers. The values are ``Wires``
+        are strings that come from the names of the bloq's registers. The values are :class:`~.Wires`
         objects that are determined by the bitsizes of those same registers.
 
     Raises:
