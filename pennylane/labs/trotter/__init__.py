@@ -20,15 +20,13 @@
 
 .. currentmodule:: pennylane.labs.trotter
 
-Trotter Abstract Classes and Functions:
+Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
     ~Fragment
-    ~commutator
-    ~nested_commutator
 
 Realspace Hamiltonian Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
