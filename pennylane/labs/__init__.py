@@ -27,11 +27,13 @@ Modules
 
     dla
     resource_estimation
+    trotter
 
 """
 
 from pennylane.labs import dla
 from pennylane.labs import resource_estimation
 from pennylane.labs import vibrational
+from pennylane.labs import trotter
 
 __all__ = []

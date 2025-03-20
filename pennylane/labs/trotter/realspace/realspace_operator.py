@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -284,14 +284,12 @@ class RealspaceSum(Fragment):
         norm = 0
 
         for op in self.ops:
-            term__op_norm = math.prod(map(lambda op: _op_norm(gridpoints) ** len(op), op.ops))
+            term_op_norm = math.prod(map(lambda op: _op_norm(gridpoints) ** len(op), op.ops))
 
-            indices = (
-                op.coeffs.nonzero() if sparse else product(range(self.modes), repeat=len(op.ops))
-            )
-            coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
+            coeffs = op.coeffs.nonzero()
+            coeff_sum = sum(abs(val) for val in coeffs.values())
 
-            norm += coeff_sum * term__op_norm
+            norm += coeff_sum * term_op_norm
 
         return norm
 

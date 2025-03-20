@@ -18,7 +18,7 @@ Tests a function for determining abstracted axes and extracting the abstract sha
 
 import pytest
 
-from pennylane.capture import determine_abstracted_axes
+from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
 pytestmark = pytest.mark.jax
 
@@ -147,3 +147,22 @@ class TestDyanmicShapes:
             assert len(abstract_shapes) == 30
 
         _ = jax.make_jaxpr(f)(list(range(30)))
+
+
+def test_custom_staging_rule(enable_disable_dynamic_shapes):
+    """Test regsitering a custom staging rule for a new primitive."""
+    my_prim = jax.core.Primitive("my_prim")
+    register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
+
+    def f(i):
+        return i, jax.numpy.ones(i)
+
+    jaxpr = jax.make_jaxpr(f)(2)
+
+    def workflow():
+        return my_prim.bind(jaxpr=jaxpr.jaxpr)
+
+    jaxpr = jax.make_jaxpr(workflow)()
+    assert jaxpr.eqns[0].primitive == my_prim
+    assert len(jaxpr.eqns[0].outvars) == 2
+    assert jaxpr.eqns[0].outvars[0] is jaxpr.eqns[0].outvars[1].aval.shape[0]

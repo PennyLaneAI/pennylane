@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from enum import Enum
 from itertools import product
-from typing import Any, Iterator, Tuple, Union
+from typing import Any, Dict, Iterator, Tuple, Union
 
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
@@ -36,7 +36,7 @@ class _NodeType(Enum):
 
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
-    """RealspaceCoeffss of a tree used to compute the coefficients of a RealspaceOperator"""
+    """A tree representing an expression that computes the coefficients of a ``RealspaceOperator``."""
 
     def __init__(
         self,
@@ -63,19 +63,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         self.is_zero = is_zero
         self.label = label
 
-        match node_type:
-            case _NodeType.SUM:
-                self.shape = l_child.shape
-            case _NodeType.OUTER:
-                self.shape = l_child.shape + r_child.shape
-            case _NodeType.SCALAR:
-                self.shape = l_child.shape
-            case _NodeType.TENSOR:
-                self.shape = tensor.shape
-            case _NodeType.FLOAT:
-                self.shape = ()
-            case _:
-                raise ValueError(f"{node_type} is not a valid _NodeType.")
+        if node_type == _NodeType.SUM:
+            self.shape = l_child.shape
+        if node_type == _NodeType.OUTER:
+            self.shape = l_child.shape + r_child.shape
+        if node_type == _NodeType.SCALAR:
+            self.shape = l_child.shape
+        if node_type == _NodeType.TENSOR:
+            self.shape = tensor.shape
+        if node_type == _NodeType.FLOAT:
+            self.shape = ()
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
@@ -84,7 +81,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Construct a SUM node"""
+        """Returns a `RealspaceCoefs` with node type ``SUM``.
+
+        Args:
+            l_child (RealspaceCoeffs): the left child
+            r_child (RealspaceCOeffs): the right child
+
+        Returns:
+            RealspaceCoeffs: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
+        """
+
         if l_child.shape != r_child.shape:
             raise ValueError(
                 f"Cannot add RealspaceCoeffs of shape {l_child.shape} with RealspaceCoeffs of shape {r_child.shape}."
@@ -105,7 +111,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         l_child: RealspaceCoeffs,
         r_child: RealspaceCoeffs,
     ) -> RealspaceCoeffs:
-        """Construct a OUTER node"""
+        """Returns a ``RealspaceCoeffs`` with node type ``OUTER``.
+
+        Args:
+            l_child (RealspaceCoeffs): the left child
+            r_child (RealspaceCOeffs): the right child
+
+        Returns:
+            RealspaceCoeffs: a ``RealspaceCoeff`` object representing the outer product of ``l_child`` and ``r_child``
+        """
 
         return cls(
             node_type=_NodeType.OUTER,
@@ -118,7 +132,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Construct a TENSOR node"""
+        """Returns a ``RealspaceCoefs`` with node type ``TENSOR`` or ``FLOAT`` when the input tensor is a scalar.
+
+        Args:
+            tensor (ndarray): a tensor of coefficients
+            label (string): a label for the tensor to be used when displaying the ``RealspaceCoeff`` object as an expression
+
+        Returns:
+            RealspaceCoeffs: a ``RealspaceCoeff`` object representing containing the tensor
+        """
 
         if len(tensor.shape):
             return cls(
@@ -136,7 +158,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Construct a SCALAR node"""
+        """Returns a ``RealspaceCoefs`` with node type ``SCALAR``.
+
+        Args:
+            scalar (float): a scalar to multiply ``child`` by
+            child (RealspaceCoeffs): the ``RealspaceCoeffs`` object to be multiplied by ``scalar``
+
+        Returns:
+            RealspaceCoeffs: a ``RealspaceCoeff`` object representing the coefficients of ``child`` multiplied by ``scalar``
+        """
 
         return cls(
             node_type=_NodeType.SCALAR,
@@ -199,72 +229,67 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     def _str(self, indices) -> str:
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return f"{self.label}[{','.join(indices)}]"
-            case _NodeType.FLOAT:
-                return f"{self.value}"
-            case _NodeType.SCALAR:
-                return f"{self.scalar} * ({self.l_child._str(indices)})"
-            case _NodeType.OUTER:
-                l_indices = indices[: len(self.l_shape)]
-                r_indices = indices[len(self.l_shape) :]
+        if self.node_type == _NodeType.TENSOR:
+            return f"{self.label}[{','.join(indices)}]"
+        if self.node_type == _NodeType.FLOAT:
+            return f"{self.value}"
+        if self.node_type == _NodeType.SCALAR:
+            return f"{self.scalar} * ({self.l_child._str(indices)})"
+        if self.node_type == _NodeType.OUTER:
+            l_indices = indices[: len(self.l_shape)]
+            r_indices = indices[len(self.l_shape) :]
+            return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
+        if self.node_type == _NodeType.SUM:
+            return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
 
-                return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
-            case _NodeType.SUM:
-                return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
     def compute(self, index: Tuple[int]) -> float:
-        """Compute the coefficient at the given index"""
+        """Evaluate the tree on a given index
+
+        Args:
+            index (Tuple[int]): the index of the coefficient to be computed
+
+        Returns:
+            float: the coefficient at the given index
+
+        """
 
         if not self._validate_index(index):
             raise ValueError(f"Given index {index} is not compatible with shape {self.shape}")
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return self.tensor[index]
-            case _NodeType.FLOAT:
-                return self.value
-            case _NodeType.SCALAR:
-                return self.scalar * self.l_child.compute(index)
-            case _NodeType.SUM:
-                return self.l_child.compute(index) + self.r_child.compute(index)
-            case _NodeType.OUTER:
-                l_index = index[: len(self.l_shape)]
-                r_index = index[len(self.l_shape) :]
-                return self.l_child.compute(l_index) * self.r_child.compute(r_index)
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        if self.node_type == _NodeType.TENSOR:
+            return self.tensor[index]
+        if self.node_type == _NodeType.FLOAT:
+            return self.value
+        if self.node_type == _NodeType.SCALAR:
+            return self.scalar * self.l_child.compute(index)
+        if self.node_type == _NodeType.SUM:
+            return self.l_child.compute(index) + self.r_child.compute(index)
+        if self.node_type == _NodeType.OUTER:
+            l_index = index[: len(self.l_shape)]
+            r_index = index[len(self.l_shape) :]
+            return self.l_child.compute(l_index) * self.r_child.compute(r_index)
+
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
     def __getitem__(self, index):
         return self.compute(index)
 
-    def nonzero(self) -> Iterator[Tuple[int]]:
-        """Compute the nonzero indices"""
-
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return zip(*self.tensor.nonzero())
-            case _NodeType.FLOAT:
-                return iter(((),)) if self.value else iter(())
-            case _NodeType.SCALAR:
-                return self.l_child.nonzero() if self.scalar else iter(())
-            case _NodeType.SUM:
-                return _uniq_chain(self.l_child.nonzero(), self.r_child.nonzero())
-            case _NodeType.OUTER:
-                return _flatten_product(self.l_child.nonzero(), self.r_child.nonzero())
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
-
     def _validate_index(self, index: Tuple[int]) -> bool:
+        """Validate the shape of an index.
+
+        Args:
+            index (Tuple[int]): an index
+
+        Returns:
+            bool: True if ``index`` corresponds to a valid index of the tensor, False otherwise
+        """
+
         if len(index) != len(self.shape):
             return False
 
@@ -277,35 +302,52 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         return True
 
-    def get_coefficients(self, threshold: float = 0.0):
-        """Return the coefficients in a dictionary."""
+    def nonzero(self, threshold: float = 0.0):
+        """Return the nonzero coefficients in a dictionary.
 
-        match self.node_type:
-            case _NodeType.TENSOR:
-                return _numpy_to_dict(self.tensor, threshold)
-            case _NodeType.FLOAT:
-                return {(): self.value}
-            case _NodeType.SCALAR:
-                return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
-            case _NodeType.SUM:
-                return _add_dicts(
-                    self.l_child.get_coefficients(threshold),
-                    self.r_child.get_coefficients(threshold),
-                    threshold,
-                )
-            case _NodeType.OUTER:
-                return _mul_dicts(
-                    self.l_child.get_coefficients(threshold),
-                    self.r_child.get_coefficients(threshold),
-                    threshold,
-                )
-            case _:
-                raise ValueError(
-                    f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-                )
+        Args:
+            threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+        Returns:
+            dict: a dictionary representation of the coefficient tensor
+
+        """
+
+        if self.node_type == _NodeType.TENSOR:
+            return _numpy_to_dict(self.tensor, threshold)
+        if self.node_type == _NodeType.FLOAT:
+            return {(): self.value}
+        if self.node_type == _NodeType.SCALAR:
+            return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
+        if self.node_type == _NodeType.SUM:
+            return _add_dicts(
+                self.l_child.get_coefficients(threshold),
+                self.r_child.get_coefficients(threshold),
+                threshold,
+            )
+        if self.node_type == _NodeType.OUTER:
+            return _mul_dicts(
+                self.l_child.get_coefficients(threshold),
+                self.r_child.get_coefficients(threshold),
+                threshold,
+            )
+
+        raise ValueError(
+            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
+        )
 
 
-def _add_dicts(d1, d2, threshold):
+def _add_dicts(d1: Dict, d2: Dict, threshold: float):
+    """Add two coefficient dictionaries
+
+    Args:
+        d1 (dict): the first dictionary to be added
+        d2 (dict): the second dictionary to be added
+        threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+    Returns:
+        dict: the sum of ``d1`` and ``d2``
+    """
     add_dict = {}
 
     d1_keys = {d1.keys()}
@@ -325,6 +367,16 @@ def _add_dicts(d1, d2, threshold):
 
 
 def _mul_dicts(d1, d2, threshold):
+    """Multiply two coefficient dictionaries
+
+    Args:
+        d1 (dict): the first dictionary to be multiplied
+        d2 (dict): the second dictionary to be multiplied
+        threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+    Returns:
+        dict: the outer product of ``d1`` and ``d2``
+    """
     mul_dict = {}
 
     for key1, key2 in product(d1.keys(), d2.keys()):
@@ -335,6 +387,16 @@ def _mul_dicts(d1, d2, threshold):
 
 
 def _scale_dict(scalar, d, threshold):
+    """Multiply a coefficient dictionary by a scalar
+
+    Args:
+        d (dict): the dictionary to be scaled
+        scalar (float): the scalar to multiply ``d`` by
+        threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+    Returns:
+        dict: the product of ``d`` and ``scalar``
+    """
     scaled = {}
     for key in d.keys():
         if abs(scalar * d[key]) > threshold:
@@ -344,6 +406,15 @@ def _scale_dict(scalar, d, threshold):
 
 
 def _numpy_to_dict(arr, threshold):
+    """Returns a dictionary representation of a numpy array
+
+    Args:
+        arr (ndarray): a numpy array
+        threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+    Returns:
+        dict: a dictionary representation of the numpy array
+    """
     nz = arr.nonzero()
     d = {}
 
@@ -352,20 +423,3 @@ def _numpy_to_dict(arr, threshold):
             d[index] = arr[index]
 
     return d
-
-
-def _flatten_product(iter1: Iterator[Tuple], iter2: Iterator[Tuple]) -> Iterator[Tuple]:
-    for a, b in product(iter1, iter2):
-        yield (*a, *b)
-
-
-def _uniq_chain(iter1: Iterator, iter2: Iterator) -> Iterator:
-    seen = set()
-
-    for a in iter1:
-        seen.add(a)
-        yield a
-
-    for b in iter2:
-        if b not in seen:
-            yield b

@@ -871,6 +871,22 @@ class TestDynamicShapeValidation:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
+    def test_cond_no_returns(self):
+        """Test that cond can have empty returns when dynamic shapes are enabled."""
+
+        def rx(x, w):
+            qml.RX(x, w)
+
+        def ry(x, w):
+            qml.RY(x, w)
+
+        def f(condition):
+            qml.cond(condition == 2, rx, ry)(0.5, 1)
+
+        jaxpr = jax.make_jaxpr(f)(0)
+        [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        qml.assert_equal(op, qml.RY(0.5, 1))
+
     def test_cond_abstracted_axes(self):
         """Test cond can accept inputs with dynamic shapes."""
 
@@ -947,3 +963,26 @@ class TestDynamicShapes:
 
         [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
+
+    def test_dynamic_shape_matches_arg(self):
+        """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
+
+        def t(i, x):
+            return qml.RX(x, i)
+
+        def f(i, x):
+            return qml.RY(x, i)
+
+        def w(val, i):
+            return qml.cond(val, t, f)(i, jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(w)(True, 3)
+
+        [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
+
+        expected = qml.RX(jax.numpy.arange(2), 2)
+        qml.assert_equal(res_true, expected)
+
+        [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
+        expected_false = qml.RY(jax.numpy.arange(3), 3)
+        qml.assert_equal(res_false, expected_false)
