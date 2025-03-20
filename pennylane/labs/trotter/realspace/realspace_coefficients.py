@@ -43,8 +43,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         node_type: _NodeType,
         l_child: RealspaceCoeffs = None,
         r_child: RealspaceCoeffs = None,
-        l_shape: Tuple[int] = (),
-        r_shape: Tuple[int] = (),
         tensor: ndarray = None,
         scalar: float = None,
         value: float = None,
@@ -55,8 +53,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         self.node_type = node_type
         self.l_child = l_child
         self.r_child = r_child
-        self.l_shape = l_shape
-        self.r_shape = r_shape
         self.tensor = tensor
         self.scalar = scalar
         self.value = value
@@ -81,7 +77,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a `RealspaceCoefs` with node type ``SUM``.
+        """Returns a ``RealspaceCoeffs`` with node type ``SUM``.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -100,8 +96,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             node_type=_NodeType.SUM,
             l_child=l_child,
             r_child=r_child,
-            l_shape=l_child.shape,
-            r_shape=r_child.shape,
             is_zero=l_child.is_zero and r_child.is_zero,
         )
 
@@ -125,14 +119,12 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             node_type=_NodeType.OUTER,
             l_child=l_child,
             r_child=r_child,
-            l_shape=l_child.shape,
-            r_shape=r_child.shape,
             is_zero=l_child.is_zero or r_child.is_zero,
         )
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``TENSOR`` or ``FLOAT`` when the input tensor is a scalar.
+        """Returns a ``RealspaceCoefs`` with node type ``TENSOR``, or ``FLOAT`` when the input tensor is a scalar.
 
         Args:
             tensor (ndarray): a tensor of coefficients
@@ -171,7 +163,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         return cls(
             node_type=_NodeType.SCALAR,
             l_child=child,
-            l_shape=child.shape,
             scalar=scalar,
             is_zero=child.is_zero or isclose(scalar, 0),
         )
@@ -195,10 +186,10 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             return False
 
         if self.node_type == _NodeType.OUTER:
-            if self.l_shape != other.l_shape:
+            if self.l_child.shape != other.l_child.shape:
                 return False
 
-            if self.r_shape != other.r_shape:
+            if self.r_child.shape != other.r_child.shape:
                 return False
 
             return (self.l_child == other.l_child) and (self.r_child == other.r_child)
@@ -236,8 +227,8 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if self.node_type == _NodeType.SCALAR:
             return f"{self.scalar} * ({self.l_child._str(indices)})"
         if self.node_type == _NodeType.OUTER:
-            l_indices = indices[: len(self.l_shape)]
-            r_indices = indices[len(self.l_shape) :]
+            l_indices = indices[: len(self.l_child.shape)]
+            r_indices = indices[len(self.l_child.shape) :]
             return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
         if self.node_type == _NodeType.SUM:
             return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
@@ -269,8 +260,8 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if self.node_type == _NodeType.SUM:
             return self.l_child.compute(index) + self.r_child.compute(index)
         if self.node_type == _NodeType.OUTER:
-            l_index = index[: len(self.l_shape)]
-            r_index = index[len(self.l_shape) :]
+            l_index = index[: len(self.l_child.shape)]
+            r_index = index[len(self.l_child.shape) :]
             return self.l_child.compute(l_index) * self.r_child.compute(r_index)
 
         raise ValueError(

@@ -39,7 +39,7 @@ class RealspaceOperator:
     r"""This class represents the summation of a product of position and momentum operators over the vibrational modes.
     For example,
 
-    ..math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
+    .. math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
 
     Args:
         modes (int): the number of vibrational modes
@@ -58,7 +58,7 @@ class RealspaceOperator:
 
     """
 
-    def __init__(self, modes: int, ops: Tuple[str], coeffs: RealspaceCoeffs) -> RealspaceOperator:
+    def __init__(self, modes: int, ops: Tuple[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]) -> RealspaceOperator:
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs

@@ -161,7 +161,7 @@ def _kron(a: Union[np.ndarray, sp.sparse.csr_array], b: Union[np.ndarray, sp.spa
     if isinstance(a, sp.sparse.csr_array) and isinstance(b, sp.sparse.csr_array):
         return sp.sparse.kron(a, b, format="csr")
 
-    raise TypeError(f"Matrices must be ndarray or csr_array. Got {type(a)} and {type(b)}.")
+    raise TypeError(f"Matrices must both be ndarray or csr_array. Got {type(a)} and {type(b)}.")
 
 
 def _zeros(shape: Tuple[int], sparse: bool = False) -> Union[np.ndarray, sp.sparse.csr_array]:

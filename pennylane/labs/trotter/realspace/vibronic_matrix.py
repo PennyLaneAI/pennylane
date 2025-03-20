@@ -47,7 +47,7 @@ class VibronicMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix
+        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix``
 
         Args:
             row (int): the row of the index
@@ -99,7 +99,7 @@ class VibronicMatrix(Fragment):
         Args:
             gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
             basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
-            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+            sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
