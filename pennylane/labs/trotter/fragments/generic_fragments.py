@@ -47,7 +47,7 @@ class GenericFragment(Fragment):
 
     Args:
         fragment (Any): Any Python object. The object is assumed to implement the following methods:
-            __add__, __sub__, __mul__, and __matmul__.
+            ``__add__``, ``__sub__``, ``__mul__``, and ``__matmul__``.
         norm_fn (Callable): Optional argument. This is a function used to compute the norm of `fragment`, which is
             needed for some Trotter error functionality.
     """
