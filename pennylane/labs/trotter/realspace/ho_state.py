@@ -22,7 +22,14 @@ from scipy.sparse import csr_array, identity, kron
 
 
 class HOState:
-    """Representation of a wavefunction in the Harmonic Oscillator basis"""
+    """Representation of a wavefunction in the Harmonic Oscillator basis
+
+    Args:
+        modes (int): the number of vibrational modes
+        gridpoints (int): the number of gridpoints used to discretize the state
+        vector: (csr_array): a sparse vector representation of the state
+
+    """
 
     def __init__(self, modes: int, gridpoints: int, vector: csr_array):
         self.gridpoints = gridpoints
@@ -32,7 +39,7 @@ class HOState:
 
     @classmethod
     def from_dict(cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]) -> HOState:
-        """Construct an HOState from a dictionary"""
+        """Construct an ``HOState`` from a dictionary"""
         rows, cols, vals = [], [], []
         for index, val in coeffs.items():
             if len(index) != modes:
@@ -67,57 +74,6 @@ class HOState:
         """Construct an HOState whose vector is zero"""
         return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
 
-    def apply_momentum(self, mode: int) -> HOState:
-        """Apply momentum operator on specified mode"""
-        rows = np.array(list(range(1, self.gridpoints)) + list(range(0, self.gridpoints - 1)))
-        cols = np.array(list(range(0, self.gridpoints - 1)) + list(range(1, self.gridpoints)))
-        vals = np.array([np.sqrt(i) for i in range(1, self.gridpoints)] * 2)
-
-        momentum = csr_array((vals, (rows, cols)), shape=(self.gridpoints, self.gridpoints))
-        op = _tensor_with_identity(momentum, self.gridpoints, self.modes, mode)
-
-        return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
-
-    def apply_position(self, mode: int) -> HOState:
-        """Apply position operator on specified mode"""
-        rows = np.array(list(range(1, self.gridpoints)) + list(range(0, self.gridpoints - 1)))
-        cols = np.array(list(range(0, self.gridpoints - 1)) + list(range(1, self.gridpoints)))
-        vals = np.array(
-            [np.sqrt(i) for i in range(1, self.gridpoints)]
-            + [-np.sqrt(i) for i in range(1, self.gridpoints)]
-        )
-
-        position = csr_array((vals, (rows, cols)), shape=(self.gridpoints, self.gridpoints))
-        op = _tensor_with_identity(position, self.gridpoints, self.modes, mode)
-
-        return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
-
-    def apply_creation(self, mode: int) -> HOState:
-        """Apply creation operator on specified mode"""
-        rows = np.array(range(1, self.gridpoints))
-        cols = np.array(range(0, self.gridpoints - 1))
-        vals = np.array([np.sqrt(i) for i in range(1, self.gridpoints)])
-
-        creation = csr_array((vals, (rows, cols)), shape=(self.gridpoints, self.gridpoints))
-        op = _tensor_with_identity(creation, self.gridpoints, self.modes, mode)
-
-        return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
-
-    def apply_annihilation(self, mode: int) -> HOState:
-        """Apply annihilation operator on specified mode"""
-        rows = np.array(range(0, self.gridpoints - 1))
-        cols = np.array(range(1, self.gridpoints))
-        vals = np.array([np.sqrt(i) for i in range(1, self.gridpoints)])
-
-        annihilation = csr_array((vals, (rows, cols)), shape=(self.gridpoints, self.gridpoints))
-        op = _tensor_with_identity(annihilation, self.gridpoints, self.modes, mode)
-
-        return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
-
-    def apply_operator(self, op: csr_array) -> HOState:
-        """Apply an operator to the state"""
-        return HOState.from_scipy(self.modes, self.gridpoints, op @ self.vector)
-
     def __add__(self, other: HOState) -> HOState:
         if not isinstance(other, HOState):
             raise TypeError(f"Can only add HOState with another HOState, got {type(other)}.")
@@ -128,10 +84,6 @@ class HOState:
         return HOState.from_scipy(self.modes, self.gridpoints, scalar * self.vector)
 
     __rmul__ = __mul__
-
-    def to_dict(self) -> Dict[Tuple[int], float]:
-        """Return the dictionary representation"""
-        raise NotImplementedError
 
     def dot(self, other: HOState) -> float:
         """Return the inner product"""
