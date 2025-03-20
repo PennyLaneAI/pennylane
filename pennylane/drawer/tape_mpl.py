@@ -226,7 +226,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
     fig = kwargs.get("fig", None)
 
     n_layers = len(layers)
-    n_wires = len(layers[0])
+    n_wires = len(wire_map)
 
     cwire_layers, cwire_wires = cwire_connections(layers + [measurements], bit_map)
 
