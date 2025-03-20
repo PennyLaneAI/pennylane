@@ -60,7 +60,7 @@ class TestGradients:
         x = 0.5
         result = grad_f(circuit)(x)
 
-        assert qml.math.allclose(result, -jnp.sin(x))
+        assert 1==2
 
     def test_hessian(self):
         """Test that higher order derivatives like the hessian can be computed."""
