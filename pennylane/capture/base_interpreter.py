@@ -639,6 +639,17 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+# pylint: disable=protected-access
+@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+def _(self, *invals, jaxpr, **params):
+    if jax.config.jax_dynamic_shapes:
+        # just evaluate it so it doesn't throw dynamic shape errors
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+
+    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+
+
 @FlattenedInterpreter.register_primitive(while_loop_prim)
 def flatten_while_loop(
     self,
@@ -715,6 +726,7 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
 
     This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
     of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
+
     >>> import jax
     >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(i):

@@ -14,10 +14,13 @@
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
 import inspect
+import warnings
 from collections.abc import Iterable
 from typing import Optional, Text
 
 from packaging.version import Version
+
+from pennylane import PennyLaneDeprecationWarning
 
 try:
     import tensorflow as tf
@@ -50,6 +53,9 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
+
+    .. warning::
+        This class is deprecated because Keras 2 is no longer actively maintained.  Please consider using torch instead of TensorFlow/Keras 2.
 
     .. note::
 
@@ -308,6 +314,10 @@ class KerasLayer(Layer):
         weight_specs: Optional[dict] = None,
         **kwargs,
     ):
+        warnings.warn(
+            "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
+            PennyLaneDeprecationWarning,
+        )
         # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
             raise ImportError(
@@ -315,12 +325,6 @@ class KerasLayer(Layer):
                 "version of TensorFlow can be installed using:\n"
                 "pip install tensorflow --upgrade\nAlternatively, visit "
                 "https://www.tensorflow.org/install for detailed instructions."
-            )
-
-        if not CORRECT_KERAS_VERSION:
-            raise ImportError(
-                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
-                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
             )
 
         self.weight_shapes = {
@@ -352,7 +356,10 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(dynamic=True, **kwargs)
+        if CORRECT_KERAS_VERSION:
+            super().__init__(dynamic=True, **kwargs)
+        else:  # pragma: no cover
+            super().__init__(**kwargs)
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)
