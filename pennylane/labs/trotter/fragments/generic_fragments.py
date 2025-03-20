@@ -27,16 +27,16 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
         raise TypeError("All fragments must be of the same type.")
 
     if not hasattr(frag_type, "__add__"):
-        raise TypeError(f"Fragment type {frag_type} does not implement __add__.")
+        raise TypeError(f"Fragment of type {frag_type} does not implement __add__.")
 
     if not hasattr(frag_type, "__sub__"):
-        raise TypeError(f"Fragment type {frag_type} does not implement __sub__.")
+        raise TypeError(f"Fragment of type {frag_type} does not implement __sub__.")
 
     if not hasattr(frag_type, "__mul__"):
-        raise TypeError(f"Fragment type {frag_type} does not implement __mul__.")
+        raise TypeError(f"Fragment of type {frag_type} does not implement __mul__.")
 
     if not hasattr(frag_type, "__matmul__"):
-        raise TypeError(f"Fragment type {frag_type} does not implement __matmul__.")
+        raise TypeError(f"Fragment of type {frag_type} does not implement __matmul__.")
 
     return [GenericFragment(fragment, norm_fn=norm_fn) for fragment in fragments]
 
