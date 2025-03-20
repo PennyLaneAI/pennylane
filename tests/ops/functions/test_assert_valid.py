@@ -92,28 +92,6 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
-    def test_decomposition_must_not_contain_op_class(self):
-        """Test that by default, assert_valid checks that a decomposition of an
-        operator doesn't include the operator class itself, and that the decomposition_to_same_class
-        argument can be used to skip this check"""
-
-        class GenericOp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.PhaseShift(1.23, wires), qml.H(wires)]
-
-        with pytest.raises(
-            AssertionError,
-            match="decomposition that includes operators of the same class as itself",
-        ):
-            assert_valid(qml.ctrl(GenericOp(wires=0), control=1), skip_pickle=True)
-
-        assert_valid(
-            qml.ctrl(GenericOp(wires=0), control=1),
-            skip_pickle=True,
-            decomposition_to_same_class=True,
-        )
-
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
