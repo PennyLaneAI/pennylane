@@ -29,7 +29,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         num_wires (int): the number of wires that StatePrep acts on
 
     Resources:
-        Uses the resources as defined in the ResourceMottonenStatePreperation template.
+        Uses the resources as defined in the `:class:~.ResourceMottonenStatePreperation` template.
     """
 
     @staticmethod
@@ -41,7 +41,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
             num_wires (int): the number of wires that StatePrep acts on
 
         Resources:
-            Uses the resources as defined in the ResourceMottonenStatePreperation template.
+            Uses the resources as defined in the `:class:~.ResourceMottonenStatePreperation` template.
         """
         return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
 
