@@ -39,7 +39,15 @@ class Fragment(ABC):
 
     @abstractmethod
     def norm(self, params: Dict) -> float:
-        """Compute the norm of the fragment"""
+        """Compute the norm of the fragment
+
+        Args:
+            params (Dict): A dictionary of parameters needed to compute the norm is specified for each class inheriting from ``Fragment``.
+
+        Returns:
+            float: the norm of the ``Fragment``
+
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -53,12 +61,27 @@ class Fragment(ABC):
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
-    """Return the commutator [a, b]"""
+    """Return the commutator of two ``Fragment`` objects
+
+    Args:
+        a (Fragment): the ``Fragment`` on the left side of the commutator
+        b (Fragment): the ``Fragment`` on the right side of the commutator
+
+    Returns:
+        Fragment: the commutator ``[a, b]``
+    """
     return a @ b - b @ a
 
 
 def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
-    """Return [a, [b, [c, d]]]"""
+    """Return the nested commutator of a sequence of ``Fragment`` objects
+
+    Args:
+        fragments (Sequence[Fragment]): a sequence of fragments
+
+    Returns:
+        Fragment: the nested commutator of the fragments
+    """
 
     if len(fragments) < 2:
         raise ValueError("Need at least two fragments to commute.")
