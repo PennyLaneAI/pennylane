@@ -159,6 +159,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
             gate_types[cnot] = cnot_count
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
@@ -221,6 +222,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> Dict:
         bases = self.hyperparameters["bases"]
         num_basis_states = len(bases)
@@ -503,6 +505,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> dict:
         """The key parameters required to expand the resources of QROMPrep."""
         state_vector = self.state_vector
