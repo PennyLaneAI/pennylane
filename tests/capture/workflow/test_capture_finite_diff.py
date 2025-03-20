@@ -60,7 +60,7 @@ class TestGradients:
         x = 0.5
         result = grad_f(circuit)(x)
 
-        assert qml.math.allclose(result, -jnp.sin(x))
+        assert 1==2
 
     @pytest.mark.parametrize("argnums", ((0,), (1,), (0, 1)))
     def test_multi_inputs(self, argnums):

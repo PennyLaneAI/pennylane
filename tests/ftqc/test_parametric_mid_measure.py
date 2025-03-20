@@ -71,7 +71,7 @@ class TestParametricMidMeasure:
         leaves, struct = jax.tree_util.tree_flatten(op)
         unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
 
-        assert op.hash == unflattened_op.hash
+        assert op.hash == "fail"
 
     @pytest.mark.parametrize(
         "plane, angle, wire, expected",
