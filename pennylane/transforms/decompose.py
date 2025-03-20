@@ -77,7 +77,7 @@ def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
 
     if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
         raise ValueError(
-            "The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition."
+            "The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition."
             "Please enable the decomposition graph with qml.decomposition.enable_graph()."
         )
 
@@ -86,8 +86,14 @@ def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps)
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
-    target_gate_names -= set(op.name if isinstance(op, type) else op for op in fixed_decomps.keys())
-    target_gate_names -= set(op.name if isinstance(op, type) else op for op in alt_decomps.keys())
+    if fixed_decomps:
+        target_gate_names -= set(
+            op.name if isinstance(op, type) else op for op in fixed_decomps.keys()
+        )
+    if alt_decomps:
+        target_gate_names -= set(
+            op.name if isinstance(op, type) else op for op in alt_decomps.keys()
+        )
 
     graph = DecompositionGraph(
         operations,
@@ -119,9 +125,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         when program capture is enabled.
         """
 
-        def __init__(
-            self, gate_set=None, max_expansion=None, fixed_decomps=dict(), alt_decomps=dict()
-        ):
+        def __init__(self, gate_set=None, max_expansion=None, fixed_decomps=None, alt_decomps=None):
 
             _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
 
@@ -404,8 +408,8 @@ def decompose(
     tape,
     gate_set=None,
     max_expansion=None,
-    fixed_decomps: dict = dict(),
-    alt_decomps: dict = dict(),
+    fixed_decomps: dict = None,
+    alt_decomps: dict = None,
 ):
     """Decomposes a quantum circuit into a user-specified gate set.
 
@@ -648,8 +652,8 @@ def decompose(
         gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
-        if (fixed_decomps and isinstance(op, tuple(fixed_decomps.keys()))) or (
-            alt_decomps and isinstance(op, tuple(alt_decomps.keys()))
+        if (isinstance(fixed_decomps, dict) and isinstance(op, tuple(fixed_decomps.keys()))) or (
+            isinstance(alt_decomps, dict) and isinstance(op, tuple(alt_decomps.keys()))
         ):
             return False
 

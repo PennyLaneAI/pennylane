@@ -251,7 +251,7 @@ class TestTransformDecompose:
 
         with pytest.raises(
             ValueError,
-            match="The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition.",
+            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
 
@@ -277,7 +277,7 @@ class TestTransformDecompose:
 
         with pytest.raises(
             ValueError,
-            match="The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition.",
+            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
 
@@ -307,7 +307,7 @@ class TestTransformDecompose:
 
         with pytest.raises(
             ValueError,
-            match="The fixed_decomps and alt_decomps arguments can be used with the experimental graph-based decomposition.",
+            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
 
