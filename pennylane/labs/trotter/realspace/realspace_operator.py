@@ -35,7 +35,27 @@ from .realspace_coefficients import RealspaceCoeffs
 
 
 class RealspaceOperator:
-    """The RealspaceOperator class"""
+    r"""This class represents the summation of a product of position and momentum operators over the vibrational modes.
+    For example,
+
+    ..math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
+
+    Args:
+        modes (int): the number of vibrational modes
+        ops (Tuple[str]): a tuple representation of the position and momentum operators
+        coeffs (``RealspaceCoeffs``): an expression tree which evaluates the entries of the coefficient tensor
+
+    **Example**
+
+    We build a ``RealspaceOperator`` in the following way.
+
+    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceCoeffs
+    >>> import numpy as np
+    >>> n_modes = 5
+    >>> ops = ("Q", "Q")
+    >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+
+    """
 
     def __init__(self, modes: int, ops: Tuple[str], coeffs: RealspaceCoeffs) -> RealspaceOperator:
         self.modes = modes
@@ -45,7 +65,17 @@ class RealspaceOperator:
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
     ) -> Union[np.ndarray, sp.sparse.csr_array]:
-        """Return a matrix representation of the operator"""
+        """Return a matrix representation of the operator
+
+        Args:
+            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
+            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+
+        Returns:
+            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+
+        """
 
         matrices = [
             _string_to_matrix(op, gridpoints, basis=basis, sparse=sparse) for op in self.ops
@@ -107,7 +137,7 @@ class RealspaceOperator:
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
-            return RealspaceOperator.zero_term(self.modes)
+            return RealspaceOperator.zero(self.modes)
 
         return RealspaceOperator(
             self.modes, self.ops, RealspaceCoeffs.scalar_node(scalar, self.coeffs)
@@ -117,7 +147,7 @@ class RealspaceOperator:
 
     def __imul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
-            return RealspaceOperator.zero_term(self.modes)
+            return RealspaceOperator.zero(self.modes)
 
         self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
         return self
@@ -146,16 +176,36 @@ class RealspaceOperator:
 
     @property
     def is_zero(self) -> bool:
-        """If is_zero returns true the term evaluates to zero, however there are false negatives"""
+        """Always returns true when the operator is zero, but with false positives
+
+        Returns:
+            bool: if False, the operator is guarnateed to be non-zero, if True the operator is likely non-zero, but with some edge cases
+        """
         return self.coeffs.is_zero
 
     @classmethod
-    def zero_term(cls, modes) -> RealspaceOperator:
-        """Returns a RealspaceOperator representing 0"""
+    def zero(cls, modes) -> RealspaceOperator:
+        """Returns a RealspaceOperator representing the zero operator
+
+        Args:
+            modes (int): the number of vibrational modes (needed for consistency with arithmetic operations)
+
+        Returns:
+            RealspaceOperator: a representation of the zero operator
+
+        """
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs.tensor_node(np.array(0)))
 
-    def get_coefficients(self, threshold: float = 0.0):
-        """Return the coefficients in a dictionary"""
+    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
+        """Return the coefficients in a dictionary
+
+        Args:
+            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+
+        Returns:
+            Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are the coefficients
+
+        """
         return self.coeffs.get_coefficients(threshold)
 
 
@@ -174,7 +224,7 @@ class RealspaceSum(Fragment):
         self.is_zero = len(ops) == 0
 
         self.modes = modes
-        self._lookup = defaultdict(lambda: RealspaceOperator.zero_term(self.modes))
+        self._lookup = defaultdict(lambda: RealspaceOperator.zero(self.modes))
 
         for op in ops:
             self._lookup[op.ops] += op
@@ -255,11 +305,31 @@ class RealspaceSum(Fragment):
 
     @classmethod
     def zero(cls, modes: int) -> RealspaceSum:
-        """Return a RealspaceSum representing 0"""
-        return RealspaceSum(modes, [RealspaceOperator.zero_term(modes)])
+        """Returns a RealspaceOperator representing the zero operator
 
-    def matrix(self, gridpoints: int, basis: str = "realspace", sparse: bool = False):
-        """Return a matrix representation of the RealspaceSum"""
+        Args:
+            modes (int): the number of vibrational modes (needed for consistency with arithmetic operations)
+
+        Returns:
+            RealspaceOperator: a representation of the zero operator
+
+        """
+        return RealspaceSum(modes, [RealspaceOperator.zero(modes)])
+
+    def matrix(
+        self, gridpoints: int, basis: str = "realspace", sparse: bool = False
+    ) -> Union[np.ndarray, sp.sparse.cs_array]:
+        """Return a matrix representation of the ``RealspaceSum``.
+
+        Args:
+            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
+            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+
+        Returns:
+            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+
+        """
 
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
         for op in self.ops:
@@ -268,27 +338,54 @@ class RealspaceSum(Fragment):
         return final_matrix
 
     def norm(self, params: Dict) -> float:
-        """Return the spectral norm of the operator"""
+        """Returns an upper bound on the spectral norm of the operator.
+
+        Args:
+            params (Dict): The dictionary of parameters. The supported parameters are
+
+                * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
+                * ``sparse`` (bool): If True, use optimizations for sparse operators. Defaults to False.
+
+        Returns:
+            float: an upper bound on the spectral norm of the operator
+
+        """
 
         try:
             gridpoints = params["gridpoints"]
         except KeyError as e:
             raise KeyError("Need to specify the number of gridpoints") from e
 
+        try:
+            sparse = params["sparse"]
+        except KeyError:
+            sparse = False
+
         norm = 0
 
         for op in self.ops:
             term_op_norm = math.prod(map(lambda op: _op_norm(gridpoints) ** len(op), op.ops))
 
-            coeffs = op.coeffs.nonzero()
-            coeff_sum = sum(abs(val) for val in coeffs.values())
+            if sparse:
+                coeffs = op.coeffs.nonzero()
+                coeff_sum = sum(abs(val) for val in coeffs.values())
+            else:
+                indices = product(range(self.modes), repeat=len(op))
+                coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
 
             norm += coeff_sum * term_op_norm
 
         return norm
 
-    def get_coefficients(self, threshold: float = 0.0):
-        """Return a dictionary containing the coefficients of the realspace operator"""
+    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
+        """Return a dictionary containing the coefficients of the ``RealspaceSum``
+
+        Args:
+            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+
+        Returns:
+            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by ``RealspaceOperator.get_coefficients``
+        """
 
         coeffs = {}
         for op in self.ops:
