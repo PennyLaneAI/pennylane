@@ -370,7 +370,7 @@ class RealspaceSum(Fragment):
                 coeffs = op.coeffs.nonzero()
                 coeff_sum = sum(abs(val) for val in coeffs.values())
             else:
-                indices = product(range(self.modes), repeat=len(op))
+                indices = product(range(self.modes), repeat=len(op.ops))
                 coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
 
             norm += coeff_sum * term_op_norm
