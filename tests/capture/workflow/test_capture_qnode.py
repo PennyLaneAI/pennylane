@@ -517,7 +517,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("diff_method", ("best", "backprop"))
     def test_default_qubit_backprop(self, diff_method):
-        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
+        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule on default.qubit."""
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
@@ -529,8 +529,8 @@ class TestDifferentiation:
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
-    def test_gradients_with_lightning(self):
-        """Test that gradients can be computed with lightning."""
+    def test_jvp_with_lightning(self):
+        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule on lightning.qubit."""
 
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x):
