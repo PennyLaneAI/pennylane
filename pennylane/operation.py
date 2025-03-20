@@ -2419,7 +2419,9 @@ def gen_is_multi_term_hamiltonian(obj):
     if not isinstance(obj, Operator) or not obj.has_generator:
         return False
     try:
-        return len(obj.generator().terms()[1]) > 1
+        generator = obj.generator()
+        _, ops = generator.terms() # len(coeffs) can be weird sometimes
+        return len(ops) > 1
     except TermsUndefinedError:
         return False
 
