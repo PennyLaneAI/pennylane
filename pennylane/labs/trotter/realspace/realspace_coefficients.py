@@ -90,7 +90,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Args:
             l_child (RealspaceCoeffs): the left child
-            r_child (RealspaceCOeffs): the right child
+            r_child (RealspaceCoeffs): the right child
 
         Returns:
             RealspaceCoeffs: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
