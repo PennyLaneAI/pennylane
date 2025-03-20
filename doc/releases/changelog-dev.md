@@ -713,7 +713,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-
 * Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
   differ depending if equivalent gate generators are defined using
   different PennyLane operators. This was resolved by updating
