@@ -529,8 +529,8 @@ class TestDifferentiation:
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
-    def test_jvp_with_lightning(self):
-        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule on lightning.qubit."""
+    def test_jvp_lightning(self):
+        """Test that JAX can compute the JVP of the QNode primitive via a registered rule on lightning.qubit."""
 
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x):
@@ -541,6 +541,30 @@ class TestDifferentiation:
         xt = -0.6
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
+
+    def test_grad_lightning(self):
+        """Test that JAX can compute the gradient of the QNode primitive via a registered rule on lightning.qubit."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        grad = jax.grad(circuit)(0.9)
+        assert qml.math.allclose(grad, -qml.math.sin(0.9))
+
+    def test_jacobian_lightning(self):
+        """Test that JAX can compute the Jacobian of the QNode primitive via a registered rule on lightning.qubit."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x[0], 0)
+            qml.RY(x[1], 1)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        x = jnp.array([0.9, -0.6])
+        jac = jax.jacobian(circuit)(x)
+        assert qml.math.allclose(jac, [[-qml.math.sin(0.9), 0], [0, -qml.math.sin(-0.6)]])
 
 
 def test_qnode_jit():
