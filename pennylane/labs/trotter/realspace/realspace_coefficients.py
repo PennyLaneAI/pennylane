@@ -318,17 +318,17 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if self.node_type == _NodeType.FLOAT:
             return {(): self.value}
         if self.node_type == _NodeType.SCALAR:
-            return _scale_dict(self.scalar, self.l_child.get_coefficients(threshold), threshold)
+            return _scale_dict(self.scalar, self.l_child.nonzero(threshold), threshold)
         if self.node_type == _NodeType.SUM:
             return _add_dicts(
-                self.l_child.get_coefficients(threshold),
-                self.r_child.get_coefficients(threshold),
+                self.l_child.nonzero(threshold),
+                self.r_child.nonzero(threshold),
                 threshold,
             )
         if self.node_type == _NodeType.OUTER:
             return _mul_dicts(
-                self.l_child.get_coefficients(threshold),
-                self.r_child.get_coefficients(threshold),
+                self.l_child.nonzero(threshold),
+                self.r_child.nonzero(threshold),
                 threshold,
             )
 
