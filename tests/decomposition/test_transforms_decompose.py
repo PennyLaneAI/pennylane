@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the new experimental graph-based decomposition system integrated with `qml.transforms.decompose`."""
+"""Tests for the new experimental graph-based decomposition system integrated with `qml.transforms.decompose`."""
 
 # pylint: disable=no-name-in-module, too-few-public-methods
 

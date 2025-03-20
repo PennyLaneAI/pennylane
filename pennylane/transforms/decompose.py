@@ -650,7 +650,7 @@ def decompose(
     _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
 
     if isinstance(gate_set, (str, type)):
-        gate_set = set([gate_set])
+        gate_set = {gate_set}
 
     if isinstance(gate_set, Iterable):
         target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))

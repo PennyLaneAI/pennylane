@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Unit tests for the new experimental graph-based decomposition system integrated with `qml.transforms.decompose` with the program capture.
+Tests for the new experimental graph-based decomposition system integrated with `qml.transforms.decompose` with the program capture.
 """
 
 # pylint: disable=no-name-in-module, too-few-public-methods
@@ -123,7 +123,7 @@ class TestPLxPRTransformDecompose:
         qml.capture.disable()
 
     def test_plxpr_gate_types_gateset(self):
-        """Test that the PennyLane's Operators does not work with the new decomposition system."""
+        """Test that the PennyLane's Operator does not work with the new decomposition system."""
 
         qml.capture.enable()
         qml.decomposition.enable_graph()
