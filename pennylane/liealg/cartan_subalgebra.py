@@ -490,7 +490,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
-    >>> from pennylane.labs.dla import change_basis_ad_rep
+    >>> from pennylane.liealg import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
 
@@ -525,7 +525,7 @@ def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
 
     **Example**
 
-    >>> from pennylane.labs.dla import check_abelian
+    >>> from pennylane.liealg import check_abelian
     >>> from pennylane import X
     >>> ops = [X(i) for i in range(10)]
     >>> check_abelian(ops)

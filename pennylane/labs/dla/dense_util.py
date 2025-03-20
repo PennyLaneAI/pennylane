@@ -248,7 +248,8 @@ def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) 
 
     **Example**
 
-    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal, trace_inner_product
+    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal
+    >>> from pennylane.pauli import trace_inner_product
     >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
     >>> check_orthonormal(ops, trace_inner_product)
     False
