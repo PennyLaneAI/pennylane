@@ -28,13 +28,23 @@ def generate_random_states(n, n_qubit=1, seed=None):
     """Generate `n` random initial `n_qubit`-states."""
     rng = np.random.default_rng(seed=seed)
     input_state = rng.random((n, 2**n_qubit)) + 1j * rng.random((n, 2**n_qubit))
-    return input_state / np.linalg.norm(input_state, axis=1).reshape(-1, 1)
+    input_state /= np.linalg.norm(input_state, axis=1).reshape(-1, 1)
+
+    if n == 1:
+        return input_state[0]
+
+    return input_state
 
 
 def generate_random_rotation_angles(n, lo=0, hi=4 * np.pi, seed=None):
     """Generate `n` random rotation angles on the interval [lo, hi)."""
     rng = np.random.default_rng(seed=seed)
-    return rng.uniform(lo, hi, n)
+    angles = rng.uniform(lo, hi, n)
+
+    if n == 1:
+        return angles[0]
+
+    return angles
 
 
 @pytest.mark.system
@@ -43,9 +53,7 @@ class TestIndividualGates:
     correct results.
     """
 
-    @pytest.mark.parametrize("initial_state", generate_random_states(2, n_qubit=1, seed=1))
-    @pytest.mark.parametrize("rz_angle", generate_random_rotation_angles(3, seed=2))
-    def test_rz_in_mbqc_representation(self, initial_state, rz_angle):
+    def test_rz_in_mbqc_representation(self, seed):
         """Test that the RZ gate in the MBQC representation gives correct results."""
         dev = qml.device("default.qubit")
 
@@ -89,13 +97,15 @@ class TestIndividualGates:
 
             return qml.expval(qml.X(5)), qml.expval(qml.Y(5)), qml.expval(qml.Z(5))
 
+        initial_state = generate_random_states(n=1, n_qubit=1, seed=seed)
+        rz_angle = generate_random_rotation_angles(n=1, seed=seed)
+
         result_ref = circuit_ref(initial_state, rz_angle)
         result_mbqc = circuit_mbqc(initial_state, rz_angle)
 
         assert np.allclose(result_ref, result_mbqc)
 
-    @pytest.mark.parametrize("initial_state", generate_random_states(1, n_qubit=2, seed=3))
-    def test_cnot_in_mbqc_representation(self, initial_state):
+    def test_cnot_in_mbqc_representation(self, seed):
         """Test that the CNOT gate in the MBQC representation gives correct results."""
         dev = qml.device("default.qubit")
 
@@ -173,6 +183,8 @@ class TestIndividualGates:
             qml.cond(x_cor % 2, qml.X)(15)
 
             return qml.expval(qml.Z(7)), qml.expval(qml.Z(15))
+
+        initial_state = generate_random_states(1, n_qubit=2, seed=seed)
 
         result_ref = circuit_ref(initial_state)
         result_mbqc = circuit_mbqc(initial_state)
