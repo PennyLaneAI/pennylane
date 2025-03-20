@@ -71,7 +71,9 @@ class _Config:
         return "═" if self.cur_layer < self.num_op_layers else " "
 
 
-def _initialize_totals(config: _Config, show_wire_labels: bool) -> _CurrentTotals:
+def _initialize_wire_and_bit_totals(
+    config: _Config, show_wire_labels: bool
+) -> tuple[list[str], list[str]]:
     """Initialize the wire totals and bit_totals with the required wire labels."""
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in config.wire_map]
@@ -82,7 +84,7 @@ def _initialize_totals(config: _Config, show_wire_labels: bool) -> _CurrentTotal
 
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
     bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
-    return _CurrentTotals([], wire_totals, bit_totals)
+    return wire_totals, bit_totals
 
 
 def _initialize_layer_str(config: _Config) -> list[str]:
@@ -395,7 +397,7 @@ def tape_text(
         cache=cache,
     )
 
-    totals = _initialize_totals(config, show_wire_labels)
+    totals = _CurrentTotals([], *(_initialize_wire_and_bit_totals(config, show_wire_labels)))
 
     for cur_layer, layer in enumerate(layers):
         config.cur_layer = cur_layer
