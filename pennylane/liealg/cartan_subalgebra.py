@@ -90,10 +90,10 @@ def cartan_subalgebra(
         k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         adj (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
-            When ``None`` is provided, it internally uses :func:`~structure_constants` to compute the adjoint representation (default).
+            When ``None`` is provided, :func:`~structure_constants` is used internally by default to compute the adjoint representation.
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
-        tol (float): Numerical tolerance for linear independence check
-        verbose (bool): Whether or not to output progress during computation
+        tol (float): Numerical tolerance for linear independence check.
+        verbose (bool): Whether or not to output progress during computation.
         return_adjvec (bool): Determine the output format. If ``False``, returns operators in their original
             input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func`~op_to_adjvec` and `~adjvec_to_op`).
         is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
@@ -139,7 +139,7 @@ def cartan_subalgebra(
     >>> op
     -1.0 * Z(0) @ Z(1)
 
-    For convenience, we provide a helper function :func:`~adjvec_to_op` for the collections of adjoint vectors in the returns.
+    For convenience, we provide a helper function :func:`~adjvec_to_op` for conversion of the returned collections of adjoint vectors.
 
     >>> a = qml.liealg.adjvec_to_op(np_a, g)
     >>> a
@@ -213,7 +213,8 @@ def cartan_subalgebra(
         In that case we chose a Cartan subalgebra from which we can readily see that it is commuting, but we also provide a small helper function to check that.
 
         >>> from pennylane.liealg import check_abelian
-        >>> assert check_abelian(h_op)
+        >>> check_abelian(h_op)
+        True
 
         Last but not least, the adjoint representation ``new_adj`` is updated to represent the new basis and its ordering of ``g``.
     """
@@ -233,6 +234,7 @@ def cartan_subalgebra(
     while True:
         if verbose:
             print(f"iteration {iteration}: Found {len(np_a)} independent Abelian operators.")
+        # todo: avoid re-computing this overlap in every while-loop iteration.
         # todo: avoid re-computing this overlap in every while-loop iteration.
         kernel_intersection = np_m
         for h_i in np_a:
