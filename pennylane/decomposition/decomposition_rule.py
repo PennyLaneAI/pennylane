@@ -266,8 +266,6 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
         import pennylane as qml
         import numpy as np
 
-        qml.decomposition.enable_graph()
-
         @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
         def my_hadamard1(wires):
             qml.RZ(np.pi / 2, wires=wires)

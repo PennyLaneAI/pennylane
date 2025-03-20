@@ -41,13 +41,13 @@ By default, the mechanism is disabled.
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.decomposition.enabled_enabled()
+    >>> qml.decomposition.enabled_garph()
     False
-    >>> qml.decomposition.enabled_enable()
-    >>> qml.decomposition.enabled_enabled()
+    >>> qml.decomposition.enable_graph()
+    >>> qml.decomposition.enabled_garph()
     True
-    >>> qml.decomposition.enabled_disable()
-    >>> qml.decomposition.enabled_enabled()
+    >>> qml.decomposition.disable_graph()
+    >>> qml.decomposition.enabled_garph()
     False
 
 
@@ -127,10 +127,6 @@ operator towards a target gate set.
 
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For workflows that just involve targeting a specific gate set with
-``qml.transforms.decompose(circuit, gate_set={...})``, the UI is the exact same,
-but you can expect better performance.
 
 **Custom decompositions**
 

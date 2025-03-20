@@ -243,9 +243,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """
         op_node = resource_rep(type(op), **op.resource_params)
 
-        if op_node not in self._op_node_indices:
-            raise DecompositionError(f"Operator {op} not found in the decomposition graph.")
-
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.distances[op_node_idx]
 
@@ -280,9 +277,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         """
         op_node = resource_rep(type(op), **op.resource_params)
-
-        if op_node not in self._op_node_indices:
-            raise DecompositionError(f"Operator {op} not found in the decomposition graph.")
 
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.predecessors[op_node_idx]

@@ -89,7 +89,7 @@ class TestTransformDecompose:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="The graph-based decomposition doesn't support Operator types",
         ):
             circuit()
@@ -232,8 +232,8 @@ class TestTransformDecompose:
         qml.decomposition.disable_graph()
 
     @pytest.mark.unit
-    def test_valueerror_graph_disabled_fixed(self):
-        """Test that a ValueError is raised when graph is disabled and fixed_decomps is used."""
+    def test_error_disable_graphd_fixed(self):
+        """Test that a TypeError is raised when graph is disabled and fixed_decomps is used."""
 
         qml.decomposition.disable_graph()
 
@@ -250,16 +250,14 @@ class TestTransformDecompose:
             return qml.state()
 
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
 
-        qml.decomposition.disable_graph()
-
     @pytest.mark.unit
-    def test_valueerror_graph_disabled_alt(self):
-        """Test that a ValueError is raised when the graph-based decomposition and alt_decomps is used."""
+    def test_error_disable_graphd_alt(self):
+        """Test that a TypeError is raised when the graph-based decomposition and alt_decomps is used."""
 
         qml.decomposition.disable_graph()
 
@@ -276,16 +274,14 @@ class TestTransformDecompose:
             return qml.state()
 
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
 
-        qml.decomposition.disable_graph()
-
     @pytest.mark.unit
-    def test_valueerror_graph_disabled_decomps(self):
-        """Test that a ValueError is raised when the graph-based decomposition with fixed and alt decomps is used."""
+    def test_error_disable_graphd_decomps(self):
+        """Test that a TypeError is raised when the graph-based decomposition with fixed and alt decomps is used."""
 
         qml.decomposition.disable_graph()
 
@@ -306,9 +302,7 @@ class TestTransformDecompose:
             return qml.state()
 
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
         ):
             circuit()
-
-        qml.decomposition.disable_graph()

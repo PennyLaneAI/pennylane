@@ -1394,7 +1394,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         function will also expect keyword arguments that match these keys when called with this
         operator type.
 
-        The default implementation is an empty tuple, which is suitable for most operators.
+        The default implementation is an empty set, which is suitable for most operators.
 
         .. seealso::
             :meth:`~.Operator.resource_params`
@@ -1430,8 +1430,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
         >>> op2.resource_params
         {"num_wires": 2}
-
-        The default implementation is an empty dictionary, which is suitable for most operators.
 
         """
         # For most operators, this should just be an empty dictionary, but a default

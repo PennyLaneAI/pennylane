@@ -40,7 +40,7 @@ def _operator_decomposition_gen(
     acceptance_function: Callable[[qml.operation.Operator], bool],
     max_expansion: Optional[int] = None,
     current_depth=0,
-    graph=None,
+    graph: DecompositionGraph = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
 
@@ -76,7 +76,7 @@ def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
     """Check the keyword arguments for the decompose transform for the graph-based decomposition."""
 
     if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
-        raise ValueError(
+        raise TypeError(
             "The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition."
             "Please enable the decomposition graph with qml.decomposition.enable_graph()."
         )
@@ -160,7 +160,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if qml.decomposition.enabled_graph():
 
                     if target_gate_types:
-                        raise ValueError(
+                        raise TypeError(
                             f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
                         )
 
@@ -172,8 +172,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 self.gate_set = gate_set
 
                 if qml.decomposition.enabled_graph():
-                    raise ValueError(
-                        "A Callable gate_set is not support with the enabled decomposition graph."
+                    raise TypeError(
+                        "A Callable gate_set is not supported with the enabled decomposition graph."
                     )
 
         def setup(self) -> None:
@@ -205,7 +205,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 that the operator does not need to be decomposed.
             """
 
-            print("op: ", op)
             if (self._fixed_decomps and isinstance(op, tuple(self._fixed_decomps.keys()))) or (
                 self._alt_decomps and isinstance(op, tuple(self._alt_decomps.keys()))
             ):
@@ -310,7 +309,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 # Skip the graph creation if there are
                 # no concrete operations in the closed PLxPR:
-                print("operations: ", operations)
                 if operations:
                     self._graph_decomp = _get_decomp_graph(
                         operations,
@@ -417,7 +415,7 @@ def decompose(
 
         When `qml.decomposition.enable_graph()` is present, the new experimental
         graph-based decompositions system is enabled. This new way of doing decompositions
-        is generally more performant and allows for specifying custom decompositions.
+        is generally more resource efficient and allows for specifying custom decompositions.
         The `fixed_decomps` and `alt_decomps` arguments are only functional with this toggle present.
 
     Args:
@@ -678,7 +676,7 @@ def decompose(
     if qml.decomposition.enabled_graph():
 
         if target_gate_types:
-            raise ValueError(
+            raise TypeError(
                 f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
             )
 
