@@ -141,6 +141,7 @@ Exceptions
     :toctree: api
 
     ~ResourcesNotDefined
+    ~ResourceOperatorNotImplemented
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
