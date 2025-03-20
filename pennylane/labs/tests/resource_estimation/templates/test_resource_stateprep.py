@@ -103,16 +103,16 @@ class TestResourceBasisState:
     """Test the ResourceBasisState class"""
 
     @pytest.mark.parametrize(
-        "state, num_rx",
-        [([1, 1, 1, 1, 0, 0], 4), ([0, 1, 1, 1, 1, 1], 5), ([1, 1, 1, 1, 1, 1], 6)],
+        "num_bit_flips, num_x",
+        [(4, 4), (5, 5), (6, 6)],
     )
-    def test_resources(self, state, num_rx):
+    def test_resources(self, num_bit_flips, num_x):
         """Test that the resources are correct"""
         expected = {}
-        rx = re.CompressedResourceOp(re.ResourceRX, {})
-        expected[rx] = num_rx
+        x = re.CompressedResourceOp(re.ResourceX, {})
+        expected[x] = num_x
 
-        assert re.ResourceBasisState.resources(state) == expected
+        assert re.ResourceBasisState.resources(num_bit_flips) == expected
 
     @pytest.mark.parametrize(
         "state, wires",
@@ -125,44 +125,44 @@ class TestResourceBasisState:
     )
     def test_resource_params(self, state, wires):
         """Test that the resource params are correct"""
-        op = re.ResourceBasisState(state=state, wires=wires)
+        op = re.ResourceBasisState(state, wires=wires)
 
-        assert list(op.resource_params["state"]) == state
+        assert op.resource_params == {"num_bit_flips": 2}
 
     @pytest.mark.parametrize(
-        "state",
-        [([1, 1, 1, 1, 0, 0]), ([1, 1, 1, 1, 1, 0]), ([1, 1, 1, 1, 1, 1])],
+        "num_bit_flips",
+        [(4, 4), (5, 5), (6, 6)],
     )
-    def test_resource_rep(self, state):
+    def test_resource_rep(self, num_bit_flips):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = re.CompressedResourceOp(
             re.ResourceBasisState,
-            {"state": state},
+            {"num_bit_flips": num_bit_flips},
         )
-        assert expected == re.ResourceBasisState.resource_rep(state)
+        assert expected == re.ResourceBasisState.resource_rep(num_bit_flips)
 
     @pytest.mark.parametrize(
-        "state, num_rx",
-        [([1, 1, 1, 1, 0, 0], 4), ([0, 1, 1, 1, 1, 1], 5), ([1, 1, 1, 1, 1, 1], 6)],
+        "num_bit_flips, num_x",
+        [(4, 4), (5, 5), (6, 6)],
     )
-    def test_resources_from_rep(self, state, num_rx):
+    def test_resources_from_rep(self, num_bit_flips, num_x):
         """Test that computing the resources from a compressed representation works"""
-        rep = re.ResourceBasisState.resource_rep(state)
+        rep = re.ResourceBasisState.resource_rep(num_bit_flips)
         actual = rep.op_type.resources(**rep.params)
         expected = {}
-        rx = re.CompressedResourceOp(re.ResourceRX, {})
-        expected[rx] = num_rx
+        x = re.CompressedResourceOp(re.ResourceX, {})
+        expected[x] = num_x
 
         assert actual == expected
 
     @pytest.mark.parametrize(
-        "state",
-        [([1, 1, 1, 1, 0, 0]), ([0, 1, 1, 1, 1, 1]), ([1, 1, 1, 1, 1, 1])],
+        "num_bit_flips",
+        [(4), (5), (6)],
     )
-    def test_tracking_name(self, state):
+    def test_tracking_name(self, num_bit_flips):
         """Test that the tracking name is correct."""
-        assert re.ResourceBasisState.tracking_name(state) == f"BasisState({state})"
+        assert re.ResourceBasisState.tracking_name(num_bit_flips) == f"BasisState({num_bit_flips})"
 
 
 class TestResourceSuperposition:
