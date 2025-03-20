@@ -67,7 +67,7 @@ class QROMStatePreparation(Operation):
     .. code-block::
 
         state_vector = np.array([0.5, -0.5, 0.5, 0.5])
-        
+
         dev = qml.device("default.qubit")
         wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
 
@@ -203,9 +203,11 @@ class QROMStatePreparation(Operation):
             # Compute the binary representations of the angles θi
             thetas_binary = [
                 _float_to_binary(
-                    2 * qml.math.arccos(
+                    2
+                    * qml.math.arccos(
                         qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
-                    ) / np.pi,
+                    )
+                    / np.pi,
                     len(precision_wires),
                 )
                 for j in range(qml.math.shape(probs_numerator)[0])
