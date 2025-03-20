@@ -389,9 +389,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
     r"""Resource class for the CSWAP gate.
 
     Resources:
-        The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
-        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging
-        <https://arxiv.org/pdf/2305.18128>`_.
+        The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
 
         The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
         given by:
@@ -412,9 +410,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
-            of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging
-            <https://arxiv.org/pdf/2305.18128>`_.
+            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
 
             The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
             given by:
@@ -730,8 +726,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
     Resources:
-        The resources are obtained from (in figure 1.) the paper `Novel constructions for the
-        fault-tolerant Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
+        The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
         The circuit which applies the Toffoli gate on target wire 'target' with control wires
         ('c1', 'c2') is given by:
@@ -759,8 +754,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are obtained from (in figure 1.) the paper `Novel constructions for the
-            fault-tolerant Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
+            The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
             ('c1', 'c2') is given by:
@@ -802,8 +796,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken (figure 4.9) from the textbook `Quantum Computation and
-            Quantum Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+            The resources are taken from Figure 4.9 of `Nielsen, M. A., & Chuang, I. L. (2010) <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
             The circuit is given by:
 
@@ -914,8 +907,8 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
-        The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
-        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+        The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
+        <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
         resources are given by the following rules:
 
         * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
@@ -948,8 +941,8 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
-            without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+            The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
+            <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
             resources are given by the following rules:
 
             * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
@@ -1122,8 +1115,8 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     r"""Resource class for the CRX gate.
 
     Resources:
-        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
@@ -1142,8 +1135,8 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
@@ -1244,8 +1237,8 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     r"""Resource class for the CRY gate.
 
     Resources:
-        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
@@ -1264,8 +1257,8 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
@@ -1364,8 +1357,8 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     r"""Resource class for the CRZ gate.
 
     Resources:
-        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
@@ -1384,8 +1377,8 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
@@ -1484,8 +1477,8 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     r"""Resource class for the CRot gate.
 
     Resources:
-        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math::
 
@@ -1512,8 +1505,8 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math::
 
