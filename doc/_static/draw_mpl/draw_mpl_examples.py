@@ -127,6 +127,15 @@ def mid_measure():
     plt.savefig(folder / "mid_measure.png")
     plt.close()
 
+def max_length():
+    def circuit():
+        for _ in range(10):
+            qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    figs_and_axes = draw_mpl(circuit, max_length=5)()
+    figs_and_axes[0][0].savefig(folder / "max_length1.png")
+    figs_and_axes[1][0].savefig(folder / "max_length2.png")
 
 @qml.transforms.merge_rotations
 @qml.transforms.cancel_inverses
@@ -172,3 +181,4 @@ if __name__ == "__main__":
     wires_labels(circuit)
     mid_measure()
     levels()
+    max_length()
