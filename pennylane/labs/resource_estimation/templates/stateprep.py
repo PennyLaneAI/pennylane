@@ -168,6 +168,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         then we don't need to permute. In general, there is a probability associated
         with not needing to permute wires if the basis states happen to match, we
         estimate this quantity aswell.
+
     """
 
     @staticmethod
@@ -200,6 +201,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
             then we don't need to permute. In general, there is a probability associated
             with not needing to permute wires if the basis states happen to match, we
             estimate this quantity aswell.
+
         """
         gate_types = {}
         msp = re.ResourceMottonenStatePreparation.resource_rep(num_stateprep_wires)
@@ -272,13 +274,16 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
 
 class ResourceBasisState(qml.BasisState, ResourceOperator):
-    """Resource class for the BasisState template.
+    r"""Resource class for the BasisState template.
 
     Args:
-        state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
+        state (list): Binary input of shape ``(len(wires), )``. For example, if
+        ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+        :math:`|010 \rangle`.
 
     Resources:
-        The resources for BasisState are according to the decomposition found in qml.BasisState."""
+        The resources for BasisState are according to the decomposition found in qml.BasisState.
+    """
 
     @staticmethod
     def _resource_decomp(
@@ -289,11 +294,14 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
+            state (list): Binary input of shape ``(len(wires), )``. For example, if
+            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+            :math:`|010 \rangle`.
 
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
         """
+
         gate_types = {}
 
         rx = re.ResourceRX.resource_rep()
@@ -307,7 +315,9 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
+            state (list): Binary input of shape ``(len(wires), )``. For example, if
+            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+            :math:`|010 \rangle`.
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -321,11 +331,14 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
+            state (list): Binary input of shape ``(len(wires), )``. For example, if
+            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+            :math:`|010 \rangle`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+
         params = {"state": state}
         return CompressedResourceOp(cls, params)
 
