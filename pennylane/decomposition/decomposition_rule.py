@@ -37,7 +37,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using ``qml.register_resources``.
@@ -240,7 +240,7 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using :func:`~pennylane.register_resources`
@@ -304,7 +304,7 @@ def list_decomps(op: Type[Operator]) -> list[DecompositionRule]:
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
@@ -324,7 +324,7 @@ def has_decomp(op: Type[Operator]) -> bool:
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
