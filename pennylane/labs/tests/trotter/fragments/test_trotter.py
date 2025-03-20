@@ -47,8 +47,8 @@ def _coeffs(states: int, modes: int, order: int):
 
 
 @pytest.mark.parametrize("modes", range(5))
-def test_epsilon(modes):
-    """Test that epsilon is correct for 2 states"""
+def test_second_order_trotter_error_operator(modes):
+    """Test that the second order Trotter error operator is correct for a 2 state example"""
     states = 2
     delta = 0.72
     scalar = -(delta**2) / 24
