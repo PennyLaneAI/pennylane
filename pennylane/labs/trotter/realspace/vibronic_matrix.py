@@ -47,7 +47,15 @@ class VibronicMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the block indexed at (row, col)"""
+        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix
+
+        Args:
+            row (int): the row of the index
+            col (int): the column of the index
+
+        Returns:
+            RealspaceSum: the ``RealspaceSum`` object indexed at ``(row, col)``
+        """
         if row < 0 or col < 0:
             raise IndexError(f"Index cannot be negative, got {(row, col)}.")
         if row >= self.states or col >= self.states:
@@ -57,10 +65,20 @@ class VibronicMatrix(Fragment):
 
         return self._blocks.get((row, col), RealspaceSum.zero(self.modes))
 
-    def set_block(self, row: int, col: int, word: RealspaceSum) -> None:
-        """Set the value of the block indexed at (row, col)"""
-        if not isinstance(word, RealspaceSum):
-            raise TypeError(f"Block value must be RealspaceSum. Got {type(word)}.")
+    def set_block(self, row: int, col: int, rs_sum: RealspaceSum) -> None:
+        """Set the value of the block indexed at ``(row, col)``
+        
+        Args:
+            row (int): the row of the index
+            col (int): the column of the index
+            rs_sum (RealspaceSum): the ``RealspaceSum`` object to stored in index ``(row, col)``
+
+        Returns:
+            None
+        """
+
+        if not isinstance(rs_sum, RealspaceSum):
+            raise TypeError(f"Block value must be RealspaceSum. Got {type(rs_sum)}.")
         if row < 0 or col < 0:
             raise IndexError(f"Index cannot be negative, got {(row, col)}.")
         if row >= self.states or col >= self.states:
@@ -68,15 +86,25 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if word.is_zero:
+        if rs_sum.is_zero:
             return
 
-        self._blocks[(row, col)] = word
+        self._blocks[(row, col)] = rs_sum
 
     def matrix(
         self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
-        """Returns a sparse matrix representing the operator discretized on the given number of gridpoints"""
+        """Return a matrix representation of the operator
+
+        Args:
+            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
+            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+
+        Returns:
+            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+
+        """
         pow2 = _next_pow_2(self.states)
         dim = pow2 * gridpoints**self.modes
         shape = (pow2, pow2)
@@ -97,7 +125,18 @@ class VibronicMatrix(Fragment):
         return matrix
 
     def norm(self, params: Dict) -> float:
-        """Compute the spectral norm"""
+        """Returns an upper bound on the spectral norm of the operator.
+
+        Args:
+            params (Dict): The dictionary of parameters. The supported parameters are
+
+                * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
+                * ``sparse`` (bool): If True, use optimizations for sparse operators. Defaults to False.
+
+        Returns:
+            float: an upper bound on the spectral norm of the operator
+
+        """
         try:
             gridpoints = params["gridpoints"]
         except KeyError as e:
@@ -278,8 +317,15 @@ class VibronicMatrix(Fragment):
             ho_states=ho_states,
         )
 
-    def get_coefficients(self, threshold: float = 0.0):
-        """Return the coefficients in a dictionary"""
+    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int, int], Dict]:
+        """Return a dictionary containing the coefficients of the ``RealspaceSum``
+
+        Args:
+            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+
+        Returns:
+            Dict: a dictionary whose keys are the indices of the ``VibronicMatrix`` and whose values are dictionaries obtained by ``RealspaceSum.get_coefficients``
+        """
         d = {}
         for i, j in product(range(self.states), repeat=2):
             d[(i, j)] = self.block(i, j).get_coefficients(threshold)
