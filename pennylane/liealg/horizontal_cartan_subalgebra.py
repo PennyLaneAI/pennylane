@@ -129,7 +129,8 @@ def horizontal_cartan_subalgebra(
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
     The adjoint vectors for the Cartan subalgebra are in ``np_a``.
 
-    >>> np_newg, np_k, np_mtilde, np_a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m, return_adjvec=True)
+    .. code-block:: python
+        np_newg, np_k, np_mtilde, np_a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m, return_adjvec=True)
 
     We can reconstruct an operator by computing :math:`\hat{O}_v = \sum_i v_i g_i` for an adjoint vector :math:`v` and :math:`g_i \in \mathfrak{g}`.
 
