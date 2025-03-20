@@ -50,6 +50,7 @@ By default, the mechanism is disabled.
     >>> qml.decomposition.enabled_garph()
     False
 
+.. _decomps_rules:
 
 Defining Decomposition Rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,6 +81,8 @@ must declare its resource requirements using the ``register_resources`` decorato
         qml.H(wires=wires[1])
         qml.CZ(wires=wires)
         qml.H(wires=wires[1])
+
+.. _decomps_management:
 
 Inspecting and Managing Decomposition Rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,7 +131,15 @@ operator towards a target gate set.
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Custom decompositions**
+The graph decompostiion system can be used in conjunction with the decompose transform ``qml.transforms.decompose``.
+This new way of performing decomposition is generally more resource-efficient and allows for specifying custom decompositions.
+
+The new system can handle more complex decompositions pathways and is more flexible. For example,
+in the old system when ``qml.decomposition.disable_graph``, if ``qml.CZ`` is in the target gate set instead of ``qml.CNOT``,
+you won't be able to decompose a ``qml.CRX`` to the desired target gate set, but with ``qml.decomposition.enable_graph``,
+you do get the expected result.
+
+**Custom Decompositions**
 
 Additionally, the ``fixed_decomps` and ``alt_decomps`` arguments are functional with the new system enabled.
 These two keyword arguments allow for customizing how gates get decomposed; decompositions in ``alt_decomps``
@@ -138,7 +149,14 @@ are optional for the algorithm to choose if it's the most resource-efficient, an
 Creating custom decompositions that the system can use involves a quantum function that represents
 the decomposition and a resource data structure that tracks gate counts in the custom decomposition.
 
-See also: :func:`register_resources`
+See also :ref:`Defining Decomposition Rules <decomps_rules>` section.
+
+In the following example, we define custom decompositions for both ``qml.CNOT`` and ``qml.IsingXX``,
+and we use the ``qml.transforms.decompose`` transform to decompose a quantum circuit to the target gate set
+``{"RZ", "RX", "CZ", "GlobalPhase"}``.
+
+We use ``fixed_decomps`` to force the system to use the custom decompositions for ``qml.IsingXX``
+and ``alt_decomps`` to provide alternative decompositions for the ``qml.CNOT`` gate.
 
 .. code-block:: python
 
@@ -146,28 +164,11 @@ See also: :func:`register_resources`
 
     qml.decomposition.enable_graph()
 
-
-    @qml.register_resources({qml.H: 2, qml.CZ: 1})
-    def my_cnot(wires, **__):
-        qml.H(wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.H(wires=wires[1])
-
-    @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.CNOT(wires=[0, 1])
-        return qml.state()
-
-.. code-block:: pycon
-
-    >>> print(qml.draw(circuit, level="device")())
-    0: ────╭●────┤  State
-    1: ──H─╰Z──H─┤  State
-
-The ``alt_decomps`` argument can handle multiple options per operator:
-
-.. code-block:: python
+    @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+    def isingxx_decomp(phi, wires, **__):
+        qml.CNOT(wires=wires)
+        qml.RX(phi, wires=[wires[0]])
+        qml.CNOT(wires=wires)
 
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
     def my_cnot1(wires, **__):
@@ -185,17 +186,25 @@ The ``alt_decomps`` argument can handle multiple options per operator:
 
     @partial(
         qml.transforms.decompose,
-        alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]}
+        gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+        alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+        fixed_decomps={qml.IsingXX: isingxx_decomp},
     )
     @qml.qnode(qml.device("default.qubit"))
     def circuit():
         qml.CNOT(wires=[0, 1])
+        qml.IsingXX(0.5, wires=[0, 1])
         return qml.state()
 
 
-Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
+.. code-block:: pycon
 
-See also: :func:`add_decomps`
+    >>> qml.specs(circuit)()["resources"].gate_types
+    defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
+
+
+Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
+See also :ref:`Inspecting and Managing Decomposition Rules <decomps_management>` section for more information.
 
 """
 

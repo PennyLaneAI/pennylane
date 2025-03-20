@@ -73,6 +73,48 @@ class TestTransformDecompose:
 
         qml.decomposition.disable_graph()
 
+    def test_gateset_with_custom_rules(self):
+        """Test the gate_set argument with custom decomposition rules."""
+
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+        def isingxx_decomp(phi, wires, **__):
+            qml.CNOT(wires=wires)
+            qml.RX(phi, wires=[wires[0]])
+            qml.CNOT(wires=wires)
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot1(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+        def my_cnot2(wires, **__):
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+            qml.CZ(wires=wires)
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+            fixed_decomps={qml.IsingXX: isingxx_decomp},
+        )
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.IsingXX(0.5, wires=[0, 1])
+            return qml.state()
+
+        expected_resources = {"RZ": 12, "RX": 7, "GlobalPhase": 6, "CZ": 3}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
+
+        qml.decomposition.disable_graph()
+
     def test_gate_types_gateset(self):
         """Test that the PennyLane's Operators does not work with the new decomposition system."""
 

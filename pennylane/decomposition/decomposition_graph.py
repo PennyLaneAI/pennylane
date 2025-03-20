@@ -241,6 +241,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
 
         """
+        if not self.is_solved_for(op):
+            raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
+
         op_node = resource_rep(type(op), **op.resource_params)
 
         op_node_idx = self._op_node_indices[op_node]
@@ -276,6 +279,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
 
         """
+        if not self.is_solved_for(op):
+            raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
+
         op_node = resource_rep(type(op), **op.resource_params)
 
         op_node_idx = self._op_node_indices[op_node]

@@ -162,6 +162,12 @@ class TestDecompositionGraph:
         graph.solve(lazy=True)
         assert not graph.is_solved_for(AnotherOp(wires=[0, 1]))
 
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            graph.resource_estimate(AnotherOp(wires=[0, 1]))
+
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            graph.decomposition(AnotherOp(wires=[0, 1]))
+
         graph.solve(lazy=False)
         assert graph.is_solved_for(AnotherOp(wires=[0, 1]))
 

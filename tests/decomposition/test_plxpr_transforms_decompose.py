@@ -66,6 +66,62 @@ class TestPLxPRTransformDecompose:
         qml.decomposition.disable_graph()
         qml.capture.disable()
 
+    def test_gateset_with_custom_rules(self):
+        """Test the gate_set argument with custom decomposition rules."""
+
+        qml.capture.enable()
+        qml.decomposition.enable_graph()
+
+        @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+        def isingxx_decomp(phi, wires, **__):
+            qml.CNOT(wires=wires)
+            qml.RX(phi, wires=[wires[0]])
+            qml.CNOT(wires=wires)
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot1(wires, **__):
+            qml.H(wires=wires[1])
+            qml.CZ(wires=wires)
+            qml.H(wires=wires[1])
+
+        @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+        def my_cnot2(wires, **__):
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+            qml.CZ(wires=wires)
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+
+        @qml.capture.expand_plxpr_transforms
+        @partial(
+            qml.transforms.decompose,
+            gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+            fixed_decomps={qml.IsingXX: isingxx_decomp},
+        )
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.IsingXX(0.5, wires=[0, 1])
+            return qml.state()
+
+        obj = CollectOpsandMeas()
+        obj(circuit)()
+
+        expected_resources = {"RZ": 12, "RX": 7, "GlobalPhase": 6, "CZ": 3}
+        resources = dict()
+        for op in obj.state["ops"]:
+            if op.name in resources:
+                resources[op.name] += 1
+            else:
+                resources[op.name] = 1
+
+        assert resources == expected_resources
+        assert len(obj.state["ops"]) == 28
+
+        qml.decomposition.disable_graph()
+        qml.capture.disable()
+
     def test_plxpr_gate_types_gateset(self):
         """Test that the PennyLane's Operators does not work with the new decomposition system."""
 
