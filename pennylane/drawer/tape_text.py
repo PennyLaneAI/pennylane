@@ -120,35 +120,27 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
     return layer_str
 
 
-def _add_to_totals(totals: _CurrentTotals, layer_str, config, max_length) -> _CurrentTotals:
-    """
-    Note: Mutates totals in place
-    """
+def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
+    """Add current totals to the finished lines and initialize new totals."""
+    totals.finished_lines += totals.wire_totals + totals.bit_totals
+    totals.finished_lines[-1] += "\n"
+
+    totals.wire_totals = [config.wire_filler] * len(config.wire_map)
+
+    # Bit totals for new lines for warped drawings need to be consistent with the
+    # current bit filler
+    totals.bit_totals = []
+    for b in range(len(config.bit_map)):
+        bit_occupied = config.cwire_layers[b][0] < config.cur_layer <= config.cwire_layers[b][-1]
+        cur_b_filler = config.bit_filler if bit_occupied else " "
+        totals.bit_totals.append(cur_b_filler)
+
+    return totals
+
+
+def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _CurrentTotals:
     n_wires = len(config.wire_map)
     n_bits = len(config.bit_map)
-    cur_line_length = len(totals.wire_totals[0])
-    new_length = len(layer_str[0])
-
-    if cur_line_length + new_length > max_length - 1:
-        # move totals into finished_lines and reset totals
-        totals.finished_lines += totals.wire_totals + totals.bit_totals
-        totals.finished_lines[-1] += "\n"
-        totals.wire_totals = [config.wire_filler] * n_wires
-
-        # Bit totals for new lines for warped drawings need to be consistent with the
-        # current bit filler
-        totals.bit_totals = []
-        for b in range(n_bits):
-            bit_occupied = (
-                config.cwire_layers[b][0] < config.cur_layer <= config.cwire_layers[b][-1]
-            )
-            cur_b_filler = config.bit_filler if bit_occupied else " "
-            totals.bit_totals.append(cur_b_filler)
-
-    ###################################################
-    # Join current layer with lines for previous layers
-    ###################################################
-    # Joining is done by adding a filler at the end of the previous layer
     totals.wire_totals = [
         config.wire_filler.join([t, s]) for t, s in zip(totals.wire_totals, layer_str[:n_wires])
     ]
@@ -407,7 +399,10 @@ def tape_text(
             layer_str = _add_obj(op, layer_str, config, tape_cache)
         layer_str = _left_justify(layer_str, config)
 
-        totals = _add_to_totals(totals, layer_str, config, max_length)
+        if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
+            totals = _add_to_finished_lines(totals, config)
+
+        totals = _add_layer_str_to_totals(totals, layer_str, config)
 
         if config.cur_layer == config.num_op_layers - 1:
             totals = _finalize_layers(totals, config)
