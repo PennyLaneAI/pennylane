@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
+"""
 Contains the FlipSign template.
 """
 
@@ -68,7 +68,7 @@ class FlipSign(Operation):
     num_wires = AnyWires
 
     def _flatten(self):
-        return self.data, (self.wires, self.hyperparameters)
+        return self.data, (self.wires, ())
 
     def __repr__(self):
         return f"FlipSign({self.data}, wires={self.wires.tolist()})"
@@ -140,12 +140,17 @@ class FlipSign(Operation):
 
         op_list = []
 
-        if n[-1] == 0:
+        if qml.math.is_abstract(n):
+            check = n.at[-1] == 0
+        else:
+            check = n[-1] == 0
+
+        if check:
             op_list.append(qml.X(wires[-1]))
 
         op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=n[:-1]))
 
-        if n[-1] == 0:
+        if check:
             op_list.append(qml.X(wires[-1]))
 
         return op_list
