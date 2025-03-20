@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,34 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module containing functions for computing Trotter error"""
+"""Module containing functions for computing Trotter error
 
-from .abstract import Fragment, AbstractState, commutator, nested_commutator
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+.. currentmodule:: pennylane.labs.trotter
+
+Trotter Base Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Fragment
+
+Realspace Hamiltonian Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~RealspaceCoeffs
+    ~RealspaceOperator
+    ~RealspaceSum
+    ~VibronicMatrix
+"""
+
+from .abstract_fragment import Fragment, commutator, nested_commutator
+from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix

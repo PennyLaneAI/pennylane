@@ -75,6 +75,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
         inst = DefaultQubitInterpreter.__new__(DefaultQubitInterpreter)
         inst.stateref = self.stateref
         inst.shots = self.shots
+        inst.execution_config = self.execution_config
         return inst
 
     def __init__(
