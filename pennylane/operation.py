@@ -2420,7 +2420,7 @@ def gen_is_multi_term_hamiltonian(obj):
         return False
     try:
         generator = obj.generator()
-        _, ops = generator.terms() # len(coeffs) can be weird sometimes
+        _, ops = generator.terms()  # len(coeffs) can be weird sometimes
         return len(ops) > 1
     except TermsUndefinedError:
         return False
