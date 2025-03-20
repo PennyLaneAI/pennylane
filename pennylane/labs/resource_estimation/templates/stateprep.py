@@ -84,7 +84,8 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
     Resources:
         Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
-        The resources are defined, mathematically, as 2
+        The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
+        :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
     """
 
     @staticmethod
@@ -97,6 +98,8 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
         Resources:
             Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
+            The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
+            :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
         """
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
