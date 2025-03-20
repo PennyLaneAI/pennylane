@@ -1124,7 +1124,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
 
 
         Resources:
-            The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
+            The resources are taken from the decomposition of :class:`qml.AmplitudeAmplification` class.
         """
         gate_types = {}
         ctrl = re.ResourceControlled.resource_rep(
