@@ -17,6 +17,17 @@ Overview
 
 This module contains functionality to express and manipulate Lie algebras within the context of quantum computing.
 
+In quantum computing, we are typically dealing with vectors in the Hilbert space
+:math:`\mathcal{H} = \mathbb{C}^{2^n}` that are manipulated by unitary gates from
+the special unitary group :math:`SU(2^n).`
+For full universality, we require the available gates to span all of :math:`SU(2^n)`
+in order to reach any state in Hilbert space from any other state.
+
+:math:`SU(2^n)` is a Lie group and has an associated :doc:`Lie algebra <demos/tutorial_liealgebra>`
+to it, called :math:`\mathfrak{su}(2^n)`.
+In some cases, it is more convenient to work with the
+associated Lie algebra rather than the Lie group.
+
 Lie algebra functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -78,20 +89,6 @@ eigenbasis of the underlying involution :math:`\theta`.
     ~C
     ~CI
     ~CII
-
-Lie Algebras and quantum computing
-----------------------------------
-
-In quantum computing, we are typically dealing with vectors in the Hilbert space
-:math:`\mathcal{H} = \mathbb{C}^{2^n}` that are manipulated by unitary gates from
-the special unitary group :math:`SU(2^n).`
-For full universality, we require the available gates to span all of :math:`SU(2^n)`
-in order to reach any state in Hilbert space from any other state.
-
-:math:`SU(2^n)` is a Lie group and has an associated :doc:`Lie algebra <demos/tutorial_liealgebra>`
-to it, called :math:`\mathfrak{su}(2^n)`.
-In some cases, it is more convenient to work with the
-associated Lie algebra rather than the Lie group.
 
 Relevant demos
 --------------
