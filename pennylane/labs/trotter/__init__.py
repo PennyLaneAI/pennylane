@@ -40,5 +40,5 @@ Realspace Hamiltonian Classes:
     ~VibronicMatrix
 """
 
-from .abstract_fragment import Fragment, commutator, nested_commutator
+from .abstract import AbstractState, Fragment, commutator, nested_commutator
 from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
