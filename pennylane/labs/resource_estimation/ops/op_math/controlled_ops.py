@@ -952,6 +952,8 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
             resources are given by the following rules:
 
+            * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
+
             * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
 
             * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.

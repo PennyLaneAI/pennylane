@@ -649,8 +649,87 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def _resource_decomp(
         cls, base_class, base_params, z, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            z (int): the power that the operator is being raised to
+
+        Resources:
+            The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
+            gate and we have no resources. If the base operation class :code:`base_class` implements the
+            :code:`.pow_resource_decomp()` method, then the resources are obtained from this. Otherwise,
+            the resources of the operation raised to the power :math:`z` are given by extracting the base
+            operation's resources (via :code:`.resources()`) and raising each operation to the same power.
+
+        **Example**
+
+        The operation raised to a power :math:`z` can be constructed like this:
+
+        >>> qft = re.ResourceQFT(wires=range(3))
+        >>> pow_qft = re.ResourcePow(qft, 2)
+        >>> pow_qft.resources(**pow_qft.resource_params)
+        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+        Alternatively, we can call the resources method on from the class:
+
+        >>> re.ResourcePow.resources(
+        ...     base_class = re.ResourceQFT,
+        ...     base_params = {"num_wires": 3},
+        ...     z = 2,
+        ... )
+        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+
+        .. details::
+            :title: Usage Details
+
+            We can configure the resources for the power of a base operation by modifying
+            its :code:`.pow_resource_decomp(**resource_params, z)` method. Consider for example this
+            custom PauliZ class, where the pow-resources are not defined (this is the default
+            for a general :class:`~.ResourceOperator`).
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def pow_resource_decomp(cls, z):
+                        raise re.ResourcesNotDefined
+
+            When this method is not defined, the resources are computed by taking the power of
+            each operation in the resources of the base operation.
+
+            >>> CustomZ.resources()
+            {S: 2}
+            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+            defaultdict(<class 'int'>, {Pow(S, 2): 2})
+
+            We can update the resources with the observation that the PauliZ gate is self-inverse,
+            so the resources should when :math:`z mod 2 = 0` should just be the identity operation:
+
+            .. code-block:: python
+
+                class CustomZ(re.ResourceZ):
+
+                    @classmethod
+                    def pow_resource_decomp(cls, z):
+                        if z%2 == 0:
+                            return {re.ResourceIdentity.resource_rep(): 1}
+                        return {cls.resource_rep(): 1}
+
+            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
+            {Identity: 1}
+            >>> re.ResourcePow.resources(CustomZ, {}, z=3)
+            {CustomZ: 1}
+
+        """
         if z == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
+            return {}
+
+        if z == 1:
+            return {base_class.resource_rep(**base_params): 1}
 
         try:
             return base_class.pow_resource_decomp(z, **base_params)

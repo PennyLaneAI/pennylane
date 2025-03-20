@@ -115,20 +115,63 @@ def func_to_binary(n_precision, x, func):
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
+    Args:
+        num_wires(int): the number of wires that StatePrep acts on
+
     Resources:
         Uses the resources as defined in the ResourceMottonenStatePreperation template.
     """
 
+    def __init__(self, state, wires, pad_with=None, normalize=False, id=None, validate_norm=True):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(state, re.CompactState):
+            self.compact_state = state
+            Operation.__init__(self, state, wires=wires)
+            return
+
+        self.compact_state = None
+        super().__init__(state, wires, pad_with, normalize, id, validate_norm)
+
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Resources:
+            Uses the resources as defined in the ResourceMottonenStatePreperation template.
+        """
         return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        if self.compact_state:
+            return {"num_wires": self.compact_state.num_qubits}
+
         return {"num_wires": len(self.wires)}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
@@ -140,11 +183,35 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOperator):
     """Resource class for the MottonenStatePreparation template.
 
-    Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
+    Args:
+        num_wires(int): the number of wires that StatePrep acts on
+
+    Resources:
+        Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
     """
+
+    def __init__(self, state_vector, wires, id=None):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(state_vector, re.CompactState):
+            self.compact_state = state_vector
+            Operation.__init__(self, state_vector, wires=wires)
+            return
+
+        self.compact_state = None
+        super().__init__(state_vector, wires, id)
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Resources:
+            Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
+        """
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
@@ -161,10 +228,30 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        if self.compact_state:
+            return {"num_wires": self.compact_state.num_qubits}
+
         return {"num_wires": len(self.wires)}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires(int): the number of wires that StatePrep acts on
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
@@ -174,13 +261,15 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
 
 class ResourceSuperposition(qml.Superposition, ResourceOperator):
-    """Resource class for the Superposition template."""
+    """Resource class for the Superposition template.
 
-    @staticmethod
-    def _resource_decomp(
-        num_stateprep_wires, num_basis_states, size_basis_state, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources are computed following the PennyLane decomposition of
+    Args:
+        num_stateprep_wires (int): the number of wires used for the operation
+        num_basis_states (int): the number of basis states of the superposition
+        size_basis_state (int): the size of each basis state
+
+    Resources:
+        The resources are computed following the PennyLane decomposition of
         the class. This class was designed based on the method described in
         https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
 
@@ -197,6 +286,51 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         then we don't need to permute. In general, there is a probability associated
         with not needing to permute wires if the basis states happen to match, we
         estimate this quantity aswell.
+    """
+
+    def __init__(
+        self, coeffs=None, bases=None, wires=None, work_wire=None, state_vect=None, id=None
+    ):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(state_vect, re.CompactState):
+            self.compact_state = state_vect
+            Operation.__init__(self, state_vect, wires=wires)
+            return
+
+        self.compact_state = None
+        super().__init__(coeffs, bases, wires, work_wire, id)
+
+    @staticmethod
+    def _resource_decomp(
+        num_stateprep_wires, num_basis_states, size_basis_state, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
+
+        Resources:
+            The resources are computed following the PennyLane decomposition of
+            the class. This class was designed based on the method described in
+            https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
+
+            We use the following (somewhat naive) assumptions to approximate the
+            resources:
+
+            -  The MottonenStatePreparation routine is assumed for the state prep
+            component.
+            -  The permutation block requires 2 multi-controlled X gates and a
+            series of CNOT gates. On average we will be controlling on and flipping
+            half the number of bits in :code:`size_basis`. (i.e for any given basis
+            state, half will be ones and half will be zeros).
+            -  If the number of basis states provided spans the set of all basis states,
+            then we don't need to permute. In general, there is a probability associated
+            with not needing to permute wires if the basis states happen to match, we
+            estimate this quantity aswell.
         """
         gate_types = {}
         msp = re.ResourceMottonenStatePreparation.resource_rep(num_stateprep_wires)
@@ -224,10 +358,26 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
     @property
     def resource_params(self) -> Dict:
-        bases = self.hyperparameters["bases"]
-        num_basis_states = len(bases)
-        size_basis_state = len(bases[0])  # assuming they are all the same size
-        num_stateprep_wires = math.ceil(math.log2(len(self.coeffs)))
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        if self.compact_state:
+            num_basis_states = self.compact_state.num_coeffs
+            size_basis_state = self.compact_state.num_qubits
+            num_stateprep_wires = math.ceil(math.log2(num_basis_states))
+
+        else:
+            bases = self.hyperparameters["bases"]
+            num_basis_states = len(bases)
+            size_basis_state = len(bases[0])  # assuming they are all the same size
+            num_stateprep_wires = math.ceil(math.log2(len(self.coeffs)))
 
         return {
             "num_stateprep_wires": num_stateprep_wires,
@@ -239,6 +389,17 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     def resource_rep(
         cls, num_stateprep_wires, num_basis_states, size_basis_state
     ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_stateprep_wires (int): the number of wires used for the operation
+            num_basis_states (int): the number of basis states of the superposition
+            size_basis_state (int): the size of each basis state
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         params = {
             "num_stateprep_wires": num_stateprep_wires,
             "num_basis_states": num_basis_states,
@@ -504,7 +665,7 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
             ] += 1
 
         return gate_types
-
+    
     @property
     def resource_params(self) -> dict:
         """The key parameters required to expand the resources of QROMPrep."""
@@ -536,3 +697,169 @@ class ResourceQROMStatePreparation(Operation, re.ResourceOperator):
             "positive_and_real": positive_and_real,
         }
         return re.CompressedResourceOp(cls, params)
+
+
+class ResourceBasisState(qml.BasisState, ResourceOperator):
+    """Resource class for the BasisState template.
+
+    Args:
+        state (list): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state :math:`|010 \rangle`.
+
+    Resources:
+        The resources for BasisState are according to the decomposition found in qml.BasisState."""
+
+    def __init__(self, state, wires, id=None):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(state, re.CompactState):
+            self.compact_state = state
+            Operation.__init__(self, state, wires=wires)
+            return
+
+        self.compact_state = None
+        super().__init__(state, wires, id)
+
+    @staticmethod
+    def _resource_decomp(
+        num_bit_flips,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_bit_flips (int): the number of qubits in the basis state which are in the |1> state.
+
+        Resources:
+            The resources for BasisState are according to the decomposition found in qml.BasisState.
+        """
+        gate_types = {}
+        x = re.ResourceX.resource_rep()
+        gate_types[x] = num_bit_flips
+
+        return gate_types
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_bit_flips (int): the number of qubits in the basis state which are in the |1> state.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        if self.compact_state:
+            return {"num_bit_flips": self.compact_state.num_bit_flips}
+
+        bitstring = self.parameters[0]
+        num_bit_flips = sum(bitstring)
+        return {"num_bit_flips": num_bit_flips}
+
+    @classmethod
+    def resource_rep(cls, num_bit_flips) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_bit_flips (int): the number of qubits in the basis state which are in the |1> state.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"num_bit_flips": num_bit_flips}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def tracking_name(cls, num_bit_flips) -> str:
+        return f"BasisState({num_bit_flips})"
+
+
+class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
+    r"""Resource class for the MPSPrep template.
+
+    Args:
+        num_wires (int): number of qubits corresponding to the state preparation register
+        num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+
+    Resources:
+        The resources for MPSPrep are according to the decomposition.
+
+    .. seealso:: :class:`~.MPSPrep`
+
+    """
+
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(mps, re.CompactState):
+            self.compact_state = mps
+            Operation.__init__(self, mps, wires=wires)
+            return
+
+        self.compact_state = None
+        super().__init__(mps, wires, work_wires, right_canonicalize, id)
+
+    @staticmethod
+    def _resource_decomp(
+        num_wires,
+        num_work_wires,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires (int): number of qubits corresponding to the state preparation register
+            num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+
+        Resources:
+            The resources for MPSPrep are according to the decomposition.
+        """
+        gate_types = {}
+
+        qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=num_work_wires + 1)
+        gate_types[qubit_unitary] = num_wires
+        return gate_types
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_wires (int): number of qubits corresponding to the state preparation register
+            num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        if self.compact_state:
+            return {
+                "num_wires": self.compact_state.num_qubits,
+                "num_work_wires": self.compact_state.num_work_wires,
+            }
+
+        ww = self.hyperparameters["work_wires"]
+        num_work_wires = len(ww) if ww else 0
+        num_wires = self.hyperparameters["input_wires"]
+
+        return {"num_wires": num_wires, "num_work_wires": num_work_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires, num_work_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): number of qubits corresponding to the state preparation register
+            num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"num_wires": num_wires, "num_work_wires": num_work_wires}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def tracking_name(cls, num_wires, num_work_wires) -> str:
+        return f"MPSPrep({num_wires}, {num_work_wires})"

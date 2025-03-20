@@ -27,6 +27,7 @@ from .subroutines import (
     ResourceModExp,
     ResourceMultiplier,
     ResourcePhaseAdder,
+    ResourceAmplitudeAmplification,
     ResourceQubitUnitary,
 )
 
@@ -37,6 +38,8 @@ from .qsvt import ResourcePCPhase, ResourceQSVT
 from .stateprep import (
     ResourceSuperposition,
     ResourceStatePrep,
-    ResourceMottonenStatePreparation,
     ResourceQROMStatePreparation,
+    ResourceBasisState,
+    ResourceMottonenStatePreparation,
+    ResourceMPSPrep,
 )

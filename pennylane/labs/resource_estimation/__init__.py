@@ -102,6 +102,7 @@ Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceAmplitudeAmplification
     ~ResourceBasisRotation
     ~ResourcePrepSelPrep
     ~ResourceQFT
@@ -117,6 +118,7 @@ Templates
     ~ResourceModExp
     ~ResourceMultiplier
     ~ResourcePhaseAdder
+    ~ResourceQubitUnitary
 
 State Preparation Templates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,9 +126,19 @@ State Preparation Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceBasisState
+    ~ResourceMPSPrep
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
+
+Compact Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactState
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -235,5 +247,11 @@ from .templates import (
     ResourceQROMStatePreparation,
     ResourceQubitUnitary,
     ResourceQSVT,
-    ResourcePCPhase
+    ResourcePCPhase,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState,
+    ResourceMPSPrep,
+    ResourceQubitUnitary,
 )
+
+from .compact import CompactState
