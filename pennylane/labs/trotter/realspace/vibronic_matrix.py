@@ -47,7 +47,7 @@ class VibronicMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix
+        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix``
 
         Args:
             row (int): the row of the index
@@ -67,7 +67,7 @@ class VibronicMatrix(Fragment):
 
     def set_block(self, row: int, col: int, rs_sum: RealspaceSum) -> None:
         """Set the value of the block indexed at ``(row, col)``
-        
+
         Args:
             row (int): the row of the index
             col (int): the column of the index
