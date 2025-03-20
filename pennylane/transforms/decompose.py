@@ -86,6 +86,7 @@ def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps)
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Exclude the gates in fixed_decomps and alt_decomps from the target gate set.
+    # This is to avoid the algorithm from trying to decompose these supported gatas.
     if fixed_decomps:
         target_gate_names -= set(
             op.name if isinstance(op, type) else op for op in fixed_decomps.keys()
@@ -300,11 +301,25 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 # Evaluate the jaxpr of the dynamic decomposition
                 # and create a decomposition graph from the known operations.
                 for eq in jaxpr.eqns:
-                    if getattr(eq.primitive, "prim_type", "") == "operator":
+
+                    # Create the graph creation if eq
+                    # - hasn't been registered yet
+                    # - is a primitive operator
+                    # - has a DropVar output
+                    # - has no Var inputs (skip parametric ops)
+                    if (
+                        not self._primitive_registrations.get(eq.primitive, None)
+                        and getattr(eq.primitive, "prim_type", "") == "operator"
+                        and eq.outvars[0].__class__.__name__ == "DropVar"
+                        and all(invar.__class__.__name__ != "Var" for invar in eq.invars)
+                    ):
                         invals = (self.read(invar) for invar in eq.invars)
                         with qml.QueuingManager.stop_recording():
                             op = eq.primitive.impl(*invals, **eq.params)
-                        if eq.outvars[0].__class__.__name__ == "DropVar":
+
+                        # Skip the graph creation if the operator has a dynamic decomposition defined:
+                        # TODO: Fix this when the graph-based decomposition gets support for dynamic rules.
+                        if not op.has_plxpr_decomposition:
                             operations.append(op)
 
                 # Skip the graph creation if there are
@@ -426,18 +441,18 @@ def decompose(
             case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
-        fixed_decomps (Dict[Operator: DecompositionRule]): A dictionary mapping PennyLane operators to
-            user-specified decompositions. Note that user-specified decompositions must be PennyLane
-            quantum functions with resources specified via `qml.register_resources`.
-            This feature is experimental and only functions with `qml.decomposition.enable_graph()`.
-            With this enabled, the new experimental graph-based decomposition algorithm will always
-            choose the decomposition rules specified in this dictionary.
-        alt_decomps (Dict[Operator: List(DecompositionRule)]): A dictionary mapping PennyLane operators
-            to user-specified decompositions. Note that user-specified decompositions must be PennyLane
-            quantum functions with resources specified via `qml.register_resources`. This feature is
-            experimental and only functions with `qml.decomposition.enable_graph()`. With this enabled,
-            the experimental graph-based decomposition algorithm will add the decomposition rules specified
-            in this dictionary as potential options for how to decompose given operators.
+        fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
+            to custom decomposition rules. A decomposition rule is a quantum function decorated with
+            :func:`~pennylane.register_resources`. The custom decomposition rules specified here
+            will be used in place of the existing decomposition rules defined for this operator.
+            This is only used when `qml.decomposition.enable_graph()` is present.
+        alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
+            types to lists of alternative custom decomposition rules. A decomposition rule is a
+            quantum function decorated with :func:`~pennylane.register_resources`. The custom
+            decomposition rules specified here will be considered as alternatives to the existing
+            decomposition rules defined for this operator, and one of them may be chosen if they
+            lead to a more resource-efficient decomposition. This is only used when `qml.decomposition.enable_graph()`
+            is present.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
