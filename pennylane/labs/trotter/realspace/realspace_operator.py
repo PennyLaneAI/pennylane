@@ -57,7 +57,9 @@ class RealspaceOperator:
 
     """
 
-    def __init__(self, modes: int, ops: Tuple[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]) -> RealspaceOperator:
+    def __init__(
+        self, modes: int, ops: Tuple[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+    ) -> RealspaceOperator:
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs

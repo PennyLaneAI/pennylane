@@ -94,6 +94,17 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             RealspaceCoeffs: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
+
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = RealspaceCoeffs.tensor_node(np.array([4, 5, 6]), label="beta")
+        >>> parent = RealspaceCoeffs.sum_node(left_child, right_child)
+        >>> parent
+        >>> (alpha[idx0]) + (beta[idx0])
+
         """
 
         if l_child.shape != r_child.shape:
@@ -122,6 +133,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             RealspaceCoeffs: a ``RealspaceCoeff`` object representing the outer product of ``l_child`` and ``r_child``
+
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+        >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+        >>> parent
+        (alpha[idx0]) * (beta[idx1,idx2])
         """
 
         return cls(
@@ -141,6 +162,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             RealspaceCoeffs: a ``RealspaceCoeff`` object representing containing the tensor
+
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+        >>> node
+        alpha[idx0,idx1]
         """
 
         if len(tensor.shape):
@@ -167,6 +196,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             RealspaceCoeffs: a ``RealspaceCoeff`` object representing the coefficients of ``child`` multiplied by ``scalar``
+
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> child = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+        >>> parent = RealspaceCoeffs.scalar_node(5, child)
+        >>> parent
+        5 * (alpha[idx0,idx1])
         """
 
         return cls(
@@ -222,6 +260,9 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
         )
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def __str__(self) -> str:
         indices = [f"idx{i}" for i in range(len(self.shape))]
 
@@ -255,6 +296,15 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         Returns:
             float: the coefficient at the given index
 
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+        >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+        >>> parent.compute((1, 1, 2))
+        12
         """
 
         if not self._validate_index(index):
@@ -311,6 +361,13 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         Returns:
             dict: a dictionary representation of the coefficient tensor
 
+        **Example**
+
+        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> import numpy as np
+        >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
+        >>> node.nonzero()
+        {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
         """
 
         if self.node_type == _NodeType.TENSOR:
