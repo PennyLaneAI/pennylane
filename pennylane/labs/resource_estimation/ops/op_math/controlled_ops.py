@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for controlled operations."""
+from collections import defaultdict
 from typing import Dict
 
 import pennylane as qml
@@ -915,14 +916,13 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
 
-        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
-            one :class:`~.ResourceToffoli` gate.
+        * If there are three control qubits, the resources are three :code:`Toffoli` gates.
 
         * If there are more than three control qubits (:math:`n`), the resources are given by
-            :math:`36n - 111` :class:`~.ResourceCNOT` gates.
-
-    .. seealso:: :class:`~.MultiControlledX`
-
+          :math:`36n - 111` :code:`CNOT` gates if there is one work wire. Otherwise, we use
+          the waterfall construction described in `Encoding Electronic Spectra in Quantum
+          Circuits with Linear T Complexity <https://arxiv.org/pdf/1805.03662>`_. The resources
+          are given as :math:`2n - 3` :code:`Toffoli` gates  if there is one clean work wire.
     """
 
     @staticmethod
@@ -945,6 +945,8 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
             resources are given by the following rules:
 
+            * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
+
             * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
 
             * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
@@ -955,11 +957,15 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             * If there are more than three control qubits (:math:`n`), the resources are given by
             :math:`36n - 111` :class:`~.ResourceCNOT` gates.
         """
-        gate_types = {}
+        gate_types = defaultdict(int)
 
+        x = re.ResourceX.resource_rep()
         if num_ctrl_values:
-            x = re.ResourceX.resource_rep()
             gate_types[x] = num_ctrl_values * 2
+
+        if num_ctrl_wires == 0:
+            gate_types[x] += 1
+            return gate_types
 
         cnot = re.ResourceCNOT.resource_rep()
         if num_ctrl_wires == 1:
@@ -971,13 +977,24 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 1
             return gate_types
 
-        if num_ctrl_wires == 3:
-            gate_types[cnot] = 2
-            gate_types[toffoli] = 1
+        if num_ctrl_wires == 3 and num_work_wires >= 1:
+            gate_types[toffoli] = 3
+            return gate_types
+
+        if num_ctrl_wires > 3 and num_work_wires >= 1:
+            # if num_work_wires >= (num_ctrl_wires - 2):  
+            #     gate_types[toffoli] = 2 * num_ctrl_wires - 3
+            #     return gate_types
+
+            # gate_types[cnot] = 36 * num_ctrl_wires - 111
+            # return gate_types
+            
+            gate_types[toffoli] = 2 * num_ctrl_wires - 3  # rise of conditionally clean ancilla 
             return gate_types
 
         gate_types[cnot] = 36 * num_ctrl_wires - 111
         return gate_types
+        # raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:

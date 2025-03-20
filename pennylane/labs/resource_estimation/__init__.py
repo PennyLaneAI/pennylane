@@ -102,17 +102,43 @@ Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceAmplitudeAmplification
     ~ResourceBasisRotation
     ~ResourcePrepSelPrep
     ~ResourceQFT
     ~ResourceQPE
     ~ResourceQubitization
+    ~ResourceQROM
     ~ResourceReflection
     ~ResourceSelect
-    ~ResourceStatePrep
     ~ResourceTrotterProduct
     ~ResourceTrotterizedQfunc
     ~resource_trotterize
+    ~ResourceControlledSequence
+    ~ResourceModExp
+    ~ResourceMultiplier
+    ~ResourcePhaseAdder
+    ~ResourceQubitUnitary
+
+State Preparation Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceBasisState
+    ~ResourceMPSPrep
+    ~ResourceStatePrep
+    ~ResourceSuperposition
+    ~ResourceMottonenStatePreparation
+
+Compact Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactState
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -199,16 +225,33 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
     ResourceBasisRotation,
     ResourcePrepSelPrep,
     ResourceQFT,
     ResourceQPE,
     ResourceQuantumPhaseEstimation,
     ResourceQubitization,
+    ResourceQROM,
     ResourceReflection,
     ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
     ResourceTrotterizedQfunc,
     resource_trotterize,
+    ResourceMottonenStatePreparation,
+    ResourceSuperposition,
+    ResourceQROMStatePreparation,
+    ResourceQubitUnitary,
+    ResourceQSVT,
+    ResourcePCPhase,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState,
+    ResourceMPSPrep,
+    ResourceQubitUnitary,
 )
+
+from .compact import CompactState

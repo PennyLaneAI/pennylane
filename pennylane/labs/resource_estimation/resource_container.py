@@ -143,14 +143,14 @@ class Resources:
     def __str__(self):
         """String representation of the Resources object."""
         keys = ["wires", "gates"]
-        vals = [self.num_wires, self.num_gates]
+        vals = [format(int(self.num_wires), ',d'), format(int(self.num_gates), ',d')]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")
 
         gate_type_str = ", ".join(
-            [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
+            [f"'{gate_name}': {format(int(count), ',d')}" for gate_name, count in self.gate_types.items()]
         )
         items += "\ngate_types:\n{" + gate_type_str + "}"
         return items
