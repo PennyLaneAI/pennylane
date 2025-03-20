@@ -533,7 +533,7 @@
   `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
   `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
   `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
-  `pennylane.labs.horizontal_cartan_subalgebra` is moved to `qml.liealg.horizontal_cartan_subalgebra`.
+  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.horizontal_cartan_subalgebra`.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
