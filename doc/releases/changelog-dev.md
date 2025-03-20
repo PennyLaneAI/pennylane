@@ -84,10 +84,10 @@
   True
   ```
 
-  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
+  `qml.liealg.horizontal_cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
 
   ```pycon
-  >>> newg, k, mtilde, a, new_adj = qml.liealg.cartan_subalgebra(k, m)
+  >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
   ```
 
   `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
@@ -107,6 +107,7 @@
 
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -537,7 +538,7 @@
   `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
   `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
   `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
-  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.cartan_subalgebra`.
+  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.horizontal_cartan_subalgebra`.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
