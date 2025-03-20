@@ -46,35 +46,36 @@ def _float_to_binary(val, num_bits):
 
 
 class QROMStatePreparation(Operation):
-    r"""Prepares a quantum state using a Quantum Read-Only Memory (QROM) based approach.
+    r"""Prepares a quantum state using Quantum Read-Only Memory (QROM).
 
     This operation implements the state preparation method described
     in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
 
     Args:
-        state_vector (TensorLike): The state vector to prepare.
+        state_vector (TensorLike): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
         precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
             rotation angles utilized in the template.
         work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
 
     Raises:
-        ValueError: If the array does not contain :math:`2^n` elements for some integer :math:`n`, or if
+        ValueError: If the length of the input state vector array is not :math:`2^n` where :math:`n` is an integer, or if
             its norm is not equal to one.
 
     **Example**
 
     .. code-block::
 
-        dev = qml.device("default.qubit")
         state_vector = np.array([0.5, -0.5, 0.5, 0.5])
-        wires = [4, 5]
-        precision_wires = [1, 2, 3]
-        work_wires = [0]
+        
+        dev = qml.device("default.qubit")
+        wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
 
         @qml.qnode(dev)
         def circuit():
-            qml.QROMStatePreparation(state_vector, wires, precision_wires, work_wires)
+            qml.QROMStatePreparation(
+                state_vector, wires["state_wires"], wires["prec_wires"], wires["work_wires"]
+            )
             return qml.state()
 
     .. code-block:: pycon
@@ -87,7 +88,7 @@ class QROMStatePreparation(Operation):
     .. details::
         :title: Usage Details
 
-        Following the algorithm described in `arXiv:quant-ph/0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
+        Following the algorithm described in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
         this template employs :class:`~.QROM` to encode the binary representation of the rotation angles
         and subsequently applies controlled rotations :class:`~.CRY` to implement these angles on the target qubits.
 
@@ -204,11 +205,9 @@ class QROMStatePreparation(Operation):
             # Compute the binary representations of the angles θi
             thetas_binary = [
                 _float_to_binary(
-                    2
-                    / np.pi
-                    * qml.math.arccos(
+                    2 * qml.math.arccos(
                         qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
-                    ),
+                    ) / np.pi,
                     len(precision_wires),
                 )
                 for j in range(qml.math.shape(probs_numerator)[0])
