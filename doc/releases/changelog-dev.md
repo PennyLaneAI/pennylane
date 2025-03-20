@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Device preprocessing is now being performed in the execution pipeline for program capture.
+  [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
+  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
+
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
 
@@ -505,6 +509,7 @@
 
 * Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
   [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -573,6 +578,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `KerasLayer` in `qml.qnn.keras` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of `TensorFlow/Keras 2`.
+  [(#7097)](https://github.com/PennyLaneAI/pennylane/pull/7097)
+
 * Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
   transforms should always be specified.
   [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
@@ -615,6 +623,9 @@
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
+
+* Clean up logic in `_capture_qnode.py`.
+  [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
 * The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random matrices are guaranteed positive.
   [(#7071)](https://github.com/PennyLaneAI/pennylane/pull/7071)
@@ -768,6 +779,10 @@
 
 * `qml.qchem.givens_decomposition` no longer raises a `RuntimeWarning` when the input is a zero matrix.
   [#7053)](https://github.com/PennyLaneAI/pennylane/pull/7053)
+
+* Comparing an adjoint of an `Observable` with another `Operation` using `qml.equal` no longer incorrectly 
+  skips the check ensuring that the operator types match.
+  [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
 <h3>Contributors ✍️</h3>
 
