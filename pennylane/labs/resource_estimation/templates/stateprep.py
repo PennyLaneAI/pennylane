@@ -158,16 +158,16 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         We use the following (somewhat naive) assumptions to approximate the
         resources:
 
-        -  The MottonenStatePreparation routine is assumed for the state prep
-        component.
-        -  The permutation block requires 2 multi-controlled X gates and a
-        series of CNOT gates. On average we will be controlling on and flipping
-        half the number of bits in :code:`size_basis`. (i.e for any given basis
-        state, half will be ones and half will be zeros).
-        -  If the number of basis states provided spans the set of all basis states,
-        then we don't need to permute. In general, there is a probability associated
-        with not needing to permute wires if the basis states happen to match, we
-        estimate this quantity aswell.
+        -   The MottonenStatePreparation routine is assumed for the state prep
+            component.
+        -   The permutation block requires 2 multi-controlled X gates and a
+            series of CNOT gates. On average we will be controlling on and flipping
+            half the number of bits in :code:`size_basis`. (i.e for any given basis
+            state, half will be ones and half will be zeros).
+        -   If the number of basis states provided spans the set of all basis states,
+            then we don't need to permute. In general, there is a probability associated
+            with not needing to permute wires if the basis states happen to match, we
+            estimate this quantity aswell.
 
     """
 
@@ -191,16 +191,16 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
             We use the following (somewhat naive) assumptions to approximate the
             resources:
 
-            -  The MottonenStatePreparation routine is assumed for the state prep
-            component.
-            -  The permutation block requires 2 multi-controlled X gates and a
-            series of CNOT gates. On average we will be controlling on and flipping
-            half the number of bits in :code:`size_basis`. (i.e for any given basis
-            state, half will be ones and half will be zeros).
-            -  If the number of basis states provided spans the set of all basis states,
-            then we don't need to permute. In general, there is a probability associated
-            with not needing to permute wires if the basis states happen to match, we
-            estimate this quantity aswell.
+            -   The MottonenStatePreparation routine is assumed for the state prep
+                component.
+            -   The permutation block requires 2 multi-controlled X gates and a
+                series of CNOT gates. On average we will be controlling on and flipping
+                half the number of bits in :code:`size_basis`. (i.e for any given basis
+                state, half will be ones and half will be zeros).
+            -   If the number of basis states provided spans the set of all basis states,
+                then we don't need to permute. In general, there is a probability associated
+                with not needing to permute wires if the basis states happen to match, we
+                estimate this quantity aswell.
 
         """
         gate_types = {}
@@ -279,7 +279,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     Args:
         state (list): Binary input of shape ``(len(wires), )``. For example, if
         ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-        :math:`|010 \rangle`.
+        :math:`|010\rangle`.
 
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -296,7 +296,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         Args:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
             ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+            :math:`|010\rangle`.
 
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -317,7 +317,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         Resource parameters:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
             ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+            :math:`|010\rangle`.
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -333,7 +333,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         Args:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
             ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+            :math:`|010\rangle`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
