@@ -6,6 +6,7 @@
 
 * Device preprocessing is now being performed in the execution pipeline for program capture.
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
+  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
@@ -715,6 +716,12 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
+  differ depending if equivalent gate generators are defined using
+  different PennyLane operators. This was resolved by updating
+  `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
+  [(#7121)])(https://github.com/PennyLaneAI/pennylane/pull/7121)
 
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
   [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
