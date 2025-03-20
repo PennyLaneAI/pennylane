@@ -252,10 +252,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         if issubclass(base_class, qml.ops.Pow):
             rule = pow_pow_decomp
-            return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
 
         rule = pow_decomp
-        return self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+        self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+        return op_node_idx
 
     def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
         """Adds a controlled decomposition node to the graph."""
