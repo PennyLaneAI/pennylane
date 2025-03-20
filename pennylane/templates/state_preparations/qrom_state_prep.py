@@ -52,7 +52,7 @@ class QROMStatePreparation(Operation):
     in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
 
     Args:
-        state_vector (TensorLike): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
+        state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
         precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
             rotation angles utilized in the template.
@@ -88,14 +88,12 @@ class QROMStatePreparation(Operation):
     .. details::
         :title: Usage Details
 
-        Following the algorithm described in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_,
-        this template employs :class:`~.QROM` to encode the binary representation of the rotation angles
-        and subsequently applies controlled rotations :class:`~.CRY` to implement these angles on the target qubits.
-
-        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the number of ``wires`` must be :math:`n`.
-        The ``precision_wires`` are used as the target wires in the underlying QROM operations.
-        The number of ``precision_wires`` determines the precision with which the rotation angles of the
-        template are encoded. This means that we truncate the binary representation of the angle up to
+        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`, and the
+        number of ``wires`` must be :math:`n`. The ``precision_wires`` are used as the target wires
+        in the underlying QROM operations and are used to
+        store the binary representation :math:`|\theta_i\rangle` following Eq.5
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+        This means that we truncate the binary representation of the angle up to
         the :math:`m`-th digit, where :math:`m` is the number of precision wires given.
 
         The ``work_wires`` are used as auxiliary qubits in the underlying QROM operations.
@@ -111,7 +109,7 @@ class QROMStatePreparation(Operation):
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
+        norm = qml.math.linalg.norm(state_vector)
         if not qml.math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError(
                 f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
@@ -167,13 +165,13 @@ class QROMStatePreparation(Operation):
     @staticmethod
     def compute_decomposition(
         state_vector, wires, input_wires, precision_wires, work_wires
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""
         Computes the decomposition operations for the given state vector.
 
         Args:
 
-            state_vector (TensorLike): The state vector to prepare.
+            state_vector (tensor_like): The state vector to prepare.
             wires (Sequence[int]): The wires which the operator acts on.
             input_wires (Sequence[int]): The wires on which to prepare the state.
             precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
@@ -225,8 +223,7 @@ class QROMStatePreparation(Operation):
 
             # Turn binary representation into proper rotation
             for ind, wire in enumerate(precision_wires):
-                rotation_angle = 2 ** (-ind - 1)
-                decomp_ops.append(qml.CRY(np.pi * rotation_angle, wires=[wire, wires[i]]))
+                decomp_ops.append(qml.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
 
             # Clean wires used to store the theta values
             decomp_ops.append(
