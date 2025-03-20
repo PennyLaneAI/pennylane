@@ -50,7 +50,7 @@ def _coeffs(states: int, modes: int, order: int):
             for j in range(states):
                 symmetric_phi[i, j] = (phi[i, j] + phi[j, i]) / 2
 
-    return np.random.random(size=(modes,)), symmetric_phis
+    return np.random.random(size=modes), symmetric_phis
 
 
 vword0 = RealspaceSum(
