@@ -145,7 +145,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCY(qml.CY, re.ResourceOperator):
@@ -263,7 +263,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCZ(qml.CZ, re.ResourceOperator):
@@ -382,7 +382,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
@@ -504,7 +504,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
@@ -620,7 +620,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
@@ -719,7 +719,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
@@ -895,7 +895,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):

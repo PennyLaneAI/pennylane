@@ -726,7 +726,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
 
         try:
             return base_class.pow_resource_decomp(z, **base_params)
