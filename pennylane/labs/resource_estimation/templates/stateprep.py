@@ -84,6 +84,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
     Resources:
         Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
+        The resources are defined, mathematically, as 2
     """
 
     @staticmethod
