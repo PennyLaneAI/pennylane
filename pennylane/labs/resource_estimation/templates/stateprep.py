@@ -277,9 +277,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     r"""Resource class for the BasisState template.
 
     Args:
-        state (list): Binary input of shape ``(len(wires), )``. For example, if
-            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+         num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -287,26 +285,21 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        state,
+        num_bit_flips,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Args:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if
-                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-                :math:`|010 \rangle`.
+            num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
         """
-
         gate_types = {}
-
-        rx = re.ResourceRX.resource_rep()
-
-        gate_types[rx] = sum(1 for basis in state if basis == 1)
+        x = re.ResourceX.resource_rep()
+        gate_types[x] = num_bit_flips
 
         return gate_types
 
@@ -315,33 +308,29 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if
-                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-                :math:`|010 \rangle`.
+            num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
         Returns:
             dict: dictionary containing the resource parameters
         """
-        state = self.parameters[0]
-        return {"state": state}
+        num_bit_flips = sum(self.parameters[0])
+        return {"num_bit_flips": num_bit_flips}
 
     @classmethod
-    def resource_rep(cls, state) -> CompressedResourceOp:
+    def resource_rep(cls, num_bit_flips) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            state (list): Binary input of shape ``(len(wires), )``. For example, if
-                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-                :math:`|010 \rangle`.
+            num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
 
-        params = {"state": state}
+        params = {"num_bit_flips": num_bit_flips}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def tracking_name(cls, state) -> str:
-        return f"BasisState({state})"
+    def tracking_name(cls, num_bit_flips) -> str:
+        return f"BasisState({num_bit_flips})"
