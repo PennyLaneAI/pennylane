@@ -278,8 +278,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
     Args:
         state (list): Binary input of shape ``(len(wires), )``. For example, if
-        ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-        :math:`|010 \rangle`.
+            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+            :math:`|010 \rangle`.
 
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -295,8 +295,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
         Args:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
-            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+                :math:`|010 \rangle`.
 
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
@@ -316,8 +316,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
         Resource parameters:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
-            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+                :math:`|010 \rangle`.
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -332,8 +332,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
         Args:
             state (list): Binary input of shape ``(len(wires), )``. For example, if
-            ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
-            :math:`|010 \rangle`.
+                ``state=np.array([0, 1, 0])``, the quantum system will be prepared in the state
+                :math:`|010 \rangle`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
