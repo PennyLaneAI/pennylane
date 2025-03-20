@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Integrate PennyLane's graph-based decomposition solver with decompose.
-  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
-
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
 
@@ -175,6 +172,9 @@
 * A graph-based decomposition solver has been implemented that solves for the optimal decomposition
   rule to use for an operator towards a target gate set.
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+
+* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
 
 <h3>Improvements 🛠</h3>
   
