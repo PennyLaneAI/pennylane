@@ -18,10 +18,10 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
         List[GenericFragment]: A list of GenericFragment objects instantiated from `fragments`.
     """
 
-    if len(fragments) > 0:
-        frag_type = type(fragments[0])
-    else:
+    if not len(fragments):
         return []
+    
+    frag_type = type(fragments[0])
 
     if not all(isinstance(fragment, frag_type) for fragment in fragments):
         raise TypeError("All fragments must be of the same type.")
