@@ -484,7 +484,7 @@ def draw_mpl(
 
         For deep circuits, the ``max_length`` kwarg can break the circuit into multiple independent figures.
 
-        .. code-blockk:: python
+        .. code-block:: python
 
             def circuit():
                 for _ in range(10):
