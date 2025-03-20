@@ -67,7 +67,7 @@ class VibronicMatrix(Fragment):
 
     def set_block(self, row: int, col: int, rs_sum: RealspaceSum) -> None:
         """Set the value of the block indexed at ``(row, col)``
-        
+
         Args:
             row (int): the row of the index
             col (int): the column of the index

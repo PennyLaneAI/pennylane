@@ -14,6 +14,7 @@
 """Functions for retreiving effective error from fragments"""
 
 from typing import List, Sequence
+
 from pennylane.labs.trotter import AbstractState, Fragment, nested_commutator
 
 

@@ -21,108 +21,123 @@ from pennylane.labs.trotter.realspace import RealspaceCoeffs, RealspaceOperator,
 
 
 def vibrational_fragments(
-    modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray], frags="harmonic"
+    modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray], frags="harmonic"
 ) -> List[RealspaceSum]:
-    """Return a list of fragments"""
+    """Returns a list of fragments summing to the vibrational Hamiltonian
+
+    Args:
+        modes (int): the number of vibrational modes
+        freqs (ndarray): the harmonic frequences
+        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
+        frags (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
+
+    Returns:
+        List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
+
+    """
 
     if frags == "harmonic":
-        return [_harmonic_fragment(modes, omegas), _anharmonic_fragment(modes, phis)]
+        return [_harmonic_fragment(modes, freqs), _anharmonic_fragment(modes, taylor_coeffs)]
 
     if frags == "kinetic":
-        return [_kinetic_fragment(modes, omegas), _potential_fragment(modes, omegas, phis)]
+        return [_kinetic_fragment(modes, freqs), _potential_fragment(modes, freqs, taylor_coeffs)]
 
     if frags == "position":
-        return [_position_fragment(modes, omegas, phis), _momentum_fragment(modes, omegas)]
+        return [_position_fragment(modes, freqs, taylor_coeffs), _momentum_fragment(modes, freqs)]
 
     raise ValueError(f"{frags} is not a valid fragmentation scheme.")
 
 
-def _harmonic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _harmonic_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the harmonic part."""
-    _validate_omegas(modes, omegas)
+    _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(omegas / 2, label=("omegas", omegas / 2))
+    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label=("freqs", freqs / 2))
     momentum = RealspaceOperator(modes, ("PP",), coeffs)
     position = RealspaceOperator(modes, ("QQ",), coeffs)
 
     return RealspaceSum(modes, [momentum, position])
 
 
-def _anharmonic_fragment(modes: int, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _anharmonic_fragment(modes: int, taylor_coeffs: Sequence[np.ndarray]) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the anharmonic part."""
-    _validate_phis(modes, phis)
+    _validate_taylor_coeffs(modes, taylor_coeffs)
 
     ops = []
-    for i, phi in enumerate(phis):
+    for i, phi in enumerate(taylor_coeffs):
         op = ("Q",) * i
-        coeffs = RealspaceCoeffs.tensor_node(phi, label=(f"phis[{i}]", phis))
+        coeffs = RealspaceCoeffs.tensor_node(phi, label=(f"taylor_coeffs[{i}]", taylor_coeffs))
         realspace_op = RealspaceOperator(modes, op, coeffs)
         ops.append(realspace_op)
 
     return RealspaceSum(modes, ops)
 
 
-def _kinetic_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _kinetic_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the kinetic part"""
-    _validate_omegas(modes, omegas)
+    _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(omegas / 2, label=("omegas", omegas / 2))
+    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label=("freqs", freqs / 2))
     kinetic = RealspaceOperator(modes, ("PP",), coeffs)
 
     return RealspaceSum(modes, [kinetic])
 
 
-def _potential_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _potential_fragment(
+    modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the potential part"""
-    _validate_input(modes, omegas, phis)
+    _validate_input(modes, freqs, taylor_coeffs)
 
     ops = []
-    for i, phi in enumerate(phis):
+    for i, phi in enumerate(taylor_coeffs):
         op = ("Q",) * i
-        coeffs = RealspaceCoeffs.tensor_node(phi, label=(f"phis[{i}]", phis))
+        coeffs = RealspaceCoeffs.tensor_node(phi, label=(f"taylor_coeffs[{i}]", taylor_coeffs))
         realspace_op = RealspaceOperator(modes, op, coeffs)
         ops.append(realspace_op)
 
     op = ("Q", "Q")
-    diag = np.diag(omegas / 2)
-    coeffs = RealspaceCoeffs.tensor_node(diag, label=("omegas", diag))
+    diag = np.diag(freqs / 2)
+    coeffs = RealspaceCoeffs.tensor_node(diag, label=("freqs", diag))
     realspace_op = RealspaceOperator(modes, op, coeffs)
     ops.append(realspace_op)
 
     return RealspaceSum(modes, ops)
 
 
-def _position_fragment(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> RealspaceSum:
+def _position_fragment(
+    modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
+) -> RealspaceSum:
     """Return the position term of the Hamiltonian"""
-    coeffs = RealspaceCoeffs.tensor_node(omegas / 2, label=("omegas", omegas / 2))
+    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label=("freqs", freqs / 2))
     position = RealspaceOperator(modes, ("QQ",), coeffs)
 
-    return RealspaceSum(modes, [position]) + _anharmonic_fragment(modes, phis)
+    return RealspaceSum(modes, [position]) + _anharmonic_fragment(modes, taylor_coeffs)
 
 
-def _momentum_fragment(modes: int, omegas: np.ndarray) -> RealspaceSum:
+def _momentum_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Return the momentum term of the Hamiltonian"""
-    _validate_omegas(modes, omegas)
+    _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(omegas / 2, label=("omegas", omegas / 2))
+    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label=("freqs", freqs / 2))
     momentum = RealspaceOperator(modes, ("PP",), coeffs)
 
     return RealspaceSum(modes, [momentum])
 
 
-def _validate_phis(modes: int, phis: Sequence[np.ndarray]) -> None:
-    for i, phi in enumerate(phis):
+def _validate_taylor_coeffs(modes: int, taylor_coeffs: Sequence[np.ndarray]) -> None:
+    for i, phi in enumerate(taylor_coeffs):
         shape = (modes,) * i
 
         if not phi.shape == shape:
             raise ValueError(f"Expected order {i} to be of shape {shape}, got {phi.shape}.")
 
 
-def _validate_omegas(modes: int, omegas: np.ndarray) -> None:
-    if not len(omegas) == modes:
-        raise ValueError(f"Expected omegas to be of length {modes}, got {len(omegas)}.")
+def _validate_freqs(modes: int, freqs: np.ndarray) -> None:
+    if not len(freqs) == modes:
+        raise ValueError(f"Expected freqs to be of length {modes}, got {len(freqs)}.")
 
 
-def _validate_input(modes: int, omegas: np.ndarray, phis: Sequence[np.ndarray]) -> None:
-    _validate_phis(modes, phis)
-    _validate_omegas(modes, omegas)
+def _validate_input(modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]) -> None:
+    _validate_taylor_coeffs(modes, taylor_coeffs)
+    _validate_freqs(modes, freqs)
