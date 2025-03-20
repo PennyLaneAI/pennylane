@@ -17,6 +17,7 @@ Contains the FlipSign template.
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import WiresLike
 
 
 class FlipSign(Operation):
@@ -67,13 +68,13 @@ class FlipSign(Operation):
     num_wires = AnyWires
 
     def _flatten(self):
-        hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
-        return tuple(), (self.wires, hyperparameters)
+        return self.data, (self.wires, self.hyperparameters)
 
     def __repr__(self):
-        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
+        return f"FlipSign({self.data}, wires={self.wires.tolist()})"
 
-    def __init__(self, n, wires, id=None):
+    def __init__(self, n, wires: WiresLike, id=None):
+
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
@@ -88,15 +89,13 @@ class FlipSign(Operation):
                 raise ValueError(
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
-        n = tuple(n)
 
-        if len(wires) != len(n):
+        if len(wires) != len(tuple(n)):
             raise ValueError(
                 "Wires length and flipping state length does not match, they must be equal length "
             )
 
-        self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires, id=id)
+        super().__init__(n, wires=wires, id=id)
 
     @staticmethod
     def to_list(n, n_wires):
@@ -120,10 +119,10 @@ class FlipSign(Operation):
 
     @property
     def num_params(self):
-        return 0
+        return 1
 
     @staticmethod
-    def compute_decomposition(wires, arr_bin):  # pylint: disable=arguments-differ
+    def compute_decomposition(n, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
@@ -141,12 +140,35 @@ class FlipSign(Operation):
 
         op_list = []
 
-        if arr_bin[-1] == 0:
+        if n[-1] == 0:
             op_list.append(qml.X(wires[-1]))
 
-        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=n[:-1]))
 
-        if arr_bin[-1] == 0:
+        if n[-1] == 0:
             op_list.append(qml.X(wires[-1]))
 
         return op_list
+
+    @staticmethod
+    def compute_qfunc_decomposition(n, *wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator
+
+        .. seealso:: :meth:`~.FlipSign.decomposition`.
+
+        Args:
+            wires (array[int]): wires that the operator acts on
+            arr_bin (array[int]): binary array vector representing the state to flip the sign
+
+        Raises:
+            ValueError: "Wires length and flipping state length does not match, they must be equal length "
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+
+        qml.cond(n[-1] == 0, qml.X, qml.I)(wires[-1])
+
+        qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=n[:-1])
+
+        qml.cond(n[-1] == 0, qml.X, qml.I)(wires[-1])
