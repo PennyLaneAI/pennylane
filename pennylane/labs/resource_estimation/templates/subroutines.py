@@ -1221,3 +1221,64 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "fixed_point": fixed_point,
         }
         return CompressedResourceOp(cls, params)
+
+
+class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
+    r"""Resource class for the QubitUnitary template.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+
+    Resources:
+        The resources are not defined. Requesting the resources of this
+        gate raises a :code:`ResourcesNotDefined` error.
+
+    .. seealso:: :class:`~.QubitUnitary`
+
+    """
+
+    @staticmethod
+    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are not defined. Requesting the resources of this
+            gate raises a :code:`ResourcesNotDefined` error.
+
+        """
+        raise re.ResourcesNotDefined
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        return {"num_wires": len(self.wires)}
+
+    @classmethod
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"num_wires": num_wires}
+        return CompressedResourceOp(cls, params)
+
+    @staticmethod
+    def tracking_name(num_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"QubitUnitary({num_wires})"
