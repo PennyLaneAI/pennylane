@@ -26,7 +26,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
     Args:
-        num_wires(int): the number of wires that StatePrep acts on
+        num_wires (int): the number of wires that StatePrep acts on
 
     Resources:
         Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -38,7 +38,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires(int): the number of wires that StatePrep acts on
+            num_wires (int): the number of wires that StatePrep acts on
 
         Resources:
             Uses the resources as defined in the ResourceMottonenStatePreperation template.
@@ -50,7 +50,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            num_wires(int): the number of wires that StatePrep acts on
+            num_wires (int): the number of wires that StatePrep acts on
 
         Returns:
             dict: dictionary containing the resource parameters
@@ -63,7 +63,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires(int): the number of wires that StatePrep acts on
+            num_wires (int): the number of wires that StatePrep acts on
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -83,7 +83,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         num_wires(int): the number of wires that StatePrep acts on
 
     Resources:
-        Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
+        Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
     """
 
     @staticmethod
@@ -95,7 +95,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
             num_wires(int): the number of wires that StatePrep acts on
 
         Resources:
-            Using the resources as described in https://arxiv.org/pdf/quant-ph/0407010.
+            Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
         """
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
@@ -153,7 +153,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
     Resources:
         The resources are computed following the PennyLane decomposition of
         the class. This class was designed based on the method described in
-        https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
+        `Fomichev et al. (2024) <https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339>`_.
 
         We use the following (somewhat naive) assumptions to approximate the
         resources:
@@ -186,7 +186,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         Resources:
             The resources are computed following the PennyLane decomposition of
             the class. This class was designed based on the method described in
-            https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339.
+            `Fomichev et al. (2024) <https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339>`_.
 
             We use the following (somewhat naive) assumptions to approximate the
             resources:

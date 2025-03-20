@@ -540,8 +540,8 @@ class ResourceSelect(qml.Select, ResourceOperator):
     @staticmethod
     def resources_for_ui(cmpr_ops, **kwargs):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
-        The resources are based on the analysis in https://arxiv.org/pdf/1805.03662 section III.A, 'Unary Iteration and Indexed
-        Operations'. See Figures 4, 6, and 7.
+        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
         Note: This implementation assumes we have access to :math:`S + 1` additional work qubits,
         where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
@@ -938,8 +938,8 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
     Resources:
         The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
+        `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
 
         We use the one-auxillary qubit version of select, instead of the built-in select
         resources.
@@ -969,8 +969,8 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         Resources:
             The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
+            `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
 
             We use the one-auxillary qubit version of select, instead of the built-in select
             resources.
