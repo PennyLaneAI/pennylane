@@ -529,16 +529,18 @@ class TestDifferentiation:
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
-    def test_no_gradients_with_lightning(self):
-        """Test that we get an error if we try and differentiate a lightning execution."""
+    def test_gradients_with_lightning(self):
+        """Test that gradients can be computed with lightning."""
 
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(NotImplementedError, match=r"does not yet support PLXPR jvps."):
-            jax.grad(circuit)(0.5)
+        x = 0.9
+        xt = -0.6
+        jvp = jax.jvp(circuit, (x,), (xt,))
+        assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
 def test_qnode_jit():
