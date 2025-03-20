@@ -1151,6 +1151,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         return gate_types
 
+    @property
     def resource_params(self) -> Dict:
         bitstrings = self.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
