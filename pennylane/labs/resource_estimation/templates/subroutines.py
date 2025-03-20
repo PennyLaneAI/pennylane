@@ -990,7 +990,6 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         num_swap_wires = math.floor(math.log2(num_parallel_computations))
         num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
-        assert num_swap_wires + num_select_wires <= num_control_wires
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
