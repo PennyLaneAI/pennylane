@@ -421,10 +421,10 @@ def decompose(
 
     .. note::
 
-        When `qml.decomposition.enable_graph()` is present, the new experimental
-        graph-based decompositions system is enabled. This new way of doing decompositions
-        is generally more resource efficient and allows for specifying custom decompositions.
-        The `fixed_decomps` and `alt_decomps` arguments are only functional with this toggle present.
+        When ``qml.decomposition.enable_graph()`` is present, this transform takes advantage of the
+        new graph-based decomposition algorithm that allows for more flexible and resource-efficient
+        decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
+        ``alt_decomps`` are only functional with this toggle present.
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
@@ -438,13 +438,13 @@ def decompose(
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
-            This is only used when `qml.decomposition.enable_graph()` is present.
+            This is only used when ``qml.decomposition.enable_graph()`` is present.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
             quantum function decorated with :func:`~pennylane.register_resources`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
             decomposition rules defined for this operator, and one of them may be chosen if they
-            lead to a more resource-efficient decomposition. This is only used when `qml.decomposition.enable_graph()`
+            lead to a more resource-efficient decomposition. This is only used when ``qml.decomposition.enable_graph()``
             is present.
 
     Returns:
@@ -466,24 +466,59 @@ def decompose(
         circuit into a set of basis gates available on a specific device architecture.
 
     .. details::
-        :title: Use with new decompositions system
+        :title: Integration with the Graph-Based Decomposition System
 
-        With `qml.decomposition.enable_graph()` present, the new experimental graph-based decompositions
-        system is enabled. For workflows that just involve targeting a specific gate set with
-        `qml.transforms.decompose(circuit, gate_set={...})`, the UI is the exact same, but you can expect
-        better performance.
+        This transform takes advantage of the new graph-based decomposition algorithm when
+        ``qml.decomposition.enable_graph()`` is present, which allows for more flexible
+        decompositions towards any target gate set. For example, the current system does not
+        guarentee a decomposition to the desired target gate set:
 
-        **Custom decompositions**
+        .. code-block:: python
 
-        Additionally, the `fixed_decomps` and `alt_decomps` arguments are functional with the new system enabled.
-        These two keyword arguments allow for customizing how gates get decomposed; decompositions in `alt_decomps`
-        are optional for the algorithm to choose if it's the most resource-efficient, and decompositions in
-        `fixed_decomps` force the algorithm to choose those decompositions, regardless of their efficiency.
+            import pennylane as qml
 
-        Creating custom decompositions that the system can use involves a quantum function that represents
-        the decomposition and a resource data structure that tracks gate counts in the custom decomposition.
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.CRX(0.5, wires=[0, 1])
 
-        See also: :func:`register_resources`
+            tape = qml.tape.QuantumScript.from_queue(q)
+            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+
+        .. code-block:: pycon
+
+            >>> new_tape.operations
+            [RZ(1.5707963267948966, wires=[1]),
+             RY(0.25, wires=[1]),
+             CNOT(wires=[0, 1]),
+             RY(-0.25, wires=[1]),
+             CNOT(wires=[0, 1]),
+             RZ(-1.5707963267948966, wires=[1])]
+
+        With the new system enabled, the transform produces the expected outcome.
+
+        .. code-block:: pycon
+
+            >>> qml.decomposition.enable_graph()
+            >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+            >>> new_tape.operations
+            [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
+
+
+        **Customizing Decompositions**
+
+        The new system also enables specifying custom decomposition rules. When ``qml.decomposition.enable_graph()``
+        is present, this transform accepts two additional keyword arguments: ``fixed_decomps`` and
+        ``alt_decomps``. The user can define custom decomposition rules as quantum functions decorated
+        with ``@qml.register_resources``, and provide them to the transform via these arguments.
+
+        .. seealso:: :func:`qml.register_resources <pennylane.register_resources>`
+
+        The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
+        certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+        for operators that may be chosen if they lead to a more resource-efficient decomposition.
+
+        In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
+        gates; when it comes to ``qml.CNOT``, the system will choose the most efficient decomposition rule
+        among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qml.CNOT``.
 
         .. code-block:: python
 
@@ -491,25 +526,11 @@ def decompose(
 
             qml.decomposition.enable_graph()
 
-            @qml.register_resources({qml.H: 2, qml.CZ: 1})
-            def my_cnot(wires, **__):
-                qml.H(wires=wires[1])
-                qml.CZ(wires=wires)
-                qml.H(wires=wires[1])
-
-            @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-            @qml.qnode(qml.device("default.qubit"))
-            def circuit():
-                qml.CNOT(wires=[0, 1])
-                return qml.state()
-
-        >>> print(qml.draw(circuit, level="device")())
-        0: ────╭●────┤  State
-        1: ──H─╰Z──H─┤  State
-
-        The `alt_decomps` argument can handle multiple options per operator:
-
-        .. code-block:: python
+            @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+            def isingxx_decomp(phi, wires, **__):
+                qml.CNOT(wires=wires)
+                qml.RX(phi, wires=[wires[0]])
+                qml.CNOT(wires=wires)
 
             @qml.register_resources({qml.H: 2, qml.CZ: 1})
             def my_cnot1(wires, **__):
@@ -527,16 +548,21 @@ def decompose(
 
             @partial(
                 qml.transforms.decompose,
-                alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]}
+                gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+                alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+                fixed_decomps={qml.IsingXX: isingxx_decomp},
             )
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 qml.CNOT(wires=[0, 1])
+                qml.IsingXX(0.5, wires=[0, 1])
                 return qml.state()
 
-        Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
 
-        See also: :func:`add_decomps`
+        .. code-block:: pycon
+
+            >>> qml.specs(circuit)()["resources"].gate_types
+            defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
 
     **Example**
 

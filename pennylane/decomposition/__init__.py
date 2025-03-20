@@ -21,13 +21,10 @@ This module implements the infrastructure for PennyLane's new graph-based decomp
 
     This module is experimental and is subject to change in the future.
 
-To activate and deactivate the new experimental graph-based decomposition
-system, use the switches ``qml.decomposition.enable_graph`` and
-``qml.decomposition.disable_graph``.
-
-Whether or not the graph-based decomposition is currently being used can be
-queried with ``qml.decomposition.enabled_graph``.
-By default, the mechanism is disabled.
+To activate and deactivate the new experimental graph-based decomposition system, use the switches
+``qml.decomposition.enable_graph`` and ``qml.decomposition.disable_graph``. Whether the graph-based
+decomposition system is currently being used can be queried with ``qml.decomposition.enabled_graph``.
+By default, this system is disabled.
 
 .. currentmodule:: pennylane.decomposition
 
@@ -96,7 +93,9 @@ Inspecting and Managing Decomposition Rules
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
-a list of known decomposition rules for a given operator.
+a list of known decomposition rules for a given operator. In the new system, an operator can be
+associated with multiple decomposition rules, and the one that leads to the most resource-efficient
+decomposition towards a target gate set is chosen.
 
 Graph-based Decomposition Solver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,32 +130,55 @@ operator towards a target gate set.
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The graph decompostiion system can be used in conjunction with the decompose transform ``qml.transforms.decompose``.
-This new way of performing decomposition is generally more resource-efficient and allows for specifying custom decompositions.
+The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
+decomposition algorithm when ``qml.decomposition.enable_graph()`` is present, and allows for more
+flexible decompositions towards any target gate set. For example, the current system does not
+guarentee a decomposition to the desired target gate set:
 
-The new system can handle more complex decompositions pathways and is more flexible. For example,
-in the old system when ``qml.decomposition.disable_graph``, if ``qml.CZ`` is in the target gate set instead of ``qml.CNOT``,
-you won't be able to decompose a ``qml.CRX`` to the desired target gate set, but with ``qml.decomposition.enable_graph``,
-you do get the expected result.
+.. code-block:: python
 
-**Custom Decompositions**
+    import pennylane as qml
 
-Additionally, the ``fixed_decomps` and ``alt_decomps`` arguments are functional with the new system enabled.
-These two keyword arguments allow for customizing how gates get decomposed; decompositions in ``alt_decomps``
-are optional for the algorithm to choose if it's the most resource-efficient, and decompositions in
-``fixed_decomps`` force the algorithm to choose those decompositions, regardless of their efficiency.
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.CRX(0.5, wires=[0, 1])
 
-Creating custom decompositions that the system can use involves a quantum function that represents
-the decomposition and a resource data structure that tracks gate counts in the custom decomposition.
+    tape = qml.tape.QuantumScript.from_queue(q)
+    [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
-See also :ref:`Defining Decomposition Rules <decomps_rules>` section.
+.. code-block:: pycon
 
-In the following example, we define custom decompositions for both ``qml.CNOT`` and ``qml.IsingXX``,
-and we use the ``qml.transforms.decompose`` transform to decompose a quantum circuit to the target gate set
-``{"RZ", "RX", "CZ", "GlobalPhase"}``.
+    >>> new_tape.operations
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
 
-We use ``fixed_decomps`` to force the system to use the custom decompositions for ``qml.IsingXX``
-and ``alt_decomps`` to provide alternative decompositions for the ``qml.CNOT`` gate.
+With the new system enabled, the transform produces the expected outcome.
+
+.. code-block:: pycon
+
+    >>> qml.decomposition.enable_graph()
+    >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    >>> new_tape.operations
+    [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
+
+**Customizing Decompositions**
+
+The new system also enables specifying custom decomposition rules. When ``qml.decomposition.enable_graph()``
+is present, the :func:`~pennylane.transforms.decompose` transform accepts two additional keyword
+arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom decomposition rules
+as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
+to the transform via these arguments.
+
+The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
+certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+for operators that may be chosen if they lead to a more resource-efficient decomposition.
+
+In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
+gates; when it comes to ``qml.CNOT``, the system will choose the most efficient decomposition rule
+among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qml.CNOT``.
 
 .. code-block:: python
 
@@ -202,14 +224,13 @@ and ``alt_decomps`` to provide alternative decompositions for the ``qml.CNOT`` g
     >>> qml.specs(circuit)()["resources"].gate_types
     defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
 
-
-Alternative decompositions for the system to choose can also be specified globally with :func:`add_decomps`.
-See also :ref:`Inspecting and Managing Decomposition Rules <decomps_management>` section for more information.
+To register alternative decomposition rules under an operator to be used globally, use
+:func:`~pennylane.add_decomps`. See :ref:`Inspecting and Managing Decomposition Rules <decomps_management>`
+for details.
 
 """
 
 from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
-
 from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,
