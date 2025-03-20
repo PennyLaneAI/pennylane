@@ -97,36 +97,6 @@ a list of known decomposition rules for a given operator. In the new system, an 
 associated with multiple decomposition rules, and the one that leads to the most resource-efficient
 decomposition towards a target gate set is chosen.
 
-Graph-based Decomposition Solver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~DecompositionGraph
-
-The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
-algorithm is used to explore the graph and find the most efficient decomposition of a given
-operator towards a target gate set.
-
-.. code-block:: python
-
-    op = qml.CRX(0.5, wires=[0, 1])
-    graph = DecompositionGraph(
-        operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
-    )
-    graph.solve()
-
-.. code-block:: pycon
-
-    >>> with qml.queuing.AnnotatedQueue() as q:
-    ...     graph.decomposition(op)(0.5, wires=[0, 1])
-    >>> q.queue
-    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
-    >>> graph.resource_estimate(op)
-    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
-
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -227,6 +197,36 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 To register alternative decomposition rules under an operator to be used globally, use
 :func:`~pennylane.add_decomps`. See :ref:`Inspecting and Managing Decomposition Rules <decomps_management>`
 for details.
+
+Graph-based Decomposition Solver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionGraph
+
+The decomposition graph is a directed graph of operators and decomposition rules. Dijkstra's
+algorithm is used to explore the graph and find the most efficient decomposition of a given
+operator towards a target gate set.
+
+.. code-block:: python
+
+    op = qml.CRX(0.5, wires=[0, 1])
+    graph = DecompositionGraph(
+        operations=[op],
+        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+    )
+    graph.solve()
+
+.. code-block:: pycon
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    >>> q.queue
+    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    >>> graph.resource_estimate(op)
+    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
 
 """
 

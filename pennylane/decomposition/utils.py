@@ -67,9 +67,3 @@ def toggle_graph_decomposition():
 
 
 enable_graph, disable_graph, enabled_graph = toggle_graph_decomposition()
-"""
-The following functions are used to enable and disable the graph-based decomposition algorithm:
-- enable_graph: Enables the graph-based decomposition algorithm.
-- disable_graph: Disables the graph-based decomposition algorithm.
-- enabled_graph: Returns the current status of the graph-based decomposition algorithm.
-"""
