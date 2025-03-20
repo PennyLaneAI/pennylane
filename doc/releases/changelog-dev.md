@@ -348,8 +348,13 @@
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
+* The `assert_valid` method now validates that an operator's decomposition does not contain 
+  the operator itself, instead of checking that it does not contain any operators of the same class as the operator.
+  [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
+
 * Improves support when specifying wires as type `jax.numpy.ndarray` if program capture is enabled.
   [(#7108)](https://github.com/PennyLaneAI/pennylane/pull/7108)
+
 
 <h4>Capturing and representing hybrid programs</h4>
 
