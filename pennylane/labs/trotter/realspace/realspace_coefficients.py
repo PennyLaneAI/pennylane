@@ -350,8 +350,8 @@ def _add_dicts(d1: Dict, d2: Dict, threshold: float):
     """
     add_dict = {}
 
-    d1_keys = {d1.keys()}
-    d2_keys = {d2.keys()}
+    d1_keys = set(d1.keys())
+    d2_keys = set(d2.keys())
 
     for key in d1_keys.intersection(d2_keys):
         if abs(d1[key] + d2[key]) > threshold:
