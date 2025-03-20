@@ -333,7 +333,7 @@ class VibronicMatrix(Fragment):
         return d
 
     @classmethod
-    def zero(cls, states, modes) -> VibronicMatrix:
+    def zero(cls, states: int, modes: int) -> VibronicMatrix:
         """Return a VibronicMatrix representation of the zero operator"""
         return cls(states, modes, {})
 
