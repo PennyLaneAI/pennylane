@@ -36,7 +36,16 @@ class _NodeType(Enum):
 
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
-    """A tree representing an expression that computes the coefficients of a ``RealspaceOperator``."""
+    """A tree representing an expression that computes the coefficients of a ``RealspaceOperator``.
+    This class should be instantiated from the following class methods.
+
+        * ``tensor_node``: a leaf node containing a coefficient tensor
+        * ``outer_node``: a node representing the outer product of its two children
+        * ``sum_node``: a node representing the sum of its two children
+        * ``scalar_node``: a node representing the product of its child by a scalar
+
+    See the documentation for these methods for usage details.
+    """
 
     def __init__(
         self,

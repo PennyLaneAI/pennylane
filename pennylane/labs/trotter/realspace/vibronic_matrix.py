@@ -308,7 +308,7 @@ class VibronicMatrix(Fragment):
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
-    return (k & (k - 1) == 0) or k == 0
+    return k & (k - 1) == 0
 
 
 def _next_pow_2(k: int) -> int:
