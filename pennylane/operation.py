@@ -720,6 +720,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+        # If not in kwargs, check if the last positional argument represents wire(s).
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
