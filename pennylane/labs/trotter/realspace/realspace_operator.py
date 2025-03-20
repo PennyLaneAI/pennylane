@@ -53,7 +53,7 @@ class RealspaceOperator:
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
 
         if sparse:
-            indices = self.coeffs.nonzero()
+            indices = list(self.coeffs.nonzero().keys())
         else:
             indices = product(range(self.modes), repeat=len(self.ops))
 
@@ -274,11 +274,6 @@ class RealspaceSum(Fragment):
             gridpoints = params["gridpoints"]
         except KeyError as e:
             raise KeyError("Need to specify the number of gridpoints") from e
-
-        try:
-            sparse = params["sparse"]
-        except KeyError:
-            sparse = False
 
         norm = 0
 

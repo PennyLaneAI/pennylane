@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from enum import Enum
 from itertools import product
-from typing import Any, Dict, Iterator, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
