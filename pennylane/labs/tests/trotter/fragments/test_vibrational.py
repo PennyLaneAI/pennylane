@@ -81,7 +81,7 @@ class TestHarmonic1Mode:
         for i in range(n_states):
             for j in range(i):
                 rot_log[i, j] = (i + 1) * (j + 1)
-                rot_log[j, i] = -(i + 1) * (j + 1)
+                rot_log[j, i] = -rot_log[i, j]
 
         rot = sp.linalg.expm(rot_log)
 
@@ -141,7 +141,7 @@ class TestHarmonicMultiMode:
         for i in range(len(states)):
             for j in range(i):
                 rot_log[i, j] = (i + 1) * (j + 1)
-                rot_log[j, i] = -(i + 1) * (j + 1)
+                rot_log[j, i] = -rot_log[i, j]
 
         rot = sp.linalg.expm(rot_log)
 
