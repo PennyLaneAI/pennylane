@@ -41,7 +41,8 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
     ``abstract_shapes`` contains all the tracers found in shapes.
 
     """
-    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(getattr(x, "dtype", None), "int"):
+    dtype = getattr(x, "dtype", "float")
+    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(dtype, jax.numpy.integer):
         previous_ints.append(x)
         return {}
 
@@ -98,7 +99,7 @@ def determine_abstracted_axes(args):
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
 
 
-    For cases where the shape of an argnument matches a previous argument like:
+    For cases where the shape of an argument matches a previous argument like:
 
     >>> def f(i, x):
     ...    return x
@@ -109,13 +110,13 @@ def determine_abstracted_axes(args):
     ...     print("abstract_shapes: ", abstract_shapes)
     ...     print("jaxpr: ", jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args))
     >>> _ = jax.make_jaxpr(workflow)(2)
-    abstracted_axes:  ({}, {0: 'a_arg'})
+    abstracted_axes:  ({}, {0: '0_arg'})
     abstract_shapes:  []
     jaxpr:  { lambda ; a:i32[] b:f32[a]. let  in (b,) }
 
     We allow Jax to identify that the shape of ``b`` matches our first argument, ``a``. This is
     demonstrated by the fact that we do not have any additional ``abstract_shapes``, as it is already
-    present in the call signature.  The abstracted axis is also `"a_arg"` instead of `"a"`.
+    present in the call signature.  The abstracted axis is also `"0_arg"` instead of ``0``.
     The ``"_arg"`` at the end indicates that the corresponding abstract axis
     was already in the argument loop.
 

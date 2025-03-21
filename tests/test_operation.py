@@ -1611,6 +1611,20 @@ class TestCriteria:
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
         assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
 
+        class SProdGen(Operator):
+
+            def generator(self):
+                return 2.0 * (qml.X(0) + qml.Y(0))
+
+        assert qml.operation.gen_is_multi_term_hamiltonian(SProdGen(wires=0))
+
+        class SumGen(Operator):
+
+            def generator(self):
+                return qml.X(0) + qml.Y(1)
+
+        assert qml.operation.gen_is_multi_term_hamiltonian(SumGen(wires=0))
+
     def test_has_multipar(self):
         """Test has_multipar criterion."""
         assert not qml.operation.has_multipar(self.rx)

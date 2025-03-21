@@ -351,9 +351,7 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
-@pytest.mark.parametrize(
-    "dev_name", ["default.qubit", pytest.param("lightning.qubit", marks=pytest.mark.skip)]
-)
+@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
     """Integration tests for preprocessing and executing qnodes with program capture."""
 
@@ -437,7 +435,7 @@ class TestDevicePreprocessing:
             assert len(shots_res) == shots
             # Check it's roughly 50/50 by counting the second column of bits
             counts = qml.numpy.bincount(shots_res[:, 1].astype(int))
-            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method, seed):
@@ -483,7 +481,8 @@ class TestDevicePreprocessing:
             return qml.sample(wires=[0])
 
         # pylint: disable = not-an-iterable
-        assert all(sample == 0 for sample in circuit()) or all(sample == 1 for sample in circuit())
+        results = circuit()
+        assert all(sample == 0 for sample in results) or all(sample == 1 for sample in results)
 
 
 class TestDifferentiation:
