@@ -24,103 +24,8 @@ from pennylane import Y, Z, matrix
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-
-def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wire: int = None):
-    r"""Khaneja-Glaser involution, which is a type-:func:`~AIII` Cartan involution with p=q.
-
-    Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Input operator
-        wire (int): Qubit wire on which to perform Khaneja-Glaser decomposition
-
-    Returns:
-        bool: Whether ``op`` should go to the even or odd subspace of the decomposition
-
-    .. seealso:: :func:`~cartan_decomp`
-
-    See `Khaneja and Glaser (2000) <https://arxiv.org/abs/quant-ph/0010100>`__ for reference.
-
-    **Example**
-
-    Let us first perform a single Khaneja-Glaser decomposition of
-    :math:`\mathfrak{g} = \mathfrak{su}(8)`, i.e. the Lie algebra of all Pauli words on 3 qubits.
-
-    >>> g = list(qml.pauli.pauli_group(3)) # u(8)
-    >>> g = g[1:] # remove identity
-    >>> g = [op.pauli_rep for op in g]
-
-
-    We perform the first iteration on the first qubit. We use :func:`~cartan_decomp`.
-
-    >>> from functools import partial
-    >>> from pennylane.labs.dla import cartan_decomp, khaneja_glaser_involution
-    >>> k0, m0 = cartan_decomp(g, partial(khaneja_glaser_involution, wire=0))
-    >>> print(f"First iteration, AIII: {len(k0)}, {len(m0)}")
-    First iteration, AIII: 31, 32
-    >>> assert qml.labs.dla.check_cartan_decomp(k0, m0) # check Cartan commutation relations
-
-    We see that we split the 63-dimensional algebra :math:`\mathfrak{su}(8)` into a 31-dimensional
-    and a 32-dimensional subspace, and :func:`~check_cartan_decomp` verified that they satisfy
-    the commutation relations of a Cartan decomposition.
-
-    To expand on this example, we continue process recursively on the :math:`\mathfrak{k}_0`
-    subalgebra. Before we can apply the Khaneja-Glaser (type AIII) decomposition a second time,
-    we need to a) remove the :math:`\mathfrak{u}(1)` center from
-    :math:`\mathfrak{k}_0=\mathfrak{su}(4)\oplus\mathfrak{su}(4)\oplus\mathfrak{u}(1)` to make it
-    semisimple and b) perform a different Cartan decomposition, which is sometimes termed class B.
-
-    >>> center_k0 = qml.center(k0, pauli=True) # Compute center of k0
-    >>> k0_semi = [op for op in k0 if op not in center_k0] # Remove center from k0
-    >>> print(f"Removed operators {center_k0}, new length: {len(k0_semi)}")
-    Removed operators [1.0 * Z(0)], new length: 30
-
-    >>> from pennylane.labs.dla import ClassB
-    >>> k1, m1 = cartan_decomp(k0_semi, partial(ClassB, wire=0))
-    >>> assert qml.labs.dla.check_cartan_decomp(k1, m1)
-    >>> print(f"First iteration, class B: {len(k1)}, {len(m1)}")
-    First iteration, class B: 15, 15
-
-    Now we arrived at the subalgebra :math:`\mathfrak{k}_1=\mathfrak{su}(4)` and can perform the
-    next iteration of the recursive decomposition.
-
-    >>> k2, m2 = cartan_decomp(k1, partial(khaneja_glaser_involution, wire=1))
-    >>> assert qml.labs.dla.check_cartan_decomp(k2, m2)
-    >>> print(f"Second iteration, AIII: {len(k2)}, {len(m2)}")
-    Second iteration, AIII: 7, 8
-
-    We can follow up on this by removing the center from :math:`\mathfrak{k}_1` again, and
-    applying a final class B decomposition:
-
-    >>> center_k2 = qml.center(k2, pauli=True)
-    >>> k2_semi = [op for op in k2 if op not in center_k2]
-    >>> print(f"Removed operators {center_k2}, new length: {len(k2_semi)}")
-    Removed operators [1.0 * Z(1)], new length: 6
-
-    >>> k3, m3 = cartan_decomp(k2_semi, partial(ClassB, wire=1))
-    >>> assert qml.labs.dla.check_cartan_decomp(k3, m3)
-    >>> print(f"Second iteration, class B: {len(k3)}, {len(m3)}")
-    Second iteration, class B: 3, 3
-
-    This concludes our example of the Khaneja-Glaser recursive decomposition, as we arrived at
-    easy to implement single-qubit operations.
-    """
-    if wire is None:
-        raise ValueError(
-            "Please specify the wire for the Khaneja-Glaser involution via "
-            "functools.partial(khaneja_glaser_involution, wire=wire)"
-        )
-    if isinstance(op, np.ndarray):
-        p = q = op.shape[0] // 2
-    elif isinstance(op, (PauliSentence, Operator)):
-        p = q = 2 ** (len(op.wires) - 1)
-    else:
-        raise ValueError(f"Can't infer p and q from operator of type {type(op)}.")
-    return AIII(op, p, q, wire)
-
-
 # Canonical involutions
 # see https://arxiv.org/abs/2406.04418 appendix C
-
-# matrices
 
 
 def int_log2(x):
@@ -159,7 +64,7 @@ def Ipq(p, q, wire=None):
         return Z(wire).matrix(wire_order=range(int_log2(p) + 1))
     if wire is not None:
         raise ValueError("The wire argument is only supported for p=q=2**N for some integer N.")
-    return np.block([[np.eye(p), np.zeros((p, q))], [np.zeros((q, p)), -np.eye(q)]])
+    return np.diag(np.concatenate([np.ones(p), -np.ones(q)]))
 
 
 def Kpq(p, q, wire=None):
@@ -173,10 +78,29 @@ def Kpq(p, q, wire=None):
         return Z(wire).matrix(wire_order=range(int_log2(p) + 1))
     if wire is not None:
         raise ValueError("The wire argument is only supported for p=q=2**N for some integer N.")
-    zeros = np.zeros((p + q, p + q))
-    d = np.diag(np.concatenate([np.ones(p), -np.ones(q)]))
-    KKm = np.block([[d, zeros], [zeros, d]])
-    return KKm
+    return np.diag(np.concatenate([np.ones(p), -np.ones(q), np.ones(p), -np.ones(q)]))
+
+
+def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+    r"""Canonical Cartan decomposition of type A on
+    :math:`\mathfrak{su}(n)\oplus \mathfrak{su}(n)`, given by
+    :math:`\theta: x\oplus y \mapsto y\oplus x`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        evaluated and for which the parity under the involution is returned.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
+    """
+    # Note that even though DIII implements Ad_{Y_0} and we want a simple swap, so Ad_{X_0},
+    # they only differ by applying Ad_{Z_0}, which in turn does not have an effect on the algebra
+    return DIII(op, wire)
 
 
 def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
@@ -385,6 +309,28 @@ def _AIII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = N
     return _AIII_ps(op.pauli_rep, p, q, wire)
 
 
+def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+    r"""Canonical Cartan decomposition of type BD on
+    :math:`\mathfrak{so}(n)\oplus \mathfrak{so}(n)`, given by
+    :math:`\theta: x\oplus y \mapsto y\oplus x`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        evaluated and for which the parity under the involution is returned.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
+    """
+    # Note that even though DIII implements Ad_{Y_0} and we want a simple swap, so Ad_{X_0},
+    # they only differ by applying Ad_{Z_0}, which in turn does not have an effect on the algebra
+    return DIII(op, wire)
+
+
 def BDI(
     op: Union[np.ndarray, PauliSentence, Operator],
     p: int = None,
@@ -418,6 +364,83 @@ def BDI(
         involution :math:`\theta` with eigenvalue :math:`+1`.
     """
     return AIII(op, p, q, wire)
+
+
+def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+    r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
+    """
+    return _DIII(op, wire)
+
+
+@singledispatch
+def _DIII(op, wire=None):  # pylint:disable=unused-argument
+    r"""Default implementation of the canonical form of the DIII involution
+    :math:`\theta: x \mapsto Y_0 x Y_0`.
+    """
+    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
+
+
+@_DIII.register(np.ndarray)
+def _DIII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
+    r"""Matrix implementation of the canonical form of the DIII involution
+    :math:`\theta: x \mapsto Y_0 x Y_0`.
+    """
+    y = J(op.shape[-1] // 2, wire=wire)
+    return np.allclose(op, y @ op @ y)
+
+
+@_DIII.register(PauliSentence)
+def _DIII_ps(op: PauliSentence, wire: Optional[int] = None) -> bool:
+    r"""PauliSentence implementation of the canonical form of the DIII involution
+    :math:`\theta: x \mapsto Y_0 x Y_0`.
+    """
+    if wire is None:
+        wire = 0
+    parity = [pw.get(wire, "I") in "IY" for pw in op]
+
+    # only makes sense if parity is the same for all terms
+    assert all(parity) or not any(parity)
+    return parity[0]
+
+
+@_DIII.register(Operator)
+def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
+    r"""Operator implementation of the canonical form of the DIII involution
+    :math:`\theta: x \mapsto Y_0 x Y_0`.
+    """
+    return _DIII_ps(op.pauli_rep, wire)
+
+
+def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+    r"""Canonical Cartan decomposition of type C on
+    :math:`\mathfrak{sp}(n)\oplus \mathfrak{sp}(n)`, given by
+    :math:`\theta: x\oplus y \mapsto y\oplus x`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        evaluated and for which the parity under the involution is returned.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
+    """
+    # Note that even though DIII implements Ad_{Y_0} and we want a simple swap, so Ad_{X_0},
+    # they only differ by applying Ad_{Z_0}, which in turn does not have an effect on the algebra
+    return DIII(op, wire)
 
 
 def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
@@ -527,83 +550,12 @@ def _CII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = No
     return _CII_ps(op.pauli_rep, p, q, wire)
 
 
-def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
-    r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
-
-    Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-            evaluated and for which the parity under the involution is returned.
-        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
-            involution. Will default to ``0`` if ``None``.
-
-    Returns:
-        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
-        involution :math:`\theta` with eigenvalue :math:`+1`.
-    """
-    return _DIII(op, wire)
-
-
-@singledispatch
-def _DIII(op, wire=None):  # pylint:disable=unused-argument
-    r"""Default implementation of the canonical form of the DIII involution
-    :math:`\theta: x \mapsto Y_0 x Y_0`.
-    """
-    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
-
-
-@_DIII.register(np.ndarray)
-def _DIII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
-    r"""Matrix implementation of the canonical form of the DIII involution
-    :math:`\theta: x \mapsto Y_0 x Y_0`.
-    """
-    y = J(op.shape[-1] // 2, wire=wire)
-    return np.allclose(op, y @ op @ y)
-
-
-@_DIII.register(PauliSentence)
-def _DIII_ps(op: PauliSentence, wire: Optional[int] = None) -> bool:
-    r"""PauliSentence implementation of the canonical form of the DIII involution
-    :math:`\theta: x \mapsto Y_0 x Y_0`.
-    """
-    if wire is None:
-        wire = 0
-    parity = [pw.get(wire, "I") in "IY" for pw in op]
-
-    # only makes sense if parity is the same for all terms
-    assert all(parity) or not any(parity)
-    return parity[0]
-
-
-@_DIII.register(Operator)
-def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
-    r"""Operator implementation of the canonical form of the DIII involution
-    :math:`\theta: x \mapsto Y_0 x Y_0`.
-    """
-    return _DIII_ps(op.pauli_rep, wire)
-
-
-def ClassB(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
-    r"""Canonical Cartan decomposition of class B, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
-
-    Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-            evaluated and for which the parity under the involution is returned.
-        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
-            involution. Will default to ``0`` if ``None``.
-
-    Returns:
-        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
-        involution :math:`\theta` with eigenvalue :math:`+1`.
-    """
-    return DIII(op, wire)
-
-
-# dispatch to different input types
 def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     r"""The Even-Odd involution.
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
     For Pauli words and sentences, it comes down to counting non-trivial Paulis in Pauli words.
+    For an even (odd) number of qubits, it is of type AI (AII).
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
@@ -616,7 +568,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import even_odd_involution
+    >>> from pennylane.liealg import even_odd_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
     >>> [even_odd_involution(op) for op in ops]
     [True, False, True]
@@ -635,7 +587,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
 
 @singledispatch
 def _even_odd_involution(op):  # pylint:disable=unused-argument, missing-function-docstring
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
+    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
 @_even_odd_involution.register(PauliSentence)
@@ -675,7 +627,8 @@ def _even_odd_involution_op(op: Operator):
 
 # dispatch to different input types
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
-    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function.
+    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan
+    involution function. It is of type AI.
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
     For Pauli words and sentences, it comes down to counting Pauli-Y operators.
@@ -691,7 +644,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bo
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import concurrence_involution
+    >>> from pennylane.liealg import concurrence_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2), Y(0) @ Y(2)]
     >>> [concurrence_involution(op) for op in ops]
     [False, True, True, False]
@@ -710,7 +663,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bo
 
 @singledispatch
 def _concurrence_involution(op):
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
+    raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
 @_concurrence_involution.register(PauliSentence)
