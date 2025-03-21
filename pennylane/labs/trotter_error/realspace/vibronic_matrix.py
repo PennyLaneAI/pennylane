@@ -23,7 +23,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.realspace import RealspaceSum
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access

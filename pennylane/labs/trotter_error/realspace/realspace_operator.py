@@ -23,7 +23,7 @@ from typing import Dict, Sequence, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error import Fragment, HOState
 from pennylane.labs.trotter_error.realspace.matrix import (
     _op_norm,
     _string_to_matrix,

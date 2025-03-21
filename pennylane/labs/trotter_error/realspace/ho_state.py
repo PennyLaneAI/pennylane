@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the HOState class which represents a wavefunction in the Harmonic Oscillator basis"""
+"""Contains the HOState class which represents a wavefunction in the harmonic oscillator basis"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from scipy.sparse import csr_array, identity, kron
 
 
 class HOState:
-    """Representation of a wavefunction in the Harmonic Oscillator basis
+    """Representation of a wavefunction in the harmonic oscillator basis
 
     Args:
         modes (int): the number of vibrational modes
@@ -52,6 +52,7 @@ class HOState:
             HOState: an ``HOState`` representation of the state vector
 
         **Example**
+
         >>> from pennylane.labs.trotter import HOState
         >>> n_modes = 3
         >>> gridpoints = 5
@@ -78,7 +79,7 @@ class HOState:
 
     @classmethod
     def from_scipy(cls, modes: int, gridpoints: int, vector: csr_array) -> HOState:
-        """Construct an HOState from a scipy ``csr_array``.
+        """Construct an ``HOState`` from a scipy ``csr_array``.
 
         Args:
             modes (int): the number of vibrational modes
@@ -89,6 +90,7 @@ class HOState:
             HOState: an ``HOState`` representing the state vector
 
         **Examples**
+
         >>> from scipy.sparse import csr_array
         >>> import numpy as np
         >>> gridpoints = 2
@@ -149,7 +151,7 @@ class HOState:
 
 
 class VibronicHO:
-    """This class represents the tensor product of harmonic oscillator states.
+    """Represents the tensor product of harmonic oscillator states.
 
     Args:
         states (int): the number of electronic states
@@ -225,7 +227,7 @@ class VibronicHO:
 
     @classmethod
     def zero_state(cls, states: int, modes: int, gridpoints: int) -> VibronicHO:
-        """Construct an ``HOState`` representing the zero state.
+        """Construct a ``VibronicHO`` representing the zero state.
 
         Args:
             states (int): the number of electronic states
