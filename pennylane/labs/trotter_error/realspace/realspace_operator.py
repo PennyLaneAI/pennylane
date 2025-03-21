@@ -238,7 +238,7 @@ class RealspaceSum(Fragment):
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
-        # pylint: disable=unnecessary-lambda
+        # pylint: disable=unnecessary-lambda, protected-access
         for op in ops:
             if op.modes != modes:
                 raise ValueError(

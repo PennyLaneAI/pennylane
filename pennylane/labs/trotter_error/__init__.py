@@ -18,7 +18,7 @@
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-.. currentmodule:: pennylane.labs.trotter
+.. currentmodule:: pennylane.labs.trotter_error
 
 Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,5 +40,5 @@ Realspace Hamiltonian Classes:
     ~VibronicMatrix
 """
 
-from .abstract_fragment import Fragment, commutator, nested_commutator
+from .abstract_fragment import Fragment
 from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
