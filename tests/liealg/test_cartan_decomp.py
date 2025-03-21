@@ -20,7 +20,7 @@ from pennylane import X, Y, Z
 from pennylane.liealg import (
     cartan_decomp,
     check_cartan_decomp,
-    check_commutation,
+    check_commutation_relation,
     concurrence_involution,
     even_odd_involution,
 )
@@ -48,9 +48,9 @@ class TestCartanDecomposition:
         m_space = qml.pauli.PauliVSpace(m)
 
         # Commutation relations for Cartan pair
-        assert check_commutation(k, k, k_space)
-        assert check_commutation(k, m, m_space)
-        assert check_commutation(m, m, k_space)
+        assert check_commutation_relation(k, k, k_space)
+        assert check_commutation_relation(k, m, m_space)
+        assert check_commutation_relation(m, m, k_space)
 
     @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
     @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
@@ -68,9 +68,9 @@ class TestCartanDecomposition:
         m_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in m])
 
         # Commutation relations for Cartan pair
-        assert check_commutation(k_space.basis, k_space.basis, k_space)
-        assert check_commutation(k_space.basis, m_space.basis, m_space)
-        assert check_commutation(m_space.basis, m_space.basis, k_space)
+        assert check_commutation_relation(k_space.basis, k_space.basis, k_space)
+        assert check_commutation_relation(k_space.basis, m_space.basis, m_space)
+        assert check_commutation_relation(m_space.basis, m_space.basis, k_space)
 
 
 involution_ops = [
@@ -104,16 +104,16 @@ class TestCheckFunctions:
         with pytest.raises(TypeError, match=r"All inputs `k`, `m`"):
             _ = check_cartan_decomp(qml.numpy.array(m0_m), k0)
 
-    def test_check_commutation_mixed_inputs_raises_TypeError(self):
+    def test_check_commutation_relation_mixed_inputs_raises_TypeError(self):
         """Test that mixing operators and matrices raises an error in check_cartan_decomp"""
         with pytest.raises(TypeError, match=r"All inputs `ops1`, `ops2`"):
-            _ = check_commutation(m0, k0_m, m0_m)
+            _ = check_commutation_relation(m0, k0_m, m0_m)
 
         with pytest.raises(TypeError, match=r"All inputs `ops1`, `ops2`"):
-            _ = check_commutation(m0_m, k0, m0_m)
+            _ = check_commutation_relation(m0_m, k0, m0_m)
 
         with pytest.raises(TypeError, match=r"All inputs `ops1`, `ops2`"):
-            _ = check_commutation(m0_m, k0_m, m0)
+            _ = check_commutation_relation(m0_m, k0_m, m0)
 
     def test_check_cartan_decomp(self):
         """Test that check_cartan_decomp correctly checks Ising cartan decomp
@@ -127,25 +127,25 @@ class TestCheckFunctions:
 
         assert check_cartan_decomp(k0_m, m0_m)
 
-    def test_check_commutation(self):
-        """Test that check_commutation returns false correctly"""
+    def test_check_commutation_relation(self):
+        """Test that check_commutation_relation returns false correctly"""
 
-        assert check_commutation(k0, k0, k0)
-        assert not check_commutation(m0, m0, m0)
-        assert check_commutation(k0, m0, m0)
-        assert not check_commutation(k0, m0, k0)
-        assert check_commutation(m0, k0, m0)
-        assert not check_commutation(m0, k0, k0)
+        assert check_commutation_relation(k0, k0, k0)
+        assert not check_commutation_relation(m0, m0, m0)
+        assert check_commutation_relation(k0, m0, m0)
+        assert not check_commutation_relation(k0, m0, k0)
+        assert check_commutation_relation(m0, k0, m0)
+        assert not check_commutation_relation(m0, k0, k0)
 
-    def test_check_commutation_matrix(self):
-        """Test that check_commutation returns false correctly when using matrix inputs"""
+    def test_check_commutation_relation_matrix(self):
+        """Test that check_commutation_relation returns false correctly when using matrix inputs"""
 
-        assert check_commutation(k0_m, k0_m, k0_m)
-        assert not check_commutation(m0_m, m0_m, m0_m)
-        assert check_commutation(k0_m, m0_m, m0_m)
-        assert not check_commutation(k0_m, m0_m, k0_m)
-        assert check_commutation(m0_m, k0_m, m0_m)
-        assert not check_commutation(m0_m, k0_m, k0_m)
+        assert check_commutation_relation(k0_m, k0_m, k0_m)
+        assert not check_commutation_relation(m0_m, m0_m, m0_m)
+        assert check_commutation_relation(k0_m, m0_m, m0_m)
+        assert not check_commutation_relation(k0_m, m0_m, k0_m)
+        assert check_commutation_relation(m0_m, k0_m, m0_m)
+        assert not check_commutation_relation(m0_m, k0_m, k0_m)
 
     def test_check_cartan_decomp_verbose(self, capsys):
         """Test the verbose output of check_cartan_decomp"""

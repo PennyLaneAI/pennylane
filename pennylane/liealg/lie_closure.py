@@ -36,7 +36,7 @@ def lie_closure(
     matrix: bool = False,
     tol: float = None,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
-    r"""Compute the dynamical Lie algebra from a set of generators.
+    r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
     For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
