@@ -82,7 +82,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """User facing method to construct a coefficient tensor"""
+        """Constructs a coefficient tensor."""
         return cls.tensor_node(tensor, label)
 
     @classmethod
