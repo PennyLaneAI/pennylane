@@ -122,7 +122,18 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
 
 
 class AbstractState(ABC):
-    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value"""
+    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value
+    a class inheriting from ``AbstractState`` must implement the following dunder methods.
+
+    * ``__add__``
+    * ``__sub__``
+    * ``__mul__``
+
+    Additionally it requires the following methods.
+
+    * ``zero_state``: returns a representation of the zero state
+    * ``dot``: implments the dot product of two states
+    """
 
     @abstractmethod
     def __add__(self, other: AbstractState) -> AbstractState:
