@@ -34,7 +34,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
     """Add the abstract shapes that the specified locations to the output of f.
 
     .. code-block:: python
-
+        import jax.numpy as jnp
         def f(x, y): return [x, y]
 
         loc1 = AbstractShapeLocation(arg_idx=0, shape_idx=0)
