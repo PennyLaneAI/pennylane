@@ -40,6 +40,16 @@ Realspace Hamiltonian Classes:
     ~RealspaceSum
     ~VibronicMatrix
 
+Fragment Functions:
+~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~generic_fragments
+    ~vibrational_fragments
+    ~vibronic_fragments
+
 State Classes:
 ~~~~~~~~~~~~~~
 
@@ -51,6 +61,7 @@ State Classes:
 """
 
 from .abstract import AbstractState, Fragment
+from .fragments import generic_fragments, vibrational_fragments, vibronic_fragments
 from .realspace import (
     RealspaceCoeffs,
     RealspaceOperator,
