@@ -2717,6 +2717,15 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
+    def test_assert_valid(self):
+        """Tests that a PauliRot is valid"""
+
+        op = qml.PauliRot(0.5, "XYZI", wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op)
+
+        op2 = qml.PauliRot(0.5, "III", wires=[0, 1, 2])
+        qml.ops.functions.assert_valid(op2)
+
     def test_paulirot_repr(self):
         op = qml.PauliRot(1.234, "XYX", wires=(0, 1, 2))
         assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
