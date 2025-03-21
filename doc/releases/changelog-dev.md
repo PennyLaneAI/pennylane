@@ -418,7 +418,7 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* The sizes of dynamicly shaped arrays can now be updated in a `while_loop` and `for_loop`
+* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
   when capture is enabled.
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
   [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
