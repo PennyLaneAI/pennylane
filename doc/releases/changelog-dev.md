@@ -790,6 +790,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
+  [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
+
 * Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
   differ depending if equivalent gate generators are defined using
   different PennyLane operators. This was resolved by updating
