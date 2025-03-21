@@ -71,7 +71,7 @@ def _process(wires):
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
-        if type(wires) is range: # pylint: disable=unidiomatic-typecheck
+        if type(wires) is range:  # pylint: disable=unidiomatic-typecheck
             return tuple_of_wires
 
     except TypeError:
