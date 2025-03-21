@@ -49,11 +49,10 @@ class HOState:
 
             row = sum(i * (gridpoints**exp) for exp, i in enumerate(reversed(index)))
             rows.append(row)
-            cols.append(0)
             vals.append(val)
 
         rows = np.array(rows)
-        cols = np.array(cols)
+        cols = np.zeros_like(rows)
         vals = np.array(vals)
         vector = csr_array((vals, (rows, cols)), shape=(gridpoints**modes, 1))
 

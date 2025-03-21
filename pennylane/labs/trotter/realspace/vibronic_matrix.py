@@ -291,6 +291,15 @@ class VibronicMatrix(Fragment):
         return top_left, top_right, bottom_left, bottom_right
 
     def apply(self, state: VibronicHO) -> VibronicHO:
+        """Apply the VibronicMatrix to a state on the right.
+
+        Args:
+            state (VibronicHO): a vibronic wavefunction
+
+        Returns:
+            VibronicHO: the result of applying the ``VibronicMatrix`` to ``state``
+
+        """
 
         if self.states != len(state.ho_states):
             raise ValueError(
@@ -340,7 +349,7 @@ class VibronicMatrix(Fragment):
 
 def _is_pow_2(k: int) -> bool:
     """Test if k is a power of two"""
-    return (k & (k - 1) == 0) or k == 0
+    return k & (k - 1) == 0
 
 
 def _next_pow_2(k: int) -> int:

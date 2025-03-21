@@ -43,7 +43,7 @@ class RealspaceOperator:
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Tuple[str]): a tuple representation of the position and momentum operators
+        ops (Sequence[str]): a sequence representation of the position and momentum operators
         coeffs (``RealspaceCoeffs``): an expression tree which evaluates the entries of the coefficient tensor
 
     **Example**
@@ -55,10 +55,13 @@ class RealspaceOperator:
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
     >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+    >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
 
     """
 
-    def __init__(self, modes: int, ops: Tuple[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]) -> RealspaceOperator:
+    def __init__(
+        self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+    ) -> RealspaceOperator:
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs
