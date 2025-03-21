@@ -1408,9 +1408,9 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is ``0.9``
 
     Resource Parameters:
-        * U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        * U_op (Type[~.ResourceOperator]): the class of the operator that prepares the state :math:`|\Psi\rangle`
         * U_params (dict): the parameters for the U operator
-        * O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        * O_op (Type[~.ResourceOperator]): the class of the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
         * O_params (dict): the parameters for the O operator
         * iters (int): the number of iterations of the amplitude amplification subroutine
         * num_ref_wires (int): the number of wires used for the reflection
