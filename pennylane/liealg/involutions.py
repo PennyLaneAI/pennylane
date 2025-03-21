@@ -568,7 +568,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import even_odd_involution
+    >>> from pennylane.liealg import even_odd_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
     >>> [even_odd_involution(op) for op in ops]
     [True, False, True]
@@ -644,7 +644,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bo
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import concurrence_involution
+    >>> from pennylane.liealg import concurrence_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2), Y(0) @ Y(2)]
     >>> [concurrence_involution(op) for op in ops]
     [False, True, True, False]
