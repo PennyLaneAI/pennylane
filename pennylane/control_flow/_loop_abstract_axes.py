@@ -92,6 +92,7 @@ def get_dummy_arg(arg):
     """
     if all(isinstance(s, int) for s in arg.shape):
         return arg
+    # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
     return np.empty(shape=shape, dtype=arg.dtype)
 
