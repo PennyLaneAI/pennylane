@@ -30,7 +30,28 @@ from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
 
 
 class VibronicMatrix(Fragment):
-    """The VibronicMatrix class"""
+    r"""This class implements a dictionary of ``RealspaceSum`` objects used to respresent the fragments of the vibronic Hamiltonian given by
+
+    .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots
+
+    The dictionary is indexed by tuples ``(i, j)`` and the values are ``RealspaceSum`` objects representing the operator :math:`V_{i,j}`.
+
+    Args:
+        states (int): the number of electronic states
+        modes (int): the number of vibrational modes
+        blocks (Dict[Tuple[int, int], RealspaceSum): a dictionary representation of the block matrix
+
+    **Example**
+
+    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+    >>> import numpy as np
+    >>> n_states = 1
+    >>> n_modes = 5
+    >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
+    >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+    >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+    >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    """
 
     def __init__(
         self,
