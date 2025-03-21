@@ -46,7 +46,7 @@ class Fragment(ABC):
 
     @abstractmethod
     def norm(self, params: Dict) -> float:
-        """Compute the norm of the fragment
+        """Compute the norm of the fragment.
 
         Args:
             params (Dict): A dictionary of parameters needed to compute the norm is specified for each class inheriting from ``Fragment``.
