@@ -369,10 +369,7 @@ class RealspaceSum(Fragment):
         except KeyError as e:
             raise KeyError("Need to specify the number of gridpoints") from e
 
-        try:
-            sparse = params["sparse"]
-        except KeyError:
-            sparse = False
+       sparse = params.get("sparse", False)
 
         norm = 0
 
