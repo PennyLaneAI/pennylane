@@ -407,6 +407,21 @@ a QNode, and will raise an error:
 ...
 TransformError: Input is not an Operator, tape, QNode, or quantum function
 
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        mat = qml.matrix(qml.X)(0)
+        return qml.state()
+
+>>> circuit()
+...
+NotImplementedError: 
+
 Section title 
 -------------
 
