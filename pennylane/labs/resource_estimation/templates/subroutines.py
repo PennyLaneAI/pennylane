@@ -100,7 +100,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     """Resource class for the ControlledSequence template.
 
-    Args:
+    Resource Parameters:
         base_class (ResourceOperator): The type of the operation corresponding to the
             operator.
         base_params (dict): A dictionary of parameters required to obtain the resources for
@@ -138,6 +138,18 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource Parameters:
+            base_class (ResourceOperator): The type of the operation corresponding to the
+                operator.
+            base_params (dict): A dictionary of parameters required to obtain the resources for
+                the operator.
+            num_ctrl_wires (int): the number of control wires
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -146,6 +158,19 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, base_params, num_ctrl_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (ResourceOperator): The type of the operation corresponding to the
+                operator.
+            base_params (dict): A dictionary of parameters required to obtain the resources for
+                the operator.
+            num_ctrl_wires (int): the number of control wires
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls,
             {
@@ -164,7 +189,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     """Resource class for the PhaseAdder template.
 
-    Args:
+    Resource Parameters:
         mod (int): the module for performing the addition
         num_x_wires (int): the number of wires the operation acts on
 
@@ -225,6 +250,15 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource Parameters:
+            mod (int): the module for performing the addition
+            num_x_wires (int): the number of wires the operation acts on
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_x_wires": len(self.hyperparameters["x_wires"]),
@@ -232,13 +266,24 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, mod, num_x_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the addition
+            num_x_wires (int): the number of wires the operation acts on
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+
         return re.CompressedResourceOp(cls, {"mod": mod, "num_x_wires": num_x_wires})
 
 
 class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     """Resource class for the :class:`~.Multiplier` template.
 
-    Args:
+    Resource Parameters:
         mod (int): the module for performing the multiplication
         num_work_wires (int): the number of work wires used for the multiplication.
         num_x_wires (int): the number of wires the operation acts on.
@@ -306,6 +351,16 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource Parameters:
+            mod (int): the module for performing the multiplication
+            num_work_wires (int): the number of work wires used for the multiplication.
+            num_x_wires (int): the number of wires the operation acts on.
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_work_wires": len(self.hyperparameters["work_wires"]),
@@ -314,6 +369,17 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, mod, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the multiplication
+            num_work_wires (int): the number of work wires used for the multiplication.
+            num_x_wires (int): the number of wires the operation acts on.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls, {"mod": mod, "num_work_wires": num_work_wires, "num_x_wires": num_x_wires}
         )
@@ -322,7 +388,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 class ResourceModExp(qml.ModExp, re.ResourceOperator):
     r"""Resource class for the PhaseAdder template.
 
-    Args:
+    Resource Parameters:
         mod (int): the module for performing the exponentiation
         num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
             in the computational basis
@@ -373,6 +439,20 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource Parameters:
+            mod (int): the module for performing the exponentiation
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
+                in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation
+                operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
+                computational basis
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_output_wires": len(self.hyperparameters["output_wires"]),
@@ -384,6 +464,21 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     def resource_rep(
         cls, mod, num_output_wires, num_work_wires, num_x_wires
     ) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the exponentiation
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
+                in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation
+                operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
+                computational basis
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls,
             {
@@ -398,7 +493,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
-    Args:
+    Resource Parameters:
         base_class (ResourceOperator): The type of the operation corresponding to the
             phase estimation unitary.
         base_params (dict): A dictionary of parameters required to obtain the resources for
@@ -514,7 +609,7 @@ ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
-    Args:
+    Resource Parameters:
         dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
             as the number of columns of the matrix.
 
@@ -594,7 +689,7 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
 class ResourceSelect(qml.Select, ResourceOperator):
     r"""Resource class for the Select gate.
 
-    Args:
+    Resource Parameters:
         cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
             to be applied according to the selected qubits.
 
@@ -700,7 +795,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     r"""Resource class for PrepSelPrep gate.
 
-    Args:
+    Resource Parameters:
         cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
             which correspond to the unitaries in the LCU to be blockencoded.
 
@@ -819,7 +914,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 class ResourceReflection(qml.Reflection, ResourceOperator):
     r"""Resource class for the Reflection gate.
 
-    Args:
+    Resource Parameters:
         base_class (Type(ResourceOperator)): The type of the operation used to prepare the
             state we will be reflecting over.
         base_params (dict): A dictionary of parameters required to obtain the resources for
@@ -943,7 +1038,7 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 class ResourceQubitization(qml.Qubitization, ResourceOperator):
     r"""Resource class for the Qubitization gate.
 
-    Args:
+    Resource Parameters:
         cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
         num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
@@ -1030,7 +1125,7 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
 class ResourceQROM(qml.QROM, ResourceOperator):
     """Resource class for the QROM template.
 
-    Args:
+    Resource Parameters:
         num_bitstrings (int): the number of bitstrings that are to be encoded
         num_bit_flips (int): the number of bit flips needed for the list of bitstrings
         num_control_wires (int): the number of control wires where in the indexes are specified
@@ -1187,7 +1282,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperator):
     r"""Resource class for the AmplitudeAmplification template.
 
-    Args:
+    Resource Parameters:
         U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
         U_params (dict): the parameters for the U operator
         O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`

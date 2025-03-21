@@ -25,7 +25,7 @@ from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOpe
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     """Resource class for StatePrep.
 
-    Args:
+    Resource Parameters:
         num_wires (int): the number of wires that StatePrep acts on
 
     Resources:
@@ -79,7 +79,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOperator):
     """Resource class for the MottonenStatePreparation template.
 
-    Args:
+    Resource Parameters:
         num_wires(int): the number of wires that StatePrep acts on
 
     Resources:
@@ -149,7 +149,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 class ResourceSuperposition(qml.Superposition, ResourceOperator):
     """Resource class for the `:class:~.Superposition` template.
 
-    Args:
+    Resource Parameters:
         num_stateprep_wires (int): the number of wires used for the operation
         num_basis_states (int): the number of basis states of the superposition
         size_basis_state (int): the size of each basis state
@@ -278,7 +278,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 class ResourceBasisState(qml.BasisState, ResourceOperator):
     r"""Resource class for the BasisState template.
 
-    Args:
+    Resource Parameters:
          num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
     Resources:
