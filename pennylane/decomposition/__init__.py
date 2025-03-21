@@ -36,10 +36,7 @@ Defining Decomposition Rules
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
-<<<<<<< HEAD
     ~pow_resource_rep
-=======
->>>>>>> 8bb96b21d331570e128b7a12223f67fc58bc68bc
     ~DecompositionRule
     ~Resources
 
