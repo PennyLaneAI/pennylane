@@ -136,7 +136,7 @@ class HOState:
             gridpoints(int): the number of gridpoints used to discretize the state
 
         Returns:
-            HOState: an ``HOState` representing the zero state
+            HOState: an ``HOState`` representing the zero state
 
         **Example**
 
