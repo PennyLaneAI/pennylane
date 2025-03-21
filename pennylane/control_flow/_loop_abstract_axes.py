@@ -161,7 +161,7 @@ def handle_jaxpr_error(
 
 
 # pylint: disable=too-few-public-methods
-class CalculateAbstractedAxes:
+class _CalculateLoopAbstractedAxes:
     """A helper class for accumulating information about abstract axes for loop functions."""
 
     def __init__(self, allow_array_resizing: bool = False):
@@ -255,7 +255,7 @@ def loop_determine_abstracted_axes(
     import jax
 
     args, structure = jax.tree_util.tree_flatten(args)
-    calculator = CalculateAbstractedAxes(allow_array_resizing=allow_array_resizing)
+    calculator = _CalculateLoopAbstractedAxes(allow_array_resizing=allow_array_resizing)
     _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
 
     if not any(calculator.abstracted_axes):
