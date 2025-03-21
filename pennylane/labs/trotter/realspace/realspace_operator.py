@@ -214,7 +214,29 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    """The RealspaceSum class"""
+    r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of ``RealspaceOperator`` objects
+    For example, the vibrational hamiltonian
+
+    .. math:: \sum_{i} \frac{\omega_i}{2} P^2_i \sum_{i} \frac{\omega_i}{2} Q^2_i + \sum_{i} \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)_{i,j} Q_i Q_j + \dots
+
+    is a sum of sums, where each sum can be expressed by a ``RealspaceOperator``. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
+    contains a list of ``RealspaceOperator`` objects representing these sums.
+
+    Args:
+        modes (int): the number of vibrational modes
+        ops (Sequence[RealspaceOperator]): a sequence containing ``RealspaceOperator`` objects representing the sums in the Hamiltonian
+
+    **Example**
+    We can build the harmonic part of the vibrational Hamiltonian with the following code.
+
+    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> n_modes = 2
+    >>> freqs = np.array([1.23, 3.45])
+    >>> coeffs = RealspaceCoeffs.coeffs(freqs, label="omega")
+    >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
+    >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
+    >>> rs_sum = RealspaceSum(n_modes, [rs_op1, rs_op2])
+    """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
         # pylint: disable=unnecessary-lambda
