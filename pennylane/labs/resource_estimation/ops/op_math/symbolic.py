@@ -830,7 +830,7 @@ class ResourceExp(Exp, re.ResourceOperator):
     A symbolic class used to represent the exponential of some base operation.
 
     Args:
-        base (~.operation.Operator): The Operator to be exponentiated
+        base (~.operation.Operator): The operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter

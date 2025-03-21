@@ -938,7 +938,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
 
@@ -1034,13 +1034,11 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_ctrl_wires (int): the number of qubits the operation is controlled on
+                * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+                * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
         num_control = len(self.hyperparameters["control_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
@@ -1057,7 +1055,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def resource_rep(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> re.CompressedResourceOp:
-        """Returns a compressed representation containing only the parameters of
+        r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
