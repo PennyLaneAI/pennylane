@@ -68,6 +68,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 )
             super().interpret_operation(ctrl_op)
 
+    # pylint: disable=too-many-instance-attributes
     class DecomposeInterpreter(qml.capture.PlxprInterpreter):
         """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
         when program capture is enabled.
