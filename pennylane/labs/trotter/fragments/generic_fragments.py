@@ -31,7 +31,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
         List[GenericFragment]: A list of GenericFragment objects instantiated from `fragments`.
     """
 
-    if not len(fragments):
+    if len(fragments) == 0:
         return []
 
     frag_type = type(fragments[0])
