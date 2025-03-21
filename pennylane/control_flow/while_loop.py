@@ -60,7 +60,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     Args:
         cond_fn (Callable): the condition function in the while loop
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
-            with dynamic shapes that change between iterations
+            with dynamic shapes that change between iterations. Defaults to `"auto"`. 
 
     Returns:
         Callable: A wrapper around the while-loop function.
@@ -119,16 +119,16 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         .. code-block:: python
 
             @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=True)
-            def f(a, b):
-                return jax.numpy.hstack([a, b]), 2*b
+            def f(x, y):
+                return jax.numpy.hstack([x, y]), 2*y
 
-            def w(i0):
-                a0, b0 = jnp.ones(i0), jnp.ones(i0)
-                return f(a0, b0)
+            def workflow(i0):
+                x0, y0 = jnp.ones(i0), jnp.ones(i0)
+                return f(x0, y0)
 
-        Even though ``a`` and ``b`` are initialized with the same shape, the shapes no longer match
-        after one iteration. In this circumstance, ``a`` and ``b`` can no longer be combined
-        with operations like ``a * b``, as they do not have matching shapes.
+        Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
+        after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
+        with operations like ``x * y``, as they do not have matching shapes.
 
         With ``allow_array_resizing=False``, anything that starts with the same dynamic dimension
         must keep the same shape pattern throughout the loop.

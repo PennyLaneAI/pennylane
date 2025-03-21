@@ -199,8 +199,8 @@ def loop_determine_abstracted_axes(
 
     Args:
         args (Any): Arguments to determine the abstracted axes for
-        allow_array_resizing=False (bool): If True, each abstracted axis should be treated as
-            an independent axis
+        allow_array_resizing (bool): If True, each abstracted axis should be treated as
+            an independent axis. Defaults to False.
 
     Returns:
         abstracted_axes, abstract_shapes, locations for shapes
@@ -225,7 +225,7 @@ def loop_determine_abstracted_axes(
         [Traced<ShapedArray(int32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>]
         [[AbstractShapeLocation(arg_idx=1, shape_idx=0), AbstractShapeLocation(arg_idx=2, shape_idx=1)]]
 
-    Here we can that the abstracted axes out match what we put in. The returned ``abstract_shapes`` is the single
+    Here we can verify that the output abstracted axes match what we put in. The returned ``abstract_shapes`` is the single
     abstract shape that occurs in both variables.  The locations array tells us that we can locate the first
     abstract shape in the ``1`` argument at shape position ``0``, and in the ``2`` argument at shape position ``1``.
 
@@ -243,8 +243,8 @@ def loop_determine_abstracted_axes(
 
     Now the abstracted axes treat the two abstracted axes as different, even though they are the same tracer in the input
     arguments. The abstract shapes has two elements. By looking at the locations, we can see that we can find
-    the first abstract shape in argument ``1`` at shape ``0``, and we can find the second abstract shape in
-    argument ``2`` at shape ``1``.
+    the first abstract shape in argument ``1`` at shape position ``0``, and we can find the second abstract shape in
+    argument ``2`` at shape position ``1``.
 
 
     """
