@@ -27,7 +27,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         wires (Sequence[int] or int): the wire the operation acts on
 
     Resources:
-        The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
+        The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.Hadamard`
@@ -40,8 +40,11 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
+            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
         raise re.ResourcesNotDefined
 
@@ -82,7 +85,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -220,7 +223,7 @@ class ResourceS(qml.S, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -401,7 +404,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -461,7 +464,7 @@ class ResourceT(qml.T, re.ResourceOperator):
         wires (Sequence[int] or int): the wire the operation acts on
 
     Resources:
-        The T-gate is treated as a terminal gate and thus it cannot be decomposed
+        The T-gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.T`
@@ -474,8 +477,11 @@ class ResourceT(qml.T, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The T-gate is treated as a terminal gate and thus it cannot be decomposed
+            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
         raise re.ResourcesNotDefined
 
@@ -515,7 +521,7 @@ class ResourceT(qml.T, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -575,7 +581,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-    
+
     Resources:
         The X-gate can be decomposed according to the following identities:
 
@@ -661,7 +667,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -812,7 +818,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -955,7 +961,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
