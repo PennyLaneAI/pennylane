@@ -7,6 +7,7 @@
 * Device preprocessing is now being performed in the execution pipeline for program capture.
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
+  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
