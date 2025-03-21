@@ -120,7 +120,7 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
 
     @classmethod
