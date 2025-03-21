@@ -349,13 +349,12 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource Parameters:
-            mod (int): the module for performing the multiplication
-            num_work_wires (int): the number of work wires used for the multiplication.
-            num_x_wires (int): the number of wires the operation acts on.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters.
+
+                * **mod** (int): The modulus for performing the multiplication.
+                * **num_work_wires** (int): The number of work wires used.
+                * **num_x_wires** (int): The number of wires the operation acts on.
         """
         return {
             "mod": self.hyperparameters["mod"],
