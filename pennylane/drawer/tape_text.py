@@ -48,7 +48,7 @@ class _Config:
 
     num_op_layers: int
 
-    cur_layer: int
+    cur_layer: int = -1
     """Current layer index that is being updated"""
 
     cwire_layers: list = field(default_factory=list)
@@ -383,7 +383,6 @@ def tape_text(
         wire_map=wire_map,
         bit_map=bit_map,
         num_op_layers=num_op_layers,
-        cur_layer=-1,
         cwire_layers=cwire_layers,
         decimals=decimals,
         cache=cache,

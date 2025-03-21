@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module containts the _add_obj function for adding an object to the text drawer.
+This module contains the _add_obj function for adding an object to the text drawer.
 """
+# pylint: disable=unused-argument
 from functools import singledispatch
 
 import pennylane as qml
