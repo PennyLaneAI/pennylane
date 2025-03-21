@@ -71,6 +71,8 @@ def _process(wires):
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
+        if type(wires) is range:  # pylint: disable=unidiomatic-typecheck
+            return tuple_of_wires
 
     except TypeError:
         # if not iterable, interpret as single wire label
@@ -94,6 +96,21 @@ def _process(wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
     # required to make `Wires` object idempotent
+    return _cache_tuple(tuple_of_wires)
+
+
+@functools.lru_cache(maxsize=32)
+def _cache_tuple(tuple_of_wires):
+    """
+    Wrapper function for flattening Wires tuples.
+    Caches the tuple of wire labels to prevent expensive re-computation.
+
+    Args:
+         tuple_of_wires (Tuple[Any, ...]): the wire label(s)
+
+    Returns:
+        Tuple[Any, ...]: the flattened tuple of wire labels
+    """
     return tuple(itertools.chain(*(_flatten_wires_object(x) for x in tuple_of_wires)))
 
 
