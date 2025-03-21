@@ -31,7 +31,7 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 class VibronicMatrix(Fragment):
     r"""Implements a dictionary of ``RealspaceSum`` objects.
-    
+
      This can be used to represent the fragments of the vibronic Hamiltonian given by
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots
@@ -109,7 +109,7 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if rs_sum.is_zero:
+        if rs_sum._is_zero:
             return
 
         self._blocks[(row, col)] = rs_sum

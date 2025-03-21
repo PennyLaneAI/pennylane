@@ -99,10 +99,10 @@ class RealspaceOperator:
         return final_matrix
 
     def __add__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if self.is_zero:
+        if self._is_zero:
             return other
 
-        if other.is_zero:
+        if other._is_zero:
             return self
 
         if self.ops != other.ops:
@@ -118,10 +118,10 @@ class RealspaceOperator:
         )
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if self.is_zero:
+        if self._is_zero:
             return (-1) * other
 
-        if other.is_zero:
+        if other._is_zero:
             return self
 
         if self.ops != other.ops:
@@ -156,7 +156,7 @@ class RealspaceOperator:
         return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if other.is_zero:
+        if other._is_zero:
             return self
 
         if self.modes != other.modes:
@@ -178,7 +178,7 @@ class RealspaceOperator:
         return self.coeffs == other.coeffs
 
     @property
-    def is_zero(self) -> bool:
+    def _is_zero(self) -> bool:
         """Always returns true when the operator is zero, but with false positives
 
         Returns:
@@ -245,8 +245,8 @@ class RealspaceSum(Fragment):
                     f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes."
                 )
 
-        ops = tuple(filter(lambda op: not op.is_zero, ops))
-        self.is_zero = len(ops) == 0
+        ops = tuple(filter(lambda op: not op._is_zero, ops))
+        self._is_zero = len(ops) == 0
 
         self.modes = modes
         self._lookup = defaultdict(lambda: RealspaceOperator.zero(self.modes))

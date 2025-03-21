@@ -54,7 +54,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         tensor: ndarray = None,
         scalar: float = None,
         value: float = None,
-        is_zero: bool = None,
         label: Tuple[str, Any] = None,
     ) -> RealspaceCoeffs:
 
@@ -64,19 +63,23 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         self.tensor = tensor
         self.scalar = scalar
         self.value = value
-        self.is_zero = is_zero
         self.label = label
 
         if node_type == _NodeType.SUM:
             self.shape = l_child.shape
+            self.is_zero = l_child.is_zero and r_child.is_zero
         elif node_type == _NodeType.OUTER:
             self.shape = l_child.shape + r_child.shape
+            self.is_zero = l_child.is_zero or r_child.is_zero
         elif node_type == _NodeType.SCALAR:
             self.shape = l_child.shape
+            self.is_zero = l_child.is_zero or isclose(scalar, 0)
         elif node_type == _NodeType.TENSOR:
             self.shape = tensor.shape
+            self.is_zero = allclose(tensor, zeros(tensor.shape))
         elif node_type == _NodeType.FLOAT:
             self.shape = ()
+            self.is_zero = isclose(value, 0)
         else:
             raise ValueError(f"Got invalid node type {node_type}.")
 
@@ -133,7 +136,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             node_type=_NodeType.SUM,
             l_child=l_child,
             r_child=r_child,
-            is_zero=l_child.is_zero and r_child.is_zero,
         )
 
     @classmethod
@@ -166,7 +168,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             node_type=_NodeType.OUTER,
             l_child=l_child,
             r_child=r_child,
-            is_zero=l_child.is_zero or r_child.is_zero,
         )
 
     @classmethod
@@ -194,13 +195,11 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
                 node_type=_NodeType.TENSOR,
                 tensor=tensor,
                 label=label,
-                is_zero=allclose(tensor, zeros(tensor.shape)),
             )
 
         return cls(
             node_type=_NodeType.FLOAT,
             value=tensor,
-            is_zero=(tensor == 0),
         )
 
     @classmethod
@@ -228,7 +227,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             node_type=_NodeType.SCALAR,
             l_child=child,
             scalar=scalar,
-            is_zero=child.is_zero or isclose(scalar, 0),
         )
 
     def __add__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:

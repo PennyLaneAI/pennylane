@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from typing import Dict, Sequence
 
 class Fragment(ABC):
     """Abstract class used to define the methods an object needs to implement in order to be used as a fragment
-    in the Trotteer error workflow. A ``Fragment`` is an that has a well-defined notion of a commutator.
+    in the Trotter error workflow. A ``Fragment`` is an that has a well-defined notion of a commutator.
     To ensure the existence of commutators the implementation requires of the following dunder methods:
     ``__add__``,  ``__matmul__``,  ``__mul__``,  ``__sub__``.
 
