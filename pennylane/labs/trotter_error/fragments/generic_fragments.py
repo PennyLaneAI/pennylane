@@ -21,7 +21,7 @@ from pennylane.labs.trotter_error import Fragment
 
 
 def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
-    """Wrapper function used to instantiate GenericFragment objects
+    """Instantiates ``GenericFragment`` objects.
 
     Args:
         fragments (Sequence[Any]): A sequence of Python objects of the same type
