@@ -57,7 +57,9 @@ that ``wires`` be specified at device instantiation (this is in contrast to when
 program-capture is disabled, where automatic qubit management takes place internally
 with ``default.qubit``).
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @qml.qnode(qml.device('default.qubit'))
     def circuit():
@@ -78,7 +80,9 @@ types are ``jax.numpy`` arrays and standard Python ``int``\ s and ``float``\ s.
 For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for 
 the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device('default.qubit', wires=2)
 
@@ -93,7 +97,9 @@ TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
 Providing a ``list`` as input to a quantum function or QNode is accepted in cases 
 where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device('default.qubit', wires=2)
 
@@ -108,7 +114,9 @@ Array(0., dtype=float32)
 
 JAX-incompatible types, like Python ``range``\ s, are acceptable as keyword arguments:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
     
     dev = qml.device('default.qubit', wires=2)
 
@@ -128,38 +136,50 @@ But, again, using JAX-compatible types wherever possible is recommended.
 Positional arguments
 ~~~~~~~~~~~~~~~~~~~~
 
-Positional arguments **must** be acceptable JAX types. For instance, consider this
-example with ``qml.RZ``:
+Positional arguments in PennyLane are flexible in that their variable names can 
+instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
+``qml.RZ(phi=0.1, wires=0)``). However, to ensure differentiability and, in general,
+compatilibty with program-capture enabled, such arguments must be kept as positional, 
+regardless of if they're provided as an acceptable JAX type. 
 
-.. code-block:: python
+For instance, consider this example with ``qml.RZ``:
+
+.. code-block:: python 
 
     import jax.numpy as jnp
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
-    def circui(angle):
+    def circuit(angle):
         qml.RX(phi=angle, wires=0)
         return qml.expval(qml.Z(0))
 
 >>> angle = jnp.array(0.1)
->>> circuit1(angle)
+>>> circuit(angle)
 ...
 UnexpectedTracerError: Encountered an unexpected tracer. A function transformed by JAX had a side effect, allowing for a reference to an intermediate value with type float32[] wrapped in a DynamicJaxprTracer to escape the scope of the transformation.
 ...
 
+Even though the value for ``phi`` in ``qml.RZ`` is given as a valid JAX type, the 
+fact that it was provided as a keyword argument results in an error.
+
 But, when the angle is passed as a positional argument, the circuit executes as 
 expected:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @qml.qnode(dev)
-    def circui(angle):
+    def circuit(angle):
         qml.RX(angle, wires=0)
         return qml.expval(qml.Z(0))
 
 >>> angle = jnp.array(0.1)
->>> circuit1(angle)
+>>> circuit(angle)
 Array(0.9950042, dtype=float32)
 
 Parameter broadcasting and vmap
@@ -171,7 +191,9 @@ cases.
 
 Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -201,7 +223,9 @@ work** and will give a vague error. Additionally, decorating QNodes with the exp
 Consider the following toy example, which shows a tape-based transform that shifts 
 all :class:`~.pennylane.RX`` gates to the end of a circuit.
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @qml.transform
     def shift_rx_to_end(tape):
@@ -220,7 +244,9 @@ all :class:`~.pennylane.RX`` gates to the end of a circuit.
 
 Decorating with just ``@shift_rx_to_end`` will not work, and will give a vague error:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @shift_rx_to_end
     @qml.qnode(qml.device("default.qubit", wires=1))
@@ -237,7 +263,9 @@ A requirement for tape transforms to be compatible with program capture is to fu
 decorate QNodes with the experimental :func:`~.pennylane.capture.expand_plxpr_transforms` 
 decorator:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @qml.capture.expand_plxpr_transforms
     @shift_rx_to_end
@@ -251,7 +279,7 @@ decorator:
 0: ──H──RX(0.10)─┤  State
 
 Dynamic variables and transforms
-================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some transforms in the :doc:`/code/qml_transforms` module have natively support program capture mode:
 
@@ -277,7 +305,9 @@ For transforms that do not natively work with program capture, they can continue
 Here is an example with our toy ``shift_rx_to_end`` transform and a dynamic parameter
 for ``stop`` in ``qml.for_loop``.
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     @qml.capture.expand_plxpr_transforms
     @shift_rx_to_end
@@ -304,7 +334,9 @@ while loops
 While loops written with :func:`~.pennylane.while_loop` cannot accept a ``lambda``
 function:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -328,7 +360,9 @@ KeyError: <gast.gast.Lambda object at 0x136ff82b0>
 
 As a workaround, use a regular Python function:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -358,7 +392,9 @@ Calculating operator matrices in QNodes
 The matrix of an operator cannot be computed with :func:`~.pennylane.matirx` within
 a QNode, and will raise an error:
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -376,7 +412,9 @@ Section title
 
 blah blah blah
 
-.. code-block:: python
+.. code-block:: python 
+
+    qml.capture.enable()
 
     # nice code block!!!!!!!!!
 
