@@ -24,7 +24,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
     """Instantiates ``GenericFragment`` objects.
 
     Args:
-        fragments (Sequence[Any]): A sequence of Python objects of the same type
+        fragments (Sequence[Any]): A sequence of Python objects of the same type.
         norm_fn (Callable): A function that computes the norm of the fragments.
 
     Returns:
