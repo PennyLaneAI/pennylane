@@ -186,13 +186,11 @@ class ResourceTrotterProduct(
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            n (int): an integer representing the number of Trotter steps to perform
-            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * n (int): an integer representing the number of Trotter steps to perform
+                * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+                * first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
         """
         n = self.hyperparameters["n"]
         base = self.hyperparameters["base"]
@@ -366,13 +364,11 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            n (int): an integer representing the number of Trotter steps to perform
-            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-            qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
-
         Returns:
             dict: dictionary containing the resource parameters
+                * n (int): an integer representing the number of Trotter steps to perform
+                * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+                * qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
         """
         with qml.QueuingManager.stop_recording():
             with qml.queuing.AnnotatedQueue() as q:

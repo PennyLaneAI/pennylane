@@ -77,11 +77,9 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_wires (int): the number of qubits the operation acts upon
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
         """
         return {"num_wires": len(self.wires)}
 
@@ -118,10 +116,8 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
             estimation
 
     Resource Parameters:
-        * base_class (ResourceOperator): The type of the operation corresponding to the
-            phase estimation unitary.
-        * base_params (dict): A dictionary of parameters required to obtain the resources for
-            the phase estimation unitary.
+        * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
         * num_estimation_wires (int): the number of wires used for measuring out the phase
 
     Resources:
@@ -178,15 +174,11 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
-            num_estimation_wires (int): the number of wires used for measuring out the phase
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type(ResourceOperator)): The type of the operation corresponding to the phase estimation unitary.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+                * num_estimation_wires (int): the number of wires used for measuring out the phase
         """
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
@@ -250,10 +242,8 @@ Args:
         estimation
 
 Resource Parameters:
-    * base_class (ResourceOperator): The type of the operation corresponding to the
-        phase estimation unitary.
-    * base_params (dict): A dictionary of parameters required to obtain the resources for
-        the phase estimation unitary.
+    * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
+    * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
     * num_estimation_wires (int): the number of wires used for measuring out the phase
 
 Resources:
@@ -327,8 +317,7 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
         check (bool): test unitarity of the provided `unitary_matrix`
 
     Resource Parameters:
-        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
-            as the number of columns of the matrix.
+        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -378,12 +367,9 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
-                as the number of columns of the matrix.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
         """
         unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
@@ -418,8 +404,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
         id (str or None): String representing the operation (optional)
 
     Resource Parameters:
-        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-            to be applied according to the selected qubits.
+        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
 
     Resources:
         The resources correspond directly to the definition of the operation. Specifically,
@@ -473,12 +458,9 @@ class ResourceSelect(qml.Select, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
-                representation, to be applied according to the selected qubits.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
         """
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -509,8 +491,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         control (Iterable[Any], Wires): The control qubits for the PrepSelPrep operator.
 
     Resource Parameters:
-        * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation,
-            which correspond to the unitaries in the LCU to be blockencoded.
+        * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation, which correspond to the unitaries in the LCU to be blockencoded.
 
     Resources:
         The resources correspond directly to the definition of the operation. Specifically,
@@ -561,12 +542,9 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
-                representation, which correspond to the unitaries in the LCU to be blockencoded.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation, which correspond to the unitaries in the LCU to be blockencoded.
         """
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -642,12 +620,9 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
             default is ``None`` and the reflection will be applied on the ``U`` wires.
 
     Resource Parameters:
-        * base_class (Type(ResourceOperator)): The type of the operation used to prepare the
-            state we will be reflecting over.
-        * base_params (dict): A dictionary of parameters required to obtain the resources for
-            the state preparation operator.
-        * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
-            applied.
+        * base_class (Type(ResourceOperator)): The type of the operation used to prepare the state we will be reflecting over.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the state preparation operator.
+        * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is applied.
 
     Resources:
         The resources correspond directly to the definition of the operation. The operator is
@@ -728,16 +703,11 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type(ResourceOperator)): The type of the operation used to prepare the
-                state we will be reflecting over.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the state preparation operator.
-            num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
-                applied.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type(ResourceOperator)): The type of the operation used to prepare the state we will be reflecting over.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the state preparation operator.
+                * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is applied.
         """
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
@@ -843,12 +813,10 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+                * num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
         """
         lcu = self.hyperparameters["hamiltonian"]
         _, ops = lcu.terms()
