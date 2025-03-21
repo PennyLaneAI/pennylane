@@ -236,12 +236,12 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
 
 class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
-    """Resource class for the Multiplier template.
+    """Resource class for the :class:`~.Multiplier` template.
 
     Args:
-        mod (int): the module for performing the addition
-        num_work_wires (int): the number of work wires provided
-        num_x_wires (int): the number of wires the operation acts on
+        mod (int): the module for performing the multiplication
+        num_work_wires (int): the number of work wires used for the multiplication.
+        num_x_wires (int): the number of wires the operation acts on.
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
@@ -257,9 +257,9 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            mod (int): the module for performing the addition
-            num_work_wires (int): the number of work wires provided
-            num_x_wires (int): the number of wires the operation acts on
+            mod (int): the module for performing the multiplication
+            num_work_wires (int): the number of work wires used for the multiplication.
+            num_x_wires (int): the number of wires the operation acts on.
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
