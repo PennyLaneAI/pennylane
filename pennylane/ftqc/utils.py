@@ -33,6 +33,62 @@ class QubitMgr:
         num_qubits (int): Total number of wire indices to track.
         start_idx (int): Starting index of wires to track. Defaults to `0`.
 
+    **Example:**
+        The following MBQC example workload uses the QubitMgr to assist with recycling of indices
+        between iterations
+
+        .. code-block:: python3
+
+            import pennylane as qml
+            from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
+            dev = qml.device('default.qubit')
+
+            @qml.qnode(qml.device("null.qubit"), mcm_method="one-shot")
+            def circuit_mbqc(start_state, angles):
+                q_mgr = QubitMgr(num_qubits=5, start_idx=0)
+                input_idx = q_mgr.acquire_qubit()
+
+                # prep input node
+                qml.StatePrep(start_state, wires=[input_idx])
+
+                # prep and consume graph state iteratively
+                for i in range(num_iter):
+                    # Acquire 4 free qubit indices
+                    graph_wires = q_mgr.acquire_qubits(4)
+
+                    # Denote the index for the final output state
+                    output_idx = graph_wires[-1]
+
+                    # Prepare the state
+                    qml.ftqc.GraphStatePrep(lattice.graph, wires=graph_wires)
+
+                    # entangle input and graph using first qubit
+                    qml.CZ([input_idx, graph_wires[0]])
+
+                    # MBQC Z rotation: X, X, +/- angle, X
+                    # Reset operations allow qubits to be returned to the pool
+                    m0 = measure_x(input_idx, reset=True)
+                    m1 = measure_x(graph_wires[0], reset=True)
+                    m2 = cond_measure(m1, partial(measure, angle=angle, reset=True), partial(measure, angle=-angle, reset=True))(plane="XY", wires=graph_wires[1])
+                    m3 = measure_x(graph_wires[2], reset=True)
+
+                    # corrections based on measurement outcomes
+                    qml.cond((m0+m2)%2, qml.Z)(graph_wires[3])
+                    qml.cond((m1+m3)%2, qml.X)(graph_wires[3])
+
+                    # The input qubit can be freed and the output qubit becomes the next iteration's input
+                    q_mgr.release_qubit(input_idx)
+                    input_idx = output_idx
+
+                    # We can now free all but the last qubit, which has become the new input_idx
+                    q_mgr.release_qubits(graph_wires[0:-1])
+
+                # Perform the measurements on the output qubit from the last iteration
+                return qml.expval(X(output_idx)), qml.expval(Y(output_idx)), qml.expval(Z(output_idx))
+
+        For each loop iteration, the measured and reset wire labels are returned to the ``QubitMgr`` instance, which are then reallocated
+        on the next step, which when combined with the MCM resets allows for qubit index recycling.
+
     """
 
     def __init__(self, num_qubits: int = 0, start_idx: int = 0):
@@ -53,41 +109,58 @@ class QubitMgr:
         return f"QubitMgr(num_qubits={self.num_qubits}, active={self.active}, inactive={self.inactive})"
 
     @property
-    def num_qubits(self):
+    def num_qubits(self) -> int:
+        """Defines the total number of wire indices tracked by the manager.
+
+        Returns:
+            int: total number of qubit wire indices
         """
-        Return the total number of wire indices tracked by the manager.
-        """
+
         return self._num_qubits
 
     @property
-    def active(self):
+    def active(self) -> set:
         """
-        Return the active wire indices. Any wire index in this set is unavailable for use, as it may
+        Defines the active wire indices. Any wire index in this set is unavailable for use, as it may
         be participating in existing algorithms and/or not be in a reset state.
+
+        Returns:
+            set[int]: active wire indices
         """
         with self._lock:
             return self._active
 
     @property
-    def inactive(self):
+    def inactive(self) -> set:
         """
-        Return the inactive wire indices. Any wire index in this set is available for use, and is
+        Defines the inactive wire indices. Any wire index in this set is available for use, and is
         assumed to be in a reset (|0>) state.
+
+        Returns:
+            set[int]: inactive wire indices
         """
+
         with self._lock:
             return self._inactive
 
     @property
-    def all_qubits(self):
+    def all_qubits(self) -> set:
         """
-        Return all active and inactive wire indices.
+        Defines all active and inactive wire indices.
+
+        Returns:
+            set[int]: union of active and inactive wire indices
         """
         with self._lock:
             return self.inactive | self.active
 
-    def acquire_qubit(self):
+    def acquire_qubit(self) -> int:
         """
-        Return an available inactive wire index and make it active.
+        Acquires an available qubit wire index from the inactive pool, and makes it active.
+        If there are no inactive qubits available a RuntimeError will be raised.
+
+        Returns:
+            int: newly activated qubit wire index
         """
         with self._lock:
             try:
@@ -101,7 +174,13 @@ class QubitMgr:
 
     def acquire_qubits(self, num_qubits: int):
         """
-        Return num_qubits number of inactive wires and make them active.
+        Acquires num_qubits qubit wire indices from the inactive pool, and makes them active.
+        If there are no inactive qubits available a RuntimeError will be raised.
+
+        .. seealso:: :meth:`~.QubitMgr.acquire_qubit`.
+
+        Returns:
+            list[int]: newly activated qubit wire indices
         """
         indices = []
         if num_qubits > 0:
@@ -114,7 +193,8 @@ class QubitMgr:
 
     def release_qubit(self, idx: int):
         """
-        Return the active wire idx to the inactive pool.
+        Release an active qubit wire index, idx, from the active pool, and makes it inactive.
+        If idx is not in the active pool a RuntimeError will be raised.
         """
         with self._lock:
             try:
@@ -127,7 +207,8 @@ class QubitMgr:
 
     def release_qubits(self, indices: list[int]):
         """
-        Return the active wire indices to the inactive pool.
+        Release the list of active qubit wire indices, indices, from the active pool, and makes them inactive.
+        If any of the given indices are not in the active pool a RuntimeError will be raised.
         """
         with self._lock:
             for idx in indices:
@@ -135,7 +216,8 @@ class QubitMgr:
 
     def reserve_qubit(self, idx: int):
         """
-        Explicitly request the wire index idx to be active.
+        Explicitly reserve the qubit wire index, idx, to be active.
+        If given index is not in the active pool a RuntimeError will be raised.
         """
         with self._lock:
             if idx in self._inactive:
