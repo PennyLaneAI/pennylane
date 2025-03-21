@@ -79,6 +79,7 @@ For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for
 the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
 .. code-block:: python
+
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
@@ -161,8 +162,8 @@ expected:
 >>> circuit1(angle)
 Array(0.9950042, dtype=float32)
 
-Parameter broadcasting and ``vmap``
------------------------------------
+Parameter broadcasting and vmap
+-------------------------------
 
 Parameter-broadcasting is generally not compatible with program-capture. There are 
 cases that magically work, but one shouldn't extrapolate beyond those particular 
@@ -252,8 +253,7 @@ decorator:
 Dynamic variables and transforms
 ================================
 
-Some transforms in the :module:`~.pennylane.transforms` API have bespoke plxpr implementations
-that *directly* transform jaxpr:
+Some transforms in the :doc:`/code/qml_transforms` module have natively support program capture mode:
 
 #. :func:`~.pennylane.transforms.merge_rotations`
 #. :func:`~.pennylane.transforms.single_qubit_fusion`
@@ -264,18 +264,15 @@ that *directly* transform jaxpr:
 #. :func:`~.pennylane.map_wires`
 #. :func:`~.pennylane.transforms.cancel_inverses`
 
-**This section applies to any transform not listed above, including custom quantum tape
-transforms**.
+For transforms that do not natively work with program capture, they can continue to be used with certain limitations:
 
-There are a few other restrictions on QNodes and applying transforms that do not 
-have a native program-capture implementation:
-
-#. Transforms that return multiple tapes are not backwards-compatible.
-#. Transforms that return non-trivial post-processing functions are not backwards-compatible.
+#. Transforms that return multiple tapes are not supported.
+#. Transforms that return non-trivial post-processing functions are not supported.
 #. Tape transforms will fail to execute if the transformed quantum function or QNode contains:
-    #. ``qml.cond`` with dynamic parameters as predicates.
-    #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
-    #. ``qml.while_loop``.
+
+   #. ``qml.cond`` with dynamic parameters as predicates.
+   #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
+   #. ``qml.while_loop``.
 
 Here is an example with our toy ``shift_rx_to_end`` transform and a dynamic parameter
 for ``stop`` in ``qml.for_loop``.
@@ -301,8 +298,8 @@ TracerIntegerConversionError: The __index__() method was called on traced array 
 The error occurred while tracing the function wrapper at /Users/isaac/.virtualenvs/pl-latest/lib/python3.11/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
-``while`` loops 
----------------
+while loops 
+-----------
 
 While loops written with :func:`~.pennylane.while_loop` cannot accept a ``lambda``
 function:
