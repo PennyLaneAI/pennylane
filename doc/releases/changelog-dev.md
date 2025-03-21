@@ -612,6 +612,9 @@
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
+* Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
+  [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
