@@ -18,7 +18,7 @@
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-.. currentmodule:: pennylane.labs.trotter
+.. currentmodule:: pennylane.labs.trotter_error
 
 Trotter Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~

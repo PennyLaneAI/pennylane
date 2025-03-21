@@ -109,7 +109,7 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if rs_sum.is_zero:
+        if rs_sum._is_zero:
             return
 
         self._blocks[(row, col)] = rs_sum
