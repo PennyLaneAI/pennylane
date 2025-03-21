@@ -631,11 +631,22 @@ def _cz_to_cps_resources():
 
 
 @register_resources(_cz_to_cps_resources)
-def _cz(wires: WiresLike, **__):
+def _cz_to_cps(wires: WiresLike, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
 
-add_decomps(CZ, _cz)
+def _cz_to_cnot_resources():
+    return {qml.H: 2, qml.CNOT: 1}
+
+
+@register_resources(_cz_to_cnot_resources)
+def _cz_to_cnot(wires: WiresLike, **__):
+    qml.H(wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.H(wires=wires[1])
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
 
 
 class CSWAP(ControlledOp):
