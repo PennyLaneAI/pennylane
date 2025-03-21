@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+from functools import reduce
 from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
@@ -107,19 +108,9 @@ def _string_to_matrix(
     matrix = _identity(gridpoints, sparse=sparse)
     p = _momentum_operator(gridpoints, basis=basis, sparse=sparse)
     q = _position_operator(gridpoints, basis=basis, sparse=sparse)
+    mat_dict = {"P": p, "Q": q}
 
-    for char in op:
-        if char == "P":
-            matrix = matrix @ p
-            continue
-
-        if char == "Q":
-            matrix = matrix @ q
-            continue
-
-        raise ValueError(f"Operator terms must only contain P and Q. Got {char}.")
-
-    return matrix
+    return reduce(lambda x, y: x @ mat_dict[y], op, matrix)
 
 
 def _tensor_with_identity(
@@ -130,19 +121,14 @@ def _tensor_with_identity(
     sparse: bool = False,
 ) -> Union[np.ndarray, sp.sparse.csr_array]:
     """Tensor the input matrices with the identity"""
-    lookup = {}
+    lookup = [_identity(gridpoints, sparse=sparse)] * modes
 
     for mode in range(modes):
-        lookup[mode] = _identity(gridpoints, sparse=sparse)
         for count, i in enumerate(index):
             if i == mode:
                 lookup[mode] = lookup[mode] @ ops[count]
 
-    matrix = lookup[0]
-    for mode in range(1, modes):
-        matrix = _kron(matrix, lookup[mode])
-
-    return matrix
+    return reduce(_kron, lookup[1:], lookup[0])
 
 
 def _identity(dim: int, sparse: bool) -> Union[np.ndarray, sp.sparse.csr_array]:

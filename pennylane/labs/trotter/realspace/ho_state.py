@@ -29,6 +29,8 @@ class HOState:
         gridpoints (int): the number of gridpoints used to discretize the state
         vector: (csr_array): a sparse vector representation of the state
 
+    ``HOState`` should be instantiated from the ``from_dict`` and ``from_scipy`` class methods.
+
     """
 
     def __init__(self, modes: int, gridpoints: int, vector: csr_array):
@@ -39,7 +41,23 @@ class HOState:
 
     @classmethod
     def from_dict(cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]) -> HOState:
-        """Construct an ``HOState`` from a dictionary"""
+        """Construct an ``HOState`` from a dictionary.
+
+        Args:
+            modes (int): the number of vibrational modes
+            gridpoints (int): the number of gridpoints used to discretize the state
+            coeffs (Dict[Tuple[int]]): a dictionary representation of the state
+
+        Returns:
+            HOState: an ``HOState`` representation of the state vector
+
+        **Example**
+        >>> from pennylane.labs.trotter import HOState
+        >>> n_modes = 3
+        >>> gridpoints = 5
+        >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
+        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+        """
         rows, cols, vals = [], [], []
         for index, val in coeffs.items():
             if len(index) != modes:
@@ -60,7 +78,28 @@ class HOState:
 
     @classmethod
     def from_scipy(cls, modes: int, gridpoints: int, vector: csr_array) -> HOState:
-        """Construct an HOState from a scipy array"""
+        """Construct an HOState from a scipy ``csr_array``.
+
+        Args:
+            modes (int): the number of vibrational modes
+            gridpoints (int): the number of gridpoints used to discretize the state
+            vector (csr_array): a sparse representation of the state vector
+
+        Returns:
+            HOState: an ``HOState`` representing the state vector
+
+        **Examples**
+        >>> from scipy.sparse import csr_array
+        >>> import numpy as np
+        >>> gridpoints = 2
+        >>> n_modes = 2
+        >>> state_vector = csr_array(np.array([0, 1, 0, 0]))
+        >>> state = HOState.from_scipy(n_modes, gridpoints, state_vector)
+        """
+
+        if vector.shape == (gridpoints**modes,):
+            vector = vector.reshape((gridpoints**modes, 1))
+
         if vector.shape != (gridpoints**modes, 1):
             raise ValueError(
                 f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {vector.shape}."
@@ -70,7 +109,15 @@ class HOState:
 
     @classmethod
     def zero_state(cls, modes: int, gridpoints: int) -> HOState:
-        """Construct an HOState whose vector is zero"""
+        """Construct an ``HOState`` whose vector is zero.
+
+        Args:
+            modes (int): the number of vibrational modes
+            gridpoints(int): the number of gridpoints used to discretize the state
+
+        Returns:
+            HOState: an ``HOState` representing the zero state
+        """
         return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
 
     def __add__(self, other: HOState) -> HOState:
@@ -85,7 +132,14 @@ class HOState:
     __rmul__ = __mul__
 
     def dot(self, other: HOState) -> float:
-        """Return the inner product"""
+        """Return the dot product of two ``HOState`` objects.
+
+        Args:
+            other (HOState): the state to take the dot product with
+
+        Returns:
+            float: the dot product of the two states
+        """
         if self.dim != other.dim:
             raise ValueError(
                 f"Dimension mismatch. Attempting to dot product vectors of dimension {self.dim} and {other.dim}."
@@ -95,7 +149,23 @@ class HOState:
 
 
 class VibronicHO:
-    """Class representing a harmonic oscilator vibronic state"""
+    """This class represents the tensor product of harmonic oscillator states.
+
+    Args:
+        states (int): the number of electronic states
+        modes (int): the number of vibrational modes
+        gridpoints (int): the number of gridpoints used to discretize the state
+        ho_states (Sequence[HOState]): a sequence of ``HOState`` objects representing the harmonic oscillator states
+
+    **Example**
+    >>> from pennylane.labs.trotter import HOState, VibronicHO
+    >>> n_modes = 3
+    >>> n_states = 2
+    >>> gridpoints = 5
+    >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
+    >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+    >>> vo_state = VibronicHO(n_states, n_modes, gridpoints, [state, state])
+    """
 
     def __init__(self, states: int, modes: int, gridpoints: int, ho_states: Sequence[HOState]):
 
@@ -155,7 +225,16 @@ class VibronicHO:
 
     @classmethod
     def zero_state(cls, states: int, modes: int, gridpoints: int) -> VibronicHO:
-        """Return an all zero state"""
+        """Construct an ``HOState`` representing the zero state.
+
+        Args:
+            states (int): the number of electronic states
+            modes (int): the number of vibrational modes
+            gridpoints(int): the number of gridpoints used to discretize the state
+
+        Returns:
+            VibronicHO: a ``VibronicHO`` representing the zero state
+        """
         return cls(
             states=states,
             modes=modes,
@@ -164,12 +243,20 @@ class VibronicHO:
         )
 
     def dot(self, other: VibronicHO):
-        """Return the inner product"""
+        """Return the dot product of two ``VibronicHO`` objects.
+
+        Args:
+            other (VibronicHO): the state to take the dot product with
+
+        Returns:
+            float: the dot product of the two states
+        """
 
         return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:
+    """Return the tensor product of ``op`` with the ``gridpoints**mode`` dimensional identity matrix on the left, and the ``gridpoints ** (n_modes - mode - 1)`` dimensional identity matrix on the right."""
     if mode == 0:
         return kron(op, identity(gridpoints ** (n_modes - 1)))
 

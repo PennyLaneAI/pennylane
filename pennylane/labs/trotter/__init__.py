@@ -26,6 +26,7 @@ Trotter Base Classes:
 .. autosummary::
     :toctree: api
 
+    ~AbstractState
     ~Fragment
 
 Realspace Hamiltonian Classes:
@@ -48,8 +49,27 @@ Fragment Functions:
     ~generic_fragments
     ~vibrational_fragments
     ~vibronic_fragments
+
+State Classes:
+~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~HOState
+    ~VibronicHO
 """
 
 from .abstract import AbstractState, Fragment, commutator, nested_commutator
 from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
 from .fragments import generic_fragments, vibrational_fragments, vibronic_fragments
+
+from .abstract import AbstractState, Fragment
+from .realspace import (
+    RealspaceCoeffs,
+    RealspaceOperator,
+    RealspaceSum,
+    VibronicMatrix,
+    HOState,
+    VibronicHO,
+)

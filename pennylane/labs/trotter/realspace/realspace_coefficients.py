@@ -70,14 +70,16 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         if node_type == _NodeType.SUM:
             self.shape = l_child.shape
-        if node_type == _NodeType.OUTER:
+        elif node_type == _NodeType.OUTER:
             self.shape = l_child.shape + r_child.shape
-        if node_type == _NodeType.SCALAR:
+        elif node_type == _NodeType.SCALAR:
             self.shape = l_child.shape
-        if node_type == _NodeType.TENSOR:
+        elif node_type == _NodeType.TENSOR:
             self.shape = tensor.shape
-        if node_type == _NodeType.FLOAT:
+        elif node_type == _NodeType.FLOAT:
             self.shape = ()
+        else:
+            raise ValueError(f"Got invalid node type {node_type}.")
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
