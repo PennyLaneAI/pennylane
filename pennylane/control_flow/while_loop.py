@@ -246,7 +246,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     loop via the Python interpreter.
 
     Args:
-         cond_fn (Callable): the condition function in the while loop
+        cond_fn (Callable): the condition function in the while loop
         body_fn (Callable): the function that is executed within the while loop
         allow_array_resizing (Literal["auto", True, False])
     """
