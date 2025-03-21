@@ -55,7 +55,7 @@ class CalculateAbstractedAxes:
                             found = True
                             break
                 # haven't encountered it, so add it to abstract_axes
-                # and use new letter designation
+                # and use new number designation
                 if not found:
                     arg_abstracted_axes[shape_idx] = len(self.abstract_shapes)
                     self.shape_locations.append([AbstractShapeLocation(x_idx, shape_idx)])
@@ -79,7 +79,7 @@ def loop_determine_abstracted_axes(
 
     .. code-block:: python
 
-        from pennylane.capture import loop_determine_abstracted_axes
+        from pennylane.control_flow._loop_abstract_axes import loop_determine_abstracted_axes
         from functools import partial
 
         def f(*args, allow_array_resizing):

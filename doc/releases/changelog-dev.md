@@ -349,7 +349,7 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* The sizes of dynamicly shaped arrays can now be updated in a `while_loop` when capture is enabled.
+* The sizes of dynamically shaped arrays can now be updated in a `while_loop` when capture is enabled.
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.

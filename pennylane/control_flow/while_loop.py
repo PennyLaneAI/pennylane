@@ -271,8 +271,8 @@ def _validate_no_resizing_returns(
                     "Detected dynamically shaped arrays being resized indepedently. "
                     f"\nReturned variables at {l0.arg_idx} and {compare_loc.arg_idx} must keep the same size "
                     "with allow_array_resizing=False."
-                    "\nPlease specify allow_array_resizing=True to `qml.for_loop` to allow "
-                    "dynamically shaped arrays to be reshaped indepdendently. "
+                    "\nPlease specify allow_array_resizing=True to `qml.while_loop` to allow "
+                    "dynamically shaped arrays to be reshaped independently. "
                 )
 
     return None
