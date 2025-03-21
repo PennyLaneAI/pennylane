@@ -65,7 +65,9 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
 
 class GenericFragment(Fragment):
-    """This class allows users to use any Python object implementing arithmetic dunder methods to be used
+    """Represents objects implementing arithmetic dunder methods.
+    
+    This class allows using any object implementing arithmetic dunder methods to be used
     in the Trotter error workflow.
 
     Args:
