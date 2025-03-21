@@ -271,7 +271,7 @@ decorator:
 Dynamic variables and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some transforms in the :doc:`/code/qml_transforms` module have natively support program capture mode:
+Some transforms in the :doc:`/code/qml_transforms` module have natively support program capture:
 
 #. :func:`~.pennylane.transforms.merge_rotations`
 #. :func:`~.pennylane.transforms.single_qubit_fusion`
@@ -379,7 +379,7 @@ Array([1.+0.j, 0.+0.j], dtype=complex64)
 Calculating operator matrices in QNodes
 ---------------------------------------
 
-The matrix of an operator cannot be computed with :func:`~.pennylane.matirx` within
+The matrix of an operator cannot be computed with :func:`~.pennylane.matrix` within
 a QNode, and will raise an error:
 
 .. code-block:: python 
