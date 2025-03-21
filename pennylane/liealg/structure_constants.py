@@ -74,6 +74,8 @@ def structure_constants(
 
     Let us first generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
+    >>> import pennylane as qml
+    >>> from pennylane import X, Y, Z, I
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
     >>> gens += [Z(i) for i in range(n)]
@@ -136,8 +138,7 @@ def structure_constants(
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.labs.dla import structure_constants_matrix
-    >>> adj = structure_constants_matrix(g)
+    >>> adj = qml.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
@@ -248,6 +249,8 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
+    >>> import pennylane as qml
+    >>> from pennylane import X, Y, Z, I
     >>> n = 4
     >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
     >>> g = qml.lie_closure(gens, matrix=True)
@@ -257,8 +260,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> from pennylane.labs.dla import structure_constants_matrix
-    >>> adj = structure_constants_matrix(g)
+    >>> adj = qml.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
