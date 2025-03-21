@@ -186,8 +186,8 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     """Resource class for the PhaseAdder template.
 
     Resource Parameters:
-        mod (int): the module for performing the addition
-        num_x_wires (int): the number of wires the operation acts on
+        * mod (int): the module for performing the addition
+        * num_x_wires (int): the number of wires the operation acts on
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
@@ -280,9 +280,9 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     """Resource class for the :class:`~.Multiplier` template.
 
     Resource Parameters:
-        - mod (int): the module for performing the multiplication
-        - num_work_wires (int): the number of work wires used for the multiplication.
-        - num_x_wires (int): the number of wires the operation acts on.
+        * mod (int): the module for performing the multiplication
+        * num_work_wires (int): the number of work wires used for the multiplication.
+        * num_x_wires (int): the number of wires the operation acts on.
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
@@ -352,9 +352,9 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters.
 
-                * **mod** (int): The modulus for performing the multiplication.
-                * **num_work_wires** (int): The number of work wires used.
-                * **num_x_wires** (int): The number of wires the operation acts on.
+                * mod (int): The modulus for performing the multiplication.
+                * num_work_wires (int): The number of work wires used.
+                * num_x_wires (int): The number of wires the operation acts on.
         """
         return {
             "mod": self.hyperparameters["mod"],
@@ -384,12 +384,12 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     r"""Resource class for the PhaseAdder template.
 
     Resource Parameters:
-        - mod (int): the module for performing the exponentiation
-        - num_output_wires (int): the number of output wires used to encode the integer
+        * mod (int): the module for performing the exponentiation
+        * num_output_wires (int): the number of output wires used to encode the integer
             :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
-        - num_work_wires (int): the number of work wires used to perform the modular
+        * num_work_wires (int): the number of work wires used to perform the modular
             exponentiation operation
-        - num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
+        * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
             in the computational basis
 
     Resources:
@@ -434,10 +434,13 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource Parameters:
-            mod (int): the module for performing the exponentiation
-            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
-            num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
-            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
+            * mod (int): the module for performing the exponentiation
+            * num_output_wires (int): the number of output wires used to encode the integer
+            :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+            * num_work_wires (int): the number of work wires used to perform the modular
+            exponentiation operation
+            * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
+            in the computational basis
 
         Returns:
             dict: dictionary containing the resource parameters
