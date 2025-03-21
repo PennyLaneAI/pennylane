@@ -307,7 +307,7 @@ class TestDynamicShapes:
 
     def test_array_initialized_with_size_of_other_arg(self):
         """Test that one argument can have a shape that matches another argument, but
-        can be resized indepdently of that arg."""
+        can be resized independently of that arg."""
 
         @qml.for_loop(3)
         def f(i, j, a):
@@ -322,8 +322,26 @@ class TestDynamicShapes:
         assert qml.math.allclose(final_j, 5)  # 2 +3
         assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
 
+    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
+    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
+        """Test that if a broadcasting error is raised when a dynamically shaped closure variable
+        is present, the error mentions it may be due to the closure variable with a dynamic shape.
+        """
+
+        def w(i0):
+            c = jnp.arange(i0)
+
+            @qml.for_loop(3, allow_array_resizing=allow_array_resizing)
+            def f(i, a):
+                return c * a
+
+            return f(jnp.arange(i0))
+
+        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
+            jax.make_jaxpr(w)(3)
+
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
-    def test_loop_with_argument_combinding(self, allow_array_resizing):
+    def test_loop_with_argument_combining(self, allow_array_resizing):
         """Test that arguments with dynamic shapes can be combined if allow_array_resizing=auto or False."""
 
         @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
@@ -335,8 +353,8 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [s, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(s, 2)  # the initial size
+        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(dynamic_shape, 2)  # the initial size
         assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
         assert qml.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
 
@@ -360,6 +378,25 @@ class TestDynamicShapes:
         x_expected = jnp.array([1, 1, 1, 1, 2, 2, 2, 2])
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 3 * x_expected)
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
+    def test_independent_resizing(self, allow_array_resizing):
+        """Test that two arrays can be resized independently of each other."""
+
+        @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
+        def f(i, a, b):
+            return jnp.hstack((a, b)), b + 1
+
+        def w(i0):
+            return f(jnp.zeros(i0), jnp.zeros(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(shape1, 15)
+        assert jnp.allclose(shape2, 3)
+        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        assert jnp.allclose(a, expected)
+        assert jnp.allclose(b, jnp.array([4, 4, 4]))
 
 
 class TestCaptureCircuitsForLoop:

@@ -16,7 +16,7 @@ Contains utilities for handling abstracted axes for for_loop and while_loop.
 
 Note that these are located in the ``control_flow`` module and not the ``capture`` module
 as they are specific to just ``for_loop`` and ``while_loop``.
-``capture.determine_abstacted_axes`` applies to any higher order primitive.
+``capture.determine_abstracted_axes`` applies to any higher order primitive.
 
 """
 

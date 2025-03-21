@@ -20,8 +20,13 @@ from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
-from ._loop_abstract_axes import loop_determine_abstracted_axes
-from .while_loop import _add_abstract_shapes, _get_dummy_arg, _validate_no_resizing_returns
+from ._loop_abstract_axes import (
+    add_abstract_shapes,
+    get_dummy_arg,
+    handle_jaxpr_error,
+    loop_determine_abstracted_axes,
+    validate_no_resizing_returns,
+)
 
 
 def for_loop(
@@ -124,6 +129,81 @@ def for_loop(
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of using quantum just-in-time compilation.
+
+    .. details::
+        :title: Usage Details
+
+        A dynamically shaped array is an array whose shape depends on an abstract value. This is
+        an experimental jax mode that can be turned on with:
+
+        >>> import jax
+        >>> jax.config.update("jax_dynamic_shapes", True)
+
+        ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
+        If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
+        the loop, potentially taking more time.
+
+        When working with dynamic shapes in a ``for_loop``, we have two possible
+        options. ``allow_array_resizing=True`` treats every dynamic dimension as independent.
+
+        .. code-block:: python
+
+            @qml.for_loop(3, allow_array_resizing=True)
+            def f(i, x, y):
+                return jax.numpy.hstack([x, y]), 2*y
+
+            def workflow(i0):
+                x0, y0 = jnp.ones(i0), jnp.ones(i0)
+                return f(x0, y0)
+
+        Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
+        after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
+        with operations like ``x * y``, as they do not have matching shapes.
+
+        With ``allow_array_resizing=False``, anything that starts with the same dynamic dimension
+        must keep the same shape pattern throughout the loop.
+
+        .. code-block:: python
+
+            @qml.for_loop(3, allow_array_resizing=False)
+            def f(x, y):
+                return x * y, 2*y
+
+            def workflow(i0):
+                x0 = jnp.ones(i0)
+                y0 = jnp.ones(i0)
+                return f(x0, y0)
+
+        Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
+        long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
+        same shape, and keep the same shape as each other for each iteration.
+
+        .. code-block:: python
+
+            @qml.for_loop(3, allow_array_resizing=False)
+            def f(x, y):
+                x = jnp.hstack([x, y])
+                return x, 2*x
+
+            def workflow(i0):
+                x0 = jnp.ones(i0)
+                y0 = jnp.ones(i0)
+                return f(x0, y0)
+
+        Note that new dynamic dimensions cannot yet be created inside a loop.  Only things
+        that already have a dynamic dimension can have that dynamic dimension change.
+        For example, this is **not** a viable ``for_loop``, as ``x`` is initialized
+        with an array with a concrete size.
+
+        .. code-block:: python
+
+            def w():
+                @qml.for_loop(3)
+                def f(i, x):
+                    return jax.numpy.append(x, i)
+
+                return f(jnp.array([]))
+
 
     """
     if stop is None:
@@ -258,8 +338,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         flat_fn = FlatFn(self.body_fn, in_tree=in_tree)
 
         if abstracted_axes:
-            new_body_fn = _add_abstract_shapes(flat_fn, shape_locations)
-            dummy_init_state = [_get_dummy_arg(arg) for arg in flat_args]
+            new_body_fn = add_abstract_shapes(flat_fn, shape_locations)
+            dummy_init_state = [get_dummy_arg(arg) for arg in flat_args]
             abstracted_axes = ({},) + abstracted_axes  # add in loop index
         else:
             new_body_fn = flat_fn
@@ -270,18 +350,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                 0, *dummy_init_state
             )
         except ValueError as e:
-            if (
-                "Incompatible shapes for broadcasting" in str(e)
-                and allow_array_resizing is True
-                and jax.config.jax_dynamic_shapes
-            ):
-                raise ValueError(
-                    "Detected an attempt to combine arrays with two different dynamic shapes. "
-                    "To keep dynamic shapes matching, please specify ``allow_array_resizing=False`` to ``qml.for_loop``."
-                ) from e
-            raise e
+            handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
-        validation = _validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations)
+        validation = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
         if validation:
             if allow_array_resizing == "auto":
                 # didn't work, so try with array resizing.

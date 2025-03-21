@@ -392,7 +392,7 @@ class TestCaptureWhileLoopDynamicShapes:
 
     def test_array_initialized_with_size_of_other_arg(self):
         """Test that one argument can have a shape that matches another argument, but
-        can be resized indepdently of that arg."""
+        can be resized independently of that arg."""
 
         @qml.while_loop(lambda i, a: i < 5)
         def f(i, a):
