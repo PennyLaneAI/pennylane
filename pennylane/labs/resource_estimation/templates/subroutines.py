@@ -423,11 +423,11 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     Resource Parameters:
         * mod (int): the module for performing the exponentiation
         * num_output_wires (int): the number of output wires used to encode the integer
-            :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+        :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
         * num_work_wires (int): the number of work wires used to perform the modular
-            exponentiation operation
+        exponentiation operation
         * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
-            in the computational basis
+        in the computational basis
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.ModExp`.
