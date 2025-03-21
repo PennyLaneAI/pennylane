@@ -35,75 +35,6 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
-    op: qml.operation.Operator,
-    acceptance_function: Callable[[qml.operation.Operator], bool],
-    max_expansion: Optional[int] = None,
-    current_depth=0,
-    graph: DecompositionGraph = None,
-) -> Generator[qml.operation.Operator, None, None]:
-    """A generator that yields the next operation that is accepted."""
-
-    max_depth_reached = False
-    decomp = []
-
-    if max_expansion is not None and max_expansion <= current_depth:
-        max_depth_reached = True
-
-    if acceptance_function(op) or max_depth_reached:
-        yield op
-    elif graph is not None and graph.is_solved_for(op):
-        op_rule = graph.decomposition(op)
-        with qml.queuing.AnnotatedQueue() as decomposed_ops:
-            op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
-        decomp = decomposed_ops.queue
-        current_depth += 1
-    else:
-        decomp = op.decomposition()
-        current_depth += 1
-
-    for sub_op in decomp:
-        yield from _operator_decomposition_gen(
-            sub_op,
-            acceptance_function,
-            max_expansion=max_expansion,
-            current_depth=current_depth,
-            graph=graph,
-        )
-
-
-def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
-    """Check the keyword arguments for the decompose transform for the graph-based decomposition."""
-
-    if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
-        raise TypeError(
-            "The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition."
-            "Please enable the decomposition graph with qml.decomposition.enable_graph()."
-        )
-
-    _fixed_decomps = fixed_decomps if fixed_decomps is not None else {}
-    _alt_decomps = alt_decomps if alt_decomps is not None else {}
-
-    return _fixed_decomps, _alt_decomps
-
-
-def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
-    """Create and solve a DecompositionGraph instance to optimize the decomposition."""
-
-    # Create the decomposition graph
-    graph = DecompositionGraph(
-        operations,
-        target_gate_names,
-        fixed_decomps=fixed_decomps,
-        alt_decomps=alt_decomps,
-    )
-
-    # Find the efficient pathways to the target gate set
-    graph.solve()
-
-    return graph
-
-
 @lru_cache
 def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
     try:
@@ -304,8 +235,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         with qml.QueuingManager.stop_recording():
                             op = eq.primitive.impl(*invals, **eq.params)
 
-                        # Skip the graph creation if the operator has a dynamic decomposition defined:
-                        # TODO: Fix this when the graph-based decomposition gets support for dynamic rules.
+                        # Construct the graph for the inner operations of structured rules
                         if not op.has_plxpr_decomposition:
                             operations.append(op)
 
@@ -732,3 +662,69 @@ def decompose(
     tape = tape.copy(operations=new_ops)
 
     return (tape,), null_postprocessing
+
+
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+    acceptance_function: Callable[[qml.operation.Operator], bool],
+    max_expansion: Optional[int] = None,
+    current_depth=0,
+    graph: DecompositionGraph = None,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted."""
+
+    max_depth_reached = False
+    decomp = []
+
+    if max_expansion is not None and max_expansion <= current_depth:
+        max_depth_reached = True
+
+    if acceptance_function(op) or max_depth_reached:
+        yield op
+    elif graph is not None and graph.is_solved_for(op):
+        op_rule = graph.decomposition(op)
+        with qml.queuing.AnnotatedQueue() as decomposed_ops:
+            op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        decomp = decomposed_ops.queue
+        current_depth += 1
+    else:
+        decomp = op.decomposition()
+        current_depth += 1
+
+    for sub_op in decomp:
+        yield from _operator_decomposition_gen(
+            sub_op,
+            acceptance_function,
+            max_expansion=max_expansion,
+            current_depth=current_depth,
+            graph=graph,
+        )
+
+
+def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
+    """Check the keyword arguments for the decompose transform for the graph-based decomposition."""
+
+    if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
+        raise TypeError(
+            "The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition."
+            "Please enable the decomposition graph with qml.decomposition.enable_graph()."
+        )
+
+    return fixed_decomps, alt_decomps
+
+
+def _get_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
+    """Create and solve a DecompositionGraph instance to optimize the decomposition."""
+
+    # Create the decomposition graph
+    graph = DecompositionGraph(
+        operations,
+        target_gate_names,
+        fixed_decomps=fixed_decomps,
+        alt_decomps=alt_decomps,
+    )
+
+    # Find the efficient pathways to the target gate set
+    graph.solve()
+
+    return graph

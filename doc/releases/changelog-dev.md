@@ -840,6 +840,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Daniela Angulo,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Joey Carter,
