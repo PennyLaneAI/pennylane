@@ -52,11 +52,27 @@ class Fragment(ABC):
 
     @abstractmethod
     def apply(self, state: AbstractState) -> AbstractState:
-        """Apply to a state on the right"""
+        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each class inherting from ``Fragment``.
+
+        Args:
+            state (AbstractState): an object representing a quantum state
+
+        Returns:
+            AbstractState: the result of applying the ``Fragment`` to ``state``
+
+        """
         raise NotImplementedError
 
     def expectation(self, left: AbstractState, right: AbstractState) -> float:
-        """Return the expectation value of a state"""
+        """Return the expectation value of a state. The type of ``state`` is determined by each class inherting from ``Fragment``.
+
+        Args:
+            left (AbstractState): the state to be multiplied on the left of the ``Fragment``
+            right (AbstractState): the state to be multiplied on the right of the ``Fragment``
+
+        Returns:
+            float: the expectation value obtained by applying ``Fragment`` to the given states
+        """
         return left.dot(self.apply(right))
 
 
@@ -111,10 +127,21 @@ class AbstractState(ABC):
     @classmethod
     @abstractmethod
     def zero_state(cls) -> AbstractState:
-        """Return a representation of the zero state"""
+        """Return a representation of the zero state
+
+        Returns:
+            AbstractState: an AbstractState representation of the zero state
+        """
         raise NotImplementedError
 
     @abstractmethod
-    def dot(self, other: AbstractState):
-        """Return the dot product of two states"""
+    def dot(self, other: AbstractState) -> float:
+        """Return the dot product of two states
+    
+        Args:
+            other (AbstractState): the state to take the dot product with
+
+        Returns:
+           float: the dot product of self and other 
+        """
         raise NotImplementedError
