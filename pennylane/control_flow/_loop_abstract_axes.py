@@ -31,7 +31,7 @@ AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_i
 
 
 def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
-    """Add the abstract shapes that the specified locations to the output of f.
+    """Add the abstract shapes at the specified locations to the output of f.
 
     .. code-block:: python
         import jax.numpy as jnp
