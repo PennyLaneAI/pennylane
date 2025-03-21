@@ -21,6 +21,7 @@ for developers when making any change that might impact the resulting figures.
 
 import pathlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pennylane as qml
 from pennylane import draw_mpl
 
@@ -159,17 +160,21 @@ def levels():
 
 if __name__ == "__main__":
 
-    dev = qml.device("lightning.qubit", wires=(0, 1, 2, 3))
+    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
     @qml.qnode(dev)
     def circuit(x, z):
-        qml.QFT(wires=(0, 1, 2, 3))
-        qml.IsingXX(1.234, wires=(0, 2))
-        qml.Toffoli(wires=(0, 1, 2))
-        qml.CSWAP(wires=(0, 2, 3))
+        qml.QFT(wires=(0,1,2,3))
+        qml.IsingXX(1.234, wires=(0,2))
+        qml.Toffoli(wires=(0,1,2))
+        mcm = qml.measure(1)
+        mcm_out = qml.measure(2)
+        qml.CSWAP(wires=(0,2,3))
         qml.RX(x, wires=0)
-        qml.CRZ(z, wires=(3, 0))
-        return qml.expval(qml.PauliZ(0))
+        qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
+        qml.CRZ(z, wires=(3,0))
+        return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
+
 
     main_example(circuit)
     decimals(dev)

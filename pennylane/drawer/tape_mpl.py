@@ -217,14 +217,6 @@ def _get_measured_bits(measurements, bit_map, offset):
 
 
 def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
-    wire_options = kwargs.get("wire_options", None)
-    label_options = kwargs.get("label_options", None)
-    show_wire_labels = kwargs.get("show_wire_labels", True)
-    active_wire_notches = kwargs.get("active_wire_notches", True)
-    fontsize = kwargs.get("fontsize", None)
-    decimals = kwargs.get("decimals", None)
-    fig = kwargs.get("fig", None)
-
     n_layers = len(layers)
     n_wires = len(wire_map)
 
@@ -234,13 +226,13 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
         n_layers=n_layers,
         wire_map=wire_map,
         c_wires=len(bit_map),
-        wire_options=wire_options,
-        fig=fig,
+        wire_options=kwargs.get("wire_options", None),
+        fig=kwargs.get("fig", None),
     )
 
     config = _Config(
-        decimals=decimals,
-        active_wire_notches=active_wire_notches,
+        decimals=kwargs.get("decimals", None),
+        active_wire_notches=kwargs.get("active_wire_notches", True),
         bit_map=bit_map,
         terminal_layers=[cl[-1] for cl in cwire_layers],
     )
@@ -248,11 +240,11 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
     if n_wires == 0:
         return drawer.fig, drawer.ax
 
-    if fontsize is not None:
+    if fontsize := kwargs.get("fontsize", None) is not None:
         drawer.fontsize = fontsize
 
-    if show_wire_labels:
-        drawer.label(list(wire_map), text_options=label_options)
+    if kwargs.get("show_wire_labels", True):
+        drawer.label(list(wire_map), text_options=kwargs.get("label_options", None))
     else:
         drawer.crop_wire_labels()
 
@@ -270,7 +262,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
                 s="...",
                 ha="center",
                 va="center_baseline",
-                fontsize=1.5 * drawer.fontsize,
+                fontsize=21,
             )
     else:
         for wire in _get_measured_wires(measurements, list(range(n_wires))):
