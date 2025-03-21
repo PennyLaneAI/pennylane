@@ -137,11 +137,11 @@ class AbstractState(ABC):
     @abstractmethod
     def dot(self, other: AbstractState) -> float:
         """Return the dot product of two states
-    
+
         Args:
             other (AbstractState): the state to take the dot product with
 
         Returns:
-           float: the dot product of self and other 
+           float: the dot product of self and other
         """
         raise NotImplementedError
