@@ -109,3 +109,19 @@ def _x_to_rx(*_, **__):
 
 
 decompositions[qml.X] = [_x_to_rx]
+
+
+@qml.register_resources({qml.PhaseShift: 1})
+def _u1_ps(phi, wires, **__):
+    qml.PhaseShift(phi, wires=wires)
+
+
+decompositions[qml.U1] = [_u1_ps]
+
+
+@qml.register_resources({qml.PhaseShift: 1})
+def _t_ps(wires, **__):
+    raise NotImplementedError
+
+
+decompositions[qml.T] = [_t_ps]
