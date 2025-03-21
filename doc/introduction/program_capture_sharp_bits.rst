@@ -1,8 +1,8 @@
 .. role:: html(raw)
    :format: html
 
-Program-capture sharp bits and debugging tips
-=============================================
+Program-capture sharp bits
+==========================
 
 Program-capture is PennyLane's new internal representation for hyrbid quantum-classical 
 programs that maintains the same familiar feeling frontend that you're used to, 
