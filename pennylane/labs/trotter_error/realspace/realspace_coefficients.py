@@ -83,7 +83,23 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """User facing method to construct a coefficient tensor"""
+        """Returns a ``RealspaceCoefs`` with node type ``TENSOR``, or ``FLOAT`` when the input tensor is a scalar.
+
+        Args:
+            tensor (ndarray): a tensor of coefficients
+            label (string): a label for the tensor to be used when displaying the ``RealspaceCoeff`` object as an expression
+
+        Returns:
+            RealspaceCoeffs: a ``RealspaceCoeff`` object representing containing the tensor
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> import numpy as np
+        >>> node = RealspaceCoeffs.coeffs(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+        >>> node
+        alpha[idx0,idx1]
+        """
         return cls.tensor_node(tensor, label)
 
     @classmethod
@@ -99,7 +115,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = RealspaceCoeffs.tensor_node(np.array([4, 5, 6]), label="beta")
@@ -138,7 +154,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
@@ -167,7 +183,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> node
@@ -201,7 +217,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> child = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> parent = RealspaceCoeffs.scalar_node(5, child)
@@ -300,7 +316,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
@@ -365,7 +381,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()

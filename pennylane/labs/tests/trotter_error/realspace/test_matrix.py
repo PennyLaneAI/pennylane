@@ -18,13 +18,13 @@ from typing import Dict, Tuple
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter.realspace import (
+from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
     RealspaceOperator,
     RealspaceSum,
     VibronicMatrix,
 )
-from pennylane.labs.trotter.realspace.matrix import _op_norm
+from pennylane.labs.trotter_error.realspace.matrix import _op_norm
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
 

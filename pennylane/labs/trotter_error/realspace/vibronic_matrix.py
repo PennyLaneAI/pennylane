@@ -22,9 +22,9 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.trotter import Fragment
-from pennylane.labs.trotter.realspace import RealspaceSum
-from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
+from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace import RealspaceSum
+from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access
 
@@ -43,7 +43,7 @@ class VibronicMatrix(Fragment):
 
     **Example**
 
-    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
     >>> import numpy as np
     >>> n_states = 1
     >>> n_modes = 5
