@@ -221,6 +221,7 @@ class QNSPSAOptimizer:
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
 
+        # nosemgrep
         raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
