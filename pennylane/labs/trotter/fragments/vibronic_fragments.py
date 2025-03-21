@@ -83,6 +83,7 @@ def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> VibronicMa
 def _realspace_sum(
     i: int, j: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> RealspaceSum:
+    """Return a RealspaceSum representation of the ``(i, j)`` block in the VibronicMatrix"""
     if i > states - 1 or j > states - 1:
         return RealspaceSum.zero(modes)
 
@@ -111,6 +112,7 @@ def _realspace_sum(
 def _validate_input(
     states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> None:
+    """Validate that the shapes of the harmonic frequencies and the Taylor coefficients are correct."""
     for i, phi in enumerate(taylor_coeffs):
         shape = (states, states) + (modes,) * i
 

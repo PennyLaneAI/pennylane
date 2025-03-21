@@ -21,7 +21,7 @@ from pennylane.labs.trotter.realspace import RealspaceCoeffs, RealspaceOperator,
 
 
 def vibrational_fragments(
-    modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray], frags="harmonic"
+    modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray], frag_method="harmonic"
 ) -> List[RealspaceSum]:
     """Returns a list of fragments summing to the vibrational Hamiltonian
 
@@ -29,23 +29,23 @@ def vibrational_fragments(
         modes (int): the number of vibrational modes
         freqs (ndarray): the harmonic frequences
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
-        frags (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
+        frag_method (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
 
     Returns:
         List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
 
     """
 
-    if frags == "harmonic":
+    if frag_method == "harmonic":
         return [_harmonic_fragment(modes, freqs), _anharmonic_fragment(modes, taylor_coeffs)]
 
-    if frags == "kinetic":
+    if frag_method == "kinetic":
         return [_kinetic_fragment(modes, freqs), _potential_fragment(modes, freqs, taylor_coeffs)]
 
-    if frags == "position":
+    if frag_method == "position":
         return [_position_fragment(modes, freqs, taylor_coeffs), _momentum_fragment(modes, freqs)]
 
-    raise ValueError(f"{frags} is not a valid fragmentation scheme.")
+    raise ValueError(f"{frag_method} is not a valid fragmentation scheme.")
 
 
 def _harmonic_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
@@ -126,6 +126,7 @@ def _momentum_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
 
 
 def _validate_taylor_coeffs(modes: int, taylor_coeffs: Sequence[np.ndarray]) -> None:
+    """Validate that the Taylor coefficients have the correct shape."""
     for i, phi in enumerate(taylor_coeffs):
         shape = (modes,) * i
 
@@ -134,10 +135,12 @@ def _validate_taylor_coeffs(modes: int, taylor_coeffs: Sequence[np.ndarray]) -> 
 
 
 def _validate_freqs(modes: int, freqs: np.ndarray) -> None:
+    """Validate that the harmonic frequencies have the correct shape."""
     if not len(freqs) == modes:
         raise ValueError(f"Expected freqs to be of length {modes}, got {len(freqs)}.")
 
 
 def _validate_input(modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]) -> None:
+    """Validate that the Taylor coefficients and the harmonic frequencies have the correct shape."""
     _validate_taylor_coeffs(modes, taylor_coeffs)
     _validate_freqs(modes, freqs)

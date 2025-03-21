@@ -39,6 +39,10 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
         Fragment: a representation of the Trotter error operator
 
     """
+
+    if len(fragments) == 0:
+        return fragments
+
     eff = _AdditiveIdentity()
     n_frags = len(fragments)
     scalar = -(delta**2) / 24

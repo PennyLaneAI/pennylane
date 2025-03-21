@@ -92,6 +92,7 @@ class GenericFragment(Fragment):
         return left @ self.fragment @ right
 
     def norm(self, params: Dict = None) -> float:
+        """Compute the norm of the ``GenericFragment`` by calling ``norm_fn``."""
         if self.norm_fn:
             params = params or {}
             return self.norm_fn(self.fragment, **params)
