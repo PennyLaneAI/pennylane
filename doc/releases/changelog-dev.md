@@ -186,6 +186,7 @@
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
   [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
 <h3>Improvements 🛠</h3>
   
