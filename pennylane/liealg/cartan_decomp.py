@@ -24,7 +24,7 @@ from pennylane.typing import TensorLike
 def cartan_decomp(
     g: List[Union[PauliSentence, Operator]], involution: callable
 ) -> Tuple[List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]]:
-    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
+    r"""Compute the Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` of a Lie algebra :math:`\mathfrak{g}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
     :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` into orthogonal complements.
@@ -57,7 +57,7 @@ def cartan_decomp(
     We first construct a Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> from pennylane.liealg import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -82,7 +82,7 @@ def cartan_decomp(
 
     There are other Cartan decomposition induced by other involutions. For example using :func:`~even_odd_involution`.
 
-    >>> from pennylane.labs.dla import check_cartan_decomp
+    >>> from pennylane.liealg import check_cartan_decomp
     >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> k, m
     ([Z(0), Z(1)],
@@ -106,7 +106,7 @@ def cartan_decomp(
     return k, m
 
 
-def check_commutation(
+def check_commutation_relation(
     ops1: List[Union[PauliSentence, TensorLike]],
     ops2: List[Union[PauliSentence, TensorLike]],
     vspace: Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]],
@@ -125,20 +125,20 @@ def check_commutation(
 
     **Example**
 
-    >>> from pennylane.liealg import check_commutation
+    >>> from pennylane.liealg import check_commutation_relation
     >>> ops1 = [qml.X(0)]
     >>> ops2 = [qml.Y(0)]
     >>> vspace1 = [qml.X(0), qml.Y(0)]
 
     Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
 
-    >>> check_commutation(ops1, ops2, vspace1)
+    >>> check_commutation_relation(ops1, ops2, vspace1)
     False
 
     Instead, we need the full :math:`\mathfrak{su}(2)` space.
 
     >>> vspace2 = [qml.X(0), qml.Y(0), qml.Z(0)]
-    >>> check_commutation(ops1, ops2, vspace2)
+    >>> check_commutation_relation(ops1, ops2, vspace2)
     True
     """
 
@@ -156,7 +156,7 @@ def check_commutation(
     any_tensors = any((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor))
     if not all_tensors and any_tensors:
         raise TypeError(
-            "All inputs `ops1`, `ops2` and `vspace` to qml.liealg.check_commutation need to either be iterables of operators or matrices."
+            "All inputs `ops1`, `ops2` and `vspace` to qml.liealg.check_commutation_relation need to either be iterables of operators or matrices."
         )
 
     if all_tensors:
@@ -239,7 +239,7 @@ def check_cartan_decomp(
     We first construct a Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> from pennylane.liealg import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -259,7 +259,7 @@ def check_cartan_decomp(
 
     We can check the validity of the decomposition using ``check_cartan_decomp``.
 
-    >>> from pennylane.labs.dla import check_cartan_decomp
+    >>> from pennylane.liealg import check_cartan_decomp
     >>> check_cartan_decomp(k, m)
     True
 
@@ -291,11 +291,11 @@ def check_cartan_decomp(
         m_space = qml.pauli.PauliVSpace(m, dtype=complex)
 
     # Commutation relations for Cartan pair
-    if not (check_kk := check_commutation(k, k, k_space)):
+    if not (check_kk := check_commutation_relation(k, k, k_space)):
         _ = print("[k, k] sub k not fulfilled") if verbose else None
-    if not (check_km := check_commutation(k, m, m_space)):
+    if not (check_km := check_commutation_relation(k, m, m_space)):
         _ = print("[k, m] sub m not fulfilled") if verbose else None
-    if not (check_mm := check_commutation(m, m, k_space)):
+    if not (check_mm := check_commutation_relation(m, m, k_space)):
         _ = print("[m, m] sub k not fulfilled") if verbose else None
 
     return all([check_kk, check_km, check_mm])
