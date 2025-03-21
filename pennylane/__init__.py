@@ -29,11 +29,17 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
@@ -160,6 +166,9 @@ from pennylane.noise import NoiseModel
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
+
+import pennylane.liealg
+from pennylane.liealg import lie_closure, structure_constants, center
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
