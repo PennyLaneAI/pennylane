@@ -44,7 +44,6 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         * ``sum_node``: a node representing the sum of its two children
         * ``scalar_node``: a node representing the product of its child by a scalar
 
-    See the documentation for these methods for usage details.
     """
 
     def __init__(

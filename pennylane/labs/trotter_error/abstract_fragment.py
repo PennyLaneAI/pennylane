@@ -22,14 +22,10 @@ from typing import Dict, Sequence
 class Fragment(ABC):
     """Abstract class used to define the methods an object needs to implement in order to be used as a fragment
     in the Trotteer error workflow. A ``Fragment`` is an that has a well-defined notion of a commutator.
-    To ensure the existence of commutators we require the implementation of the following dunder methods.
+    To ensure the existence of commutators the implementation requires of the following dunder methods:
+    ``__add__``,  ``__matmul__``,  ``__mul__``,  ``__sub__``.
 
-    * ``__add__``
-    * ``__matmul__``
-    * ``__mul__``
-    * ``__sub__``
-
-    In addition to the arithmetic operators we require that a ``norm`` method is specified. The norm is required
+    In addition to the arithmetic operators a ``norm`` method should be defined. The norm is required
     to compute error estimates of the Trotter error operators obtained by computing nested commutators.
     """
 
@@ -50,10 +46,10 @@ class Fragment(ABC):
 
     @abstractmethod
     def norm(self, params: Dict) -> float:
-        """Compute the norm of the fragment
+        """Compute the norm of the fragment.
 
         Args:
-            params (Dict): A dictionary of parameters needed to compute the norm is specified for each class inheriting from ``Fragment``.
+            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from ``Fragment``.
 
         Returns:
             float: the norm of the ``Fragment``
