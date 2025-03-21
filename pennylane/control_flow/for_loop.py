@@ -133,14 +133,18 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        The following discussion applies to the experimental capture infrastructure, which can be
+        turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
+
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
 
         >>> import jax
         >>> jax.config.update("jax_dynamic_shapes", True)
+        >>> qml.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
-        If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
+        If the needed mode is ``allow_array_resizing=True``, then this will require re-capturing
         the loop, potentially taking more time.
 
         When working with dynamic shapes in a ``for_loop``, we have two possible
@@ -166,7 +170,7 @@ def for_loop(
         .. code-block:: python
 
             @qml.for_loop(3, allow_array_resizing=False)
-            def f(x, y):
+            def f(i, x, y):
                 return x * y, 2*y
 
             def workflow(i0):
@@ -181,7 +185,7 @@ def for_loop(
         .. code-block:: python
 
             @qml.for_loop(3, allow_array_resizing=False)
-            def f(x, y):
+            def f(i, x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
 
@@ -193,7 +197,8 @@ def for_loop(
         Note that new dynamic dimensions cannot yet be created inside a loop.  Only things
         that already have a dynamic dimension can have that dynamic dimension change.
         For example, this is **not** a viable ``for_loop``, as ``x`` is initialized
-        with an array with a concrete size.
+        with an array with a concrete size. Note that while this example does not currently
+        error out, similar code will likely cause XLA lowering errors.
 
         .. code-block:: python
 
@@ -215,7 +220,7 @@ def for_loop(
         return ops_loader.for_loop(start, stop, step)
 
     # if there is no active compiler, simply interpret the for loop
-    # via the Python interpretor.
+    # via the Python interpreter.
     def _decorator(body_fn):
         """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables start, stop, and step.
 
@@ -331,7 +336,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         # need in_tree to include index so flat_fn will repack args correctly
         flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
 
-        # slice out the index so shape_locations indexes from non-index args and results
+        # slice out the index so shape_locations indexes from non-index args/ results
         flat_args = flat_args[1:]
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
