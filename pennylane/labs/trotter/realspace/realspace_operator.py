@@ -245,14 +245,8 @@ class RealspaceSum(Fragment):
 
         new_ops = []
 
-        for op in l_ops.intersection(r_ops):
+        for op in l_ops.union(r_ops):
             new_ops.append(self._lookup[op] + other._lookup[op])
-
-        for op in l_ops.difference(r_ops):
-            new_ops.append(self._lookup[op])
-
-        for op in r_ops.difference(l_ops):
-            new_ops.append(other._lookup[op])
 
         return RealspaceSum(self.modes, new_ops)
 
@@ -267,14 +261,8 @@ class RealspaceSum(Fragment):
 
         new_terms = []
 
-        for op in l_ops.intersection(r_ops):
+        for op in l_ops.union(r_ops):
             new_terms.append(self._lookup[op] - other._lookup[op])
-
-        for op in l_ops.difference(r_ops):
-            new_terms.append(self._lookup[op])
-
-        for op in r_ops.difference(l_ops):
-            new_terms.append((-1) * other._lookup[op])
 
         return RealspaceSum(self.modes, new_terms)
 
