@@ -49,7 +49,7 @@ class Fragment(ABC):
         """Compute the norm of the fragment.
 
         Args:
-            params (Dict): A dictionary of parameters needed to compute the norm is specified for each class inheriting from ``Fragment``.
+            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from ``Fragment``.
 
         Returns:
             float: the norm of the ``Fragment``
