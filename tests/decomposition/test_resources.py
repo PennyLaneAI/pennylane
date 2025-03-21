@@ -21,6 +21,7 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
     controlled_resource_rep,
+    custom_ctrl_op_to_base,
     resource_rep,
 )
 
@@ -188,6 +189,17 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = {}
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        with pytest.raises(TypeError, match="CustomOp.resource_keys must be a set"):
+            resource_rep(CustomOp)
+
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
 
@@ -343,6 +355,13 @@ class TestControlledResourceRep:
             },
         )
 
+    def test_custom_controlled_ops(self):
+        """Tests that the resource rep of custom controlled ops remain as the custom version."""
+
+        for op_type in custom_ctrl_op_to_base():
+            rep = resource_rep(op_type)
+            assert rep == CompressedResourceOp(op_type, {})
+
 
 class TestSymbolicResourceRep:
     """Tests resource reps of symbolic operators"""
@@ -402,3 +421,16 @@ class TestSymbolicResourceRep:
                 },
             },
         )
+
+    def test_adjoint_custom_controlled_ops(self):
+        """Tests that the adjoint of custom controlled ops remain as the custom version."""
+
+        for op_type in custom_ctrl_op_to_base():
+            rep = qml.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
+            assert rep == CompressedResourceOp(
+                qml.ops.Adjoint,
+                {
+                    "base_class": op_type,
+                    "base_params": {},
+                },
+            )

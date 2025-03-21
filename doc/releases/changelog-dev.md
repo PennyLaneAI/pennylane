@@ -174,6 +174,12 @@
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
     ```
+* Decomposition rules are implemented using the new infrastructure for most PennyLane operators excluding templates.
+  [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+
+* A graph-based decomposition solver has been implemented that solves for the optimal decomposition
+  rule to use for an operator towards a target gate set.
+  [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
 
 <h3>Improvements 🛠</h3>
   

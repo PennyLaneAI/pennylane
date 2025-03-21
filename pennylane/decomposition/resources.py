@@ -37,7 +37,7 @@ class Resources:
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Verify that the gate counts and the number of gates are consistent."""
+        """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
 
     @cached_property
@@ -142,6 +142,11 @@ def _validate_resource_rep(op_type, params):
 
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
+
+    if not isinstance(op_type.resource_keys, set):
+        raise TypeError(
+            f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
+        )
 
     unexpected_arguments = set(params.keys()) - op_type.resource_keys
     if unexpected_arguments:
@@ -263,8 +268,8 @@ def controlled_resource_rep(
     base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
-    num_zero_control_values: int,
-    num_work_wires: int,
+    num_zero_control_values: int = 0,
+    num_work_wires: int = 0,
 ):
     """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 
