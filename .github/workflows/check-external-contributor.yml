@@ -11,5 +11,7 @@ jobs:
           org: context.repo.owner
           team: "external-collaborators"
           git_read_member: ${{secrets.GIT_READ_TOKEN}}
+        env:
+          GH_TOKEN: ${{ github.token }}
         uses: XanaduAI/cloud-actions/label-external-pull-request@sc-86563-external-label-forks
         
