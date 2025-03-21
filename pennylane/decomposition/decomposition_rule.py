@@ -30,13 +30,15 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
-def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = None):
+def register_resources(
+    resources: Callable | dict, qfunc: Optional[Callable] = None
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Bind a quantum function to its required resources.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -239,7 +241,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -303,7 +305,7 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
@@ -312,6 +314,27 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
+
+    **Example**
+
+    >>> import pennylane as qml
+    >>> qml.list_decomps(qml.CRX)
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+
+    Each decomposition rule can be inspected:
+
+    >>> print(qml.list_decomps(qml.CRX)[0])
+    @register_resources(_crx_to_rx_cz_resources)
+    def _crx_to_rx_cz(phi, wires, **__):
+        qml.RX(phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+        qml.RX(-phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
     return _decompositions[op_type][:]
@@ -323,7 +346,7 @@ def has_decomp(op_type: Type[Operator]) -> bool:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 

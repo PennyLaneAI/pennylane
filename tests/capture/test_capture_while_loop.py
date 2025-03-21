@@ -410,7 +410,7 @@ class TestCaptureWhileLoopDynamicShapes:
     @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
     def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
         """Test that if a broadcasting error is raised when a dynamically shaped closure variable
-        is present, the error mentions it may be due to the clousre variable with a dynamic shape.
+        is present, the error mentions it may be due to the closure variable with a dynamic shape.
         """
 
         def w(i0):

@@ -31,10 +31,13 @@ AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_i
 
 
 def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
-    """Add the abstract shapes that the specified locations to the output of f.
+    """Add the abstract shapes at the specified locations to the output of f.
+
+    Here we can see that the shapes at argument 0, shape index 0 and
+    argument 1, shape index 1 are returned alongside the results of ``f``.
 
     .. code-block:: python
-
+        import jax.numpy as jnp
         def f(x, y): return [x, y]
 
         loc1 = AbstractShapeLocation(arg_idx=0, shape_idx=0)
@@ -67,7 +70,7 @@ def get_dummy_arg(arg):
     """If any axes are abstract, replace with an empty numpy array.
 
     Even if abstracted_axes specifies two dimensions as having different dynamic shapes,
-    if they have the dimension is the same tracer, jaxpr will still treat them as the same shape.
+    if the dimension is the same tracer, jax will still treat them as the same shape.
 
     .. code-block:: python
 
@@ -92,6 +95,7 @@ def get_dummy_arg(arg):
     """
     if all(isinstance(s, int) for s in arg.shape):
         return arg
+    # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
     return np.empty(shape=shape, dtype=arg.dtype)
 
@@ -157,7 +161,7 @@ def handle_jaxpr_error(
 
 
 # pylint: disable=too-few-public-methods
-class CalculateAbstractedAxes:
+class _CalculateLoopAbstractedAxes:
     """A helper class for accumulating information about abstract axes for loop functions."""
 
     def __init__(self, allow_array_resizing: bool = False):
@@ -251,7 +255,7 @@ def loop_determine_abstracted_axes(
     import jax
 
     args, structure = jax.tree_util.tree_flatten(args)
-    calculator = CalculateAbstractedAxes(allow_array_resizing=allow_array_resizing)
+    calculator = _CalculateLoopAbstractedAxes(allow_array_resizing=allow_array_resizing)
     _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
 
     if not any(calculator.abstracted_axes):

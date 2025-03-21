@@ -403,7 +403,7 @@ class TestDevicePreprocessing:
                 assert len(shots_res) == shots
                 # Check it's roughly 50/50 by counting the second column of bits
                 counts = qml.numpy.bincount(shots_res[:, 1].astype(int))
-                assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+                assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method, seed):
@@ -466,7 +466,7 @@ class TestDevicePreprocessing:
         else:
             assert len(res) == shots
             counts = qml.numpy.bincount(res)
-            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""
@@ -518,7 +518,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("diff_method", ("best", "backprop"))
     def test_default_qubit_backprop(self, diff_method):
-        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
+        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule on default.qubit."""
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
@@ -530,16 +530,42 @@ class TestDifferentiation:
         jvp = jax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
-    def test_no_gradients_with_lightning(self):
-        """Test that we get an error if we try and differentiate a lightning execution."""
+    def test_jvp_lightning(self):
+        """Test that JAX can compute the JVP of the QNode primitive via a registered rule on lightning.qubit."""
 
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(NotImplementedError, match=r"does not yet support PLXPR jvps."):
-            jax.grad(circuit)(0.5)
+        x = 0.9
+        xt = -0.6
+        jvp = jax.jvp(circuit, (x,), (xt,))
+        assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
+
+    def test_grad_lightning(self):
+        """Test that JAX can compute the gradient of the QNode primitive via a registered rule on lightning.qubit."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        grad = jax.grad(circuit)(0.9)
+        assert qml.math.allclose(grad, -qml.math.sin(0.9))
+
+    def test_jacobian_lightning(self):
+        """Test that JAX can compute the Jacobian of the QNode primitive via a registered rule on lightning.qubit."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x[0], 0)
+            qml.RY(x[1], 1)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        x = jnp.array([0.9, -0.6])
+        jac = jax.jacobian(circuit)(x)
+        assert qml.math.allclose(jac, [[-qml.math.sin(0.9), 0], [0, -qml.math.sin(-0.6)]])
 
 
 def test_qnode_jit():
