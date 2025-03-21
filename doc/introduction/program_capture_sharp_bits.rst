@@ -1,17 +1,17 @@
 .. role:: html(raw)
    :format: html
 
-program capture sharp bits
+Program capture sharp bits
 ==========================
 
-program capture is PennyLane's new internal representation for hyrbid quantum-classical 
+Program capture is PennyLane's new internal representation for hyrbid quantum-classical 
 programs that maintains the same familiar feeling frontend that you're used to, 
 while providing better performance, harmonious integration with just-in-time compilation 
 frameworks like `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
 (:func:`~.pennylane.qjit`) and JAX-jit, and compact representations of programs that preserve 
 their structure.
 
-program capture in PennyLane is propped up by JAX's internal representation of programs 
+Program capture in PennyLane is propped up by JAX's internal representation of programs 
 called `jaxpr <https://docs.jax.dev/en/latest/jaxpr.html>`__, which works by leveraging 
 the Python interpreter to extract the core elements of programs and capture them 
 into a light-weight language.
@@ -41,7 +41,7 @@ features that will help get your existing tape-based code working with program c
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
     
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
-    "program capture" and "plxpr" can be considered synonymous and interchangeable. 
+    "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
 
 Device compatibility
 --------------------
