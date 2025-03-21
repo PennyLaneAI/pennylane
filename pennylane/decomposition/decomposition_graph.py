@@ -42,6 +42,16 @@ from .controlled_decomposition import (
 )
 from .decomposition_rule import DecompositionRule, list_decomps
 from .resources import CompressedResourceOp, Resources, resource_rep
+from .symbolic_decomposition import (
+    AdjointDecomp,
+    adjoint_adjoint_decomp,
+    adjoint_controlled_decomp,
+    adjoint_pow_decomp,
+    pow_decomp,
+    pow_pow_decomp,
+    same_type_adjoint_decomp,
+    same_type_adjoint_ops,
+)
 from .utils import DecompositionError
 
 
@@ -164,6 +174,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             # This branch only applies to general controlled operators
             return self._add_controlled_decomp_node(op_node, op_node_idx)
 
+        if issubclass(op_node.op_type, qml.ops.Adjoint):
+            return self._add_adjoint_decomp_node(op_node, op_node_idx)
+
+        if issubclass(op_node.op_type, qml.ops.Pow):
+            return self._add_pow_decomp_node(op_node, op_node_idx)
+
         for decomposition in self._get_decompositions(op_node.op_type):
             decomp_resource = decomposition.compute_resources(**op_node.params)
             d_node_idx = self._recursively_add_decomposition_node(decomposition, decomp_resource)
@@ -178,6 +194,57 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         decomp_resource = rule.compute_resources(**op_node.params)
         d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
         self._graph.add_edge(d_node_idx, op_node_idx, 0)
+
+    def _add_adjoint_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
+        """Adds an adjoint decomposition node."""
+
+        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
+
+        if issubclass(base_class, qml.ops.Adjoint):
+            rule = adjoint_adjoint_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
+
+        if (
+            issubclass(base_class, qml.ops.Pow)
+            and base_params["base_class"] in same_type_adjoint_ops()
+        ):
+            rule = adjoint_pow_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
+
+        if base_class in same_type_adjoint_ops():
+            rule = same_type_adjoint_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
+
+        if (
+            issubclass(base_class, qml.ops.Controlled)
+            and base_params["base_class"] in same_type_adjoint_ops()
+        ):
+            rule = adjoint_controlled_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
+
+        for base_decomposition in self._get_decompositions(base_class):
+            rule = AdjointDecomp(base_decomposition)
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+
+        return op_node_idx
+
+    def _add_pow_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
+        """Adds a power decomposition node to the graph."""
+
+        base_class = op_node.params["base_class"]
+
+        if issubclass(base_class, qml.ops.Pow):
+            rule = pow_pow_decomp
+            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            return op_node_idx
+
+        rule = pow_decomp
+        self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+        return op_node_idx
 
     def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
         """Adds a controlled decomposition node to the graph."""
