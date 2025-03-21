@@ -38,7 +38,7 @@ def register_resources(
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -241,7 +241,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -305,7 +305,7 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
@@ -346,7 +346,7 @@ def has_decomp(op_type: Type[Operator]) -> bool:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
