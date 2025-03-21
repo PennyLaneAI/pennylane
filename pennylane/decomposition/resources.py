@@ -37,7 +37,7 @@ class Resources:
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Verify that the gate counts and the number of gates are consistent."""
+        """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
 
     @cached_property
@@ -268,8 +268,8 @@ def controlled_resource_rep(
     base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
-    num_zero_control_values: int,
-    num_work_wires: int,
+    num_zero_control_values: int = 0,
+    num_work_wires: int = 0,
 ):
     """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 
