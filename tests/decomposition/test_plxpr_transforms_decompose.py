@@ -55,7 +55,7 @@ class TestPLxPRTransformDecompose:
 
         with pytest.raises(
             TypeError,
-            match="A Callable gate_set is not supported with the enabled decomposition graph",
+            match="Specifying gate_set as a function"
         ):
             circuit()
 

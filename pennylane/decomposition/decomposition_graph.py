@@ -403,8 +403,8 @@ class _DecompositionNode:
     """A node that represents a decomposition rule."""
 
     rule: DecompositionRule
-    resource_decomp: Resources
+    decomp_resource: Resources
 
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
-        return self.resource_decomp.gate_counts.get(op, 0)
+        return self.decomp_resource.gate_counts.get(op, 0)

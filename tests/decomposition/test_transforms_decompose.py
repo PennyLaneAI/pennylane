@@ -296,10 +296,7 @@ class TestTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
     @pytest.mark.unit
@@ -320,10 +317,7 @@ class TestTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
     @pytest.mark.unit
@@ -348,8 +342,5 @@ class TestTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
