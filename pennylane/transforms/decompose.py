@@ -26,9 +26,8 @@ from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.decomposition import DecompositionGraph
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 
 
@@ -46,6 +45,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         import jax
 
         from pennylane.capture.primitives import ctrl_transform_prim
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
     except ImportError:  # pragma: no cover
         return None, None
