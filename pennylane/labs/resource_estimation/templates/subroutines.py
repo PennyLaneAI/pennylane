@@ -99,7 +99,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     """Resource class for the ControlledSequence template.
-    
+
     Args:
         base_class (ResourceOperator): The type of the operation corresponding to the
             operator.
@@ -109,7 +109,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
-    
+
     .. seealso:: :class:`~.ControlledSequence`
     """
 
@@ -129,7 +129,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
-    
+
         """
         return {
             re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires
@@ -170,7 +170,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
-    
+
     .. seealso:: :class:`~.PhaseAdder`
     """
 
@@ -185,7 +185,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
-        
+
         """
         if mod == 2**num_x_wires:
             return {re.ResourcePhaseShift.resource_rep(): num_x_wires}
@@ -245,7 +245,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
-    
+
     .. seealso:: :class:`~.Multiplier`
     """
 
@@ -263,7 +263,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
-        
+
         """
         if mod == 2**num_x_wires:
             num_aux_wires = num_x_wires
@@ -320,20 +320,20 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
 
 class ResourceModExp(qml.ModExp, re.ResourceOperator):
-    """Resource class for the PhaseAdder template.
+    r"""Resource class for the PhaseAdder template.
 
     Args:
         mod (int): the module for performing the exponentiation
         num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
             in the computational basis
-        num_work_wires (int): the number of work wires used to perform the modular exponentiation 
+        num_work_wires (int): the number of work wires used to perform the modular exponentiation
             operation
-        num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the 
+        num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
             computational basis
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.ModExp`.
-    
+
     .. seealso:: :class:`~.ModExp`
     """
 
@@ -348,14 +348,14 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
             mod (int): the module for performing the exponentiation
             num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
                 in the computational basis
-            num_work_wires (int): the number of work wires used to perform the modular exponentiation 
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation
                 operation
-            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the 
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
                 computational basis
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.ModExp`.
-        
+
         """
         mult_resources = ResourceMultiplier._resource_decomp(mod, num_work_wires, num_output_wires)
         gate_types = {}

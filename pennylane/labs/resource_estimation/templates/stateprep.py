@@ -147,7 +147,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
 
 class ResourceSuperposition(qml.Superposition, ResourceOperator):
-    """Resource class for the Superposition template.
+    """Resource class for the `:class:~.Superposition` template.
 
     Args:
         num_stateprep_wires (int): the number of wires used for the operation
@@ -156,8 +156,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
     Resources:
         The resources are computed following the PennyLane decomposition of
-        the class. This class was designed based on the method described in
-        `Fomichev et al. (2024) <https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339>`_.
+        the class `:class:~.Superposition`.
 
         We use the following (somewhat naive) assumptions to approximate the
         resources:
@@ -189,8 +188,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
         Resources:
             The resources are computed following the PennyLane decomposition of
-            the class. This class was designed based on the method described in
-            `Fomichev et al. (2024) <https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.5.040339>`_.
+            the class `:class:~.Superposition`.
 
             We use the following (somewhat naive) assumptions to approximate the
             resources:
