@@ -10,7 +10,7 @@ jobs:
         with:
           org: context.repo.owner
           team: "external-collaborators"
-          git_read_member: ${{secrets.GIT_READ_TOKEN}}
+          github_token: ${{secrets.GIT_READ_TOKEN}}
           username: "${{ github.actor }}"
         env:
           GH_TOKEN: ${{ github.token }}
