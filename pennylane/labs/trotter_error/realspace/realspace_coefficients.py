@@ -36,7 +36,7 @@ class _NodeType(Enum):
 
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
-    """A tree representing an expression that computes the coefficients of a ``RealspaceOperator``.
+    """A tree representing an expression that computes the coefficients of a :class:`pennylane.labs.trotter_error.RealspaceOperator`.
     This class should be instantiated from the following class methods.
 
         * ``tensor_node``: a leaf node containing a coefficient tensor
@@ -46,7 +46,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     **Examples**
 
-    Building a node of type ``_NodeType.TENSOR``
+    Building a node representing a tensor of coefficients
 
     >>> from pennylane.labs.trotter_error import RealspaceCoeffs
     >>> import numpy as np
@@ -54,7 +54,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     >>> node
     alpha[idx0,idx1]
 
-    Building a node of type ``_NodeType.OUTER``
+    Building a node representing the outer product of its children
 
     >>> from pennylane.labs.trotter_error import RealspaceCoeffs
     >>> import numpy as np
@@ -64,7 +64,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     >>> parent
     (alpha[idx0]) * (beta[idx1,idx2])
 
-    Building a node of type ``_NodeType.SUM``
+    Building a node representing the sum of its children
 
     >>> from pennylane.labs.trotter_error import RealspaceCoeffs
     >>> import numpy as np
@@ -74,7 +74,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     >>> parent
     (alpha[idx0]) + (beta[idx0])
 
-    Building a node of type ``_NodeType.SCALAR``
+    Building a node representing the multiplication of its child by a scalar
 
     >>> from pennylane.labs.trotter_error import RealspaceCoeffs
     >>> import numpy as np
@@ -123,14 +123,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.TENSOR``, or ``_NodeType.FLOAT`` when the input tensor is a scalar.
+        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the ``RealspaceCoeff`` object as an expression
+            label (string): a label for the tensor to be used when displaying the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
 
         Returns:
-            RealspaceCoeffs: a ``RealspaceCoeff`` object representing containing the tensor
+            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
 
         **Example**
 
@@ -144,7 +144,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoeffs`` with node type ``_NodeType.SUM``.
+        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -182,14 +182,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         l_child: RealspaceCoeffs,
         r_child: RealspaceCoeffs,
     ) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoeffs`` with node type ``_NodeType.OUTER``.
+        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the outer product of the two children nodes.
 
         Args:
             l_child (RealspaceCoeffs): the left child
             r_child (RealspaceCOeffs): the right child
 
         Returns:
-            RealspaceCoeffs: a ``RealspaceCoeff`` object representing the outer product of ``l_child`` and ``r_child``
+            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing the outer product of ``l_child`` and ``r_child``
 
         **Example**
 
@@ -210,14 +210,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.TENSOR``, or ``_NodeType.FLOAT`` when the input tensor is a scalar.
+        """Returns a ``RealspaceCoefs`` leaf node storing a tensor of coefficients.
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the ``RealspaceCoeff`` object as an expression
+            label (string): a label for the tensor to be used when displaying the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
 
         Returns:
-            RealspaceCoeffs: a ``RealspaceCoeff`` object representing containing the tensor
+            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
 
         **Example**
 
@@ -242,14 +242,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.SCALAR``.
+        """Returns a ``RealspaceCoefs`` representing the scalar product of ``scalar`` and ``child``.
 
         Args:
             scalar (float): a scalar to multiply ``child`` by
-            child (RealspaceCoeffs): the ``RealspaceCoeffs`` object to be multiplied by ``scalar``
+            child (RealspaceCoeffs): the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object to be multiplied by ``scalar``
 
         Returns:
-            RealspaceCoeffs: a ``RealspaceCoeff`` object representing the coefficients of ``child`` multiplied by ``scalar``
+            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing the coefficients of ``child`` multiplied by ``scalar``
 
         **Example**
 

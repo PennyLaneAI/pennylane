@@ -47,7 +47,7 @@ class RealspaceOperator:
 
     **Example**
 
-    We build a ``RealspaceOperator`` in the following way.
+    We build a :class:`pennylane.labs.trotter_error.RealspaceOperator` in the following way.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
@@ -76,7 +76,7 @@ class RealspaceOperator:
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -213,17 +213,17 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of ``RealspaceOperator`` objects
+    r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects
     For example, the vibrational hamiltonian
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots
 
-    is a sum of sums, where each sum can be expressed by a ``RealspaceOperator``. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
-    contains a list of ``RealspaceOperator`` objects representing these sums.
+    is a sum of sums, where each sum can be expressed by a :class:`pennylane.labs.trotter_error.RealspaceOperator`. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
+    contains a list of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing these sums.
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Sequence[RealspaceOperator]): a sequence containing ``RealspaceOperator`` objects representing the sums in the Hamiltonian
+        ops (Sequence[RealspaceOperator]): a sequence containing :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
 
     **Example**
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
@@ -340,7 +340,7 @@ class RealspaceSum(Fragment):
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -392,7 +392,7 @@ class RealspaceSum(Fragment):
             threshold (float): only return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by ``RealspaceOperator.get_coefficients``
+            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
         """
 
         coeffs = {}
