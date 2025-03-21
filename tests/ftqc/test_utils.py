@@ -203,7 +203,7 @@ class TestQubitMgr:
             assert q_idx not in mgr.inactive
 
     @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
-    def test_reserve_qubit(self, num_qubits, offset):
+    def test_reserve_qubit_invalid(self, num_qubits, offset):
         "Test that we can selectively reserve and make active a user-specified qubit wire index"
         mgr = QubitMgr(num_qubits, offset)
 
