@@ -163,7 +163,18 @@ def _rx_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-add_decomps(RX, _rx_to_rot)
+def _rx_to_rz_ry_resources():
+    return {qml.RZ: 2, qml.RY: 1}
+
+
+@register_resources(_rx_to_rz_ry_resources)
+def _rx_to_rz_ry(phi, wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RY(phi, wires=wires)
+    qml.RZ(-np.pi / 2, wires=wires)
+
+
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
 
 
 class RY(Operation):
@@ -284,7 +295,18 @@ def _ry_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(0, phi, 0, wires=wires)
 
 
-add_decomps(RY, _ry_to_rot)
+def _ry_to_rz_rx_resources():
+    return {qml.RZ: 2, qml.RX: 1}
+
+
+@register_resources(_ry_to_rz_rx_resources)
+def _ry_to_rz_rx(phi, wires: WiresLike, **__):
+    qml.RZ(-np.pi / 2, wires=wires)
+    qml.RX(phi, wires=wires)
+    qml.RZ(np.pi / 2, wires=wires)
+
+
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
 
 
 class RZ(Operation):
@@ -444,7 +466,18 @@ def _rz_to_rot(phi, wires: WiresLike, **__):
     qml.Rot(0, 0, phi, wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot)
+def _rz_to_ry_rx_resources():
+    return {qml.RY: 2, qml.RX: 1}
+
+
+@register_resources(_rz_to_ry_rx_resources)
+def _rz_to_ry_rx(phi, wires: WiresLike, **__):
+    qml.RY(np.pi / 2, wires=wires)
+    qml.RX(phi, wires=wires)
+    qml.RY(-np.pi / 2, wires=wires)
+
+
+add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
 
 
 class PhaseShift(Operation):

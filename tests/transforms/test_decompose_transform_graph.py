@@ -16,8 +16,6 @@
 
 # pylint: disable=no-name-in-module, too-few-public-methods
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -42,208 +40,173 @@ def test_fixed_alt_decomps_not_available():
         qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
 
 
-@pytest.mark.unit
 @pytest.mark.usefixtures("enable_graph_decomposition")
-def test_callable_gate_set_not_available():
-    """Tests that a callable gate set is not available with graph enabled."""
+class TestDecomposeGraphEnabled:
+    """Tests the decompose transform with graph enabled."""
 
-    tape = qml.tape.QuantumScript([])
-    with pytest.raises(TypeError, match="Specifying gate_set as a function"):
-        qml.transforms.decompose(tape, gate_set=lambda op: True)
+    @pytest.mark.unit
+    def test_callable_gate_set_not_available(self):
+        """Tests that a callable gate set is not available with graph enabled."""
 
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
+            qml.transforms.decompose(tape, gate_set=lambda op: True)
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
-class TestTransformDecompose:
+    @pytest.mark.integration
+    def test_mixed_gate_set_specification(self):
+        """Tests that the gate_set can be specified as both a type and a string."""
 
-    def test_gate_names_gateset(self):
-        """Test that the string representation of the gate_set works with the new decomposition system."""
+        tape = qml.tape.QuantumScript([qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])])
+        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RX", qml.CNOT})
+        assert new_tape.operations == tape.operations
 
-        @partial(
-            qml.transforms.decompose,
-            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
+    @pytest.mark.integration
+    def test_gate_set_targeted_decompositions(self):
+        """Tests that a simple circuit is correctly decomposed into different gate sets."""
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.H(0),  # non-parametric op
+                qml.Rot(0.1, 0.2, 0.3, wires=[0]),  # parametric single-qubit op
+                qml.MultiRZ(0.5, wires=[0, 1, 2]),  # parametric multi-qubit op
+            ]
         )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
 
-        expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
+        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"Hadamard", "CNOT", "RZ", "RY"})
+        assert new_tape.operations == [
+            # H is in the target gate set
+            qml.H(0),
+            # Rot decomposes to ZYZ
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+            # Decomposition of MultiRZ
+            qml.CNOT(wires=[2, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(0.5, wires=[0]),
+            qml.CNOT(wires=[1, 0]),
+            qml.CNOT(wires=[2, 1]),
+        ]
 
-    def test_gateset_with_custom_rules(self):
-        """Test the gate_set argument with custom decomposition rules."""
+        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RY", "RZ", "CZ", "GlobalPhase"})
+        assert new_tape.operations == [
+            # The H decomposes to RZ and RY
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            # Rot decomposes to ZYZ
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+            # CNOT decomposes to H and CZ, where H decomposes to RZ and RY
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[2, 1]),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            # second CNOT
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[1, 0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            # The middle RZ
+            qml.RZ(0.5, wires=[0]),
+            # The last two CNOTs
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[1, 0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[2, 1]),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+        ]
 
-        @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
-        def isingxx_decomp(phi, wires, **__):
-            qml.CNOT(wires=wires)
-            qml.RX(phi, wires=[wires[0]])
-            qml.CNOT(wires=wires)
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot1(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
+    @pytest.mark.integration
+    def test_fixed_decomp(self):
+        """Tests that a fixed decomposition rule is used instead of the stock ones."""
 
         @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
-        def my_cnot2(wires, **__):
+        def my_cnot(wires, **__):
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
             qml.CZ(wires=wires)
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
 
-        @partial(
-            qml.transforms.decompose,
-            gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
-            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
-            fixed_decomps={qml.IsingXX: isingxx_decomp},
+        tape = qml.tape.QuantumScript([qml.CNOT(wires=[1, 0])])
+        [new_tape], _ = qml.transforms.decompose(
+            tape,
+            gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
+            fixed_decomps={qml.CNOT: my_cnot},
         )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            qml.IsingXX(0.5, wires=[0, 1])
-            return qml.state()
+        assert new_tape.operations == [
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[1, 0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+        ]
 
-        expected_resources = {"RZ": 12, "RX": 7, "GlobalPhase": 6, "CZ": 3}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
-
-    def test_gate_types_gateset(self):
-        """Test that the PennyLane's Operator works with the new decomposition system."""
-
-        @partial(
-            qml.transforms.decompose,
-            gate_set={qml.GlobalPhase, qml.RX, qml.RZ, qml.CNOT},
-        )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
-
-    def test_fixed_decomps(self):
-        """Test the fixed_decomps argument with the new decomposition system."""
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @partial(
-            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, fixed_decomps={qml.CNOT: my_cnot}
-        )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        expected_resources = {"Hadamard": 2, "CZ": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
-
-    def test_alt_decomps_single(self):
-        """Test the alt_decomps argument with a single decomposition rules."""
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @partial(
-            qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, alt_decomps={qml.CNOT: [my_cnot]}
-        )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        expected_resources = {"Hadamard": 2, "CZ": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
-
-    def test_alt_decomps_multiple(self):
-        """Test the alt_decomps argument with multiple decomposition rules."""
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot1(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
+    @pytest.mark.integration
+    def test_alt_decomp_not_used(self):
+        """Tests that alt_decomp isn't necessarily used if it's not efficient."""
 
         @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
-        def my_cnot2(wires, **__):
+        def my_cnot(wires, **__):
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
             qml.CZ(wires=wires)
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
 
-        @partial(
-            qml.transforms.decompose,
-            gate_set={"CZ", "Hadamard", "RY"},
-            alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
+        tape = qml.tape.QuantumScript([qml.CNOT(wires=[1, 0])])
+        [new_tape], _ = qml.transforms.decompose(
+            tape,
+            gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
+            alt_decomps={qml.CNOT: [my_cnot]},
         )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+        assert new_tape.operations == [
+            qml.H(0),
+            qml.CZ(wires=[1, 0]),
+            qml.H(0),
+        ]
 
-        expected_resources = {"Hadamard": 2, "CZ": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
+    @pytest.mark.integration
+    def test_alt_decomp(self):
+        """Tests that alternative decomposition rules are used when applicable."""
 
-    def test_alt_decomps_custom_op(self):
-        """Test the custom operator with the new decomposition system."""
+        @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+        def my_cnot(wires, **__):
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
+            qml.CZ(wires=wires)
+            qml.RY(np.pi / 2, wires[1])
+            qml.Z(wires[1])
 
-        class CustomOp(qml.operation.Operation):
-
-            resource_params = set()
-
-            @property
-            def resource_params(self):  # pylint: disable=function-redefined
-                return {}
-
-        @qml.register_resources({qml.RZ: 2, qml.CNOT: 1})
-        def custom_decomp(theta, wires, **__):
-            qml.RZ(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
-
-        @qml.register_resources({qml.RX: 3, qml.CNOT: 2})
-        def custom_decomp2(theta, wires, **__):
-            qml.RX(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RX(theta, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[1]])
-            qml.RX(theta, wires=wires[0])
-
-        @partial(
-            qml.transforms.decompose,
-            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
-            alt_decomps={CustomOp: [custom_decomp, custom_decomp2]},
+        tape = qml.tape.QuantumScript([qml.CNOT(wires=[1, 0])])
+        [new_tape], _ = qml.transforms.decompose(
+            tape,
+            gate_set={"RY", "RZ", "CZ", "PauliZ", "GlobalPhase"},
+            alt_decomps={qml.CNOT: [my_cnot]},
         )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            CustomOp(0.5, wires=[0, 1])  # not supported on default.qubit
-            return qml.expval(qml.PauliZ(0))
-
-        expected_resources = {"RZ": 2, "CNOT": 1}
-        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
-
-    def test_qft_template(self):
-        """Test the QFT template with the new decomposition system."""
-
-        @partial(
-            qml.transforms.decompose,
-            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
-        )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(wires):
-            qml.QFT(wires=wires)
-            return qml.expval(qml.PauliZ(0))
-
-        expected_resources = {"RZ": 57, "RX": 6, "GlobalPhase": 21, "CNOT": 39}
-        assert qml.specs(circuit)([*range(6)])["resources"].gate_types == expected_resources
+        assert new_tape.operations == [
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.Z(0),
+            qml.CZ(wires=[1, 0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.Z(0),
+        ]
