@@ -1,17 +1,17 @@
 .. role:: html(raw)
    :format: html
 
-Program-capture sharp bits
+program capture sharp bits
 ==========================
 
-Program-capture is PennyLane's new internal representation for hyrbid quantum-classical 
+program capture is PennyLane's new internal representation for hyrbid quantum-classical 
 programs that maintains the same familiar feeling frontend that you're used to, 
 while providing better performance, harmonious integration with just-in-time compilation 
 frameworks like `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
 (:func:`~.pennylane.qjit`) and JAX-jit, and compact representations of programs that preserve 
 their structure.
 
-Program-capture in PennyLane is propped up by JAX's internal representation of programs 
+program capture in PennyLane is propped up by JAX's internal representation of programs 
 called `jaxpr <https://docs.jax.dev/en/latest/jaxpr.html>`__, which works by leveraging 
 the Python interpreter to extract the core elements of programs and capture them 
 into a light-weight language.
@@ -21,40 +21,40 @@ written with PennyLane translate nicely into the language of jaxpr, letting your
 quantum-classical programs burn the same fuel that powers JAX and just-in-time compilation.
 
 The quantum tape/script has been PennyLane's trusty program representation since 
-its inception, but our vision with program-capture is to supplant the quantum tape
+its inception, but our vision with program capture is to supplant the quantum tape
 as the default program representation in PennyLane, and to support *more* than just 
 the core features of the PennyLane you have come to know and love. 
 
 There are some **quirks and restrictions to be aware of while we strive towards 
 that ideal**. Additionally, we've added backwards-compatibility features that make 
-the transition from tape-based code to program-capture be a smooth one. In this 
+the transition from tape-based code to program capture be a smooth one. In this 
 document, we provide an overview of the constraints, "gotchas" to be aware of, and
-features that will help get your existing tape-based code working with program-capture.
+features that will help get your existing tape-based code working with program capture.
 
 .. note::
 
     #. From here onwards, :func:`~.pennylane.capture.enable` is assumed to be present 
     within the scope of code examples, unless otherwise stated. This ensures that 
-    program-capture is enabled.
+    program capture is enabled.
 
-    #. Using program-capture requires that JAX be installed. Please consult the 
+    #. Using program capture requires that JAX be installed. Please consult the 
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
     
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
-    "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
+    "program capture" and "plxpr" can be considered synonymous and interchangeable. 
 
 Device compatibility
 --------------------
 
 Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatible 
-with program-capture.
+with program capture.
 
 Device wires 
 ~~~~~~~~~~~~
 
-With program-capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
+With program capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
 that ``wires`` be specified at device instantiation (this is in contrast to when 
-program-capture is disabled, where automatic qubit management takes place internally
+program capture is disabled, where automatic qubit management takes place internally
 with ``default.qubit``).
 
 .. code-block:: python 
@@ -141,7 +141,7 @@ Positional arguments
 Positional arguments in PennyLane are flexible in that their variable names can 
 instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
 ``qml.RZ(phi=0.1, wires=0)``). However, to ensure differentiability and, in general,
-compatilibty with program-capture enabled, such arguments must be kept as positional, 
+compatilibty with program capture enabled, such arguments must be kept as positional, 
 regardless of if they're provided as an acceptable JAX type. 
 
 For instance, consider this example with ``qml.RZ``:
@@ -187,7 +187,7 @@ Array(0.9950042, dtype=float32)
 Parameter broadcasting and vmap
 -------------------------------
 
-Parameter-broadcasting is generally not compatible with program-capture. There are 
+Parameter-broadcasting is generally not compatible with program capture. There are 
 cases that magically work, but one shouldn't extrapolate beyond those particular 
 cases.
 
@@ -217,7 +217,7 @@ Transforms
 
 One of the core features of PennyLane is modularity, which has allowed users to 
 transform QNodes in a NumPy-like way and to create their own transforms with ease. 
-Your favourite transforms will still work with program-capture enabled (including
+Your favourite transforms will still work with program capture enabled (including
 custom transforms), but decorating QNodes with just ``@transform_name`` **will not 
 work** and will give a vague error. Additionally, decorating QNodes with the experimental 
 :func:`~.pennylane.capture.expand_plxpr_transforms` decorator is required.
