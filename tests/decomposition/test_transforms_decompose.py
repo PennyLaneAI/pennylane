@@ -116,13 +116,13 @@ class TestTransformDecompose:
         qml.decomposition.disable_graph()
 
     def test_gate_types_gateset(self):
-        """Test that the PennyLane's Operator does not work with the new decomposition system."""
+        """Test that the PennyLane's Operator works with the new decomposition system."""
 
         qml.decomposition.enable_graph()
 
         @partial(
             qml.transforms.decompose,
-            gate_set={qml.GlobalPhase, "RX", "RZ", "CNOT"},
+            gate_set={qml.GlobalPhase, qml.RX, qml.RZ, qml.CNOT},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
@@ -130,11 +130,8 @@ class TestTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            TypeError,
-            match="The graph-based decomposition doesn't support Operator types",
-        ):
-            circuit()
+        expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
 

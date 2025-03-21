@@ -154,14 +154,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 if qml.decomposition.enabled_graph():
 
-                    if target_gate_types:
-                        raise TypeError(
-                            f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
-                        )
-
                     self._target_gate_names = target_gate_names | set(
-                        gate.name for gate in target_gate_types
-                    )
+                        op.__name__ for op in target_gate_types
+                    )  # pylint: disable=protected-access
 
             else:
                 self.gate_set = gate_set
@@ -199,11 +194,10 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 bool: Whether or not ``op`` is valid or needs to be decomposed. ``True`` means
                 that the operator does not need to be decomposed.
             """
-
-            if (self._fixed_decomps and isinstance(op, tuple(self._fixed_decomps.keys()))) or (
-                self._alt_decomps and isinstance(op, tuple(self._alt_decomps.keys()))
-            ):
-                return False
+            # If the new graph-based decomposition is enabled,
+            # we don't rely on the has_decomposition attribute.
+            if qml.decomposition.enabled_graph():
+                return self.gate_set(op)
 
             if not op.has_decomposition:
                 if not self.gate_set(op):
@@ -684,10 +678,10 @@ def decompose(
         gate_set = lambda op: op.name in target_gate_names
 
     def stopping_condition(op):
-        if (_fixed_decomps and isinstance(op, tuple(_fixed_decomps.keys()))) or (
-            _alt_decomps and isinstance(op, tuple(_alt_decomps.keys()))
-        ):
-            return False
+        # If the new graph-based decomposition is enabled,
+        # we don't rely on the has_decomposition attribute.
+        if qml.decomposition.enabled_graph():
+            return gate_set(op)
 
         if not op.has_decomposition:
             if not gate_set(op):
@@ -709,10 +703,9 @@ def decompose(
 
     if qml.decomposition.enabled_graph():
 
-        if target_gate_types:
-            raise TypeError(
-                f"The graph-based decomposition doesn't support Operator types: {target_gate_types}."
-            )
+        target_gate_names = target_gate_names | set(
+            op.__name__ for op in target_gate_types
+        )  # pylint: disable=protected-access
 
         decomp_graph = _get_decomp_graph(
             tape.operations,
