@@ -43,10 +43,15 @@ features that will help get your existing tape-based code working with program-c
     #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
     "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
 
-Device wires 
-------------
+Device compatibility
+--------------------
 
-Currently, ``default.qubit`` and ``lightning.qubit`` are compatible with program-capture.
+Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatible 
+with program-capture.
+
+Device wires 
+~~~~~~~~~~~~
+
 With program-capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
 that ``wires`` be specified at device instantiation (this is in contrast to when 
 program-capture is disabled, where automatic qubit management takes place internally
@@ -120,7 +125,7 @@ Array(0., dtype=float32)
 But, again, using JAX-compatible types wherever possible is recommended.
 
 Positional arguments
-====================
+~~~~~~~~~~~~~~~~~~~~
 
 Positional arguments **must** be acceptable JAX types. For instance, consider this
 example with ``qml.RZ``:
