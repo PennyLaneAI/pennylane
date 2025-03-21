@@ -320,7 +320,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
         We can update the controlled resources with the observation that the PauliZ gate when controlled
-        on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+        on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
         so we can modify the base operation:
 
         .. code-block:: python
@@ -415,7 +415,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
             We can update the controlled resources with the observation that the PauliZ gate when controlled
-            on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+            on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
             so we can modify the base operation:
 
             .. code-block:: python
@@ -565,7 +565,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    r"""Resource class for the symbolic PowOperation.
+    r"""Resource class for the symbolic Pow operation.
 
     A symbolic class used to represent some base operation raised to a power.
 

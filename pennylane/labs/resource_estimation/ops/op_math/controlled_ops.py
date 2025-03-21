@@ -1095,6 +1095,9 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         Args:
             z (int): the power that the operator is being raised to
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
