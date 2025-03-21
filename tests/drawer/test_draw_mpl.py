@@ -253,6 +253,35 @@ class TestKwargs:
             1.0,
         )
 
+    @pytest.mark.parametrize("as_qnode", (True, False))
+    def test_max_length(self, as_qnode):
+        """Test that long circuits can be broken up into multiple figures."""
+
+        def c():
+            for _ in range(15):
+                qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        if as_qnode:
+            c = qml.QNode(c, qml.device("default.qubit"))
+
+        figs_and_axes = qml.draw_mpl(c, max_length=5)()
+        assert len(figs_and_axes) == 3
+        for i in range(3):
+            assert isinstance(figs_and_axes[i][0], plt.Figure)
+            assert isinstance(figs_and_axes[i][1], plt.Axes)
+
+        ax0 = figs_and_axes[0][1]
+        ax1 = figs_and_axes[1][1]
+        ax2 = figs_and_axes[2][1]
+        assert len(ax0.patches) == 5
+        assert len(ax1.patches) == 5
+        assert len(ax2.patches) == 8  # three for measure box
+
+        assert ax0.texts[-1].get_text() == "..."
+        assert ax1.texts[-1].get_text() == "..."
+        assert ax2.texts[-1].get_text() == "X"
+
 
 class TestWireBehaviour:
     """Tests that involve how wires are displayed"""
