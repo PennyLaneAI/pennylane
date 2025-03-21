@@ -331,26 +331,26 @@ class TestCaptureWhileLoopDynamicShapes:
         """Test while loop can accept arrays with dynamic shapes."""
 
         def f(x):
-            @qml.while_loop(lambda res: jax.numpy.sum(res) < 10)
+            @qml.while_loop(lambda res: jnp.sum(res) < 10)
             def g(res):
                 return res + res
 
             return g(x)
 
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(2))
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jnp.arange(2))
 
-        [s, output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
-        expected = jax.numpy.array([0, 4, 8])
+        [s, output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
+        expected = jnp.array([0, 4, 8])
         assert qml.math.allclose(s, 3)
-        assert jax.numpy.allclose(output, expected)
+        assert jnp.allclose(output, expected)
 
     def test_while_loop_dynamic_array_creation(self):
         """Test that while loop can handle creating dynamic arrays."""
 
         @qml.while_loop(lambda s: s < 9)
         def f(s):
-            a = jax.numpy.ones(s + 1, dtype=int)
-            return jax.numpy.sum(a)
+            a = jnp.ones(s + 1, dtype=int)
+            return jnp.sum(a)
 
         def w():
             return f(3)
@@ -363,9 +363,9 @@ class TestCaptureWhileLoopDynamicShapes:
         """Test that a useful error is raised if the shape pattern changes with
         allow_array_resizing=False"""
 
-        @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+        @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
         def f(a, b):
-            return jax.numpy.hstack([a, b]), 2 * b
+            return jnp.hstack([a, b]), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
@@ -448,7 +448,7 @@ class TestCaptureWhileLoopDynamicShapes:
         """Test that arrays can be resized as long as they are resized together."""
 
         @qml.while_loop(
-            lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
+            lambda a, b: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing
         )
         def f(x, y):
             x = jnp.hstack([x, y])
