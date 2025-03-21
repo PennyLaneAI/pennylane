@@ -292,7 +292,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
 
-            if not op.has_plxpr_decomposition:
+            if not op.has_qfunc_decomposition:
                 return self.decompose_operation(op)
 
             return self._evaluate_jaxpr_decomposition(op)

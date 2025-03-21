@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def test_standarad_checks():
+def test_standard_checks():
     """Run standard checks with the assert_valid function."""
     op = qml.FlipSign([0, 1], wires=("a", "b"))
     qml.ops.functions.assert_valid(op)
@@ -139,19 +139,11 @@ class TestFlipSign:
     def test_jax_jit(self):
         import jax
 
-        basis_state = [1, 0]
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            for wire in list(range(2)):
-                qml.Hadamard(wires=wire)
-            qml.FlipSign(basis_state, wires=list(range(2)))
-            return qml.state()
+        def circuit(basis_state):
+            return qml.FlipSign(basis_state, wires=list(range(2)))
 
         jit_circuit = jax.jit(circuit)
 
-        res = circuit()
-        res2 = jit_circuit()
+        res = circuit([1, 0])
+        res2 = jit_circuit(jax.numpy.array([1, 0]))
         assert qml.math.allclose(res, res2)
