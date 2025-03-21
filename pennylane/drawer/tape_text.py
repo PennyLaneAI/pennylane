@@ -79,11 +79,10 @@ def _initialize_wire_and_bit_totals(
         wire_totals = [f"{wire}: " for wire in config.wire_map]
     else:
         wire_totals = [""] * len(config.wire_map)
-    bit_totals = [""] * len(config.bit_map)
     line_length = max(len(s) for s in wire_totals)
 
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
-    bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
+    bit_totals = [" " * line_length for _ in config.bit_map]
     return wire_totals, bit_totals
 
 
