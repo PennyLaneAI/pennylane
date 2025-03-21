@@ -8,6 +8,7 @@
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
   [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
@@ -185,6 +186,7 @@
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
   [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
 <h3>Improvements 🛠</h3>
 
@@ -795,6 +797,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
+  [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
 
 * Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
   differ depending if equivalent gate generators are defined using
