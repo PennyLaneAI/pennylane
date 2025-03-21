@@ -114,6 +114,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
+  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
