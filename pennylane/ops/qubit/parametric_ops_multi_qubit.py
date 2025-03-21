@@ -166,10 +166,6 @@ class MultiRZ(Operation):
 
         return qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
-
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         theta: TensorLike, wires: WiresLike, **kwargs
