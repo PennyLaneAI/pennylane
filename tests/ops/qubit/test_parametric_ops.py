@@ -3179,6 +3179,12 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
+    def test_MultiRZ_assert_valid(self):
+        """Tests that MultiRZ is valid."""
+
+        op = qml.MultiRZ(0.123, wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op)
+
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
