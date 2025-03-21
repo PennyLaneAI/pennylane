@@ -251,7 +251,10 @@ def _qft_decomposition_resources(num_wires):
 @register_resources(_qft_decomposition_resources)
 def _qft_decomposition(wires: WiresLike, n_wires, **__):
 
-    shifts = qml.math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)])
+    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    if qml.capture.enabled():
+        shifts = qml.math.array(shifts, like="jax")
+
     shift_len = len(shifts)
 
     @qml.for_loop(n_wires)
