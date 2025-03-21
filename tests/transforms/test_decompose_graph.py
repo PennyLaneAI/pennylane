@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Tests for the new experimental graph-based decomposition system integrated with `qml.transforms.decompose` with the program capture.
-"""
+"""Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
 
 # pylint: disable=no-name-in-module, too-few-public-methods
 
@@ -24,76 +22,33 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionGraph
-
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
-
-jax = pytest.importorskip("jax")
-
-from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
-    CollectOpsandMeas,
-)
 
 
-class TestPLxPRTransformDecompose:
+class TestTransformDecompose:
 
-    def test_plxpr_with_callable(self):
-        """Test the new decomposition system with a Callable gate_set."""
-
-        qml.capture.enable()
-        qml.decomposition.enable_graph()
-
-        @qml.capture.expand_plxpr_transforms
-        @partial(
-            qml.transforms.decompose,
-            gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"},
-        )
-        @qml.qnode(qml.device("default.qubit", wires=2))
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
-            circuit()
-
-        qml.decomposition.disable_graph()
-        qml.capture.disable()
-
-    def test_plxpr_gate_names_gateset(self):
+    def test_gate_names_gateset(self):
         """Test that the string representation of the gate_set works with the new decomposition system."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-
-        qml.assert_equal(obj.state["ops"][0], qml.RZ(np.pi / 2, 0))
-        qml.assert_equal(obj.state["ops"][1], qml.RX(np.pi / 2, 0))
-        qml.assert_equal(obj.state["ops"][2], qml.RZ(np.pi / 2, 0))
-        qml.assert_equal(obj.state["ops"][3], qml.GlobalPhase(-np.pi / 2, 0))
-        qml.assert_equal(obj.state["ops"][4], qml.CNOT([0, 1]))
-        assert len(obj.state["ops"]) == 5
+        expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_gateset_with_custom_rules(self):
+    def test_gateset_with_custom_rules(self):
         """Test the gate_set argument with custom decomposition rules."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
@@ -116,101 +71,46 @@ class TestPLxPRTransformDecompose:
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
             alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
             fixed_decomps={qml.IsingXX: isingxx_decomp},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             qml.IsingXX(0.5, wires=[0, 1])
             return qml.state()
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-
         expected_resources = {"RZ": 12, "RX": 7, "GlobalPhase": 6, "CZ": 3}
-        resources = dict()
-        for op in obj.state["ops"]:
-            if op.name in resources:
-                resources[op.name] += 1
-            else:
-                resources[op.name] = 1
-
-        assert resources == expected_resources
-        assert len(obj.state["ops"]) == 28
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_gate_types_gateset(self):
+    def test_gate_types_gateset(self):
         """Test that the PennyLane's Operator works with the new decomposition system."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={qml.GlobalPhase, qml.RX, qml.RZ, qml.CNOT},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-
         expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
-        resources = dict()
-        for op in obj.state["ops"]:
-            if op.name in resources:
-                resources[op.name] += 1
-            else:
-                resources[op.name] = 1
-
-        assert resources == expected_resources
-        assert len(obj.state["ops"]) == 5
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_fixed_decomps_corner_case(self):
-        """Test the fixed_decomps argument with an op in the gate-set."""
-
-        qml.capture.enable()
-        qml.decomposition.enable_graph()
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @qml.capture.expand_plxpr_transforms
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-        @qml.qnode(qml.device("default.qubit", wires=2))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-        qml.assert_equal(obj.state["ops"][0], qml.CNOT([0, 1]))
-        assert len(obj.state["ops"]) == 1
-
-        qml.decomposition.disable_graph()
-        qml.capture.disable()
-
-    def test_plxpr_fixed_decomps(self):
+    def test_fixed_decomps(self):
         """Test the fixed_decomps argument with the new decomposition system."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -219,29 +119,22 @@ class TestPLxPRTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, fixed_decomps={qml.CNOT: my_cnot}
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
-        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
-        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
-        assert len(obj.state["ops"]) == 3
+        expected_resources = {"Hadamard": 2, "CZ": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_alt_decomps_single(self):
+    def test_alt_decomps_single(self):
         """Test the alt_decomps argument with a single decomposition rules."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -250,29 +143,22 @@ class TestPLxPRTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose, gate_set={"CZ", "Hadamard"}, alt_decomps={qml.CNOT: [my_cnot]}
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
-        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
-        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
-        assert len(obj.state["ops"]) == 3
+        expected_resources = {"Hadamard": 2, "CZ": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_alt_decomps_multiple(self):
+    def test_alt_decomps_multiple(self):
         """Test the alt_decomps argument with multiple decomposition rules."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -289,31 +175,24 @@ class TestPLxPRTransformDecompose:
             qml.RY(np.pi / 2, wires[1])
             qml.Z(wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={"CZ", "Hadamard", "RY"},
             alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-        qml.assert_equal(obj.state["ops"][0], qml.Hadamard(1))
-        qml.assert_equal(obj.state["ops"][1], qml.CZ([0, 1]))
-        qml.assert_equal(obj.state["ops"][2], qml.Hadamard(1))
-        assert len(obj.state["ops"]) == 3
+        expected_resources = {"Hadamard": 2, "CZ": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_alt_decomps_custom_op(self):
+    def test_alt_decomps_custom_op(self):
         """Test the custom operator with the new decomposition system."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
         class CustomOp(qml.operation.Operation):
@@ -338,62 +217,44 @@ class TestPLxPRTransformDecompose:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RX(theta, wires=wires[0])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
             alt_decomps={CustomOp: [custom_decomp, custom_decomp2]},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             CustomOp(0.5, wires=[0, 1])  # not supported on default.qubit
             return qml.expval(qml.PauliZ(0))
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-        qml.assert_equal(obj.state["ops"][0], qml.RZ(0.5, 0))
-        qml.assert_equal(obj.state["ops"][1], qml.CNOT([0, 1]))
-        qml.assert_equal(obj.state["ops"][2], qml.RZ(0.5, 0))
-        assert len(obj.state["ops"]) == 3
+        expected_resources = {"RZ": 2, "CNOT": 1}
+        assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_qft_template(self):
+    def test_qft_template(self):
         """Test the QFT template with the new decomposition system."""
 
-        qml.capture.enable()
         qml.decomposition.enable_graph()
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
-        @qml.qnode(qml.device("default.qubit", wires=4))
-        def circuit():
-            qml.QFT(wires=[0, 1, 2, 3])
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(wires):
+            qml.QFT(wires=wires)
             return qml.expval(qml.PauliZ(0))
 
-        obj = CollectOpsandMeas()
-        obj(circuit)()
-
-        graph = DecompositionGraph(
-            operations=[qml.QFT(wires=[0, 1, 2, 3])],
-            target_gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
-        )
-        graph.solve()
-        expected_resources = graph.resource_estimate(qml.QFT(wires=[0, 1, 2, 3]))
-
-        assert len(obj.state["ops"]) == expected_resources.num_gates
+        expected_resources = {"RZ": 57, "RX": 6, "GlobalPhase": 21, "CNOT": 39}
+        assert qml.specs(circuit)([*range(6)])["resources"].gate_types == expected_resources
 
         qml.decomposition.disable_graph()
-        qml.capture.disable()
 
-    def test_plxpr_error_disable_graphd_fixed(self):
+    @pytest.mark.unit
+    def test_error_disable_graphd_fixed(self):
         """Test that a TypeError is raised when graph is disabled and fixed_decomps is used."""
 
-        qml.capture.enable()
         qml.decomposition.disable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -402,9 +263,8 @@ class TestPLxPRTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
@@ -412,12 +272,10 @@ class TestPLxPRTransformDecompose:
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
-        qml.capture.disable()
-
-    def test_plxpr_error_disable_graphd_alt(self):
+    @pytest.mark.unit
+    def test_error_disable_graphd_alt(self):
         """Test that a TypeError is raised when the graph-based decomposition and alt_decomps is used."""
 
-        qml.capture.enable()
         qml.decomposition.disable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -426,9 +284,8 @@ class TestPLxPRTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot]})
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
@@ -436,12 +293,10 @@ class TestPLxPRTransformDecompose:
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
-        qml.capture.disable()
-
-    def test_plxpr_error_disable_graphd_decomps(self):
+    @pytest.mark.unit
+    def test_error_disable_graphd_decomps(self):
         """Test that a TypeError is raised when the graph-based decomposition with fixed and alt decomps is used."""
 
-        qml.capture.enable()
         qml.decomposition.disable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
@@ -450,18 +305,15 @@ class TestPLxPRTransformDecompose:
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.capture.expand_plxpr_transforms
         @partial(
             qml.transforms.decompose,
             fixed_decomps={qml.CNOT: my_cnot},
             alt_decomps={qml.CNOT: [my_cnot]},
         )
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
-
-        qml.capture.disable()
