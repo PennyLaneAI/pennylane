@@ -23,7 +23,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.realspace import RealspaceSum
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access
@@ -109,7 +109,7 @@ class VibronicMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if rs_sum.is_zero:
+        if rs_sum._is_zero:
             return
 
         self._blocks[(row, col)] = rs_sum

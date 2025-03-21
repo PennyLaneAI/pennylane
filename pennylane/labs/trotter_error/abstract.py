@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from typing import Dict, Sequence
 
 class Fragment(ABC):
     """Abstract class used to define the methods an object needs to implement in order to be used as a fragment
-    in the Trotteer error workflow. A ``Fragment`` is an that has a well-defined notion of a commutator.
+    in the Trotter error workflow. A :class:`~.Fragment` is an that has a well-defined notion of a commutator.
     To ensure the existence of commutators the implementation requires of the following dunder methods:
     ``__add__``,  ``__matmul__``,  ``__mul__``,  ``__sub__``.
 
@@ -49,17 +49,17 @@ class Fragment(ABC):
         """Compute the norm of the fragment.
 
         Args:
-            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from ``Fragment``.
+            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from :class:`~.Fragment`.
 
         Returns:
-            float: the norm of the ``Fragment``
+            float: the norm of the :class:`~.Fragment`
 
         """
         raise NotImplementedError
 
     @abstractmethod
     def apply(self, state: AbstractState) -> AbstractState:
-        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each class inherting from ``Fragment``.
+        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each class inheriting from ``Fragment``.
 
         Args:
             state (AbstractState): an object representing a quantum state
@@ -71,7 +71,7 @@ class Fragment(ABC):
         raise NotImplementedError
 
     def expectation(self, left: AbstractState, right: AbstractState) -> float:
-        """Return the expectation value of a state. The type of ``state`` is determined by each class inherting from ``Fragment``.
+        """Return the expectation value of a state. The type of ``state`` is determined by each class inheriting from ``Fragment``.
 
         Args:
             left (AbstractState): the state to be multiplied on the left of the ``Fragment``
@@ -84,11 +84,11 @@ class Fragment(ABC):
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
-    """Return the commutator of two ``Fragment`` objects
+    """Return the commutator of two :class:`~.Fragment` objects
 
     Args:
-        a (Fragment): the ``Fragment`` on the left side of the commutator
-        b (Fragment): the ``Fragment`` on the right side of the commutator
+        a (Fragment): the :class:`~.Fragment` on the left side of the commutator
+        b (Fragment): the :class:`~.Fragment` on the right side of the commutator
 
     Returns:
         Fragment: the commutator ``[a, b]``
@@ -97,7 +97,7 @@ def commutator(a: Fragment, b: Fragment) -> Fragment:
 
 
 def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
-    """Return the nested commutator of a sequence of ``Fragment`` objects
+    """Return the nested commutator of a sequence of :class:`~.Fragment` objects
 
     Args:
         fragments (Sequence[Fragment]): a sequence of fragments
@@ -118,8 +118,9 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
 
 
 class AbstractState(ABC):
-    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value
-    a class inheriting from ``AbstractState`` must implement the following dunder methods.
+    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value.
+
+    A class inheriting from ``AbstractState`` must implement the following dunder methods.
 
     * ``__add__``
     * ``__sub__``
@@ -148,13 +149,13 @@ class AbstractState(ABC):
         """Return a representation of the zero state
 
         Returns:
-            AbstractState: an AbstractState representation of the zero state
+            AbstractState: an ``AbstractState`` representation of the zero state
         """
         raise NotImplementedError
 
     @abstractmethod
     def dot(self, other: AbstractState) -> float:
-        """Return the dot product of two states
+        """Compute the dot product of two states
 
         Args:
             other (AbstractState): the state to take the dot product with
