@@ -531,7 +531,7 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
-* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``Amplitude`` ``Amplification``, ``QROM``, ``SuperPosition``, ``Mottonen``, ``StatePrep``, ``BasisState`` templates.
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``Amplitude`` ``Amplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
   [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
 
 * `pennylane.labs.khaneja_glaser_involution` is removed.
