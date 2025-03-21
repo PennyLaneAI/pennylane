@@ -88,18 +88,13 @@ class QROMStatePreparation(Operation):
     .. details::
         :title: Usage Details
 
-        The input ``state_vector`` must have a length that is a power of 2, i.e., :math:`2^n`,
-        where :math:`n` must be the number of ``wires``.
-
-        We discretize the probability distribution corresponding to the ``state_vector`` and
-        use `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for efficiently generating the corresponding
-        quantum superposition of basis states in an iterative manner.
-
-        For this purpose, in every iteration, we use the QROM operations to load the binary representation
-        of the angles :math:`|\theta_i\rangle` (Eq. 5, `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_)
-        in the ``precision_wires`` using the provided ``work_wires`` as the auxillary qubits needed in :class:`~.QROM`.
-        Therefore, we truncate the binary representation of the angles up to :math:`m`-th digits,
-        where :math:`m` is the number of precision wires.
+        The ``precision_wires`` are used as the target wires in the underlying QROM operations.
+        The number of ``precision_wires`` determines the precision with which the rotation angles of the
+        template are encoded. This means that the binary representation of the angle is truncated up to
+        the :math:`m`-th digit, where :math:`m` is the number of precision wires given. See  Eq. 5 in
+        `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for more details.
+        The ``work_wires`` correspond to auxiliary qubits that can be specified in :class:`~.QROM` to
+        reduce the overall resource requirements on the implementation.
     """
 
     def __init__(
