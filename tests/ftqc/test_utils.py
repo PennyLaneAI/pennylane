@@ -23,14 +23,14 @@ from pennylane.ftqc import QubitMgr
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
-num_qubits = [1, 3, 7]
-acquire_num = [0, 1, 5]
-offsets = [0, 8, 9]
+num_qubits_vals = [1, 3, 7]
+acquire_num_vals = [0, 1, 5]
+offsets_vals = [0, 8, 9]
 
 
 def _is_valid(num_q, acquire_q):
     "Utility function to select for valid/invalid parameters in tests"
-    if num_q > acquire_q:
+    if num_q < acquire_q:
         return False
     return True
 
@@ -46,7 +46,7 @@ class TestQubitMgr:
         assert len(mgr.inactive) == 0
         assert len(mgr.all_qubits) == 0
 
-    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits, offsets)))
+    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
     def test_explicit_init(self, num_qubits, offset):
         "Test for valid initialization of QubitMgr"
 
@@ -75,7 +75,7 @@ class TestQubitMgr:
         ):
             _ = QubitMgr(num_qubits, offset)
 
-    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits, offsets)))
+    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
     def test_acquire_qubit_valid(self, num_qubits, offset):
         "Test that we can acquire a single qubits and make it active"
 
@@ -91,7 +91,8 @@ class TestQubitMgr:
         assert set([idx_list]) == mgr.active
 
     @pytest.mark.parametrize(
-        "num_qubits, acquire_num, offset", list(it.product(num_qubits, acquire_num, offsets))
+        "num_qubits, acquire_num, offset",
+        list(it.product(num_qubits_vals, acquire_num_vals, offsets_vals)),
     )
     def test_acquire_qubits(self, num_qubits, acquire_num, offset):
         "Test that we can acquire multiple qubits and make them active"
@@ -106,7 +107,8 @@ class TestQubitMgr:
         assert len(mgr.active.intersection(mgr.inactive)) == 0
 
     @pytest.mark.parametrize(
-        "num_qubits, acquire_num, offset", list(it.product(range(5), acquire_num, offsets))
+        "num_qubits, acquire_num, offset",
+        list(it.product(range(5), acquire_num_vals, offsets_vals)),
     )
     def test_acquire_qubits_invalid(self, num_qubits, acquire_num, offset):
         "Test that we have checks for invalid qubit acquisition requests"
@@ -123,7 +125,8 @@ class TestQubitMgr:
             mgr.acquire_qubits(acquire_num)
 
     @pytest.mark.parametrize(
-        "num_qubits, acquire_num, offset", list(it.product(num_qubits, acquire_num, offsets))
+        "num_qubits, acquire_num, offset",
+        list(it.product(num_qubits_vals, acquire_num_vals, offsets_vals)),
     )
     def test_release_qubit(self, num_qubits, acquire_num, offset):
         "Test that we can acquire and release qubits individually"
@@ -141,7 +144,8 @@ class TestQubitMgr:
             assert e in mgr.inactive
 
     @pytest.mark.parametrize(
-        "num_qubits, acquire_num, offset", list(it.product(num_qubits, acquire_num, offsets))
+        "num_qubits, acquire_num, offset",
+        list(it.product(num_qubits_vals, acquire_num_vals, offsets_vals)),
     )
     def test_release_qubits(self, num_qubits, acquire_num, offset):
         "Test that we can acquire and release a fixed number of qubits"
@@ -158,7 +162,7 @@ class TestQubitMgr:
             assert mgr.inactive.intersection(idx_list) == set(idx_list)
             assert set(idx_list).intersection(mgr.active) == set()
 
-    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits, offsets)))
+    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
     def test_reserve_qubit(self, num_qubits, offset):
         "Test that we can selectively reserve and make active a user-specified qubit wire index"
         mgr = QubitMgr(num_qubits, offset)
