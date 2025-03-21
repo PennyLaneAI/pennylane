@@ -316,7 +316,9 @@ class TestExpvalVar:
 
 class TestProbs:
 
-    @pytest.mark.parametrize("wires, shape", [([0, 1, 2], 8), ([], 16)])
+    @pytest.mark.parametrize(
+        "wires, shape", [([0, 1, 2], 8), ([], 16), (jax.numpy.array([0, 1, 2]), 8)]
+    )
     def test_wires(self, wires, shape):
         """Tests capturing probabilities on wires."""
 
@@ -328,7 +330,7 @@ class TestProbs:
         assert len(jaxpr.eqns) == 1
 
         assert jaxpr.eqns[0].primitive == ProbabilityMP._wires_primitive
-        assert [x.val for x in jaxpr.eqns[0].invars] == wires
+        assert [x.val for x in jaxpr.eqns[0].invars] == list(wires)
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == len(wires)
@@ -392,7 +394,16 @@ class TestProbs:
 
 class TestSample:
 
-    @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4), (1, 1)])
+    @pytest.mark.parametrize(
+        "wires, dim1_len",
+        [
+            ([0, 1, 2], 3),
+            ([], 4),
+            (1, 1),
+            (jax.numpy.array([0, 1, 2]), 3),
+            (np.array([0, 1, 2]), 3),
+        ],
+    )
     def test_wires(self, wires, dim1_len):
         """Tests capturing samples on wires."""
         if isinstance(wires, list):
@@ -408,20 +419,27 @@ class TestSample:
 
             jaxpr = jax.make_jaxpr(f)(wires)
 
-        assert len(jaxpr.eqns) == 1
+        if not isinstance(wires, (jax.numpy.ndarray, np.ndarray)):
+            assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == SampleMP._wires_primitive
+        assert jaxpr.eqns[-1].primitive == SampleMP._wires_primitive
         assert [x.aval for x in jaxpr.eqns[0].invars] == jaxpr.in_avals
-        mp = jaxpr.eqns[0].outvars[0].aval
+        mp = jaxpr.eqns[-1].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
-        assert mp.n_wires == len(wires) if isinstance(wires, list) else 1
+        assert (
+            mp.n_wires == len(wires)
+            if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray))
+            else 1
+        )
         assert mp._abstract_eval == SampleMP._abstract_eval
 
         shapes = _get_shapes_for(
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
         assert len(shapes) == 1
-        shape = (50, dim1_len) if isinstance(wires, list) else (50,)
+        shape = (
+            (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
+        )
         assert shapes[0] == jax.core.ShapedArray(
             shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )

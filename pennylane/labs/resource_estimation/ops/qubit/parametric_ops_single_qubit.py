@@ -174,7 +174,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -260,8 +260,8 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
-            In the case where multiple controlled wires are provided, the resources are taken from
-            (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            In the case where multiple controlled wires are provided, the resources are taken
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
@@ -315,7 +315,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -401,7 +401,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are taken
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit
             unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the
             following identity:
 
@@ -448,7 +448,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -534,7 +534,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are obtained
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
@@ -580,7 +580,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -662,7 +662,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are derived
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
             identities:
 
@@ -728,5 +728,5 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}

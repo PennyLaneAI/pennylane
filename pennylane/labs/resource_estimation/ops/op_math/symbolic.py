@@ -726,7 +726,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
 
         if z == 1:
             return {base_class.resource_rep(**base_params): 1}

@@ -27,7 +27,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
         num_wires (int): the number of qubits the operation acts upon
 
     Resources:
-        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
+        The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
         Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
@@ -47,7 +47,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
-            The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
+            The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
             quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
             Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
@@ -182,7 +182,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
+        The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
         for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
         in combination with the following identity:
 
@@ -215,7 +215,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-            The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
+            The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
             for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
             in combination with the following identity:
 

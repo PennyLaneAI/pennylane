@@ -148,7 +148,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -226,7 +226,7 @@ class ResourceS(qml.S, re.ResourceOperator):
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -265,7 +265,7 @@ class ResourceS(qml.S, re.ResourceOperator):
                 values are the counts.
         """
         if (mod_4 := z % 4) == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): mod_4}
 
 
@@ -438,7 +438,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -515,7 +515,7 @@ class ResourceT(qml.T, re.ResourceOperator):
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -554,7 +554,7 @@ class ResourceT(qml.T, re.ResourceOperator):
                 values are the counts.
         """
         if (mod_8 := z % 8) == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): mod_8}
 
 
@@ -693,7 +693,7 @@ class ResourceX(qml.X, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -848,7 +848,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
@@ -984,5 +984,5 @@ class ResourceZ(qml.Z, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}

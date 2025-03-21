@@ -85,7 +85,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
