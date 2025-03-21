@@ -302,6 +302,12 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     """Resource class for the :class:`~.Multiplier` template.
 
+    Args:
+        k (int): the number that needs to be multiplied
+        x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If :math:`mod=2^{\text{len(x_wires)}}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
+
     Resource Parameters:
         * mod (int): the module for performing the multiplication
         * num_work_wires (int): the number of work wires used for the multiplication.
@@ -405,6 +411,15 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 class ResourceModExp(qml.ModExp, re.ResourceOperator):
     r"""Resource class for the :class:`~.ModExp` template.
 
+    Args:
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`
+        output_wires (Sequence[int]): the wires that store the operator result. These wires also encode :math:`b`.
+        base (int): integer that needs to be exponentiated
+        mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
+            :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
+
     Resource Parameters:
         * mod (int): the module for performing the exponentiation
         * num_output_wires (int): the number of output wires used to encode the integer
@@ -455,17 +470,15 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource Parameters:
-            * mod (int): the module for performing the exponentiation
-            * num_output_wires (int): the number of output wires used to encode the integer
-                :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
-            * num_work_wires (int): the number of work wires used to perform the modular
-                exponentiation operation
-            * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
-                in the computational basis
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * mod (int): the module for performing the exponentiation
+                * num_output_wires (int): the number of output wires used to encode the integer
+                    :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+                * num_work_wires (int): the number of work wires used to perform the modular
+                    exponentiation operation
+                * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
+                    in the computational basis
         """
         return {
             "mod": self.hyperparameters["mod"],
@@ -1225,13 +1238,20 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
 class ResourceQROM(qml.QROM, ResourceOperator):
     """Resource class for the QROM template.
 
+    Args:
+        bitstrings (list[str]): the bitstrings to be encoded
+        control_wires (Sequence[int]): the wires where the indexes are specified
+        target_wires (Sequence[int]): the wires where the bitstring is loaded
+        work_wires (Sequence[int]): the auxiliary wires used for the computation
+        clean (bool): if True, the work wires are not altered by operator, default is ``True``
+
     Resource Parameters:
-        num_bitstrings (int): the number of bitstrings that are to be encoded
-        num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-        num_control_wires (int): the number of control wires where in the indexes are specified
-        num_work_wires (int): the number of auxiliary wires used for QROM computation
-        size_bitstring (int): the length of each bitstring
-        clean (bool): if True, the work wires are not altered by the QROM operator
+        * num_bitstrings (int): the number of bitstrings that are to be encoded
+        * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+        * num_control_wires (int): the number of control wires where in the indexes are specified
+        * num_work_wires (int): the number of auxiliary wires used for QROM computation
+        * size_bitstring (int): the length of each bitstring
+        * clean (bool): if True, the work wires are not altered by the QROM operator
 
     Resources:
         The resources for QROM are taken from the following two papers:
@@ -1318,16 +1338,14 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_bitstrings (int): the number of bitstrings that are to be encoded
-            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-            num_control_wires (int): the number of control wires where in the indexes are specified
-            num_work_wires (int): the number of auxiliary wires used for QROM computation
-            size_bitstring (int): the length of each bitstring
-            clean (bool): if True, the work wires are not altered by the QROM operator
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_bitstrings (int): the number of bitstrings that are to be encoded
+                * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+                * num_control_wires (int): the number of control wires where in the indexes are specified
+                * num_work_wires (int): the number of auxiliary wires used for QROM computation
+                * size_bitstring (int): the length of each bitstring
+                * clean (bool): if True, the work wires are not altered by the QROM operator
         """
         bitstrings = self.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
@@ -1382,14 +1400,23 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperator):
     r"""Resource class for the AmplitudeAmplification template.
 
+    Args:
+        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        O (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        iters (int): the number of iterations of the amplitude amplification subroutine, default is ``1``
+        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm, default is ``False``
+        work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm, default is ``None``
+        reflection_wires (Wires): the wires to reflect on, default is the wires of ``U``
+        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is ``0.9``
+
     Resource Parameters:
-        U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
-        U_params (dict): the parameters for the U operator
-        O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
-        O_params (dict): the parameters for the O operator
-        iters (int): the number of iterations of the amplitude amplification subroutine
-        num_ref_wires (int): the number of wires used for the reflection
-        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
+        * U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        * U_params (dict): the parameters for the U operator
+        * O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        * O_params (dict): the parameters for the O operator
+        * iters (int): the number of iterations of the amplitude amplification subroutine
+        * num_ref_wires (int): the number of wires used for the reflection
+        * fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
 
     Resources:
         The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
@@ -1457,17 +1484,15 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
-            U_params (dict): the parameters for the U operator
-            O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
-            O_params (dict): the parameters for the O operator
-            iters (int): the number of iterations of the amplitude amplification subroutine
-            num_ref_wires (int): the number of wires used for the reflection
-            fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+                * U_params (dict): the parameters for the U operator
+                * O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+                * O_params (dict): the parameters for the O operator
+                * iters (int): the number of iterations of the amplitude amplification subroutine
+                * num_ref_wires (int): the number of wires used for the reflection
+                * fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
         """
         U_op = self.hyperparameters["U"]
         O_op = self.hyperparameters["O"]
