@@ -57,6 +57,10 @@ class TestQubitMgr:
         assert len(mgr.all_qubits) == num_qubits
         assert mgr.inactive == set(range(offset, offset + num_qubits, 1))
         assert mgr.inactive == mgr.all_qubits
+        assert (
+            str(mgr)
+            == f"QubitMgr(num_qubits={num_qubits}, active={mgr.active}, inactive={mgr.inactive})"
+        )
 
     @pytest.mark.parametrize(
         "num_qubits, offset",
@@ -89,6 +93,10 @@ class TestQubitMgr:
 
         assert idx_list == offset
         assert set([idx_list]) == mgr.active
+        assert (
+            str(mgr)
+            == f"QubitMgr(num_qubits={num_qubits}, active={mgr.active}, inactive={mgr.inactive})"
+        )
 
     @pytest.mark.parametrize(
         "num_qubits, acquire_num, offset",
