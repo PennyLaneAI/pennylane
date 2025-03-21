@@ -23,6 +23,9 @@ import pennylane.labs.resource_estimation as re
 class ResourceCH(qml.CH, re.ResourceOperator):
     r"""Resource class for the CH gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The resources are derived from the following identities (as presented in this
         `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
@@ -34,11 +37,17 @@ class ResourceCH(qml.CH, re.ResourceOperator):
                 \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
             \end{align}
 
-        Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
-        :class:`~.ResourceHadamard` gates and a :class:`~.ResourceCNOT` gate.
+        Specifically, the resources are given by two :class:`~.ResourceRY`, two
+        :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
 
     .. seealso:: :class:`~.CH`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCH.resources()
+    {Hadamard: 2, RY: 2, CNOT: 1}
     """
 
     @staticmethod
@@ -151,6 +160,11 @@ class ResourceCH(qml.CH, re.ResourceOperator):
 class ResourceCY(qml.CY, re.ResourceOperator):
     r"""Resource class for the CY gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
     Resources:
         The resources are derived from the following identity:
 
@@ -162,6 +176,12 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
     .. seealso:: :class:`~.CY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCY.resources()
+    {CNOT: 1, S: 1, Adjoint(S): 1}
     """
 
     @staticmethod
@@ -269,6 +289,9 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 class ResourceCZ(qml.CZ, re.ResourceOperator):
     r"""Resource class for the CZ gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The resources are derived from the following identity:
 
@@ -280,6 +303,12 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.CZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCZ.resources()
+    {CNOT: 1, Hadamard: 2}
     """
 
     @staticmethod
@@ -510,6 +539,9 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     r"""Resource class for the CCZ gate.
 
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+
     Resources:
         The resources are derived from the following identity:
 
@@ -521,6 +553,12 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.CCZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCCZ.resources()
+    {Toffoli: 1, Hadamard: 2}
     """
 
     @staticmethod
@@ -626,6 +664,9 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     r"""Resource class for the CNOT gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The CNOT gate is treated as a terminal gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
@@ -725,6 +766,9 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+
     Resources:
         The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
@@ -746,6 +790,12 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
     .. seealso:: :class:`~.Toffoli`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceToffoli.resources()
+    {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
     """
 
     @staticmethod
@@ -902,9 +952,17 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     r"""Resource class for the MultiControlledX gate.
 
     Args:
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
-        num_ctrl_values (int): the number of control qubits, that are controlled when off
-        num_work_wires (int): the number of additional qubits that can be used for decomposition
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
+            the operation acts on
+        control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
+                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
+            the operation into a series of :class:`~.Toffoli` gates
+
+    Resource Parameters:
+        * num_ctrl_wires (int): the number of qubits the operation is controlled on
+        * num_ctrl_values (int): the number of control qubits, that are controlled when off
+        * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
         The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
@@ -923,6 +981,12 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
     .. seealso:: :class:`~.MultiControlledX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2, num_work_wires=3)
+    {X: 4, CNOT: 69}
     """
 
     @staticmethod
@@ -1117,6 +1181,11 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 class ResourceCRX(qml.CRX, re.ResourceOperator):
     r"""Resource class for the CRX gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
         <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
@@ -1130,6 +1199,12 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
     .. seealso:: :class:`~.CRX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRX.resources()
+    {CNOT: 2, RZ: 2, Hadamard: 2}
     """
 
     @staticmethod
@@ -1239,6 +1314,11 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 class ResourceCRY(qml.CRY, re.ResourceOperator):
     r"""Resource class for the CRY gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
         <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
@@ -1252,6 +1332,12 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
     .. seealso:: :class:`~.CRY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRY.resources()
+    {CNOT: 2, RY: 2}
     """
 
     @staticmethod
@@ -1359,6 +1445,11 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     r"""Resource class for the CRZ gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
         <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
@@ -1372,6 +1463,12 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.CRZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRZ.resources()
+    {CNOT: 2, RZ: 2}
     """
 
     @staticmethod
@@ -1479,6 +1576,13 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 class ResourceCRot(qml.CRot, re.ResourceOperator):
     r"""Resource class for the CRot gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
         <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
@@ -1500,6 +1604,12 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
     .. seealso:: :class:`~.CRot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRot.resources()
+    {CNOT: 2, RZ: 3, RY: 2}
     """
 
     @staticmethod
@@ -1618,6 +1728,11 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are derived using the fact that a :class:`~.ResourcePhaseShift` gate is
         identical to the :class:`~.ResourceRZ` gate up to some global phase. Furthermore, a controlled
@@ -1631,6 +1746,12 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
     .. seealso:: :class:`~.ControlledPhaseShift`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceControlledPhaseShift.resources()
+    {CNOT: 2, RZ: 3}
     """
 
     @staticmethod

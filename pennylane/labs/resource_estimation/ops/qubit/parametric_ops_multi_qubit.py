@@ -24,7 +24,12 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        theta (tensor_like or float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * num_wires (int): the number of qubits the operation acts upon
 
     Resources:
         The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
@@ -36,6 +41,12 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.MultiRZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiRZ.resources(num_wires=3)
+    {CNOT: 4, RZ: 1}
     """
 
     @staticmethod
@@ -176,7 +187,13 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Args:
-        pauli_string (str): a string describing the pauli operators that define the rotation
+        theta (float): rotation angle :math:`\theta`
+        pauli_word (string): the Pauli word defining the rotation
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * pauli_string (str): a string describing the pauli operators that define the rotation
 
     Resources:
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
@@ -201,6 +218,12 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     .. seealso:: :class:`~.PauliRot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePauliRot.resources(pauli_string="XYZ")
+    {Hadamard: 4, S: 1, Adjoint(S): 1, RZ: 1, CNOT: 4}
     """
 
     @staticmethod
@@ -401,6 +424,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
     r"""Resource class for the IsingXX gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising XX coupling gate
 
@@ -421,6 +449,12 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingXX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingXX.resources()
+    {CNOT: 2, RX: 1}
     """
 
     @staticmethod
@@ -553,6 +587,11 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     r"""Resource class for the IsingYY gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising YY coupling gate
 
@@ -573,6 +612,12 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingYY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingYY.resources()
+    {CY: 2, RY: 1}
     """
 
     @staticmethod
@@ -706,6 +751,11 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     r"""Resource class for the IsingXY gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising (XX + YY) coupling gate
 
@@ -726,6 +776,12 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingXY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingXY.resources()
+    {Hadamard: 2, CY: 2, RY: 1, RX: 1}
     """
 
     @staticmethod
@@ -872,6 +928,11 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
     r"""Resource class for the IsingZZ gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising ZZ coupling gate
 
@@ -892,6 +953,12 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingZZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingZZ.resources()
+    {CNOT: 2, RZ: 1}
     """
 
     @staticmethod
@@ -1024,6 +1091,11 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
     r"""Resource class for the PSWAP gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The :code:`PSWAP` gate is defined as:
 
@@ -1043,6 +1115,12 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
     .. seealso:: :class:`~.PSWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePSWAP.resources()
+    {SWAP: 1, CNOT: 2, PhaseShift: 1}
     """
 
     @staticmethod

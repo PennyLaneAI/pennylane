@@ -61,9 +61,17 @@ class ResourceTrotterProduct(
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        n (int): an integer representing the number of Trotter steps to perform
-        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination
+            of operators with known matrix exponentials.
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
+        n (int): An integer representing the number of Trotter steps to perform
+        order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
+
+    Resource Parameters:
+        * n (int): an integer representing the number of Trotter steps to perform
+        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        * first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
     Resources:
         The resources are defined according to the recurrsive formula presented above. Specifically, each
@@ -259,9 +267,19 @@ class ResourceTrotterizedQfunc(TrotterizedQfunc, ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
+        time (float): the time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
+        *trainable_args (tuple): the trainable arguments of the first-order expansion function
+        qfunc (Callable): the first-order expansion given as a callable function which queues operations
+        wires (Iterable): the set of wires the operation will act upon (should be identical to qfunc wires)
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+        reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
+        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
+
+    Resource Parameters:
+        * n (int): an integer representing the number of Trotter steps to perform
+        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        * qfunc_compressed_reps (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
     Resources:
         The resources are defined according to the recurrsive formula presented above. Specifically, each

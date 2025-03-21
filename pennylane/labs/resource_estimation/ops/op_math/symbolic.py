@@ -35,8 +35,11 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
-        base_params (dict): the resource parameters required to extract the cost of the base operator
+        base (~.operation.Operator): The operator that is adjointed.
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
@@ -253,11 +256,19 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     of some control qubits.
 
     Args:
-        base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
-        num_ctrl_values (int): the number of control qubits, that are controlled when off
-        num_work_wires (int): the number of additional qubits that can be used for decomposition
+        base (~.operation.Operator): the operator that is controlled
+        control_wires (Any): The wires to control on.
+        control_values (Iterable[Bool]): The values to control on. Must be the same
+            length as ``control_wires``. Defaults to ``True`` for all control wires.
+            Provided values are converted to `Bool` internally.
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * num_ctrl_wires (int): the number of qubits the operation is controlled on
+        * num_ctrl_values (int): the number of control qubits, that are controlled when off
+        * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
         The resources are determined as follows. If the base operation class :code:`base_class`
@@ -570,9 +581,13 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        z (int): the power that the operator is being raised to
+        base (~.operation.Operator): the operator to be raised to a power
+        z (float): the exponent (default value is 1)
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * z (int): the power that the operator is being raised to
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -817,13 +832,21 @@ class ResourceExp(Exp, re.ResourceOperator):
     A symbolic class used to represent the exponential of some base operation.
 
     Args:
-        base_class (Type[~.ResourceOperator]): The class type of the base operator that is
+        base (~.operation.Operator): The Operator to be exponentiated
+        coeff=1 (Number): A scalar coefficient of the operator.
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        id (str): id for the Exp operator. Default is None.
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): The class type of the base operator that is
             exponentiated.
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
             combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-        coeff (complex): a scalar value which multiplies the base operator in the exponent
-        num_steps (int): the number of trotter steps to use in approximating the exponential
+        * coeff (complex): a scalar value which multiplies the base operator in the exponent
+        * num_steps (int): the number of trotter steps to use in approximating the exponential
 
     Resources:
         This symbolic operation represents the exponential of some base operation. The resources
@@ -1107,7 +1130,11 @@ class ResourceProd(Prod, re.ResourceOperator):
     A symbolic class used to represent a product of some base operations.
 
     Args:
-        cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+            together.
+
+    Resource Parameters:
+        * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
             representation, corresponding to the factors in the product.
 
     Resources:

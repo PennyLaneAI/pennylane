@@ -23,6 +23,11 @@ import pennylane.labs.resource_estimation as re
 class ResourceIdentity(qml.Identity, re.ResourceOperator):
     r"""Resource class for the Identity gate.
 
+    Args:
+        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
@@ -49,11 +54,8 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -119,6 +121,12 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
+    Args:
+        phi (TensorLike): the global phase
+        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
@@ -145,11 +153,8 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 

@@ -23,6 +23,9 @@ import pennylane.labs.resource_estimation as re
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
@@ -46,11 +49,8 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -155,11 +155,20 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 class ResourceS(qml.S, re.ResourceOperator):
     r"""Resource class for the S-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The S-gate decomposes into two T-gates.
 
     .. seealso:: :class:`~.S`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceS.resources()
+    {T: 2}
     """
 
     @staticmethod
@@ -180,11 +189,8 @@ class ResourceS(qml.S, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -272,9 +278,12 @@ class ResourceS(qml.S, re.ResourceOperator):
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     r"""Resource class for the SWAP gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The resources come from the following identity expressing SWAP as the product of
-        three CNOT gates:
+        three :class:`~.CNOT` gates:
 
         .. math::
 
@@ -305,6 +314,12 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
     .. seealso:: :class:`~.SWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSWAP.resources()
+    {CNOT: 3}
     """
 
     @staticmethod
@@ -353,11 +368,8 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -445,6 +457,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 class ResourceT(qml.T, re.ResourceOperator):
     r"""Resource class for the T-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The T-gate is treated as a terminal gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
@@ -468,11 +483,8 @@ class ResourceT(qml.T, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -561,6 +573,9 @@ class ResourceT(qml.T, re.ResourceOperator):
 class ResourceX(qml.X, re.ResourceOperator):
     r"""Resource class for the X-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    
     Resources:
         The X-gate can be decomposed according to the following identities:
 
@@ -576,6 +591,12 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     .. seealso:: :class:`~.X`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceX.resources()
+    {S: 2, Hadamard: 2}
     """
 
     @staticmethod
@@ -609,11 +630,8 @@ class ResourceX(qml.X, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -700,6 +718,9 @@ class ResourceX(qml.X, re.ResourceOperator):
 class ResourceY(qml.Y, re.ResourceOperator):
     r"""Resource class for the Y-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The Y-gate can be decomposed according to the following identities:
 
@@ -717,6 +738,12 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     .. seealso:: :class:`~.Y`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceY.resources()
+    {S: 6, Hadamard: 2}
     """
 
     @staticmethod
@@ -752,11 +779,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -855,6 +879,9 @@ class ResourceY(qml.Y, re.ResourceOperator):
 class ResourceZ(qml.Z, re.ResourceOperator):
     r"""Resource class for the Z-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The Z-gate can be decomposed according to the following identities:
 
@@ -864,6 +891,12 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
     .. seealso:: :class:`~.Z`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceZ.resources()
+    {S: 2}
     """
 
     @staticmethod
@@ -889,11 +922,8 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 

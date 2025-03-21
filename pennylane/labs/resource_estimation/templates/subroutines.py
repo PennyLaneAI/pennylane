@@ -27,7 +27,10 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     r"""Resource class for QFT.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
+    Resource Parameters:
+        * num_wires (int): the number of qubits the operation acts upon
 
     Resources:
         The resources are obtained from the standard decomposition of QFT as presented
@@ -36,6 +39,12 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
     .. seealso:: :class:`~.QFT`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQFT.resources(num_wires=3)
+    {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
     """
 
     @staticmethod
@@ -100,11 +109,20 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
-        base_class (ResourceOperator): The type of the operation corresponding to the
+        unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
+            :class:`~.Operator`
+        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
+            If the unitary is specified as an operator, the target wires should already have been
+            defined as part of the operator. In this case, target_wires should not be specified.
+        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+            estimation
+
+    Resource Parameters:
+        * base_class (ResourceOperator): The type of the operation corresponding to the
             phase estimation unitary.
-        base_params (dict): A dictionary of parameters required to obtain the resources for
+        * base_params (dict): A dictionary of parameters required to obtain the resources for
             the phase estimation unitary.
-        num_estimation_wires (int): the number of wires used for measuring out the phase
+        * num_estimation_wires (int): the number of wires used for measuring out the phase
 
     Resources:
         The resources are obtained from the standard decomposition of QPE as presented
@@ -113,6 +131,16 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQuantumPhaseEstimation.resources(
+    ...     base_class=re.ResourceQFT,
+    ...     base_params={"num_wires": 3},
+    ...     num_estimation_wires=3,
+    ... )
+    {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
     """
 
     @staticmethod
@@ -258,7 +286,12 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
+        wires (Iterable[Any]): wires that the operator acts on
+        unitary_matrix (array): matrix specifying the basis transformation
+        check (bool): test unitarity of the provided `unitary_matrix`
+
+    Resource Parameters:
+        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
             as the number of columns of the matrix.
 
     Resources:
@@ -270,6 +303,12 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
 
     .. seealso:: :class:`~.BasisRotation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceBasisRotation.resources(dim_N=3)
+    {PhaseShift: 6, SingleExcitation: 3}
     """
 
     @staticmethod
@@ -338,7 +377,12 @@ class ResourceSelect(qml.Select, ResourceOperator):
     r"""Resource class for the Select gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
+        ops (list[Operator]): operations to apply
+        control (Sequence[int]): the wires controlling which operation is applied
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
             to be applied according to the selected qubits.
 
     Resources:
@@ -348,6 +392,13 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
     .. seealso:: :class:`~.Select`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_lst = [re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3)]
+    >>> re.ResourceSelect.resources(cmpr_ops=ops_lst)
+    defaultdict(<class 'int'>, {X: 2, C(X,1,0,0): 1, C(QFT(3),1,0,0): 1})
     """
 
     @staticmethod
@@ -417,7 +468,12 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     r"""Resource class for PrepSelPrep gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
+        lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
+            written as a linear combination of unitaries.
+        control (Iterable[Any], Wires): The control qubits for the PrepSelPrep operator.
+
+    Resource Parameters:
+        * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation,
             which correspond to the unitaries in the LCU to be blockencoded.
 
     Resources:
@@ -427,6 +483,14 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
     .. seealso:: :class:`~.PrepSelPrep`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_tup = (re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3))
+    >>> re.ResourcePrepSelPrep.resources(cmpr_ops=ops_tup)
+    {StatePrep(1): 1, Select: 1, Adjoint(StatePrep(1)): 1}
+
     """
 
     @staticmethod
@@ -435,7 +499,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, which correspond to the unitaries in the LCU to be blockencoded.
 
         Resources:
@@ -462,7 +526,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, which correspond to the unitaries in the LCU to be blockencoded.
 
         Returns:
@@ -478,7 +542,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
 
         Returns:
@@ -493,7 +557,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
         Args:
             z (int): the power that the operator is being raised to
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
 
         Resources:
@@ -536,11 +600,17 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
     r"""Resource class for the Reflection gate.
 
     Args:
-        base_class (Type(ResourceOperator)): The type of the operation used to prepare the
+        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        alpha (float): the angle of the operator, default is :math:`\pi`
+        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+            default is ``None`` and the reflection will be applied on the ``U`` wires.
+
+    Resource Parameters:
+        * base_class (Type(ResourceOperator)): The type of the operation used to prepare the
             state we will be reflecting over.
-        base_params (dict): A dictionary of parameters required to obtain the resources for
+        * base_params (dict): A dictionary of parameters required to obtain the resources for
             the state preparation operator.
-        num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
+        * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
             applied.
 
     Resources:
@@ -557,6 +627,16 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
     .. seealso:: :class:`~.Reflection`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceReflection.resources(
+    ...     base_class=re.ResourceQFT,
+    ...     base_params={"num_wires": 3},
+    ...     num_ref_wires=3,
+    ... )
+    {X: 2, GlobalPhase: 1, QFT(3): 1, Adjoint(QFT(3)): 1, C(PhaseShift,2,2,0): 1}
     """
 
     @staticmethod
@@ -660,8 +740,12 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     r"""Resource class for the Qubitization gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
+        control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
+
+    Resource Parameters:
+        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+        * num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
     Resources:
         The resources are obtained from the definition of the operation as described in (section III. C)
@@ -677,6 +761,16 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
 
     .. seealso:: :class:`~.Qubitization`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_tup = (re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3))
+    >>> re.ResourceQubitization.resources(
+    ...     cmpr_ops=ops_tup,
+    ...     num_ctrl_wires=2,
+    ... )
+    {Reflection: 1, PrepSelPrep: 1}
     """
 
     @staticmethod

@@ -50,6 +50,11 @@ def _rotation_resources(epsilon=10e-3):
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+    
     Resources:
         The phase shift gate is equivalent to a Z-rotation upto some global phase,
         as defined from the following identity:
@@ -61,6 +66,12 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     .. seealso:: :class:`~.PhaseShift`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePhaseShift.resources()
+    {RZ: 1, GlobalPhase: 1}
     """
 
     @staticmethod
@@ -181,6 +192,11 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 class ResourceRX(qml.RX, re.ResourceOperator):
     r"""Resource class for the RX gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
@@ -191,6 +207,19 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     .. seealso:: :class:`~.RX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRX(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_rx": 1e-3}
+    >>> re.get_resources(re.ResourceRX(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
     @staticmethod
@@ -322,6 +351,11 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 class ResourceRY(qml.RY, re.ResourceOperator):
     r"""Resource class for the RY gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
@@ -332,6 +366,19 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     .. seealso:: :class:`~.RY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRY(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_ry": 1e-3}
+    >>> re.get_resources(re.ResourceRY(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
     @staticmethod
@@ -455,6 +502,11 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 class ResourceRZ(qml.RZ, re.ResourceOperator):
     r"""Resource class for the RZ gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
@@ -465,6 +517,19 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.RZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRZ(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_rz": 1e-3}
+    >>> re.get_resources(re.ResourceRZ(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}s
     """
 
     @staticmethod
@@ -587,6 +652,13 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 class ResourceRot(qml.Rot, re.ResourceOperator):
     r"""Resource class for the Rot-gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Any, Wires): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained according to the definition of the :class:`Rot` gate:
 
@@ -594,6 +666,12 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     .. seealso:: :class:`~.Rot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceRot.resources()
+    {RY: 1, RZ: 2}
     """
 
     @staticmethod

@@ -19,6 +19,11 @@ import pennylane.labs.resource_estimation as re
 class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
     r"""Resource class for the SingleExcitation gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following matrix into fundamental gates.
 
@@ -38,6 +43,12 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
     .. seealso:: :class:`~.SingleExcitation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSingleExcitation.resources()
+    {Adjoint(T): 2, Hadamard: 4, S: 2, Adjoint(S): 2, CNOT: 2, RZ: 1, RY: 1, T: 2}
     """
 
     @staticmethod
@@ -106,6 +117,11 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperator):
     r"""Resource class for the SingleExcitationMinus gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following matrix into fundamental gates.
 
@@ -125,6 +141,12 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
     .. seealso:: :class:`~.SingleExcitationMinus`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSingleExcitationMinus.resources()
+    {X: 4, ControlledPhaseShift: 2, CNOT: 2, CRY: 1}
     """
 
     @staticmethod
@@ -185,6 +207,11 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator):
     r"""Resource class for the SingleExcitationPlus gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following matrix into fundamental gates.
 
@@ -204,6 +231,12 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
     .. seealso:: :class:`~.SingleExcitationPlus`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSingleExcitationPlus.resources()
+    {X: 4, ControlledPhaseShift: 2, CNOT: 2, CRY: 1}
     """
 
     @staticmethod
@@ -264,6 +297,11 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     r"""Resource class for the DoubleExcitation gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following mapping into fundamental gates.
 
@@ -286,6 +324,12 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
     .. seealso:: :class:`~.DoubleExcitation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceDoubleExcitation.resources()
+    {Hadamard: 6, RY: 8, CNOT: 14}
     """
 
     @staticmethod
@@ -347,6 +391,11 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperator):
     r"""Resource class for the DoubleExcitationMinus gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following mapping into fundamental gates.
 
@@ -362,6 +411,12 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
     .. seealso:: :class:`~.DoubleExcitationMinus`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceDoubleExcitationMinus.resources()
+    {GlobalPhase: 1, DoubleExcitation: 1, C(Z,3,1,0): 2, C(PhaseShift,3,1,0): 2}
     """
 
     @staticmethod
@@ -417,6 +472,11 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator):
     r"""Resource class for the DoubleExcitationPlus gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following mapping into fundamental gates.
 
@@ -432,6 +492,12 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
     .. seealso:: :class:`~.DoubleExcitationPlus`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceDoubleExcitationPlus.resources()
+    {GlobalPhase: 1, DoubleExcitation: 1, C(Z,3,1,0): 2, C(PhaseShift,3,1,0): 2}
     """
 
     @staticmethod
@@ -487,6 +553,11 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
     r"""Resource class for the OrbitalRotation gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following mapping into fundamental gates.
 
@@ -499,6 +570,12 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 
     .. seealso:: :class:`~.OrbitalRotation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceOrbitalRotation.resources()
+    {FermionicSWAP: 2, SingleExcitation: 2}
     """
 
     @staticmethod
@@ -547,6 +624,11 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
     r"""Resource class for the FermionicSWAP gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are obtained by decomposing the following matrix into fundamental gates.
 
@@ -566,6 +648,12 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
     .. seealso:: :class:`~.FermionicSWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceFermionicSWAP.resources()
+    {Hadamard: 4, MultiRZ: 2, RX: 4, RZ: 2, GlobalPhase: 1}
     """
 
     @staticmethod
