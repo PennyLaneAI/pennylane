@@ -339,9 +339,11 @@ class TestCaptureWhileLoopDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(2))
 
-        [s, output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        [dynamic_shape, output] = jax.core.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3)
+        )
         expected = jax.numpy.array([0, 4, 8])
-        assert qml.math.allclose(s, 3)
+        assert qml.math.allclose(dynamic_shape, 3)
         assert jax.numpy.allclose(output, expected)
 
     def test_while_loop_dynamic_array_creation(self):
@@ -438,8 +440,8 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [s, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(s, 2)  # the initial size
+        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(dynamic_shape, 2)  # the initial size
         assert qml.math.allclose(a, jnp.array([11, 11]))  # 11 + 11 > 20 , 11 = 1 + 1+ 2 + 3+ 4
         assert qml.math.allclose(b, jnp.array([5, 5]))
 
@@ -460,8 +462,8 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(x0, y0)
 
         jaxpr = jax.make_jaxpr(workflow)(2)
-        [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
-        assert qml.math.allclose(s, 8)
+        [dynamic_shape, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
+        assert qml.math.allclose(dynamic_shape, 8)
         x_expected = jnp.array([1, 1, 2, 2, 2, 2, 4, 4])
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 2 * x_expected)
@@ -480,9 +482,9 @@ class TestCaptureWhileLoopDynamicShapes:
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [s1, s2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-        assert jnp.allclose(s1, 15)  # 3 * 5
-        assert jnp.allclose(s2, 3)
+        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(shape1, 15)  # 3 * 5
+        assert jnp.allclose(shape2, 3)
         expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
         assert jnp.allclose(a, expected)
         assert jnp.allclose(b, jnp.array([4, 4, 4]))
