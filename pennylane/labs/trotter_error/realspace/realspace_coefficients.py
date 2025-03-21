@@ -44,6 +44,44 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         * ``sum_node``: a node representing the sum of its two children
         * ``scalar_node``: a node representing the product of its child by a scalar
 
+    **Examples**
+
+    Building a node of type ``_NodeType.TENSOR``
+
+    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> import numpy as np
+    >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+    >>> node
+    alpha[idx0,idx1]
+
+    Building a node of type ``_NodeType.OUTER``
+
+    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> import numpy as np
+    >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
+    >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+    >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+    >>> parent
+    (alpha[idx0]) * (beta[idx1,idx2])
+
+    Building a node of type ``_NodeType.SUM``
+
+    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> import numpy as np
+    >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
+    >>> right_child = RealspaceCoeffs.tensor_node(np.array([4, 5, 6]), label="beta")
+    >>> parent = RealspaceCoeffs.sum_node(left_child, right_child)
+    >>> parent
+    (alpha[idx0]) + (beta[idx0])
+
+    Building a node of type ``_NodeType.SCALAR``
+
+    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> import numpy as np
+    >>> child = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+    >>> parent = RealspaceCoeffs.scalar_node(5, child)
+    >>> parent
+    5 * (alpha[idx0,idx1])
     """
 
     def __init__(
@@ -85,7 +123,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """Returns a ``RealspaceCoefs`` with node type ``TENSOR``, or ``FLOAT`` when the input tensor is a scalar.
+        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.TENSOR``, or ``_NodeType.FLOAT`` when the input tensor is a scalar.
 
         Args:
             tensor (ndarray): a tensor of coefficients
@@ -106,7 +144,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoeffs`` with node type ``SUM``.
+        """Returns a ``RealspaceCoeffs`` with node type ``_NodeType.SUM``.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -144,7 +182,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         l_child: RealspaceCoeffs,
         r_child: RealspaceCoeffs,
     ) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoeffs`` with node type ``OUTER``.
+        """Returns a ``RealspaceCoeffs`` with node type ``_NodeType.OUTER``.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -172,7 +210,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``TENSOR``, or ``FLOAT`` when the input tensor is a scalar.
+        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.TENSOR``, or ``_NodeType.FLOAT`` when the input tensor is a scalar.
 
         Args:
             tensor (ndarray): a tensor of coefficients
@@ -204,7 +242,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` with node type ``SCALAR``.
+        """Returns a ``RealspaceCoefs`` with node type ``_NodeType.SCALAR``.
 
         Args:
             scalar (float): a scalar to multiply ``child`` by
