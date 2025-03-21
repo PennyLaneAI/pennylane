@@ -74,13 +74,13 @@ class ResourceTrotterProduct(
         * first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
 
     Resources:
-        The resources are defined according to the recurrsive formula presented above. Specifically, each
+        The resources are defined according to the recursive formula presented above. Specifically, each
         operator in the :code:`first_order_expansion` is called a number of times given by the formula:
 
         .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
-        of the recurrsive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
+        of the recursive formula. Those counts are further simplified by grouping like terms as:
 
         .. math::
 

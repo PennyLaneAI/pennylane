@@ -70,8 +70,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            This operation is self-adjoint, so the resources of the adjoint operation is also an empty dictionary.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated

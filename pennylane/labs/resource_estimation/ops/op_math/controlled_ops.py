@@ -66,8 +66,8 @@ class ResourceCH(qml.CH, re.ResourceOperator):
                     \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
                 \end{align}
 
-            Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
-            :class:`~.ResourceHadamard` gates and a :class:`~.ResourceCNOT` gate.
+            Specifically, the resources are given by two :class:`~.ResourceRY`, two
+            :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
         """
         gate_types = {}
 
