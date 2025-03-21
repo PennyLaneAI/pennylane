@@ -216,7 +216,7 @@ Transforms
 One of the core features of PennyLane is modularity, which has allowed users to 
 transform QNodes in a NumPy-like way and to create their own transforms with ease. 
 Your favourite transforms will still work with program-capture enabled (including
-custom transforms), but **decorating QNodes with just ``@transform_name`` will not 
+custom transforms), but decorating QNodes with just ``@transform_name`` **will not 
 work** and will give a vague error. Additionally, decorating QNodes with the experimental 
 :func:`~.pennylane.capture.expand_plxpr_transforms` decorator is required.
 
