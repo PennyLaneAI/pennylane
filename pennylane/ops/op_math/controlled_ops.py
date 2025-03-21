@@ -2142,14 +2142,14 @@ class CRZ(ControlledOp):
 
 
 def _crz_resources():
-    return {qml.PhaseShift: 2, qml.CNOT: 2}
+    return {qml.RZ: 2, qml.CNOT: 2}
 
 
 @register_resources(_crz_resources)
 def _crz(phi: TensorLike, wires: WiresLike, **__):
-    qml.PhaseShift(phi / 2, wires=wires[1])
+    qml.RZ(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
-    qml.PhaseShift(-phi / 2, wires=wires[1])
+    qml.RZ(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
 
 
