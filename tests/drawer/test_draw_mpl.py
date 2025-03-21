@@ -68,7 +68,7 @@ def test_standard_use():
     texts = [t.get_text() for t in ax.texts[3:]]
     assert "RX" in texts
     assert "RY" in texts
-    plt.close()
+    plt.close("all")
 
 
 def test_fig_argument():
@@ -78,6 +78,7 @@ def test_fig_argument():
     output_fig, ax = qml.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
     assert ax.get_figure() == fig
     assert output_fig == fig
+    plt.close("all")
 
 
 class TestLevelExpansionStrategy:
@@ -152,6 +153,7 @@ class TestLevelExpansionStrategy:
 
         with pytest.warns(UserWarning, match="Multiple tapes constructed"):
             qml.draw_mpl(circuit)()
+        plt.close("all")
 
 
 class TestKwargs:
@@ -163,7 +165,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
         for t in ax.texts:
             assert t.get_fontsize() == 20
-        plt.close()
+        plt.close("all")
 
     def test_decimals(self):
         """Test decimals changes operation labelling"""
@@ -173,7 +175,7 @@ class TestKwargs:
         texts = [t.get_text() for t in ax.texts[3:]]
         assert "RX\n(1.23)" in texts
         assert "RY\n(2.34)" in texts
-        plt.close()
+        plt.close("all")
 
     def test_label_options(self):
         """Test label options modifies label style."""
@@ -185,7 +187,7 @@ class TestKwargs:
         for l in ax.texts[:3]:  # three labels
             assert l.get_color() == "purple"
             assert l.get_fontsize() == 20
-        plt.close()
+        plt.close("all")
 
     def test_hide_wire_labels(self):
         """Test that wire labels are skipped with show_wire_labels=False."""
@@ -200,7 +202,7 @@ class TestKwargs:
         assert fig.get_figwidth() == 4
         assert fig_with_labels.get_figwidth() == 4 + 1
 
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize(
         "notches, n_patches",
@@ -220,7 +222,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
 
         assert len(ax.patches) == n_patches
-        plt.close()
+        plt.close("all")
 
     def test_black_white_is_default_style(self):
         """Test that if no style is specified, the black_white style is the default for mpl_draw,
@@ -278,7 +280,7 @@ class TestWireBehaviour:
         assert ax.texts[0].get_text() == "1.23"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "0"
-        plt.close()
+        plt.close("all")
 
     def test_empty_wires(self):
         """Test empty wires do not appear by default"""
@@ -289,7 +291,7 @@ class TestWireBehaviour:
         assert len(ax.texts) == 2  # one wire label and one gate label
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == "RX"
-        plt.close()
+        plt.close("all")
 
     def test_show_all_wires(self):
         """Test show_all_wires=True displays empty wires."""
@@ -302,7 +304,7 @@ class TestWireBehaviour:
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "1.23"
-        plt.close()
+        plt.close("all")
 
     def test_wire_order_not_on_device(self):
         """Test when ``wire_order`` priority by requesting ``show_all_wires`` with
@@ -317,7 +319,7 @@ class TestWireBehaviour:
         assert ax.texts[0].get_text() == "2"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "0"
-        plt.close()
+        plt.close("all")
 
     def test_uniform_wire_options(self):
         """Test wire options modifies wire styling"""
@@ -328,7 +330,7 @@ class TestWireBehaviour:
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
-        plt.close()
+        plt.close("all")
 
     def test_individual_wire_options(self):
         """Test wire option styling when individual wires have their own options specified"""
@@ -402,7 +404,7 @@ class TestWireBehaviour:
                 assert w.get_linestyle() == "-"
                 assert w.get_linewidth() == 5
 
-        plt.close()
+        plt.close("all")
 
     def test_individual_wire_options_with_string_labels(self):
         """Test that individual wire options work with string wire labels"""
@@ -477,7 +479,7 @@ class TestMPLIntegration:
             assert l.get_color() == rgba_green
 
         qml.drawer.use_style("black_white")
-        plt.close()
+        plt.close("all")
 
     def test_style_with_matplotlib(self):
         """Test matplotlib styles impact figure styling for draw_mpl(circuit, style="rcParams")."""
@@ -495,7 +497,7 @@ class TestMPLIntegration:
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
         qml.drawer.use_style("black_white")
-        plt.close()
+        plt.close("all")
 
     def test_style_restores_settings(self):
         """Test that selecting style as draw_mpl(circuit, style=None) does not modify the users
@@ -542,7 +544,7 @@ def test_draw_mpl_supports_qfuncs():
     assert len(ax.texts) == 2
     assert ax.texts[0].get_text() == "0"
     assert ax.texts[1].get_text() == "RX"
-    plt.close()
+    plt.close("all")
 
 
 def test_draw_mpl_with_qfunc_warns_with_level():
@@ -626,7 +628,7 @@ def test_applied_transforms():
     assert len(ax.patches) == 1  # single pauli x gate
     assert len(ax.texts) == 2  # one wire label, one gate label
 
-    plt.close()
+    plt.close("all")
 
 
 @pytest.mark.parametrize("use_qnode", (True, False))

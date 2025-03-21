@@ -56,7 +56,7 @@ class TestInitialization:
         for wire, line in enumerate(lines):
             assert line.get_xdata() == (-1, n_layers)
             assert line.get_ydata() == (wire, wire)
-        plt.close()
+        plt.close("all")
 
     def test_figsize_classical_wires(self):
         """Test the figsize is correct if classical wires are present."""
@@ -81,7 +81,7 @@ class TestInitialization:
 
         assert drawer.fig.get_figwidth() == 5
         assert drawer.fig.get_figheight() == 5
-        plt.close()
+        plt.close("all")
 
     def test_customfigure(self):
         """Tests a custom figure is used"""
@@ -90,7 +90,7 @@ class TestInitialization:
         drawer = MPLDrawer(1, {0: 0}, fig=fig)
 
         assert drawer.fig == fig
-        plt.close()
+        plt.close("all")
 
     def test_config_params_set(self):
         """Tests sizing hidden variables are set."""
@@ -108,7 +108,7 @@ class TestInitialization:
         assert drawer._notch_width == 0.04
         assert drawer._notch_height == 0.25
         assert drawer._notch_style == "round, pad=0.05"
-        plt.close()
+        plt.close("all")
 
     def test_wires_formatting(self):
         """Tests wires formatting with options"""
@@ -121,7 +121,7 @@ class TestInitialization:
             assert line.get_linewidth() == 3
             assert line.get_color() == rgba_red
 
-        plt.close()
+        plt.close("all")
 
     def test_fontsize(self):
         """Test fontsize can be get and set via property."""
@@ -134,7 +134,7 @@ class TestInitialization:
 
         assert drawer._fontsize == 10
         assert drawer.fontsize == 10
-        plt.close()
+        plt.close("all")
 
 
 class TestLabels:
@@ -157,7 +157,7 @@ class TestLabels:
 
             assert actual_label.get_position() == (-1.5, wire)
 
-        plt.close()
+        plt.close("all")
 
     def test_labels_formatting(self):
         """Test labels are formatted with text options."""
@@ -175,7 +175,7 @@ class TestLabels:
             assert text.get_fontsize() == 10
             assert text.get_color() == rgba_red
 
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize("n_layers", [1, 4])
     def test_crop_wire_labels(self, n_layers):
@@ -236,7 +236,7 @@ class TestBoxGate:
         assert text.get_text() == "X"
         assert text.get_position() == (0, 0)
         assert text.get_zorder() == 3
-        plt.close()
+        plt.close("all")
 
     def test_multiwire_box(self):
         """tests a gate spanning multiple wires."""
@@ -257,7 +257,7 @@ class TestBoxGate:
         assert text.get_text() == "Tall Gate"
         assert text.get_position() == (0, 1.0)
         assert text.get_zorder() == 3
-        plt.close()
+        plt.close("all")
 
     def test_notch_standard_styling(self):
         """Test notch styling is correct"""
@@ -276,7 +276,7 @@ class TestBoxGate:
             assert notch.get_height() == drawer._notch_height
             assert notch.get_zorder() == 1
             assert notch.get_boxstyle().pad == 0.05
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize(
         "wires, n_notches", [((0, 1, 2, 3), 0), ((0,), 0), ((0, 2), 4), ((0, 1, 3), 6)]
@@ -288,7 +288,7 @@ class TestBoxGate:
         drawer.box_gate(layer=0, wires=wires)
 
         assert len(drawer.ax.patches) == (n_notches + 1)
-        plt.close()
+        plt.close("all")
 
     def test_no_active_wire_notches(self):
         """Test active wire notches deactivated by keyword."""
@@ -297,7 +297,7 @@ class TestBoxGate:
 
         # only one patch for big box, no patches for notches
         assert len(drawer.ax.patches) == 1
-        plt.close()
+        plt.close("all")
 
     def test_extra_width(self):
         """tests a box with added width."""
@@ -321,7 +321,7 @@ class TestBoxGate:
         for x, notch in zip(xs, drawer.ax.patches[1:]):
             assert notch.get_x() == x
 
-        plt.close()
+        plt.close("all")
 
     def test_box_formatting(self):
         """Tests that box_options influences the rectangle"""
@@ -341,7 +341,7 @@ class TestBoxGate:
         assert drawer.ax.patches[0].get_zorder() == 5
         for n in drawer.ax.patches[1:]:
             assert n.get_zorder() == 4
-        plt.close()
+        plt.close("all")
 
     def test_text_formatting(self):
         """Tests rotated text"""
@@ -354,7 +354,7 @@ class TestBoxGate:
         text = drawer.ax.texts[0]
         assert text.get_rotation() == 90.0
         assert text.get_color() == rgba_red
-        plt.close()
+        plt.close("all")
 
 
 class TestCTRL:
@@ -377,7 +377,7 @@ class TestCTRL:
 
         assert circle.width == 0.2
         assert circle.center == (0, 0)
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_multi_wires(self):
         """Tests two control wires with no target."""
@@ -398,7 +398,7 @@ class TestCTRL:
         for wire, circle in zip(ctrl_wires, circles):
             assert circle.width == 0.2
             assert circle.center == (0, wire)
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_on_zero(self):
         """Tests a control on zero circle is open"""
@@ -415,7 +415,7 @@ class TestCTRL:
 
         assert circ.center == (0, 0)
         assert circ.width == 0.2
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_control_values_error(self):
         """Tests a ValueError is raised if different number of wires and control_values."""
@@ -425,7 +425,7 @@ class TestCTRL:
         with pytest.raises(ValueError, match="`control_values` must be the same length"):
             drawer.ctrl(0, (0, 1), control_values=True)
 
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_formatting(self):
         """Tests two control wires with no target."""
@@ -449,7 +449,7 @@ class TestCTRL:
         assert open_circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert open_circ.get_linewidth() == 4
 
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_circ(self):
         """Test only the ``_ctrl_circ`` private method."""
@@ -463,7 +463,7 @@ class TestCTRL:
         assert circ.center == (0, 0)
         assert circ.width == 0.2
 
-        plt.close()
+        plt.close("all")
 
     def test_ctrlo_circ(self):
         """Test only the ``ctrlo_circ`` private method."""
@@ -475,7 +475,7 @@ class TestCTRL:
         assert circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert circ.get_edgecolor() == to_rgba(plt.rcParams["lines.color"])
         assert circ.get_linewidth() == plt.rcParams["lines.linewidth"]
-        plt.close()
+        plt.close("all")
 
     def test_ctrl_target(self):
         """Tests target impacts line extent"""
@@ -495,7 +495,7 @@ class TestCTRL:
 
         assert circle.width == 0.2
         assert circle.center == (0, 0)
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize(
         "control_wires,target_wires",
@@ -511,7 +511,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, {i: i for i in range(4)})
         with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
             drawer.ctrl(0, control_wires, target_wires)
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
     def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
@@ -519,7 +519,7 @@ class TestCTRL:
         with warnings.catch_warnings(record=True) as w:
             drawer.ctrl(0, control_wires, target_wires)
         assert len(w) == 0
-        plt.close()
+        plt.close("all")
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
@@ -540,7 +540,7 @@ class TestCTRL:
         assert circle.width == 0.6
         assert circle.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(circle.get_edgecolor())
-        plt.close()
+        plt.close("all")
 
     def test_target_x_color(self):
         """Test the color of target_x."""
@@ -559,7 +559,7 @@ class TestCTRL:
         assert circle.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert circle.get_edgecolor() == rgba_red
 
-        plt.close()
+        plt.close("all")
 
     def test_CNOT(self):
         """Tests the CNOT method"""
@@ -584,7 +584,7 @@ class TestCTRL:
         assert target_circle.width == 0.6
         assert target_circle.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(target_circle.get_edgecolor())
-        plt.close()
+        plt.close("all")
 
     def test_CNOT_control_values(self):
         """Tests the ``control_values`` keyword for CNOT."""
@@ -600,7 +600,7 @@ class TestCTRL:
         assert ctrl_circ1.get_facecolor() == to_rgba(plt.rcParams["lines.color"])
         # second facecolor should match the background
         assert ctrl_circ2.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
-        plt.close()
+        plt.close("all")
 
     def test_CNOT_color(self):
         """Tests the color of CNOT."""
@@ -620,7 +620,7 @@ class TestCTRL:
         target_circle = drawer.ax.patches[1]
         assert target_circle.get_edgecolor() == rgba_red
 
-        plt.close()
+        plt.close("all")
 
 
 class TestSWAP:
@@ -637,7 +637,7 @@ class TestSWAP:
 
         assert l1.get_data() == ((-0.2, 0.2), (-0.2, 0.2))
         assert l2.get_data() == ((-0.2, 0.2), (0.2, -0.2))
-        plt.close()
+        plt.close("all")
 
     def test_SWAP(self):
         """Tests the SWAP method."""
@@ -653,7 +653,7 @@ class TestSWAP:
         assert x_lines[1].get_data() == ((-0.2, 0.2), (0.2, -0.2))
         assert x_lines[2].get_data() == ((-0.2, 0.2), (1.8, 2.2))
         assert x_lines[3].get_data() == ((-0.2, 0.2), (2.2, 1.8))
-        plt.close()
+        plt.close("all")
 
     def test_SWAP_options(self):
         """Tests that SWAP can be colored."""
@@ -667,7 +667,7 @@ class TestSWAP:
             assert line.get_color() == rgba_red
             assert line.get_linewidth() == 3
 
-        plt.close()
+        plt.close("all")
 
 
 class TestMeasure:
@@ -694,7 +694,7 @@ class TestMeasure:
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
         assert len(drawer.ax.texts) == 0
-        plt.close()
+        plt.close("all")
 
     def test_measure_multiple_wires(self):
         """Tests the measure method when multiple wires are provided."""
@@ -718,7 +718,7 @@ class TestMeasure:
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
         assert len(drawer.ax.texts) == 0
-        plt.close()
+        plt.close("all")
 
     def test_measure_classical_wires(self):
         """Tests the measure method when multiple wires are provided."""
@@ -742,7 +742,7 @@ class TestMeasure:
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
         assert len(drawer.ax.texts) == 0
-        plt.close()
+        plt.close("all")
 
     def test_measure_text(self):
         """Test adding a postselection label to a measure box."""
@@ -751,7 +751,7 @@ class TestMeasure:
         assert len(drawer.ax.texts) == 1
         assert drawer.ax.texts[0].get_text() == "0"
         assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.225)
-        plt.close()
+        plt.close("all")
 
     def test_measure_formatted(self):
         """Tests you can color the measure box"""
@@ -775,7 +775,7 @@ class TestMeasure:
         assert arrow.get_edgecolor() == rgba_green
         assert arrow.get_linewidth() == 0.5
 
-        plt.close()
+        plt.close("all")
 
 
 class TestAutosize:
@@ -812,7 +812,7 @@ class TestAutosize:
         assert t.get_rotation() == 0
         assert t.get_fontsize() == drawer._fontsize
 
-        plt.close()
+        plt.close("all")
 
     def test_autosize_one_wire(self):
         """Test case where the box is on only one wire.  The text should still
@@ -826,7 +826,7 @@ class TestAutosize:
 
         assert self.text_in_box(drawer)
 
-        plt.close()
+        plt.close("all")
 
     def test_autosize_multiwires(self):
         """Test case where the box is on multiple wires.  The text should
@@ -840,7 +840,7 @@ class TestAutosize:
 
         assert self.text_in_box(drawer)
 
-        plt.close()
+        plt.close("all")
 
     def test_multiline_text_single_wire(self):
         """Test case where the box is on one wire and the text is skinny and tall.
@@ -854,7 +854,7 @@ class TestAutosize:
 
         assert self.text_in_box(drawer)
 
-        plt.close()
+        plt.close("all")
 
     def text_tall_multitline_text_multiwires(self):
         """Test case where the box is on mutiple wires and the text is skinny and tall.
@@ -874,7 +874,7 @@ class TestAutosize:
 
         assert self.text_in_box(drawer)
 
-        plt.close()
+        plt.close("all")
 
     def test_wide_multline_text_multiwires(self):
         """Test case where the box is on multiple wires and text is fat, tall,
@@ -885,7 +885,7 @@ class TestAutosize:
 
         assert self.text_in_box(drawer)
 
-        plt.close()
+        plt.close("all")
 
 
 class TestClassicalWires:
@@ -913,7 +913,7 @@ class TestClassicalWires:
             "foreground": plt.rcParams["figure.facecolor"],
         }
 
-        plt.close()
+        plt.close("all")
 
     def test_cwire_join(self):
         """Test the cwire join method."""
@@ -927,7 +927,7 @@ class TestClassicalWires:
         assert eraser.get_ydata() == (1.25, 1.25)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
-        plt.close()
+        plt.close("all")
 
     def test_cwire_join_erase_right(self):
         """Test the cwire join method."""
@@ -941,7 +941,7 @@ class TestClassicalWires:
         assert eraser.get_ydata() == (1, 1)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
-        plt.close()
+        plt.close("all")
 
 
 class TestCond:
@@ -964,7 +964,7 @@ class TestCond:
             ((0.97, 0.97), (0.03, 1)),
         ]
         assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
-        plt.close()
+        plt.close("all")
 
     def test_cond_two_ctrl_wires(self):
         """Tests cond from two separated wires."""
@@ -985,7 +985,7 @@ class TestCond:
             ((0.375, 0.97), (1.97, 1.97)),
             ((0.375, 0.97), (2.03, 2.03)),
         ]
-        plt.close()
+        plt.close("all")
 
     def test_cond_two_ctrl_wires_upward(self):
         """Test cond when the conditional operation is above the control wires."""
@@ -1004,7 +1004,7 @@ class TestCond:
             ((0.375, 0.97), (0.97, 0.97)),
             ((0.375, 0.97), (1.03, 1.03)),
         ]
-        plt.close()
+        plt.close("all")
 
     @pytest.mark.parametrize(
         "ctrl_wires, target_wires",
@@ -1020,4 +1020,4 @@ class TestCond:
         drawer = MPLDrawer(wire_map={i: i for i in range(4)}, n_layers=2)
         with pytest.raises(ValueError, match="Cannot draw interspersed mid-circuit measurements"):
             drawer.cond(layer=1, measured_layer=0, wires=ctrl_wires, wires_target=target_wires)
-        plt.close()
+        plt.close("all")
