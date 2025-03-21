@@ -165,7 +165,7 @@ Array(0.9950042, dtype=float32)
 Parameter broadcasting and vmap
 -------------------------------
 
-Parameter broadcasting is generally not compatible with program-capture. There are 
+Parameter-broadcasting is generally not compatible with program-capture. There are 
 cases that magically work, but one shouldn't extrapolate beyond those particular 
 cases.
 
