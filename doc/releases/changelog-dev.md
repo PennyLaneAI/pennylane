@@ -8,6 +8,7 @@
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
   [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
@@ -114,6 +115,9 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
+  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
@@ -180,6 +184,9 @@
 * A graph-based decomposition solver has been implemented that solves for the optimal decomposition
   rule to use for an operator towards a target gate set.
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+  [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
+  [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
 <h3>Improvements 🛠</h3>
   
