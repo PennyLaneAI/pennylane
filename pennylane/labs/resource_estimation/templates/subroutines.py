@@ -780,6 +780,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
     @staticmethod
     def resources_for_ui(cmpr_ops, **kwargs):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
+
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
         'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
