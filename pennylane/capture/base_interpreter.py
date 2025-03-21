@@ -696,6 +696,7 @@ def flattened_for(
     res = init_state
     for i in range(start, stop, step):
         res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
+        # separate abstract shapes from normal results so we can put the index in between
         abstract_shapes = res[:num_abstract_shapes]
         res = res[num_abstract_shapes:]
     return abstract_shapes + res

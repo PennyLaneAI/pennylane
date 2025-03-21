@@ -328,7 +328,10 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
         import jax  # pylint: disable=import-outside-toplevel
 
+        # need in_tree to include index so flat_fn will repack args correctly
         flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
+
+        # slice out the index so shape_locations indexes from non-index args and results
         flat_args = flat_args[1:]
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
@@ -352,12 +355,12 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         except ValueError as e:
             handle_jaxpr_error(e, (self.body_fn,), self.allow_array_resizing, "for_loop")
 
-        validation = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
-        if validation:
+        error_msg = validate_no_resizing_returns(jaxpr_body_fn.jaxpr, shape_locations, "for_loop")
+        if error_msg:
             if allow_array_resizing == "auto":
                 # didn't work, so try with array resizing.
                 return self._get_jaxpr(init_state, allow_array_resizing=True)
-            raise ValueError(validation)
+            raise ValueError(error_msg)
 
         assert flat_fn.out_tree
         return jaxpr_body_fn, abstract_shapes, flat_args, flat_fn.out_tree
