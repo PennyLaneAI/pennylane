@@ -24,12 +24,39 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.unit
+def test_fixed_alt_decomps_not_available():
+    """Test that a TypeError is raised when graph is disabled and
+    fixed_decomps or alt_decomps is used."""
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(*_, **__):
+        raise NotImplementedError
+
+    tape = qml.tape.QuantumScript([])
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
+
+
+@pytest.mark.unit
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_callable_gate_set_not_available():
+    """Tests that a callable gate set is not available with graph enabled."""
+
+    tape = qml.tape.QuantumScript([])
+    with pytest.raises(TypeError, match="Specifying gate_set as a function"):
+        qml.transforms.decompose(tape, gate_set=lambda op: True)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestTransformDecompose:
 
     def test_gate_names_gateset(self):
         """Test that the string representation of the gate_set works with the new decomposition system."""
-
-        qml.decomposition.enable_graph()
 
         @partial(
             qml.transforms.decompose,
@@ -44,12 +71,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_gateset_with_custom_rules(self):
         """Test the gate_set argument with custom decomposition rules."""
-
-        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
         def isingxx_decomp(phi, wires, **__):
@@ -86,12 +109,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 12, "RX": 7, "GlobalPhase": 6, "CZ": 3}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_gate_types_gateset(self):
         """Test that the PennyLane's Operator works with the new decomposition system."""
-
-        qml.decomposition.enable_graph()
 
         @partial(
             qml.transforms.decompose,
@@ -106,12 +125,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 2, "RX": 1, "GlobalPhase": 1, "CNOT": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_fixed_decomps(self):
         """Test the fixed_decomps argument with the new decomposition system."""
-
-        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot(wires, **__):
@@ -130,12 +145,8 @@ class TestTransformDecompose:
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_alt_decomps_single(self):
         """Test the alt_decomps argument with a single decomposition rules."""
-
-        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot(wires, **__):
@@ -154,12 +165,8 @@ class TestTransformDecompose:
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_alt_decomps_multiple(self):
         """Test the alt_decomps argument with multiple decomposition rules."""
-
-        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot1(wires, **__):
@@ -188,12 +195,8 @@ class TestTransformDecompose:
         expected_resources = {"Hadamard": 2, "CZ": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_alt_decomps_custom_op(self):
         """Test the custom operator with the new decomposition system."""
-
-        qml.decomposition.enable_graph()
 
         class CustomOp(qml.operation.Operation):
 
@@ -230,12 +233,8 @@ class TestTransformDecompose:
         expected_resources = {"RZ": 2, "CNOT": 1}
         assert qml.specs(circuit)()["resources"].gate_types == expected_resources
 
-        qml.decomposition.disable_graph()
-
     def test_qft_template(self):
         """Test the QFT template with the new decomposition system."""
-
-        qml.decomposition.enable_graph()
 
         @partial(
             qml.transforms.decompose,
@@ -248,72 +247,3 @@ class TestTransformDecompose:
 
         expected_resources = {"RZ": 57, "RX": 6, "GlobalPhase": 21, "CNOT": 39}
         assert qml.specs(circuit)([*range(6)])["resources"].gate_types == expected_resources
-
-        qml.decomposition.disable_graph()
-
-    @pytest.mark.unit
-    def test_error_disable_graphd_fixed(self):
-        """Test that a TypeError is raised when graph is disabled and fixed_decomps is used."""
-
-        qml.decomposition.disable_graph()
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-            circuit()
-
-    @pytest.mark.unit
-    def test_error_disable_graphd_alt(self):
-        """Test that a TypeError is raised when the graph-based decomposition and alt_decomps is used."""
-
-        qml.decomposition.disable_graph()
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @partial(qml.transforms.decompose, alt_decomps={qml.CNOT: [my_cnot]})
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-            circuit()
-
-    @pytest.mark.unit
-    def test_error_disable_graphd_decomps(self):
-        """Test that a TypeError is raised when the graph-based decomposition with fixed and alt decomps is used."""
-
-        qml.decomposition.disable_graph()
-
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires, **__):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
-
-        @partial(
-            qml.transforms.decompose,
-            fixed_decomps={qml.CNOT: my_cnot},
-            alt_decomps={qml.CNOT: [my_cnot]},
-        )
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-            circuit()
