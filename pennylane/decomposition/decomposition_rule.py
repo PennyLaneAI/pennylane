@@ -30,7 +30,9 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
-def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = None):
+def register_resources(
+    resources: Callable | dict, qfunc: Optional[Callable] = None
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Bind a quantum function to its required resources.
 
     .. note::

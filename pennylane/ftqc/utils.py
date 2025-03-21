@@ -39,9 +39,9 @@ class QubitMgr:
 
             import pennylane as qml
             from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
-            dev = qml.device('default.qubit')
+            dev = qml.device('null.qubit')
 
-            @qml.qnode(qml.device("null.qubit"), mcm_method="one-shot")
+            @qml.qnode(dev, mcm_method="one-shot")
             def circuit_mbqc(start_state, angles):
                 q_mgr = QubitMgr(num_qubits=5, start_idx=0)
                 input_idx = q_mgr.acquire_qubit()
