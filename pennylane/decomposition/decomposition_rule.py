@@ -37,7 +37,7 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using ``qml.register_resources``.
@@ -100,12 +100,12 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
 
         In many cases, the resource requirement of an operator's decomposition is not static; some
         operators have properties that directly affect the resource estimate of its decompositions,
-        i.e., the types of gates that exists in the decomposition and their number of occurrences.
-        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
-        on the number of wires it acts on.
+        i.e., the types of gates that exist in the decomposition and their number of occurrences.
 
         For each operator class, the set of parameters that affects the type of gates and their
-        number of occurrences in its decompositions is given by the ``resource_keys`` attribute:
+        number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
+        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
+        on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
 
         >>> qml.CNOT.resource_keys
         {}
@@ -233,25 +233,25 @@ _decompositions = defaultdict(list)
 """dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
 
 
-def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using :func:`~pennylane.register_resources`
 
     In the new system of decompositions, multiple decomposition rules can be registered for the
     same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
-    decomposition rules that may be chosen if they lead to a more efficient decomposition.
+    decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
-        op: the operator type for which new decomposition rules are specified.
-        decomps (DecompositionRule): new decomposition rules to add to the given ``op``.
+        op_type: the operator type for which new decomposition rules are specified.
+        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
             ``qml.register_resources``.
 
@@ -284,7 +284,7 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
     These two new decomposition rules for ``qml.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
     for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose`` transform.
+    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
 
     .. seealso:: :func:`~pennylane.transforms.decompose`
 
@@ -294,21 +294,21 @@ def add_decomps(op: Type[Operator], *decomps: DecompositionRule) -> None:
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    _decompositions[op].extend(decomps)
+    _decompositions[op_type].extend(decomps)
 
 
-def list_decomps(op: Type[Operator]) -> list[DecompositionRule]:
+def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
-        op: the operator class to retrieve decomposition rules for.
+        op_type: the operator class to retrieve decomposition rules for.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -335,24 +335,24 @@ def list_decomps(op: Type[Operator]) -> list[DecompositionRule]:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return _decompositions[op][:]
+    return _decompositions[op_type][:]
 
 
-def has_decomp(op: Type[Operator]) -> bool:
+def has_decomp(op_type: Type[Operator]) -> bool:
     """Check whether an operator has decomposition rules defined.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
-        doing decompositions is generally more performant and accommodates multiple alternative
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
-        op: the operator class to check for decomposition rules.
+        op_type: the operator class to check for decomposition rules.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    return op in _decompositions and len(_decompositions[op]) > 0
+    return op_type in _decompositions and len(_decompositions[op_type]) > 0
