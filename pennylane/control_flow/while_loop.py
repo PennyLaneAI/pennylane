@@ -60,7 +60,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     Args:
         cond_fn (Callable): the condition function in the while loop
         allow_array_resizing (Literal["auto", True, False]): How to handle arrays
-            with dynamic shapes that change between iterations. Defaults to `"auto"`. 
+            with dynamic shapes that change between iterations. Defaults to `"auto"`.
 
     Returns:
         Callable: A wrapper around the while-loop function.
