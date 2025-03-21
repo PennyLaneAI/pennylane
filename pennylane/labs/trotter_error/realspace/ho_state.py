@@ -31,6 +31,24 @@ class HOState:
 
     ``HOState`` should be instantiated from the ``from_dict`` and ``from_scipy`` class methods.
 
+    **Examples**
+
+    Building an ``HOState`` from a dictionary
+
+    >>> from pennylane.labs.trotter import HOState
+    >>> n_modes = 3
+    >>> gridpoints = 5
+    >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
+    >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+
+    Building an ``HOState`` from a ``csr_array``
+
+    >>> from scipy.sparse import csr_array
+    >>> import numpy as np
+    >>> gridpoints = 2
+    >>> n_modes = 2
+    >>> state_vector = csr_array(np.array([0, 1, 0, 0]))
+    >>> state = HOState.from_scipy(n_modes, gridpoints, state_vector)
     """
 
     def __init__(self, modes: int, gridpoints: int, vector: csr_array):
@@ -119,6 +137,11 @@ class HOState:
 
         Returns:
             HOState: an ``HOState` representing the zero state
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import HOState
+        >>> zero = HOState.zero_state(5, 10)
         """
         return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
 
@@ -141,6 +164,16 @@ class HOState:
 
         Returns:
             float: the dot product of the two states
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import HOState
+        >>> n_modes = 3
+        >>> gridpoints = 5
+        >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
+        >>> state1 = HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> state1.dot(state1)
+        2
         """
         if self.dim != other.dim:
             raise ValueError(
@@ -160,6 +193,7 @@ class VibronicHO:
         ho_states (Sequence[HOState]): a sequence of ``HOState`` objects representing the harmonic oscillator states
 
     **Example**
+
     >>> from pennylane.labs.trotter import HOState, VibronicHO
     >>> n_modes = 3
     >>> n_states = 2
@@ -236,6 +270,10 @@ class VibronicHO:
 
         Returns:
             VibronicHO: a ``VibronicHO`` representing the zero state
+
+        **Example**
+
+        >>> VibronicHO.zero_state(2, 3, 5)
         """
         return cls(
             states=states,
@@ -252,6 +290,18 @@ class VibronicHO:
 
         Returns:
             float: the dot product of the two states
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import HOState, VibronicHO
+        >>> n_modes = 3
+        >>> n_states = 2
+        >>> gridpoints = 5
+        >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
+        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> vo_state = VibronicHO(n_states, n_modes, gridpoints, [state, state])
+        >>> vo_state.dot(vo_state)
+        4
         """
 
         return sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states))
