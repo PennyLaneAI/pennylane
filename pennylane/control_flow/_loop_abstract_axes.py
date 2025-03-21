@@ -67,7 +67,7 @@ def get_dummy_arg(arg):
     """If any axes are abstract, replace with an empty numpy array.
 
     Even if abstracted_axes specifies two dimensions as having different dynamic shapes,
-    if they have the dimension is the same tracer, jaxpr will still treat them as the same shape.
+    if the dimension is the same tracer, jax will still treat them as the same shape.
 
     .. code-block:: python
 
