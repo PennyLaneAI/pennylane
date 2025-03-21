@@ -109,10 +109,14 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     """Resource class for the :class:`~.ControlledSequence` template.
 
+    Args:
+        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        control (Union[Wires, Sequence[int], or int]): the wires to be used for control
+
     Resource Parameters:
-        base_class (ResourceOperator): The type of the operation corresponding to the operator.
-        base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
-        num_ctrl_wires (int): the number of control wires
+        * base_class (ResourceOperator): The type of the operation corresponding to the operator.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
+        * num_ctrl_wires (int): the number of control wires
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
@@ -147,13 +151,11 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource Parameters:
-            base_class (ResourceOperator): The type of the operation corresponding to the operator.
-            base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
-            num_ctrl_wires (int): the number of control wires
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (ResourceOperator): The type of the operation corresponding to the operator.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
+                * num_ctrl_wires (int): the number of control wires
         """
         return {
             "base_class": type(self.base),
@@ -192,7 +194,17 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
 
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
-    """Resource class for the PhaseAdder template.
+    """Resource class for the :class:`~.PhaseAdder` template.
+
+    Args:
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
+            for a binary representation of the value being targeted, :math:`x`. In some cases an additional
+            wire is needed, see usage details below. The number of wires also limits the maximum
+            value for `mod`.
+        mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple.
 
     Resource Parameters:
         * mod (int): the module for performing the addition
@@ -262,7 +274,9 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
             num_x_wires (int): the number of wires the operation acts on
 
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * mod (int): the module for performing the addition
+                * num_x_wires (int): the number of wires the operation acts on
         """
         return {
             "mod": self.hyperparameters["mod"],
@@ -359,8 +373,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: A dictionary containing the resource parameters.
-
+            dict: A dictionary containing the resource parameters:
                 * mod (int): The modulus for performing the multiplication.
                 * num_work_wires (int): The number of work wires used.
                 * num_x_wires (int): The number of wires the operation acts on.
@@ -390,7 +403,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
 
 class ResourceModExp(qml.ModExp, re.ResourceOperator):
-    r"""Resource class for the PhaseAdder template.
+    r"""Resource class for the :class:`~.ModExp` template.
 
     Resource Parameters:
         * mod (int): the module for performing the exponentiation
@@ -445,11 +458,11 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         Resource Parameters:
             * mod (int): the module for performing the exponentiation
             * num_output_wires (int): the number of output wires used to encode the integer
-            :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+                :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
             * num_work_wires (int): the number of work wires used to perform the modular
-            exponentiation operation
+                exponentiation operation
             * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod`
-            in the computational basis
+                in the computational basis
 
         Returns:
             dict: dictionary containing the resource parameters

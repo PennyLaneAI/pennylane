@@ -279,7 +279,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     r"""Resource class for the BasisState template.
 
     Resource Parameters:
-         num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
+        num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
 
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
