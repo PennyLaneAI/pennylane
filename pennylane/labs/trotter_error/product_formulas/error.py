@@ -15,7 +15,7 @@
 
 from typing import List, Sequence
 
-from pennylane.labs.trotter import AbstractState, Fragment, nested_commutator
+from pennylane.labs.trotter_error import AbstractState, Fragment, nested_commutator
 
 
 class _AdditiveIdentity:
