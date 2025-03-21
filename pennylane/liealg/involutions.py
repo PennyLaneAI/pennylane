@@ -92,7 +92,9 @@ def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -112,7 +114,7 @@ def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -320,7 +322,9 @@ def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = Non
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -432,7 +436,9 @@ def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -452,7 +458,7 @@ def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
