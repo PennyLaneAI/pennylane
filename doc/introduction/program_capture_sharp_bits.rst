@@ -4,26 +4,21 @@
 Program capture sharp bits
 ==========================
 
-Program capture is PennyLane's new internal representation for hyrbid quantum-classical 
-programs that maintains the same familiar feeling frontend that you're used to, 
-while providing better performance, harmonious integration with just-in-time compilation 
-frameworks like `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
-(:func:`~.pennylane.qjit`) and JAX-jit, and compact representations of programs that preserve 
-their structure.
+Program capture is a new feature of PennyLane that allows for compactly expressing 
+details about hybrid workflows, including quantum operations, classical processing, 
+structured control flow, and dynamicism.
 
-Program capture in PennyLane is propped up by JAX's internal representation of programs 
-called `jaxpr <https://docs.jax.dev/en/latest/jaxpr.html>`__, which works by leveraging 
-the Python interpreter to extract the core elements of programs and capture them 
-into a light-weight language.
+This new feature unlocks better performance, more functional and dynamic workflows, 
+and smoother integration with just-in-time compilation frameworks like 
+`Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
+(via the :func:`~.pennylane.qjit` decorator) and JAX-jit.
 
-In part because of PennyLane's NumPy-like syntax and functionality, quantum programs 
-written with PennyLane translate nicely into the language of jaxpr, letting your 
-quantum-classical programs burn the same fuel that powers JAX and just-in-time compilation.
+Internally, program capture is supported by representing hyrbid programs via a new 
+intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
+``plxpr`` IR is an adaptation of JAX's ``jaxpr`` IR.
 
-The quantum tape/script has been PennyLane's trusty program representation since 
-its inception, but our vision with program capture is to supplant the quantum tape
-as the default program representation in PennyLane, and to support *more* than just 
-the core features of the PennyLane you have come to know and love. 
+Our vision with ``plxpr`` is to supplant the quantum tape as our default program 
+representation, and to support *more* than just the core features of PennyLane.
 
 There are some **quirks and restrictions to be aware of while we strive towards 
 that ideal**. Additionally, we've added backwards-compatibility features that make 
@@ -33,15 +28,8 @@ features that will help get your existing tape-based code working with program c
 
 .. note::
 
-    #. From here onwards, :func:`~.pennylane.capture.enable` is assumed to be present 
-    within the scope of code examples, unless otherwise stated. This ensures that 
-    program capture is enabled.
-
-    #. Using program capture requires that JAX be installed. Please consult the 
+    Using program capture requires that JAX be installed. Please consult the 
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__.
-    
-    #. Our short name for PennyLane code that is captured as jaxpr is *plxpr* (PennyLane-jaxpr).
-    "Program-capture" and "plxpr" can be considered synonymous and interchangeable. 
 
 Device compatibility
 --------------------
