@@ -55,8 +55,9 @@ class QROMStatePreparation(Operation):
         state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
         precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
-            rotation angles utilized in the template.
-        work_wires (Sequence[int], optional):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+            rotation angles utilized in the template. The binary representations of the angles are truncated up to 
+            the :math:`m`-th digit, where :math:`m` is the number of precision wires.
+        work_wires (Sequence[int], optional):  The work wires used for the QROM operations. Defaults to ``None``.
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n` where :math:`n` is an integer, or if
