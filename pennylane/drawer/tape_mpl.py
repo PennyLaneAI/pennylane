@@ -240,7 +240,8 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
     if n_wires == 0:
         return drawer.fig, drawer.ax
 
-    if fontsize := kwargs.get("fontsize", None) is not None:
+    fontsize = kwargs.get("fontsize", None)
+    if fontsize is not None:
         drawer.fontsize = fontsize
 
     if kwargs.get("show_wire_labels", True):
