@@ -170,6 +170,22 @@ class TestQubitMgr:
             assert mgr.inactive.intersection(idx_list) == set(idx_list)
             assert set(idx_list).intersection(mgr.active) == set()
 
+    @pytest.mark.parametrize(
+        "num_qubits, acquire_num, offset",
+        list(it.product(num_qubits_vals, acquire_num_vals, offsets_vals)),
+    )
+    def test_release_qubits_invalid(self, num_qubits, acquire_num, offset):
+        "Test that we have checks for invalid qubit release requests"
+        if _is_valid(num_qubits, acquire_num):
+            pytest.skip()
+
+        mgr = QubitMgr(num_qubits, offset)
+        with pytest.raises(RuntimeError, match="not found in active set"):
+            mgr.release_qubit(101)
+
+        with pytest.raises(RuntimeError, match="not found in active set"):
+            mgr.release_qubits([99, 88, 77])
+
     @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
     def test_reserve_qubit(self, num_qubits, offset):
         "Test that we can selectively reserve and make active a user-specified qubit wire index"
@@ -185,3 +201,15 @@ class TestQubitMgr:
             mgr.reserve_qubit(q_idx)
             assert q_idx in mgr.active
             assert q_idx not in mgr.inactive
+
+    @pytest.mark.parametrize("num_qubits, offset", list(it.product(num_qubits_vals, offsets_vals)))
+    def test_reserve_qubit(self, num_qubits, offset):
+        "Test that we can selectively reserve and make active a user-specified qubit wire index"
+        mgr = QubitMgr(num_qubits, offset)
+
+        # Ensure randomly ordered indices for reservation
+        q_invalid = list(range(99, 100, 1))
+
+        for q_idx in q_invalid:
+            with pytest.raises(RuntimeError, match="not found in inactive set"):
+                mgr.reserve_qubit(q_idx)
