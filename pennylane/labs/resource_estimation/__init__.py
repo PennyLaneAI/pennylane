@@ -62,10 +62,7 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
-    ~ResourceMultiControlledX
     ~ResourceOrbitalRotation
-    ~ResourcePauliRot
-    ~ResourcePhaseShift
     ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePSWAP
