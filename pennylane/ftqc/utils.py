@@ -12,29 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains utility data-structures and algorithms supporting functionality in the
+r"""
+This module contains utility data-structures and algorithms supporting functionality in the
 ftqc module.
 """
 from threading import RLock
 
 
 class QubitMgr:
-    """
-    The QubitMgr object maintains a list of active and inactive qubit wire indices used and for use
+    r"""
+    The ``QubitMgr`` object maintains a list of active and inactive qubit wire indices used and for use
     during execution of a workload. Its purpose is to allow tracking of free qubit indices that
-    are in the |0> state to participate in MCM-based workloads, under the assumption of reset
+    are in the :math:`\vert 0 \rangle` state to participate in MCM-based workloads, under the assumption of reset
     upon measurement. Qubit wires indices will be tracked with a monotonically increasing set
-    of values, starting from the initial input `start_idx`.
-
-    This class assumes single-producer, single-consumer serialized CRUD operations only, and may
-    not behave correctly in a concurrent execution environment.
+    of values, starting from the initial input ``start_idx``.
 
     Args:
         num_qubits (int): Total number of wire indices to track.
-        start_idx (int): Starting index of wires to track. Defaults to `0`.
+        start_idx (int): Starting index of wires to track. Defaults to 0.
 
     **Example:**
-        The following MBQC example workload uses the QubitMgr to assist with recycling of indices
+        The following MBQC example workload uses the ``QubitMgr`` to assist with recycling of indices
         between iterations
 
         .. code-block:: python3
@@ -132,9 +130,9 @@ class QubitMgr:
 
     @property
     def inactive(self) -> set:
-        """
+        r"""
         Defines the inactive wire indices. Any wire index in this set is available for use, and is
-        assumed to be in a reset (|0>) state.
+        assumed to be in a reset (:math:`\vert 0 \rangle`) state.
 
         Returns:
             set[int]: inactive wire indices
@@ -172,7 +170,7 @@ class QubitMgr:
                     "Cannot allocate any additional wire indices. Execution aborted."
                 ) from exc
 
-    def acquire_qubits(self, num_qubits: int):
+    def acquire_qubits(self, num_qubits: int) -> list[int]:
         """
         Acquires num_qubits qubit wire indices from the inactive pool, and makes them active.
         If there are no inactive qubits available a RuntimeError will be raised.
@@ -191,7 +189,7 @@ class QubitMgr:
                         break
         return indices
 
-    def release_qubit(self, idx: int):
+    def release_qubit(self, idx: int) -> None:
         """
         Release an active qubit wire index, idx, from the active pool, and makes it inactive.
         If idx is not in the active pool a RuntimeError will be raised.
@@ -205,16 +203,18 @@ class QubitMgr:
                 ) from exc
             self._inactive.add(idx)
 
-    def release_qubits(self, indices: list[int]):
+    def release_qubits(self, indices: list[int]) -> None:
         """
         Release the list of active qubit wire indices, indices, from the active pool, and makes them inactive.
         If any of the given indices are not in the active pool a RuntimeError will be raised.
+
+        .. seealso:: :meth:`~.QubitMgr.release_qubit`.
         """
         with self._lock:
             for idx in indices:
                 self.release_qubit(idx)
 
-    def reserve_qubit(self, idx: int):
+    def reserve_qubit(self, idx: int) -> None:
         """
         Explicitly reserve the qubit wire index, idx, to be active.
         If given index is not in the active pool a RuntimeError will be raised.

@@ -16,13 +16,9 @@
 import itertools as it
 import random
 
-import numpy as np
 import pytest
 
-import pennylane as qml
-from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import QubitMgr
-from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
@@ -32,9 +28,9 @@ acquire_num = [0, 1, 5]
 offsets = [0, 8, 9]
 
 
-def _is_valid(num_qubits, acquire_num):
+def _is_valid(num_q, acquire_q):
     "Utility function to select for valid/invalid parameters in tests"
-    if acquire_num > num_qubits:
+    if num_q > acquire_q:
         return False
     return True
 
