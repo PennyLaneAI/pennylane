@@ -245,7 +245,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
 
         op_node = resource_rep(type(op), **op.resource_params)
-
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.distances[op_node_idx]
 
@@ -283,7 +282,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
 
         op_node = resource_rep(type(op), **op.resource_params)
-
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule

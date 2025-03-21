@@ -694,19 +694,39 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        array_types = (jax.numpy.ndarray, np.ndarray)
+        iterable_wires_types = (
+            list,
+            tuple,
+            qml.wires.Wires,
+            range,
+            set,
+            *array_types,
+        )
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
         # Stick `n_wires` as a keyword argument so we have enough information to repack them during
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            if isinstance(wires, array_types) and wires.shape == ():
+                wires = (wires,)
+            elif isinstance(wires, iterable_wires_types):
+                wires = tuple(wires)
+            else:
+                wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+        # If not in kwargs, check if the last positional argument represents wire(s).
+        elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
+            kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
-            kwargs["n_wires"] = len(args[-1])
-            args = args[:-1] + tuple(args[-1])
+            wires = tuple(args[-1])
+            kwargs["n_wires"] = len(wires)
+            args = args[:-1] + wires
         else:
             kwargs["n_wires"] = 1
         return cls._primitive.bind(*args, **kwargs)
@@ -2468,13 +2488,14 @@ def defines_diagonalizing_gates(obj):
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
     with more than one term."""
-
-    try:
-        o = obj.generator()
-    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+    if not isinstance(obj, Operator) or not obj.has_generator:
         return False
-
-    return isinstance(o, qml.ops.LinearCombination) and len(o.coeffs) > 1
+    try:
+        generator = obj.generator()
+        _, ops = generator.terms()  # len(coeffs) can be weird sometimes
+        return len(ops) > 1
+    except TermsUndefinedError:
+        return False
 
 
 def __getattr__(name):
