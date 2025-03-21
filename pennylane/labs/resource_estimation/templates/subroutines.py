@@ -105,7 +105,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
 
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
-    """Resource class for the :class:`~.ControlledSequence` template.
+    """Resource class for the ControlledSequence template.
 
     Args:
         base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
@@ -120,6 +120,13 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
 
     .. seealso:: :class:`~.ControlledSequence`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceControlledSequence.resources(re.ResourceHadamard, {}, 2)
+    {C(Hadamard,1,0,0): 3}
     """
 
     @staticmethod
@@ -192,7 +199,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
 
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
-    r"""Resource class for the :class:`~.PhaseAdder` template.
+    r"""Resource class for the PhaseAdder template.
 
     Args:
         k (int): the number that needs to be added
@@ -212,6 +219,19 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
         The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
 
     .. seealso:: :class:`~.PhaseAdder`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePhaseAdder.resources(3, 5)
+    {QFT(5): 2,
+    Adjoint(QFT(5)): 2,
+    PhaseShift: 10,
+    Adjoint(PhaseShift): 10,
+    C(PhaseShift,1,0,0): 5,
+    CNOT: 1,
+    MultiControlledX: 1}
     """
 
     @staticmethod
@@ -241,13 +261,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
             re.ResourcePhaseShift,
             {},
         )
-        ctrl_phase_shift = re.ResourceControlled.resource_rep(
-            re.ResourcePhaseShift,
-            {},
-            1,
-            0,
-            0,
-        )
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
 
         cnot = re.ResourceCNOT.resource_rep()
         multix = re.ResourceMultiControlledX.resource_rep(1, 0, 1)
@@ -298,7 +312,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
 
 class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
-    """Resource class for the :class:`~.Multiplier` template.
+    """Resource class for the Multiplier template.
 
     Args:
         k (int): the number that needs to be multiplied
@@ -315,6 +329,17 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
 
     .. seealso:: :class:`~.Multiplier`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiplier.resources(3, 5, 5)
+    {QFT(4): 2,
+    Adjoint(QFT(4)): 2,
+    ControlledSequence(PhaseAdder, 5): 1,
+    Adjoint(ControlledSequence(PhaseAdder, 5)): 1,
+    CNOT: 3}
     """
 
     @staticmethod
@@ -428,6 +453,17 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         The resources are obtained from the standard decomposition of :class:`~.ModExp`.
 
     .. seealso:: :class:`~.ModExp`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceModExp.resources(3, 5, 5, 5)
+    {C(QFT(4),1,0,0): 62,
+    C(Adjoint(QFT(4)),1,0,0): 62,
+    C(ControlledSequence(PhaseAdder, 5),1,0,0): 31,
+    C(Adjoint(ControlledSequence(PhaseAdder, 5)),1,0,0): 31,
+    C(CNOT,1,0,0): 93}
     """
 
     @staticmethod
@@ -1258,6 +1294,15 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         We use the one-auxillary qubit version of select, instead of the built-in select
         resources.
+
+    .. seealso:: :class:`~.QROM`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQROM.resources(3, 7, 5, 5, 3, True)
+    {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
     """
 
     # pylint: disable=too-many-arguments
@@ -1418,6 +1463,15 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
 
     Resources:
         The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
+
+    .. seealso:: :class:`~.AmplitudeAmplification`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceAmplitudeAmplification.resources(re.ResourceHadamard, {}, re.ResourceX, {}, 5, 10, True)
+    {C(X,1,0,0): 4, PhaseShift: 2, Hadamard: 8, Reflection: 2}
     """
 
     # pylint: disable=too-many-arguments
@@ -1494,8 +1548,16 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         """
         U_op = self.hyperparameters["U"]
         O_op = self.hyperparameters["O"]
-        U_params = U_op.resource_params if hasattr(U_op, "resource_params") else {}
-        O_params = O_op.resource_params if hasattr(O_op, "resource_params") else {}
+        try:
+            U_params = U_op.resource_params
+        except (NotImplementedError, AttributeError):
+            U_params = {}
+
+        try:
+            O_params = O_op.resource_params
+        except (NotImplementedError, AttributeError):
+            O_params = {}
+
         iters = self.hyperparameters["iters"]
         fixed_point = self.hyperparameters["fixed_point"]
         num_ref_wires = len(self.hyperparameters["reflection_wires"])

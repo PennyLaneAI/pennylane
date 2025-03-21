@@ -41,6 +41,15 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 
     Resources:
         Uses the resources as defined in the `:class:~.ResourceMottonenStatePreperation` template.
+
+    .. seealso:: `:class:~.StatePrep`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceStatePrep.resources(num_wires=3)
+    {MottonenStatePrep(3): 1}
     """
 
     @staticmethod
@@ -100,6 +109,15 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
         The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
         :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
+
+    .. seealso:: `:class:~.MottonenStatePreperation`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMottonenStatePreparation.resources(num_wires=3)
+    {RZ: 27, CNOT: 16}
     """
 
     @staticmethod
@@ -159,7 +177,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
 
 class ResourceSuperposition(qml.Superposition, ResourceOperator):
-    """Resource class for the `:class:~.Superposition` template.
+    """Resource class for the Superposition template.
 
     Args:
         coeffs (tensor-like[float]): normalized coefficients of the superposition
@@ -190,6 +208,14 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
             with not needing to permute wires if the basis states happen to match, we
             estimate this quantity aswell.
 
+    .. seealso:: `:class:~.Superposition`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSuperposition.resources(3, 3, 3)
+    {MottonenStatePrep(3): 1, CNOT: 2, MultiControlledX: 4}
     """
 
     @staticmethod
@@ -305,6 +331,15 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
+
+    .. seealso:: `:class:~.BasisState`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceBasisState.resources(6)
+    {X: 6}
     """
 
     @staticmethod
