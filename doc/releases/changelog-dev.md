@@ -181,6 +181,8 @@
 * A graph-based decomposition solver has been implemented that solves for the optimal decomposition
   rule to use for an operator towards a target gate set.
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+  [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
+  [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 
 <h3>Improvements 🛠</h3>
   

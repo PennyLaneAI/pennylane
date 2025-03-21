@@ -231,7 +231,12 @@ def controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **
 
 @functools.lru_cache(maxsize=1)
 def base_to_custom_ctrl_op():
-    """A dictionary mapping base op types to their custom controlled versions."""
+    """A dictionary mapping base op types to their custom controlled versions.
+
+    This dictionary is used under the assumption that all custom controlled operations do not
+    have resource params (which is why `ControlledQubitUnitary` is not included here).
+
+    """
 
     ops_with_custom_ctrl_ops = {
         (qml.PauliZ, 1): qml.CZ,
