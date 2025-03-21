@@ -23,9 +23,8 @@ from typing import Dict, Sequence, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.trotter import Fragment
-from pennylane.labs.trotter.realspace.ho_state import HOState
-from pennylane.labs.trotter.realspace.matrix import (
+from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace.matrix import (
     _op_norm,
     _string_to_matrix,
     _tensor_with_identity,
@@ -36,7 +35,7 @@ from .realspace_coefficients import RealspaceCoeffs
 
 
 class RealspaceOperator:
-    r"""This class represents the summation of a product of position and momentum operators over the vibrational modes.
+    r"""Represents the summation of a product of position and momentum operators over the vibrational modes.
     For example,
 
     .. math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
@@ -50,7 +49,7 @@ class RealspaceOperator:
 
     We build a ``RealspaceOperator`` in the following way.
 
-    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
@@ -229,7 +228,7 @@ class RealspaceSum(Fragment):
     **Example**
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
 
-    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
     >>> n_modes = 2
     >>> freqs = np.array([1.23, 3.45])
     >>> coeffs = RealspaceCoeffs.coeffs(freqs, label="omega")

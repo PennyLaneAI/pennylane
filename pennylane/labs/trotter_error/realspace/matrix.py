@@ -22,7 +22,7 @@ import numpy as np
 import scipy as sp
 
 if TYPE_CHECKING:
-    from pennylane.labs.trotter.realspace import RealspaceOperator, RealspaceSum
+    from pennylane.labs.trotter_error.realspace import RealspaceOperator, RealspaceSum
 
 
 def _position_operator(

@@ -22,15 +22,17 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import scipy as sp
 
-from pennylane.labs.trotter import Fragment
-from pennylane.labs.trotter.realspace import HOState, RealspaceSum, VibronicHO
-from pennylane.labs.trotter.realspace.matrix import _kron, _zeros
+from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace import RealspaceSum
+from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access
 
 
 class VibronicMatrix(Fragment):
-    r"""This class implements a dictionary of ``RealspaceSum`` objects used to respresent the fragments of the vibronic Hamiltonian given by
+    r"""Implements a dictionary of ``RealspaceSum`` objects.
+
+     This can be used to represent the fragments of the vibronic Hamiltonian given by
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots
 
@@ -43,7 +45,7 @@ class VibronicMatrix(Fragment):
 
     **Example**
 
-    >>> from pennylane.labs.trotter import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
     >>> import numpy as np
     >>> n_states = 1
     >>> n_modes = 5
