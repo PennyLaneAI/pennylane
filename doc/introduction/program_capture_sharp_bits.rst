@@ -74,8 +74,10 @@ Valid JAX data types
 
 Because of the nature of creating and executing plxpr, it is **best practice to 
 use JAX-compatible types whenever possible**, in particular for arguments to quantum 
-functions and QNodes, and positional arguments in PennyLane gate operations. JAX-compatible 
-types are ``jax.numpy`` arrays and standard Python ``int``\ s and ``float``\ s. 
+functions and QNodes, and positional arguments in PennyLane gate operations. Examples of 
+JAX-compatible types are ``jax.numpy`` arrays, regular NumPy arrays, dictionaries, standard
+Python ``int``\ s and ``float``\ s, and anything else with a valid `Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>` 
+representation.
 
 For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for 
 the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
