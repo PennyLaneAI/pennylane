@@ -43,6 +43,15 @@ def vibronic_fragments(
     Returns:
         List[VibronicMatrix]: a list of ``VibronicMatrix`` objects representing the fragments of the vibronic Hamiltonian
 
+    **Example**
+
+    >>> from pennylane.labs.trotter import vibronic_fragments
+    >>> import numpy as np
+    >>> n_modes = 4
+    >>> n_states = 2
+    >>> freqs = np.random.random(4)
+    >>> taylor_coeffs = [np.array(0), np.random.random(size=(n_modes, )), np.random.random(size=(n_modes, n_modes))]
+    >>> frags = vibrational_fragments(n_states, n_modes, freqs, taylor_coeffs)
     """
     _validate_input(states, modes, freqs, taylor_coeffs)
 

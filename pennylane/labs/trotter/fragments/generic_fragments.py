@@ -29,6 +29,16 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
     Returns:
         List[GenericFragment]: A list of GenericFragment objects instantiated from `fragments`.
+
+
+    **Example**
+
+    This code example demonstrates building fragments from numpy matrices.
+
+    >>> from pennylane.labs.trotter import generic_fragments
+    >>> import numpy as np
+    >>> matrices = [np.random.random(size=(10, 10)) for _ in range(100)]
+    >>> fragments = generic_fragments(matrices, norm_fn=np.linalg.norm)
     """
 
     if len(fragments) == 0:
@@ -63,6 +73,8 @@ class GenericFragment(Fragment):
             ``__add__``, ``__sub__``, ``__mul__``, and ``__matmul__``.
         norm_fn (optional, Callable): This is a function used to compute the norm of `fragment`, which is
             needed for some Trotter error functionality.
+
+    ``GenericFragment`` objects should be instantated through the ``generic_fragments`` function.
     """
 
     def __init__(self, fragment: Any, norm_fn: Callable = None):

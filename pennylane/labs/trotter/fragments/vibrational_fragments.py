@@ -34,6 +34,14 @@ def vibrational_fragments(
     Returns:
         List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
 
+    **Example**
+
+    >>> from pennylane.labs.trotter import vibrational_fragments
+    >>> import numpy as np
+    >>> n_modes = 4
+    >>> freqs = np.random.random(4)
+    >>> taylor_coeffs = [np.array(0), np.random.random(size=(n_modes, )), np.random.random(size=(n_modes, n_modes))]
+    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
     """
 
     if frag_method == "harmonic":
