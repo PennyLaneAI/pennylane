@@ -24,6 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import DecompositionGraph
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -53,10 +54,7 @@ class TestPLxPRTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            TypeError,
-            match="Specifying gate_set as a function"
-        ):
+        with pytest.raises(TypeError, match="Specifying gate_set as a function"):
             circuit()
 
         qml.decomposition.disable_graph()
@@ -380,7 +378,14 @@ class TestPLxPRTransformDecompose:
         obj = CollectOpsandMeas()
         obj(circuit)()
 
-        assert len(obj.state["ops"]) == 74
+        graph = DecompositionGraph(
+            operations=[qml.QFT(wires=[0, 1, 2, 3])],
+            target_gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
+        )
+        graph.solve()
+        expected_resources = graph.resource_estimate(qml.QFT(wires=[0, 1, 2, 3]))
+
+        assert len(obj.state["ops"]) == expected_resources.num_gates
 
         qml.decomposition.disable_graph()
         qml.capture.disable()
@@ -404,10 +409,7 @@ class TestPLxPRTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
         qml.capture.disable()
@@ -431,10 +433,7 @@ class TestPLxPRTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
         qml.capture.disable()
@@ -462,10 +461,7 @@ class TestPLxPRTransformDecompose:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(
-            TypeError,
-            match="The fixed_decomps and alt_decomps arguments must be used with the experimental graph-based decomposition.",
-        ):
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             circuit()
 
         qml.capture.disable()

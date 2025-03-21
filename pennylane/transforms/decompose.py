@@ -216,10 +216,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if qml.decomposition.enabled_graph() and self._decomp_graph.is_solved_for(op):
 
                 rule = self._decomp_graph.decomposition(op)
+                num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
-                    wires = qml.math.array(_args[-op.num_wires :], like="jax")
-                    rule(*_args[: -op.num_wires], wires=wires, **_kwargs)
+                    wires = qml.math.array(_args[-num_wires:], like="jax")
+                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             else:
                 compute_qfunc_decomposition = op.compute_qfunc_decomposition
@@ -256,7 +257,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env_map[constvar] = const
 
-            if qml.decomposition.enabled_graph():
+            if qml.decomposition.enabled_graph() and not self._decomp_graph:
 
                 # TODO: replace this with a collector that does not flatten the PLxPR
                 collector = CollectOpsandMeas()
@@ -774,7 +775,7 @@ def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decom
     # Create the decomposition graph
     graph = DecompositionGraph(
         operations,
-        target_gate_names | {"GlobalPhase"},  # Assume GlobalPhase is always supported.
+        target_gate_names,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
     )
