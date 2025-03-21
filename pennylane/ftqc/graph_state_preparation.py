@@ -197,7 +197,6 @@ class GraphStatePrep(Operation):
                 )
             super().__init__(wires=wires)
 
-
     def label(self, *args, **kwargs) -> str:  # pylint: disable=unused-argument
         r"""Defines how the graph state preparation is represented in diagrams and drawings.
 
