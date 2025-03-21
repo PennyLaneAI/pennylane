@@ -23,7 +23,7 @@ from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOpe
 def vibrational_fragments(
     modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray], frag_method="harmonic"
 ) -> List[RealspaceSum]:
-    """Returns a list of fragments summing to the vibrational Hamiltonian
+    """Returns a list of fragments summing to a vibrational Hamiltonian.
 
     Args:
         modes (int): the number of vibrational modes

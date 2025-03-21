@@ -29,7 +29,7 @@ class _AdditiveIdentity:
 
 
 def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
-    """Return the second order trotter error.
+    """Returns the second order Trotter error.
 
     Args:
         fragments (Sequence[Fragments]): the set of fragments to compute Trotter error from
@@ -60,7 +60,7 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
 def perturbation_error(
     fragments: Sequence[Fragment], states: Sequence[AbstractState], delta: float = 1
 ) -> List[float]:
-    """Return the perturbation theory error obtained from second order Trotter.
+    """Returns the the second order Trotter error computed with perturbation theory.
 
     Args:
         fragments (Sequence[Fragments]): the set of fragments to compute Trotter error from

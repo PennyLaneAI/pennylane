@@ -28,7 +28,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
         norm_fn (Callable): A function that computes the norm of the fragments.
 
     Returns:
-        List[GenericFragment]: A list of GenericFragment objects instantiated from `fragments`.
+        List[GenericFragment]: A list of ``GenericFragment`` objects instantiated from `fragments`.
 
 
     **Example**

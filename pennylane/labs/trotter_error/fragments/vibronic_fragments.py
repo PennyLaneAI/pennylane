@@ -31,7 +31,7 @@ from pennylane.labs.trotter_error.realspace.vibronic_matrix import _next_pow_2
 def vibronic_fragments(
     states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> List[VibronicMatrix]:
-    """Returns a list of fragments summing to the vibrational Hamiltonian
+    """Returns a list of fragments summing to a vibronic Hamiltonian.
 
     Args:
         states (int): the number of electronic states
