@@ -98,13 +98,11 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
 
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
-    """Resource class for the ControlledSequence template.
+    """Resource class for the :class:`~.ControlledSequence` template.
 
     Resource Parameters:
-        base_class (ResourceOperator): The type of the operation corresponding to the
-            operator.
-        base_params (dict): A dictionary of parameters required to obtain the resources for
-            the operator.
+        base_class (ResourceOperator): The type of the operation corresponding to the operator.
+        base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
         num_ctrl_wires (int): the number of control wires
 
     Resources:
@@ -141,10 +139,8 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource Parameters:
-            base_class (ResourceOperator): The type of the operation corresponding to the
-                operator.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the operator.
+            base_class (ResourceOperator): The type of the operation corresponding to the operator.
+            base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
             num_ctrl_wires (int): the number of control wires
 
         Returns:
@@ -390,12 +386,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
     Resource Parameters:
         mod (int): the module for performing the exponentiation
-        num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
-            in the computational basis
-        num_work_wires (int): the number of work wires used to perform the modular exponentiation
-            operation
-        num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
-            computational basis
+        num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+        num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+        num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
 
     Resources:
         The resources are obtained from the standard decomposition of :class:`~.ModExp`.
@@ -412,12 +405,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
         Args:
             mod (int): the module for performing the exponentiation
-            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
-                in the computational basis
-            num_work_wires (int): the number of work wires used to perform the modular exponentiation
-                operation
-            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
-                computational basis
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
 
         Resources:
             The resources are obtained from the standard decomposition of :class:`~.ModExp`.
@@ -443,12 +433,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
         Resource Parameters:
             mod (int): the module for performing the exponentiation
-            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
-                in the computational basis
-            num_work_wires (int): the number of work wires used to perform the modular exponentiation
-                operation
-            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
-                computational basis
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
 
         Returns:
             dict: dictionary containing the resource parameters
