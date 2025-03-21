@@ -43,7 +43,7 @@ class RealspaceOperator:
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Tuple[str]): a tuple representation of the position and momentum operators
+        ops (Sequence[str]): a sequence representation of the position and momentum operators
         coeffs (``RealspaceCoeffs``): an expression tree which evaluates the entries of the coefficient tensor
 
     **Example**
@@ -55,10 +55,13 @@ class RealspaceOperator:
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
     >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+    >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
 
     """
 
-    def __init__(self, modes: int, ops: Tuple[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]) -> RealspaceOperator:
+    def __init__(
+        self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+    ) -> RealspaceOperator:
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs
@@ -243,14 +246,8 @@ class RealspaceSum(Fragment):
 
         new_ops = []
 
-        for op in l_ops.intersection(r_ops):
+        for op in l_ops.union(r_ops):
             new_ops.append(self._lookup[op] + other._lookup[op])
-
-        for op in l_ops.difference(r_ops):
-            new_ops.append(self._lookup[op])
-
-        for op in r_ops.difference(l_ops):
-            new_ops.append(other._lookup[op])
 
         return RealspaceSum(self.modes, new_ops)
 
@@ -265,14 +262,8 @@ class RealspaceSum(Fragment):
 
         new_terms = []
 
-        for op in l_ops.intersection(r_ops):
+        for op in l_ops.union(r_ops):
             new_terms.append(self._lookup[op] - other._lookup[op])
-
-        for op in l_ops.difference(r_ops):
-            new_terms.append(self._lookup[op])
-
-        for op in r_ops.difference(l_ops):
-            new_terms.append((-1) * other._lookup[op])
 
         return RealspaceSum(self.modes, new_terms)
 
