@@ -206,13 +206,24 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         .. code-block:: python
 
             def my_decomp(wires):
-                qml.ctrl(qml.MultiRZ(wires=wires[:3]), control=wires[3:5], control_values=[0, 1], work_wires=wires[5])
+                qml.ctrl(
+                    qml.MultiRZ(wires=wires[:3]),
+                    control=wires[3:5],
+                    control_values=[0, 1],
+                    work_wires=wires[5]
+                )
 
         To declare this controlled operator in the resource function, we find the resource keys
         of ``qml.ops.Controlled``:
 
         >>> qml.ops.Controlled.resource_keys
-        {'base_class', 'base_params', 'num_control_wires', 'num_zero_control_values', 'num_work_wires'}
+        {
+            'base_class',
+            'base_params',
+            'num_control_wires',
+            'num_zero_control_values',
+            'num_work_wires'
+        }
 
         Then the resource representation can be created as follows:
 

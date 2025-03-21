@@ -100,12 +100,12 @@ def register_resources(resources: Callable | dict, qfunc: Optional[Callable] = N
 
         In many cases, the resource requirement of an operator's decomposition is not static; some
         operators have properties that directly affect the resource estimate of its decompositions,
-        i.e., the types of gates that exists in the decomposition and their number of occurrences.
-        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
-        on the number of wires it acts on.
+        i.e., the types of gates that exist in the decomposition and their number of occurrences.
 
         For each operator class, the set of parameters that affects the type of gates and their
-        number of occurrences in its decompositions is given by the ``resource_keys`` attribute:
+        number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
+        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
+        on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
 
         >>> qml.CNOT.resource_keys
         {}
@@ -247,7 +247,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
 
     In the new system of decompositions, multiple decomposition rules can be registered for the
     same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
-    decomposition rules that may be chosen if they lead to a more efficient decomposition.
+    decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
         op_type: the operator type for which new decomposition rules are specified.
@@ -284,7 +284,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     These two new decomposition rules for ``qml.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
     for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose`` transform.
+    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
 
     .. seealso:: :func:`~pennylane.transforms.decompose`
 

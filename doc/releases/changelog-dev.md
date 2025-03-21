@@ -163,10 +163,12 @@
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
     def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-        qml.RX(-phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+    >>> qml.list_decomps(qml.CRX)[0].compute_resources()
+    {qml.RX: 2, qml.CZ: 2}
     >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
