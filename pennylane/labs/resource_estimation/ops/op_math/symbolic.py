@@ -35,10 +35,10 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base (~.operation.Operator): The operator that is adjointed.
+        base (~.operation.Operator): The operator that we want the adjoint of.
 
     Resource Parameters:
-        * base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+        * base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
         * base_params (dict): the resource parameters required to extract the cost of the base operator
 
     Resources:
@@ -118,7 +118,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Resources:
@@ -202,7 +202,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Resource parameters:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Returns:
@@ -216,7 +216,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Returns:
@@ -229,7 +229,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Resources:
@@ -267,7 +267,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
         * base_params (dict): the resource parameters required to extract the cost of the base operator
         * num_ctrl_wires (int): the number of qubits the operation is controlled on
-        * num_ctrl_values (int): the number of control qubits, that are controlled when off
+        * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
         * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
@@ -276,7 +276,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         directly from this.
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-        should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+        should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
         cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
         resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
         variant of each operation in the resources.
@@ -363,7 +363,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -372,7 +372,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             directly from this.
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-            should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+            should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
             cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
             resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
             variant of each operation in the resources.
@@ -478,7 +478,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
@@ -503,7 +503,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
@@ -538,14 +538,14 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             outer_num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
             outer_num_ctrl_values (int): The subset of those control qubits, which further control
-                the base controlled operation, which are controlled when off.
+                the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             outer_num_work_wires (int): the number of additional qubits that can be used in the
                 decomposition for the further controlled, base control oepration.
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
-                when off.
+                when in the :math:`|0\rangle` state.
             num_work_wires (int): The number of additional qubits that can be used for the
                 decomposition of the operation.
 

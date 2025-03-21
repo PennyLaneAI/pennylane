@@ -106,6 +106,7 @@ Templates
     ~ResourcePrepSelPrep
     ~ResourceQFT
     ~ResourceQPE
+    ~ResourceQuantumPhaseEstimation
     ~ResourceQubitization
     ~ResourceReflection
     ~ResourceSelect

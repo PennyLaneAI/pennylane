@@ -169,7 +169,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
         Resources:
             The adjoint of a global phase operator changes the sign of the phase, thus
-            the resources of the adjoint operation results in the original operation.
+            the resources of the adjoint operation is the original operation.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -185,7 +185,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
