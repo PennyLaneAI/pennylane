@@ -323,7 +323,7 @@ def controlled_resource_rep(
     )
 
 
-def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
+def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -331,6 +331,7 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
         base_params (dict): the resource params of the base operator
 
     """
+    base_params = base_params or {}
     base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
     return CompressedResourceOp(
         qml.ops.Adjoint,
