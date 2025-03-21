@@ -194,7 +194,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
 
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
-    """Resource class for the :class:`~.PhaseAdder` template.
+    r"""Resource class for the :class:`~.PhaseAdder` template.
 
     Args:
         k (int): the number that needs to be added
