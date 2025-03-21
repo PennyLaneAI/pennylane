@@ -103,14 +103,14 @@ class QubitMgr:
         """
         Return num_qubits number of inactive wires and make them active.
         """
-        with self._lock:
-            indices = []
-            if num_qubits > 0:
+        indices = []
+        if num_qubits > 0:
+            with self._lock:
                 while True:
                     indices.append(self.acquire_qubit())
                     if len(indices) == num_qubits:
                         break
-            return indices
+        return indices
 
     def release_qubit(self, idx: int):
         """
