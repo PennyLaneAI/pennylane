@@ -71,6 +71,19 @@ with qml.queuing.AnnotatedQueue() as q_tape:
 tape = qml.tape.QuantumScript.from_queue(q_tape)
 
 
+def test_error_if_unsupported_object_in_tape():
+    """Test an error is raised if there's an unsupported object in the tape."""
+
+    # pylint: disable=too-few-public-methods
+    class DummyObj:
+        wires = qml.wires.Wires(2)
+
+    _tape = qml.tape.QuantumScript([DummyObj()], [])
+
+    with pytest.raises(NotImplementedError, match="unable to draw object"):
+        qml.drawer.tape_text(_tape)
+
+
 class TestHelperFunctions:  # pylint: disable=too-many-arguments
     """Test helper functions for the tape text."""
 
@@ -772,3 +785,28 @@ class TestShowMatrices:
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
+
+
+def test_nested_tapes():
+    """Test nested tapes inside the qnode."""
+
+    def circ():
+        with qml.tape.QuantumTape():
+            qml.PauliX(0)
+            with qml.tape.QuantumTape():
+                qml.PauliY(0)
+        with qml.tape.QuantumTape():
+            qml.PauliZ(0)
+            with qml.tape.QuantumTape():
+                qml.PauliX(0)
+        return qml.expval(qml.PauliZ(0))
+
+    expected = (
+        "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
+        "Tape:0\n0: ──X──Tape:2─┤  \n\n"
+        "Tape:2\n0: ──Y─┤  \n\n"
+        "Tape:1\n0: ──Z──Tape:3─┤  \n\n"
+        "Tape:3\n0: ──X─┤  "
+    )
+
+    assert qml.draw(circ)() == expected
