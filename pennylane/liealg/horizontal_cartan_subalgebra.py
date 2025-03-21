@@ -87,8 +87,8 @@ def horizontal_cartan_subalgebra(
     .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
-        k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+        k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
+        m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
         adj (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
             When ``None`` is provided, :func:`~structure_constants` is used internally by default to compute the adjoint representation.
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
@@ -404,8 +404,8 @@ def op_to_adjvec(
     .. seealso:: :func:`~adjvec_to_op`
 
     Args:
-        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose
-        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis
+        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose.
+        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis.
         is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
             product. Defaults to ``True``, which allows to skip some computations.
 
