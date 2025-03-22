@@ -179,6 +179,16 @@ def enable_disable_dynamic_shapes():
         jax.config.update("jax_dynamic_shapes", False)
 
 
+@pytest.fixture(scope="function")
+def enable_graph_decomposition():
+    """enable and disable graph-decomposition around each test."""
+    qml.decomposition.enable_graph()
+    try:
+        yield
+    finally:
+        qml.decomposition.disable_graph()
+
+
 #######################################################################
 
 try:

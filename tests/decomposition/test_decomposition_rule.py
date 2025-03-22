@@ -27,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 
 
+@pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
 

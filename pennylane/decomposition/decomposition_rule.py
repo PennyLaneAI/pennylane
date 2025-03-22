@@ -67,7 +67,7 @@ def register_resources(
 
         import pennylane as qml
 
-        qml.decompositions.enable_graph()
+        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
         def my_cnot(wires):
