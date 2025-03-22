@@ -242,7 +242,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` representing the scalar product of ``scalar`` and ``child``.
+        """Returns a ``RealspaceCoeffs`` representing the scalar product of ``scalar`` and ``child``.
 
         Args:
             scalar (float): a scalar to multiply ``child`` by
