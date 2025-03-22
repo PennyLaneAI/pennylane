@@ -210,7 +210,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` leaf node storing a tensor of coefficients.
+        """Returns a ``RealspaceCoeffs`` leaf node storing a tensor of coefficients.
 
         Args:
             tensor (ndarray): a tensor of coefficients
