@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace import HOState
 from pennylane.labs.trotter_error.realspace.matrix import (
     _op_norm,
     _string_to_matrix,
@@ -384,6 +385,19 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
+
+    def apply(self, state: HOState) -> HOState:
+        """Apply the ``RealspaceSum`` to an ``HOState`` object."""
+        if not isinstance(state, HOState):
+            raise TypeError
+
+        mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
+
+        return HOState.from_scipy(
+            state.modes,
+            state.gridpoints,
+            mat @ state.vector,
+        )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
         """Return a dictionary containing the coefficients of the ``RealspaceSum``

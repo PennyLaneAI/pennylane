@@ -23,7 +23,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.realspace import RealspaceSum
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 # pylint: disable=protected-access
@@ -312,6 +312,42 @@ class VibronicMatrix(Fragment):
                 bottom_right.set_block(x - half, y - half, word)
 
         return top_left, top_right, bottom_left, bottom_right
+
+    def apply(self, state: VibronicHO) -> VibronicHO:
+        """Apply the VibronicMatrix to a state on the right.
+
+        Args:
+            state (VibronicHO): a vibronic wavefunction
+
+        Returns:
+            VibronicHO: the result of applying the ``VibronicMatrix`` to ``state``
+
+        """
+
+        if self.states != len(state.ho_states):
+            raise ValueError(
+                f"Cannot apply VibronicMatrix on {self.states} states to VibronicHO on {len(state.ho_states)} states."
+            )
+
+        if self.modes != state.modes:
+            raise ValueError(
+                f"Cannot apply VibronicMatrix on {self.modes} modes to VibronicHO on {state.modes} modes."
+            )
+
+        ho_states = []
+        for i in range(self.states):
+            ho = sum(
+                (self.block(i, j).apply(ho_state) for j, ho_state in enumerate(state.ho_states)),
+                HOState.zero_state(state.modes, state.gridpoints),
+            )
+            ho_states.append(ho)
+
+        return VibronicHO(
+            states=state.states,
+            modes=state.modes,
+            gridpoints=state.gridpoints,
+            ho_states=ho_states,
+        )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int, int], Dict]:
         """Return a dictionary containing the coefficients of the ``RealspaceSum``

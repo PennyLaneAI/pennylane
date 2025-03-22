@@ -20,12 +20,13 @@
 
 .. currentmodule:: pennylane.labs.trotter_error
 
-Trotter Base Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Trotter Base Classes:
+~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
+    ~AbstractState
     ~Fragment
 
 Realspace Hamiltonian Classes:
@@ -38,7 +39,23 @@ Realspace Hamiltonian Classes:
     ~RealspaceOperator
     ~RealspaceSum
     ~VibronicMatrix
+
+State Classes:
+~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~HOState
+    ~VibronicHO
 """
 
-from .abstract_fragment import Fragment
-from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
+from .abstract import AbstractState, Fragment
+from .realspace import (
+    RealspaceCoeffs,
+    RealspaceOperator,
+    RealspaceSum,
+    VibronicMatrix,
+    HOState,
+    VibronicHO,
+)
