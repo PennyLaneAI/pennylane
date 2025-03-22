@@ -37,7 +37,7 @@ class _NodeType(Enum):
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     """A tree representing an expression that computes the coefficients of a :class:`pennylane.labs.trotter_error.RealspaceOperator`.
-    This class should be instantiated from the following class methods.
+     This class should be instantiated from the following class methods:
 
         * ``tensor_node``: a leaf node containing a coefficient tensor
         * ``outer_node``: a node representing the outer product of its two children
