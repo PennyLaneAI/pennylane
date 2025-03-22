@@ -226,6 +226,7 @@ class RealspaceSum(Fragment):
         ops (Sequence[RealspaceOperator]): a sequence containing :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
 
     **Example**
+
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
