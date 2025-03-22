@@ -189,6 +189,9 @@
   [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
 <h3>Improvements 🛠</h3>
+
+* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
+  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
@@ -431,8 +434,10 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* The sizes of dynamically shaped arrays can now be updated in a `while_loop` when capture is enabled.
+* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
+  when capture is enabled.
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
+  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
