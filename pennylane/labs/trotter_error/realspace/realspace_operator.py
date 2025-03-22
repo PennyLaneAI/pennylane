@@ -213,7 +213,7 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects
+    r"""The ``RealspaceSum`` class is used to represent a Hamiltonian that is built from a sum of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects
     For example, the vibrational hamiltonian
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots
