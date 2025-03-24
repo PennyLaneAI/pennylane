@@ -79,7 +79,7 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 @register_resources(_adjoint_adjoint_resource)
 def adjoint_adjoint_decomp(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    _, [_, metadata] = base.base._flatten()
+    _, [_, metadata] = base.base._flatten()  # pylint: disable=protected-access
     new_struct = wires, metadata
     base.base._unflatten(params, new_struct)  # pylint: disable=protected-access
 
