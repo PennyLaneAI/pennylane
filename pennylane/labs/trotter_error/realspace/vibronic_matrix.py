@@ -53,6 +53,7 @@ class VibronicMatrix(Fragment):
     >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
     >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
     >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, Q, phi[idx0])))})
     """
 
     def __init__(
@@ -175,6 +176,7 @@ class VibronicMatrix(Fragment):
         return padded._norm(params)
 
     def _norm(self, params: Dict) -> float:
+        """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a power of two."""
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
@@ -291,6 +293,7 @@ class VibronicMatrix(Fragment):
         return True
 
     def _partition_into_quadrants(self) -> Tuple[VibronicMatrix]:
+        """Partitions the ``VibronicMatrix`` into four ``VibronicMatrix`` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
         # pylint: disable=chained-comparison
         half = self.states // 2
 
@@ -363,6 +366,9 @@ class VibronicMatrix(Fragment):
             d[(i, j)] = self.block(i, j).get_coefficients(threshold)
 
         return d
+
+    def __repr__(self):
+        return f"VibronicMatrix({self._blocks})"
 
 
 def _is_pow_2(k: int) -> bool:

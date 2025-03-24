@@ -39,10 +39,10 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     """A tree representing an expression that computes the coefficients of a ``RealspaceOperator``.
     This class should be instantiated from the following class methods.
 
-        * ``tensor_node``: a leaf node containing a coefficient tensor
-        * ``outer_node``: a node representing the outer product of its two children
-        * ``sum_node``: a node representing the sum of its two children
-        * ``scalar_node``: a node representing the product of its child by a scalar
+        * ``tensor_node(tensor)``: a leaf node containing a coefficient tensor
+        * ``outer_node(l_child, r_child)``: a node representing the outer product of two ``RealspaceCoeffs`` objects
+        * ``sum_node(l_child, r_child)``: a node representing the sum of two ``RealspaceCoeffs`` objects
+        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs`` object by a scalar
 
     """
 

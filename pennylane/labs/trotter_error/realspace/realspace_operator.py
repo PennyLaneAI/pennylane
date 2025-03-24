@@ -54,8 +54,10 @@ class RealspaceOperator:
     >>> import numpy as np
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
-    >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+    >>> coeffs = RealspaceCoeffs.coeffs(np.random.random(size=(n_modes, n_modes)), label="alpha")
     >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
+    >>> rs_op
+    RealspaceOperator(5, ('Q', 'Q'), alpha[idx0,idx1])
 
     """
 
@@ -169,9 +171,6 @@ class RealspaceOperator:
             self.modes, self.ops + other.ops, RealspaceCoeffs.outer_node(self.coeffs, other.coeffs)
         )
 
-    def __repr__(self) -> str:
-        return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
-
     def __eq__(self, other: RealspaceOperator) -> bool:
         if self.ops != other.ops:
             return False
@@ -212,6 +211,9 @@ class RealspaceOperator:
         """
         return self.coeffs.get_coefficients(threshold)
 
+    def __repr__(self):
+        return f"RealspaceOperator({self.modes}, {self.ops}, {self.coeffs})"
+
 
 class RealspaceSum(Fragment):
     r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of ``RealspaceOperator`` objects
@@ -230,12 +232,15 @@ class RealspaceSum(Fragment):
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> import numpy as np
     >>> n_modes = 2
     >>> freqs = np.array([1.23, 3.45])
     >>> coeffs = RealspaceCoeffs.coeffs(freqs, label="omega")
     >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
     >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
     >>> rs_sum = RealspaceSum(n_modes, [rs_op1, rs_op2])
+    >>> rs_sum
+    RealspaceSum((RealspaceOperator(2, ('PP',), omega[idx0]), RealspaceOperator(2, ('QQ',), omega[idx0])))
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
@@ -414,3 +419,6 @@ class RealspaceSum(Fragment):
             coeffs[op.ops] = op.get_coefficients(threshold)
 
         return coeffs
+
+    def __repr__(self):
+        return f"RealspaceSum({self.ops})"
