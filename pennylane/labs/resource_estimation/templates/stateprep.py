@@ -192,7 +192,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
     Resources:
         The resources are computed following the PennyLane decomposition of
-        the class `:class:~.Superposition`.
+        the class :class:`~.Superposition`.
 
         We use the following (somewhat naive) assumptions to approximate the
         resources:
