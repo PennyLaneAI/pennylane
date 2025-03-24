@@ -131,6 +131,8 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params", "z"}
+
     def _flatten(self):
         return (self.base, self.z), tuple()
 
@@ -198,6 +200,14 @@ class Pow(ScalarSymbolicOp):
         )
 
     @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
+
+    @property
     def z(self):
         """The exponent."""
         return self.hyperparameters["z"]
@@ -253,10 +263,10 @@ class Pow(ScalarSymbolicOp):
 
     # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(*params, base=None, z=0):
+    def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method

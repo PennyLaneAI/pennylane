@@ -114,6 +114,16 @@ state preparation is typically used as the first operation.
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
+.. gallery-item::
+    :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
+    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+
+.. gallery-item::
+    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
+
+
+
 .. raw:: html
 
         <div style='clear:both'></div>

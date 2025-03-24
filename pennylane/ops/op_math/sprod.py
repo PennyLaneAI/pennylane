@@ -251,7 +251,7 @@ class SProd(ScalarSymbolicOp):
         return self.scalar * base_eigs
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
@@ -265,10 +265,10 @@ class SProd(ScalarSymbolicOp):
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
-        return mat
+        return mat.asformat(format)
 
     @property
     @handle_recursion_error

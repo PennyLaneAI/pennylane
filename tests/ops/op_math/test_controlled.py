@@ -203,6 +203,23 @@ class TestControlledInit:
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
 
+    def test_resource_params(self):
+        """Tests that a controlled op has the correct resource params."""
+
+        op = Controlled(
+            qml.MultiRZ(0.5, wires=[0, 1, 2]),
+            control_wires=[3, 4],
+            control_values=[True, False],
+            work_wires=[5],
+        )
+        assert op.resource_params == {
+            "base_class": qml.MultiRZ,
+            "base_params": {"num_wires": 3},
+            "num_control_wires": 2,
+            "num_zero_control_values": 1,
+            "num_work_wires": 1,
+        }
+
     def test_data(self):
         """Test that the base data can be get and set through Controlled class."""
 
@@ -742,6 +759,7 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(sparse_mat.toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]))
     def test_sparse_matrix_only_matrix_defined(self, control_values):
@@ -754,6 +772,7 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
     def test_sparse_matrix_wire_order(self):
         """Check if the user requests specific wire order, sparse_matrix() returns the same as matrix()."""
@@ -772,6 +791,7 @@ class TestMatrix:
 
         base = TempOperator(1)
         op = Controlled(base, 2)
+        assert not op.has_sparse_matrix
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()

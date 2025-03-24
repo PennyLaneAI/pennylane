@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class TestPauliRotation:
     def test_resource_params(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test that the resource params are correct"""
         op = resource_class(1.24, wires=0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -117,14 +117,16 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(10)))
+    @pytest.mark.parametrize("z", list(range(0, 10)))
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 
-        expected = {resource_class.resource_rep(): 1}
+        expected = (
+            {resource_class.resource_rep(): 1} if z else {re.ResourceIdentity.resource_rep(): 1}
+        )
         assert resource_class.pow_resource_decomp(z) == expected
 
-        op = resource_class(1.24, wires=0)
+        op = resource_class(1.24, wires=0) if z else re.ResourceIdentity(wires=0)
         dag = re.ResourcePow(op, z)
 
         label = "error_" + resource_class.__name__.replace("Resource", "").lower()
@@ -209,7 +211,20 @@ class TestPauliRotation:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_resources
         )
-        assert op2.resources(**op2.resource_params()) == expected_resources
+        assert op2.resources(**op2.resource_params) == expected_resources
+
+    # pylint: disable=unused-argument, import-outside-toplevel
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_sparse_matrix_format(self, resource_class, epsilon):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        op = resource_class(1.24, wires=0)
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
 
 
 class TestRot:
@@ -245,7 +260,7 @@ class TestRot:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
@@ -310,9 +325,10 @@ class TestRot:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
+        (0, {re.ResourceIdentity.resource_rep(): 1}),
         (1, {re.ResourceRot.resource_rep(): 1}),
         (2, {re.ResourceRot.resource_rep(): 1}),
         (5, {re.ResourceRot.resource_rep(): 1}),
@@ -325,7 +341,7 @@ class TestRot:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestPhaseShift:
@@ -362,7 +378,7 @@ class TestPhaseShift:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourcePhaseShift(0.1, wires=0)
-        assert op.resource_params() == {}
+        assert op.resource_params == {}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
@@ -425,9 +441,10 @@ class TestPhaseShift:
             op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires)
             == expected_res
         )
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
+        (0, {re.ResourceIdentity.resource_rep(): 1}),
         (1, {re.ResourcePhaseShift.resource_rep(): 1}),
         (2, {re.ResourcePhaseShift.resource_rep(): 1}),
         (5, {re.ResourcePhaseShift.resource_rep(): 1}),
@@ -440,4 +457,4 @@ class TestPhaseShift:
         assert op.pow_resource_decomp(z) == expected_res
 
         op2 = re.ResourcePow(op, z)
-        assert op2.resources(**op2.resource_params()) == expected_res
+        assert op2.resources(**op2.resource_params) == expected_res
