@@ -338,7 +338,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceBasisState.resources(6)
+    >>> re.ResourceBasisState.resources(num_bit_flips = 6)
     {X: 6}
     """
 
