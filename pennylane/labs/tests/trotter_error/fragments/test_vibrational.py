@@ -20,8 +20,8 @@ import pytest
 import scipy as sp
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter.fragments import vibrational_fragments
-from pennylane.labs.trotter.realspace import HOState, RealspaceSum
+from pennylane.labs.trotter_error.fragments import vibrational_fragments
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum
 
 # pylint: disable=no-self-use
 
@@ -41,8 +41,8 @@ def _vibrational_hamiltonian(modes, freqs, taylor_coeffs):
 def test_fragementation_schemes_equal(n_modes, omegas, phis, gridpoints):
     """Test that harmonic + anharmonic = kinetic + potential"""
 
-    harmonic, anharmonic = vibrational_fragments(n_modes, omegas, phis, frags="harmonic")
-    kinetic, potential = vibrational_fragments(n_modes, omegas, phis, frags="kinetic")
+    harmonic, anharmonic = vibrational_fragments(n_modes, omegas, phis, frag_method="harmonic")
+    kinetic, potential = vibrational_fragments(n_modes, omegas, phis, frag_method="kinetic")
 
     mat1 = (harmonic + anharmonic).matrix(gridpoints)
     mat2 = (kinetic + potential).matrix(gridpoints)

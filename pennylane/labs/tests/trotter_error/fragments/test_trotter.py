@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter import nested_commutator
-from pennylane.labs.trotter.fragments import vibronic_fragments
-from pennylane.labs.trotter.product_formulas import trotter_error
-from pennylane.labs.trotter.realspace import VibronicMatrix
+from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.fragments import vibronic_fragments
+from pennylane.labs.trotter_error.product_formulas import trotter_error
+from pennylane.labs.trotter_error.realspace import VibronicMatrix
 
 
 def _coeffs(states: int, modes: int, order: int):

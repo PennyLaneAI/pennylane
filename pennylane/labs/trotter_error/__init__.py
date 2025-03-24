@@ -58,10 +58,20 @@ State Classes:
 
     ~HOState
     ~VibronicHO
+
+Error Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~perturbation_error
+    ~trotter_error
 """
 
 from .abstract import AbstractState, Fragment
 from .fragments import generic_fragments, vibrational_fragments, vibronic_fragments
+from .product_formulas import perturbation_error, trotter_error
 from .realspace import (
     RealspaceCoeffs,
     RealspaceOperator,
