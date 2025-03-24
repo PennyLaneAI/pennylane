@@ -81,7 +81,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_wires (int): the number of wires that StatePrep acts on
+            num_wires (int): the number of wires that the operation acts on
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
