@@ -8,6 +8,7 @@
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
   [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
@@ -186,8 +187,12 @@
   [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
   [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
 <h3>Improvements 🛠</h3>
+
+* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
+  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
@@ -429,6 +434,11 @@
 
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
+  when capture is enabled.
+  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
+  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
@@ -793,6 +803,9 @@
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
 <h3>Bug fixes 🐛</h3>
+
+* Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
+  [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
 
 * Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
   differ depending if equivalent gate generators are defined using

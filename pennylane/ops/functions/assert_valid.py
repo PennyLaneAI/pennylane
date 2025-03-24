@@ -395,13 +395,7 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(
-    op: qml.operation.Operator,
-    skip_deepcopy=False,
-    skip_pickle=False,
-    skip_wire_mapping=False,
-    skip_differentiation=False,
-) -> None:
+def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -412,8 +406,11 @@ def assert_valid(
         skip_deepcopy=False: If `True`, deepcopy tests are not run.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
+        skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
             the operator is parametrized but not differentiable.
+        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
+            defined using the new system.
 
     **Examples:**
 
@@ -456,20 +453,20 @@ def assert_valid(
         assert qml.math.allclose(d, p), "data and parameters must match."
 
     if len(op.wires) <= 26:
-        _check_wires(op, skip_wire_mapping)
-    _check_copy(op, skip_deepcopy)
+        _check_wires(op, kwargs.get("skip_wire_mapping", False))
+    _check_copy(op, kwargs.get("skip_deepcopy", False))
     _check_pytree(op)
-    if not skip_pickle:
+    if not kwargs.get("skip_pickle", False):
         _check_pickle(op)
     _check_bind_new_parameters(op)
-    _check_decomposition(op, skip_wire_mapping)
-    _check_decomposition_new(op)
-
+    _check_decomposition(op, kwargs.get("skip_wire_mapping", False))
+    if not kwargs.get("skip_new_decomp", False):
+        _check_decomposition_new(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    if not skip_differentiation:
+    if not kwargs.get("skip_differentiation", False):
         _check_differentiation(op)
     _check_capture(op)
