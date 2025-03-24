@@ -14,7 +14,5 @@ jobs:
           team: "external-collaborators"
           github_token: ${{secrets.PENNYLANE_EXTERNAL_LABEL_MEMBER_CHECK}}
           username: "${{ github.actor }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
         uses: XanaduAI/cloud-actions/label-external-pull-request@sc-86563-external-label-forks
         
