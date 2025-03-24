@@ -274,7 +274,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
+        global_phase = math.squeeze(global_phase[0])
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations

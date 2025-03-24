@@ -864,29 +864,31 @@ class TestAdjointDiffTapeValidation:
         res = res[0]
 
         assert isinstance(res, qml.tape.QuantumScript)
-        assert len(res.operations) == 7
+        assert len(res.operations) == 8
         qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
         qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
         qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-        qml.assert_equal(res[3], qml.CNOT([0, 1]))
-        qml.assert_equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
-        qml.assert_equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
-        qml.assert_equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
         qs.trainable_params = [2, 3]
         res, _ = program((qs,))
         res = res[0]
         assert isinstance(res, qml.tape.QuantumScript)
-        assert len(res.operations) == 7
+        assert len(res.operations) == 8
         qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
         qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
         qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-        qml.assert_equal(res[3], qml.CNOT([0, 1]))
-        qml.assert_equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
-        qml.assert_equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
-        qml.assert_equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
     def test_u3_non_trainable_params(self):
         """Test that a warning is raised and all parameters are trainable in the expanded
