@@ -18,8 +18,6 @@ Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system
 
 # pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -27,7 +25,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
+from pennylane.transforms.decompose import DecomposeInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -209,9 +207,9 @@ class TestDecomposeInterpreterGraphEnabled:
             gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp: custom_decomp}
         )
         def f(x, y, z):
-            qml.adjoint(qml.RX(x, wires=[0])),
-            qml.adjoint(qml.adjoint(qml.MultiRZ(x, wires=[0, 1]))),
-            qml.adjoint(CustomOp(x, y, z, wires=[0])),
+            qml.adjoint(qml.RX(x, wires=[0]))
+            qml.adjoint(qml.adjoint(qml.MultiRZ(x, wires=[0, 1])))
+            qml.adjoint(CustomOp(x, y, z, wires=[0]))
 
         jaxpr = jax.make_jaxpr(f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
