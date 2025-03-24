@@ -237,6 +237,7 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
+    "determine_abstracted_axes",
     "expand_plxpr_transforms",
     "register_custom_staging_rule",
     "AbstractOperator",

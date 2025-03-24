@@ -37,7 +37,7 @@ class _NodeType(Enum):
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     """A tree representing an expression that computes the coefficients of a :class:`pennylane.labs.trotter_error.RealspaceOperator`.
-    This class should be instantiated from the following class methods.
+     This class should be instantiated from the following class methods:
 
         * ``tensor_node``: a leaf node containing a coefficient tensor
         * ``outer_node``: a node representing the outer product of its two children
@@ -210,7 +210,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` leaf node storing a tensor of coefficients.
+        """Returns a ``RealspaceCoeffs`` leaf node storing a tensor of coefficients.
 
         Args:
             tensor (ndarray): a tensor of coefficients
@@ -242,7 +242,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a ``RealspaceCoefs`` representing the scalar product of ``scalar`` and ``child``.
+        """Returns a ``RealspaceCoeffs`` representing the scalar product of ``scalar`` and ``child``.
 
         Args:
             scalar (float): a scalar to multiply ``child`` by

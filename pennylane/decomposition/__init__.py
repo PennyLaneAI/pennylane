@@ -36,6 +36,7 @@ Defining Decomposition Rules
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
+    ~pow_resource_rep
     ~DecompositionRule
     ~Resources
 
@@ -113,6 +114,7 @@ from .resources import (
     resource_rep,
     controlled_resource_rep,
     adjoint_resource_rep,
+    pow_resource_rep,
 )
 from .decomposition_rule import (
     register_resources,
