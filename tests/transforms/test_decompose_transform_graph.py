@@ -212,6 +212,32 @@ class TestDecomposeGraphEnabled:
         ]
 
     @pytest.mark.integration
+    def test_fall_back(self):
+        """Tests that op.decompose() is used for ops unsolved in the graph."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """Dummy custom op."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+            def decomposition(self):
+                return [qml.H(self.wires[1]), qml.CNOT(self.wires), qml.H(self.wires[1])]
+
+        @qml.register_resources({qml.CZ: 1})
+        def my_decomp(wires, **__):
+            qml.CZ(wires=wires)
+
+        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])])
+        [new_tape], _ = qml.transforms.decompose(
+            tape, gate_set={"CNOT", "Hadamard"}, fixed_decomps={CustomOp: my_decomp}
+        )
+        assert new_tape.operations == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
+
+    @pytest.mark.integration
     def test_controlled_decomp(self):
         """Tests decomposing a controlled operation."""
 
@@ -224,11 +250,14 @@ class TestDecomposeGraphEnabled:
         tape = qml.tape.QuantumScript(ops)
         [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
         assert new_tape.operations == [
+            # Decomposition of C(CNOT)
             qml.Toffoli(wires=[2, 1, 0]),
+            # Decomposition of C(RZ) -> CRZ
             qml.RZ(0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
             qml.RZ(-0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
+            # Decomposition of C(CNOT)
             qml.Toffoli(wires=[2, 1, 0]),
         ]
 
