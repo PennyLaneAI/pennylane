@@ -1,8 +1,8 @@
 .. role:: html(raw)
    :format: html
 
-Program capture sharp bits
-==========================
+🔪 Program capture sharp bits
+=============================
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
@@ -81,7 +81,8 @@ TransformError: Too many mid-circuit measurements for the specified number of wi
 
 Recall that the deferred measurements MCM method adds a temporary wire and represents 
 the physical MCM as a controlled operation, deferring the measurement until the 
-end of the circuit.
+end of the circuit. By adding an additional wire to the device, the above circuit
+executes as expected: 
 
 >>> circuit = circuit.update(device = qml.device('default.qubit', wires=2))
 >>> circuit(0.1)
