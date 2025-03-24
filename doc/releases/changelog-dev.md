@@ -612,6 +612,9 @@
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
+* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``VibronicMatrix``
+  [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
