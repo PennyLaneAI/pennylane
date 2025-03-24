@@ -123,14 +123,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
+        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
+            label (string): a label for the tensor to be used when displaying the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
 
         Returns:
-            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
+            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
 
         **Example**
 
@@ -144,7 +144,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
+        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
 
         Args:
             l_child (RealspaceCoeffs): the left child
@@ -182,14 +182,14 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         l_child: RealspaceCoeffs,
         r_child: RealspaceCoeffs,
     ) -> RealspaceCoeffs:
-        """Returns a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` representing the outer product of the two children nodes.
+        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the outer product of the two children nodes.
 
         Args:
             l_child (RealspaceCoeffs): the left child
             r_child (RealspaceCOeffs): the right child
 
         Returns:
-            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing the outer product of ``l_child`` and ``r_child``
+            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing the outer product of ``l_child`` and ``r_child``
 
         **Example**
 
@@ -214,10 +214,10 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
+            label (string): a label for the tensor to be used when displaying the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
 
         Returns:
-            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
+            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
 
         **Example**
 
@@ -246,10 +246,10 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         Args:
             scalar (float): a scalar to multiply ``child`` by
-            child (RealspaceCoeffs): the :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object to be multiplied by ``scalar``
+            child (RealspaceCoeffs): the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object to be multiplied by ``scalar``
 
         Returns:
-            RealspaceCoeffs: a :class:`pennylane.labs.trotter_error.RealspaceCoeffs` object representing the coefficients of ``child`` multiplied by ``scalar``
+            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing the coefficients of ``child`` multiplied by ``scalar``
 
         **Example**
 
