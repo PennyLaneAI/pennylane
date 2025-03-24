@@ -321,7 +321,7 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
     if isinstance(op, qml.QubitUnitary):
         qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(
-            op.matrix(),
+            op.matrix() if op.has_matrix else op.sparse_matrix(),
             wires=control + op.wires,
             control_values=control_values,
             work_wires=work_wires,
