@@ -444,7 +444,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
             ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
 
     Resource Parameters:
-        * mod (int): the module for performing the exponentiation
+        * mod (int): the modulo for performing the modular exponentiation
         * num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
         * num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
         * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
