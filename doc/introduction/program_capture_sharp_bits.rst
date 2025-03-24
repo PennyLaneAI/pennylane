@@ -60,6 +60,34 @@ NotImplementedError: devices must specify wires for integration with plxpr captu
 >>> circuit()
 Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
 
+This also affects mid-circuit measurements (MCMs) with the deferred measurements
+method:
+
+.. code-block:: python
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0)
+        return qml.state()
+
+>>> circuit(0.1)
+...
+TransformError: Too many mid-circuit measurements for the specified number of wires with 'defer_measurements'.
+
+Recall that the deferred measurements MCM method adds a temporary wire and represents 
+the physical MCM as a controlled operation, deferring the measurement until the 
+end of the circuit.
+
+>>> circuit = circuit.update(device = qml.device('default.qubit', wires=2))
+>>> circuit(0.1)
+Array([0.99875027+0.j        , 0.        +0.j        ,
+       0.        +0.j        , 0.        -0.04997917j], dtype=complex64)
+
 Valid JAX data types 
 --------------------
 
