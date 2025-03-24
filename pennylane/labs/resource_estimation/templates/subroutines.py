@@ -126,8 +126,8 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceControlledSequence.resources(
-    ...     base_class=re.ResourceHadamard, 
-    ...     base_params={}, 
+    ...     base_class=re.ResourceHadamard,
+    ...     base_params={},
     ...     num_ctrl_wires=2
     ... )
     {C(Hadamard,1,0,0): 3}
@@ -229,7 +229,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourcePhaseAdder.resources(
-    ...     mod=3, 
+    ...     mod=3,
     ...     num_x_wires=5
     ... )
     {QFT(5): 2,
@@ -342,8 +342,8 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceMultiplier.resources(
-    ...     mod=3, 
-    ...     num_work_wires=5, 
+    ...     mod=3,
+    ...     num_work_wires=5,
     ...     num_x_wires=5
     ... )
     {QFT(4): 2,
@@ -470,9 +470,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceModExp.resources(
-    ...     mod=3, 
-    ...     num_output_wires=5, 
-    ...     num_work_wires5, 
+    ...     mod=3,
+    ...     num_output_wires=5,
+    ...     num_work_wires5,
     ...     num_x_wires=5
     ... )
     {C(QFT(4),1,0,0): 62,
@@ -1318,11 +1318,11 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceQROM.resources(
-    ...     num_bitstrings=3, 
-    ...     num_bit_flips=7, 
-    ...     num_control_wires=5, 
-    ...     num_work_wires=5, 
-    ...     size_bitstring=3, 
+    ...     num_bitstrings=3,
+    ...     num_bit_flips=7,
+    ...     num_control_wires=5,
+    ...     num_work_wires=5,
+    ...     size_bitstring=3,
     ...     clean=True
     ... )
     {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
@@ -1494,12 +1494,12 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     The resources for this operation are computed using:
 
     >>> re.ResourceAmplitudeAmplification.resources(
-    ...     U_op=re.ResourceHadamard, 
-    ...     U_params={}, 
-    ...     O_op=re.ResourceX, 
-    ...     O_params={}, 
-    ...     iters=5, 
-    ...     num_ref_wires=10, 
+    ...     U_op=re.ResourceHadamard,
+    ...     U_params={},
+    ...     O_op=re.ResourceX,
+    ...     O_params={},
+    ...     iters=5,
+    ...     num_ref_wires=10,
     ...     fixed_point=True
     ... )
     {C(X,1,0,0): 4, PhaseShift: 2, Hadamard: 8, Reflection: 2}
