@@ -36,7 +36,7 @@ class _NodeType(Enum):
 
 
 class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
-    """A tree representing an expression that computes the coefficients of a :class:`pennylane.labs.trotter_error.RealspaceOperator`.
+    """A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
 
         * ``tensor_node``: a leaf node containing a coefficient tensor
@@ -92,7 +92,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         tensor: ndarray = None,
         scalar: float = None,
         value: float = None,
-        label: Tuple[str, Any] = None,
+        label: str = None,
     ) -> RealspaceCoeffs:
 
         self.node_type = node_type
