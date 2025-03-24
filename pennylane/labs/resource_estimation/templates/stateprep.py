@@ -42,7 +42,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     Resources:
         Uses the resources as defined in the `:class:~.ResourceMottonenStatePreperation` template.
 
-    .. seealso:: `:class:~.StatePrep`
+    .. seealso:: :class:`~.StatePrep`
 
     **Example**
 
