@@ -110,7 +110,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
         :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
 
-    .. seealso:: `:class:~.MottonenStatePreperation`
+    .. seealso:: :class:`~.MottonenStatePreperation`
 
     **Example**
 
@@ -208,7 +208,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
             with not needing to permute wires if the basis states happen to match, we
             estimate this quantity aswell.
 
-    .. seealso:: `:class:~.Superposition`
+    .. seealso:: :class:`~.Superposition`
 
     **Example**
 
@@ -332,7 +332,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     Resources:
         The resources for BasisState are according to the decomposition found in qml.BasisState.
 
-    .. seealso:: `:class:~.BasisState`
+    .. seealso:: :class:`~.BasisState`
 
     **Example**
 

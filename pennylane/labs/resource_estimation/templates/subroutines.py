@@ -125,7 +125,11 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceControlledSequence.resources(re.ResourceHadamard, {}, 2)
+    >>> re.ResourceControlledSequence.resources(
+    ...     base_class=re.ResourceHadamard, 
+    ...     base_params={}, 
+    ...     num_ctrl_wires=2
+    ... )
     {C(Hadamard,1,0,0): 3}
     """
 
@@ -224,7 +228,10 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourcePhaseAdder.resources(3, 5)
+    >>> re.ResourcePhaseAdder.resources(
+    ...     mod=3, 
+    ...     num_x_wires=5
+    ... )
     {QFT(5): 2,
     Adjoint(QFT(5)): 2,
     PhaseShift: 10,
@@ -334,7 +341,11 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceMultiplier.resources(3, 5, 5)
+    >>> re.ResourceMultiplier.resources(
+    ...     mod=3, 
+    ...     num_work_wires=5, 
+    ...     num_x_wires=5
+    ... )
     {QFT(4): 2,
     Adjoint(QFT(4)): 2,
     ControlledSequence(PhaseAdder, 5): 1,
@@ -458,7 +469,12 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceModExp.resources(3, 5, 5, 5)
+    >>> re.ResourceModExp.resources(
+    ...     mod=3, 
+    ...     num_output_wires=5, 
+    ...     num_work_wires5, 
+    ...     num_x_wires=5
+    ... )
     {C(QFT(4),1,0,0): 62,
     C(Adjoint(QFT(4)),1,0,0): 62,
     C(ControlledSequence(PhaseAdder, 5),1,0,0): 31,
