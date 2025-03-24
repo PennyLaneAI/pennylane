@@ -37,7 +37,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         validate_norm (bool): whether to validate the norm of the input state
 
     Resource Parameters:
-        * num_wires (int): the number of wires that StatePrep acts on
+        * num_wires (int): the number of wires that the operation acts on
 
     Resources:
         Uses the resources as defined in the :class:`~.ResourceMottonenStatePreperation` template.
