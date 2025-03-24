@@ -738,8 +738,8 @@ def _operator_decomposition_gen(
 
     if acceptance_function(op) or max_depth_reached:
         yield op
-    elif graph is not None and graph.is_solved_for(op):
-        op_rule = graph.decomposition(op)
+    elif decomp_graph is not None and decomp_graph.is_solved_for(op):
+        op_rule = decomp_graph.decomposition(op)
         with qml.queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
@@ -754,7 +754,7 @@ def _operator_decomposition_gen(
             acceptance_function,
             max_expansion=max_expansion,
             current_depth=current_depth,
-            decomp_graph=graph,
+            decomp_graph=decomp_graph,
         )
 
 
@@ -773,7 +773,7 @@ def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decom
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
-    graph = DecompositionGraph(
+    decomp_graph = DecompositionGraph(
         operations,
         target_gate_names,
         fixed_decomps=fixed_decomps,
@@ -781,6 +781,6 @@ def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decom
     )
 
     # Find the efficient pathways to the target gate set
-    graph.solve()
+    decomp_graph.solve()
 
-    return graph
+    return decomp_graph
