@@ -83,6 +83,82 @@ class TestDecomposeInterpreterGraphEnabled:
         assert collector.state["ops"] == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
 
     @pytest.mark.integration
+    def test_gate_set_targeted_decompositions(self):
+        """Tests that a simple circuit is correctly decomposed into different gate sets."""
+
+        def f(x, y, z):
+            qml.H(0)
+            qml.Rot(x, y, z, wires=0)
+            qml.MultiRZ(x, wires=[0, 1, 2])
+
+        decomposed_f = DecomposeInterpreter(gate_set={"Hadamard", "CNOT", "RZ", "RY"})(f)
+        jaxpr = jax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
+        assert collector.state["ops"] == [
+            # H is in the target gate set
+            qml.H(0),
+            # Rot decomposes to ZYZ
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+            # Decomposition of MultiRZ
+            qml.CNOT(wires=[2, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(0.1, wires=[0]),
+            qml.CNOT(wires=[1, 0]),
+            qml.CNOT(wires=[2, 1]),
+        ]
+
+        decomposed_f = DecomposeInterpreter(gate_set={"RY", "RZ", "CZ", "GlobalPhase"})(f)
+        jaxpr = jax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
+        assert collector.state["ops"] == [
+            # The H decomposes to RZ and RY
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            # Rot decomposes to ZYZ
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+            # CNOT decomposes to H and CZ, where H decomposes to RZ and RY
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[2, 1]),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            # second CNOT
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[1, 0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            # The middle RZ
+            qml.RZ(0.1, wires=[0]),
+            # The last two CNOTs
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[1, 0]),
+            qml.RZ(np.pi, wires=[0]),
+            qml.RY(np.pi / 2, wires=[0]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+            qml.CZ(wires=[2, 1]),
+            qml.RZ(np.pi, wires=[1]),
+            qml.RY(np.pi / 2, wires=[1]),
+            qml.GlobalPhase(-np.pi / 2),
+        ]
+
+    @pytest.mark.integration
     def test_decompose_controlled(self):
         """Tests that controlled decomposition works."""
 
