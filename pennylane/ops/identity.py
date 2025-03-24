@@ -310,6 +310,8 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
+    resource_keys = set()
+
     @classmethod
     def _primitive_bind_call(
         cls, phi, wires: WiresLike = (), **kwargs
@@ -318,6 +320,10 @@ class GlobalPhase(Operation):
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
