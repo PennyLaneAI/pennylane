@@ -1414,6 +1414,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         function will also expect keyword arguments that match these keys when called with this
         operator type.
 
+        The default implementation is an empty set, which is suitable for most operators.
+
         .. seealso::
             :meth:`~.Operator.resource_params`
 

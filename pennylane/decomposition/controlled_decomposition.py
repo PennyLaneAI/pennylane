@@ -104,15 +104,18 @@ class ControlledBaseDecomposition(DecompositionRule):  # pylint: disable=too-few
     def _get_impl(self) -> Callable:
         """The default implementation of a controlled decomposition."""
 
-        def _impl(*_, control_wires, control_values, work_wires, base, **__):
+        def _impl(*params, wires, control_wires, control_values, work_wires, base, **__):
             zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
             for w in zero_control_wires:
                 qml.PauliX(w)
+            # We're extracting control wires and base wires from the wires argument instead
+            # of directly using control_wires and base.wires, `wires` is properly traced, but
+            # `control_wires` and `base.wires` are not.
             qml.ctrl(
                 self._base_decomposition._impl,  # pylint: disable=protected-access
-                control=control_wires,
+                control=wires[: len(control_wires)],
                 work_wires=work_wires,
-            )(*base.parameters, wires=base.wires, **base.hyperparameters)
+            )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
             for w in zero_control_wires:
                 qml.PauliX(w)
 
@@ -165,24 +168,24 @@ def _controlled_g_phase_resource(
 
 
 @register_resources(_controlled_g_phase_resource)
-def controlled_global_phase_decomp(*_, control_wires, control_values, work_wires, base, **__):
+def controlled_global_phase_decomp(*params, wires, control_wires, control_values, work_wires, **__):
     """The decomposition rule for a controlled global phase."""
 
     if len(control_wires) == 1 and control_values[0]:
-        qml.PhaseShift(-base.data[0], wires=control_wires[-1])
+        qml.PhaseShift(-params[0], wires=control_wires[-1])
         return
 
     if len(control_wires) == 1 and not control_values[0]:
-        qml.PhaseShift(base.data[0], wires=control_wires[-1])
-        qml.GlobalPhase(base.data[0])
+        qml.PhaseShift(params[0], wires=control_wires[-1])
+        qml.GlobalPhase(params[0])
         return
 
     zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
     for w in zero_control_wires:
         qml.PauliX(w)
     qml.ctrl(
-        qml.PhaseShift(-base.data[0], wires=control_wires[-1]),
-        control=control_wires[:-1],
+        qml.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
+        control=wires[: len(control_wires) - 1],
         work_wires=work_wires,
     )
     for w in zero_control_wires:
