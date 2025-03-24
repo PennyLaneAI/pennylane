@@ -152,7 +152,7 @@ If you are having issues, please let us know by posting the issue on our GitHub 
 Join the [PennyLane Discussion Forum](https://discuss.pennylane.ai/) to connect with the quantum community, get support, and engage directly with our team. It’s the perfect place to share ideas, ask questions, and collaborate with fellow researchers and developers!
 
 Note that we are committed to providing a friendly, safe, and welcoming environment for all.
-Please read and respect the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+Please read and respect the [Code of Conduct](.github/CODE_OF_CONDUCT.md). 
 
 ## Authors
 
