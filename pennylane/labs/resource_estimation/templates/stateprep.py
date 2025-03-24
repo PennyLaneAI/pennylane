@@ -58,7 +58,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            num_wires (int): the number of wires that StatePrep acts on
+            num_wires (int): the number of wires that the operation acts on
 
         Resources:
             Uses the resources as defined in the :class:`~.ResourceMottonenStatePreperation` template.
@@ -71,7 +71,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of wires that StatePrep acts on
+                * num_wires (int): the number of wires that the operation acts on
         """
         return {"num_wires": len(self.wires)}
 
