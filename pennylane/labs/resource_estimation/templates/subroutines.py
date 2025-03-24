@@ -472,7 +472,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     >>> re.ResourceModExp.resources(
     ...     mod=3,
     ...     num_output_wires=5,
-    ...     num_work_wires5,
+    ...     num_work_wires=5,
     ...     num_x_wires=5
     ... )
     {C(QFT(4),1,0,0): 62,
@@ -749,7 +749,7 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceBasisRotation.resources(dim_N=3)
-    {PhaseShift: 6, SingleExcitation: 3}
+    {PhaseShift: 6.0, SingleExcitation: 3.0}
     """
 
     @staticmethod
