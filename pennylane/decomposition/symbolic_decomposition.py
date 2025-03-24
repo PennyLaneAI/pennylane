@@ -22,7 +22,7 @@ import pennylane as qml
 
 from .controlled_decomposition import base_to_custom_ctrl_op
 from .decomposition_rule import DecompositionRule, register_resources
-from .resources import adjoint_resource_rep, resource_rep
+from .resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 
 
 class AdjointDecomp(DecompositionRule):  # pylint: disable=too-few-public-methods
@@ -132,6 +132,50 @@ def adjoint_controlled_decomp(*_, base, **__):
         control_values=base.control_values,
         work_wires=base.work_wires,
     )
+
+
+def _adjoint_pow_resource(base_class, base_params):  # pylint: disable=unused-argument
+    """Resources of the adjoint of the power of a gate whose adjoint is of the same type."""
+    base, base_params, z = base_params["base_class"], base_params["base_params"], base_params["z"]
+    # The adjoint of the base is assumed to be of the same type as the base.
+    return {pow_resource_rep(base, base_params, z): 1}
+
+
+@register_resources(_adjoint_pow_resource)
+def adjoint_pow_decomp(*_, base, **__):
+    """Decompose the adjoint of the power of a gate that has its own adjoint."""
+    qml.pow(base.base.adjoint(), z=base.z)
+
+
+def _pow_resource(base_class, base_params, z):
+    """Resources of the power of a gate."""
+    if not isinstance(z, int) or z < 0:
+        raise NotImplementedError("Non-integer or negative powers are not supported yet.")
+    return {resource_rep(base_class, **base_params): z}
+
+
+@register_resources(_pow_resource)
+def pow_decomp(*_, base, z, **__):
+    """Decompose the power of a gate."""
+    assert isinstance(z, int) and z >= 0
+    for _ in range(z):
+        base._unflatten(*base._flatten())  # pylint: disable=protected-access
+
+
+def _pow_pow_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    """Resources of the power of the power of a gate."""
+    base_class, base_params, base_z = (
+        base_params["base_class"],
+        base_params["base_params"],
+        base_params["z"],
+    )
+    return {pow_resource_rep(base_class, base_params, z * base_z): 1}
+
+
+@register_resources(_pow_pow_resource)
+def pow_pow_decomp(*_, base, z, **__):
+    """Decompose the power of the power of a gate."""
+    qml.pow(base.base, z=z * base.z)
 
 
 @functools.lru_cache(maxsize=1)

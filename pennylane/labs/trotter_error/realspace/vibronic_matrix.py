@@ -32,11 +32,11 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 class VibronicMatrix(Fragment):
     r"""Implements a dictionary of ``RealspaceSum`` objects.
 
-     This can be used to represent the fragments of the vibronic Hamiltonian given by
+    This can be used to represent the fragments of the vibronic Hamiltonian given by
 
-    .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots
+    .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
-    The dictionary is indexed by tuples ``(i, j)`` and the values are ``RealspaceSum`` objects representing the operator :math:`V_{i,j}`.
+    where the dictionary is indexed by tuples ``(i, j)`` and the values are :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
 
     Args:
         states (int): the number of electronic states
