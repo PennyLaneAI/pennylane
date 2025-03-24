@@ -84,6 +84,22 @@ the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an e
 >>> circuit()
 TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
 
+.. code-block:: python 
+
+    import jax.numpy as jnp
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array([0., 0.], dtype=float32)
+
 Providing a ``list`` as input to a quantum function or QNode is accepted in cases 
 where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
 
@@ -102,7 +118,7 @@ where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
 >>> circuit([0.1, 0.2])
 Array(0., dtype=float32)
 
-JAX-incompatible types, like Python ``range``\ s, are acceptable as keyword arguments:
+JAX-incompatible types, like Python ``range``\ s, are acceptable as **keyword arguments**:
 
 .. code-block:: python 
 
