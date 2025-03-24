@@ -126,6 +126,29 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
 
 
+def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08, scalar_is_a=False):
+    """Compare a sparse matrix to a scalar value efficiently.
+
+    Args:
+        sparse_mat: A scipy sparse matrix
+        scalar: A scalar value to compare against
+        rtol: Relative tolerance
+        atol: Absolute tolerance
+        scalar_is_a: True if the scalar is the 'a' argument in the comparison
+
+    Returns:
+        bool: True if the sparse matrix is approximately equal to the scalar
+    """
+    # Check if any non-zero values are not close to the scalar
+    if sparse_mat.nnz > 0:
+        # For non-zero elements, they must be close to the scalar
+        if not np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol):
+            return False
+
+    # For zero elements, the scalar must be close to zero
+    return abs(0 - scalar) <= atol + rtol * abs(scalar if scalar_is_a else 0)
+
+
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
@@ -134,6 +157,12 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         # Try and use it if available.
         if sp.sparse.issparse(a) and sp.sparse.issparse(b):
             return _allclose_sparse(a, b, rtol=rtol, atol=atol)
+        # Add handling for sparse matrix compared with scalar
+        if sp.sparse.issparse(a) and np.isscalar(b):
+            return _allclose_sparse_scalar(a, b, rtol=rtol, atol=atol)
+        if sp.sparse.issparse(b) and np.isscalar(a):
+            return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol, scalar_is_a=True)
+
         if sp.sparse.issparse(a):
             # pylint: disable=arguments-out-of-order
             return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=False)
