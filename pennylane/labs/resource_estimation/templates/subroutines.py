@@ -1301,7 +1301,14 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceQROM.resources(3, 7, 5, 5, 3, True)
+    >>> re.ResourceQROM.resources(
+    ...     num_bitstrings=3, 
+    ...     num_bit_flips=7, 
+    ...     num_control_wires=5, 
+    ...     num_work_wires=5, 
+    ...     size_bitstring=3, 
+    ...     clean=True
+    ... )
     {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
     """
 
@@ -1470,7 +1477,15 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceAmplitudeAmplification.resources(re.ResourceHadamard, {}, re.ResourceX, {}, 5, 10, True)
+    >>> re.ResourceAmplitudeAmplification.resources(
+    ...     U_op=re.ResourceHadamard, 
+    ...     U_params={}, 
+    ...     O_op=re.ResourceX, 
+    ...     O_params={}, 
+    ...     iters=5, 
+    ...     num_ref_wires=10, 
+    ...     fixed_point=True
+    ... )
     {C(X,1,0,0): 4, PhaseShift: 2, Hadamard: 8, Reflection: 2}
     """
 
