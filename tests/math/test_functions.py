@@ -258,6 +258,15 @@ def test_allclose(t1, t2):
 class TestAllCloseSparse:
     """Test that the sparse-matrix specialized allclose functions works well"""
 
+    @pytest.mark.parametrize("v", [0, 1, 2.0, 3.0j])
+    def test_sparse_scalar(self, v):
+        """Test comparing a scalar to a sparse matrix"""
+        dense = v
+        sparse = sp.sparse.csr_matrix([v] * 10)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
     def test_dense_sparse_small_matrix(self):
         """Test comparing small dense and sparse matrices"""
         dense = np.array([[1, 0, 2], [0, 3, 0]])
