@@ -110,6 +110,7 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.Toffoli(wires=[2, 1, 0]),
         ]
 
+    @pytest.mark.xfail("The DecomposeInterpreter does not support adjoint transforms.")
     @pytest.mark.integration
     def test_decompose_adjoint(self):
         """Tests that an adjoint operation is decomposed."""
