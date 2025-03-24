@@ -325,6 +325,26 @@ class VibronicMatrix(Fragment):
         Returns:
             VibronicHO: the result of applying the ``VibronicMatrix`` to ``state``
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import HOState, VibronicHO
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 3
+        >>> gridpoints = 2
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+        >>> state_dict = {(1, 0, 0): 1, (0, 1, 1): 1}
+        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> VibronicHO(n_states, n_modes, gridpoints, [state])
+        VibronicHO([HOState(modes=3, gridpoints=2, <Compressed Sparse Row sparse array of dtype 'int64'
+            with 2 stored elements and shape (8, 1)>
+          Coords	Values
+          (3, 0)	1
+          (4, 0)	1)])
         """
 
         if self.states != len(state.ho_states):

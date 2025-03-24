@@ -71,11 +71,16 @@ class HOState:
 
         **Example**
 
-        >>> from pennylane.labs.trotter import HOState
+        >>> from pennylane.labs.trotter_error import HOState
         >>> n_modes = 3
         >>> gridpoints = 5
         >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
-        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> HOState.from_dict(n_modes, gridpoints, state_dict)
+        HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
+            with 2 stored elements and shape (125, 1)>
+          Coords	Values
+          (17, 0)	1
+          (38, 0)	1)
         """
         rows, cols, vals = [], [], []
         for index, val in coeffs.items():
@@ -109,12 +114,17 @@ class HOState:
 
         **Examples**
 
+        >>> from pennylane.labs.trotter_error import HOState
         >>> from scipy.sparse import csr_array
         >>> import numpy as np
         >>> gridpoints = 2
         >>> n_modes = 2
         >>> state_vector = csr_array(np.array([0, 1, 0, 0]))
-        >>> state = HOState.from_scipy(n_modes, gridpoints, state_vector)
+        >>> HOState.from_scipy(n_modes, gridpoints, state_vector)
+        HOState(modes=2, gridpoints=2, <COOrdinate sparse array of dtype 'int64'
+            with 1 stored elements and shape (4, 1)>
+          Coords	Values
+          (1, 0)	1)
         """
 
         if vector.shape == (gridpoints**modes,):
@@ -141,7 +151,9 @@ class HOState:
         **Example**
 
         >>> from pennylane.labs.trotter_error import HOState
-        >>> zero = HOState.zero_state(5, 10)
+        >>> HOState.zero_state(5, 10)
+        HOState(modes=5, gridpoints=10, <Compressed Sparse Row sparse array of dtype 'float64'
+            with 0 stored elements and shape (100000, 1)>)
         """
         return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
 
@@ -182,6 +194,9 @@ class HOState:
 
         return ((self.vector.T).dot(other.vector))[0, 0]
 
+    def __repr__(self):
+        return f"HOState(modes={self.modes}, gridpoints={self.gridpoints}, {self.vector})"
+
 
 class VibronicHO:
     """Represents the tensor product of harmonic oscillator states.
@@ -194,13 +209,22 @@ class VibronicHO:
 
     **Example**
 
-    >>> from pennylane.labs.trotter import HOState, VibronicHO
+    >>> from pennylane.labs.trotter_error import HOState, VibronicHO
     >>> n_modes = 3
     >>> n_states = 2
     >>> gridpoints = 5
     >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
     >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
-    >>> vo_state = VibronicHO(n_states, n_modes, gridpoints, [state, state])
+    >>> VibronicHO(n_states, n_modes, gridpoints, [state, state])
+    VibronicHO([HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
+        with 2 stored elements and shape (125, 1)>
+      Coords	Values
+      (17, 0)	1
+      (38, 0)	1), HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
+        with 2 stored elements and shape (125, 1)>
+      Coords	Values
+      (17, 0)	1
+      (38, 0)	1)])
     """
 
     def __init__(self, states: int, modes: int, gridpoints: int, ho_states: Sequence[HOState]):
@@ -225,6 +249,9 @@ class VibronicHO:
         self.modes = modes
         self.gridpoints = gridpoints
         self.ho_states = ho_states
+
+    def __repr__(self):
+        return f"VibronicHO({self.ho_states})"
 
     def __add__(self, other: VibronicHO) -> VibronicHO:
         if self.states != other.states:
@@ -273,7 +300,11 @@ class VibronicHO:
 
         **Example**
 
+        >>> from pennylane.labs.troter_error import VibronicHO
         >>> VibronicHO.zero_state(2, 3, 5)
+        VibronicHO([HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'float64'
+            with 0 stored elements and shape (125, 1)>), HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'float64'
+            with 0 stored elements and shape (125, 1)>)])
         """
         return cls(
             states=states,
