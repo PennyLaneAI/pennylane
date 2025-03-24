@@ -404,13 +404,13 @@ def decompose(
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
-            This is only used when ``qml.decomposition.enable_graph()`` is present.
+            This is only used when :func:`~pennylane.decomposition.enable_graph` is present.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
             quantum function decorated with :func:`~pennylane.register_resources`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
             decomposition rules defined for this operator, and one of them may be chosen if they
-            lead to a more resource-efficient decomposition. This is only used when ``qml.decomposition.enable_graph()``
+            lead to a more resource-efficient decomposition. This is only used when :func:`~pennylane.decomposition.enable_graph`
             is present.
 
     Returns:

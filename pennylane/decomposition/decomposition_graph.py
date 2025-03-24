@@ -73,7 +73,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
     will have a weight that is the total resource estimate of the decomposition minus the resource
-    estimate of the operator. For example the edge that connects a ``qml.CNOT`` to the following
+    estimate of the operator. For example the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python

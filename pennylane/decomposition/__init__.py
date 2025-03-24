@@ -22,8 +22,8 @@ This module implements the infrastructure for PennyLane's new graph-based decomp
     This module is experimental and is subject to change in the future.
 
 To activate and deactivate the new experimental graph-based decomposition system, use the switches
-``qml.decomposition.enable_graph`` and ``qml.decomposition.disable_graph``. Whether the graph-based
-decomposition system is currently being used can be queried with ``qml.decomposition.enabled_graph``.
+:func:`~pennylane.decomposition.enable_graph` and :func:`~pennylane.decomposition.disable_graph`. Whether the graph-based
+decomposition system is currently being used can be queried with :func:`~pennylane.decomposition.enabled_graph`.
 By default, this system is disabled.
 
 .. currentmodule:: pennylane.decomposition
@@ -102,7 +102,7 @@ Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
-decomposition algorithm when ``qml.decomposition.enable_graph()`` is present, and allows for more
+decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
 flexible decompositions towards any target gate set. For example, the current system does not
 guarentee a decomposition to the desired target gate set:
 
@@ -137,7 +137,7 @@ With the new system enabled, the transform produces the expected outcome.
 
 **Customizing Decompositions**
 
-The new system also enables specifying custom decomposition rules. When ``qml.decomposition.enable_graph()``
+The new system also enables specifying custom decomposition rules. When :func:`~pennylane.decomposition.enable_graph`
 is present, the :func:`~pennylane.transforms.decompose` transform accepts two additional keyword
 arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom decomposition rules
 as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them

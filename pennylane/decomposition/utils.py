@@ -33,7 +33,7 @@ def toggle_graph_decomposition():
         in PennyLane (introduced in v0.41). This new way of doing decompositions is
         generally more performant and allows for specifying custom decompositions.
 
-        When this is enabled, `qml.transforms.decompose` will use the new decompositions system.
+        When this is enabled, :func:`~pennylane.transforms.decompose` will use the new decompositions system.
         """
 
         nonlocal _GRAPH_DECOMPOSITION
@@ -45,7 +45,7 @@ def toggle_graph_decomposition():
         system in PennyLane (introduced in v0.41). The experimental graph-based
         decomposition system is disabled by default in PennyLane.
 
-        See also: :func:`decomposition.enable_graph`
+        See also: :func:`~pennylane.decomposition.enable_graph`
         """
 
         nonlocal _GRAPH_DECOMPOSITION
@@ -57,7 +57,7 @@ def toggle_graph_decomposition():
         decomposition system in PennyLane (introduced in v0.41). The experimental
         graph-based decomposition system is disabled by default in PennyLane.
 
-        See also: :func:`decomposition.enable_graph`
+        See also: :func:`~pennylane.decomposition.enable_graph`
         """
 
         nonlocal _GRAPH_DECOMPOSITION
