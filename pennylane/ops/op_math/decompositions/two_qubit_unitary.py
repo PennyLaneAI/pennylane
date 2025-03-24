@@ -17,6 +17,7 @@ unitary operations into elementary gates.
 import warnings
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -624,6 +625,11 @@ def two_qubit_decomposition(U, wires):
     _check_differentiability_warning(U)
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to rescale the matrix by its determinant.
+    if sp.sparse.issparse(U):
+        # Convert all the global elements to sparse matrices in-place
+        for name in global_arrays_name:
+            array = globals()[name]
+            globals()[name] = sp.sparse.csr_matrix(array)
     U = _convert_to_su4(U)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
