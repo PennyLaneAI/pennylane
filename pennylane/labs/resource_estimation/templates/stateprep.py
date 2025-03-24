@@ -103,7 +103,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         wires (Iterable): wires that the template acts on
 
     Resource Parameters:
-        * num_wires(int): the number of wires that StatePrep acts on
+        * num_wires(int): the number of wires that the operation acts on
 
     Resources:
         Using the resources as described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
