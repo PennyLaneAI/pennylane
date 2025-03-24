@@ -36,7 +36,7 @@ class SemiAdder(Operation):
 
     .. note::
 
-        To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
+        To obtain the correct result, :math:`x`, :math:`y` must be smaller than :math:`mod`.
 
     .. seealso:: :class:`~.PhaseAdder` and :class:`~.Adder`.
 
