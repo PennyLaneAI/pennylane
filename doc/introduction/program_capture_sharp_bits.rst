@@ -398,11 +398,6 @@ QNode when capture is enabled is supported with
 Given the experimental nature of this feature, PennyLane's dynamic shapes support 
 is at best a subset of what is possible with purely classical programs using JAX. 
 
-One sharp bit to be aware of when using dynamic shapes is closure variables:
-
-.. code-block:: python
-
-
 Parameter broadcasting and vmap
 -------------------------------
 
