@@ -214,7 +214,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceSuperposition.resources(3, 3, 3)
+    >>> re.ResourceSuperposition.resources(num_stateprep_wires=3, num_basis_states=3, size_basis_state=3)
     {MottonenStatePrep(3): 1, CNOT: 2, MultiControlledX: 4}
     """
 
