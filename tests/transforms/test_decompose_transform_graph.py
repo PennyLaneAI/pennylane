@@ -210,3 +210,62 @@ class TestDecomposeGraphEnabled:
             qml.RY(np.pi / 2, wires=[0]),
             qml.Z(0),
         ]
+
+    @pytest.mark.integration
+    def test_controlled_decomp(self):
+        """Tests decomposing a controlled operation."""
+
+        # The C(MultiRZ) is decomposed by applying control on the base decomposition.
+        # The decomposition of MultiRZ contains two CNOTs
+        # So this also tests applying control on an PauliX based operation
+        # The decomposition of MultiRZ also contains an RZ gate
+        # So this also tests logic involving custom controlled operators.
+        ops = [qml.ctrl(qml.MultiRZ(0.5, wires=[0, 1]), control=[2])]
+        tape = qml.tape.QuantumScript(ops)
+        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
+        assert new_tape.operations == [
+            qml.Toffoli(wires=[2, 1, 0]),
+            qml.RZ(0.25, wires=[0]),
+            qml.CNOT(wires=[2, 0]),
+            qml.RZ(-0.25, wires=[0]),
+            qml.CNOT(wires=[2, 0]),
+            qml.Toffoli(wires=[2, 1, 0]),
+        ]
+
+    @pytest.mark.integration
+    def test_adjoint_decomp(self):
+        """Tests decomposing an adjoint operation."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        @qml.register_resources({qml.RX: 1, qml.RY: 1, qml.RZ: 1})
+        def custom_decomp(theta, phi, omega, wires):
+            qml.RX(theta, wires[0])
+            qml.RY(phi, wires[0])
+            qml.RZ(omega, wires[0])
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.adjoint(qml.RX(0.5, wires=[0])),
+                qml.adjoint(qml.adjoint(qml.MultiRZ(0.5, wires=[0, 1]))),
+                qml.adjoint(CustomOp(0.1, 0.2, 0.3, wires=[0])),
+            ]
+        )
+        [new_tape], _ = qml.transforms.decompose(
+            tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp: custom_decomp}
+        )
+        assert new_tape.operations == [
+            qml.RX(-0.5, wires=[0]),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(0.5, wires=[0]),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(-0.3, wires=[0]),
+            qml.RY(-0.2, wires=[0]),
+            qml.RX(-0.1, wires=[0]),
+        ]
