@@ -531,7 +531,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         for cmp_rep in cmpr_ops:
             ctrl_op = re.ResourceControlled.resource_rep(
-                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0, 0
+                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0, 1,
             )
             gate_types[ctrl_op] += 1
 
