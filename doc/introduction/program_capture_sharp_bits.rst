@@ -13,7 +13,7 @@ and smoother integration with just-in-time compilation frameworks like
 `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
 (via the :func:`~.pennylane.qjit` decorator) and JAX-jit.
 
-Internally, program capture is supported by representing hyrbid programs via a new 
+Internally, program capture is supported by representing hybrid programs via a new 
 intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
 ``plxpr`` IR is an adaptation of JAX's ``jaxpr`` IR.
 
@@ -151,7 +151,7 @@ Positional arguments
 Positional arguments in PennyLane are flexible in that their variable names can 
 instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
 ``qml.RZ(phi=0.1, wires=0)``). However, to ensure differentiability and, in general,
-compatilibty with program capture enabled, such arguments must be kept as positional, 
+compatibility with program capture enabled, such arguments must be kept as positional, 
 regardless of if they're provided as an acceptable JAX type. 
 
 For instance, consider this example with ``qml.RZ``:
@@ -194,33 +194,25 @@ expected:
 >>> circuit(angle)
 Array(0.9950042, dtype=float32)
 
-Parameter broadcasting and vmap
--------------------------------
+Using program capture with Catalyst
+-----------------------------------
 
-Parameter-broadcasting is generally not compatible with program capture. There are 
-cases that magically work, but one shouldn't extrapolate beyond those particular 
-cases.
+To use the program capture feature with Catalyst, the ``qml.capture.enable()`` toggle
+is not required. Instead, when decorating a workflow with :func:`~.pennylane.qjit`, 
+add the ``experimental_capture=True`` flag:
 
-Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
+.. code-block:: python
 
-.. code-block:: python 
+    dev = qml.device('lightning.qubit', wires=1)
 
-    qml.capture.enable()
-
-    dev = qml.device("default.qubit", wires=1)
-
+    @qml.qjit(experimental_capture=True)
     @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+    def circuit():
+        qml.RX(0.1, wires=0)
+        return qml.state()
 
->>> x = jnp.array([0.1, 0.2, 0.3])
->>> vmap_circuit = jax.vmap(circuit)
->>> vmap_circuit(x)
-Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
-
-More information for using ``jax.vmap`` can be found in the 
-`JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
+>>> circuit()
+Array([0.99875026+0.j        , 0.        -0.04997917j], dtype=complex128)
 
 Transforms
 ----------
@@ -345,7 +337,7 @@ of this program:
 }
 
 As one can see, the outer ``RX`` gates do not merge with those in the ``for`` loop, 
-nor does the transform "smartly" merge all 4 iterations from the ``for`` loop.
+nor does the transform merge all 4 iterations from the ``for`` loop.
 
 Dynamic variables and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -397,6 +389,48 @@ TracerIntegerConversionError: The __index__() method was called on traced array 
 The error occurred while tracing the function wrapper at /Users/isaac/.virtualenvs/pl-latest/lib/python3.11/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
+Dynamic shapes
+--------------
+
+Creating and manipulating dynamically shaped objects within a quantum function or 
+QNode when capture is enabled is supported with 
+`JAX's experimental dynamic shapes support <https://docs.jax.dev/en/latest/notebooks/Common_Gotchas_in_JAX.html#dynamic-shapes>`__. 
+Given the experimental nature of this feature, PennyLane's dynamic shapes support 
+is at best a subset of what is possible with purely classical programs using JAX. 
+
+One sharp bit to be aware of when using dynamic shapes is closure variables:
+
+.. code-block:: python
+
+
+Parameter broadcasting and vmap
+-------------------------------
+
+Parameter-broadcasting is generally not compatible with program capture. There are 
+cases that magically work, but one shouldn't extrapolate beyond those particular 
+cases.
+
+Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
+
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+>>> x = jnp.array([0.1, 0.2, 0.3])
+>>> vmap_circuit = jax.vmap(circuit)
+>>> vmap_circuit(x)
+Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
+
+More information for using ``jax.vmap`` can be found in the 
+`JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
+
 while loops 
 -----------
 
@@ -427,7 +461,34 @@ function:
 ...
 KeyError: <gast.gast.Lambda object at 0x136ff82b0>
 
-As a workaround, use a regular Python function:
+As a workaround, set the ``lambda`` to a callable variable,
+
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+
+        func = lambda x: x > 3
+
+        @qml.while_loop(func)
+        def loop(a):
+            a += 1
+            return a
+
+        a = 0
+        loop(a)
+        
+        qml.RX(0, wires=0)
+        return qml.state()
+
+>>> circuit()
+Array([1.+0.j, 0.+0.j], dtype=complex64)
+
+or use a regular Python function,
 
 .. code-block:: python 
 
