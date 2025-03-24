@@ -24,7 +24,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
     """Instantiates ``GenericFragment`` objects.
 
     Args:
-        fragments (Sequence[Any]): A sequence of Python objects of the same type.
+        fragments (Sequence[Any]): A sequence of objects of the same type. The type is assumed to implement ``__add__``, ``__mul__``, and ``__matmul__``.
         norm_fn (Callable): A function that computes the norm of the fragments.
 
     Returns:
@@ -35,10 +35,11 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
     This code example demonstrates building fragments from numpy matrices.
 
-    >>> from pennylane.labs.trotter import generic_fragments
+    >>> from pennylane.labs.trotter_error import generic_fragments
     >>> import numpy as np
-    >>> matrices = [np.random.random(size=(10, 10)) for _ in range(100)]
-    >>> fragments = generic_fragments(matrices, norm_fn=np.linalg.norm)
+    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
+    >>> generic_fragments(matrices)
+    [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
     """
 
     if len(fragments) == 0:
@@ -66,7 +67,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
 class GenericFragment(Fragment):
     """Represents objects implementing arithmetic dunder methods.
-    
+
     This class allows using any object implementing arithmetic dunder methods to be used
     in the Trotter error workflow.
 
@@ -77,6 +78,14 @@ class GenericFragment(Fragment):
             needed for some Trotter error functionality.
 
     ``GenericFragment`` objects should be instantated through the ``generic_fragments`` function.
+
+    **Example**
+
+    >>> from pennylane.labs.trotter_error import generic_fragments
+    >>> import numpy as np
+    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
+    >>> generic_fragments(matrices)
+    [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
     """
 
     def __init__(self, fragment: Any, norm_fn: Callable = None):
@@ -91,6 +100,12 @@ class GenericFragment(Fragment):
 
     def __mul__(self, scalar: float):
         return GenericFragment(scalar * self.fragment, norm_fn=self.norm_fn)
+
+    def __eq__(self, other: GenericFragment):
+        if not isinstance(self.fragment, type(other)):
+            return False
+
+        return self.fragment == other.fragment
 
     __rmul__ = __mul__
 
@@ -114,3 +129,6 @@ class GenericFragment(Fragment):
         raise NotImplementedError(
             "GenericFragment was constructed without specifying the norm function."
         )
+
+    def __repr__(self):
+        return f"GenericFragment(type={type(self.fragment)})"

@@ -38,20 +38,20 @@ def vibronic_fragments(
         modes (int): the number of vibrational modes
         freqs (ndarray): the harmonic frequences
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
-        frags (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
 
     Returns:
         List[VibronicMatrix]: a list of ``VibronicMatrix`` objects representing the fragments of the vibronic Hamiltonian
 
     **Example**
 
-    >>> from pennylane.labs.trotter import vibronic_fragments
+    >>> from pennylane.labs.trotter_error import vibronic_fragments
     >>> import numpy as np
     >>> n_modes = 4
     >>> n_states = 2
     >>> freqs = np.random.random(4)
-    >>> taylor_coeffs = [np.array(0), np.random.random(size=(n_modes, )), np.random.random(size=(n_modes, n_modes))]
-    >>> frags = vibrational_fragments(n_states, n_modes, freqs, taylor_coeffs)
+    >>> taylor_coeffs = [np.random.random(size=(n_states, n_states, )), np.random.random(size=(n_states, n_states, n_modes))]
+    >>> vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
+    [VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.6158098464023244), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.7813244877436533), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))}), VibronicMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.9468868589654408), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.6904557706626872), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))}), VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})]
     """
     _validate_input(states, modes, freqs, taylor_coeffs)
 
@@ -67,6 +67,7 @@ def vibronic_fragments(
 def _position_fragment(
     i: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> VibronicMatrix:
+    """Return the ``i``th position fragment"""
     pow2 = _next_pow_2(states)
     blocks = {
         (j, i ^ j): _realspace_sum(j, i ^ j, states, modes, freqs, taylor_coeffs)
@@ -76,11 +77,12 @@ def _position_fragment(
 
 
 def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> VibronicMatrix:
+    """Return the fragment consisting only of momentum operators."""
     pow2 = _next_pow_2(states)
     term = RealspaceOperator(
         modes,
         ("P", "P"),
-        RealspaceCoeffs.tensor_node(np.diag(freqs) / 2, label=("freqs", np.diag(freqs) / 2)),
+        RealspaceCoeffs.tensor_node(np.diag(freqs) / 2, label="omega"),
     )
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
@@ -102,17 +104,13 @@ def _realspace_sum(
         realspace_op = RealspaceOperator(
             modes,
             op,
-            RealspaceCoeffs.tensor_node(
-                phi[i, j], label=(f"taylor_coeffs[{k}][{i}, {j}]", taylor_coeffs)
-            ),
+            RealspaceCoeffs.tensor_node(phi[i, j], label=f"phi[{k}][{i}, {j}]"),
         )
         realspace_ops.append(realspace_op)
 
     if i == j:
         op = ("Q", "Q")
-        coeffs = RealspaceCoeffs.tensor_node(
-            np.diag(freqs) / 2, label=("freqs", np.diag(freqs) / 2)
-        )
+        coeffs = RealspaceCoeffs.tensor_node(np.diag(freqs) / 2, label="omega")
         realspace_ops.append(RealspaceOperator(modes, op, coeffs))
 
     return RealspaceSum(modes, realspace_ops)
