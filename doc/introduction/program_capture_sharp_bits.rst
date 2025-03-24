@@ -118,6 +118,9 @@ where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
 >>> circuit([0.1, 0.2])
 Array(0., dtype=float32)
 
+Keyword arguments
+~~~~~~~~~~~~~~~~~
+
 JAX-incompatible types, like Python ``range``\ s, are acceptable as **keyword arguments**:
 
 .. code-block:: python 
@@ -283,6 +286,63 @@ decorator:
 
 >>> print(qml.draw(circuit)())
 0: ──H──RX(0.10)─┤  State
+
+Control flow and transforms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transforms do not apply "through" control flow when capture is enabled. An example
+is best to demonstrate this behaviour:
+
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.capture.expand_plxpr_transforms
+    @qml.transforms.merge_rotations
+    @qml.qnode(dev)
+    def circuit():
+        qml.RX(0.1, wires=0)
+
+        for i in range(4):
+            qml.RX(0.1, wires=0)
+            qml.RX(0.1, wires=0)
+
+        qml.RX(0.1, wires=0)
+
+        return qml.state()
+
+    print(qml.capture.make_plxpr(circuit)())
+
+The above example should result in a single ``RX`` gate with an angle of ``1.0``, 
+but transforms are unable to transfer through the circuit in its entirety. Drawing
+this circuit will result in an inaccurate circuit:
+
+>>> print(qml.draw(circuit)())
+0: ──RX(0.30)─┤  State
+
+To illustrate what is actually happening internally, consider the plxpr representation 
+of this program: 
+
+>>> print(qml.capture.make_plxpr(circuit)())
+{ ...
+    qfunc_jaxpr={ lambda ; . let
+        _:AbstractOperator() = RX[n_wires=1] 0.1 0
+        for_loop[
+          abstract_shapes_slice=slice(0, 0, None)
+          args_slice=slice(0, None, None)
+          consts_slice=slice(0, 0, None)
+          jaxpr_body_fn={ lambda ; b:i32[]. let
+              _:AbstractOperator() = RX[n_wires=1] 0.2 0
+            in () }
+        ] 0 4 1
+        _:AbstractOperator() = RX[n_wires=1] 0.1 0
+    ...
+}
+
+As one can see, the outer ``RX`` gates do not merge with those in the ``for`` loop, 
+nor does the transform "smartly" merge all 4 iterations from the ``for`` loop.
 
 Dynamic variables and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
