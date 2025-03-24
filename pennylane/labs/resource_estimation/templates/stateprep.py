@@ -153,7 +153,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires(int): the number of wires that StatePrep acts on
+                * num_wires(int): the number of wires that the operation acts on
         """
         return {"num_wires": len(self.wires)}
 
