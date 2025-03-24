@@ -83,9 +83,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             self.max_expansion = max_expansion
             self._current_depth = 0
 
-            self._decomp_graph = None
+            self._decomps_graph = None
             self._target_gate_names = None
-            _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
+            _decomps_graph_kwargs_checks(fixed_decomps, alt_decomps)
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
 
             # We use a ChainMap to store the environment frames,
@@ -198,7 +198,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
-                        graph=self._decomp_graph,
+                        graph=self._decomps_graph,
                     )
                 )
 
@@ -213,9 +213,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if qml.decomposition.enabled_graph() and self._decomp_graph.is_solved_for(op):
+            if qml.decomposition.enabled_graph() and self._decomps_graph.is_solved_for(op):
 
-                rule = self._decomp_graph.decomposition(op)
+                rule = self._decomps_graph.decomposition(op)
                 num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
@@ -257,7 +257,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env_map[constvar] = const
 
-            if qml.decomposition.enabled_graph() and not self._decomp_graph:
+            if qml.decomposition.enabled_graph() and not self._decomps_graph:
 
                 # TODO: replace this with a collector that does not flatten the PLxPR
                 collector = CollectOpsandMeas()
@@ -265,7 +265,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 operations = collector.state["ops"]
 
                 if operations:
-                    self._decomp_graph = _construct_and_solve_decomp_graph(
+                    self._decomps_graph = _construct_and_solve_decomps_graph(
                         operations,
                         self._target_gate_names,
                         self._fixed_decomps,
@@ -336,7 +336,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if (
                 op.has_plxpr_decomposition
                 or qml.decomposition.enabled_graph()
-                and self._decomp_graph.is_solved_for(op)
+                and self._decomps_graph.is_solved_for(op)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -632,7 +632,7 @@ def decompose(
     ──────╰●────────────────────────────┤
     """
 
-    _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps)
+    _decomps_graph_kwargs_checks(fixed_decomps, alt_decomps)
 
     if isinstance(gate_set, (str, type)):
         gate_set = {gate_set}
@@ -694,7 +694,7 @@ def decompose(
         types_to_names = {op_type.__name__ for op_type in target_gate_types}
         target_gate_names = target_gate_names | types_to_names
 
-        decomp_graph = _construct_and_solve_decomp_graph(
+        decomp_graph = _construct_and_solve_decomps_graph(
             tape.operations,
             target_gate_names,
             fixed_decomps=fixed_decomps,
@@ -758,7 +758,7 @@ def _operator_decomposition_gen(
         )
 
 
-def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
+def _decomps_graph_kwargs_checks(fixed_decomps, alt_decomps):
     """Check the keyword arguments for the decompose transform for the graph-based decomposition."""
 
     if not qml.decomposition.enabled_graph() and (fixed_decomps or alt_decomps):
@@ -769,7 +769,7 @@ def _graph_decomps_kwargs_checks(fixed_decomps, alt_decomps):
         )
 
 
-def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
+def _construct_and_solve_decomps_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
