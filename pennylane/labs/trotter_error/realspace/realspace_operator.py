@@ -39,7 +39,13 @@ class RealspaceOperator:
     r"""Represents the summation of a product of position and momentum operators over the vibrational modes.
     For example,
 
-    .. math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
+    .. math:: \sum_{i,j=1}^5 \phi_{i,j}Q_i Q_j,
+
+    can be expressed as a ``RealspaceOperator`` from the following three pieces of information:
+
+    * the number of vibrational modes: .. math:: 5
+    * the product of operators: .. math:: Q_iQ_j
+    * the tensor of coefficients: .. math:: \phi
 
     Args:
         modes (int): the number of vibrational modes
@@ -48,14 +54,16 @@ class RealspaceOperator:
 
     **Example**
 
-    We build a ``RealspaceOperator`` in the following way.
+    We build a :class:`pennylane.labs.trotter_error.RealspaceOperator` in the following way.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
-    >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+    >>> coeffs = RealspaceCoeffs.coeffs(np.random.random(size=(n_modes, n_modes)), label="alpha")
     >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
+    >>> rs_op
+    RealspaceOperator(5, ('Q', 'Q'), alpha[idx0,idx1])
 
     """
 
@@ -77,7 +85,7 @@ class RealspaceOperator:
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -169,9 +177,6 @@ class RealspaceOperator:
             self.modes, self.ops + other.ops, RealspaceCoeffs.outer_node(self.coeffs, other.coeffs)
         )
 
-    def __repr__(self) -> str:
-        return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
-
     def __eq__(self, other: RealspaceOperator) -> bool:
         if self.ops != other.ops:
             return False
@@ -212,30 +217,37 @@ class RealspaceOperator:
         """
         return self.coeffs.get_coefficients(threshold)
 
+    def __repr__(self):
+        return f"RealspaceOperator({self.modes}, {self.ops}, {self.coeffs})"
+
 
 class RealspaceSum(Fragment):
-    r"""The RealspaceSum class is used to represent a Hamiltonian that is built from a sum of ``RealspaceOperator`` objects
+    r"""The ``RealspaceSum`` class is used to represent a Hamiltonian that is built from a sum of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects
     For example, the vibrational hamiltonian
 
-    .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots
+    .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
-    is a sum of sums, where each sum can be expressed by a ``RealspaceOperator``. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
-    contains a list of ``RealspaceOperator`` objects representing these sums.
+    is a sum of sums, where each sum can be expressed by a :class:`pennylane.labs.trotter_error.RealspaceOperator`. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
+    contains a list of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing these sums.
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Sequence[RealspaceOperator]): a sequence containing ``RealspaceOperator`` objects representing the sums in the Hamiltonian
+        ops (Sequence[RealspaceOperator]): a sequence containing :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
 
     **Example**
+
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> import numpy as np
     >>> n_modes = 2
     >>> freqs = np.array([1.23, 3.45])
     >>> coeffs = RealspaceCoeffs.coeffs(freqs, label="omega")
     >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
     >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
     >>> rs_sum = RealspaceSum(n_modes, [rs_op1, rs_op2])
+    >>> rs_sum
+    RealspaceSum((RealspaceOperator(2, ('PP',), omega[idx0]), RealspaceOperator(2, ('QQ',), omega[idx0])))
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
@@ -311,9 +323,6 @@ class RealspaceSum(Fragment):
             ],
         )
 
-    def __repr__(self) -> str:
-        return self.ops.__repr__()
-
     def __eq__(self, other: RealspaceSum) -> bool:
         return self._lookup == other._lookup
 
@@ -341,7 +350,7 @@ class RealspaceSum(Fragment):
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -406,7 +415,7 @@ class RealspaceSum(Fragment):
             threshold (float): only return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by ``RealspaceOperator.get_coefficients``
+            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
         """
 
         coeffs = {}
@@ -414,3 +423,6 @@ class RealspaceSum(Fragment):
             coeffs[op.ops] = op.get_coefficients(threshold)
 
         return coeffs
+
+    def __repr__(self):
+        return f"RealspaceSum({self.ops})"

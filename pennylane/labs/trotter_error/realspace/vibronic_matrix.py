@@ -32,11 +32,11 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 class VibronicMatrix(Fragment):
     r"""Implements a dictionary of ``RealspaceSum`` objects.
 
-     This can be used to represent the fragments of the vibronic Hamiltonian given by
+    This can be used to represent the fragments of the vibronic Hamiltonian given by
 
-    .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots
+    .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
-    The dictionary is indexed by tuples ``(i, j)`` and the values are ``RealspaceSum`` objects representing the operator :math:`V_{i,j}`.
+    where the dictionary is indexed by tuples ``(i, j)`` and the values are :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
 
     Args:
         states (int): the number of electronic states
@@ -53,6 +53,7 @@ class VibronicMatrix(Fragment):
     >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
     >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
     >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, Q, phi[idx0])))})
     """
 
     def __init__(
@@ -175,6 +176,7 @@ class VibronicMatrix(Fragment):
         return padded._norm(params)
 
     def _norm(self, params: Dict) -> float:
+        """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a power of two."""
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
@@ -291,6 +293,7 @@ class VibronicMatrix(Fragment):
         return True
 
     def _partition_into_quadrants(self) -> Tuple[VibronicMatrix]:
+        """Partitions the ``VibronicMatrix`` into four ``VibronicMatrix`` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
         # pylint: disable=chained-comparison
         half = self.states // 2
 
@@ -322,6 +325,26 @@ class VibronicMatrix(Fragment):
         Returns:
             VibronicHO: the result of applying the ``VibronicMatrix`` to ``state``
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import HOState, VibronicHO
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 3
+        >>> gridpoints = 2
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+        >>> state_dict = {(1, 0, 0): 1, (0, 1, 1): 1}
+        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> VibronicHO(n_states, n_modes, gridpoints, [state])
+        VibronicHO([HOState(modes=3, gridpoints=2, <Compressed Sparse Row sparse array of dtype 'int64'
+            with 2 stored elements and shape (8, 1)>
+          Coords	Values
+          (3, 0)	1
+          (4, 0)	1)])
         """
 
         if self.states != len(state.ho_states):
@@ -368,6 +391,9 @@ class VibronicMatrix(Fragment):
     def zero(cls, states: int, modes: int) -> VibronicMatrix:
         """Return a VibronicMatrix representation of the zero operator"""
         return cls(states, modes, {})
+
+    def __repr__(self):
+        return f"VibronicMatrix({self._blocks})"
 
 
 def _is_pow_2(k: int) -> bool:
