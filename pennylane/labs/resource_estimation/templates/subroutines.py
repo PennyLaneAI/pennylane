@@ -25,7 +25,7 @@ from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOpe
 
 
 class ResourceQFT(qml.QFT, ResourceOperator):
-    r"""Resource class for the QFT template.
+    r"""Resource class for QFT.
 
     Args:
         wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
@@ -707,6 +707,57 @@ The resources for this operation are computed using:
 {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
 """
 
+Args:
+    unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
+        :class:`~.Operator`
+    target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
+        If the unitary is specified as an operator, the target wires should already have been
+        defined as part of the operator. In this case, target_wires should not be specified.
+    estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+        estimation
+
+Resource Parameters:
+    * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
+    * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+    * num_estimation_wires (int): the number of wires used for measuring out the phase
+
+Resources:
+    The resources are obtained from the standard decomposition of QPE as presented
+    in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
+    Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+
+.. seealso:: :class:`~.QuantumPhaseEstimation`
+
+**Example**
+
+The resources for this operation are computed using:
+
+>>> re.ResourceQuantumPhaseEstimation.resources(
+...     base_class=re.ResourceQFT,
+...     base_params={"num_wires": 3},
+...     num_estimation_wires=3,
+... )
+{Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
+"""
+
+
+class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
+    r"""Resource class for the BasisRotation gate.
+
+    Args:
+        wires (Iterable[Any]): wires that the operator acts on
+        unitary_matrix (array): matrix specifying the basis transformation
+        check (bool): test unitarity of the provided `unitary_matrix`
+
+    Resource Parameters:
+        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
+
+    Resources:
+        The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
+        <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
+        the resources are given as :math:`dim_N * (dim_N - 1) / 2` instances of the
+        :class:`~.ResourceSingleExcitation` gate, and :math:`dim_N * (1 + (dim_N - 1) / 2)` instances
+        of the :class:`~.ResourcePhaseShift` gate.
 
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     r"""Resource class for the BasisRotation gate.

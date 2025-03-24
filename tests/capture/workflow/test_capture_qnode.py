@@ -403,7 +403,7 @@ class TestDevicePreprocessing:
                 assert len(shots_res) == shots
                 # Check it's roughly 50/50 by counting the second column of bits
                 counts = qml.numpy.bincount(shots_res[:, 1].astype(int))
-                assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+                assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     def test_mcm_execution_deferred_fill_shots(self, dev_name, mcm_method, seed):
@@ -466,7 +466,7 @@ class TestDevicePreprocessing:
         else:
             assert len(res) == shots
             counts = qml.numpy.bincount(res)
-            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.2)
+            assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""

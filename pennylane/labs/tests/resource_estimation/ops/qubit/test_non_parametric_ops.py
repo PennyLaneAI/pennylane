@@ -110,9 +110,9 @@ class TestHadamard:
 
     pow_data = (
         (1, {re.ResourceHadamard.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (3, {re.ResourceHadamard.resource_rep(): 1}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -225,9 +225,9 @@ class TestSWAP:
 
     pow_data = (
         (1, {re.ResourceSWAP.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (3, {re.ResourceSWAP.resource_rep(): 1}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -286,9 +286,9 @@ class TestS:
         (1, {re.ResourceS.resource_rep(): 1}),
         (2, {re.ResourceS.resource_rep(): 2}),
         (3, {re.ResourceS.resource_rep(): 3}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
         (7, {re.ResourceS.resource_rep(): 3}),
-        (8, {}),
+        (8, {re.ResourceIdentity.resource_rep(): 1}),
         (14, {re.ResourceS.resource_rep(): 2}),
         (15, {re.ResourceS.resource_rep(): 3}),
     )
@@ -457,10 +457,10 @@ class TestT:
         (2, {re.ResourceT.resource_rep(): 2}),
         (3, {re.ResourceT.resource_rep(): 3}),
         (7, {re.ResourceT.resource_rep(): 7}),
-        (8, {}),
+        (8, {re.ResourceIdentity.resource_rep(): 1}),
         (14, {re.ResourceT.resource_rep(): 6}),
         (15, {re.ResourceT.resource_rep(): 7}),
-        (16, {}),
+        (16, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -582,9 +582,9 @@ class TestX:
 
     pow_data = (
         (1, {re.ResourceX.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (3, {re.ResourceX.resource_rep(): 1}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -703,9 +703,9 @@ class TestY:
 
     pow_data = (
         (1, {re.ResourceY.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (3, {re.ResourceY.resource_rep(): 1}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -819,9 +819,9 @@ class TestZ:
 
     pow_data = (
         (1, {re.ResourceZ.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (3, {re.ResourceZ.resource_rep(): 1}),
-        (4, {}),
+        (4, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
