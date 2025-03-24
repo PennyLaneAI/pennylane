@@ -17,7 +17,6 @@ unitary operations into elementary gates.
 import warnings
 
 import numpy as np
-import scipy as sp
 
 import pennylane as qml
 from pennylane import math
