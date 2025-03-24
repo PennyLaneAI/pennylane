@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Check PR and label
         with:
-          org: context.repo.owner
+          org: "${{ github.repository_owner }}"
           team: "external-collaborators"
           github_token: ${{secrets.PENNYLANE_EXTERNAL_LABEL_MEMBER_CHECK}}
           username: "${ github.actor }}"
