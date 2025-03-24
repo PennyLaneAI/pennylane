@@ -190,6 +190,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   

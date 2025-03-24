@@ -480,7 +480,7 @@ class Controlled(SymbolicOp):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls, base, control_wires, control_values=None, work_wires=None, id=None
@@ -490,7 +490,7 @@ class Controlled(SymbolicOp):
             base, *control_wires, control_values=control_values, work_wires=work_wires
         )
 
-    # pylint: disable=too-many-function-args
+    # pylint: disable=too-many-function-args, too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -734,7 +734,12 @@ class Controlled(SymbolicOp):
             return True
         if not all(self.control_values):
             return True
-        if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
+        # not already the simplified version
+        if (
+            len(self.control_wires) == 1
+            and hasattr(self.base, "_controlled")
+            and type(self) in {Controlled, ControlledOp}
+        ):
             return True
         is_su2 = _is_single_qubit_special_unitary(self.base)
         if not qml.math.is_abstract(is_su2) and is_su2:
@@ -932,7 +937,7 @@ class ControlledOp(Controlled, operation.Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-function-args
+    # pylint: disable=too-many-function-args, too-many-positional-arguments
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity
