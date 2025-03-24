@@ -17,6 +17,7 @@ Unit tests for Operators inheriting from ControlledOp.
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
@@ -52,6 +53,16 @@ X_broadcasted = np.array([X] * 3)
 # pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
+
+    def test_sparse_matrix(self):
+        """Test that the controlled sparse QubitUnitary works correctly"""
+        data = sp.sparse.eye(2)
+        c_op = qml.ControlledQubitUnitary(data, wires=[0, 1])
+
+        data_dense = data.toarray()
+        c_op_dense = qml.ControlledQubitUnitary(data_dense, wires=[0, 1])
+
+        assert qml.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
 
     def test_flatten_unflatten(self):
         """Test that the operation can be flattened and unflattened"""
