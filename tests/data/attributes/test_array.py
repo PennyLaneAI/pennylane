@@ -42,7 +42,7 @@ class TestDatasetArray:
         assert arr.bind.dtype == value.dtype
         assert arr.info.py_type == py_type
         assert arr.info.type_id == "array"
-        assert arr.info["array_interface"] == "fail"
+        assert arr.info["array_interface"] == interface
 
     @pytest.mark.parametrize("array_class", [qml_numpy.tensor])
     @pytest.mark.parametrize("requires_grad", [True, False])
