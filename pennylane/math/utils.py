@@ -80,6 +80,28 @@ def _allclose_sparse(a, b, rtol=1e-05, atol=1e-08):
     return max_diff <= atol + rtol * max_b
 
 
+def _mixed_shape_match(a, b):
+    """Check if the shapes of two matrices of mixed types are compatible for comparison.
+
+    Args:
+        a, b: matrices to compare
+
+    Returns:
+        bool: True if the shapes are compatible
+    """
+    a_shapes = a.shape
+    b_shapes = b.shape
+    # Take the product, if inequal then false
+    if np.prod(a_shapes) != np.prod(b_shapes):
+        return False
+    # Make the sets of shapes, and ignore '1'
+    a_shape_set = set(i for i in a_shapes if i != 1)
+    b_shape_set = set(i for i in b_shapes if i != 1)
+    if len(a_shape_set) == len(b_shape_set) == 1:
+        return True  # For intrinsic one-dimensional arrays
+    return a_shapes == b_shapes
+
+
 def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     """Helper function for comparing dense and sparse matrices with correct tolerance reference.
 
@@ -99,7 +121,7 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     if sparse.nnz == 0:
         return np.allclose(dense, 0, rtol=rtol, atol=atol)
 
-    if dense.shape != sparse.shape:
+    if not _mixed_shape_match(dense, sparse):
         return False
 
     SIZE_THRESHOLD = 10000
@@ -126,7 +148,7 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
     return np.allclose(a_data, b_data, rtol=rtol, atol=atol)
 
 
-def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08, scalar_is_a=False):
+def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08):
     """Compare a sparse matrix to a scalar value efficiently.
 
     Args:
@@ -134,7 +156,6 @@ def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08, scalar_i
         scalar: A scalar value to compare against
         rtol: Relative tolerance
         atol: Absolute tolerance
-        scalar_is_a: True if the scalar is the 'a' argument in the comparison
 
     Returns:
         bool: True if the sparse matrix is approximately equal to the scalar
@@ -142,11 +163,9 @@ def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08, scalar_i
     # Check if any non-zero values are not close to the scalar
     if sparse_mat.nnz > 0:
         # For non-zero elements, they must be close to the scalar
-        if not np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol):
-            return False
-
+        return np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol)
     # For zero elements, the scalar must be close to zero
-    return abs(0 - scalar) <= atol + rtol * abs(scalar if scalar_is_a else 0)
+    return np.allclose(scalar, 0, rtol=rtol, atol=atol)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
@@ -161,7 +180,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         if sp.sparse.issparse(a) and np.isscalar(b):
             return _allclose_sparse_scalar(a, b, rtol=rtol, atol=atol)
         if sp.sparse.issparse(b) and np.isscalar(a):
-            return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol, scalar_is_a=True)
+            return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol)
 
         if sp.sparse.issparse(a):
             # pylint: disable=arguments-out-of-order
