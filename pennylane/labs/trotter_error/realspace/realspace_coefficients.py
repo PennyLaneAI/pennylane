@@ -25,7 +25,7 @@ from numpy import allclose, isclose, ndarray, zeros
 
 class RealspaceCoeffs:
     """Lightweight representation of a tensor of coefficients.
-    A :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with a numpy array. 
+    A :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with a numpy array.
     Printing :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` the object displays the expression that is used to compute to compute each entry of the tensor.
     For a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` initialized through the constructor the expression is simply the label and the indices of the tensor.
     Manipulating :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects through arithmetic methods results in more complex expressions.
