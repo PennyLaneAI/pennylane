@@ -57,3 +57,25 @@ class CompactState:
             precision=precision,
             num_work_wires=num_work_wires,
         )
+
+class CompactHamiltonian: 
+    r"""A compact representation for the state of a hamiltonian."""
+
+    def __init__(
+        self,
+        num_qubits,
+        num_terms,
+        cost_per_term,
+        cost_per_exp_term, 
+        cost_per_
+    ):
+        return
+    
+    @classmethod
+    def from_pauli_lcu(cls, num_qubits, num_terms, k_local=None, pauli_term_dist=None):
+
+        return cls()
+    
+    @classmethod 
+    def from_factorized_lcu(cls, num_qubits, num_terms):
+        return cls()
