@@ -65,10 +65,10 @@ class _Config:
         """The filler character for wires at the current layer."""
         return "─" if self.cur_layer < self.num_op_layers else " "
 
-    @property
-    def bit_filler(self) -> str:
-        """The filler character for bits at the current layer."""
-        return "═" if self.cur_layer < self.num_op_layers else " "
+    def bit_filler(self, bit) -> str:
+        """The filler character for bits at the current layer and the designated bit.."""
+        b_is_occupied = min(self.cwire_layers[bit]) < self.cur_layer < max(self.cwire_layers[bit])
+        return "═" if self.cur_layer < self.num_op_layers and b_is_occupied else " "
 
 
 def _initialize_wire_and_bit_totals(
@@ -87,22 +87,44 @@ def _initialize_wire_and_bit_totals(
 
 
 def _initialize_layer_str(config: _Config) -> list[str]:
-    """Initialize the list of strings for a new layer."""
+    """Initialize the list of strings for a new layer.
+
+    For example, we have three wires and two classical wires, we will get:
+
+    .. code-block::
+
+        ['─', '─', '─', ' ', ' ']
+
+    """
     n_wires = len(config.wire_map)
     n_bits = len(config.bit_map)
 
     # Create initial strings for the current layer using wire and cwire fillers
     layer_str = [config.wire_filler] * n_wires + [" "] * n_bits
     for b in config.bit_map.values():
-        b_is_occupied = min(config.cwire_layers[b]) < config.cur_layer < max(config.cwire_layers[b])
-        cur_bit_filler = config.bit_filler if b_is_occupied else " "
-        layer_str[b + n_wires] = cur_bit_filler
+        layer_str[b + n_wires] = config.bit_filler(b)
 
     return layer_str
 
 
 def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
-    """Add filler characters to layer_str so that everything has the same length."""
+    """Add filler characters to layer_str so that everything has the same length.
+
+    If we initialize with:
+
+    .. code-block::
+
+        ['─Rot', '─', '─', ' ']
+
+    We will get out:
+
+    .. code-block::
+
+        ['─Rot', '────', '────', '    ']
+
+    where every entry in the layer now has the same length.
+
+    """
     max_label_len = max(len(s) for s in layer_str)
     n_wires = len(config.wire_map)
 
@@ -111,8 +133,7 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
 
     # Adjust width for bit filler on unused bits
     for b in range(len(config.bit_map)):
-        occupied_bit = config.cwire_layers[b][0] <= config.cur_layer < config.cwire_layers[b][-1]
-        cur_b_filler = config.bit_filler if occupied_bit else " "
+        cur_b_filler = config.bit_filler(b)
         layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
     # one for the filler character
@@ -128,11 +149,7 @@ def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentT
 
     # Bit totals for new lines for warped drawings need to be consistent with the
     # current bit filler
-    totals.bit_totals = []
-    for b in range(len(config.bit_map)):
-        bit_occupied = config.cwire_layers[b][0] < config.cur_layer <= config.cwire_layers[b][-1]
-        cur_b_filler = config.bit_filler if bit_occupied else " "
-        totals.bit_totals.append(cur_b_filler)
+    totals.bit_totals = [config.bit_filler(b) for b in range(len(config.bit_map))]
 
     return totals
 
@@ -145,9 +162,7 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     ]
 
     for j, (bt, s) in enumerate(zip(totals.bit_totals, layer_str[n_wires : n_wires + n_bits])):
-        bit_is_occupied = config.cwire_layers[j][0] < config.cur_layer <= config.cwire_layers[j][-1]
-        cur_b_filler = config.bit_filler if bit_is_occupied else " "
-        totals.bit_totals[j] = cur_b_filler.join([bt, s])
+        totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
     return totals
 
