@@ -154,7 +154,6 @@ def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json
 def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
-        print(variables)
         if variables['datasetClassId'] == 'mqt-bench':
             json_data=_list_attrs_mqt_resp
         elif variables['datasetClassId'] == 'hamlib-max-3-sat':
