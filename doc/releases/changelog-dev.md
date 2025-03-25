@@ -616,6 +616,9 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``AmplitudeAmplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
+  [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
+
 * `pennylane.labs.khaneja_glaser_involution` is removed.
   `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
@@ -904,6 +907,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
