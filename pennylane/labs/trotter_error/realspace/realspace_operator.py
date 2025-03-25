@@ -226,9 +226,6 @@ class RealspaceOperator:
         """
         return self.coeffs.nonzero(threshold)
 
-    def __repr__(self):
-        return f"RealspaceOperator({self.modes}, {self.ops}, {self.coeffs})"
-
 
 class RealspaceSum(Fragment):
     r"""The :class:`~pennylane.labs.trotter_error.RealspaceSum` class is used to represent a Hamiltonian that is built from a sum of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
@@ -476,6 +473,3 @@ class RealspaceSum(Fragment):
             coeffs[op.ops] = op.get_coefficients(threshold)
 
         return coeffs
-
-    def __repr__(self):
-        return f"RealspaceSum({self.ops})"
