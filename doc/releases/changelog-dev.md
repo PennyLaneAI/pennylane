@@ -188,6 +188,9 @@
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
   [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
+* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+
 <h3>Improvements 🛠</h3>
 
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
@@ -616,6 +619,9 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``AmplitudeAmplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
+  [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
+
 * `pennylane.labs.khaneja_glaser_involution` is removed.
   `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
@@ -893,6 +899,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Daniela Angulo,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Joey Carter,
@@ -903,6 +910,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
