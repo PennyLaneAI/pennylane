@@ -33,15 +33,11 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     r"""Returns the second order Trotter error. For a Hamiltonian :math:`H` expressed as a sum of
     fragments :math:`\sum_{m=1}^L H_m` the second order Trotter formula is given by
 
-    .. math::
-
-    e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
+    .. math:: e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
 
     where :math:`\tilde{H} = H + \epsilon`. The leading term of the error operator :math:`\epsilon` is given by
 
-    .. math::
-
-    \epsilon = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
+    .. math:: \epsilon = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
 
     Args:
         fragments (Sequence[Fragments]): the set of fragments to compute Trotter error from
