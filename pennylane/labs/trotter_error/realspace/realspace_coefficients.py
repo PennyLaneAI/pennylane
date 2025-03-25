@@ -97,6 +97,11 @@ class RealspaceCoeffs:
         """
         return self._tree.is_zero
 
+    @property
+    def shape(self) -> Tuple[int]:
+        """Return the shape of the tensor"""
+        return self._tree.shape
+
     def nonzero(self, threshold: float = 0.0):
         """Return the nonzero coefficients in a dictionary.
 
@@ -116,7 +121,6 @@ class RealspaceCoeffs:
         """
 
         return self._tree.nonzero(threshold)
-
 
 class _NodeType(Enum):
     """Enum containing the types of nodes"""

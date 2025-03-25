@@ -51,16 +51,20 @@ class RealspaceOperator:
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
-    >>> n_modes = 5
+    >>> n_modes = 2
     >>> ops = ("Q", "Q")
-    >>> coeffs = RealspaceCoeffs(np.random(shape=(n_modes, n_modes)), label="phi")
-    >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
-
+    >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
+    >>> RealspaceOperator(n_modes, ops, coeffs)
+    RealspaceOperator(5, ('Q', 'Q'), phi[idx0,idx1])
     """
 
     def __init__(
         self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
     ) -> RealspaceOperator:
+
+        if coeffs.shape != (modes,)*len(ops):
+            raise ValueError(f"coeffs has shape {coeffs.shape}, but shape {(modes, ) * len(ops)} was expected.")
+
         self.modes = modes
         self.ops = ops
         self.coeffs = coeffs
@@ -78,6 +82,18 @@ class RealspaceOperator:
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
+        >>> import numpy as np
+        >>> n_modes = 2
+        >>> ops = ("Q", "Q")
+        >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
+        >>> RealspaceOperator(n_modes, ops, coeffs).matrix(2)
+        [[6.28318531 0.         0.         0.        ]
+         [0.         3.14159265 0.         0.        ]
+         [0.         0.         3.14159265 0.        ]
+         [0.         0.         0.         0.        ]]
         """
 
         matrices = [
@@ -159,7 +175,7 @@ class RealspaceOperator:
         return RealspaceOperator(self.modes, self.ops + other.ops, self.coeffs @ other.coeffs)
 
     def __repr__(self) -> str:
-        return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
+        return f"RealspaceOperator({self.modes}, {self.ops.__repr__()}, {self.coeffs.__repr__()})"
 
     def __eq__(self, other: RealspaceOperator) -> bool:
         if self.ops != other.ops:
@@ -199,7 +215,7 @@ class RealspaceOperator:
             Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are the coefficients
 
         """
-        return self.coeffs.get_coefficients(threshold)
+        return self.coeffs.nonzero(threshold)
 
 
 class RealspaceSum(Fragment):
@@ -220,12 +236,14 @@ class RealspaceSum(Fragment):
     We can build the harmonic part of the vibrational Hamiltonian with the following code.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> import numpy as np
     >>> n_modes = 2
     >>> freqs = np.array([1.23, 3.45])
-    >>> coeffs = RealspaceCoeffs.coeffs(freqs, label="omega")
+    >>> coeffs = RealspaceCoeffs(freqs, label="omega")
     >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
     >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
-    >>> rs_sum = RealspaceSum(n_modes, [rs_op1, rs_op2])
+    >>> RealspaceSum(n_modes, [rs_op1, rs_op2])
+    RealspaceSum((RealspaceOperator(2, ('PP',), omega[idx0]), RealspaceOperator(2, ('QQ',), omega[idx0])))
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
@@ -302,7 +320,7 @@ class RealspaceSum(Fragment):
         )
 
     def __repr__(self) -> str:
-        return self.ops.__repr__()
+        return f"RealspaceSum({self.ops.__repr__()})"
 
     def __eq__(self, other: RealspaceSum) -> bool:
         return self._lookup == other._lookup
@@ -333,6 +351,24 @@ class RealspaceSum(Fragment):
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> import numpy as np
+        >>> n_modes = 2
+        >>> freqs = np.array([1.23, 3.45])
+        >>> coeffs = RealspaceCoeffs(freqs, label="omega")
+        >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
+        >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
+        >>> RealspaceSum(n_modes, [rs_op1, rs_op2]).matrix(2)
+        [[22.05398043+0.00000000e+00j -5.41924733+6.63666389e-16j
+          -1.93207948+2.36611495e-16j  0.        +0.00000000e+00j]
+         [-5.41924733-6.63666389e-16j 11.21548577+0.00000000e+00j
+           0.        +0.00000000e+00j -1.93207948+2.36611495e-16j]
+         [-1.93207948-2.36611495e-16j  0.        +0.00000000e+00j
+          18.18982146+0.00000000e+00j -5.41924733+6.63666389e-16j]
+         [ 0.        +0.00000000e+00j -1.93207948-2.36611495e-16j
+          -5.41924733-6.63666389e-16j  7.35132681+0.00000000e+00j]]
         """
 
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
@@ -353,6 +389,18 @@ class RealspaceSum(Fragment):
         Returns:
             float: an upper bound on the spectral norm of the operator
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> import numpy as np
+        >>> n_modes = 2
+        >>> freqs = np.array([1.23, 3.45])
+        >>> coeffs = RealspaceCoeffs(freqs, label="omega")
+        >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
+        >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
+        >>> params = {"gridpoints": 2, "sparse": True}
+        >>> RealspaceSum(n_modes, [rs_op1, rs_op2]).norm(params)
+        29.405307237600457
         """
 
         sparse = params.get("sparse", False)
@@ -384,6 +432,18 @@ class RealspaceSum(Fragment):
 
         Returns:
             Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> import numpy as np
+        >>> n_modes = 2
+        >>> freqs = np.array([1.23, 3.45])
+        >>> coeffs = RealspaceCoeffs(freqs, label="omega")
+        >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
+        >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
+        >>> RealspaceSum(n_modes, [rs_op1, rs_op2]).get_coefficients()
+        {('PP',): {(0,): 1.23, (1,): 3.45}, ('QQ',): {(0,): 1.23, (1,): 3.45}}
         """
 
         coeffs = {}
