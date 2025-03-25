@@ -219,7 +219,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
 
         return _matrix_transform(op, wire_order=wire_order)
-    if op.has_sparse_matrix:
+    if op.has_sparse_matrix and not op.has_matrix:
         raise TypeError(
             "using qml.matrix is not supported for Operators defined with sparse matrices."
         )
