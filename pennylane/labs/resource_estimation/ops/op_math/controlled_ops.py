@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for controlled operations."""
+from collections import defaultdict
 from typing import Dict
 
 import pennylane as qml
@@ -989,6 +990,8 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
             resources are defined as the following rules:
 
+            * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
+
             * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
 
             * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
@@ -999,11 +1002,15 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             * If there are more than three control qubits (:math:`n`), the resources are defined as
             :math:`36n - 111` :class:`~.ResourceCNOT` gates.
         """
-        gate_types = {}
+        gate_types = defaultdict(int)
 
+        x = re.ResourceX.resource_rep()
         if num_ctrl_values:
-            x = re.ResourceX.resource_rep()
             gate_types[x] = num_ctrl_values * 2
+
+        if num_ctrl_wires == 0:
+            gate_types[x] += 1
+            return gate_types
 
         cnot = re.ResourceCNOT.resource_rep()
         if num_ctrl_wires == 1:

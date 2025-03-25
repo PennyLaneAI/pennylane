@@ -16,12 +16,25 @@ r"""This module contains resource operators for PennyLane templates."""
 from .subroutines import (
     ResourceQFT,
     ResourceQuantumPhaseEstimation,
-    ResourceStatePrep,
     ResourceQPE,
     ResourceBasisRotation,
     ResourcePrepSelPrep,
     ResourceQubitization,
+    ResourceQROM,
     ResourceReflection,
     ResourceSelect,
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
+    ResourceAmplitudeAmplification,
 )
+
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
+
+from .stateprep import (
+    ResourceSuperposition,
+    ResourceStatePrep,
+    ResourceBasisState,
+    ResourceMottonenStatePreparation,
+)
