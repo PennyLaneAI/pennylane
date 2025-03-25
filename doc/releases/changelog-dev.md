@@ -883,6 +883,8 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
