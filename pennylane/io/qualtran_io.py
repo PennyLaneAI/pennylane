@@ -38,7 +38,7 @@ def bloq_registers(bloq):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
     The register names in the Qualtran bloq are used for the keys of the dictionary. The values
     are :class:`~.Wires` objects with a length of the total bitsize of its respective register. The
@@ -130,7 +130,7 @@ class FromBloq(Operation):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
