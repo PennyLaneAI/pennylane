@@ -376,7 +376,7 @@ class Controlled(SymbolicOp):
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
 
-    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
+    .. seealso:: :func:`~.ctrl`
 
     **Example**
 
