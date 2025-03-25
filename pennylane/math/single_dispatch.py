@@ -175,22 +175,6 @@ def _sparse_matrix_power_bruteforce(A, n):
     return result
 
 
-#! Note: the following two dispatches are fallbacks due to the lack of
-#! support for eigh and eig of sparse matrices in the scipy.linalg module.
-def _sparse_eigh(A):
-    """Compute the eigenvalues and eigenvectors of a sparse matrix."""
-    A_dense = A.toarray()
-    eigenvalues, eigenvectors = np.linalg.eigh(A_dense)
-    return sp.sparse.csr_matrix(eigenvalues), sp.sparse.csr_matrix(eigenvectors)
-
-
-def _sparse_eig(A):
-    """Compute the eigenvalues and eigenvectors of a sparse matrix."""
-    A_dense = A.toarray()
-    eigenvalues, eigenvectors = np.linalg.eig(A_dense)
-    return sp.sparse.csr_matrix(eigenvalues), sp.sparse.csr_matrix(eigenvectors)
-
-
 ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
@@ -200,9 +184,6 @@ ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
 ar.register_function("scipy", "linalg.eigsh", sp.sparse.linalg.eigsh)
 ar.register_function("scipy", "linalg.svds", sp.sparse.linalg.svds)
-
-ar.register_function("scipy", "linalg.eigh", _sparse_eigh)
-ar.register_function("scipy", "linalg.eig", _sparse_eig)
 
 
 ar.register_function("scipy", "trace", lambda x: x.trace())
