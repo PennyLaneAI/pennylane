@@ -927,7 +927,7 @@ class ControlledOp(Controlled, operation.Operation):
     class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
     specific methods and properties.
 
-    .. seealso:: :class:`~.Controlled`
+    .. seealso:: This class is mostly for internal use. Please see :class:`~.Controlled` instead. 
     """
 
     def __new__(cls, *_, **__):
