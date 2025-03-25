@@ -149,6 +149,13 @@ class RealspaceOperator:
 
     __rmul__ = __mul__
 
+    def __imul__(self, scalar: float) -> RealspaceOperator:
+        if np.isclose(scalar, 0):
+            return RealspaceOperator.zero(self.modes)
+
+        self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
+        return self
+
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
         if other._is_zero:
             return self
