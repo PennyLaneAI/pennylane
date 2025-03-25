@@ -61,7 +61,7 @@ def _harmonic_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the harmonic part."""
     _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label="omega")
+    coeffs = RealspaceCoeffs(freqs / 2, label="omega")
     momentum = RealspaceOperator(modes, ("PP",), coeffs)
     position = RealspaceOperator(modes, ("QQ",), coeffs)
 
@@ -75,7 +75,7 @@ def _anharmonic_fragment(modes: int, taylor_coeffs: Sequence[np.ndarray]) -> Rea
     ops = []
     for i, phi in enumerate(taylor_coeffs):
         op = ("Q",) * i
-        coeffs = RealspaceCoeffs.tensor_node(phi, label=f"phi[{i}]")
+        coeffs = RealspaceCoeffs(phi, label=f"phi[{i}]")
         realspace_op = RealspaceOperator(modes, op, coeffs)
         ops.append(realspace_op)
 
@@ -86,7 +86,7 @@ def _kinetic_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Returns the fragment of the Hamiltonian corresponding to the kinetic part"""
     _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label="omega")
+    coeffs = RealspaceCoeffs(freqs / 2, label="omega")
     kinetic = RealspaceOperator(modes, ("PP",), coeffs)
 
     return RealspaceSum(modes, [kinetic])
@@ -101,13 +101,13 @@ def _potential_fragment(
     ops = []
     for i, phi in enumerate(taylor_coeffs):
         op = ("Q",) * i
-        coeffs = RealspaceCoeffs.tensor_node(phi, label=f"phi[{i}]")
+        coeffs = RealspaceCoeffs(phi, label=f"phi[{i}]")
         realspace_op = RealspaceOperator(modes, op, coeffs)
         ops.append(realspace_op)
 
     op = ("Q", "Q")
     diag = np.diag(freqs / 2)
-    coeffs = RealspaceCoeffs.tensor_node(diag, label="omega")
+    coeffs = RealspaceCoeffs(diag, label="omega")
     realspace_op = RealspaceOperator(modes, op, coeffs)
     ops.append(realspace_op)
 
@@ -118,7 +118,7 @@ def _position_fragment(
     modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> RealspaceSum:
     """Return the position term of the Hamiltonian"""
-    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label="omega")
+    coeffs = RealspaceCoeffs(freqs / 2, label="omega")
     position = RealspaceOperator(modes, ("QQ",), coeffs)
 
     return RealspaceSum(modes, [position]) + _anharmonic_fragment(modes, taylor_coeffs)
@@ -128,7 +128,7 @@ def _momentum_fragment(modes: int, freqs: np.ndarray) -> RealspaceSum:
     """Return the momentum term of the Hamiltonian"""
     _validate_freqs(modes, freqs)
 
-    coeffs = RealspaceCoeffs.tensor_node(freqs / 2, label="omega")
+    coeffs = RealspaceCoeffs(freqs / 2, label="omega")
     momentum = RealspaceOperator(modes, ("PP",), coeffs)
 
     return RealspaceSum(modes, [momentum])

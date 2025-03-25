@@ -82,7 +82,7 @@ def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> VibronicMa
     term = RealspaceOperator(
         modes,
         ("P", "P"),
-        RealspaceCoeffs.tensor_node(np.diag(freqs) / 2, label="omega"),
+        RealspaceCoeffs(np.diag(freqs) / 2, label="omega"),
     )
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
@@ -104,13 +104,13 @@ def _realspace_sum(
         realspace_op = RealspaceOperator(
             modes,
             op,
-            RealspaceCoeffs.tensor_node(phi[i, j], label=f"phi[{k}][{i}, {j}]"),
+            RealspaceCoeffs(phi[i, j], label=f"phi[{k}][{i}, {j}]"),
         )
         realspace_ops.append(realspace_op)
 
     if i == j:
         op = ("Q", "Q")
-        coeffs = RealspaceCoeffs.tensor_node(np.diag(freqs) / 2, label="omega")
+        coeffs = RealspaceCoeffs(np.diag(freqs) / 2, label="omega")
         realspace_ops.append(RealspaceOperator(modes, op, coeffs))
 
     return RealspaceSum(modes, realspace_ops)
