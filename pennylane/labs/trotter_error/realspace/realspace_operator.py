@@ -35,16 +35,14 @@ from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 
 
 class RealspaceOperator:
-    r"""Represents the summation of a product of position and momentum operators over the vibrational modes.
-    For example,
+    r"""Represents a linear combination of a product of position and momentum operators.
 
-    .. math:: \sum_{i,j=1}^5 \phi_{i,j}Q_i Q_j,
+    The ``RealspaceOperator`` can be used to represent components of a vibrational Hamiltonian,
+    e.g., the following sum over vibrational modes :math:`Q`
 
-    can be expressed as a ``RealspaceOperator`` from the following three pieces of information:
+    .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j.
 
-    * the number of vibrational modes: .. math:: 5
-    * the product of operators: .. math:: Q_iQ_j
-    * the tensor of coefficients: .. math:: \phi
+    where :math:`\phi` is a constant.
 
     Args:
         modes (int): the number of vibrational modes
@@ -53,7 +51,9 @@ class RealspaceOperator:
 
     **Example**
 
-    We build a :class:`~.pennylane.labs.trotter_error.RealspaceOperator` in the following way.
+    This example uses :class:`~.pennylane.labs.trotter_error.RealspaceOperator` to build the
+    operator :math:`\sum_{i,j=1}^2 \phi_{i,j}Q_i Q_j`. The operator represents a sum over 2 modes
+    for the position operators :math:`Q_iQ_j`.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
@@ -80,12 +80,12 @@ class RealspaceOperator:
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
     ) -> Union[np.ndarray, sp.sparse.csr_array]:
-        """Return a matrix representation of the operator
+        """Return a matrix representation of the operator.
 
         Args:
-            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
+            gridpoints (int): the number of gridpoints used to discretize the position or momentum operators
             basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
-            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+            sparse (bool): if ``True`` returns a sparse matrix, otherwise returns a dense matrix
 
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
@@ -202,10 +202,10 @@ class RealspaceOperator:
 
     @classmethod
     def zero(cls, modes) -> RealspaceOperator:
-        """Returns a RealspaceOperator representing the zero operator
+        """Returns a ``RealspaceOperator`` representing the zero operator.
 
         Args:
-            modes (int): the number of vibrational modes (needed for consistency with arithmetic operations)
+            modes (int): the number of vibrational modes
 
         Returns:
             RealspaceOperator: a representation of the zero operator
@@ -214,10 +214,10 @@ class RealspaceOperator:
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
-        """Return the coefficients in a dictionary
+        """Return the coefficients in a dictionary.
 
         Args:
-            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
             Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are the coefficients
