@@ -49,11 +49,11 @@ class VibronicMatrix(Fragment):
     >>> import numpy as np
     >>> n_states = 1
     >>> n_modes = 5
-    >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
-    >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+    >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+    >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
     >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
-    >>> vib_matrix = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
-    VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, Q, phi[idx0])))})
+    >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
     """
 
     def __init__(
@@ -79,6 +79,18 @@ class VibronicMatrix(Fragment):
 
         Returns:
             RealspaceSum: the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object indexed at ``(row, col)``
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 5
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).block(0, 0)
+        RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))
         """
         if row < 0 or col < 0:
             raise IndexError(f"Index cannot be negative, got {(row, col)}.")
@@ -99,6 +111,20 @@ class VibronicMatrix(Fragment):
 
         Returns:
             None
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> import numpy as np
+        >>> n_states = 2
+        >>> n_modes = 5
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> vib = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+        >>> vib
+        {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
+        >>> vib.set_block(1, 1, rs_sum)
+        >>> vib
+        {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0]))), (1, 1): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
         """
 
         if not isinstance(rs_sum, RealspaceSum):
@@ -128,6 +154,29 @@ class VibronicMatrix(Fragment):
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 5
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).matrix(2)
+        [[-25.58680776   0.           0.         ...   0.           0.
+            0.        ]
+         [  0.         -16.72453851   0.         ...   0.           0.
+            0.        ]
+         [  0.           0.         -18.49699236 ...   0.           0.
+            0.        ]
+         ...
+         [  0.           0.           0.         ...  -6.0898154    0.
+            0.        ]
+         [  0.           0.           0.         ...   0.          -7.86226925
+            0.        ]
+         [  0.           0.           0.         ...   0.           0.
+            1.        ]]
         """
         pow2 = _next_pow_2(self.states)
         dim = pow2 * gridpoints**self.modes
@@ -160,6 +209,18 @@ class VibronicMatrix(Fragment):
         Returns:
             float: an upper bound on the spectral norm of the operator
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 5
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> params = {"gridpoints": 2, "sparse": True}
+        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).norm(params)
+        27.586807763582737
         """
         try:
             gridpoints = params["gridpoints"]
@@ -387,8 +448,8 @@ class VibronicMatrix(Fragment):
 
         return d
 
-    def __repr__(self):
-        return f"VibronicMatrix({self._blocks})"
+    def __repr__(self) -> str:
+        return self._blocks.__repr__()
 
 
 def _is_pow_2(k: int) -> bool:
