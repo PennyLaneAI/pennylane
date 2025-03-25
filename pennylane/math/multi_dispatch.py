@@ -375,7 +375,7 @@ def dot(tensor1, tensor2, like=None):
         # Avoid the case when one is a scalar - using a robust check for scalars
         if onp.isscalar(x) or onp.isscalar(y):
             return x * y
-        return x @ y
+        return x.dot(y)
     return np.dot(x, y, like=like)
 
 
