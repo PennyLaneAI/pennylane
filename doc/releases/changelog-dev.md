@@ -190,6 +190,7 @@
 
 * Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
 
@@ -893,6 +894,9 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -910,6 +914,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Diego Guala,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
