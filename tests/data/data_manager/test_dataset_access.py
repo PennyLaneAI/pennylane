@@ -468,8 +468,7 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     ],
 )
 def test_load_other_attributes(tmp_path, data_name, params, attributes):
-    """Test that load fetches attributes of 'other'
-    datasets."""
+    """Test that load fetches attributes of 'other' datasets."""
     folder_path = tmp_path
     dsets = pennylane.data.data_manager.load(
         data_name=data_name,
