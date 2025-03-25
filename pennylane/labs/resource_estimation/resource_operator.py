@@ -70,7 +70,7 @@ class ResourceOperator(ABC):
         .. code-block:: bash
 
             >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params())
+            >>> op.resources(**op.resource_params)
             {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
 
     """
