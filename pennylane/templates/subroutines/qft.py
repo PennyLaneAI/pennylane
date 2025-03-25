@@ -149,6 +149,10 @@ class QFT(Operation):
     @property
     def num_params(self):
         return 0
+    
+    @property
+    def group(self):
+        return self.hyperparameters["group"]
 
     def decomposition(self):
         return self.compute_decomposition(wires=self.wires)
