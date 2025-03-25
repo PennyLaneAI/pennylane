@@ -193,6 +193,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
@@ -255,6 +258,7 @@
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
   [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
   ```pycon
   >>> import numpy as np
@@ -263,7 +267,7 @@
   >>> U_dense = np.eye(4)  # 2-wire identity
   >>> U_sparse = sp.sparse.csr_matrix(U_dense)
   >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.matrix())
+  >>> print(op.sparse_matrix())
   <Compressed Sparse Row sparse matrix of dtype 'float64'
           with 4 stored elements and shape (4, 4)>
     Coords        Values
@@ -271,7 +275,7 @@
     (1, 1)        1.0
     (2, 2)        1.0
     (3, 3)        1.0
-  >>> op.matrix().toarray()
+  >>> op.sparse_matrix().toarray()
   array([[1., 0., 0., 0.],
         [0., 1., 0., 0.],
         [0., 0., 1., 0.],
