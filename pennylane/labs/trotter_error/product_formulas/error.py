@@ -51,7 +51,6 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     >>> import numpy as np
     >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
     >>> from pennylane.labs.trotter_error.product_formulas import trotter_error
-
     >>> n_modes = 4
     >>> freqs = np.random.random(4)
     >>> taylor_coeffs = [
@@ -60,9 +59,7 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     >>>     np.random.random(size=(n_modes, n_modes)),
     >>>     np.random.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-
     >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
-
     >>> delta = 0.001
     >>> type(trotter_error(frags, delta))
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
