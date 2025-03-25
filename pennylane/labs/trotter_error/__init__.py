@@ -36,9 +36,9 @@ Realspace Hamiltonian Classes:
     :toctree: api
 
     ~RealspaceCoeffs
+    ~RealspaceMatrix
     ~RealspaceOperator
     ~RealspaceSum
-    ~VibronicMatrix
 
 State Classes:
 ~~~~~~~~~~~~~~
@@ -53,9 +53,9 @@ State Classes:
 from .abstract import AbstractState, Fragment
 from .realspace import (
     RealspaceCoeffs,
+    RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
-    VibronicMatrix,
     HOState,
     VibronicHO,
 )
