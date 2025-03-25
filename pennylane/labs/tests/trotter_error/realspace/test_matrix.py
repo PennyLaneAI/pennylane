@@ -58,7 +58,7 @@ blocks0 = {(0, 0): vword0}
 vmat0 = VibronicMatrix(1, 2, blocks0)
 
 vword1 = RealspaceSum(
-    2, [RealspaceOperator(2, ("P",), RealspaceCoeffs(np.array([1]), label="omega"))]
+    1, [RealspaceOperator(1, ("P",), RealspaceCoeffs(np.array([1]), label="omega"))]
 )
 blocks1 = {(0, 0): vword1}
 vmat1 = VibronicMatrix(1, 1, blocks1)
