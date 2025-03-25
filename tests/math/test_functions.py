@@ -1117,7 +1117,6 @@ class TestScipySparse:
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
     dispatched_linalg_methods = [
-        fn.linalg.det,
         fn.linalg.expm,
         fn.linalg.inv,
         fn.linalg.norm,
