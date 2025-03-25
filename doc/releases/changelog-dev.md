@@ -789,6 +789,7 @@
 <h3>Documentation 📝</h3>
 
 * A typo in the docstring for `ControlledOp` was fixed.
+  [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
