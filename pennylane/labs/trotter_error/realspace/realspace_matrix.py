@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The VibronicMatrix class"""
+"""The RealspaceMatrix class"""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 # pylint: disable=protected-access
 
 
-class VibronicMatrix(Fragment):
+class RealspaceMatrix(Fragment):
     r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
 
     This can be used to represent the fragments of the vibronic Hamiltonian given by
@@ -45,14 +45,14 @@ class VibronicMatrix(Fragment):
 
     **Example**
 
-    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
     >>> import numpy as np
     >>> n_states = 1
     >>> n_modes = 5
     >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
     >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
     >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
-    >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
     {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
     """
 
@@ -61,7 +61,7 @@ class VibronicMatrix(Fragment):
         states: int,
         modes: int,
         blocks: Dict[Tuple[int, int], RealspaceSum] = None,
-    ) -> VibronicMatrix:
+    ) -> RealspaceMatrix:
 
         if blocks is None:
             blocks = {}
@@ -71,7 +71,7 @@ class VibronicMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object located at the ``(row, col)`` entry of the :class:`~.pennylane.labs.trotter_error.VibronicMatrix`
+        """Return the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object located at the ``(row, col)`` entry of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix`
 
         Args:
             row (int): the row of the index
@@ -82,14 +82,14 @@ class VibronicMatrix(Fragment):
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
         >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
-        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).block(0, 0)
+        >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).block(0, 0)
         RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))
         """
         if row < 0 or col < 0:
@@ -112,14 +112,14 @@ class VibronicMatrix(Fragment):
         Returns:
             None
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 2
         >>> n_modes = 5
         >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
-        >>> vib = VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum})
+        >>> vib = RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
         >>> vib
         {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
         >>> vib.set_block(1, 1, rs_sum)
@@ -156,14 +156,14 @@ class VibronicMatrix(Fragment):
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
         >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
-        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).matrix(2)
+        >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).matrix(2)
         [[-25.58680776   0.           0.         ...   0.           0.
             0.        ]
          [  0.         -16.72453851   0.         ...   0.           0.
@@ -211,7 +211,7 @@ class VibronicMatrix(Fragment):
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
@@ -219,7 +219,7 @@ class VibronicMatrix(Fragment):
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> params = {"gridpoints": 2, "sparse": True}
-        >>> VibronicMatrix(n_states, n_modes, {(0, 0): rs_sum}).norm(params)
+        >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).norm(params)
         27.586807763582737
         """
         try:
@@ -232,7 +232,7 @@ class VibronicMatrix(Fragment):
                 f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
             )
 
-        padded = VibronicMatrix(_next_pow_2(self.states), self.modes, self._blocks)
+        padded = RealspaceMatrix(_next_pow_2(self.states), self.modes, self._blocks)
 
         return padded._norm(params)
 
@@ -247,15 +247,15 @@ class VibronicMatrix(Fragment):
 
         return norm1 + norm2
 
-    def __add__(self, other: VibronicMatrix) -> VibronicMatrix:
+    def __add__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot add VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
+                f"Cannot add RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot add VibronicMatrix on {self.modes} states with VibronicMatrix on {other.modes} states."
+                f"Cannot add RealspaceMatrix on {self.modes} states with RealspaceMatrix on {other.modes} states."
             )
 
         new_blocks = {}
@@ -271,21 +271,21 @@ class VibronicMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = other._blocks[key]
 
-        return VibronicMatrix(
+        return RealspaceMatrix(
             self.states,
             self.modes,
             new_blocks,
         )
 
-    def __sub__(self, other: VibronicMatrix) -> VibronicMatrix:
+    def __sub__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot subtract VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
+                f"Cannot subtract RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot subtract VibronicMatrix on {self.modes} states with VibronicMatrix on {other.modes} states."
+                f"Cannot subtract RealspaceMatrix on {self.modes} states with RealspaceMatrix on {other.modes} states."
             )
 
         new_blocks = {}
@@ -302,39 +302,39 @@ class VibronicMatrix(Fragment):
         for key in r_keys.difference(l_keys):
             new_blocks[key] = (-1) * other._blocks[key]
 
-        return VibronicMatrix(
+        return RealspaceMatrix(
             self.states,
             self.modes,
             new_blocks,
         )
 
-    def __mul__(self, scalar: float) -> VibronicMatrix:
+    def __mul__(self, scalar: float) -> RealspaceMatrix:
         new_blocks = {}
         for key in self._blocks.keys():
             new_blocks[key] = scalar * self._blocks[key]
 
-        return VibronicMatrix(self.states, self.modes, new_blocks)
+        return RealspaceMatrix(self.states, self.modes, new_blocks)
 
     __rmul__ = __mul__
 
-    def __imul__(self, scalar: float) -> VibronicMatrix:
+    def __imul__(self, scalar: float) -> RealspaceMatrix:
         for key in self._blocks.keys():
             self._blocks[key] *= scalar
 
         return self
 
-    def __matmul__(self, other: VibronicMatrix) -> VibronicMatrix:
+    def __matmul__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot multiply VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
+                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot multiply VibronicMatrix on {self.states} states with VibronicMatrix on {other.states} states."
+                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
             )
 
-        product_matrix = VibronicMatrix(self.states, self.modes)
+        product_matrix = RealspaceMatrix(self.states, self.modes)
 
         for i, j in product(range(self.states), repeat=2):
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
@@ -343,7 +343,7 @@ class VibronicMatrix(Fragment):
 
         return product_matrix
 
-    def __eq__(self, other: VibronicMatrix):
+    def __eq__(self, other: RealspaceMatrix):
         if self.states != other.states:
             return False
 
@@ -352,14 +352,14 @@ class VibronicMatrix(Fragment):
 
         return True
 
-    def _partition_into_quadrants(self) -> Tuple[VibronicMatrix]:
+    def _partition_into_quadrants(self) -> Tuple[RealspaceMatrix]:
         # pylint: disable=chained-comparison
         half = self.states // 2
 
-        top_left = VibronicMatrix(half, self.modes, {})
-        top_right = VibronicMatrix(half, self.modes, {})
-        bottom_left = VibronicMatrix(half, self.modes, {})
-        bottom_right = VibronicMatrix(half, self.modes, {})
+        top_left = RealspaceMatrix(half, self.modes, {})
+        top_right = RealspaceMatrix(half, self.modes, {})
+        bottom_left = RealspaceMatrix(half, self.modes, {})
+        bottom_right = RealspaceMatrix(half, self.modes, {})
 
         for index, word in self._blocks.items():
             x, y = index
@@ -382,7 +382,7 @@ class VibronicMatrix(Fragment):
             threshold (float): only return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.VibronicMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
+            Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
         """
         d = {}
         for i, j in product(range(self.states), repeat=2):

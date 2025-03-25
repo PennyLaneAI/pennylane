@@ -35,10 +35,10 @@ Realspace Hamiltonian Classes:
     :toctree: api
 
     ~RealspaceCoeffs
+    ~RealspaceMatrix
     ~RealspaceOperator
     ~RealspaceSum
-    ~VibronicMatrix
 """
 
 from .abstract_fragment import Fragment
-from .realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum, VibronicMatrix
+from .realspace import RealspaceCoeffs, RealspaceMatrix, RealspaceOperator, RealspaceSum
