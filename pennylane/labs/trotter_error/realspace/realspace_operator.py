@@ -38,7 +38,13 @@ class RealspaceOperator:
     r"""Represents the summation of a product of position and momentum operators over the vibrational modes.
     For example,
 
-    .. math:: \sum_{i,j} \phi_{i,j}Q_i Q_j
+    .. math:: \sum_{i,j=1}^5 \phi_{i,j}Q_i Q_j,
+
+    can be expressed as a ``RealspaceOperator`` from the following three pieces of information:
+
+    * the number of vibrational modes: .. math:: 5
+    * the product of operators: .. math:: Q_iQ_j
+    * the tensor of coefficients: .. math:: \phi
 
     Args:
         modes (int): the number of vibrational modes
