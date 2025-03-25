@@ -277,6 +277,10 @@ class VibronicMatrix(Fragment):
         product_matrix = VibronicMatrix(self.states, self.modes)
 
         for i, j in product(range(self.states), repeat=2):
+            for op in self.block(i, j).ops:
+                assert op.coeffs is not None
+            for op in other.block(i, j).ops:
+                assert op.coeffs is not None
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
             block_sum = sum(block_products, RealspaceSum.zero(self.modes))
             product_matrix.set_block(i, j, block_sum)
@@ -285,6 +289,9 @@ class VibronicMatrix(Fragment):
 
     def __eq__(self, other: VibronicMatrix):
         if self.states != other.states:
+            return False
+
+        if self.modes != other.modes:
             return False
 
         if self._blocks != other._blocks:

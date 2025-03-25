@@ -36,17 +36,21 @@ class RealspaceCoeffs:
     def _from_tree(cls, tree: _RealspaceTree):
         rs_coeffs = cls.__new__(cls)
         rs_coeffs._tree = tree
+        return rs_coeffs
 
     def __add__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
         tree = _RealspaceTree.sum_node(self._tree, other._tree)
         return RealspaceCoeffs._from_tree(tree)
 
     def __sub__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
-        return self + (-1) * other
+        tree = _RealspaceTree.sum_node(self._tree, _RealspaceTree.scalar_node(-1, other._tree))
+        return RealspaceCoeffs._from_tree(tree)
 
     def __mul__(self, scalar: float) -> RealspaceCoeffs:
         tree = _RealspaceTree.scalar_node(scalar, self._tree)
         return RealspaceCoeffs._from_tree(tree)
+
+    __rmul__ = __mul__
 
     def __matmul__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
         tree = _RealspaceTree.outer_node(self._tree, other._tree)
@@ -57,6 +61,9 @@ class RealspaceCoeffs:
 
     def __getitem__(self, index) -> float:
         return self._tree.compute(index)
+
+    def __eq__(self, other: RealspaceCoeffs) -> bool:
+        return self._tree == other._tree
 
     @property
     def is_zero(self) -> bool:

@@ -111,7 +111,12 @@ def _realspace_sum(
     if i == j:
         op = ("Q", "Q")
         coeffs = RealspaceCoeffs(np.diag(freqs) / 2, label="omega")
+        assert coeffs is not None
         realspace_ops.append(RealspaceOperator(modes, op, coeffs))
+
+    ret_val = RealspaceSum(modes, realspace_ops)
+    for op in ret_val.ops:
+        assert op.coeffs is not None
 
     return RealspaceSum(modes, realspace_ops)
 

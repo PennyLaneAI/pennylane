@@ -75,7 +75,7 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
             for k in range(i + 1, n_frags):
                 eff += 2 * nested_commutator([fragments[k], fragments[i], fragments[j]])
 
-    eff *= scalar
+    eff = scalar * eff
     return eff
 
 
