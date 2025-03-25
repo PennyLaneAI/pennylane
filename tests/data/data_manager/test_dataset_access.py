@@ -34,6 +34,8 @@ from .support import (
     _error_response,
     _get_urls_resp,
     _list_attrs_resp,
+    _list_attrs_mqt_resp,
+    _list_attrs_max3sat_resp,
     _parameter_tree,
     _qchem_parameter_tree,
     _rydberggpt_url_resp,
@@ -152,7 +154,13 @@ def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json
 def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
-        json_data = _list_attrs_resp
+        print(variables)
+        if variables['datasetClassId'] == 'mqt-bench':
+            json_data=_list_attrs_mqt_resp
+        elif variables['datasetClassId'] == 'hamlib-max-3-sat':
+            json_data=_list_attrs_max3sat_resp
+        else:
+            json_data = _list_attrs_resp
     elif variables is not None and variables["datasetClassId"] == "rydberggpt":
         json_data = _rydberggpt_url_resp
     elif "GetDatasetsForDownload" in query:
@@ -437,6 +445,40 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
         Path(tmp_path, path) for path in expect_paths
     }
 
+# pylint: disable=too-many-arguments
+@patch.object(pennylane.data.data_manager, "head", head_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
+@pytest.mark.usefixtures("mock_download_dataset")
+@pytest.mark.parametrize(
+    "data_name, params, attributes",
+    [
+        (
+            "other",
+            {"name": "mqt-bench"},
+            ["ae", "dj", "portfolioqaoa"],
+        ),
+        (
+            "other",
+            {"name": "hamlib-max-3-sat"},
+            ["ns", "ids", "ratios"],
+        ),
+    ],
+)
+@pytest.mark.parametrize("progress_bar", [True, False])
+# @pytest.mark.parametrize("attributes", [["ae", "dj", "portfolioqaoa"], ["Rbs", "deltas", "betas"]])
+def test_load_other_attributes(tmp_path, data_name, params, progress_bar, attributes):
+    """Test that load fetches attributes of 'other'
+    datasets."""
+
+    folder_path = tmp_path
+    dsets = pennylane.data.data_manager.load(
+        data_name=data_name,
+        folder_path=folder_path,
+        block_size=1,
+        progress_bar=progress_bar,
+        attributes=attributes,
+        **params,
+    )
 
 @patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
 def test_load_bad_config():
