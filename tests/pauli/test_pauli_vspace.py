@@ -75,6 +75,16 @@ class TestPauliVSpace:
         assert len(vspace._pw_to_idx) == 0
         assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
 
+    def test_getitem(self):
+        """Test dunder getitem method"""
+        vspace = PauliVSpace(ops1)
+        assert vspace[0] == vspace.basis[0]
+
+    def test_iter(self):
+        """Test dunder iter method"""
+        vspace = PauliVSpace(ops1)
+        assert list(vspace) == vspace.basis
+
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)

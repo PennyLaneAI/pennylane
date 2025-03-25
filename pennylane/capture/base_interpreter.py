@@ -432,17 +432,6 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
 
 
-# pylint: disable=protected-access
-@PlxprInterpreter.register_primitive(jax._src.pjit.pjit_p)
-def _(self, *invals, jaxpr, **params):
-    if jax.config.jax_dynamic_shapes:
-        # just evaluate it so it doesn't throw dynamic shape errors
-        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
-
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
-
-
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
 def _(self, *dyn_shape, dimension, dtype, shape):
@@ -566,37 +555,28 @@ def handle_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    abstract_shapes_slice,
 ):
     """Handle a while loop primitive."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
-    abstract_shapes = invals[abstract_shapes_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_body_fn, consts_body, *abstract_shapes, *init_state
-    )
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
-        copy(self), jaxpr_cond_fn, consts_cond, *abstract_shapes, *init_state
-    )
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
 
     body_consts = slice(0, len(new_jaxpr_body_fn.consts))
     cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
-    abstract_shapes_slice = slice(cond_consts.stop, cond_consts.stop + len(abstract_shapes))
-    args_slice = slice(abstract_shapes_slice.stop, None)
+    args_slice = slice(cond_consts.stop, None)
 
     return while_loop_prim.bind(
         *new_jaxpr_body_fn.consts,
         *new_jaxpr_cond_fn.consts,
-        *abstract_shapes,
         *init_state,
         jaxpr_body_fn=new_jaxpr_body_fn.jaxpr,
         jaxpr_cond_fn=new_jaxpr_cond_fn.jaxpr,
         body_slice=body_consts,
         cond_slice=cond_consts,
         args_slice=args_slice,
-        abstract_shapes_slice=abstract_shapes_slice,
     )
 
 
@@ -650,6 +630,17 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+# pylint: disable=protected-access
+@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+def _(self, *invals, jaxpr, **params):
+    if jax.config.jax_dynamic_shapes:
+        # just evaluate it so it doesn't throw dynamic shape errors
+        return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
+
+    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+
+
 @FlattenedInterpreter.register_primitive(while_loop_prim)
 def flatten_while_loop(
     self,
@@ -659,17 +650,15 @@ def flatten_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    abstract_shapes_slice,
 ):
     """Handle the while loop by a flattened python strategy."""
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
-    abstract_shapes = invals[abstract_shapes_slice]
 
     fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *abstract_shapes, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *abstract_shapes, *fn_res)
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
 
     return fn_res
 
@@ -702,12 +691,15 @@ def flattened_for(
     consts = invals[consts_slice]
     init_state = invals[args_slice]
     abstract_shapes = invals[abstract_shapes_slice]
+    num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
 
     res = init_state
     for i in range(start, stop, step):
         res = copy(self).eval(jaxpr_body_fn, consts, *abstract_shapes, i, *res)
-
-    return res
+        # separate abstract shapes from normal results so we can put the index in between
+        abstract_shapes = res[:num_abstract_shapes]
+        res = res[num_abstract_shapes:]
+    return abstract_shapes + res
 
 
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
@@ -726,6 +718,7 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
 
     This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
     of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
+
     >>> import jax
     >>> jax.config.update("jax_dynamic_shapes", True)
     >>> def f(i):

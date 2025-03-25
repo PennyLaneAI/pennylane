@@ -20,7 +20,7 @@ from typing import Callable, Optional, Sequence, Type, Union
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.flatfn import FlatFn
+from pennylane.capture import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.operation import AnyWires, Operation, Operator
@@ -693,73 +693,6 @@ def cond(
     return wrapper
 
 
-def _register_custom_staging_rule(cond_prim):
-
-    # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
-    # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
-    # for reference to how jax is handling staging rules for dynamic shapes in v0.4.28
-    # see also capture/intro_to_dynamic_shapes.md
-
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.interpreters import partial_eval as pe  # pylint: disable=import-outside-toplevel
-
-    def _tracer_and_outvar(
-        jaxpr_trace: pe.DynamicJaxprTrace,
-        outvar: jax.core.Var,
-        env: dict[jax.core.Var, jax.core.Var],
-    ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
-        """
-        Create a new tracer and returned var from the true branch outvar
-        returned vars are cached in env for use in future shapes
-        """
-        if not hasattr(outvar.aval, "shape"):
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
-            return out_tracer, jaxpr_trace.makevar(out_tracer)
-        new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
-        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
-        new_var = jaxpr_trace.makevar(out_tracer)
-
-        if not isinstance(outvar, jax.core.Literal):
-            env[outvar] = new_var
-        return out_tracer, new_var
-
-    def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
-        """
-        Add new jaxpr equation to the jaxpr_trace and return new tracers.
-        """
-        if not jax.config.jax_dynamic_shapes:
-            # fallback to normal behavior
-            return jaxpr_trace.default_process_primitive(cond_prim, tracers, params)
-        true_outvars = params["jaxpr_branches"][0].outvars
-
-        env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
-        if true_outvars:
-            out_tracers, returned_vars = tuple(
-                zip(
-                    *(_tracer_and_outvar(jaxpr_trace, var, env) for var in true_outvars),
-                    strict=True,
-                )
-            )
-        else:
-            out_tracers, returned_vars = (), ()
-
-        invars = [jaxpr_trace.getvar(x) for x in tracers]
-        eqn = pe.new_jaxpr_eqn(
-            invars,
-            returned_vars,
-            cond_prim,
-            params,
-            jax.core.no_effects,
-        )
-        jaxpr_trace.frame.add_eqn(eqn)
-        return out_tracers
-
-    pe.custom_staging_rules[cond_prim] = custom_staging_rule
-
-
 def _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval):
     raise ValueError(
         f"Mismatch in output abstract values in {branch_type} branch "
@@ -834,7 +767,9 @@ def _get_cond_qfunc_prim():
     cond_prim = NonInterpPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
-    _register_custom_staging_rule(cond_prim)
+    qml.capture.register_custom_staging_rule(
+        cond_prim, lambda params: params["jaxpr_branches"][0].outvars
+    )
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_branches, **__):
