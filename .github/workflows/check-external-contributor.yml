@@ -1,8 +1,6 @@
 name: External Contributor Check
 on:
-  pull_request_target:
-    types: 
-      - opened   
+  pull_request: {}
   
 jobs:
   check-external:
@@ -14,5 +12,5 @@ jobs:
           github_team: "external-collaborators"
           github_token: ${{secrets.PENNYLANE_EXTERNAL_LABEL_MEMBER_CHECK}}
           github_username: "${{ github.actor }}"
-        uses: XanaduAI/cloud-actions/label-external-pull-request@main
+        uses: XanaduAI/cloud-actions/label-external-pull-request@fx-external-checks  
         
