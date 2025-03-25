@@ -62,8 +62,10 @@ class RealspaceOperator:
         self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
     ) -> RealspaceOperator:
 
-        if coeffs.shape != (modes,)*len(ops):
-            raise ValueError(f"coeffs has shape {coeffs.shape}, but shape {(modes, ) * len(ops)} was expected.")
+        if coeffs.shape != (modes,) * len(ops):
+            raise ValueError(
+                f"coeffs has shape {coeffs.shape}, but shape {(modes, ) * len(ops)} was expected."
+            )
 
         self.modes = modes
         self.ops = ops

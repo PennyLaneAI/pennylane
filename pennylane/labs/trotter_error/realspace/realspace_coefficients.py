@@ -122,6 +122,7 @@ class RealspaceCoeffs:
 
         return self._tree.nonzero(threshold)
 
+
 class _NodeType(Enum):
     """Enum containing the types of nodes"""
 
