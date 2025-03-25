@@ -149,7 +149,15 @@ def _allclose_mixed(a, b, rtol=1e-05, atol=1e-08, b_is_sparse=True):
 
 
 def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08):
-    """Compare a sparse matrix to a scalar value efficiently.
+    """Compare a sparse matrix to a scalar value.
+
+    This function checks if a sparse matrix is approximately equal to a scalar value
+    by considering three cases:
+    1. Empty/zero sparse matrix compared to any scalar -> scalar must be close to zero
+    2. Sparse matrix with non-zero values compared to a scalar -> all non-zero values must match
+    3. Following case 2, if scalar is zero, any sparsity pattern is allowed
+    4. If the scalar is non-zero, all elements must be non-zero, e.g. size match nnz
+
 
     Args:
         sparse_mat: A scipy sparse matrix
@@ -160,12 +168,24 @@ def _allclose_sparse_scalar(sparse_mat, scalar, rtol=1e-05, atol=1e-08):
     Returns:
         bool: True if the sparse matrix is approximately equal to the scalar
     """
-    # Check if any non-zero values are not close to the scalar
-    if sparse_mat.nnz > 0:
-        # For non-zero elements, they must be close to the scalar
-        return np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol)
-    # For zero elements, the scalar must be close to zero
-    return np.allclose(scalar, 0, rtol=rtol, atol=atol)
+    # Case 1: Empty sparse matrix - only close to zero scalar
+    if sparse_mat.nnz == 0:
+        return np.isclose(scalar, 0, rtol=rtol, atol=atol)
+
+    # Case 2: Sparse matrix with all non-zero values matching scalar
+    # Check if all non-zeros in the sparse matrix match the scalar
+    if not np.allclose(sparse_mat.data, scalar, rtol=rtol, atol=atol):
+        return False
+
+    # Note that from this step all the data already close to scalar
+    # Case 3: Special handling for scalar = 0 or fully populated sparse matrix
+    # If scalar is approximately zero, allow any sparsity pattern
+    if np.isclose(scalar, 0, rtol=rtol, atol=atol):
+        return True
+
+    # If scalar is non-zero, all elements must be non-zero
+    # Use size property for efficiency with very large matrices
+    return sparse_mat.nnz == np.prod(sparse_mat.shape)
 
 
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
