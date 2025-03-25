@@ -24,7 +24,32 @@ from numpy import allclose, isclose, ndarray, zeros
 
 
 class RealspaceCoeffs:
-    """Lightweight representation of a tensor of coefficients."""
+    """Lightweight representation of a tensor of coefficients.
+    A :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with a numpy array.
+    Printing :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` the object displays the expression that is used to compute to compute each entry of the tensor.
+    For a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` initialized through the constructor the expression is simply the label and the indices of the tensor.
+    Manipulating :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects through arithmetic methods results in more complex expressions.
+
+    Args:
+        tensor (ndarray): a numpy tensor
+        label (string): a name for the tensor
+
+    **Examples**
+
+    >>> import numpy as np
+    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> coeffs1 = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="omega")
+    >>> coeffs1
+    omega[idx0,idx1]
+    >>> coeffs2 = RealspaceCoeffs(np.array([[2, 1], [1, 3]]), label="alpha")
+    >>> expr1 = coeffs1 + 2*coeffs2
+    >>> expr1
+    (omega[idx0,idx1]) + (2 * (alpha[idx0,idx1]))
+    >>> coeffs3 = RealspaceCoeffs(np.array([3, 2]), label="beta")
+    >>> expr2 = expr1 @ coeffs3
+    >>> expr2
+    ((omega[idx0,idx1]) + (2 * (alpha[idx0,idx1]))) * (beta[idx2])
+    """
 
     def __init__(self, tensor: np.ndarray, label: str = None):
         if label is None and tensor.shape != ():
@@ -34,6 +59,7 @@ class RealspaceCoeffs:
 
     @classmethod
     def _from_tree(cls, tree: _RealspaceTree):
+        """Initialize directly from a ``_RealspaceTree`` object."""
         rs_coeffs = cls.__new__(cls)
         rs_coeffs._tree = tree
         return rs_coeffs
@@ -50,6 +76,8 @@ class RealspaceCoeffs:
         tree = _RealspaceTree.scalar_node(scalar, self._tree)
         return RealspaceCoeffs._from_tree(tree)
 
+    __rmul__ = __mul__
+
     def __matmul__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
         tree = _RealspaceTree.outer_node(self._tree, other._tree)
         return RealspaceCoeffs._from_tree(tree)
@@ -62,6 +90,11 @@ class RealspaceCoeffs:
 
     @property
     def is_zero(self) -> bool:
+        """Determine if the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects represents the zero tensor, but with false positives.
+
+        Returns:
+            bool: Always returns ``False`` when the tensor is non-zero. When returning ``True`` there are rare edge cases where the tensor is non-zero.
+        """
         return self._tree.is_zero
 
     def nonzero(self, threshold: float = 0.0):
@@ -82,7 +115,7 @@ class RealspaceCoeffs:
         {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
         """
 
-        return self._tree.nonzero()
+        return self._tree.nonzero(threshold)
 
 
 class _NodeType(Enum):
