@@ -20,9 +20,9 @@ import pytest
 
 from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
+    RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
-    VibronicMatrix,
 )
 from pennylane.labs.trotter_error.realspace.matrix import _op_norm
 
@@ -55,13 +55,13 @@ def _coeffs(states: int, modes: int, order: int):
 
 vword0 = RealspaceSum(2, [RealspaceOperator(2, tuple(), RealspaceCoeffs(np.array(0.5)))])
 blocks0 = {(0, 0): vword0}
-vmat0 = VibronicMatrix(1, 2, blocks0)
+vmat0 = RealspaceMatrix(1, 2, blocks0)
 
 vword1 = RealspaceSum(
     1, [RealspaceOperator(1, ("P",), RealspaceCoeffs(np.array([1]), label="omega"))]
 )
 blocks1 = {(0, 0): vword1}
-vmat1 = VibronicMatrix(1, 1, blocks1)
+vmat1 = RealspaceMatrix(1, 1, blocks1)
 
 vword2a = RealspaceSum(
     2,
@@ -71,17 +71,17 @@ vword2b = RealspaceSum(
     2, [RealspaceOperator(2, ("P",), RealspaceCoeffs(np.array([1, 2]), label="omega"))]
 )
 blocks2 = {(0, 0): vword2a, (1, 1): vword2b}
-vmat2 = VibronicMatrix(2, 2, blocks2)
+vmat2 = RealspaceMatrix(2, 2, blocks2)
 
 blocks3 = {(0, 1): vword2a, (1, 0): vword2b}
-vmat3 = VibronicMatrix(2, 2, blocks3)
+vmat3 = RealspaceMatrix(2, 2, blocks3)
 
 blocks4 = {(0, 0): vword2a, (0, 1): vword2a, (1, 0): vword2b, (1, 1): vword2b}
-vmat4 = VibronicMatrix(2, 2, blocks4)
+vmat4 = RealspaceMatrix(2, 2, blocks4)
 
 
 class TestMatrix:
-    """Test properties of the VibronicMatrix class"""
+    """Test properties of the RealspaceMatrix class"""
 
     params = [
         (blocks2, 2, 2, 2, False, 6 * _op_norm(2) ** 2),
@@ -110,7 +110,7 @@ class TestMatrix:
     ):
         """Test that the norm is correct"""
 
-        vmatrix = VibronicMatrix(states, modes, blocks)
+        vmatrix = RealspaceMatrix(states, modes, blocks)
 
         params = {"gridpoints": gridpoints, "sparse": sparse}
 
@@ -144,7 +144,7 @@ class TestMatrix:
 
         params = {"gridpoints": gridpoints, "sparse": sparse}
 
-        vmatrix = VibronicMatrix(states, modes, blocks)
+        vmatrix = RealspaceMatrix(states, modes, blocks)
         upper_bound = vmatrix.norm(params)
         norm = np.abs(np.max(np.linalg.eigvals(vmatrix.matrix(gridpoints))))
 

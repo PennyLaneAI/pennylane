@@ -36,9 +36,9 @@ Realspace Hamiltonian Classes:
     :toctree: api
 
     ~RealspaceCoeffs
+    ~RealspaceMatrix
     ~RealspaceOperator
     ~RealspaceSum
-    ~VibronicMatrix
 
 Fragment Functions:
 ~~~~~~~~~~~~~~~~~~~
@@ -74,9 +74,9 @@ from .fragments import generic_fragments, vibrational_fragments, vibronic_fragme
 from .product_formulas import perturbation_error, trotter_error
 from .realspace import (
     RealspaceCoeffs,
+    RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
-    VibronicMatrix,
     HOState,
     VibronicHO,
 )

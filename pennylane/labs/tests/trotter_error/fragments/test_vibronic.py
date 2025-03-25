@@ -20,14 +20,14 @@ import pytest
 import scipy as sp
 
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
-from pennylane.labs.trotter_error.realspace import HOState, VibronicHO, VibronicMatrix
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, VibronicHO
 
 # pylint: disable=no-self-use
 
 
 def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
     frags = vibronic_fragments(states, modes, freqs, taylor_coeffs)
-    return sum(frags, VibronicMatrix.zero(states, modes))
+    return sum(frags, RealspaceMatrix.zero(states, modes))
 
 
 class Test1Mode:

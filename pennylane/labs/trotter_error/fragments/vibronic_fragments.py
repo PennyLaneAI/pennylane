@@ -21,16 +21,16 @@ import numpy as np
 
 from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
+    RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
-    VibronicMatrix,
 )
-from pennylane.labs.trotter_error.realspace.vibronic_matrix import _next_pow_2
+from pennylane.labs.trotter_error.realspace.realspace_matrix import _next_pow_2
 
 
 def vibronic_fragments(
     states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
-) -> List[VibronicMatrix]:
+) -> List[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian.
 
     Args:
@@ -40,7 +40,7 @@ def vibronic_fragments(
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
 
     Returns:
-        List[VibronicMatrix]: a list of ``VibronicMatrix`` objects representing the fragments of the vibronic Hamiltonian
+        List[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian
 
     **Example**
 
@@ -51,7 +51,7 @@ def vibronic_fragments(
     >>> freqs = np.random.random(4)
     >>> taylor_coeffs = [np.random.random(size=(n_states, n_states, )), np.random.random(size=(n_states, n_states, n_modes))]
     >>> vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
-    [VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.6158098464023244), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.7813244877436533), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))}), VibronicMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.9468868589654408), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.6904557706626872), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))}), VibronicMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})]
+    [RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.6158098464023244), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.7813244877436533), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))}), RealspaceMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.9468868589654408), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.6904557706626872), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))}), RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})]
     """
     _validate_input(states, modes, freqs, taylor_coeffs)
 
@@ -66,17 +66,17 @@ def vibronic_fragments(
 
 def _position_fragment(
     i: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
-) -> VibronicMatrix:
+) -> RealspaceMatrix:
     """Return the ``i``th position fragment"""
     pow2 = _next_pow_2(states)
     blocks = {
         (j, i ^ j): _realspace_sum(j, i ^ j, states, modes, freqs, taylor_coeffs)
         for j in range(pow2)
     }
-    return VibronicMatrix(pow2, modes, blocks)
+    return RealspaceMatrix(pow2, modes, blocks)
 
 
-def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> VibronicMatrix:
+def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> RealspaceMatrix:
     """Return the fragment consisting only of momentum operators."""
     pow2 = _next_pow_2(states)
     term = RealspaceOperator(
@@ -87,14 +87,14 @@ def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> VibronicMa
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
 
-    return VibronicMatrix(pow2, modes, blocks)
+    return RealspaceMatrix(pow2, modes, blocks)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def _realspace_sum(
     i: int, j: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> RealspaceSum:
-    """Return a RealspaceSum representation of the ``(i, j)`` block in the VibronicMatrix"""
+    """Return a RealspaceSum representation of the ``(i, j)`` block in the RealspaceMatrix"""
     if i > states - 1 or j > states - 1:
         return RealspaceSum.zero(modes)
 

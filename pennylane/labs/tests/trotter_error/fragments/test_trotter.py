@@ -19,7 +19,7 @@ import pytest
 from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
 from pennylane.labs.trotter_error.product_formulas import trotter_error
-from pennylane.labs.trotter_error.realspace import VibronicMatrix
+from pennylane.labs.trotter_error.realspace import RealspaceMatrix
 
 
 def _coeffs(states: int, modes: int, order: int):
@@ -66,6 +66,6 @@ def test_second_order_trotter_error_operator(modes):
     ]
 
     actual = trotter_error(fragments, delta)
-    expected = scalar * sum(terms, VibronicMatrix(states, modes))
+    expected = scalar * sum(terms, RealspaceMatrix(states, modes))
 
     assert actual == expected
