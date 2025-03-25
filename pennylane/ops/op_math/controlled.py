@@ -927,9 +927,6 @@ class ControlledOp(Controlled, operation.Operation):
     class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
     specific methods and properties.
 
-    When we no longer rely on certain functionality through ``Operation``, we can get rid of this
-    class.
-
     .. seealso:: :class:`~.Controlled`
     """
 
