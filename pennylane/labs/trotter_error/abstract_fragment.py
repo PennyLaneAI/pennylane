@@ -34,7 +34,6 @@ class Fragment(ABC):
 
     * :meth:`~.__matmul__`: implements matrix multiplication
 
-
     In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is
     required to compute error estimates of error operators obtained by computing nested commutators.
     """
