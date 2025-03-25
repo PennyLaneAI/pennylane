@@ -18,12 +18,14 @@ Operator class is correctly defined.
 
 import copy
 import pickle
+from collections import defaultdict
 from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qml
+from pennylane.decomposition import DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -92,6 +94,47 @@ def _check_decomposition(op, skip_wire_mapping):
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )(*op.data, wires=op.wires, **op.hyperparameters)
+
+
+def _check_decomposition_new(op):
+    """Checks involving the new system of decompositions."""
+
+    if type(op).resource_params is qml.operation.Operator.resource_params:
+        assert not qml.decomposition.has_decomp(
+            type(op)
+        ), "resource_params must be defined for operators with decompositions"
+        return
+
+    assert set(op.resource_params.keys()) == set(
+        type(op).resource_keys
+    ), "resource_params must have the same keys as specified by resource_keys"
+
+    for rule in qml.list_decomps(type(op)):
+        _test_decomposition_rule(op, rule)
+
+
+def _test_decomposition_rule(op, rule: DecompositionRule):
+    """Tests that a decomposition rule is consistent with the operator."""
+
+    # Test that the resource function is correct
+    resources = rule.compute_resources(**op.resource_params)
+    gate_counts = resources.gate_counts
+
+    with qml.queuing.AnnotatedQueue() as q:
+        rule(*op.data, wires=op.wires, **op.hyperparameters)
+    tape = qml.tape.QuantumScript.from_queue(q)
+    actual_gate_counts = defaultdict(int)
+    for _op in tape.operations:
+        resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+        actual_gate_counts[resource_rep] += 1
+    assert gate_counts == actual_gate_counts
+
+    # Tests that the decomposition produces the same matrix
+    op_matrix = qml.matrix(op)
+    decomp_matrix = qml.matrix(tape, wire_order=op.wires)
+    assert qml.math.allclose(
+        op_matrix, decomp_matrix
+    ), "decomposition must produce the same matrix as the operator."
 
 
 def _check_matrix(op):
@@ -352,13 +395,7 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(
-    op: qml.operation.Operator,
-    skip_deepcopy=False,
-    skip_pickle=False,
-    skip_wire_mapping=False,
-    skip_differentiation=False,
-) -> None:
+def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -369,8 +406,11 @@ def assert_valid(
         skip_deepcopy=False: If `True`, deepcopy tests are not run.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
+        skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
             the operator is parametrized but not differentiable.
+        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
+            defined using the new system.
 
     **Examples:**
 
@@ -413,18 +453,20 @@ def assert_valid(
         assert qml.math.allclose(d, p), "data and parameters must match."
 
     if len(op.wires) <= 26:
-        _check_wires(op, skip_wire_mapping)
-    _check_copy(op, skip_deepcopy)
+        _check_wires(op, kwargs.get("skip_wire_mapping", False))
+    _check_copy(op, kwargs.get("skip_deepcopy", False))
     _check_pytree(op)
-    if not skip_pickle:
+    if not kwargs.get("skip_pickle", False):
         _check_pickle(op)
     _check_bind_new_parameters(op)
-    _check_decomposition(op, skip_wire_mapping)
+    _check_decomposition(op, kwargs.get("skip_wire_mapping", False))
+    if not kwargs.get("skip_new_decomp", False):
+        _check_decomposition_new(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    if not skip_differentiation:
+    if not kwargs.get("skip_differentiation", False):
         _check_differentiation(op)
     _check_capture(op)
