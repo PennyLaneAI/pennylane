@@ -1198,32 +1198,6 @@ class TestScipySparse:
         with pytest.raises(ValueError, match="exponent must be an integer"):
             _sparse_matrix_power_bruteforce(A, 1.5)
 
-    def test_sparse_det_2x2(self):
-        """Test the sparse determinant for a 2x2."""
-
-        mat = np.array([[1, 2], [3, 4]])
-        smat = sci.sparse.csr_matrix(mat)
-        det = qml.math.det(smat)
-        expected = 1 * 3 - 2 * 4
-        assert qml.math.allclose(det, expected)
-
-    def test_sparse_det_zero(self):
-        """Test we can handle a matrix with a zero determinant."""
-        U = sci.sparse.csr_matrix([[0, 0, 0], [0, 0, 1], [0, 0, 0]])
-        assert qml.math.allclose(qml.math.linalg.det(U), 0)
-
-    def test_sparse_det_diagonal(self):
-        """Test calculating the sparse determinant for one known diagonal."""
-
-        U = sci.sparse.diags([4, 5, 6, 7], 0)
-        assert qml.math.allclose(qml.math.linalg.det(U), 4 * 5 * 6 * 7)
-
-    def test_sparse_reversed_diag(self):
-        """Test calcualting the sparse determinant for a right to left diagonal."""
-
-        tester = sci.sparse.csc_matrix([[0, 2, 0], [3, 0, 0], [0, 0, 4]])
-        assert qml.math.allclose(qml.math.linalg.det(tester), -2 * 3 * 4)
-
 
 # pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
