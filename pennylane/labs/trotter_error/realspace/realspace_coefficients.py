@@ -90,6 +90,11 @@ class RealspaceCoeffs:
 
     @property
     def is_zero(self) -> bool:
+        """Determine if the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects represents the zero tensor, but with false positives.
+
+        Returns:
+            bool: Always returns ``False`` when the tensor is non-zero. When returning ``True`` there are rare edge cases where the tensor is non-zero.
+        """
         return self._tree.is_zero
 
     def nonzero(self, threshold: float = 0.0):
@@ -110,7 +115,7 @@ class RealspaceCoeffs:
         {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
         """
 
-        return self._tree.nonzero()
+        return self._tree.nonzero(threshold)
 
 
 class _NodeType(Enum):

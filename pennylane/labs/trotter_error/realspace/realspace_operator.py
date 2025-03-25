@@ -31,7 +31,7 @@ from pennylane.labs.trotter_error.realspace.matrix import (
     _zeros,
 )
 
-from .realspace_coefficients import RealspaceCoeffs
+from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 
 
 class RealspaceOperator:
@@ -144,7 +144,7 @@ class RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero(self.modes)
 
-        self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
+        self.coeffs = _RealspaceTree.scalar_node(scalar, self.coeffs)
         return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
