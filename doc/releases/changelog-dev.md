@@ -196,6 +196,9 @@
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
+* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
+  [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
