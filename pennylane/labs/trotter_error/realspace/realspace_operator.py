@@ -53,7 +53,7 @@ class RealspaceOperator:
     >>> import numpy as np
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
-    >>> coeffs = RealspaceCoeffs.coeffs(np.random(shape=(n_modes, n_modes)))
+    >>> coeffs = RealspaceCoeffs(np.random(shape=(n_modes, n_modes)), label="phi")
     >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
 
     """
@@ -113,9 +113,7 @@ class RealspaceOperator:
                 f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes, self.ops, RealspaceCoeffs.sum_node(self.coeffs, other.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops, self.coeffs + other.coeffs)
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self._is_zero:
@@ -132,28 +130,15 @@ class RealspaceOperator:
                 f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes,
-            self.ops,
-            RealspaceCoeffs.sum_node(self.coeffs, RealspaceCoeffs.scalar_node(-1, other.coeffs)),
-        )
+        return RealspaceOperator(self.modes, self.ops, self.coeffs - other.coeffs)
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero(self.modes)
 
-        return RealspaceOperator(
-            self.modes, self.ops, RealspaceCoeffs.scalar_node(scalar, self.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops, scalar * self.coeffs)
 
     __rmul__ = __mul__
-
-    def __imul__(self, scalar: float) -> RealspaceOperator:
-        if np.isclose(scalar, 0):
-            return RealspaceOperator.zero(self.modes)
-
-        self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
-        return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
         if other._is_zero:
@@ -164,9 +149,7 @@ class RealspaceOperator:
                 f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes, self.ops + other.ops, RealspaceCoeffs.outer_node(self.coeffs, other.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops + other.ops, self.coeffs @ other.coeffs)
 
     def __repr__(self) -> str:
         return f"({self.ops.__repr__()}, {self.coeffs.__repr__()})"
@@ -197,7 +180,7 @@ class RealspaceOperator:
             RealspaceOperator: a representation of the zero operator
 
         """
-        return RealspaceOperator(modes, tuple(), RealspaceCoeffs.tensor_node(np.array(0)))
+        return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
         """Return the coefficients in a dictionary
@@ -380,7 +363,7 @@ class RealspaceSum(Fragment):
                 coeff_sum = sum(abs(val) for val in coeffs.values())
             else:
                 indices = product(range(self.modes), repeat=len(op.ops))
-                coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
+                coeff_sum = sum(abs(op.coeffs[index]) for index in indices)
 
             norm += coeff_sum * term_op_norm
 

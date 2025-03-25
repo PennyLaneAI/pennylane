@@ -17,12 +17,70 @@ from __future__ import annotations
 
 from enum import Enum
 from itertools import product
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments,protected-access,too-many-return-statements
+
+class RealspaceCoeffs:
+    """Lightweight representation of a tensor of coefficients."""
+
+    def __init__(self, tensor: np.ndarray, label: str = None):
+        if label is None and tensor.shape != ():
+            raise ValueError(f"A label is required for a tensor of shape {tensor.shape}.")
+
+        self._tree = _RealspaceTree.tensor_node(tensor, label)
+
+    @classmethod
+    def _from_tree(cls, tree: _RealspaceTree):
+        rs_coeffs = cls.__new__(cls)
+        rs_coeffs._tree = tree
+
+    def __add__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
+        tree = _RealspaceTree.sum_node(self._tree, other._tree)
+        return RealspaceCoeffs._from_tree(tree)
+
+    def __sub__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
+        return self + (-1) * other
+
+    def __mul__(self, scalar: float) -> RealspaceCoeffs:
+        tree = _RealspaceTree.scalar_node(scalar, self._tree)
+        return RealspaceCoeffs._from_tree(tree)
+
+    def __matmul__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
+        tree = _RealspaceTree.outer_node(self._tree, other._tree)
+        return RealspaceCoeffs._from_tree(tree)
+
+    def __repr__(self) -> str:
+        return self._tree.__repr__()
+
+    def __getitem__(self, index) -> float:
+        return self._tree.compute(index)
+
+    @property
+    def is_zero(self) -> bool:
+        return self._tree.is_zero
+
+    def nonzero(self, threshold: float = 0.0):
+        """Return the nonzero coefficients in a dictionary.
+
+        Args:
+            threshold (float): only return coefficients with magnitude greater than ``threshold``
+
+        Returns:
+            dict: a dictionary representation of the coefficient tensor
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> import numpy as np
+        >>> node = RealspaceCoeffs(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
+        >>> node.nonzero()
+        {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
+        """
+
+        return self._tree.nonzero()
 
 
 class _NodeType(Enum):
@@ -35,7 +93,7 @@ class _NodeType(Enum):
     FLOAT = 5
 
 
-class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
+class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
     """
      A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
@@ -49,52 +107,53 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing a tensor of coefficients
 
-    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import _RealspaceTree
     >>> import numpy as np
-    >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+    >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
     >>> node
     alpha[idx0,idx1]
 
     Building a node representing the outer product of its children
 
-    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import _RealspaceTree
     >>> import numpy as np
-    >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
-    >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
-    >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+    >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
+    >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+    >>> parent = _RealspaceTree.outer_node(left_child, right_child)
     >>> parent
     (alpha[idx0]) * (beta[idx1,idx2])
 
     Building a node representing the sum of its children
 
-    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import _RealspaceTree
     >>> import numpy as np
-    >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
-    >>> right_child = RealspaceCoeffs.tensor_node(np.array([4, 5, 6]), label="beta")
-    >>> parent = RealspaceCoeffs.sum_node(left_child, right_child)
+    >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
+    >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
+    >>> parent = _RealspaceTree.sum_node(left_child, right_child)
     >>> parent
     (alpha[idx0]) + (beta[idx0])
 
     Building a node representing the multiplication of its child by a scalar
 
-    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import _RealspaceTree
     >>> import numpy as np
-    >>> child = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
-    >>> parent = RealspaceCoeffs.scalar_node(5, child)
+    >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+    >>> parent = _RealspaceTree.scalar_node(5, child)
     >>> parent
     5 * (alpha[idx0,idx1])
     """
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         node_type: _NodeType,
-        l_child: RealspaceCoeffs = None,
-        r_child: RealspaceCoeffs = None,
+        l_child: _RealspaceTree = None,
+        r_child: _RealspaceTree = None,
         tensor: ndarray = None,
         scalar: float = None,
         value: float = None,
         label: str = None,
-    ) -> RealspaceCoeffs:
+    ) -> _RealspaceTree:
 
         self.node_type = node_type
         self.l_child = l_child
@@ -123,44 +182,23 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             raise ValueError(f"Got invalid node type {node_type}.")
 
     @classmethod
-    def coeffs(cls, tensor: Union[np.ndarray, float], label: str):
-        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
+    def sum_node(cls, l_child: _RealspaceTree, r_child: _RealspaceTree) -> _RealspaceTree:
+        """Returns a ``_RealspaceTree`` representing the sum of the two children nodes.
 
         Args:
-            tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
+            l_child (_RealspaceTree): the left child
+            r_child (_RealspaceTree): the right child
 
         Returns:
-            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
+            _RealspaceTree: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> node = RealspaceCoeffs.coeffs(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
-        >>> node
-        alpha[idx0,idx1]
-        """
-        return cls.tensor_node(tensor, label)
-
-    @classmethod
-    def sum_node(cls, l_child: RealspaceCoeffs, r_child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the sum of the two children nodes.
-
-        Args:
-            l_child (RealspaceCoeffs): the left child
-            r_child (RealspaceCoeffs): the right child
-
-        Returns:
-            RealspaceCoeffs: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
-
-        **Example**
-
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
-        >>> import numpy as np
-        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
-        >>> right_child = RealspaceCoeffs.tensor_node(np.array([4, 5, 6]), label="beta")
-        >>> parent = RealspaceCoeffs.sum_node(left_child, right_child)
+        >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
+        >>> parent = _RealspaceTree.sum_node(left_child, right_child)
         >>> parent
         >>> (alpha[idx0]) + (beta[idx0])
 
@@ -168,7 +206,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         if l_child.shape != r_child.shape:
             raise ValueError(
-                f"Cannot add RealspaceCoeffs of shape {l_child.shape} with RealspaceCoeffs of shape {r_child.shape}."
+                f"Cannot add _RealspaceTree of shape {l_child.shape} with _RealspaceTree of shape {r_child.shape}."
             )
 
         return cls(
@@ -180,25 +218,25 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def outer_node(
         cls,
-        l_child: RealspaceCoeffs,
-        r_child: RealspaceCoeffs,
-    ) -> RealspaceCoeffs:
-        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the outer product of the two children nodes.
+        l_child: _RealspaceTree,
+        r_child: _RealspaceTree,
+    ) -> _RealspaceTree:
+        """Returns a ``_RealspaceTree`` representing the outer product of the two children nodes.
 
         Args:
-            l_child (RealspaceCoeffs): the left child
+            l_child (_RealspaceTree): the left child
             r_child (RealspaceCOeffs): the right child
 
         Returns:
-            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing the outer product of ``l_child`` and ``r_child``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the outer product of ``l_child`` and ``r_child``
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
-        >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
-        >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+        >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+        >>> parent = _RealspaceTree.outer_node(left_child, right_child)
         >>> parent
         (alpha[idx0]) * (beta[idx1,idx2])
         """
@@ -210,21 +248,21 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def tensor_node(cls, tensor: ndarray, label: str = None) -> RealspaceCoeffs:
-        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` leaf node storing a tensor of coefficients.
+    def tensor_node(cls, tensor: ndarray, label: str = None) -> _RealspaceTree:
+        """Returns a ``_RealspaceTree`` leaf node storing a tensor of coefficients.
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object as an expression
+            label (string): a label for the tensor to be used when displaying the ``_RealspaceTree`` object as an expression
 
         Returns:
-            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing containing the tensor
+            _RealspaceTree: a ``_RealspaceTree`` object representing containing the tensor
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+        >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> node
         alpha[idx0,idx1]
         """
@@ -242,22 +280,22 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def scalar_node(cls, scalar: float, child: RealspaceCoeffs) -> RealspaceCoeffs:
-        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` representing the scalar product of ``scalar`` and ``child``.
+    def scalar_node(cls, scalar: float, child: _RealspaceTree) -> _RealspaceTree:
+        """Returns a ``_RealspaceTree`` representing the scalar product of ``scalar`` and ``child``.
 
         Args:
             scalar (float): a scalar to multiply ``child`` by
-            child (RealspaceCoeffs): the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object to be multiplied by ``scalar``
+            child (_RealspaceTree): the ``_RealspaceTree`` object to be multiplied by ``scalar``
 
         Returns:
-            RealspaceCoeffs: a :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object representing the coefficients of ``child`` multiplied by ``scalar``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the coefficients of ``child`` multiplied by ``scalar``
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> child = RealspaceCoeffs.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
-        >>> parent = RealspaceCoeffs.scalar_node(5, child)
+        >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
+        >>> parent = _RealspaceTree.scalar_node(5, child)
         >>> parent
         5 * (alpha[idx0,idx1])
         """
@@ -268,18 +306,18 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             scalar=scalar,
         )
 
-    def __add__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
+    def __add__(self, other: _RealspaceTree) -> _RealspaceTree:
         return self.__class__.sum_node(self, other)
 
-    def __mul__(self, scalar: float) -> RealspaceCoeffs:
+    def __mul__(self, scalar: float) -> _RealspaceTree:
         return self.__class__.scalar_node(scalar, self)
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: RealspaceCoeffs) -> RealspaceCoeffs:
+    def __matmul__(self, other: _RealspaceTree) -> _RealspaceTree:
         return self.__class__.outer_node(self, other)
 
-    def __eq__(self, other: RealspaceCoeffs) -> bool:
+    def __eq__(self, other: _RealspaceTree) -> bool:  # pylint: disable=too-many-return-statements
         if self.node_type != other.node_type:
             return False
 
@@ -310,9 +348,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if self.node_type == _NodeType.FLOAT:
             return self.value == other.value
 
-        raise ValueError(
-            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-        )
+        raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -322,6 +358,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         return str(self._str(indices))
 
+    # pylint: disable=protected-access
     def _str(self, indices) -> str:
 
         if self.node_type == _NodeType.TENSOR:
@@ -337,9 +374,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
         if self.node_type == _NodeType.SUM:
             return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
 
-        raise ValueError(
-            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-        )
+        raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
     def compute(self, index: Tuple[int]) -> float:
         """Evaluate the tree on a given index
@@ -352,11 +387,11 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> left_child = RealspaceCoeffs.tensor_node(np.array([1, 2, 3]), label="alpha")
-        >>> right_child = RealspaceCoeffs.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
-        >>> parent = RealspaceCoeffs.outer_node(left_child, right_child)
+        >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
+        >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
+        >>> parent = _RealspaceTree.outer_node(left_child, right_child)
         >>> parent.compute((1, 1, 2))
         12
         """
@@ -377,12 +412,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
             r_index = index[len(self.l_child.shape) :]
             return self.l_child.compute(l_index) * self.r_child.compute(r_index)
 
-        raise ValueError(
-            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-        )
-
-    def __getitem__(self, index):
-        return self.compute(index)
+        raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
     def _validate_index(self, index: Tuple[int]) -> bool:
         """Validate the shape of an index.
@@ -417,9 +447,9 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import _RealspaceTree
         >>> import numpy as np
-        >>> node = RealspaceCoeffs.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
+        >>> node = _RealspaceTree.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
         {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
         """
@@ -443,9 +473,7 @@ class RealspaceCoeffs:  # pylint: disable=too-many-instance-attributes
                 threshold,
             )
 
-        raise ValueError(
-            f"RealspaceCoeffs was constructed with invalid _NodeType {self.node_type}."
-        )
+        raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
 
 def _add_dicts(d1: Dict, d2: Dict, threshold: float):
