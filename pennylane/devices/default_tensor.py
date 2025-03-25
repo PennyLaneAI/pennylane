@@ -200,7 +200,7 @@ class DefaultTensor(Device):
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
     This device does not currently support finite-shots or differentiation with ``diff_method`` set to ``"backprop"``, ``"adjoint"``, or ``"device"``. `Other differentiation methods <https://docs.pennylane.ai/en/stable/code/qml_gradients.html>`_ such as 
-    ``parameter-shift`` and ``hadamard_grad`` work on all devices, including ``default.tensor``. 
+    ``parameter-shift`` and ``hadamard_grad`` work on all devices, including ``default.tensor``.
     At present, the supported measurement types are expectation values, variances, and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
