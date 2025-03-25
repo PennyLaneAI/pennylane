@@ -154,10 +154,10 @@ def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json
 def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
-        if variables['datasetClassId'] == 'mqt-bench':
-            json_data=_list_attrs_mqt_resp
-        elif variables['datasetClassId'] == 'hamlib-max-3-sat':
-            json_data=_list_attrs_max3sat_resp
+        if variables["datasetClassId"] == "mqt-bench":
+            json_data = _list_attrs_mqt_resp
+        elif variables["datasetClassId"] == "hamlib-max-3-sat":
+            json_data = _list_attrs_max3sat_resp
         else:
             json_data = _list_attrs_resp
     elif variables is not None and variables["datasetClassId"] == "rydberggpt":
@@ -403,6 +403,9 @@ def mock_download_dataset(monkeypatch):
     # pylint:disable=too-many-arguments
     def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
+        if attributes:
+            for attr_name in attributes:
+                setattr(dset, attr_name, "")
         dset.close()
 
     monkeypatch.setattr(pennylane.data.data_manager, "_download_dataset", mock)
@@ -444,6 +447,7 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
         Path(tmp_path, path) for path in expect_paths
     }
 
+
 # pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
@@ -459,25 +463,23 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
         (
             "other",
             {"name": "hamlib-max-3-sat"},
-            ["ns", "ids", "ratios"],
+            ["ids", "ns", "ratios"],
         ),
     ],
 )
-@pytest.mark.parametrize("progress_bar", [True, False])
-# @pytest.mark.parametrize("attributes", [["ae", "dj", "portfolioqaoa"], ["Rbs", "deltas", "betas"]])
-def test_load_other_attributes(tmp_path, data_name, params, progress_bar, attributes):
+def test_load_other_attributes(tmp_path, data_name, params, attributes):
     """Test that load fetches attributes of 'other'
     datasets."""
-
     folder_path = tmp_path
     dsets = pennylane.data.data_manager.load(
         data_name=data_name,
         folder_path=folder_path,
         block_size=1,
-        progress_bar=progress_bar,
         attributes=attributes,
         **params,
     )
+    assert all([sorted(dset.list_attributes()) == sorted(attributes) for dset in dsets])
+
 
 @patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
 def test_load_bad_config():
