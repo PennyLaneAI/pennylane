@@ -188,6 +188,9 @@
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
   [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
+* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+
 <h3>Improvements 🛠</h3>
 
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
@@ -892,6 +895,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Daniela Angulo,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Joey Carter,
