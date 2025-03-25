@@ -42,7 +42,9 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     with np.errstate(divide="ignore", invalid="ignore"):
-        determinants = math.linalg.det(U)
+        # we already know is 2x2, so no scaling problems from converting to dense
+        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
+        determinants = math.linalg.det(U_temp)
     phase = math.angle(determinants) / 2
     U = (
         U * math.exp(-1j * phase)
