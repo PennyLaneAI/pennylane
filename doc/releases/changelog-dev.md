@@ -807,6 +807,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Raise error when `qml.matrix` is applied on a sparse operator.
+
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
 
