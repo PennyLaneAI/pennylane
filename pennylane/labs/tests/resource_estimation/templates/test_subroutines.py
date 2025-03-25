@@ -211,16 +211,7 @@ class TestPhaseAdder:
         phase_shift_dag = re.CompressedResourceOp(
             re.ResourceAdjoint, {"base_class": re.ResourcePhaseShift, "base_params": {}}
         )
-        ctrl_phase_shift = re.CompressedResourceOp(
-            re.ResourceControlled,
-            {
-                "base_class": re.ResourcePhaseShift,
-                "base_params": {},
-                "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
-                "num_work_wires": 0,
-            },
-        )
+        ctrl_phase_shift = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
         cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
         multix = re.CompressedResourceOp(
@@ -292,16 +283,7 @@ class TestPhaseAdder:
         phase_shift_dag = re.CompressedResourceOp(
             re.ResourceAdjoint, {"base_class": re.ResourcePhaseShift, "base_params": {}}
         )
-        ctrl_phase_shift = re.CompressedResourceOp(
-            re.ResourceControlled,
-            {
-                "base_class": re.ResourcePhaseShift,
-                "base_params": {},
-                "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
-                "num_work_wires": 0,
-            },
-        )
+        ctrl_phase_shift = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
         cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
         multix = re.CompressedResourceOp(

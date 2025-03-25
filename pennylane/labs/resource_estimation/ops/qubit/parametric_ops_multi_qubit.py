@@ -24,10 +24,15 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        theta (tensor_like or float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * num_wires (int): the number of qubits the operation acts upon
 
     Resources:
-        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
+        The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
         Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
@@ -36,6 +41,12 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.MultiRZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiRZ.resources(num_wires=3)
+    {CNOT: 4, RZ: 1}
     """
 
     @staticmethod
@@ -47,7 +58,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
-            The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
+            The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
             quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
             Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
@@ -67,11 +78,9 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_wires (int): the number of qubits the operation acts upon
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
         """
         return {"num_wires": len(self.wires)}
 
@@ -116,7 +125,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
             num_wires (int): the number of qubits the base operation acts upon
 
@@ -176,13 +185,19 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Args:
-        pauli_string (str): a string describing the pauli operators that define the rotation
+        theta (float): rotation angle :math:`\theta`
+        pauli_word (string): the Pauli word defining the rotation
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * pauli_string (str): a string describing the pauli operators that define the rotation
 
     Resources:
         When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
         the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
+        The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
         for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
         in combination with the following identity:
 
@@ -201,6 +216,12 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     .. seealso:: :class:`~.PauliRot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePauliRot.resources(pauli_string="XYZ")
+    {Hadamard: 4, S: 1, Adjoint(S): 1, RZ: 1, CNOT: 4}
     """
 
     @staticmethod
@@ -215,7 +236,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
             When the :code:`pauli_string` is a single Pauli operator (:code:`X, Y, Z, Identity`)
             the cost is the associated single qubit rotation (:code:`RX, RY, RZ, GlobalPhase`).
 
-            The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation
+            The resources come from Section VIII (Figures 3 & 4) of `The Bravyi-Kitaev transformation
             for quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper,
             in combination with the following identity:
 
@@ -278,11 +299,9 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            pauli_string (str): a string describing the pauli operators that define the rotation
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * pauli_string (str): a string describing the pauli operators that define the rotation
         """
         return {
             "pauli_string": self.hyperparameters["pauli_word"],
@@ -330,7 +349,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
             pauli_string (str): a string describing the pauli operators that define the rotation
 
@@ -401,6 +420,11 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
     r"""Resource class for the IsingXX gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising XX coupling gate
 
@@ -421,6 +445,12 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingXX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingXX.resources()
+    {CNOT: 2, RX: 1}
     """
 
     @staticmethod
@@ -460,11 +490,8 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -498,7 +525,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -553,6 +580,11 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     r"""Resource class for the IsingYY gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising YY coupling gate
 
@@ -573,6 +605,12 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingYY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingYY.resources()
+    {CY: 2, RY: 1}
     """
 
     @staticmethod
@@ -613,11 +651,8 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -651,7 +686,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -706,6 +741,11 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     r"""Resource class for the IsingXY gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising (XX + YY) coupling gate
 
@@ -726,6 +766,12 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingXY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingXY.resources()
+    {Hadamard: 2, CY: 2, RY: 1, RX: 1}
     """
 
     @staticmethod
@@ -769,11 +815,8 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -807,7 +850,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -872,6 +915,11 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
     r"""Resource class for the IsingZZ gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         Ising ZZ coupling gate
 
@@ -892,6 +940,12 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.IsingZZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceIsingZZ.resources()
+    {CNOT: 2, RZ: 1}
     """
 
     @staticmethod
@@ -931,11 +985,8 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -969,7 +1020,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1024,6 +1075,11 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
     r"""Resource class for the PSWAP gate.
 
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The :code:`PSWAP` gate is defined as:
 
@@ -1043,6 +1099,12 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
     .. seealso:: :class:`~.PSWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePSWAP.resources()
+    {SWAP: 1, CNOT: 2, PhaseShift: 1}
     """
 
     @staticmethod
@@ -1083,11 +1145,8 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1121,7 +1180,7 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:

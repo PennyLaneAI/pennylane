@@ -29,6 +29,13 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli

@@ -22,6 +22,7 @@ from typing import Optional
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops import Identity
 from pennylane.typing import TensorLike
@@ -99,6 +100,12 @@ class QubitCarry(Operation):
 
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -180,6 +187,20 @@ class QubitCarry(Operation):
         ]
 
 
+def _qubitcarry_to_cnot_toffoli_resources():
+    return {qml.CNOT: 1, qml.Toffoli: 2}
+
+
+@register_resources(_qubitcarry_to_cnot_toffoli_resources)
+def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
+    qml.Toffoli(wires=wires[1:])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.Toffoli(wires=[wires[0], wires[2], wires[3]])
+
+
+add_decomps(QubitCarry, _qubitcarry_to_cnot_toffolis)
+
+
 class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
@@ -244,6 +265,8 @@ class QubitSum(Operation):
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_keys = set()
+
     def label(
         self,
         decimals: Optional[int] = None,
@@ -251,6 +274,10 @@ class QubitSum(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -317,6 +344,19 @@ class QubitSum(Operation):
 
     def adjoint(self):
         return QubitSum(wires=self.wires)
+
+
+def _qubitsum_to_cnots_resources():
+    return {qml.CNOT: 2}
+
+
+@register_resources(_qubitsum_to_cnots_resources)
+def _qubitsum_to_cnots(wires: WiresLike, **__):
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.CNOT(wires=[wires[0], wires[2]])
+
+
+add_decomps(QubitSum, _qubitsum_to_cnots)
 
 
 class IntegerComparator(Operation):

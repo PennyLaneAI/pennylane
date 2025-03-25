@@ -24,6 +24,9 @@ import pennylane.labs.resource_estimation as re
 class ResourceCH(qml.CH, re.ResourceOperator):
     r"""Resource class for the CH gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The resources are derived from the following identities (as presented in this
         `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
@@ -35,11 +38,17 @@ class ResourceCH(qml.CH, re.ResourceOperator):
                 \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
             \end{align}
 
-        Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
-        :class:`~.ResourceHadamard` gates and a :class:`~.ResourceCNOT` gate.
+        Specifically, the resources are defined as two :class:`~.ResourceRY`, two
+        :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
 
     .. seealso:: :class:`~.CH`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCH.resources()
+    {Hadamard: 2, RY: 2, CNOT: 1}
     """
 
     @staticmethod
@@ -58,8 +67,8 @@ class ResourceCH(qml.CH, re.ResourceOperator):
                     \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
                 \end{align}
 
-            Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
-            :class:`~.ResourceHadamard` gates and a :class:`~.ResourceCNOT` gate.
+            Specifically, the resources are defined as two :class:`~.ResourceRY`, two
+            :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
         """
         gate_types = {}
 
@@ -77,11 +86,8 @@ class ResourceCH(qml.CH, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -113,7 +119,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -146,11 +152,16 @@ class ResourceCH(qml.CH, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCY(qml.CY, re.ResourceOperator):
     r"""Resource class for the CY gate.
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     Resources:
         The resources are derived from the following identity:
@@ -158,11 +169,17 @@ class ResourceCY(qml.CY, re.ResourceOperator):
         .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
 
         By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceCNOT` we
-        obtain the controlled decomposition. Specifically, the resources are given by a
+        obtain the controlled decomposition. Specifically, the resources are defined as a
         :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceS` gates.
 
     .. seealso:: :class:`~.CY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCY.resources()
+    {CNOT: 1, S: 1, Adjoint(S): 1}
     """
 
     @staticmethod
@@ -176,7 +193,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
             .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
 
             By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceCNOT` we
-            obtain the controlled decomposition. Specifically, the resources are given by a
+            obtain the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceS` gates.
         """
         gate_types = {}
@@ -195,11 +212,8 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -231,7 +245,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -264,11 +278,14 @@ class ResourceCY(qml.CY, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCZ(qml.CZ, re.ResourceOperator):
     r"""Resource class for the CZ gate.
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -276,11 +293,17 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
         .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceCNOT` we obtain
-        the controlled decomposition. Specifically, the resources are given by a
+        the controlled decomposition. Specifically, the resources are defined as a
         :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.CZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCZ.resources()
+    {CNOT: 1, Hadamard: 2}
     """
 
     @staticmethod
@@ -294,7 +317,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
             .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
             By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceCNOT` we obtain
-            the controlled decomposition. Specifically, the resources are given by a
+            the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
         """
         gate_types = {}
@@ -311,11 +334,8 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -347,7 +367,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -383,19 +403,17 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
     r"""Resource class for the CSWAP gate.
 
     Resources:
-        The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
-        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging
-        <https://arxiv.org/pdf/2305.18128>`_.
+        The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
 
         The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
-        given by:
+        defined as:
 
         .. code-block:: bash
 
@@ -413,12 +431,10 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
-            of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging
-            <https://arxiv.org/pdf/2305.18128>`_.
+            The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
 
             The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
-            given by:
+            defined as:
 
             .. code-block:: bash
 
@@ -440,11 +456,8 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -476,7 +489,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -509,11 +522,14 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     r"""Resource class for the CCZ gate.
+
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
 
     Resources:
         The resources are derived from the following identity:
@@ -521,11 +537,17 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
         .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceToffoli` we obtain
-        the controlled decomposition. Specifically, the resources are given by a
+        the controlled decomposition. Specifically, the resources are defined as a
         :class:`~.ResourceToffoli` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
 
     .. seealso:: :class:`~.CCZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCCZ.resources()
+    {Toffoli: 1, Hadamard: 2}
     """
 
     @staticmethod
@@ -539,7 +561,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
             .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
             By replacing the :class:`~.ResourceX` gate with a :class:`~.ResourceToffoli` we obtain
-            the controlled decomposition. Specifically, the resources are given by a
+            the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceToffoli` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
         """
         gate_types = {}
@@ -556,11 +578,8 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -592,7 +611,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -625,14 +644,17 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     r"""Resource class for the CNOT gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
-        The CNOT gate is treated as a terminal gate and thus it cannot be decomposed
+        The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.CNOT`
@@ -645,8 +667,11 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The CNOT gate is treated as a terminal gate and thus it cannot be decomposed
+            The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
         raise re.ResourcesNotDefined
 
@@ -654,11 +679,8 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -690,7 +712,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -724,18 +746,20 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+
     Resources:
-        The resources are obtained from (in figure 1.) the paper `Novel constructions for the
-        fault-tolerant Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
+        The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
         The circuit which applies the Toffoli gate on target wire 'target' with control wires
-        ('c1', 'c2') is given by:
+        ('c1', 'c2') is defined as:
 
         .. code-block:: bash
 
@@ -746,12 +770,18 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
             target: ─────────────────────────────────╰X──────║───║─┤
                                                              ╚═══╝
 
-        Specifically, the resources are given by nine :class:`~.ResourceCNOT` gates, three
+        Specifically, the resources are defined as nine :class:`~.ResourceCNOT` gates, three
         :class:`~.ResourceHadamard` gates, one :class:`~.ResourceCZ` gate, one :class:`~.ResourceS`
         gate, two :class:`~.ResourceT` gates and two adjoint :class:`~.ResourceT` gates.
 
     .. seealso:: :class:`~.Toffoli`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceToffoli.resources()
+    {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
     """
 
     @staticmethod
@@ -760,11 +790,10 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are obtained from (in figure 1.) the paper `Novel constructions for the
-            fault-tolerant Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
+            The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
-            ('c1', 'c2') is given by:
+            ('c1', 'c2') is defined as:
 
             .. code-block:: bash
 
@@ -775,7 +804,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
                 target: ─────────────────────────────────╰X──────║───║─┤
                                                                 ╚═══╝
 
-            Specifically, the resources are given by nine :class:`~.ResourceCNOT` gates, three
+            Specifically, the resources are defined as nine :class:`~.ResourceCNOT` gates, three
             :class:`~.ResourceHadamard` gates, one :class:`~.ResourceCZ` gate, one :class:`~.ResourceS`
             gate, two :class:`~.ResourceT` gates and two adjoint :class:`~.ResourceT` gates.
         """
@@ -803,10 +832,9 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken (figure 4.9) from the textbook `Quantum Computation and
-            Quantum Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+            The resources are taken from Figure 4.9 of `Nielsen, M. A., & Chuang, I. L. (2010) <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-            The circuit is given by:
+            The circuit is defined as:
 
             .. code-block:: bash
 
@@ -814,7 +842,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
                 1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
                 2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
-            Specifically, the resources are given by six :class:`~.ResourceCNOT` gates, two
+            Specifically, the resources are defined as six :class:`~.ResourceCNOT` gates, two
             :class:`~.ResourceHadamard` gates, four :class:`~.ResourceT` gates and three adjoint
             :class:`~.ResourceT` gates.
         """
@@ -836,11 +864,8 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -872,7 +897,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -903,34 +928,46 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     r"""Resource class for the MultiControlledX gate.
 
     Args:
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
-        num_ctrl_values (int): the number of control qubits, that are controlled when off
-        num_work_wires (int): the number of additional qubits that can be used for decomposition
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
+            the operation acts on
+        control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
+            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
+            the operation into a series of :class:`~.Toffoli` gates
+
+    Resource Parameters:
+        * num_ctrl_wires (int): the number of qubits the operation is controlled on
+        * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+        * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
-        The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
-        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
-        resources are given by the following rules:
+        The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
+        <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+        resources are defined as the following rules:
 
         * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
 
         * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
 
-        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
-            one :class:`~.ResourceToffoli` gate.
+        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceToffoli` gate.
 
-        * If there are more than three control qubits (:math:`n`), the resources are given by
-            :math:`36n - 111` :class:`~.ResourceCNOT` gates.
+        * If there are more than three control qubits (:math:`n`), the resources are defined as :math:`36n - 111` :class:`~.ResourceCNOT` gates.
 
     .. seealso:: :class:`~.MultiControlledX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2, num_work_wires=3)
+    {X: 4, CNOT: 69}
     """
 
     @staticmethod
@@ -945,13 +982,13 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
-            without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
-            resources are given by the following rules:
+            The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
+            <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+            resources are defined as the following rules:
 
             * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
 
@@ -962,7 +999,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
             one :class:`~.ResourceToffoli` gate.
 
-            * If there are more than three control qubits (:math:`n`), the resources are given by
+            * If there are more than three control qubits (:math:`n`), the resources are defined as
             :math:`36n - 111` :class:`~.ResourceCNOT` gates.
         """
         gate_types = defaultdict(int)
@@ -997,13 +1034,11 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_ctrl_wires (int): the number of qubits the operation is controlled on
+                * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+                * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
         num_control = len(self.hyperparameters["control_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
@@ -1020,12 +1055,12 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def resource_rep(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> re.CompressedResourceOp:
-        """Returns a compressed representation containing only the parameters of
+        r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
@@ -1048,7 +1083,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1077,17 +1112,17 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             outer_num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
             outer_num_ctrl_values (int): The subset of those control qubits, which further control
-                the base controlled operation, which are controlled when off.
+                the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             outer_num_work_wires (int): the number of additional qubits that can be used in the
                 decomposition for the further controlled, base control oepration.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
-                when off.
+                when in the :math:`|0\rangle` state.
             num_work_wires (int): The number of additional qubits that can be used for the
                 decomposition of the operation.
 
         Resources:
-            The resources are derived by simply combining the control qubits, control-values and
+            The resources are derived by combining the control qubits, control-values and
             work qubits into a single instance of :class:`~.ResourceMultiControlledX` gate, controlled
             on the whole set of control-qubits.
 
@@ -1109,6 +1144,9 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         Args:
             z (int): the power that the operator is being raised to
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -1128,19 +1166,30 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 class ResourceCRX(qml.CRX, re.ResourceOperator):
     r"""Resource class for the CRX gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
-        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
         we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard`
         gates. The expression for controlled-RZ gates is used as defined in the reference above.
-        Specifically, the resources are given by two :class:`~.ResourceCNOT` gates, two
+        Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates, two
         :class:`~.ResourceHadamard` gates and two :class:`~.ResourceRZ` gates.
 
     .. seealso:: :class:`~.CRX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRX.resources()
+    {CNOT: 2, RZ: 2, Hadamard: 2}
     """
 
     @staticmethod
@@ -1149,14 +1198,14 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
             we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard`
             gates. The expression for controlled-RZ gates is used as defined in the reference above.
-            Specifically, the resources are given by two :class:`~.ResourceCNOT` gates, two
+            Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates, two
             :class:`~.ResourceHadamard` gates and two :class:`~.ResourceRZ` gates.
         """
         gate_types = {}
@@ -1175,11 +1224,8 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1211,7 +1257,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1250,19 +1296,30 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 class ResourceCRY(qml.CRY, re.ResourceOperator):
     r"""Resource class for the CRY gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
-        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
         By replacing the :class:`~.ResourceX` gates with :class:`~.ResourceCNOT` gates, we obtain a
         controlled-version of this identity. Thus we are able to constructively or destructively
         interfere the gates based on the value of the control qubit. Specifically, the resources are
-        given by two :class:`~.ResourceCNOT` gates and two :class:`~.ResourceRY` gates.
+        defined as two :class:`~.ResourceCNOT` gates and two :class:`~.ResourceRY` gates.
 
     .. seealso:: :class:`~.CRY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRY.resources()
+    {CNOT: 2, RY: 2}
     """
 
     @staticmethod
@@ -1271,14 +1328,14 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
 
             By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
             identity. Thus we are able to constructively or destructively interfere the gates based on the value
-            of the control qubit. Specifically, the resources are given by two :class:`~.ResourceCNOT` gates
+            of the control qubit. Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates
             and two :class:`~.ResourceRY` gates.
         """
         gate_types = {}
@@ -1295,11 +1352,8 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1331,7 +1385,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1370,19 +1424,30 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     r"""Resource class for the CRZ gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
-        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
         By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
         identity. Thus we are able to constructively or destructively interfere the gates based on the value
-        of the control qubit. Specifically, the resources are given by two :class:`~.ResourceCNOT` gates
+        of the control qubit. Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates
         and two :class:`~.ResourceRZ` gates.
 
     .. seealso:: :class:`~.CRZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRZ.resources()
+    {CNOT: 2, RZ: 2}
     """
 
     @staticmethod
@@ -1391,14 +1456,14 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
 
             By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
             identity. Thus we are able to constructively or destructively interfere the gates based on the value
-            of the control qubit. Specifically, the resources are given by two :class:`~.ResourceCNOT` gates
+            of the control qubit. Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates
             and two :class:`~.ResourceRZ` gates.
         """
         gate_types = {}
@@ -1415,11 +1480,8 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1451,7 +1513,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1490,9 +1552,16 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 class ResourceCRot(qml.CRot, re.ResourceOperator):
     r"""Resource class for the CRot gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
-        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
+        The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+        <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math::
 
@@ -1511,6 +1580,12 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
     .. seealso:: :class:`~.CRot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCRot.resources()
+    {CNOT: 2, RZ: 3, RY: 2}
     """
 
     @staticmethod
@@ -1519,8 +1594,8 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-            unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
+            The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
+            <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math::
 
@@ -1554,11 +1629,8 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1590,7 +1662,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -1629,6 +1701,11 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The resources are derived using the fact that a :class:`~.ResourcePhaseShift` gate is
         identical to the :class:`~.ResourceRZ` gate up to some global phase. Furthermore, a controlled
@@ -1637,11 +1714,17 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
         .. math:: CR_\phi(\phi) = (R_\phi(\phi/2) \otimes I) \cdot CNOT \cdot (I \otimes R_\phi(-\phi/2)) \cdot CNOT \cdot (I \otimes R_\phi(\phi/2))
 
-        Specifically, the resources are given by two :class:`~.ResourceCNOT` gates and three
+        Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates and three
         :class:`~.ResourceRZ` gates.
 
     .. seealso:: :class:`~.ControlledPhaseShift`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceControlledPhaseShift.resources()
+    {CNOT: 2, RZ: 3}
     """
 
     @staticmethod
@@ -1660,11 +1743,8 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -1696,7 +1776,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:

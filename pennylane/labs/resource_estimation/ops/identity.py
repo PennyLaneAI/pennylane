@@ -23,6 +23,11 @@ import pennylane.labs.resource_estimation as re
 class ResourceIdentity(qml.Identity, re.ResourceOperator):
     r"""Resource class for the Identity gate.
 
+    Args:
+        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
@@ -49,11 +54,8 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -68,8 +70,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation results
-            in the original operation.
+            This operation is self-adjoint, so the resources of the adjoint operation is also an empty dictionary.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -85,7 +86,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -119,6 +120,12 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
+    Args:
+        phi (TensorLike): the global phase
+        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty dictionary.
@@ -145,11 +152,8 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -165,7 +169,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
         Resources:
             The adjoint of a global phase operator changes the sign of the phase, thus
-            the resources of the adjoint operation results in the original operation.
+            the resources of the adjoint operation is the original operation.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -181,7 +185,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:

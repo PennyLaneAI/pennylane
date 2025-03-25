@@ -35,8 +35,11 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
-        base_params (dict): the resource parameters required to extract the cost of the base operator
+        base (~.operation.Operator): The operator that we want the adjoint of.
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
@@ -115,7 +118,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Resources:
@@ -198,12 +201,11 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+
         """
         return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
@@ -213,7 +215,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Returns:
@@ -226,7 +228,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that is adjointed
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
             base_params (dict): the resource parameters required to extract the cost of the base operator
 
         Resources:
@@ -253,11 +255,19 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     of some control qubits.
 
     Args:
-        base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        num_ctrl_wires (int): the number of qubits the operation is controlled on
-        num_ctrl_values (int): the number of control qubits, that are controlled when off
-        num_work_wires (int): the number of additional qubits that can be used for decomposition
+        base (~.operation.Operator): the operator that is controlled
+        control_wires (Any): The wires to control on.
+        control_values (Iterable[Bool]): The values to control on. Must be the same
+            length as ``control_wires``. Defaults to ``True`` for all control wires.
+            Provided values are converted to `Bool` internally.
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * num_ctrl_wires (int): the number of qubits the operation is controlled on
+        * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+        * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
         The resources are determined as follows. If the base operation class :code:`base_class`
@@ -265,7 +275,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         directly from this.
 
         Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-        should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+        should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
         cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
         resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
         variant of each operation in the resources.
@@ -320,7 +330,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
         We can update the controlled resources with the observation that the PauliZ gate when controlled
-        on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+        on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
         so we can modify the base operation:
 
         .. code-block:: python
@@ -352,7 +362,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -361,7 +371,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             directly from this.
 
             Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-            should be triggered when off (in the 0 state) are flipped. This corresponds to an additional
+            should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
             cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
             resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
             variant of each operation in the resources.
@@ -415,7 +425,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
             We can update the controlled resources with the observation that the PauliZ gate when controlled
-            on a single wire is equivalent to :math:`\hat{CZ} &= \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
+            on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
             so we can modify the base operation:
 
             .. code-block:: python
@@ -463,15 +473,13 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+                * num_ctrl_wires (int): the number of qubits the operation is controlled on
+                * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+                * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
         return {
             "base_class": type(self.base),
@@ -492,7 +500,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
@@ -527,14 +535,14 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             outer_num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
             outer_num_ctrl_values (int): The subset of those control qubits, which further control
-                the base controlled operation, which are controlled when off.
+                the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             outer_num_work_wires (int): the number of additional qubits that can be used in the
                 decomposition for the further controlled, base control oepration.
             base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
-                when off.
+                when in the :math:`|0\rangle` state.
             num_work_wires (int): The number of additional qubits that can be used for the
                 decomposition of the operation.
 
@@ -565,14 +573,18 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    r"""Resource class for the symbolic PowOperation.
+    r"""Resource class for the symbolic Pow operation.
 
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        z (int): the power that the operator is being raised to
+        base (~.operation.Operator): the operator to be raised to a power
+        z (float): the exponent (default value is 1)
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * z (int): the power that the operator is being raised to
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -726,7 +738,10 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
+
+        if z == 1:
+            return {base_class.resource_rep(**base_params): 1}
 
         if z == 1:
             return {base_class.resource_rep(**base_params): 1}
@@ -753,13 +768,11 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            z (int): the power that the operator is being raised to
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+                * z (int): the power that the operator is being raised to
         """
         return {
             "base_class": type(self.base),
@@ -820,13 +833,19 @@ class ResourceExp(Exp, re.ResourceOperator):
     A symbolic class used to represent the exponential of some base operation.
 
     Args:
-        base_class (Type[~.ResourceOperator]): The class type of the base operator that is
-            exponentiated.
-        base_params (dict): the resource parameters required to extract the cost of the base operator
-        base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
-            combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-        coeff (complex): a scalar value which multiplies the base operator in the exponent
-        num_steps (int): the number of trotter steps to use in approximating the exponential
+        base (~.operation.Operator): The operator to be exponentiated
+        coeff=1 (Number): A scalar coefficient of the operator.
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        id (str): id for the Exp operator. Default is None.
+
+    Resource Parameters:
+        * base_class (Type[~.ResourceOperator]): The class type of the base operator that is exponentiated.
+        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        * base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+        * coeff (complex): a scalar value which multiplies the base operator in the exponent
+        * num_steps (int): the number of trotter steps to use in approximating the exponential
 
     Resources:
         This symbolic operation represents the exponential of some base operation. The resources
@@ -1017,15 +1036,13 @@ class ResourceExp(Exp, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type[ResourceOperator]): The class type of the base operator that is exponentiated.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-            coeff (complex): a scalar value which multiplies the base operator in the exponent
-            num_steps (int): the number of trotter steps to use in approximating the exponential
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[ResourceOperator]): The class type of the base operator that is exponentiated.
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+                * base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
+                * coeff (complex): a scalar value which multiplies the base operator in the exponent
+                * num_steps (int): the number of trotter steps to use in approximating the exponential
         """
         return _extract_exp_params(self.base, self.scalar, self.num_steps)
 
@@ -1110,12 +1127,13 @@ class ResourceProd(Prod, re.ResourceOperator):
     A symbolic class used to represent a product of some base operations.
 
     Args:
-        cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
-            representation, corresponding to the factors in the product.
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
+
+    Resource Parameters:
+        * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
 
     Resources:
-        This symbolic class represents a product of operations. The resources are defined
-            trivially as the counts for each operation in the product.
+        This symbolic class represents a product of operations. The resources are defined trivially as the counts for each operation in the product.
 
     .. seealso:: :class:`~.ops.op_math.prod.Prod`
 
@@ -1176,12 +1194,9 @@ class ResourceProd(Prod, re.ResourceOperator):
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
-                representation, corresponding to the factors in the product.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
         """
         try:
             cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)

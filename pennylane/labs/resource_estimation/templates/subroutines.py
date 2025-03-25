@@ -25,10 +25,13 @@ from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOpe
 
 
 class ResourceQFT(qml.QFT, ResourceOperator):
-    r"""Resource class for the QFT template.
+    r"""Resource class for QFT.
 
     Args:
-        num_wires (int): the number of qubits the operation acts upon
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
+    Resource Parameters:
+        * num_wires (int): the number of qubits the operation acts upon
 
     Resources:
         The resources are obtained from the standard decomposition of QFT as presented
@@ -37,6 +40,12 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
     .. seealso:: :class:`~.QFT`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQFT.resources(num_wires=3)
+    {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
     """
 
     @staticmethod
@@ -49,7 +58,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
         Resources:
             The resources are obtained from the standard decomposition of QFT as presented
-            in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
+            in (Chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
             <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
         """
@@ -69,11 +78,9 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_wires (int): the number of qubits the operation acts upon
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
         """
         return {"num_wires": len(self.wires)}
 
@@ -98,12 +105,52 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
 
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
-    """Resource class for the ControlledSequence template."""
+    """Resource class for the ControlledSequence template.
+
+    Args:
+        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        control (Union[Wires, Sequence[int], or int]): the wires to be used for control
+
+    Resource Parameters:
+        * base_class (ResourceOperator): The type of the operation corresponding to the operator.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
+        * num_ctrl_wires (int): the number of control wires
+
+    Resources:
+        The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
+
+    .. seealso:: :class:`~.ControlledSequence`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceControlledSequence.resources(
+    ...     base_class=re.ResourceHadamard,
+    ...     base_params={},
+    ...     num_ctrl_wires=2
+    ... )
+    {C(Hadamard,1,0,0): 3}
+    """
 
     @staticmethod
     def _resource_decomp(
         base_class, base_params, num_ctrl_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            base_class (ResourceOperator): The type of the operation corresponding to the
+                operator.
+            base_params (dict): A dictionary of parameters required to obtain the resources for
+                the operator.
+            num_ctrl_wires (int): the number of control wires
+
+        Resources:
+            The resources are obtained from the standard decomposition of :class:`~.ControlledSequence`.
+
+        """
         return {
             re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires
             - 1
@@ -111,6 +158,14 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * base_class (ResourceOperator): The type of the operation corresponding to the operator.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the operator.
+                * num_ctrl_wires (int): the number of control wires
+        """
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -119,6 +174,19 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, base_params, num_ctrl_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (ResourceOperator): The type of the operation corresponding to the
+                operator.
+            base_params (dict): A dictionary of parameters required to obtain the resources for
+                the operator.
+            num_ctrl_wires (int): the number of control wires
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls,
             {
@@ -135,10 +203,57 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
 
 
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
-    """Resource class for the PhaseAdder template."""
+    r"""Resource class for the PhaseAdder template.
+
+    Args:
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
+            for a binary representation of the value being targeted, :math:`x`. In some cases an additional
+            wire is needed, see usage details below. The number of wires also limits the maximum
+            value for `mod`.
+        mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple.
+
+    Resource Parameters:
+        * mod (int): the module for performing the addition
+        * num_x_wires (int): the number of wires the operation acts on
+
+    Resources:
+        The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
+
+    .. seealso:: :class:`~.PhaseAdder`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePhaseAdder.resources(
+    ...     mod=3,
+    ...     num_x_wires=5
+    ... )
+    {QFT(5): 2,
+    Adjoint(QFT(5)): 2,
+    PhaseShift: 10,
+    Adjoint(PhaseShift): 10,
+    C(PhaseShift,1,0,0): 5,
+    CNOT: 1,
+    MultiControlledX: 1}
+    """
 
     @staticmethod
     def _resource_decomp(mod, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            mod (int): the module for performing the addition
+            num_x_wires (int): the number of wires the operation acts on
+
+        Resources:
+            The resources are obtained from the standard decomposition of :class:`~.PhaseAdder`.
+
+        """
         if mod == 2**num_x_wires:
             return {re.ResourcePhaseShift.resource_rep(): num_x_wires}
 
@@ -153,13 +268,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
             re.ResourcePhaseShift,
             {},
         )
-        ctrl_phase_shift = re.ResourceControlled.resource_rep(
-            re.ResourcePhaseShift,
-            {},
-            1,
-            0,
-            0,
-        )
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
 
         cnot = re.ResourceCNOT.resource_rep()
         multix = re.ResourceMultiControlledX.resource_rep(1, 0, 1)
@@ -177,6 +286,17 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource Parameters:
+            mod (int): the module for performing the addition
+            num_x_wires (int): the number of wires the operation acts on
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * mod (int): the module for performing the addition
+                * num_x_wires (int): the number of wires the operation acts on
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_x_wires": len(self.hyperparameters["x_wires"]),
@@ -184,16 +304,71 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, mod, num_x_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the addition
+            num_x_wires (int): the number of wires the operation acts on
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+
         return re.CompressedResourceOp(cls, {"mod": mod, "num_x_wires": num_x_wires})
 
 
 class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
-    """Resource class for the Multiplier template."""
+    """Resource class for the Multiplier template.
+
+    Args:
+        k (int): the number that needs to be multiplied
+        x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If :math:`mod=2^{\text{len(x_wires)}}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
+
+    Resource Parameters:
+        * mod (int): the module for performing the multiplication
+        * num_work_wires (int): the number of work wires used for the multiplication.
+        * num_x_wires (int): the number of wires the operation acts on.
+
+    Resources:
+        The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
+
+    .. seealso:: :class:`~.Multiplier`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMultiplier.resources(
+    ...     mod=3,
+    ...     num_work_wires=5,
+    ...     num_x_wires=5
+    ... )
+    {QFT(4): 2,
+    Adjoint(QFT(4)): 2,
+    ControlledSequence(PhaseAdder, 5): 1,
+    Adjoint(ControlledSequence(PhaseAdder, 5)): 1,
+    CNOT: 3}
+    """
 
     @staticmethod
     def _resource_decomp(
         mod, num_work_wires, num_x_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            mod (int): the module for performing the multiplication
+            num_work_wires (int): the number of work wires used for the multiplication.
+            num_x_wires (int): the number of wires the operation acts on.
+
+        Resources:
+            The resources are obtained from the standard decomposition of :class:`~.Multiplier`.
+
+        """
         if mod == 2**num_x_wires:
             num_aux_wires = num_x_wires
             num_aux_swap = num_x_wires
@@ -235,6 +410,14 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * mod (int): The modulus for performing the multiplication.
+                * num_work_wires (int): The number of work wires used.
+                * num_x_wires (int): The number of wires the operation acts on.
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_work_wires": len(self.hyperparameters["work_wires"]),
@@ -243,18 +426,79 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, mod, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the multiplication
+            num_work_wires (int): the number of work wires used for the multiplication.
+            num_x_wires (int): the number of wires the operation acts on.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls, {"mod": mod, "num_work_wires": num_work_wires, "num_x_wires": num_x_wires}
         )
 
 
 class ResourceModExp(qml.ModExp, re.ResourceOperator):
-    """Resource class for the ModExp template."""
+    r"""Resource class for the :class:`~.ModExp` template.
+
+    Args:
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`
+        output_wires (Sequence[int]): the wires that store the operator result. These wires also encode :math:`b`.
+        base (int): integer that needs to be exponentiated
+        mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
+            :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
+
+    Resource Parameters:
+        * mod (int): the modulo for performing the modular exponentiation
+        * num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+        * num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+        * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
+
+    Resources:
+        The resources are obtained from the standard decomposition of :class:`~.ModExp`.
+
+    .. seealso:: :class:`~.ModExp`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceModExp.resources(
+    ...     mod=3,
+    ...     num_output_wires=5,
+    ...     num_work_wires=5,
+    ...     num_x_wires=5
+    ... )
+    {C(QFT(4),1,0,0): 62,
+    C(Adjoint(QFT(4)),1,0,0): 62,
+    C(ControlledSequence(PhaseAdder, 5),1,0,0): 31,
+    C(Adjoint(ControlledSequence(PhaseAdder, 5)),1,0,0): 31,
+    C(CNOT,1,0,0): 93}
+    """
 
     @staticmethod
     def _resource_decomp(
         mod, num_output_wires, num_work_wires, num_x_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            mod (int): the module for performing the exponentiation
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
+
+        Resources:
+            The resources are obtained from the standard decomposition of :class:`~.ModExp`.
+
+        """
         mult_resources = ResourceMultiplier._resource_decomp(mod, num_work_wires, num_output_wires)
         gate_types = {}
 
@@ -271,6 +515,15 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * mod (int): the module for performing the exponentiation
+                * num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis
+                * num_work_wires (int): the number of work wires used to perform the modular exponentiation operation
+                * num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the computational basis
+        """
         return {
             "mod": self.hyperparameters["mod"],
             "num_output_wires": len(self.hyperparameters["output_wires"]),
@@ -282,6 +535,21 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     def resource_rep(
         cls, mod, num_output_wires, num_work_wires, num_x_wires
     ) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            mod (int): the module for performing the exponentiation
+            num_output_wires (int): the number of output wires used to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod`
+                in the computational basis
+            num_work_wires (int): the number of work wires used to perform the modular exponentiation
+                operation
+            num_x_wires (int): the number of wires used to encode the integer :math:`x < mod` in the
+                computational basis
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return re.CompressedResourceOp(
             cls,
             {
@@ -297,19 +565,36 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
-        base_class (ResourceOperator): The type of the operation corresponding to the
-            phase estimation unitary.
-        base_params (dict): A dictionary of parameters required to obtain the resources for
-            the phase estimation unitary.
-        num_estimation_wires (int): the number of wires used for measuring out the phase
+        unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
+            :class:`~.Operator`
+        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
+            If the unitary is specified as an operator, the target wires should already have been
+            defined as part of the operator. In this case, target_wires should not be specified.
+        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+            estimation
+
+    Resource Parameters:
+        * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+        * num_estimation_wires (int): the number of wires used for measuring out the phase
 
     Resources:
         The resources are obtained from the standard decomposition of QPE as presented
-        in (section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
+        in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
         Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQuantumPhaseEstimation.resources(
+    ...     base_class=re.ResourceQFT,
+    ...     base_params={"num_wires": 3},
+    ...     num_estimation_wires=3,
+    ... )
+    {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
     """
 
     @staticmethod
@@ -347,15 +632,11 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
-            num_estimation_wires (int): the number of wires used for measuring out the phase
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type(ResourceOperator)): The type of the operation corresponding to the phase estimation unitary.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+                * num_estimation_wires (int): the number of wires used for measuring out the phase
         """
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
@@ -407,14 +688,52 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
 
 ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
+r"""Resource class for QuantumPhaseEstimation (QPE).
+
+Args:
+    unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
+        :class:`~.Operator`
+    target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
+        If the unitary is specified as an operator, the target wires should already have been
+        defined as part of the operator. In this case, target_wires should not be specified.
+    estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
+        estimation
+
+Resource Parameters:
+    * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
+    * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+    * num_estimation_wires (int): the number of wires used for measuring out the phase
+
+Resources:
+    The resources are obtained from the standard decomposition of QPE as presented
+    in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
+    Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+
+.. seealso:: :class:`~.QuantumPhaseEstimation`
+
+**Example**
+
+The resources for this operation are computed using:
+
+>>> re.ResourceQuantumPhaseEstimation.resources(
+...     base_class=re.ResourceQFT,
+...     base_params={"num_wires": 3},
+...     num_estimation_wires=3,
+... )
+{Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
+"""
 
 
 class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
-            as the number of columns of the matrix.
+        wires (Iterable[Any]): wires that the operator acts on
+        unitary_matrix (array): matrix specifying the basis transformation
+        check (bool): test unitarity of the provided `unitary_matrix`
+
+    Resource Parameters:
+        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -425,6 +744,12 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
 
     .. seealso:: :class:`~.BasisRotation`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceBasisRotation.resources(dim_N=3)
+    {PhaseShift: 6.0, SingleExcitation: 3.0}
     """
 
     @staticmethod
@@ -458,12 +783,9 @@ class ResourceBasisRotation(qml.BasisRotation, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
-                as the number of columns of the matrix.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
         """
         unitary_matrix = self.parameters[0]
         return {"dim_N": qml.math.shape(unitary_matrix)[0]}
@@ -493,8 +815,12 @@ class ResourceSelect(qml.Select, ResourceOperator):
     r"""Resource class for the Select gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-            to be applied according to the selected qubits.
+        ops (list[Operator]): operations to apply
+        control (Sequence[int]): the wires controlling which operation is applied
+        id (str or None): String representing the operation (optional)
+
+    Resource Parameters:
+        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
 
     Resources:
         The resources correspond directly to the definition of the operation. Specifically,
@@ -503,6 +829,13 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
     .. seealso:: :class:`~.Select`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_lst = [re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3)]
+    >>> re.ResourceSelect.resources(cmpr_ops=ops_lst)
+    defaultdict(<class 'int'>, {X: 2, C(X,1,0,0): 1, C(QFT(3),1,0,0): 1})
     """
 
     @staticmethod
@@ -540,8 +873,9 @@ class ResourceSelect(qml.Select, ResourceOperator):
     @staticmethod
     def resources_for_ui(cmpr_ops, **kwargs):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
-        The resources are based on the analysis in https://arxiv.org/pdf/1805.03662 section III.A, 'Unary Iteration and Indexed
-        Operations'. See Figures 4, 6, and 7.
+
+        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
         Note: This implementation assumes we have access to :math:`S + 1` additional work qubits,
         where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
@@ -568,12 +902,9 @@ class ResourceSelect(qml.Select, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
-                representation, to be applied according to the selected qubits.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
         """
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -599,8 +930,12 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     r"""Resource class for PrepSelPrep gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation,
-            which correspond to the unitaries in the LCU to be blockencoded.
+        lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
+            written as a linear combination of unitaries.
+        control (Iterable[Any], Wires): The control qubits for the PrepSelPrep operator.
+
+    Resource Parameters:
+        * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation, which correspond to the unitaries in the LCU to be blockencoded.
 
     Resources:
         The resources correspond directly to the definition of the operation. Specifically,
@@ -608,6 +943,14 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         a pair of :class:`~.ResourceStatePrep` operations.
 
     .. seealso:: :class:`~.PrepSelPrep`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_tup = (re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3))
+    >>> re.ResourcePrepSelPrep.resources(cmpr_ops=ops_tup)
+    {StatePrep(1): 1, Select: 1, Adjoint(StatePrep(1)): 1}
 
     """
 
@@ -617,7 +960,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, which correspond to the unitaries in the LCU to be blockencoded.
 
         Resources:
@@ -643,12 +986,9 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
-                representation, which correspond to the unitaries in the LCU to be blockencoded.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed representation, which correspond to the unitaries in the LCU to be blockencoded.
         """
         ops = self.hyperparameters["ops"]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -660,7 +1000,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
 
         Returns:
@@ -675,7 +1015,7 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
 
         Args:
             z (int): the power that the operator is being raised to
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+            cmpr_ops (tuple[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
 
         Resources:
@@ -718,12 +1058,15 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
     r"""Resource class for the Reflection gate.
 
     Args:
-        base_class (Type(ResourceOperator)): The type of the operation used to prepare the
-            state we will be reflecting over.
-        base_params (dict): A dictionary of parameters required to obtain the resources for
-            the state preparation operator.
-        num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
-            applied.
+        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        alpha (float): the angle of the operator, default is :math:`\pi`
+        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+            default is ``None`` and the reflection will be applied on the ``U`` wires.
+
+    Resource Parameters:
+        * base_class (Type(ResourceOperator)): The type of the operation used to prepare the state we will be reflecting over.
+        * base_params (dict): A dictionary of parameters required to obtain the resources for the state preparation operator.
+        * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is applied.
 
     Resources:
         The resources correspond directly to the definition of the operation. The operator is
@@ -739,6 +1082,16 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
 
     .. seealso:: :class:`~.Reflection`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceReflection.resources(
+    ...     base_class=re.ResourceQFT,
+    ...     base_params={"num_wires": 3},
+    ...     num_ref_wires=3,
+    ... )
+    {X: 2, GlobalPhase: 1, QFT(3): 1, Adjoint(QFT(3)): 1, C(PhaseShift,2,2,0): 1}
     """
 
     @staticmethod
@@ -794,16 +1147,11 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            base_class (Type(ResourceOperator)): The type of the operation used to prepare the
-                state we will be reflecting over.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the state preparation operator.
-            num_ref_wires (int): The number of qubits for the subsystem on which the reflection is
-                applied.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type(ResourceOperator)): The type of the operation used to prepare the state we will be reflecting over.
+                * base_params (dict): A dictionary of parameters required to obtain the resources for the state preparation operator.
+                * num_ref_wires (int): The number of qubits for the subsystem on which the reflection is applied.
         """
         base_cmpr_rep = self.hyperparameters["base"].resource_rep_from_op()
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
@@ -842,8 +1190,12 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     r"""Resource class for the Qubitization gate.
 
     Args:
-        cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-        num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
+        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
+        control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
+
+    Resource Parameters:
+        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+        * num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
 
     Resources:
         The resources are obtained from the definition of the operation as described in (section III. C)
@@ -859,6 +1211,16 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
 
     .. seealso:: :class:`~.Qubitization`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> ops_tup = (re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3))
+    >>> re.ResourceQubitization.resources(
+    ...     cmpr_ops=ops_tup,
+    ...     num_ctrl_wires=2,
+    ... )
+    {Reflection: 1, PrepSelPrep: 1}
     """
 
     @staticmethod
@@ -895,12 +1257,10 @@ class ResourceQubitization(qml.Qubitization, ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
-            num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, corresponding to the unitaries of the LCU representation of the hamiltonian being qubitized.
+                * num_ctrl_wires (int): The number of qubits used to prepare the coefficients vector of the LCU.
         """
         lcu = self.hyperparameters["hamiltonian"]
         _, ops = lcu.terms()
@@ -929,20 +1289,43 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     """Resource class for the QROM template.
 
     Args:
-        num_bitstrings (int): the number of bitstrings that are to be encoded
-        num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-        num_control_wires (int): the number of control wires where in the indexes are specified
-        num_work_wires (int): the number of auxiliary wires used for QROM computation
-        size_bitstring (int): the length of each bitstring
-        clean (bool): if True, the work wires are not altered by the QROM operator
+        bitstrings (list[str]): the bitstrings to be encoded
+        control_wires (Sequence[int]): the wires where the indexes are specified
+        target_wires (Sequence[int]): the wires where the bitstring is loaded
+        work_wires (Sequence[int]): the auxiliary wires used for the computation
+        clean (bool): if True, the work wires are not altered by operator, default is ``True``
+
+    Resource Parameters:
+        * num_bitstrings (int): the number of bitstrings that are to be encoded
+        * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+        * num_control_wires (int): the number of control wires where in the indexes are specified
+        * num_work_wires (int): the number of auxiliary wires used for QROM computation
+        * size_bitstring (int): the length of each bitstring
+        * clean (bool): if True, the work wires are not altered by the QROM operator
 
     Resources:
         The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
+        `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
 
         We use the one-auxillary qubit version of select, instead of the built-in select
         resources.
+
+    .. seealso:: :class:`~.QROM`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQROM.resources(
+    ...     num_bitstrings=3,
+    ...     num_bit_flips=7,
+    ...     num_control_wires=5,
+    ...     num_work_wires=5,
+    ...     size_bitstring=3,
+    ...     clean=True
+    ... )
+    {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
     """
 
     # pylint: disable=too-many-arguments
@@ -969,8 +1352,8 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         Resources:
             The resources for QROM are taken from the following two papers:
-            (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-            (https://arxiv.org/pdf/1902.02134, figure 4).
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
+            `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
 
             We use the one-auxillary qubit version of select, instead of the built-in select
             resources.
@@ -990,7 +1373,6 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         num_swap_wires = math.floor(math.log2(num_parallel_computations))
         num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
-        assert num_swap_wires + num_select_wires <= num_control_wires
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -1022,16 +1404,14 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_bitstrings (int): the number of bitstrings that are to be encoded
-            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-            num_control_wires (int): the number of control wires where in the indexes are specified
-            num_work_wires (int): the number of auxiliary wires used for QROM computation
-            size_bitstring (int): the length of each bitstring
-            clean (bool): if True, the work wires are not altered by the QROM operator
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_bitstrings (int): the number of bitstrings that are to be encoded
+                * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+                * num_control_wires (int): the number of control wires where in the indexes are specified
+                * num_work_wires (int): the number of auxiliary wires used for QROM computation
+                * size_bitstring (int): the length of each bitstring
+                * clean (bool): if True, the work wires are not altered by the QROM operator
         """
         bitstrings = self.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
@@ -1087,16 +1467,42 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     r"""Resource class for the AmplitudeAmplification template.
 
     Args:
-        U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
-        U_params (dict): the parameters for the U operator
-        O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
-        O_params (dict): the parameters for the O operator
-        iters (int): the number of iterations of the amplitude amplification subroutine
-        num_ref_wires (int): the number of wires used for the reflection
-        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
+        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        O (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        iters (int): the number of iterations of the amplitude amplification subroutine, default is ``1``
+        fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm, default is ``False``
+        work_wire (int): the auxiliary wire to use for the fixed-point amplitude amplification algorithm, default is ``None``
+        reflection_wires (Wires): the wires to reflect on, default is the wires of ``U``
+        p_min (int): the lower bound for the probability of success in fixed-point amplitude amplification, default is ``0.9``
+
+    Resource Parameters:
+        * U_op (Type[~.ResourceOperator]): the class of the operator that prepares the state :math:`|\Psi\rangle`
+        * U_params (dict): the parameters for the U operator
+        * O_op (Type[~.ResourceOperator]): the class of the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+        * O_params (dict): the parameters for the O operator
+        * iters (int): the number of iterations of the amplitude amplification subroutine
+        * num_ref_wires (int): the number of wires used for the reflection
+        * fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
 
     Resources:
         The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
+
+    .. seealso:: :class:`~.AmplitudeAmplification`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceAmplitudeAmplification.resources(
+    ...     U_op=re.ResourceHadamard,
+    ...     U_params={},
+    ...     O_op=re.ResourceX,
+    ...     O_params={},
+    ...     iters=5,
+    ...     num_ref_wires=10,
+    ...     fixed_point=True
+    ... )
+    {C(X,1,0,0): 4, PhaseShift: 2, Hadamard: 8, Reflection: 2}
     """
 
     # pylint: disable=too-many-arguments
@@ -1125,7 +1531,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
 
 
         Resources:
-            The resources are taken from the decomposition of ``qml.AmplitudeAmplification`` class.
+            The resources are taken from the decomposition of :class:`qml.AmplitudeAmplification` class.
         """
         gate_types = {}
         ctrl = re.ResourceControlled.resource_rep(
@@ -1161,22 +1567,28 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
-            U_params (dict): the parameters for the U operator
-            O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
-            O_params (dict): the parameters for the O operator
-            iters (int): the number of iterations of the amplitude amplification subroutine
-            num_ref_wires (int): the number of wires used for the reflection
-            fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * U_op (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+                * U_params (dict): the parameters for the U operator
+                * O_op (Operator): the oracle that flips the sign of the state :math:`|\phi\rangle` and does nothing to the state :math:`|\phi^{\perp}\rangle`
+                * O_params (dict): the parameters for the O operator
+                * iters (int): the number of iterations of the amplitude amplification subroutine
+                * num_ref_wires (int): the number of wires used for the reflection
+                * fixed_point (bool): whether to use the fixed-point amplitude amplification algorithm
         """
         U_op = self.hyperparameters["U"]
         O_op = self.hyperparameters["O"]
-        U_params = U_op.resource_params if hasattr(U_op, "resource_params") else {}
-        O_params = O_op.resource_params if hasattr(O_op, "resource_params") else {}
+        try:
+            U_params = U_op.resource_params
+        except (NotImplementedError, AttributeError):
+            U_params = {}
+
+        try:
+            O_params = O_op.resource_params
+        except (NotImplementedError, AttributeError):
+            O_params = {}
+
         iters = self.hyperparameters["iters"]
         fixed_point = self.hyperparameters["fixed_point"]
         num_ref_wires = len(self.hyperparameters["reflection_wires"])
