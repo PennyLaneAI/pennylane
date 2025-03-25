@@ -188,6 +188,9 @@
   [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
   [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 
+* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+
 <h3>Improvements 🛠</h3>
 
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
@@ -222,6 +225,7 @@
   
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
 
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
@@ -888,6 +892,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Daniela Angulo,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Joey Carter,

@@ -26,6 +26,7 @@ from pennylane.decomposition.resources import (
 )
 
 
+@pytest.mark.unit
 class TestResources:
     """Unit tests for the Resources data structure."""
 
@@ -90,6 +91,7 @@ class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
     resource_keys = {"foo", "bar"}
 
 
+@pytest.mark.unit
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
@@ -180,6 +182,7 @@ class TestCompressedResourceOp:
         assert repr(op) == "DummyOp(foo=2, bar=1)"
 
 
+@pytest.mark.unit
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
@@ -217,6 +220,7 @@ class TestResourceRep:
         )
 
 
+@pytest.mark.unit
 class TestControlledResourceRep:
     """Tests the controlled_resource_rep function."""
 
@@ -363,6 +367,7 @@ class TestControlledResourceRep:
             assert rep == CompressedResourceOp(op_type, {})
 
 
+@pytest.mark.unit
 class TestSymbolicResourceRep:
     """Tests resource reps of symbolic operators"""
 

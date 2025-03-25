@@ -18,6 +18,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import (
     CCZ,
     CH,
@@ -1704,6 +1705,18 @@ custom_ctrl_ops = [
 
 class TestCtrl:
     """Tests for the ctrl transform."""
+
+    def test_sparse_qubit_unitary(self):
+        """Test that the controlled sparse QubitUnitary works correctly"""
+        data = sp.sparse.eye(2)
+        op = qml.QubitUnitary(data, wires=2)
+        c_op = qml.ctrl(op, 3)
+
+        data_dense = data.toarray()
+        op_dense = qml.QubitUnitary(data_dense, wires=2)
+        c_op_dense = qml.ctrl(op_dense, 3)
+
+        assert qml.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
 
     def test_no_redundant_queue(self):
         """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""

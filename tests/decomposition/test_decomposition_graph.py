@@ -23,17 +23,16 @@ import pytest
 from conftest import decompositions, to_resources
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionGraph
-from pennylane.decomposition.decomposition_graph import DecompositionError
+from pennylane.decomposition import DecompositionError, DecompositionGraph
 
 
+@pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
     side_effect=lambda x: decompositions[x],
 )
 class TestDecompositionGraph:
 
-    @pytest.mark.unit
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
 
@@ -75,7 +74,6 @@ class TestDecompositionGraph:
         )
         assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
 
-    @pytest.mark.unit
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""
 
@@ -93,7 +91,6 @@ class TestDecompositionGraph:
         # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
 
-    @pytest.mark.unit
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
 
@@ -109,7 +106,6 @@ class TestDecompositionGraph:
         assert graph.resource_estimate(op) == expected_resource
         assert graph.decomposition(op).compute_resources() == expected_resource
 
-    @pytest.mark.unit
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
@@ -118,7 +114,6 @@ class TestDecompositionGraph:
         with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
             graph.solve()
 
-    @pytest.mark.unit
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""
 
@@ -163,10 +158,15 @@ class TestDecompositionGraph:
         graph.solve(lazy=True)
         assert not graph.is_solved_for(AnotherOp(wires=[0, 1]))
 
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            graph.resource_estimate(AnotherOp(wires=[0, 1]))
+
+        with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
+            graph.decomposition(AnotherOp(wires=[0, 1]))
+
         graph.solve(lazy=False)
         assert graph.is_solved_for(AnotherOp(wires=[0, 1]))
 
-    @pytest.mark.unit
     def test_decomposition_with_resource_params(self, _):
         """Tests operators with non-empty resource params."""
 
@@ -216,6 +216,7 @@ class TestDecompositionGraph:
         )
 
 
+@pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
     side_effect=lambda x: decompositions[x],
