@@ -478,7 +478,7 @@ def test_load_other_attributes(tmp_path, data_name, params, attributes):
         attributes=attributes,
         **params,
     )
-    assert all([sorted(dset.list_attributes()) == sorted(attributes) for dset in dsets])
+    assert all(sorted(dset.list_attributes()) == sorted(attributes) for dset in dsets)
 
 
 @patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
