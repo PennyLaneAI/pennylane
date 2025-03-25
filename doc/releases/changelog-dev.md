@@ -190,6 +190,7 @@
 
 * Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
 

@@ -250,6 +250,7 @@ class TestDecomposeInterpreterGraphEnabled:
         ]
 
     @pytest.mark.xfail(reason="DecomposeInterpreter cannot handle adjoint transforms [sc-87096]")
+    @pytest.mark.integration
     def test_adjoint_transform(self):
         """Tests that an adjoint transform can be decomposed correctly."""
 
