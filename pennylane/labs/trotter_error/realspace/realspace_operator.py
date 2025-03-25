@@ -54,13 +54,13 @@ class RealspaceOperator:
 
     **Example**
 
-    We build a :class:`pennylane.labs.trotter_error.RealspaceOperator` in the following way.
+    We build a :class:`~.pennylane.labs.trotter_error.RealspaceOperator` in the following way.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
     >>> n_modes = 5
     >>> ops = ("Q", "Q")
-    >>> coeffs = RealspaceCoeffs.coeffs(np.random.random(size=(n_modes, n_modes)), label="alpha")
+    >>> coeffs = RealspaceCoeffs(np.random(shape=(n_modes, n_modes)), label="alpha")
     >>> rs_op = RealspaceOperator(n_modes, ops, coeffs)
     >>> rs_op
     RealspaceOperator(5, ('Q', 'Q'), alpha[idx0,idx1])
@@ -85,7 +85,7 @@ class RealspaceOperator:
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -122,9 +122,7 @@ class RealspaceOperator:
                 f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes, self.ops, RealspaceCoeffs.sum_node(self.coeffs, other.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops, self.coeffs + other.coeffs)
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self._is_zero:
@@ -141,28 +139,15 @@ class RealspaceOperator:
                 f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes,
-            self.ops,
-            RealspaceCoeffs.sum_node(self.coeffs, RealspaceCoeffs.scalar_node(-1, other.coeffs)),
-        )
+        return RealspaceOperator(self.modes, self.ops, self.coeffs - other.coeffs)
 
     def __mul__(self, scalar: float) -> RealspaceOperator:
         if np.isclose(scalar, 0):
             return RealspaceOperator.zero(self.modes)
 
-        return RealspaceOperator(
-            self.modes, self.ops, RealspaceCoeffs.scalar_node(scalar, self.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops, scalar * self.coeffs)
 
     __rmul__ = __mul__
-
-    def __imul__(self, scalar: float) -> RealspaceOperator:
-        if np.isclose(scalar, 0):
-            return RealspaceOperator.zero(self.modes)
-
-        self.coeffs = RealspaceCoeffs.scalar_node(scalar, self.coeffs)
-        return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
         if other._is_zero:
@@ -173,9 +158,7 @@ class RealspaceOperator:
                 f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
             )
 
-        return RealspaceOperator(
-            self.modes, self.ops + other.ops, RealspaceCoeffs.outer_node(self.coeffs, other.coeffs)
-        )
+        return RealspaceOperator(self.modes, self.ops + other.ops, self.coeffs @ other.coeffs)
 
     def __eq__(self, other: RealspaceOperator) -> bool:
         if self.ops != other.ops:
@@ -203,7 +186,7 @@ class RealspaceOperator:
             RealspaceOperator: a representation of the zero operator
 
         """
-        return RealspaceOperator(modes, tuple(), RealspaceCoeffs.tensor_node(np.array(0)))
+        return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
         """Return the coefficients in a dictionary
@@ -222,17 +205,17 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    r"""The ``RealspaceSum`` class is used to represent a Hamiltonian that is built from a sum of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects
+    r"""The :class:`~pennylane.labs.trotter_error.RealspaceSum` class is used to represent a Hamiltonian that is built from a sum of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
     For example, the vibrational hamiltonian
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
-    is a sum of sums, where each sum can be expressed by a :class:`pennylane.labs.trotter_error.RealspaceOperator`. A vibrational Hamiltonian can be represented as a ``RealspaceSum`` which
-    contains a list of :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing these sums.
+    is a sum of sums, where each sum can be expressed by a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`. A vibrational Hamiltonian can be represented as a :class:`~pennylane.labs.trotter_error.RealspaceSum` which
+    contains a list of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects representing these sums.
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Sequence[RealspaceOperator]): a sequence containing :class:`pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
+        ops (Sequence[RealspaceOperator]): a sequence containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
 
     **Example**
 
@@ -328,7 +311,7 @@ class RealspaceSum(Fragment):
 
     @classmethod
     def zero(cls, modes: int) -> RealspaceSum:
-        """Returns a RealspaceOperator representing the zero operator
+        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceOperator` representing the zero operator
 
         Args:
             modes (int): the number of vibrational modes (needed for consistency with arithmetic operations)
@@ -342,7 +325,7 @@ class RealspaceSum(Fragment):
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
     ) -> Union[np.ndarray, sp.sparse.cs_array]:
-        """Return a matrix representation of the ``RealspaceSum``.
+        """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
             gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
@@ -350,7 +333,7 @@ class RealspaceSum(Fragment):
             sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the :class:`pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         """
 
@@ -389,7 +372,7 @@ class RealspaceSum(Fragment):
                 coeff_sum = sum(abs(val) for val in coeffs.values())
             else:
                 indices = product(range(self.modes), repeat=len(op.ops))
-                coeff_sum = sum(abs(op.coeffs.compute(index)) for index in indices)
+                coeff_sum = sum(abs(op.coeffs[index]) for index in indices)
 
             norm += coeff_sum * term_op_norm
 
@@ -409,13 +392,13 @@ class RealspaceSum(Fragment):
         )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
-        """Return a dictionary containing the coefficients of the ``RealspaceSum``
+        """Return a dictionary containing the coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
             threshold (float): only return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
+            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
         """
 
         coeffs = {}

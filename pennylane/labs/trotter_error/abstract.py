@@ -21,11 +21,11 @@ from typing import Dict, Sequence
 
 class Fragment(ABC):
     """Abstract class used to define the methods an object needs to implement in order to be used as a fragment
-    in the Trotter error workflow. A :class:`~.Fragment` is an that has a well-defined notion of a commutator.
+    in the Trotter error workflow. A :class:`~.Fragment` is an object that has a well-defined notion of a commutator.
     To ensure the existence of commutators the implementation requires of the following dunder methods:
     ``__add__``,  ``__matmul__``,  ``__mul__``.
 
-    In addition to the arithmetic operators a ``norm`` method should be defined. The norm is required
+    In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is required
     to compute error estimates of the Trotter error operators obtained by computing nested commutators.
     """
 
