@@ -37,8 +37,8 @@ from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 class RealspaceOperator:
     r"""Represents a linear combination of a product of position and momentum operators.
 
-    The ``RealspaceOperator`` can be used to represent components of a vibrational Hamiltonian,
-    e.g., the following sum over vibrational modes :math:`Q`
+    The ``RealspaceOperator`` class can be used to represent components of a vibrational
+    Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`
 
     .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j.
 
@@ -227,21 +227,26 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    r"""The :class:`~pennylane.labs.trotter_error.RealspaceSum` class is used to represent a Hamiltonian that is built from a sum of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
-    For example, the vibrational hamiltonian
+    r"""Represents a linear combination of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects.
+
+    The :class:`~pennylane.labs.trotter_error.RealspaceSum` class can be used to represent a
+    Hamiltonian that is built from a sum of
+    :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects. For example, the vibrational
+    hamiltonian
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
-    is a sum of sums, where each sum can be expressed by a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`. A vibrational Hamiltonian can be represented as a :class:`~pennylane.labs.trotter_error.RealspaceSum` which
-    contains a list of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects representing these sums.
+    is a sum of terms where each term can be expressed by a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Sequence[RealspaceOperator]): a sequence containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects representing the sums in the Hamiltonian
+        ops (Sequence[RealspaceOperator]): a sequence containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
 
     **Example**
 
-    We can build the harmonic part of the vibrational Hamiltonian with the following code.
+    We can build the harmonic part of a vibrational Hamiltonian,
+    :math:`\sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2`, with the following
+    code.
 
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
     >>> import numpy as np
@@ -354,7 +359,7 @@ class RealspaceSum(Fragment):
         Args:
             gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
             basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
-            sparse (bool): if True returns a sparse matrix, otherwise a dense matrix
+            sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
         Returns:
             Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
@@ -392,7 +397,7 @@ class RealspaceSum(Fragment):
             params (Dict): The dictionary of parameters. The supported parameters are
 
                 * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
-                * ``sparse`` (bool): If True, use optimizations for sparse operators. Defaults to False.
+                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults to ``False``.
 
         Returns:
             float: an upper bound on the spectral norm of the operator
@@ -436,7 +441,7 @@ class RealspaceSum(Fragment):
         """Return a dictionary containing the coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
-            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
             Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
