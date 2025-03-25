@@ -35,9 +35,9 @@ class AdjointDecomp(DecompositionRule):  # pylint: disable=too-few-public-method
     def _get_impl(self):
         """The implementation of the adjoint of a gate."""
 
-        def _impl(*_, base, **__):
+        def _impl(*params, wires, base, **__):
             qml.adjoint(self._base_decomposition._impl)(  # pylint: disable=protected-access
-                *base.parameters, base.wires, **base.hyperparameters
+                *params, wires, **base.hyperparameters
             )
 
         return _impl
@@ -77,9 +77,11 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 
 
 @register_resources(_adjoint_adjoint_resource)
-def adjoint_adjoint_decomp(*_, wires, base):  # pylint: disable=unused-argument
+def adjoint_adjoint_decomp(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    base.base._unflatten(*base.base._flatten())  # pylint: disable=protected-access
+    _, [_, metadata] = base.base._flatten()  # pylint: disable=protected-access
+    new_struct = wires, metadata
+    base.base._unflatten(params, new_struct)  # pylint: disable=protected-access
 
 
 def _adjoint_controlled_resource(base_class, base_params):
