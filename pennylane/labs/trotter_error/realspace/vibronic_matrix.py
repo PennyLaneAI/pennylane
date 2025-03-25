@@ -30,13 +30,13 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 
 
 class VibronicMatrix(Fragment):
-    r"""Implements a dictionary of ``RealspaceSum`` objects.
+    r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
 
     This can be used to represent the fragments of the vibronic Hamiltonian given by
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
-    where the dictionary is indexed by tuples ``(i, j)`` and the values are :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
+    where the dictionary is indexed by tuples :math:`(i, j)` and the values are :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
 
     Args:
         states (int): the number of electronic states
@@ -71,14 +71,14 @@ class VibronicMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the ``RealspaceSum`` object located at the ``(row, col)`` entry of the ``VibronicMatrix``
+        """Return the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object located at the ``(row, col)`` entry of the :class:`~.pennylane.labs.trotter_error.VibronicMatrix`
 
         Args:
             row (int): the row of the index
             col (int): the column of the index
 
         Returns:
-            RealspaceSum: the ``RealspaceSum`` object indexed at ``(row, col)``
+            RealspaceSum: the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object indexed at ``(row, col)``
         """
         if row < 0 or col < 0:
             raise IndexError(f"Index cannot be negative, got {(row, col)}.")
@@ -95,7 +95,7 @@ class VibronicMatrix(Fragment):
         Args:
             row (int): the row of the index
             col (int): the column of the index
-            rs_sum (RealspaceSum): the ``RealspaceSum`` object to stored in index ``(row, col)``
+            rs_sum (RealspaceSum): the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object to stored in index ``(row, col)``
 
         Returns:
             None
@@ -126,7 +126,7 @@ class VibronicMatrix(Fragment):
             sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the ``RealspaceOperator``
+            Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         """
         pow2 = _next_pow_2(self.states)
@@ -373,13 +373,13 @@ class VibronicMatrix(Fragment):
         )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int, int], Dict]:
-        """Return a dictionary containing the coefficients of the ``RealspaceSum``
+        """Return a dictionary containing the coefficients of the :class:`~.pennylane.labs.trotter_error.RealspaceSum`
 
         Args:
             threshold (float): only return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys are the indices of the ``VibronicMatrix`` and whose values are dictionaries obtained by ``RealspaceSum.get_coefficients``
+            Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.VibronicMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
         """
         d = {}
         for i, j in product(range(self.states), repeat=2):

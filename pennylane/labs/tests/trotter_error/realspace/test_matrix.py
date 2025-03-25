@@ -53,21 +53,22 @@ def _coeffs(states: int, modes: int, order: int):
     return np.random.random(size=modes), symmetric_phis
 
 
-vword0 = RealspaceSum(
-    2, [RealspaceOperator(2, tuple(), RealspaceCoeffs.tensor_node(np.array(0.5)))]
-)
+vword0 = RealspaceSum(2, [RealspaceOperator(2, tuple(), RealspaceCoeffs(np.array(0.5)))])
 blocks0 = {(0, 0): vword0}
 vmat0 = VibronicMatrix(1, 2, blocks0)
 
-vword1 = RealspaceSum(2, [RealspaceOperator(2, ("P",), RealspaceCoeffs.tensor_node(np.array([1])))])
+vword1 = RealspaceSum(
+    2, [RealspaceOperator(2, ("P",), RealspaceCoeffs(np.array([1]), label="omega"))]
+)
 blocks1 = {(0, 0): vword1}
 vmat1 = VibronicMatrix(1, 1, blocks1)
 
 vword2a = RealspaceSum(
-    2, [RealspaceOperator(2, ("P", "P"), RealspaceCoeffs.tensor_node(np.array([[0, 1], [2, 3]])))]
+    2,
+    [RealspaceOperator(2, ("P", "P"), RealspaceCoeffs(np.array([[0, 1], [2, 3]]), label="omega"))],
 )
 vword2b = RealspaceSum(
-    2, [RealspaceOperator(2, ("P",), RealspaceCoeffs.tensor_node(np.array([1, 2])))]
+    2, [RealspaceOperator(2, ("P",), RealspaceCoeffs(np.array([1, 2]), label="omega"))]
 )
 blocks2 = {(0, 0): vword2a, (1, 1): vword2b}
 vmat2 = VibronicMatrix(2, 2, blocks2)
