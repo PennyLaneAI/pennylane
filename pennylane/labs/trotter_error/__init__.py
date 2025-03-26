@@ -20,8 +20,8 @@
 
 .. currentmodule:: pennylane.labs.trotter_error
 
-Trotter Base Classes:
-~~~~~~~~~~~~~~~~~~~~~
+Trotter Base Classes
+~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -29,16 +29,23 @@ Trotter Base Classes:
     ~AbstractState
     ~Fragment
 
-Realspace Hamiltonian Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Fragment Classes
+~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~RealspaceMatrix
+    ~RealspaceSum
+
+Realspace Hamiltonian Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
     ~RealspaceCoeffs
-    ~RealspaceMatrix
     ~RealspaceOperator
-    ~RealspaceSum
 
 Fragment Functions:
 ~~~~~~~~~~~~~~~~~~~
