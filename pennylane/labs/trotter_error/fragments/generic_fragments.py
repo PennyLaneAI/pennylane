@@ -66,16 +66,15 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
 
 
 class GenericFragment(Fragment):
-    """Represents objects implementing arithmetic dunder methods.
+    """Abstract class used to define a generic fragment object for product formula error estimation.
 
     This class allows using any object implementing arithmetic dunder methods to be used
-    in the Trotter error workflow.
+    for product formula error estimation.
 
     Args:
         fragment (Any): An object that implements the following arithmetic methods:
             ``__add__``, ``__sub__``, ``__mul__``, and ``__matmul__``.
-        norm_fn (optional, Callable): This is a function used to compute the norm of `fragment`, which is
-            needed for some Trotter error functionality.
+        norm_fn (optional, Callable): A function used to compute the norm of `fragment`.
 
     :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
 
@@ -113,7 +112,7 @@ class GenericFragment(Fragment):
         return GenericFragment(self.fragment @ other.fragment, norm_fn=self.norm_fn)
 
     def apply(self, state: Any) -> Any:
-        """Apply the Fragment to a state using the underlying object's __matmul__ method."""
+        """Apply the fragment to a state using the underlying object's __matmul__ method."""
         return self.fragment @ state
 
     def expectation(self, left: Any, right: Any) -> float:
@@ -121,7 +120,7 @@ class GenericFragment(Fragment):
         return left @ self.fragment @ right
 
     def norm(self, params: Dict = None) -> float:
-        """Compute the norm of the :class:`~.pennylane.labs.trotter_error.GenericFragment` by calling ``norm_fn``."""
+        """Compute the norm of the fragment."""
         if self.norm_fn:
             params = params or {}
             return self.norm_fn(self.fragment, **params)
