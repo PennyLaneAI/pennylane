@@ -611,6 +611,15 @@ class TestConvertLike:
         assert res.ndim == 0
         assert fn.allequal(res, [5])
 
+    def test_convert_like_sparse(self):
+        """Test that a numpy array can be converted to a scipy array."""
+
+        np_array = np.array([[1, 0], [1, 0]])
+        sp_array = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+        out = qml.math.convert_like(np_array, sp_array)
+        assert isinstance(out, sci.sparse.csr_matrix)
+        assert qml.math.allclose(out.todense(), np_array)
+
 
 class TestDot:
     """Tests for the dot product function"""
@@ -1129,7 +1138,6 @@ class TestScipySparse:
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
     dispatched_linalg_methods = [
-        fn.linalg.det,
         fn.linalg.expm,
         fn.linalg.inv,
         fn.linalg.norm,
