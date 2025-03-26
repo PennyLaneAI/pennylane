@@ -35,6 +35,7 @@ Fragment Classes
 .. autosummary::
     :toctree: api
 
+    ~GenericFragment
     ~RealspaceMatrix
     ~RealspaceSum
 
@@ -77,7 +78,7 @@ Error Estimation Functions:
 """
 
 from .abstract import AbstractState, Fragment
-from .fragments import generic_fragments, vibrational_fragments, vibronic_fragments
+from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
 from .product_formulas import perturbation_error, trotter_error
 from .realspace import (
     RealspaceCoeffs,
