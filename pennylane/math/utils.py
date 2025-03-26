@@ -95,8 +95,8 @@ def _mixed_shape_match(a, b):
     if np.prod(a_shapes) != np.prod(b_shapes):
         return False
     # Make the sets of shapes, and ignore '1'
-    a_shape_set = set(i for i in a_shapes if i != 1)
-    b_shape_set = set(i for i in b_shapes if i != 1)
+    a_shape_set = set(a_shapes) - {1}
+    b_shape_set = set(b_shapes) - {1}
     if len(a_shape_set) == len(b_shape_set) == 1:
         return True  # For intrinsic one-dimensional arrays
     return a_shapes == b_shapes
