@@ -21,8 +21,8 @@ Our vision with ``plxpr`` is to supplant the quantum tape as our default program
 representation, and to support *more* than just the core features of PennyLane.
 
 There are some **quirks and restrictions to be aware of while we strive towards 
-that ideal**. Additionally, we've added backwards-compatibility features that make 
-the transition from tape-based code to program capture be a smooth one. In this 
+that ideal**. Additionally, we've added backward compatibility features that make 
+the transition from tape-based code to program capture smooth. In this 
 document, we provide an overview of the constraints, "gotchas" to be aware of, and
 features that will help get your existing tape-based code working with program capture.
 
@@ -96,7 +96,7 @@ Because of the nature of creating and executing plxpr, it is **best practice to
 use JAX-compatible types whenever possible**, in particular for arguments to quantum 
 functions and QNodes, and positional arguments in PennyLane gate operations. Examples of 
 JAX-compatible types are ``jax.numpy`` arrays, regular NumPy arrays, dictionaries, standard
-Python ``int``\ s and ``float``\ s, and anything else with a valid `Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>` 
+Python ``int``\ s and ``float``\ s, and anything else with a valid `Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`__
 representation.
 
 For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for 
@@ -181,7 +181,7 @@ Positional arguments in PennyLane are flexible in that their variable names can
 instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
 ``qml.RZ(phi=0.1, wires=0)``). However, to ensure differentiability and, in general,
 compatibility with program capture enabled, such arguments must be kept as positional, 
-regardless of if they're provided as an acceptable JAX type. 
+regardless of whether they're provided as an acceptable JAX type. 
 
 For instance, consider this example with ``qml.RZ``:
 
@@ -254,7 +254,7 @@ work** and will give a vague error. Additionally, decorating QNodes with the exp
 :func:`~.pennylane.capture.expand_plxpr_transforms` decorator is required.
 
 Consider the following toy example, which shows a tape-based transform that shifts 
-all :class:`~.pennylane.RX`` gates to the end of a circuit.
+all :class:`~.pennylane.RX` gates to the end of a circuit.
 
 .. code-block:: python 
 
@@ -292,7 +292,7 @@ Decorating with just ``@shift_rx_to_end`` will not work, and will give a vague e
 ...
 NotImplementedError: 
 
-A requirement for tape transforms to be compatible with program capture is to further 
+A requirement for transforms to be compatible with program capture is to further 
 decorate QNodes with the experimental :func:`~.pennylane.capture.expand_plxpr_transforms` 
 decorator:
 
@@ -329,15 +329,13 @@ is best to demonstrate this behaviour:
     def circuit():
         qml.RX(0.1, wires=0)
 
-        for i in range(4):
+        for _ in range(4):
             qml.RX(0.1, wires=0)
             qml.RX(0.1, wires=0)
 
         qml.RX(0.1, wires=0)
 
         return qml.state()
-
-    print(qml.capture.make_plxpr(circuit)())
 
 The above example should result in a single ``RX`` gate with an angle of ``1.0``, 
 but transforms are unable to transfer through the circuit in its entirety. Drawing
@@ -415,7 +413,7 @@ for ``stop`` in ``qml.for_loop``.
 
 >>> circuit(4)
 TracerIntegerConversionError: The __index__() method was called on traced array with shape int32[].
-The error occurred while tracing the function wrapper at /Users/isaac/.virtualenvs/pl-latest/lib/python3.11/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
+The error occurred while tracing the function wrapper at <path to environment>/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
 Dynamic shapes
@@ -437,6 +435,8 @@ cases.
 Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
 
 .. code-block:: python 
+
+    import jax
 
     qml.capture.enable()
 
