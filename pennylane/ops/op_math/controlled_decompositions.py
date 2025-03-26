@@ -891,7 +891,7 @@ def _decompose_mcx_with_two_workers(
         gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire]))
     else:
         mid_mcx = _decompose_mcx_with_one_worker_kg24(
-            work_wires[0:1] + final_ctrls, target_wire, work_wires[1:2], work_wire_type="clean"
+            work_wires[0:1] + final_ctrls, target_wire, work_wires[1], work_wire_type="clean"
         )
         gates += mid_mcx
     gates += ladder_ops[::-1]
