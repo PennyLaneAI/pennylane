@@ -20,13 +20,22 @@ from typing import Dict, Sequence
 
 
 class Fragment(ABC):
-    """Abstract class used to define the methods an object needs to implement in order to be used as a fragment
-    in the Trotter error workflow. A :class:`~.Fragment` is an object that has a well-defined notion of a commutator.
-    To ensure the existence of commutators the implementation requires of the following dunder methods:
-    ``__add__``,  ``__matmul__``,  ``__mul__``,  ``__sub__``.
+    """Abstract class used to define a fragment object for product formula error estimation.
 
-    In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is required
-    to compute error estimates of the Trotter error operators obtained by computing nested commutators.
+    A :class:`~.Fragment` is an object that has a well-defined notion of a commutator. To ensure
+    the existence of commutators, the implementation requires the following arithmetic dunder
+    methods:
+
+    * :meth:`~.__add__`: implements addition
+
+    * :meth:`~.__sub__`: implements subtraction
+
+    * :meth:`~.__mul__`: implements multiplication
+
+    * :meth:`~.__matmul__`: implements matrix multiplication
+
+    In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is
+    required to compute error estimates of error operators obtained by computing nested commutators.
     """
 
     @abstractmethod
@@ -49,7 +58,8 @@ class Fragment(ABC):
         """Compute the norm of the fragment.
 
         Args:
-            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from :class:`~.Fragment`.
+            params (Dict): A dictionary of parameters needed to compute the norm. It should be
+                specified for each class inheriting from :class:`~.Fragment`.
 
         Returns:
             float: the norm of the :class:`~.Fragment`
