@@ -39,10 +39,14 @@ def vibrational_fragments(
     >>> from pennylane.labs.trotter_error import vibrational_fragments
     >>> import numpy as np
     >>> n_modes = 4
-    >>> freqs = np.random.random(4)
-    >>> taylor_coeffs = [np.array(0), np.random.random(size=(n_modes, )), np.random.random(size=(n_modes, n_modes))]
-    >>> vibrational_fragments(n_modes, freqs, taylor_coeffs)
-    [RealspaceSum((RealspaceOperator(4, ('PP',), omega[idx0]), RealspaceOperator(4, ('QQ',), omega[idx0]))), RealspaceSum((RealspaceOperator(4, ('Q',), phi[1][idx0]), RealspaceOperator(4, ('Q', 'Q'), phi[2][idx0,idx1])))]
+    >>> r_state = np.random.RandomState(42)
+    >>> freqs = r_state.random(4)
+    >>> taylor_coeffs = [np.array(0), r_state.random(size=(n_modes, )), r_state.random(size=(n_modes, n_modes))]
+    >>> fragments = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    >>> for fragment in fragments:
+    >>>     fragment
+    RealspaceSum((RealspaceOperator(4, ('PP',), omega[idx0]), RealspaceOperator(4, ('QQ',), omega[idx0])))
+    RealspaceSum((RealspaceOperator(4, ('Q',), phi[1][idx0]), RealspaceOperator(4, ('Q', 'Q'), phi[2][idx0,idx1])))
     """
 
     if frag_method == "harmonic":

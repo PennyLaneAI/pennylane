@@ -21,14 +21,14 @@ from pennylane.labs.trotter_error import Fragment
 
 
 def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
-    """Instantiates ``GenericFragment`` objects.
+    """Instantiates :class:`~.pennylane.labs.trotter_error.GenericFragment` objects.
 
     Args:
         fragments (Sequence[Any]): A sequence of objects of the same type. The type is assumed to implement ``__add__``, ``__mul__``, and ``__matmul__``.
         norm_fn (Callable): A function that computes the norm of the fragments.
 
     Returns:
-        List[GenericFragment]: A list of ``GenericFragment`` objects instantiated from `fragments`.
+        List[GenericFragment]: A list of :class:`~.pennylane.labs.trotter_error.GenericFragment` objects instantiated from `fragments`.
 
 
     **Example**
@@ -77,7 +77,7 @@ class GenericFragment(Fragment):
         norm_fn (optional, Callable): This is a function used to compute the norm of `fragment`, which is
             needed for some Trotter error functionality.
 
-    ``GenericFragment`` objects should be instantated through the ``generic_fragments`` function.
+    :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
 
     **Example**
 
@@ -121,7 +121,7 @@ class GenericFragment(Fragment):
         return left @ self.fragment @ right
 
     def norm(self, params: Dict = None) -> float:
-        """Compute the norm of the ``GenericFragment`` by calling ``norm_fn``."""
+        """Compute the norm of the :class:`~.pennylane.labs.trotter_error.GenericFragment` by calling ``norm_fn``."""
         if self.norm_fn:
             params = params or {}
             return self.norm_fn(self.fragment, **params)

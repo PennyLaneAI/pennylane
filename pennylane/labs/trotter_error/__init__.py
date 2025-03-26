@@ -22,7 +22,7 @@
 
 Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~
-test
+Abstract classes specifying the methods needed for fragments and states in the Trotter error workflow.
 
 .. autosummary::
     :toctree: api
@@ -32,6 +32,7 @@ test
 
 Fragment Classes
 ~~~~~~~~~~~~~~~~
+Classes representing fragments of different types of Hamiltonians.
 
 .. autosummary::
     :toctree: api
@@ -42,6 +43,7 @@ Fragment Classes
 
 Realspace Hamiltonian Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Classes used to store representations of realspace Hamiltonians.
 
 .. autosummary::
     :toctree: api
@@ -51,6 +53,7 @@ Realspace Hamiltonian Classes
 
 Fragment Functions:
 ~~~~~~~~~~~~~~~~~~~
+Functions used to retrieve fragments of various Hamiltonians.
 
 .. autosummary::
     :toctree: api
@@ -61,6 +64,7 @@ Fragment Functions:
 
 State Classes:
 ~~~~~~~~~~~~~~
+Representations of harmonic oscillator states.
 
 .. autosummary::
     :toctree: api
@@ -70,6 +74,7 @@ State Classes:
 
 Error Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Functions for computing Trotter error estimates.
 
 .. autosummary::
     :toctree: api

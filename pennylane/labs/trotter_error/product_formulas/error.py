@@ -30,7 +30,7 @@ class _AdditiveIdentity:
 
 
 def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
-    r"""Returns the second-order Trotter error. For a Hamiltonian :math:`H` expressed as a sum of
+    r"""Compute the second-order Trotter error. For a Hamiltonian :math:`H` expressed as a sum of
     fragments :math:`\sum_{m=1}^L H_m` the second order Trotter formula is given by
 
     .. math:: e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
@@ -52,12 +52,13 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
     >>> from pennylane.labs.trotter_error.product_formulas import trotter_error
     >>> n_modes = 4
-    >>> freqs = np.random.random(4)
+    >>> r_state = np.random.RandomState(42)
+    >>> freqs = r_state.random(4)
     >>> taylor_coeffs = [
     >>>     np.array(0),
-    >>>     np.random.random(size=(n_modes, )),
-    >>>     np.random.random(size=(n_modes, n_modes)),
-    >>>     np.random.random(size=(n_modes, n_modes, n_modes))
+    >>>     r_state.random(size=(n_modes, )),
+    >>>     r_state.random(size=(n_modes, n_modes)),
+    >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
     >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
     >>> delta = 0.001
@@ -106,21 +107,20 @@ def perturbation_error(
 
     >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
     >>> import numpy as np
-
     >>> n_modes = 2
-    >>> freqs = np.random.random(n_modes)
+    >>> r_state = np.random.RandomState(42)
+    >>> freqs = r_state.random(n_modes)
     >>> taylor_coeffs = [
     >>>     np.array(0),
-    >>>     np.random.random(size=(n_modes, )),
-    >>>     np.random.random(size=(n_modes, n_modes)),
-    >>>     np.random.random(size=(n_modes, n_modes, n_modes))
+    >>>     r_state.random(size=(n_modes, )),
+    >>>     r_state.random(size=(n_modes, n_modes)),
+    >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
     >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
     >>> gridpoints = 5
     >>> state1 = HOState.from_dict(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState.from_dict(n_modes, gridpoints, {(1, 1): 1})
-    >>> perturbation_error(frags, [state1, state2])
-    [(-1.206044220302482+0j), (-5.160474640675331+0j)]
+    [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
     error = trotter_error(fragments, delta)

@@ -48,10 +48,15 @@ def vibronic_fragments(
     >>> import numpy as np
     >>> n_modes = 4
     >>> n_states = 2
-    >>> freqs = np.random.random(4)
-    >>> taylor_coeffs = [np.random.random(size=(n_states, n_states, )), np.random.random(size=(n_states, n_states, n_modes))]
-    >>> vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
-    [RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.6158098464023244), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.7813244877436533), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))}), RealspaceMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.9468868589654408), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.6904557706626872), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))}), RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})]
+    >>> r_state = np.random.RandomState(42)
+    >>> freqs = r_state.random(4)
+    >>> taylor_coeffs = [r_state.random(size=(n_states, n_states, )), r_state.random(size=(n_states, n_states, n_modes))]
+    >>> fragments = vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
+    >>> for fragment in fragments:
+    >>>     fragment
+    RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.15601864044243652), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.8661761457749352), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))})
+    RealspaceMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.15599452033620265), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.05808361216819946), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))})
+    RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})
     """
     _validate_input(states, modes, freqs, taylor_coeffs)
 
