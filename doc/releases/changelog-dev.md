@@ -190,8 +190,12 @@
 
 * Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
+
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
@@ -255,6 +259,7 @@
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
   [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
   ```pycon
   >>> import numpy as np
@@ -263,7 +268,7 @@
   >>> U_dense = np.eye(4)  # 2-wire identity
   >>> U_sparse = sp.sparse.csr_matrix(U_dense)
   >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.matrix())
+  >>> print(op.sparse_matrix())
   <Compressed Sparse Row sparse matrix of dtype 'float64'
           with 4 stored elements and shape (4, 4)>
     Coords        Values
@@ -271,7 +276,7 @@
     (1, 1)        1.0
     (2, 2)        1.0
     (3, 3)        1.0
-  >>> op.matrix().toarray()
+  >>> op.sparse_matrix().toarray()
   array([[1., 0., 0., 0.],
         [0., 1., 0., 0.],
         [0., 0., 1., 0.],
@@ -615,6 +620,9 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``AmplitudeAmplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
+  [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
+
 * `pennylane.labs.khaneja_glaser_involution` is removed.
   `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
@@ -805,6 +813,9 @@
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
+* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
+  [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
+
 <h3>Bug fixes 🐛</h3>
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
@@ -886,6 +897,9 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -903,6 +917,8 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Diego Guala,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
