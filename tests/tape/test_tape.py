@@ -890,14 +890,13 @@ class TestExpand:
 
         new_tape = tape.expand()
 
-        assert len(new_tape.operations) == 3
+        assert len(new_tape.operations) == 2
 
-        assert new_tape.operations[0].name == "PhaseShift"
-        assert new_tape.operations[1].name == "RX"
-        assert new_tape.operations[2].name == "PhaseShift"
+        assert new_tape.operations[0].name == "RX"
+        assert new_tape.operations[1].name == "GlobalPhase"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.num_params == 2
+        assert new_tape.get_parameters() == [np.pi, -np.pi / 2]
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -931,7 +930,7 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2)
-        assert len(new_tape.operations) == 11
+        assert len(new_tape.operations) == 9
 
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(

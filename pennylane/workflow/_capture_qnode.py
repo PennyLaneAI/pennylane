@@ -196,7 +196,27 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
-    partial_eval = partial(device.eval_jaxpr, qfunc_jaxpr, [], execution_config=execution_config)
+
+    device_program = device.preprocess_transforms(execution_config)
+    if batch_dims is not None:
+        temp_all_args = []
+        for a, d in zip(args, batch_dims, strict=True):
+            if d is not None:
+                slices = [slice(None)] * qml.math.ndim(a)
+                slices[d] = 0
+                temp_all_args.append(a[tuple(slices)])
+            else:
+                temp_all_args.append(a)
+    else:
+        temp_all_args = args
+
+    qfunc_jaxpr = device_program(qfunc_jaxpr, [], *temp_all_args)
+    consts = qfunc_jaxpr.consts
+    qfunc_jaxpr = qfunc_jaxpr.jaxpr
+
+    partial_eval = partial(
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
+    )
     if batch_dims is None:
         return partial_eval(*args)
     return jax.vmap(partial_eval, batch_dims)(*args)
@@ -378,14 +398,15 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
     return hash(serialized)
 
 
-def _get_qfunc_jaxpr(qnode, args, kwargs, abstracted_axes):
+def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
+    """Process the quantum function of a QNode to create a Jaxpr."""
+
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     # pylint: disable=protected-access
     qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
 
     try:
-
         qfunc_jaxpr = jax.make_jaxpr(
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
         )(*args)
@@ -499,20 +520,22 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
     cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
 
-    # pylint: disable=protected-access
-    if cache_key in qnode.capture_cache:
-        qfunc_jaxpr, out_tree, consts = qnode.capture_cache[cache_key]
+    if cached_value := qnode.capture_cache.get(cache_key, None):
+        qfunc_jaxpr, config, out_tree, consts = cached_value
     else:
+        config = construct_execution_config(
+            qnode, resolve=False
+        )()  # no need for args and kwargs as not resolving
+        config = qnode.device.setup_execution_config(config)
+
         if abstracted_axes:
             # We unflatten the ``abstracted_axes`` here to be have the same pytree structure
             # as the original dynamic arguments
             abstracted_axes = jax.tree_util.tree_unflatten(dynamic_args_struct, abstracted_axes)
-        qfunc_jaxpr, out_tree, consts = _get_qfunc_jaxpr(qnode, args, kwargs, abstracted_axes)
-        qnode.capture_cache[cache_key] = (qfunc_jaxpr, out_tree, consts)
 
-    # no need for args and kwargs as not resolving
-    config = construct_execution_config(qnode, resolve=False)()
-    config = qnode.device.setup_execution_config(config)
+        qfunc_jaxpr, out_tree, consts = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+
+        qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree, consts)
 
     res = qnode_prim.bind(
         *abstract_shapes,

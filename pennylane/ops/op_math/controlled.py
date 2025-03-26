@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-# pylint: disable=too-many-positional-arguments
+
+from __future__ import annotations
+
 import functools
 import warnings
 from collections.abc import Callable, Sequence
@@ -30,6 +33,7 @@ import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.compiler import compiler
+from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl_op
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -41,14 +45,14 @@ from .symbolicop import SymbolicOp
 def ctrl(
     op: Operator,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Operator: ...
 @overload
 def ctrl(
     op: Callable,
     control: Any,
-    control_values: Optional[Sequence[bool]] = None,
+    control_values: Optional[Sequence[bool | int]] = None,
     work_wires: Optional[Any] = None,
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None):
@@ -67,8 +71,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
-        control_values (bool or list[bool]): The value(s) the control wire(s) should take.
-            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
+            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     Returns:
@@ -235,8 +239,6 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     ctrl_prim = NonInterpPrimitive("ctrl_transform")
@@ -245,14 +247,16 @@ def _get_ctrl_qfunc_prim():
 
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         control_wires = args[-n_control:]
         args = args[:-n_control]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, [], *args)
-        ops, _ = qml.queuing.process_queue(q)
+        collector = CollectOpsandMeas()
+        with qml.QueuingManager.stop_recording():
+            collector.eval(jaxpr, [], *args)
 
-        for op in ops:
+        for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
         return []
 
@@ -300,31 +304,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     return new_qfunc
 
 
-@functools.lru_cache()
-def _get_special_ops():
-    """Gets a list of special operations with custom controlled versions.
-
-    This is placed inside a function to avoid circular imports.
-
-    """
-
-    ops_with_custom_ctrl_ops = {
-        (qml.PauliZ, 1): qml.CZ,
-        (qml.PauliZ, 2): qml.CCZ,
-        (qml.PauliY, 1): qml.CY,
-        (qml.CZ, 1): qml.CCZ,
-        (qml.SWAP, 1): qml.CSWAP,
-        (qml.Hadamard, 1): qml.CH,
-        (qml.RX, 1): qml.CRX,
-        (qml.RY, 1): qml.CRY,
-        (qml.RZ, 1): qml.CRZ,
-        (qml.Rot, 1): qml.CRot,
-        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
-    }
-    return ops_with_custom_ctrl_ops
-
-
-@functools.lru_cache()
+@functools.lru_cache(maxsize=1)
 def _get_pauli_x_based_ops():
     """Gets a list of pauli-x based operations
 
@@ -337,7 +317,7 @@ def _get_pauli_x_based_ops():
 def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=None):
     """Wraps a controlled operation in custom ControlledOp, returns None if not applicable."""
 
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
     custom_key = (type(op), len(control))
 
     if custom_key in ops_with_custom_ctrl_ops and all(control_values):
@@ -347,7 +327,7 @@ def _try_wrap_in_custom_ctrl_op(op, control, control_values=None, work_wires=Non
     if isinstance(op, qml.QubitUnitary):
         qml.QueuingManager.remove(op)
         return qml.ControlledQubitUnitary(
-            op.matrix(),
+            op.matrix() if op.has_matrix else op.sparse_matrix(),
             wires=control + op.wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -468,6 +448,14 @@ class Controlled(SymbolicOp):
 
     """
 
+    resource_keys = {
+        "base_class",
+        "base_params",
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+    }
+
     def _flatten(self):
         return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
 
@@ -498,7 +486,7 @@ class Controlled(SymbolicOp):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls, base, control_wires, control_values=None, work_wires=None, id=None
@@ -508,7 +496,7 @@ class Controlled(SymbolicOp):
             base, *control_wires, control_values=control_values, work_wires=work_wires
         )
 
-    # pylint: disable=too-many-function-args
+    # pylint: disable=too-many-function-args, too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -639,6 +627,18 @@ class Controlled(SymbolicOp):
             work_wires=new_work_wires,
         )
 
+    # Properties for resource estimation ###############
+
+    @property
+    def resource_params(self):
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
+
     # Methods ##########################################
 
     def __repr__(self):
@@ -740,9 +740,15 @@ class Controlled(SymbolicOp):
             return True
         if not all(self.control_values):
             return True
-        if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
+        # not already the simplified version
+        if (
+            len(self.control_wires) == 1
+            and hasattr(self.base, "_controlled")
+            and type(self) in {Controlled, ControlledOp}
+        ):
             return True
-        if _is_single_qubit_special_unitary(self.base):
+        is_su2 = _is_single_qubit_special_unitary(self.base)
+        if not qml.math.is_abstract(is_su2) and is_su2:
             return True
         if self.base.has_decomposition:
             return True
@@ -864,7 +870,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
-    ops_with_custom_ctrl_ops = _get_special_ops()
+    ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
@@ -907,7 +913,8 @@ def _decompose_no_control_values(op: Controlled) -> Optional[list["operation.Ope
     if decomp is not None:
         return decomp
 
-    if _is_single_qubit_special_unitary(op.base):
+    is_su2 = _is_single_qubit_special_unitary(op.base)
+    if not qml.math.is_abstract(is_su2) and is_su2:
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
         return ctrl_decomp_zyz(op.base, op.control_wires, work_wires=op.work_wires)
@@ -936,7 +943,7 @@ class ControlledOp(Controlled, operation.Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-function-args
+    # pylint: disable=too-many-function-args, too-many-positional-arguments
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity

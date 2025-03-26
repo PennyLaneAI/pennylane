@@ -495,22 +495,6 @@ class TestMidCircuitMeasurements:
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
-    @pytest.mark.parametrize("mcm_method", ["tree-traversal", "one-shot", "deferred"])
-    def test_conditional_mcms_raise_error(self, mcm_method):
-        """Test that an error is raised if a tape contains mid-circuit measurements inside
-        a Conditional"""
-        dev = qml.device("default.qubit", shots=10)
-        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-
-        m = qml.measure(0)
-        tape = QuantumScript([qml.ops.Conditional(m, qml.measurements.MidMeasureMP(0))], [])
-
-        with pytest.raises(
-            NotImplementedError,
-            match="Conditionally applied mid-circuit measurements are not supported",
-        ):
-            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
-
 
 def test_validate_multiprocessing_workers_None():
     """Test that validation does not fail when max_workers is None"""

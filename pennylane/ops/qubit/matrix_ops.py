@@ -27,7 +27,17 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.math import (
+    cast,
+    conj,
+    eye,
+    norm,
+    sqrt,
+    sqrt_matrix,
+    sqrt_matrix_sparse,
+    transpose,
+    zeros,
+)
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -122,6 +132,8 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"num_wires"}
+
     grad_method = None
     """Gradient computation method."""
 
@@ -172,6 +184,10 @@ class QubitUnitary(Operation):
             atol=1e-6,
         )
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -201,7 +217,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -218,7 +234,7 @@ class QubitUnitary(Operation):
             with 2 stored elements in Compressed Sparse Row format>
         """
         if sp.sparse.issparse(U):
-            return U.tocsr()
+            return U.asformat(format)
         raise qml.operation.SparseMatrixUndefinedError(
             "U is a dense matrix. Use matrix method instead"
         )
@@ -259,7 +275,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
+            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -267,7 +283,10 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
-
+            if sp.sparse.issparse(U):
+                raise DecompositionUndefinedError(
+                    "The decomposition of a two-qubit sparse QubitUnitary is undefined."
+                )
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
@@ -285,7 +304,7 @@ class QubitUnitary(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
-        return len(self.wires) < 3
+        return len(self.wires) < 3 if self.has_matrix else len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:
@@ -665,6 +684,8 @@ class BlockEncode(Operation):
         n, m, k = hyperparams["subspace"]
         shape_a = qml.math.shape(A)
 
+        sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+
         def _stack(lst, h=False, like=None):
             if like == "tensorflow":
                 axis = 1 if h else 0
@@ -680,12 +701,12 @@ class BlockEncode(Operation):
         else:
             d1, d2 = shape_a
             col1 = _stack(
-                [A, sqrt_matrix(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+                [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
                 like=interface,
             )
             col2 = _stack(
                 [
-                    sqrt_matrix(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                    sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
                     -transpose(conj(A)),
                 ],
                 like=interface,

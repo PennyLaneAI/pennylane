@@ -19,11 +19,13 @@ from unittest.mock import patch
 
 import numpy as onp
 import pytest
+import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import math as fn
 from pennylane import numpy as np
+from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -251,6 +253,82 @@ def test_allclose(t1, t2):
 
     expected = all(float(x) == float(y) for x, y in zip(t1, t2))
     assert res == expected
+
+
+class TestAllCloseSparse:
+    """Test that the sparse-matrix specialized allclose functions works well"""
+
+    def test_dense_sparse_small_matrix(self):
+        """Test comparing small dense and sparse matrices"""
+        dense = np.array([[1, 0, 2], [0, 3, 0]])
+        sparse = sp.sparse.csr_matrix(dense)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+    def test_dense_sparse_zero_nnz(self):
+        """Test comparing dense matrix with empty sparse matrix"""
+        dense = np.zeros((2, 3))
+        sparse = sp.sparse.csr_matrix(dense)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+    def test_dense_sparse_different_shapes(self):
+        """Test comparing matrices with different shapes"""
+        dense = np.array([[1, 2], [3, 4]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 2]]))
+
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    def test_dense_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+        # When size is large enough, a very small perturbation
+        # will override the tolerance.
+        dense[-1, 0] = np.finfo(float).eps
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    def test_sparse_sparse_large_matrix(self):
+        """Test comparing large dense and sparse matrices"""
+        n = 200
+        dense = np.eye(n)
+        sparse0 = sp.sparse.csr_matrix(dense)
+        sparse = sp.sparse.eye(n)
+
+        assert fn.allclose(sparse0, sparse)
+
+        dense[-1, 0] = 0.001
+
+        sparse0 = sp.sparse.csr_matrix(dense)
+
+        assert not fn.allclose(sparse0, sparse)
+
+    def test_dense_sparse_different_nonzero(self):
+        """Test comparing matrices with different nonzero patterns"""
+        dense = np.array([[1, 0], [0, 1]])
+        sparse = sp.sparse.csr_matrix(np.array([[1, 1], [0, 1]]))
+
+        assert not fn.allclose(dense, sparse)
+        assert not fn.allclose(sparse, dense)
+
+    @pytest.mark.parametrize("rtol,atol", [(1e-7, 1e-8), (1e-5, 1e-6)])
+    def test_dense_sparse_tolerances(self, rtol, atol):
+        """Test comparing matrices with different tolerances"""
+        dense = np.array([[1.0, 0.0], [0.0, 1.0 + 1e-7]])
+        sparse = sp.sparse.csr_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+        allclose_result = fn.allclose(dense, sparse, rtol=rtol, atol=atol)
+        expected = np.allclose(dense, sparse.toarray(), rtol=rtol, atol=atol)
+        assert allclose_result == expected
 
 
 test_angle_data = [
@@ -511,6 +589,15 @@ class TestConvertLike:
         assert isinstance(res, t_like.__class__)
         assert res.ndim == 0
         assert fn.allequal(res, [5])
+
+    def test_convert_like_sparse(self):
+        """Test that a numpy array can be converted to a scipy array."""
+
+        np_array = np.array([[1, 0], [1, 0]])
+        sp_array = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+        out = qml.math.convert_like(np_array, sp_array)
+        assert isinstance(out, sci.sparse.csr_matrix)
+        assert qml.math.allclose(out.todense(), np_array)
 
 
 class TestDot:
@@ -1030,7 +1117,6 @@ class TestScipySparse:
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
     dispatched_linalg_methods = [
-        fn.linalg.det,
         fn.linalg.expm,
         fn.linalg.inv,
         fn.linalg.norm,
@@ -1074,7 +1160,42 @@ class TestScipySparse:
     @pytest.mark.parametrize("matrix", matrix + matrix_4)
     def test_dispatched_linalg_methods_matrix_power(self, matrix):
         """Test that the matrix power method dispatched"""
-        fn.linalg.matrix_power(matrix, 2)
+        _sparse_matrix_power_bruteforce(matrix, 2)
+
+    def test_matrix_power(self):
+        """Test our customized matrix power function"""
+        A = sci.sparse.csr_matrix([[2, 0], [0, 2]])
+
+        # Test n = 0 (identity matrix)
+        result = _sparse_matrix_power_bruteforce(A, 0)
+        expected = sci.sparse.eye(2, dtype=A.dtype, format=A.format)
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 1 (should be the same matrix)
+        result = _sparse_matrix_power_bruteforce(A, 1)
+        assert np.allclose(result.toarray(), A.toarray())
+
+        # Test n = 2 (square of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 2)
+        expected = A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Test n = 3 (cube of matrix)
+        result = _sparse_matrix_power_bruteforce(A, 3)
+        expected = A @ A @ A
+        assert np.allclose(result.toarray(), expected.toarray())
+
+        # Simple benchmark with the dispatcher
+        result0 = fn.linalg.matrix_power(A, 3)
+        assert np.allclose(result0.toarray(), expected.toarray())
+
+        # Test negative exponent (should raise an error)
+        with pytest.raises(ValueError):
+            _sparse_matrix_power_bruteforce(A, -1)
+
+        # Test non-integer exponent (should raise an error)
+        with pytest.raises(ValueError, match="exponent must be an integer"):
+            _sparse_matrix_power_bruteforce(A, 1.5)
 
 
 # pylint: disable=too-few-public-methods
@@ -3057,3 +3178,57 @@ def test_unstack_tensorflow():
     r1, r2 = qml.math.unstack(x)
     assert qml.math.allclose(r1, tf.Variable(0.1))
     assert qml.math.allclose(r2, tf.Variable(0.2))
+
+
+class TestScatter:
+    """Tests for qml.math.scatter functionality"""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_basic(self, interface):
+        """Test basic scatter operation - placing values at specific indices in a zero array"""
+        indices = [0, 2, 4]
+        updates = [1.0, 2.0, 3.0]
+        shape = [6]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_complex(self, interface):
+        """Test scatter with complex values"""
+        indices = [1, 3]
+        updates = [1.0 + 1.0j, 2.0 - 1.0j]
+        shape = [4]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray(
+            [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
+        )
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_multidimensional(self, interface):
+        """Test scatter with multidimensional target shape"""
+        indices = [0, 2]
+        updates = [[1.0, 2.0], [3.0, 4.0]]
+        shape = [3, 2]  # 3x2 target array
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+
+        assert qml.math.allclose(result, expected)

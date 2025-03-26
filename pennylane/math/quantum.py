@@ -21,7 +21,7 @@ from string import ascii_letters as ABC
 import scipy as sp
 import scipy.sparse.linalg as spla
 from autoray import numpy as np
-from numpy import float64  # pylint:disable=wrong-import-order
+from numpy import float64, sqrt  # pylint:disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 import pennylane as qml
@@ -1033,6 +1033,8 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
         LinAlgError: If matrix inversion fails
         ValueError: If NaN values or overflow are encountered during computation
     """
+    if mat.shape == (1, 1):
+        return sqrt(mat)
     try:
         mat = csc_matrix(mat)
         Y = mat

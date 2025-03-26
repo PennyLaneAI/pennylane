@@ -260,6 +260,26 @@ class TestCollectOpsandMeas:
         ):
             collector(grad_fn)(0.5)
 
+    def test_qnode(self):
+        """Test that collecting ops from a QNode works."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f(x):
+            qml.RX(x, 0)
+            qml.CNOT((0, 1))
+            qml.QFT(wires=(0, 1, 2))
+            return qml.expval(qml.Z(0))
+
+        obj = CollectOpsandMeas()
+        obj(f)(1.2)
+        qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
+        qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
+        qml.assert_equal(obj.state["ops"][2], qml.QFT((0, 1, 2)))
+        assert len(obj.state["ops"]) == 3
+
+        qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
+
 
 class TestPlxprToTape:
     """Tests for the plxpr_to_tape function."""
@@ -267,6 +287,27 @@ class TestPlxprToTape:
     def test_flat_func(self):
         """Test a function without classical structure."""
 
+        def f(x):
+            qml.RX(x, 0)
+            qml.CNOT((0, 1))
+            qml.QFT(wires=(0, 1, 2))
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(-0.5)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
+        qml.assert_equal(tape[0], qml.RX(1.2, 0))
+        qml.assert_equal(tape[1], qml.CNOT((0, 1)))
+        qml.assert_equal(tape[2], qml.QFT((0, 1, 2)))
+        assert len(tape.operations) == 3
+
+        qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
+        assert tape.shots == qml.measurements.Shots(100)
+
+    def test_qnode(self):
+        """Test a qnode can be transformed into a tape."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
         def f(x):
             qml.RX(x, 0)
             qml.CNOT((0, 1))

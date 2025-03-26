@@ -16,13 +16,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pauli import PauliSentence, PauliWord, structure_constants
+from pennylane import structure_constants
+from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
 # TFIM
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-Ising3 = qml.pauli.lie_closure(gens, pauli=True)
+Ising3 = qml.lie_closure(gens, pauli=True)
 
 # XXZ-type DLA, i.e. with true PauliSentences
 gens2 = [
@@ -35,7 +36,7 @@ gens2 = [
     for i in range(2)
 ]
 gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-XXZ3 = qml.pauli.lie_closure(gens2, pauli=True)
+XXZ3 = qml.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
@@ -84,13 +85,14 @@ class TestAdjointRepr:
 
     @pytest.mark.parametrize("ortho_dla", [Ising3, XXZ3])
     @pytest.mark.parametrize("matrix", [False, True])
-    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, matrix):
+    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla, matrix, seed):
         r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with
         non-orthogonal bases.
         """
         d = len(ortho_dla)
 
-        coeffs = np.random.random((d, d)) + 0.5
+        rng = np.random.default_rng(seed)
+        coeffs = rng.uniform(0.5, 1.5, size=(d, d))
         dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
         ad_rep = structure_constants(dla, pauli=True, matrix=matrix, is_orthogonal=False)
         for alpha in range(d):
@@ -138,7 +140,7 @@ class TestAdjointRepr:
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.pauli.structure_constants(generators)
+            structure_constants(generators)
 
 
 dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)
