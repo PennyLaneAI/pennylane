@@ -146,7 +146,6 @@ class TestAdjointQfunc:
         jaxpr = jax.make_jaxpr(workflow)(0.5)
 
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[0].params["n_consts"] == 1
         assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -170,9 +169,8 @@ class TestAdjointQfunc:
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
+        assert set(grad_eqn.params.keys()) == {"argnum", "jaxpr", "n_consts", "method", "h"}
         assert grad_eqn.params["argnum"] == [0]
-        assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] is None
         assert grad_eqn.params["h"] is None
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
