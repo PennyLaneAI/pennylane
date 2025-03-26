@@ -22,6 +22,7 @@
 
 Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~
+test
 
 .. autosummary::
     :toctree: api
