@@ -826,16 +826,16 @@ def taylor_hamiltonian(
     >>> print(ham)
     0.026123120450329353 * I(0) + -0.01325338030021957 * Z(0) + -0.0032539545260859464 * X(0)
     """
-    mapping.lower().strip()
-    if mapping not in ["binary", "unary"]:
-        raise ValueError(
-            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
-        )
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
+    mapping = mapping.lower().strip()
     if mapping == "binary":
         ham = binary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
     elif mapping == "unary":
         ham = unary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
+    else:
+        raise ValueError(
+            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
+        )
 
     return ham

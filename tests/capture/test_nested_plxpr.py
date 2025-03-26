@@ -154,7 +154,6 @@ class TestAdjointQfunc:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim
@@ -369,7 +368,6 @@ class TestCtrlQfunc:
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim

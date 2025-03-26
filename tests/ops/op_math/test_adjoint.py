@@ -320,6 +320,15 @@ class TestProperties:
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
 
+    def test_pauli_rep(self):
+        """Test pauli_rep works after adjoint operation."""
+        coeffs = [1 - 0.5j, 0.2, -3j]
+        paulis = [qml.X(0), qml.Y(0), qml.Z(0)]
+        op = qml.dot(coeffs, paulis)
+        adjoint_ps = qml.adjoint(op).pauli_rep
+        assert (list(adjoint_ps.values()) == qml.math.conjugate(coeffs)).all()
+        assert (qml.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
+
 
 class TestSimplify:
     """Test Adjoint simplify method and depth property."""

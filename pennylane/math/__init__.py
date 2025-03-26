@@ -176,6 +176,7 @@ __all__ = [
     "is_independent",
     "iscomplex",
     "jacobian",
+    "Interface",
     "marginal_prob",
     "max_entropy",
     "min_entropy",

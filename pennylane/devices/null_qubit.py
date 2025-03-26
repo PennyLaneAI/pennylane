@@ -405,7 +405,10 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    def eval_jaxpr(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+    # pylint: disable= unused-argument
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+    ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,
         )

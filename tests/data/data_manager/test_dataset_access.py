@@ -181,7 +181,7 @@ def get_dataset_urls_mock(class_id, parameters):
     return []
 
 
-def head_mock(url):
+def head_mock(url, timeout=None):
     """Return a fake header stating content-length is 1."""
     return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
 

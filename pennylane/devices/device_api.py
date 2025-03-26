@@ -970,14 +970,21 @@ class Device(abc.ABC):
         return type(self).compute_vjp != Device.compute_vjp
 
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+        self,
+        jaxpr: "jax.core.Jaxpr",
+        consts: list[TensorLike],
+        *args,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
         Args:
             jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
-            *args (TensorLike): the variables to use with the jaxpr'.
+            *args (TensorLike): the variables to use with the jaxpr.
+
+        Keyword Args:
+            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.

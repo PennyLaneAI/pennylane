@@ -165,7 +165,9 @@ class SampleMP(SampleMeasurement):
             return
 
         if isinstance(obs, Sequence):
-            if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs):
+            if not all(
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
+            ) and not all(qml.math.is_abstract(o) for o in obs):
                 raise qml.QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "

@@ -755,14 +755,16 @@ class TestMatrix:
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
 
-    def test_sparse_matrix_wire_order_error(self):
-        """Check a NonImplementedError is raised if the user requests specific wire order."""
+    def test_sparse_matrix_wire_order(self):
+        """Check if the user requests specific wire order, sparse_matrix() returns the same as matrix()."""
         control_wires = (0, 1, 2)
         base = qml.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires)
 
-        with pytest.raises(NotImplementedError):
-            op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_sparse = op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_dense = op.matrix(wire_order=[3, 2, 1, 0])
+
+        assert qml.math.allclose(op_sparse.toarray(), op_dense)
 
     def test_no_matrix_defined_sparse_matrix_error(self):
         """Check that if the base gate defines neither a sparse matrix nor a dense matrix, a

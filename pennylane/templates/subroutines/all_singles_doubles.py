@@ -223,15 +223,15 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if singles is None or not singles:
-            if doubles is None or not doubles:
-                raise ValueError(
-                    f"'singles' and 'doubles' lists can not be both empty;"
-                    f" got singles = {singles}, doubles = {doubles}"
-                )
-            if doubles is not None:
-                shape_ = (len(doubles),)
-        elif doubles is None:
+        if not singles and not doubles:
+            raise ValueError(
+                f"'singles' and 'doubles' lists can not be both empty;"
+                f" got singles = {singles}, doubles = {doubles}"
+            )
+
+        if not singles:
+            shape_ = (len(doubles),)
+        elif not doubles:
             shape_ = (len(singles),)
         else:
             shape_ = (len(singles) + len(doubles),)

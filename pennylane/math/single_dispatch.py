@@ -57,7 +57,8 @@ def _builtins_shape(x):
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
-
+ar.register_function("builtins", "logical_mod", lambda x, y: x % y)
+ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
