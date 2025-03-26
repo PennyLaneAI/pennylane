@@ -28,8 +28,8 @@ class RealspaceCoeffs:
 
     The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with an array
     and can be used to represent coefficients of a real space operator. A real space operator
-    is constrcuted from position and momentum operators, e.g., Eq. 4 of
-    `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ which represents a vibrational
+    is constrcuted from position and momentum operators, e.g., Eq. 4
+    of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ which represents a vibrational
     Hamiltonian.
 
     Args:
