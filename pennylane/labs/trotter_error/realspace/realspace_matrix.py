@@ -32,11 +32,13 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 class RealspaceMatrix(Fragment):
     r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
 
-    This can be used to represent the fragments of the vibronic Hamiltonian given by
+    This can be used to represent the fragments of a vibronic Hamiltonian given by
+    [Eq. 3 of `	arXiv:2411.13669 <https://arxiv.org/abs/2411.13669v1>`_]
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
-    where the dictionary is indexed by tuples :math:`(i, j)` and the values are :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
+    where the dictionary is indexed by tuples :math:`(i, j)` and the values are
+    :class:`~.RealspaceSum` objects representing the operator :math:`V_{i,j}`.
 
     Args:
         states (int): the number of electronic states
@@ -71,14 +73,16 @@ class RealspaceMatrix(Fragment):
         self.modes = modes
 
     def block(self, row: int, col: int) -> RealspaceSum:
-        """Return the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object located at the ``(row, col)`` entry of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix`
+        """Return the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object located at the
+        ``(row, col)`` entry of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix`.
 
         Args:
             row (int): the row of the index
             col (int): the column of the index
 
         Returns:
-            RealspaceSum: the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object indexed at ``(row, col)``
+            RealspaceSum: the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object indexed
+                at ``(row, col)``
 
         **Example**
 
@@ -102,7 +106,7 @@ class RealspaceMatrix(Fragment):
         return self._blocks.get((row, col), RealspaceSum.zero(self.modes))
 
     def set_block(self, row: int, col: int, rs_sum: RealspaceSum) -> None:
-        """Set the value of the block indexed at ``(row, col)``
+        """Set the value of the block indexed at ``(row, col)``.
 
         Args:
             row (int): the row of the index
@@ -144,10 +148,10 @@ class RealspaceMatrix(Fragment):
     def matrix(
         self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
     ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
-        """Return a matrix representation of the operator
+        """Return a matrix representation of the operator.
 
         Args:
-            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
+            gridpoints (int): the number of gridpoints used to discretize the position or momentum operators
             basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
             sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
@@ -204,7 +208,7 @@ class RealspaceMatrix(Fragment):
             params (Dict): The dictionary of parameters. The supported parameters are
 
                 * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
-                * ``sparse`` (bool): If True, use optimizations for sparse operators. Defaults to False.
+                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults to ``False``.
 
         Returns:
             float: an upper bound on the spectral norm of the operator
@@ -437,7 +441,7 @@ class RealspaceMatrix(Fragment):
         """Return a dictionary containing the coefficients of the :class:`~.pennylane.labs.trotter_error.RealspaceSum`
 
         Args:
-            threshold (float): only return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
             Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`

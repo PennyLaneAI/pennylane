@@ -25,8 +25,8 @@ class Fragment(ABC):
     To ensure the existence of commutators the implementation requires of the following dunder methods:
     ``__add__``,  ``__matmul__``,  ``__mul__``.
 
-    In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is required
-    to compute error estimates of the Trotter error operators obtained by computing nested commutators.
+    In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is
+    required to compute error estimates of error operators obtained by computing nested commutators.
     """
 
     @abstractmethod
@@ -49,7 +49,8 @@ class Fragment(ABC):
         """Compute the norm of the fragment.
 
         Args:
-            params (Dict): A dictionary of parameters needed to compute the norm. It should be specified for each class inheriting from :class:`~.Fragment`.
+            params (Dict): A dictionary of parameters needed to compute the norm. It should be
+                specified for each class inheriting from :class:`~.Fragment`.
 
         Returns:
             float: the norm of the :class:`~.Fragment`
