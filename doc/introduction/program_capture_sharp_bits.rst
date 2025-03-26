@@ -342,7 +342,7 @@ but transforms are unable to transfer through the circuit in its entirety. Drawi
 this circuit will result in an inaccurate circuit:
 
 >>> print(qml.draw(circuit)())
-0: ──RX(0.30)─┤  State
+0: ──RX(0.20)─┤
 
 To illustrate what is actually happening internally, consider the plxpr representation 
 of this program: 
