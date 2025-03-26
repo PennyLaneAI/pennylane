@@ -22,7 +22,7 @@ from scipy.sparse import csr_array, identity, kron
 
 
 class HOState:
-    """Represent a wavefunction in the harmonic oscillator basis
+    """Represent a wavefunction in the harmonic oscillator basis.
 
     Args:
         modes (int): the number of vibrational modes
