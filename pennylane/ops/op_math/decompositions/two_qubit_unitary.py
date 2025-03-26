@@ -626,10 +626,9 @@ def two_qubit_decomposition(U, wires):
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to rescale the matrix by its determinant.
     if sp.sparse.issparse(U):
-        # Convert all the global elements to sparse matrices in-place
-        for name in global_arrays_name:
-            array = globals()[name]
-            globals()[name] = sp.sparse.csr_matrix(array)
+        raise qml.operation.DecompositionUndefinedError(
+            "two_qubit_decomposition does not accept sparse matrics."
+        )
     U = _convert_to_su4(U)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects

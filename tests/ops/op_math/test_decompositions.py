@@ -20,6 +20,7 @@ from functools import reduce
 
 import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
+from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -125,6 +126,14 @@ test_cases_zyz = [
         [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3], [0, 0]],
     ),
 ]
+
+
+def test_no_sparse_matrices():
+    """Test that a DecompositionUndefinedError is raised if the input is sparse."""
+
+    U = sparse.eye(4)
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        two_qubit_decomposition(U, wires=(0, 1))
 
 
 class TestQubitUnitaryZYZDecomposition:

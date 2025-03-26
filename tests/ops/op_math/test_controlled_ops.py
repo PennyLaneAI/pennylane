@@ -18,6 +18,7 @@ Unit tests for Operators inheriting from ControlledOp.
 import numpy as np
 import pytest
 from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
+from scipy import sparse
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
@@ -53,6 +54,16 @@ X_broadcasted = np.array([X] * 3)
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
+    def test_has_decomposition_sparse_edge_case(self):
+        """Test that has_decomposition doesn't error out with sparse matrices."""
+        U = np.random.rand(4, 4) + 1.0j * np.random.rand(4, 4)
+        U, _ = np.linalg.qr(U)
+        U = sparse.csr_matrix(U)
+        op = qml.ControlledQubitUnitary(U, wires=(0, 1, 2))
+        assert not op.has_decomposition
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            op.decomposition()
+
     def test_flatten_unflatten(self):
         """Test that the operation can be flattened and unflattened"""
         op = qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3))
@@ -60,8 +71,10 @@ class TestControlledQubitUnitary:
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
+
         # make a non-iterable, non-QubitUnitary base operator
-        base_op = lambda x: 1 if x == 0 else 0  # pauliX as a mapping
+        def base_op(x):
+            return 1 if x == 0 else 0  # pauliX as a mapping
 
         with pytest.raises(ValueError, match="Base must be a matrix"):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])

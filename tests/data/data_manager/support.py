@@ -35,6 +35,59 @@ _list_attrs_resp = {
     }
 }
 
+_list_attrs_mqt_resp = {
+    "data": {
+        "datasetClass": {
+            "attributes": [
+                {"name": "ae"},
+                {"name": "dj"},
+                {"name": "ghz"},
+                {"name": "graphstate"},
+                {"name": "groundstate"},
+                {"name": "grover_noancilla"},
+                {"name": "grover_v_chain"},
+                {"name": "portfolioqaoa"},
+                {"name": "portfoliovqe"},
+                {"name": "pricingcall"},
+                {"name": "pricingput"},
+                {"name": "qaoa"},
+                {"name": "qft"},
+                {"name": "qftentangled"},
+                {"name": "qnn"},
+                {"name": "qpeexact"},
+                {"name": "qpeinexact"},
+                {"name": "qwalk_noancilla"},
+                {"name": "qwalk_v_chain"},
+                {"name": "random"},
+                {"name": "realamprandom"},
+                {"name": "routing"},
+                {"name": "shor"},
+                {"name": "su2random"},
+                {"name": "tsp"},
+                {"name": "twolocalrandom"},
+                {"name": "vqe"},
+                {"name": "wstate"},
+            ]
+        }
+    }
+}
+
+_list_attrs_max3sat_resp = {
+    "data": {
+        "datasetClass": {
+            "attributes": [
+                {"name": "clauses"},
+                {"name": "hamiltonians"},
+                {"name": "ns"},
+                {"name": "ids"},
+                {"name": "instanceids"},
+                {"name": "ratios"},
+            ]
+        }
+    }
+}
+
+
 _get_urls_resp = {
     "data": {
         "datasetClass": {
