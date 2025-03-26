@@ -1139,17 +1139,17 @@ class TestMCXDecomposition:
 
         @qml.qnode(dev)
         def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 2))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             record_from_list(_decompose_mcx_with_one_worker_kg24)(
                 control_wires, target_wire, work_wires, work_wire_type="dirty"
             )
-            return qml.probs(wires=range(n_ctrl_wires + 1))
+            return qml.probs(wires=range(n_ctrl_wires + 2))
 
         u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 2)]
         ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 2)))
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
     def test_decomposition_with_two_clean_workers(self, n_ctrl_wires):
@@ -1193,17 +1193,17 @@ class TestMCXDecomposition:
 
         @qml.qnode(dev)
         def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 3))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             record_from_list(_decompose_mcx_with_two_workers)(
                 control_wires, target_wire, work_wires, work_wire_type="dirty"
             )
-            return qml.probs(wires=range(n_ctrl_wires + 1))
+            return qml.probs(wires=range(n_ctrl_wires + 3))
 
         u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 3)]
         ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 3)))
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 8))
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
