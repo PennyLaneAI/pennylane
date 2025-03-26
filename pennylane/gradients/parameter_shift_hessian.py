@@ -18,7 +18,7 @@ of a qubit-based quantum tape.
 import itertools as it
 import warnings
 from functools import partial
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
 
@@ -67,10 +67,10 @@ def _process_jacs(jac, qhess):
         qh_indices = "ab..."
 
         # contract the first axis of the jacobian with the first and second axes of the Hessian
-        first_jac_indices = f"a{ABC[2:2 + jac_ndim - 1]}"
-        second_jac_indices = f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
+        first_jac_indices = f"a{ascii_letters[2:2 + jac_ndim - 1]}"
+        second_jac_indices = f"b{ascii_letters[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
 
-        result_indices = f"{ABC[2:2 + 2 * jac_ndim - 2]}..."
+        result_indices = f"{ascii_letters[2:2 + 2 * jac_ndim - 2]}..."
         qh = qml.math.einsum(
             f"{qh_indices},{first_jac_indices},{second_jac_indices}->{result_indices}",
             qh,
