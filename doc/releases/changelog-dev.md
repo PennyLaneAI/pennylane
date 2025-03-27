@@ -725,6 +725,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
