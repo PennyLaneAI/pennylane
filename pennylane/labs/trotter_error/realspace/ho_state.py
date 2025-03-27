@@ -27,7 +27,7 @@ class HOState:
     Args:
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        vector: (csr_array): a sparse vector representation of the state
+        vector: (scipy.sparse.csr_array): a sparse vector representation of the state
 
     ``HOState`` should be instantiated from the ``from_dict`` and ``from_scipy`` class methods.
 
@@ -41,7 +41,7 @@ class HOState:
     >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
     >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
 
-    Building an ``HOState`` from a ``csr_array``
+    Building an ``HOState`` from a ``scipy.sparse.csr_array``
 
     >>> from scipy.sparse import csr_array
     >>> import numpy as np
@@ -107,7 +107,7 @@ class HOState:
         Args:
             modes (int): the number of vibrational modes
             gridpoints (int): the number of gridpoints used to discretize the state
-            vector (csr_array): a sparse representation of the state vector
+            vector (scipy.sparse.csr_array): a sparse representation of the state vector
 
         Returns:
             HOState: an ``HOState`` representing the state vector
