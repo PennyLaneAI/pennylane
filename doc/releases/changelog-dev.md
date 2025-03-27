@@ -731,6 +731,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The error message when device wires are not specified when program capture is enabled is more clear.
+  [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
