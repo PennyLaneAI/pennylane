@@ -129,6 +129,7 @@ State Preparation Templates
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
+    ~ResourceQROMStatePreparation
 
 Compact Classes
 ~~~~~~~~~~~~~~~
@@ -246,6 +247,7 @@ from .templates import (
     ResourceBasisState,
     ResourceMPSPrep,
     ResourceQubitUnitary,
+    ResourceQROMStatePreparation,
 )
 
 from .compact import CompactState

@@ -27,17 +27,19 @@ class CompactState:
         precision=None,
         num_work_wires=None,
         num_bit_flips=None,
+        positive_and_real=None,
     ):
         self.num_qubits = num_qubits  # total dimension
         self.num_coeffs = num_coeffs  # num basis states in the linear combination
         self.precision = precision  # accuracy requirement for approx-prep
         self.num_work_wires = num_work_wires  # num extra work wires
         self.num_bit_flips = num_bit_flips
+        self.positive_and_real = positive_and_real
 
     @classmethod
-    def from_mps(cls, num_mps_matrices, max_bond_dim, precision=1e-3):
+    def from_mps(cls, num_mps_matrices, max_bond_dim):
         """Instantiate a CompactState for a state coming from an MPS"""
-        return cls(num_qubits=num_mps_matrices, num_work_wires=max_bond_dim, precision=precision)
+        return cls(num_qubits=num_mps_matrices, num_work_wires=max_bond_dim)
 
     @classmethod
     def from_bitstring(cls, num_qubits, num_bit_flips, precision=1e-3):
@@ -49,11 +51,12 @@ class CompactState:
         )
 
     @classmethod
-    def from_state_vector(cls, num_qubits, num_coeffs, precision=1e-3, num_work_wires=0):
+    def from_state_vector(cls, num_qubits, num_coeffs, precision=1e-3, num_work_wires=0, positive_and_real=False):
         """Instantiate a CompactState for a state coming from a statevector (dense or sparse)"""
         return cls(
             num_qubits=num_qubits,
             num_coeffs=num_coeffs,
             precision=precision,
             num_work_wires=num_work_wires,
+            positive_and_real=positive_and_real,
         )

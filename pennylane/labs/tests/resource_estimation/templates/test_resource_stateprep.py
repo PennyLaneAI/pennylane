@@ -394,3 +394,398 @@ class TestResourceMottonenStatePreparation:
             re.ResourceMottonenStatePreparation.tracking_name(num_wires)
             == f"MottonenStatePrep({num_wires})"
         )
+
+
+class TestResourceMPSPrep:
+    """Test the ResourceMPSPrep class"""
+
+    @pytest.mark.parametrize(
+        "num_wires, num_work_wires, expected_res",
+        (
+            (
+                4, 
+                2,
+                {
+                    re.ResourceQubitUnitary.resource_rep(num_wires=2): 2,
+                    re.ResourceQubitUnitary.resource_rep(num_wires=3): 2,
+                },
+            ),
+            (
+                5,
+                2,
+                {
+                    re.ResourceQubitUnitary.resource_rep(num_wires=2): 2,
+                    re.ResourceQubitUnitary.resource_rep(num_wires=3): 3,
+
+                },
+            ),
+            (
+                6,
+                4,
+                {
+                    re.ResourceQubitUnitary.resource_rep(num_wires=2): 2,
+                    re.ResourceQubitUnitary.resource_rep(num_wires=3): 2,
+                    re.ResourceQubitUnitary.resource_rep(num_wires=4): 2,
+                },
+            ),
+        ),
+    )
+    def test_resources(self, num_wires, num_work_wires, expected_res):
+        """Test that the resources are correct"""
+        assert re.ResourceMPSPrep.resources(num_wires, num_work_wires) == expected_res
+
+    @pytest.mark.parametrize(
+        ("mps", "num_wires", "num_work_wires"),
+        [
+            (
+                [
+                    qnp.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
+                    qnp.array(
+                        [
+                            [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                            [[0.0, 0.0, -0.0, 0.0], [-1.0, 0.0, 0.0, 0.0]],
+                        ]
+                    ),
+                    qnp.array(
+                        [
+                            [[0.00000000e00, 1.74315280e-32], [-7.07106781e-01, -7.07106781e-01]],
+                            [[7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                            [[0.00000000e00, 0.00000000e00], [-7.07106781e-01, 7.07106781e-01]],
+                            [[-7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                        ]
+                    ),
+                    qnp.array([[1.0, 0.0], [0.0, 1.0]]),
+                ],
+                4,
+                2,
+            ),
+            (
+                [
+                    qnp.array([[0.53849604, -0.44389787], [-0.59116842, -0.40434711]]),
+                    qnp.array(
+                        [
+                            [
+                                [-6.05052107e-01, 1.34284016e-01, -2.84018989e-01, -1.12416345e-01],
+                                [3.60988555e-01, 6.14571922e-01, -1.20681653e-01, -2.89527967e-04],
+                            ],
+                            [
+                                [-1.12393068e-01, 2.11496619e-01, 3.99193070e-01, -3.44891522e-01],
+                                [-5.99232567e-01, 3.76491467e-01, 3.04813277e-01, 2.65697349e-01],
+                            ],
+                        ]
+                    ),
+                    qnp.array(
+                        [
+                            [
+                                [0.87613189, -0.34254341, -0.12704983, -0.0161698],
+                                [-0.20758717, 0.1329479, -0.18184107, 0.06942658],
+                            ],
+                            [
+                                [-0.16499137, -0.13680142, -0.18432824, 0.12950892],
+                                [-0.68790868, -0.64141472, -0.12485688, -0.0556177],
+                            ],
+                            [
+                                [0.0352582, -0.37993402, 0.26781956, -0.25935129],
+                                [0.04351872, -0.27109361, 0.65111429, 0.4648453],
+                            ],
+                            [
+                                [0.1909576, 0.25461839, -0.07463641, -0.34390477],
+                                [-0.21279487, 0.0305474, 0.53420894, -0.66578494],
+                            ],
+                        ]
+                    ),
+                    qnp.array(
+                        [
+                            [[-0.26771292, -0.00628612], [-0.96316273, 0.02465422]],
+                            [[0.96011241, 0.07601506], [-0.2663889, 0.03798452]],
+                            [[-0.00727353, 0.4537835], [-0.02374101, -0.89076596]],
+                            [[0.08038064, -0.88784161], [-0.02812246, -0.45220057]],
+                        ]
+                    ),
+                    qnp.array([[-0.97855153, 0.2060022], [0.2060022, 0.97855153]]),
+                ],
+                5,
+                2,
+            ),
+            (
+                [
+                    qnp.array([[0.0, 0.107], [0.994, 0.0]]),
+                    qnp.array(
+                        [
+                            [[0.0, 0.0], [1.0, 0.0]],
+                            [[0.0, 1.0], [0.0, 0.0]],
+                        ]
+                    ),
+                    qnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
+                ],
+                3,
+                2,
+            ),
+        ],
+    )
+    def test_resource_params(self, mps, num_wires, num_work_wires):
+        """Test that the resource params are correct"""
+        op = re.ResourceMPSPrep(
+            mps, 
+            wires=range(num_wires),
+            work_wires=list(f"w_{j}" for j in range(num_work_wires)),
+        )
+
+        assert op.resource_params == {"num_wires": num_wires, "num_work_wires": num_work_wires}
+
+    @pytest.mark.parametrize(
+        "num_wires, num_work_wires",
+        [(4, 2), (5, 2), (6, 4)],
+    )
+    def test_resource_rep(self, num_wires, num_work_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = re.CompressedResourceOp(
+            re.ResourceMPSPrep,
+            {"num_wires": num_wires, "num_work_wires": num_work_wires},
+        )
+        assert expected == re.ResourceMPSPrep.resource_rep(num_wires, num_work_wires)
+
+    def test_resources_from_instance(self):
+        """Test that computing the resources from the instance works"""
+        mps = [
+            qnp.array([[0.0, 0.107], [0.994, 0.0]]),
+            qnp.array(
+                [
+                    [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
+                ]
+            ),
+            qnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        
+        op = re.ResourceMPSPrep(mps, wires=[1,2,3], work_wires=[0])
+        res_rep = op.resource_rep_from_op()
+        measured_res = res_rep.op_type.resources(**res_rep.params)
+
+        qu = re.ResourceQubitUnitary.resource_rep(num_wires=2)
+        expected_res = {qu:3}
+
+        assert measured_res == expected_res
+
+
+class TestResourceQROMStatePreparation:
+    """Test the ResourceQROMStatePreparation class"""
+
+    @pytest.mark.parametrize(
+        ("num_wires", "num_work_wires", "num_precision_wires", "positive_real", "expected_res"),
+        [
+            (
+                2, 5, 5, True,
+                {
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings=1,
+                        num_bit_flips=1,
+                        num_control_wires=0,
+                        num_work_wires=5,
+                        size_bitstring=5,
+                        clean=False,
+                    ): 1,
+                    re.ResourceAdjoint.resource_rep(
+                        re.ResourceQROM,
+                        {
+                            "num_bitstrings":1,
+                            "num_bit_flips":1,
+                            "num_control_wires":0,
+                            "num_work_wires":5,
+                            "size_bitstring":5,
+                            "clean":False,
+                        },
+                    ): 1,
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings=2,
+                        num_bit_flips=1,
+                        num_control_wires=1,
+                        num_work_wires=5,
+                        size_bitstring=5,
+                        clean=False,
+                    ): 1,
+                    re.ResourceAdjoint.resource_rep(
+                        re.ResourceQROM,
+                        {
+                            "num_bitstrings":2,
+                            "num_bit_flips":1,
+                            "num_control_wires":1,
+                            "num_work_wires":5,
+                            "size_bitstring":5,
+                            "clean":False,
+                        },
+                    ): 1,
+                    re.ResourceCRY.resource_rep(): 10,
+                },
+            ),
+            (
+                3, 5, 5, False,
+                {
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings=1,
+                        num_bit_flips=1,
+                        num_control_wires=0,
+                        num_work_wires=5,
+                        size_bitstring=5,
+                        clean=False,
+                    ): 1,
+                    re.ResourceAdjoint.resource_rep(
+                        re.ResourceQROM,
+                        {
+                            "num_bitstrings":1,
+                            "num_bit_flips":1,
+                            "num_control_wires":0,
+                            "num_work_wires":5,
+                            "size_bitstring":5,
+                            "clean":False,
+                        },
+                    ): 1,
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings=2,
+                        num_bit_flips=1,
+                        num_control_wires=1,
+                        num_work_wires=5,
+                        size_bitstring=5,
+                        clean=False,
+                    ): 1,
+                    re.ResourceAdjoint.resource_rep(
+                        re.ResourceQROM,
+                        {
+                            "num_bitstrings":2,
+                            "num_bit_flips":1,
+                            "num_control_wires":1,
+                            "num_work_wires":5,
+                            "size_bitstring":5,
+                            "clean":False,
+                        },
+                    ): 1,
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings=4,
+                        num_bit_flips=2,
+                        num_control_wires=1,
+                        num_work_wires=5,
+                        size_bitstring=5,
+                        clean=False,
+                    ): 1,
+                    re.ResourceAdjoint.resource_rep(
+                        re.ResourceQROM,
+                        {
+                            "num_bitstrings":2,
+                            "num_bit_flips":1,
+                            "num_control_wires":1,
+                            "num_work_wires":5,
+                            "size_bitstring":5,
+                            "clean":False,
+                        },
+                    ): 1,
+                    re.ResourceCRY.resource_rep(): 10,
+
+                },
+            ),
+            (
+                2, 1, 6, False,
+                {
+
+                },
+            ),
+        ],
+    )
+    def test_resources(self, num_wires, num_precision_wires, num_work_wires, positive_real, expected_res):
+        """Test that the resources are correct"""
+        calculated_res = re.ResourceQROMStatePreparation.resources(
+            num_state_qubits=num_wires,
+            num_precision_wires=num_precision_wires,
+            num_work_wires=num_work_wires,
+            positive_and_real=positive_real,
+        )
+        
+        assert calculated_res == expected_res
+
+    @pytest.mark.parametrize(
+        ("state", "num_wires", "num_work_wires", "num_precision_wires", "positive_real"),
+        [
+            (qnp.array([0, 0, 0, 1]), 2, 5, 5, True),
+            (qnp.array([0, 0, 0, 1 / 2, 0, 1 / 2, 1 / 2, -1j / 2]), 3, 5, 5, False),
+            (qnp.array([-0.84223628, -0.40036496, 0.08974619, -0.34970212]), 2, 1, 6, False),
+            (
+                qnp.array(
+                    [
+                        0.17157142 + 0.09585932j,
+                        0.00852997 - 0.21056896j,
+                        0.12986199 + 0.94654822j,
+                        0.04206036 - 0.04873857j,
+                    ]
+                ),
+                2,
+                1,
+                7,
+                False,
+            ),
+        ],
+    )
+    def test_resource_params(self, state, num_wires, num_precision_wires, num_work_wires, positive_real):
+        """Test that the resource params are correct"""
+        op = re.ResourceQROMStatePreparation(
+            state,
+            wires=range(num_wires),
+            precision_wires=list(f"p_{j}" for j in range(num_precision_wires)),
+            work_wires=list(f"w_{j}" for j in range(num_work_wires)),
+        )
+
+        expected_params = {
+            "num_state_qubits": num_wires,
+            "num_precision_wires": num_precision_wires,
+            "num_work_wires": num_work_wires,
+            "positive_and_real": positive_real,
+        }
+        assert op.resource_params == expected_params
+
+    @pytest.mark.parametrize(
+        "num_wires, num_work_wires, num_precision_wires, positive_real",
+        (
+            (3, 2, 2, True),
+            (5, 2, 10, False),
+            (10, 9, 3, True),
+        ),
+    )
+    def test_resource_rep(self, num_wires, num_precision_wires, num_work_wires, positive_real):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+        expected = re.CompressedResourceOp(
+            re.ResourceQROMStatePreparation,
+            {
+                "num_state_qubits": num_wires,
+                "num_precision_wires": num_precision_wires,
+                "num_work_wires": num_work_wires,
+                "positive_and_real": positive_real,
+            },
+        )
+
+        assert expected == re.ResourceQROMStatePreparation.resource_rep(
+            num_state_qubits=num_wires,
+            num_precision_wires=num_precision_wires,
+            num_work_wires=num_work_wires,
+            positive_and_real=positive_real,
+        )
+
+    def test_resources_from_instance(self):
+        """Test that computing the resources from the instance works"""
+        mps = [
+            qnp.array([[0.0, 0.107], [0.994, 0.0]]),
+            qnp.array(
+                [
+                    [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
+                ]
+            ),
+            qnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        
+        op = re.ResourceMPSPrep(mps, wires=[1,2,3], work_wires=[0])
+        res_rep = op.resource_rep_from_op()
+        measured_res = res_rep.op_type.resources(**res_rep.params)
+
+        qu = re.ResourceQubitUnitary.resource_rep(num_wires=2)
+        expected_res = {qu:3}
+
+        assert measured_res == expected_res

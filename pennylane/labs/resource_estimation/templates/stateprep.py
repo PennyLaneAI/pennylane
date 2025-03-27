@@ -14,6 +14,7 @@
 r"""Resource operators for PennyLane state preparation templates."""
 import math
 from typing import Dict
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
@@ -24,7 +25,7 @@ from pennylane.operation import Operation
 
 
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
-    """Resource class for StatePrep.
+    r"""Resource class for StatePrep.
 
     Args:
         state (array[complex] or csr_matrix): the state vector to prepare
@@ -459,14 +460,31 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
     r"""Resource class for the MPSPrep template.
 
     Args:
-        num_wires (int): number of qubits corresponding to the state preparation register
-        num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
+            as a product of site matrices. See the usage details section for more information.
+        wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
+            of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
+            this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+        right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
+            Default is ``False``.
+    
+    Resource Parameters:
+        * num_wires (int): number of qubits corresponding to the state preparation register
+        * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
 
     Resources:
-        The resources for MPSPrep are according to the decomposition.
+        The resources for MPSPrep are according to the decomposition, which uses generic :class:`~.QubitUnitary`.
+        The decomposition is based on the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMPSPrep.resources(num_wires=5, num_work_wires=2)
+    defaultdict(<class 'int'>, {QubitUnitary(2): 2, QubitUnitary(3): 3})
     """
 
     def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
@@ -474,7 +492,14 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
         if isinstance(mps, re.CompactState):
             self.compact_state = mps
-            Operation.__init__(self, mps, wires=wires)
+
+            self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+            all_wires = self.hyperparameters["input_wires"]
+            if work_wires:
+                self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+                all_wires += qml.wires.Wires(work_wires)
+
+            Operation.__init__(self, mps, wires=all_wires)
             return
 
         self.compact_state = None
@@ -494,24 +519,29 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
             num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
 
         Resources:
-            The resources for MPSPrep are according to the decomposition.
+        The resources for MPSPrep are according to the decomposition, which uses generic :class:`~.QubitUnitary`.
+        The decomposition is based on the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
         """
-        gate_types = {}
+        gate_types = defaultdict(int)
 
-        qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=num_work_wires + 1)
-        gate_types[qubit_unitary] = num_wires
+        log2_chi = min(num_work_wires, math.ceil(num_wires / 2))
+
+        for index in range(1, num_wires + 1):
+            qubit_unitary_wires = min(index + 1, log2_chi + 1, (num_wires - index) + 2)
+
+            qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=qubit_unitary_wires)
+            gate_types[qubit_unitary] += 1
+
         return gate_types
 
     @property
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_wires (int): number of qubits corresponding to the state preparation register
-            num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): number of qubits corresponding to the state preparation register
+                * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
         """
         if self.compact_state:
             return {
@@ -521,7 +551,7 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
         ww = self.hyperparameters["work_wires"]
         num_work_wires = len(ww) if ww else 0
-        num_wires = self.hyperparameters["input_wires"]
+        num_wires = len(self.hyperparameters["input_wires"])
 
         return {"num_wires": num_wires, "num_work_wires": num_work_wires}
 
@@ -543,3 +573,212 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
     @classmethod
     def tracking_name(cls, num_wires, num_work_wires) -> str:
         return f"MPSPrep({num_wires}, {num_work_wires})"
+
+
+class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
+    r"""Resource class for the QROMStatePreparation template.
+
+    This operation implements the state preparation method described
+    in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+
+    Args:
+        state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on :math:`n` wires.
+        wires (Sequence[int]): The wires on which to prepare the state.
+        precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
+            rotation angles utilized in the template.
+        work_wires (Sequence[int], optional):  The work wires used for the QROM operations. Defaults to ``None``.
+
+    Resource Parameters:
+        * num_state_qubits (int): number of qubits required to represent the state-vector
+        * num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+        * num_work_wires (int): additional qubits which optimize the implementation
+        * positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+
+    Resources:
+        The resources for QROMStatePreparation are according to the decomposition as described
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+
+    .. seealso:: :class:`~.QROMStatePreparation`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQROMStatePreparation.resources(
+    ...     num_state_qubits=5,
+    ...     num_precision_wires=3,
+    ...     num_work_wires=3,
+    ...     positive_and_real=True,
+    ... )
+    defaultdict(<class 'int'>, {QROM: 1, Adjoint(QROM): 1, 
+    QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1, 
+    QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1, CRY: 15})
+    """
+
+    def __init__(self, state_vector, wires, precision_wires, work_wires=None, id=None):
+        # Overriding the default init method to allow for CompactState as an input.
+
+        if isinstance(state_vector, re.CompactState):
+            self.state_vector = state_vector
+
+            self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+            self.hyperparameters["precision_wires"] = qml.wires.Wires(precision_wires)
+            self.hyperparameters["work_wires"] = qml.wires.Wires(
+                () if work_wires is None else work_wires
+            )
+
+            all_wires = (
+                self.hyperparameters["input_wires"]
+                + self.hyperparameters["precision_wires"]
+                + self.hyperparameters["work_wires"]
+            )
+            Operation.__init__(state_vector, wires=all_wires, id=id)
+            return
+
+        self.compact_state = None
+        super().__init__(state_vector, wires, precision_wires, work_wires, id)
+
+    @staticmethod
+    def _resource_decomp(
+        num_state_qubits, num_precision_wires, num_work_wires, positive_and_real, **kwargs
+    ):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+            num_work_wires (int): additional qubits which optimize the implementation
+            positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+        """
+        gate_types = defaultdict(int)
+
+        for j in range(num_state_qubits):
+            num_bitstrings = 2**j
+            num_bit_flips = max(2 ** (j - 1), 1)
+            num_control_wires = j
+
+            gate_types[
+                re.ResourceQROM.resource_rep(
+                    num_bitstrings,
+                    num_bit_flips,
+                    num_control_wires,
+                    num_work_wires,
+                    num_precision_wires,
+                    clean=False,
+                )
+            ] += 1
+
+            gate_types[
+                re.ResourceAdjoint.resource_rep(
+                    base_class=re.ResourceQROM,
+                    base_params={
+                        "num_bitstrings": num_bitstrings,
+                        "num_bit_flips": num_bit_flips,
+                        "num_control_wires": num_control_wires,
+                        "num_work_wires": num_work_wires,
+                        "size_bitstring": num_precision_wires,
+                        "clean": False,
+                    },
+                )
+            ] += 1
+
+        c_ry = re.ResourceCRY.resource_rep()
+        gate_types[c_ry] = num_precision_wires * num_state_qubits
+
+        c_gp = re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 0, 0)
+
+        if not positive_and_real:
+            gate_types[
+                re.ResourceQROM.resource_rep(
+                    2**num_state_qubits,
+                    2 ** (num_state_qubits - 1),
+                    num_state_qubits,
+                    num_work_wires,
+                    num_precision_wires,
+                    clean=False,
+                )
+            ] += 1
+
+            gate_types[c_gp] = num_precision_wires
+
+            gate_types[
+                re.ResourceAdjoint.resource_rep(
+                    base_class=re.ResourceQROM,
+                    base_params={
+                        "num_bitstrings": 2**num_state_qubits,
+                        "num_bit_flips": 2 ** (num_state_qubits - 1),
+                        "num_control_wires": num_state_qubits,
+                        "num_work_wires": num_work_wires,
+                        "size_bitstring": num_precision_wires,
+                        "clean": False,
+                    },
+                )
+            ] += 1
+
+        return gate_types
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_state_qubits (int): number of qubits required to represent the state-vector
+                * num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+                * num_work_wires (int): additional qubits which optimize the implementation
+                * positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+        """
+        state_vector = self.state_vector
+
+        if isinstance(state_vector, re.CompactState):
+            num_state_qubits = state_vector.num_qubits
+            num_work_wires = state_vector.num_work_wires
+            positive_and_real = state_vector.positive_and_real
+
+            p = state_vector.precision
+            num_precision_wires = abs(math.floor(math.log2(p)))
+
+        else:
+            positive_and_real = True
+            for c in state_vector:
+                if c.imag != 0 or c.real < 0:
+                    positive_and_real = False
+                    break
+
+            num_state_qubits = int(math.log2(len(self.state_vector)))
+            num_precision_wires = len(self.hyperparameters["precision_wires"])
+            num_work_wires = len(self.hyperparameters["work_wires"])
+
+        return {
+            "num_state_qubits": num_state_qubits,
+            "num_precision_wires": num_precision_wires,
+            "num_work_wires": num_work_wires,
+            "positive_and_real": positive_and_real,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_state_qubits, num_precision_wires, num_work_wires, positive_and_real):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+            num_work_wires (int): additional qubits which optimize the implementation
+            positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {
+            "num_state_qubits": num_state_qubits,
+            "num_precision_wires": num_precision_wires,
+            "num_work_wires": num_work_wires,
+            "positive_and_real": positive_and_real,
+        }
+        return re.CompressedResourceOp(cls, params)
