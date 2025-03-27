@@ -743,9 +743,6 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         if z == 1:
             return {base_class.resource_rep(**base_params): 1}
 
-        if z == 1:
-            return {base_class.resource_rep(**base_params): 1}
-
         try:
             return base_class.pow_resource_decomp(z, **base_params)
         except re.ResourcesNotDefined:
