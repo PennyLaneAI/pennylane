@@ -33,7 +33,7 @@ class RealspaceMatrix(Fragment):
     r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
 
     This can be used to represent the fragments of a vibronic Hamiltonian given by
-    [Eq. 3 of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669v1>`_]
+    [Eq. 3 of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669v1>`_\ ]
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
