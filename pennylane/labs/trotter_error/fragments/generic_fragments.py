@@ -94,7 +94,7 @@ class GenericFragment(Fragment):
         return GenericFragment(self.fragment + other.fragment, norm_fn=self.norm_fn)
 
     def __sub__(self, other: GenericFragment):
-        return GenericFragment(self.fragment + (-1)*other.fragment, norm_fn=self.norm_fn)
+        return GenericFragment(self.fragment + (-1) * other.fragment, norm_fn=self.norm_fn)
 
     def __mul__(self, scalar: float):
         return GenericFragment(scalar * self.fragment, norm_fn=self.norm_fn)
