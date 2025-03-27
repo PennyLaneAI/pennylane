@@ -311,11 +311,12 @@ decorator:
 >>> print(qml.draw(circuit)())
 0: ──H──RX(0.10)─┤  State
 
-Control flow and transforms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Higher-order primitives and transforms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Transforms do not apply "through" control flow when capture is enabled. An example
-is best to demonstrate this behaviour:
+Transforms do not apply "through" higher-order primitives like mid-circuit measurements,
+gradients, and control flow when capture is enabled. An example is best to demonstrate 
+this behaviour:
 
 .. code-block:: python 
 
@@ -342,7 +343,7 @@ but transforms are unable to transfer through the circuit in its entirety. Drawi
 this circuit will result in an inaccurate circuit:
 
 >>> print(qml.draw(circuit)())
-0: ──RX(0.20)─┤
+0: ──RX(0.20)─┤  State
 
 To illustrate what is actually happening internally, consider the plxpr representation 
 of this program: 
@@ -364,7 +365,9 @@ of this program:
 }
 
 As one can see, the outer ``RX`` gates do not merge with those in the ``for`` loop, 
-nor does the transform merge all 4 iterations from the ``for`` loop.
+nor does the transform merge all 4 iterations from the ``for`` loop. Generally speaking, 
+transform application is partitioned into "blocks" that are delimited by higher-order 
+primitives.
 
 Dynamic variables and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -421,7 +424,7 @@ Dynamic shapes
 
 Creating and manipulating dynamically shaped objects within a quantum function or 
 QNode when capture is enabled is supported with 
-`JAX's experimental dynamic shapes support <https://docs.jax.dev/en/latest/notebooks/Common_Gotchas_in_JAX.html#dynamic-shapes>`__. 
+`JAX's experimental dynamic shapes <https://docs.jax.dev/en/latest/notebooks/Common_Gotchas_in_JAX.html#dynamic-shapes>`__. 
 Given the experimental nature of this feature, PennyLane's dynamic shapes support 
 is at best a subset of what is possible with purely classical programs using JAX. 
 
