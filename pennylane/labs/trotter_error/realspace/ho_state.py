@@ -273,7 +273,7 @@ class VibronicHO:
 
     @classmethod
     def zero_state(cls, states: int, modes: int, gridpoints: int) -> VibronicHO:
-        """Construct a :class:`~.pennylane.labs.trotter_error.VibronicHO representing the zero state.
+        """Construct a :class:`~.pennylane.labs.trotter_error.VibronicHO` representing the zero state.
 
         Args:
             states (int): the number of electronic states
@@ -281,7 +281,7 @@ class VibronicHO:
             gridpoints(int): the number of gridpoints used to discretize the state
 
         Returns:
-            VibronicHO: a :class:`~.pennylane.labs.trotter_error.VibronicHO representing the zero state
+            VibronicHO: a :class:`~.pennylane.labs.trotter_error.VibronicHO` representing the zero state
 
         **Example**
 
@@ -299,7 +299,7 @@ class VibronicHO:
         )
 
     def dot(self, other: VibronicHO):
-        """Return the dot product of two :class:`~.pennylane.labs.trotter_error.VibronicHO objects.
+        """Return the dot product of two :class:`~.pennylane.labs.trotter_error.VibronicHO` objects.
 
         Args:
             other (VibronicHO): the state to take the dot product with
