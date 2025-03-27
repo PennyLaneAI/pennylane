@@ -41,7 +41,7 @@ class HOState:
     >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
     >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
 
-    Building an ``HOState`` from a ``csr_array``
+    Building an ``HOState`` from a ``scipy.sparse.csr_array``
 
     >>> from scipy.sparse import csr_array
     >>> import numpy as np
