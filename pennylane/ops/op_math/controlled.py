@@ -37,7 +37,7 @@ from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl
 from pennylane.operation import Channel, Operator
 from pennylane.wires import Wires, WiresLike
 
-from ..channel import ControlledChannel
+from ..channel import ControlledQubitChannel
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
@@ -189,7 +189,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         )
 
     if isinstance(op, Channel):
-        return ControlledChannel(
+        return ControlledQubitChannel(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
 

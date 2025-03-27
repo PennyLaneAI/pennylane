@@ -157,16 +157,16 @@ class ControlledQubitChannel(QubitChannel):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        base_K_list = base.krause_matrix()
-        base_channel_n_wires = base.num_wires
+        base_K_list = base.kraus_matrices()
+        base_channel_shape = base_K_list[0].shape[0]
         new_K_list = [np.eye(2)] + base_K_list
         #! TODO: expand the space, and make the correct new Kraus matrices
         #! TODO: they should depend on the given control values
-        basis = lambda x: [1-x, x]
+        basis = lambda x: [1 - x, x]
         projector = lambda x: np.outer(x, x)
-        
+
         control_values = control_values or [1] * len(control_wires)
-        
+
         # Get the projectors for each control value
         control_projectors = [projector(basis(x)) for x in control_values]
 
@@ -177,11 +177,11 @@ class ControlledQubitChannel(QubitChannel):
         # Complementary projector
         control_projector_c = np.eye(control_projector.shape[0]) - control_projector
         # Create the new Kraus matrices
-        new_K_list = [np.kron(control_projector_c, np.eye(2**base_channel_n_wires))]
+        new_K_list = [np.kron(control_projector_c, np.eye(base_channel_shape))]
         for K in base_K_list:
             new_K_list.append(np.kron(control_projector, K))
-        
-        super().__init__(*new_K_list, wires=wires, id=id)
+
+        super().__init__(K_list=new_K_list, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(base):
