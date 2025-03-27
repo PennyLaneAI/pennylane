@@ -22,30 +22,75 @@
 
 Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~
+Abstract classes specifying the methods needed for implementing fragments and states in the Trotter error workflow.
 
 .. autosummary::
     :toctree: api
 
+    ~AbstractState
     ~Fragment
 
 Fragment Classes
 ~~~~~~~~~~~~~~~~
+Classes representing fragments of different types of Hamiltonians.
 
 .. autosummary::
     :toctree: api
 
+    ~GenericFragment
     ~RealspaceMatrix
     ~RealspaceSum
 
 Realspace Hamiltonian Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Classes used to store representations of realspace Hamiltonians.
 
 .. autosummary::
     :toctree: api
 
     ~RealspaceCoeffs
     ~RealspaceOperator
+
+Fragment Functions
+~~~~~~~~~~~~~~~~~~
+Functions used to retrieve fragments of various Hamiltonians.
+
+.. autosummary::
+    :toctree: api
+
+    ~generic_fragments
+    ~vibrational_fragments
+    ~vibronic_fragments
+
+Harmonic Oscillator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Classes used to construct the representation of harmonic oscillator states.
+
+.. autosummary::
+    :toctree: api
+
+    ~HOState
+    ~VibronicHO
+
+Error Estimation Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Functions for computing Trotter error estimates.
+
+.. autosummary::
+    :toctree: api
+
+    ~perturbation_error
+    ~trotter_error
 """
 
-from .abstract import Fragment
-from .realspace import RealspaceCoeffs, RealspaceMatrix, RealspaceOperator, RealspaceSum
+from .abstract import AbstractState, Fragment
+from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
+from .product_formulas import perturbation_error, trotter_error
+from .realspace import (
+    RealspaceCoeffs,
+    RealspaceMatrix,
+    RealspaceOperator,
+    RealspaceSum,
+    HOState,
+    VibronicHO,
+)

@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module for realspace operators"""
+"""Module containing functions to generate fragments for various Hamiltonians"""
 
-from .ho_state import HOState, VibronicHO
-from .realspace_coefficients import RealspaceCoeffs
-from .realspace_operator import RealspaceOperator, RealspaceSum
-from .realspace_matrix import RealspaceMatrix
+from .generic_fragments import GenericFragment, generic_fragments
+from .vibrational_fragments import vibrational_fragments
+from .vibronic_fragments import vibronic_fragments

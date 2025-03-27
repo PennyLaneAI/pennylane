@@ -99,6 +99,9 @@ class RealspaceCoeffs:
     def __getitem__(self, index) -> float:
         return self._tree.compute(index)
 
+    def __eq__(self, other: RealspaceCoeffs) -> bool:
+        return self._tree == other._tree
+
     @property
     def is_zero(self) -> bool:
         """Determine if the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects
@@ -150,10 +153,10 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
      A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
 
-        * ``tensor_node``: a leaf node containing a coefficient tensor
-        * ``outer_node``: a node representing the outer product of its two children
-        * ``sum_node``: a node representing the sum of its two children
-        * ``scalar_node``: a node representing the product of its child by a scalar
+        * ``tensor_node(tensor)``: a leaf node containing the coefficients as a tensor
+        * ``outer_node(l_child, r_child)``: a node representing the outer product of two ``RealspaceCoeffs`` objects
+        * ``sum_node(l_child, r_child)``: a node representing the sum of two ``RealspaceCoeffs`` objects
+        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs`` object by a scalar
 
     **Examples**
 

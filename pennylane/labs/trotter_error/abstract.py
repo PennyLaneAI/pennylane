@@ -33,7 +33,7 @@ class Fragment(ABC):
     * :meth:`~.__matmul__`: implements matrix multiplication
 
     In addition to the arithmetic operators, a ``norm`` method should be defined. The norm is
-    required to compute error estimates of error operators obtained by computing nested commutators.
+    required to compute error estimates of Trotter error operators.
     """
 
     @abstractmethod
@@ -64,6 +64,31 @@ class Fragment(ABC):
 
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def apply(self, state: AbstractState) -> AbstractState:
+        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each class inheriting from ``Fragment``.
+
+        Args:
+            state (AbstractState): an object representing a quantum state
+
+        Returns:
+            AbstractState: the result of applying the ``Fragment`` to ``state``
+
+        """
+        raise NotImplementedError
+
+    def expectation(self, left: AbstractState, right: AbstractState) -> float:
+        """Return the expectation value of a state. The type of ``state`` is determined by each class inheriting from ``Fragment``.
+
+        Args:
+            left (AbstractState): the state to be multiplied on the left of the ``Fragment``
+            right (AbstractState): the state to be multiplied on the right of the ``Fragment``
+
+        Returns:
+            float: the expectation value obtained by applying ``Fragment`` to the given states
+        """
+        return left.dot(self.apply(right))
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
@@ -98,3 +123,51 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
     head, *tail = fragments
 
     return commutator(head, nested_commutator(tail))
+
+
+class AbstractState(ABC):
+    """Abstract class used to define a state object for product formula error estimation.
+
+    A class inheriting from ``AbstractState`` must implement the following dunder methods.
+
+    * ``__add__``: implements addition
+    * ``__mul__``: implements multiplication
+
+    Additionally, it requires the following methods.
+
+    * ``zero_state``: returns a representation of the zero state
+    * ``dot``: implments the dot product of two states
+    """
+
+    @abstractmethod
+    def __add__(self, other: AbstractState) -> AbstractState:
+        raise NotImplementedError
+
+    def __sub__(self, other: AbstractState) -> AbstractState:
+        return self + (-1) * other
+
+    @abstractmethod
+    def __mul__(self, scalar: float) -> AbstractState:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def zero_state(cls) -> AbstractState:
+        """Return a representation of the zero state.
+
+        Returns:
+            AbstractState: an ``AbstractState`` representation of the zero state
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def dot(self, other: AbstractState) -> float:
+        """Compute the dot product of two states.
+
+        Args:
+            other (AbstractState): the state to take the dot product with
+
+        Returns:
+           float: the dot product of self and other
+        """
+        raise NotImplementedError

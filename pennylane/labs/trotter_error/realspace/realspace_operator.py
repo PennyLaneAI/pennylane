@@ -24,6 +24,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace import HOState
 from pennylane.labs.trotter_error.realspace.matrix import (
     _op_norm,
     _string_to_matrix,
@@ -36,7 +37,6 @@ from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 
 class RealspaceOperator:
     r"""Represents a linear combination of a product of position and momentum operators.
-
     The ``RealspaceOperator`` class can be used to represent components of a vibrational
     Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`:
 
@@ -172,9 +172,6 @@ class RealspaceOperator:
         return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if other._is_zero:
-            return self
-
         if self.modes != other.modes:
             raise ValueError(
                 f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
@@ -276,6 +273,9 @@ class RealspaceSum(Fragment):
                     f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes."
                 )
 
+        for op in ops:
+            assert op.coeffs is not None
+
         ops = tuple(filter(lambda op: not op._is_zero, ops))
         self._is_zero = len(ops) == 0
 
@@ -284,6 +284,9 @@ class RealspaceSum(Fragment):
 
         for op in ops:
             self._lookup[op.ops] += op
+
+        for op in ops:
+            assert self._lookup[op.ops].coeffs is not None
 
         self.ops = tuple(self._lookup.values())
 
@@ -445,6 +448,19 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
+
+    def apply(self, state: HOState) -> HOState:
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
+        if not isinstance(state, HOState):
+            raise TypeError
+
+        mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
+
+        return HOState(
+            state.modes,
+            state.gridpoints,
+            mat @ state.vector,
+        )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
         """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
