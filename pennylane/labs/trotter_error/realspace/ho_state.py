@@ -27,13 +27,12 @@ class HOState:
     Args:
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a sparse state vector for the full wavefunction
-        or a dictionary containing the interacting modes and their non-zero coefficients
+        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a sparse state vector for the full wavefunction or a dictionary containing the interacting modes and their non-zero coefficients
 
 
     **Examples**
 
-    Building an ``HOState`` from a dictionary
+    Building an :class:`~.pennylane.labs.trotter_error.HOState` from a dictionary
 
     >>> from pennylane.labs.trotter import HOState
     >>> n_modes = 3
@@ -46,7 +45,7 @@ class HOState:
       (17, 0)	1
       (38, 0)	1)
 
-    Building an ``HOState`` from a ``scipy.sparse.csr_array``
+    Building an :class:`~.pennylane.labs.trotter_error.HOState` from a ``scipy.sparse.csr_array``
 
     >>> from scipy.sparse import csr_array
     >>> import numpy as np
@@ -84,7 +83,7 @@ class HOState:
     def _vector_from_dict(
         cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]
     ) -> csr_array:
-        """Construct an ``HOState`` from a dictionary.
+        """Construct an :class:`~.pennylane.labs.trotter_error.HOState` from a dictionary.
 
         Args:
             modes (int): the number of vibrational modes
@@ -92,7 +91,7 @@ class HOState:
             coeffs (Dict[Tuple[int]]): a dictionary representation of the state
 
         Returns:
-            HOState: an ``HOState`` representation of the state vector
+            HOState: an :class:`~.pennylane.labs.trotter_error.HOState` representation of the state vector
 
         **Example**
 
@@ -125,14 +124,14 @@ class HOState:
 
     @classmethod
     def zero_state(cls, modes: int, gridpoints: int) -> HOState:
-        """Construct an ``HOState`` whose vector is zero.
+        """Construct an :class:`~.pennylane.labs.trotter_error.HOState` whose vector is zero.
 
         Args:
             modes (int): the number of vibrational modes
             gridpoints(int): the number of gridpoints used to discretize the state
 
         Returns:
-            HOState: an ``HOState`` representing the zero state
+            HOState: an :class:`~.pennylane.labs.trotter_error.HOState` representing the zero state
 
         **Example**
 
@@ -155,7 +154,7 @@ class HOState:
     __rmul__ = __mul__
 
     def dot(self, other: HOState) -> float:
-        """Return the dot product of two ``HOState`` objects.
+        """Return the dot product of two :class:`~.pennylane.labs.trotter_error.HOState` objects.
 
         Args:
             other (HOState): the state to take the dot product with
@@ -191,7 +190,7 @@ class VibronicHO:
         states (int): the number of electronic states
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        ho_states (Sequence[HOState]): a sequence of ``HOState`` objects representing the harmonic oscillator states
+        ho_states (Sequence[HOState]): a sequence of :class:`~.pennylane.labs.trotter_error.HOState` objects representing the harmonic oscillator states
 
     **Example**
 
@@ -274,7 +273,7 @@ class VibronicHO:
 
     @classmethod
     def zero_state(cls, states: int, modes: int, gridpoints: int) -> VibronicHO:
-        """Construct a ``VibronicHO`` representing the zero state.
+        """Construct a :class:`~.pennylane.labs.trotter_error.VibronicHO representing the zero state.
 
         Args:
             states (int): the number of electronic states
@@ -282,7 +281,7 @@ class VibronicHO:
             gridpoints(int): the number of gridpoints used to discretize the state
 
         Returns:
-            VibronicHO: a ``VibronicHO`` representing the zero state
+            VibronicHO: a :class:`~.pennylane.labs.trotter_error.VibronicHO representing the zero state
 
         **Example**
 
@@ -300,7 +299,7 @@ class VibronicHO:
         )
 
     def dot(self, other: VibronicHO):
-        """Return the dot product of two ``VibronicHO`` objects.
+        """Return the dot product of two :class:`~.pennylane.labs.trotter_error.VibronicHO objects.
 
         Args:
             other (VibronicHO): the state to take the dot product with
