@@ -728,6 +728,9 @@
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
+* The error message when device wires are not specified when program capture is enabled is more clear.
+  [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
