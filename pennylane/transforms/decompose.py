@@ -259,10 +259,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             if qml.decomposition.enabled_graph() and not self._decomp_graph:
 
-                # TODO: replace this with a collector that does not flatten the PLxPR
-                collector = CollectOpsandMeas()
-                collector.eval(jaxpr, consts, *args)
-                operations = collector.state["ops"]
+                with qml.capture.pause():
+
+                    # TODO: replace this with a collector that does not flatten the PLxPR
+                    collector = CollectOpsandMeas()
+                    collector.eval(jaxpr, consts, *args)
+                    operations = collector.state["ops"]
 
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
