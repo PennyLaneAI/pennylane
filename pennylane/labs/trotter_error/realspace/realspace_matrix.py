@@ -55,7 +55,7 @@ class RealspaceMatrix(Fragment):
     >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
     >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
     >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
-    {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
+    RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))})
     """
 
     def __init__(
@@ -125,10 +125,10 @@ class RealspaceMatrix(Fragment):
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> vib = RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
         >>> vib
-        {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
+        RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))})
         >>> vib.set_block(1, 1, rs_sum)
         >>> vib
-        {(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0]))), (1, 1): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))}
+        RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0]))), (1, 1): RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))})
         """
 
         if not isinstance(rs_sum, RealspaceSum):
@@ -342,6 +342,10 @@ class RealspaceMatrix(Fragment):
         product_matrix = RealspaceMatrix(self.states, self.modes)
 
         for i, j in product(range(self.states), repeat=2):
+            for op in self.block(i, j).ops:
+                assert op.coeffs is not None
+            for op in other.block(i, j).ops:
+                assert op.coeffs is not None
             block_products = [self.block(i, k) @ other.block(k, j) for k in range(self.states)]
             block_sum = sum(block_products, RealspaceSum.zero(self.modes))
             product_matrix.set_block(i, j, block_sum)
@@ -350,6 +354,9 @@ class RealspaceMatrix(Fragment):
 
     def __eq__(self, other: RealspaceMatrix):
         if self.states != other.states:
+            return False
+
+        if self.modes != other.modes:
             return False
 
         if self._blocks != other._blocks:
@@ -465,8 +472,13 @@ class RealspaceMatrix(Fragment):
 
         return d
 
-    def __repr__(self) -> str:
-        return self._blocks.__repr__()
+    @classmethod
+    def zero(cls, states: int, modes: int) -> RealspaceMatrix:
+        """Return a RealspaceMatrix representation of the zero operator"""
+        return cls(states, modes, {})
+
+    def __repr__(self):
+        return f"RealspaceMatrix({self._blocks})"
 
 
 def _is_pow_2(k: int) -> bool:

@@ -320,7 +320,7 @@ class VibronicHO:
         4
         """
 
-        return sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states))
+        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:

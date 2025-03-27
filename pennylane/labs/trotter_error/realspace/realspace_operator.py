@@ -172,9 +172,6 @@ class RealspaceOperator:
         return self
 
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if other._is_zero:
-            return self
-
         if self.modes != other.modes:
             raise ValueError(
                 f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
@@ -276,6 +273,9 @@ class RealspaceSum(Fragment):
                     f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes."
                 )
 
+        for op in ops:
+            assert op.coeffs is not None
+
         ops = tuple(filter(lambda op: not op._is_zero, ops))
         self._is_zero = len(ops) == 0
 
@@ -284,6 +284,9 @@ class RealspaceSum(Fragment):
 
         for op in ops:
             self._lookup[op.ops] += op
+
+        for op in ops:
+            assert self._lookup[op.ops].coeffs is not None
 
         self.ops = tuple(self._lookup.values())
 
