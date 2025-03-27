@@ -32,6 +32,7 @@ from pennylane.decomposition.resources import (
 from tests.decomposition.conftest import to_resources
 
 
+@pytest.mark.unit
 class TestControlledDecompositionRules:
     """Tests the decomposition rule defined for different controlled operations."""
 
@@ -115,6 +116,7 @@ class TestControlledDecompositionRules:
         )
 
 
+@pytest.mark.unit
 class TestControlledX:
     """Tests decompositions of different versions of controlled X gates."""
 
@@ -204,6 +206,7 @@ class TestControlledX:
         )
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "op, decomp, resources, custom_op_type",
     [
@@ -307,6 +310,7 @@ def custom_decomp(*params, wires, **_):
     qml.CZ(wires=wires[:2])
 
 
+@pytest.mark.unit
 class TestControlledBaseDecomposition:
     """Tests applying control on the decomposition of the base operator."""
 
