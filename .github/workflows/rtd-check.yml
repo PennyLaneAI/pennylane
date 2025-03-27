@@ -10,7 +10,7 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-latest 
 
   sphinx:
     needs: [determine_runner] 
