@@ -28,8 +28,6 @@ class Fragment(ABC):
 
     * :meth:`~.__add__`: implements addition
 
-    * :meth:`~.__sub__`: implements subtraction
-
     * :meth:`~.__mul__`: implements multiplication
 
     * :meth:`~.__matmul__`: implements matrix multiplication
