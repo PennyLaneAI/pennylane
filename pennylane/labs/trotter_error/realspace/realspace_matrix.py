@@ -358,7 +358,7 @@ class RealspaceMatrix(Fragment):
         return True
 
     def _partition_into_quadrants(self) -> Tuple[RealspaceMatrix]:
-        """Partitions the ``RealspaceMatrix`` into four ``RealspaceMatrix`` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
+        """Partitions the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` into four :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
         # pylint: disable=chained-comparison
         half = self.states // 2
 
@@ -382,13 +382,13 @@ class RealspaceMatrix(Fragment):
         return top_left, top_right, bottom_left, bottom_right
 
     def apply(self, state: VibronicHO) -> VibronicHO:
-        """Apply the RealspaceMatrix to a state on the right.
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` to an input :class:`~.pennylane.labs.trotter_error.VibronicHO` on the right.
 
         Args:
             state (VibronicHO): a vibronic wavefunction
 
         Returns:
-            VibronicHO: the result of applying the ``RealspaceMatrix`` to ``state``
+            VibronicHO: the result of applying the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` to ``state``
 
         **Example**
 

@@ -438,7 +438,7 @@ class RealspaceSum(Fragment):
         return norm
 
     def apply(self, state: HOState) -> HOState:
-        """Apply the ``RealspaceSum`` to an ``HOState`` object."""
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
         if not isinstance(state, HOState):
             raise TypeError
 
