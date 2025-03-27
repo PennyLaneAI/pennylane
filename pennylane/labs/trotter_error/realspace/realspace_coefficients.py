@@ -611,6 +611,7 @@ def _numpy_to_dict(arr, threshold):
 
     for index in zip(*nz):
         if abs(arr[index]) > threshold:
+            index = tuple(map(int, index))
             d[index] = arr[index]
 
     return d
