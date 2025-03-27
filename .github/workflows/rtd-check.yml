@@ -5,16 +5,10 @@ on:
 permissions: write-all
 
 jobs:
-  determine_runner:
-    if: github.event.pull_request.draft == false
-    name: Determine runner type to use
-    uses: ./.github/workflows/determine-workflow-runner.yml
-    with:
-      default_runner: ubuntu-latest 
-
   sphinx:
-    needs: [determine_runner] 
-    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    runs-on: ubuntu-latest
+    container:
+      image: readthedocs/build:latest
     steps:
     - uses: actions/checkout@v4
     - shell: bash
@@ -24,3 +18,16 @@ jobs:
         python -m pip install --upgrade --no-cache-dir sphinx 
         python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt 
         sphinx-build -b html . _build -W --keep-going
+
+  # sphinx:
+  #   needs: [determine_runner] 
+  #   runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - shell: bash
+  #     run: |
+  #       asdf global python 3.10.15
+  #       python -m pip install --upgrade --no-cache-dir pip setuptools 
+  #       python -m pip install --upgrade --no-cache-dir sphinx 
+  #       python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt 
+  #       sphinx-build -b html . _build -W --keep-going
