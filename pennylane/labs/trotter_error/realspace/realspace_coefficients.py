@@ -150,7 +150,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
      A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
 
-        * ``tensor_node(tensor)``: a leaf node containing a coefficient tensor
+        * ``tensor_node(tensor)``: a leaf node containing the coefficients as a tensor
         * ``outer_node(l_child, r_child)``: a node representing the outer product of two ``RealspaceCoeffs`` objects
         * ``sum_node(l_child, r_child)``: a node representing the sum of two ``RealspaceCoeffs`` objects
         * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs`` object by a scalar

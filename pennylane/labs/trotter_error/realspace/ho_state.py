@@ -39,7 +39,12 @@ class HOState:
     >>> n_modes = 3
     >>> gridpoints = 5
     >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
-    >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
+    >>> HOState(n_modes, gridpoints, state_dict)
+    HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
+        with 2 stored elements and shape (125, 1)>
+      Coords	Values
+      (17, 0)	1
+      (38, 0)	1)
 
     Building an ``HOState`` from a ``scipy.sparse.csr_array``
 
@@ -48,17 +53,37 @@ class HOState:
     >>> gridpoints = 2
     >>> n_modes = 2
     >>> state_vector = csr_array(np.array([0, 1, 0, 0]))
-    >>> state = HOState.from_scipy(n_modes, gridpoints, state_vector)
+    >>> HOState(n_modes, gridpoints, state_vector)
+    HOState(modes=2, gridpoints=2, <COOrdinate sparse array of dtype 'int64'
+        with 1 stored elements and shape (4, 1)>
+      Coords	Values
+      (1, 0)	1)
     """
 
-    def __init__(self, modes: int, gridpoints: int, vector: csr_array):
+    def __init__(self, modes: int, gridpoints: int, state: csr_array):
+        if isinstance(state, csr_array):
+            if vector.shape == (gridpoints**modes,):
+                vector = vector.reshape((gridpoints**modes, 1))
+
+            if vector.shape != (gridpoints**modes, 1):
+                raise ValueError(
+                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {vector.shape}."
+                )
+
+            self.vector = vector
+        elif isinstance(state, dict):
+            self.vector = self._vector_from_dict(modes, gridpoints, state)
+        else:
+            raise TypeError(f"state must be of type csr_array or dict, got {type(state)}.")
+
         self.gridpoints = gridpoints
         self.modes = modes
         self.dim = gridpoints**modes
-        self.vector = vector
 
     @classmethod
-    def from_dict(cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]) -> HOState:
+    def _vector_from_dict(
+        cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]
+    ) -> csr_array:
         """Construct an ``HOState`` from a dictionary.
 
         Args:
@@ -96,46 +121,7 @@ class HOState:
         rows = np.array(rows)
         cols = np.zeros_like(rows)
         vals = np.array(vals)
-        vector = csr_array((vals, (rows, cols)), shape=(gridpoints**modes, 1))
-
-        return cls(modes, gridpoints, vector)
-
-    @classmethod
-    def from_scipy(cls, modes: int, gridpoints: int, vector: csr_array) -> HOState:
-        """Construct an ``HOState`` from a scipy ``csr_array``.
-
-        Args:
-            modes (int): the number of vibrational modes
-            gridpoints (int): the number of gridpoints used to discretize the state
-            vector (scipy.sparse.csr_array): a sparse representation of the state vector
-
-        Returns:
-            HOState: an ``HOState`` representing the state vector
-
-        **Examples**
-
-        >>> from pennylane.labs.trotter_error import HOState
-        >>> from scipy.sparse import csr_array
-        >>> import numpy as np
-        >>> gridpoints = 2
-        >>> n_modes = 2
-        >>> state_vector = csr_array(np.array([0, 1, 0, 0]))
-        >>> HOState.from_scipy(n_modes, gridpoints, state_vector)
-        HOState(modes=2, gridpoints=2, <COOrdinate sparse array of dtype 'int64'
-            with 1 stored elements and shape (4, 1)>
-          Coords	Values
-          (1, 0)	1)
-        """
-
-        if vector.shape == (gridpoints**modes,):
-            vector = vector.reshape((gridpoints**modes, 1))
-
-        if vector.shape != (gridpoints**modes, 1):
-            raise ValueError(
-                f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {vector.shape}."
-            )
-
-        return cls(modes, gridpoints, vector)
+        return csr_array((vals, (rows, cols)), shape=(gridpoints**modes, 1))
 
     @classmethod
     def zero_state(cls, modes: int, gridpoints: int) -> HOState:
@@ -161,10 +147,10 @@ class HOState:
         if not isinstance(other, HOState):
             raise TypeError(f"Can only add HOState with another HOState, got {type(other)}.")
 
-        return HOState.from_scipy(self.modes, self.gridpoints, self.vector + other.vector)
+        return HOState(self.modes, self.gridpoints, self.vector + other.vector)
 
     def __mul__(self, scalar: float) -> HOState:
-        return HOState.from_scipy(self.modes, self.gridpoints, scalar * self.vector)
+        return HOState(self.modes, self.gridpoints, scalar * self.vector)
 
     __rmul__ = __mul__
 
