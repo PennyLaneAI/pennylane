@@ -34,6 +34,7 @@ SUPPORTED_GRADIENT_KWARGS = {
     "force_order2",
     "gradient_recipes",
     "h",
+    "mode",
     "n",
     "num_directions",
     "num_split_times",
