@@ -1,14 +1,6 @@
 name: "RTD check"
 on:
-  merge_group:
-    types:
-      - checks_requested
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
+  pull_request: {}
 
 permissions: write-all
 
