@@ -62,9 +62,9 @@ Functions used to retrieve fragments of various Hamiltonians.
     ~vibrational_fragments
     ~vibronic_fragments
 
-State Classes:
+Harmonic Oscillator Classes:
 ~~~~~~~~~~~~~~
-Representations of harmonic oscillator states.
+Classes used to construct the representation of harmonic oscillator states.
 
 .. autosummary::
     :toctree: api
