@@ -23,6 +23,25 @@ from pennylane.operation import AnyWires, Channel
 from pennylane.wires import Wires, WiresLike
 
 
+class SubChannel(Channel):
+    """
+    Channels that admit Non-Preservation of Trace maps.
+    """
+
+    num_params = 1
+    num_wires = 1
+    grad_method = "F"
+
+    def __init__(self, K_list, wires: WiresLike, id=None):
+        self.K_list = K_list
+        wires = Wires(wires)
+        super().__init__(K_list, wires=wires, id=id)
+
+    @staticmethod
+    def compute_kraus_matrices(K_list):
+        return list(K_list)
+
+
 class AmplitudeDamping(Channel):
     r"""
     Single-qubit amplitude damping error channel.
@@ -961,6 +980,7 @@ class ThermalRelaxationError(Channel):
 
 
 __qubit_channels__ = {
+    "SubChannel",
     "AmplitudeDamping",
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
