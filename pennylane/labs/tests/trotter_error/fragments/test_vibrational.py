@@ -106,10 +106,7 @@ class TestHarmonicMultiMode:
     n_states = 3
     omegas = np.array([1, 2.3])
     ham = _vibrational_hamiltonian(2, omegas, [])
-    states = [
-        HOState(2, 10, {(i, j): 1})
-        for i, j in itertools.product(range(n_states), repeat=2)
-    ]
+    states = [HOState(2, 10, {(i, j): 1}) for i, j in itertools.product(range(n_states), repeat=2)]
     excitations = list(itertools.product(range(n_states), repeat=2))
 
     @pytest.mark.parametrize(
