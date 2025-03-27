@@ -27,8 +27,8 @@ jobs:
     - uses: actions/checkout@v4
     - shell: bash
       run: |
-        pip3 install -r doc/requirements.txt
-        pip3 install .
-        pip3 install openfermionpyscf
-        pip3 install aiohttp fsspec h5py
+        asdf global python 3.10.15
+        python -m pip install --upgrade --no-cache-dir pip setuptools 
+        python -m pip install --upgrade --no-cache-dir sphinx 
+        python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt 
         sphinx-build -b html . _build -W --keep-going
