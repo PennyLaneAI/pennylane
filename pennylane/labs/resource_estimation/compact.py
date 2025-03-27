@@ -51,7 +51,9 @@ class CompactState:
         )
 
     @classmethod
-    def from_state_vector(cls, num_qubits, num_coeffs, precision=1e-3, num_work_wires=0, positive_and_real=False):
+    def from_state_vector(
+        cls, num_qubits, num_coeffs, precision=1e-3, num_work_wires=0, positive_and_real=False
+    ):
         """Instantiate a CompactState for a state coming from a statevector (dense or sparse)"""
         return cls(
             num_qubits=num_qubits,
