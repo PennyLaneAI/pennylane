@@ -156,7 +156,7 @@ class RealspaceMatrix(Fragment):
             sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
