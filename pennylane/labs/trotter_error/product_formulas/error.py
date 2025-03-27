@@ -30,7 +30,7 @@ class _AdditiveIdentity:
 
 
 def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
-    r"""Compute the second-order Trotter error.
+    r"""Compute the second-order Trotter error operator.
 
     For a Hamiltonian :math:`H` expressed as a sum of
     fragments :math:`\sum_{m=1}^L H_m`, the second order Trotter formula is given by
@@ -92,7 +92,7 @@ def perturbation_error(
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
-    The second-order Trotter error operator (:math:`\hat{\epsilon}`) is given by the expression
+    The second-order Trotter error operator, :math:`\hat{\epsilon}`, is given by the expression
 
     .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
 
@@ -122,8 +122,9 @@ def perturbation_error(
     >>> ]
     >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
     >>> gridpoints = 5
-    >>> state1 = HOState.from_dict(n_modes, gridpoints, {(0, 0): 1})
-    >>> state2 = HOState.from_dict(n_modes, gridpoints, {(1, 1): 1})
+    >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
+    >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
+    >>> perturbation_error(frags, [state1, state2])
     [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
