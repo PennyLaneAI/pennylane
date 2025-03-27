@@ -131,7 +131,6 @@ class AbstractState(ABC):
     A class inheriting from ``AbstractState`` must implement the following dunder methods.
 
     * ``__add__``: implements addition
-    * ``__sub__``: implements subtraction
     * ``__mul__``: implements multiplication
 
     Additionally, it requires the following methods.

@@ -40,9 +40,9 @@ class RealspaceOperator:
     The ``RealspaceOperator`` class can be used to represent components of a vibrational
     Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`
 
-    .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j.
+    .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j,
 
-    where :math:`\phi_{i,j}` is a constant.
+    where :math:`\phi_{i, j}` represents the coefficient and is a constant.
 
     Args:
         modes (int): the number of vibrational modes
@@ -441,7 +441,7 @@ class RealspaceSum(Fragment):
         return norm
 
     def apply(self, state: HOState) -> HOState:
-        """Apply the ``RealspaceSum`` to an ``HOState`` object."""
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
         if not isinstance(state, HOState):
             raise TypeError
 

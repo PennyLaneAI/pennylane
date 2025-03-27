@@ -432,7 +432,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
     def compute(self, index: Tuple[int]) -> float:
-        """Evaluate the tree on a given index
+        """Evaluate the tree on a given ``index``.
 
         Args:
             index (Tuple[int]): the index of the coefficient to be computed
