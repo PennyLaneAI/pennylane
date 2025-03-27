@@ -32,8 +32,8 @@ from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 class RealspaceMatrix(Fragment):
     r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
 
-    This can be used to represent the fragments of a vibronic Hamiltonian given by
-    [Eq. 3 of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669v1>`_\ ]
+    This can be used to represent the fragments of a vibronic Hamiltonian given by, Eq. 3
+    of `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669v1>`_,
 
     .. math:: V_{i,j} = \lambda_{i,j} + \sum_{r} \phi^{(1)}_{i,j,r} Q_r + \sum_{r,s} \phi^{(2)}_{i,j,r,s} Q_r Q_s + \sum_{r,s,t} \phi^{(3)}_{i,j,r,s,t} Q_r Q_s Q_t + \dots,
 
@@ -452,6 +452,19 @@ class RealspaceMatrix(Fragment):
 
         Returns:
             Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> import numpy as np
+        >>> n_states = 1
+        >>> n_modes = 5
+        >>> op1 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> op2 = RealspaceOperator(n_modes, ("P"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="chi"))
+        >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+        >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).get_coefficients()
+        {(0, 0): {'Q': {(0,): 1.0, (1,): 2.0, (2,): 3.0, (3,): 4.0, (4,): 5.0},
+        'P': {(0,): 1.0, (1,): 2.0, (2,): 3.0, (3,): 4.0, (4,): 5.0}}}
         """
         d = {}
         for i, j in product(range(self.states), repeat=2):

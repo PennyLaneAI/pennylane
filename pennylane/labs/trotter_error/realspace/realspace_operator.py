@@ -38,7 +38,7 @@ from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 class RealspaceOperator:
     r"""Represents a linear combination of a product of position and momentum operators.
     The ``RealspaceOperator`` class can be used to represent components of a vibrational
-    Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`
+    Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`:
 
     .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j,
 
@@ -211,7 +211,7 @@ class RealspaceOperator:
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
-        """Return the coefficients in a dictionary.
+        """Return the non-zero coefficients in a dictionary.
 
         Args:
             threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
@@ -219,6 +219,15 @@ class RealspaceOperator:
         Returns:
             Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are the coefficients
 
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
+        >>> import numpy as np
+        >>> n_modes = 2
+        >>> ops = ("Q", "Q")
+        >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
+        >>> RealspaceOperator(n_modes, ops, coeffs).get_coefficients()
+        {(0, 0): 1, (1, 1): 1}
         """
         return self.coeffs.nonzero(threshold)
 
@@ -229,7 +238,7 @@ class RealspaceSum(Fragment):
     The :class:`~pennylane.labs.trotter_error.RealspaceSum` class can be used to represent a
     Hamiltonian that is built from a sum of
     :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects. For example, the vibrational
-    hamiltonian
+    hamiltonian, adapted from Eq. 4 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_,
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
@@ -248,7 +257,7 @@ class RealspaceSum(Fragment):
     >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
     >>> import numpy as np
     >>> n_modes = 2
-    >>> freqs = np.array([1.23, 3.45])
+    >>> freqs = np.array([1.23, 3.45]) / 2
     >>> coeffs = RealspaceCoeffs(freqs, label="omega")
     >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
     >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
@@ -454,13 +463,14 @@ class RealspaceSum(Fragment):
         )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
-        """Return a dictionary containing the coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
+        """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
             threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
+            Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose
+                values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
 
         **Example**
 
