@@ -23,23 +23,30 @@ from pennylane.operation import AnyWires, Channel
 from pennylane.wires import Wires, WiresLike
 
 
-class SubChannel(Channel):
+class ControlledChannel(Channel):
     """
-    Channels that admit Non-Preservation of Trace maps.
+    Controlled Channels. Similar to the Controlled Operators,
+    with ch = sum Ei rho Ei^dagger
     """
 
-    num_params = 1
-    num_wires = 1
-    grad_method = "F"
-
-    def __init__(self, K_list, wires: WiresLike, id=None):
-        self.K_list = K_list
-        wires = Wires(wires)
-        super().__init__(K_list, wires=wires, id=id)
+    def __init__(
+        self,
+        base: QubitChannel,
+        control_wires: WiresLike = "unset",
+        wires: WiresLike = None,
+        control_values=None,
+        unitary_check=False,
+        work_wires: WiresLike = (),
+    ):
+        base_K_list = base.krause_matrix()
+        new_K_list = [np.eye(2)] + base_K_list
+        #! TODO: expand the space, and make the correct new Kraus matrices
+        #! TODO: they should depend on the given control values
+        super().__init__(*new_K_list, wires=wires, id=id)
 
     @staticmethod
-    def compute_kraus_matrices(K_list):
-        return list(K_list)
+    def compute_kraus_matrices(base):
+        return base
 
 
 class AmplitudeDamping(Channel):
@@ -760,7 +767,7 @@ class QubitChannel(Channel):
             K_arr = np.array(K_list)
             Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
             if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
-                raise ValueError("Only trace preserving channels can be applied.")
+                raise UserWarning("Only trace preserving channels can be applied.")
 
     def _flatten(self):
         return (self.data,), (self.wires, ())
