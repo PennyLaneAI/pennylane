@@ -34,9 +34,10 @@ from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.compiler import compiler
 from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl_op
-from pennylane.operation import Operator
+from pennylane.operation import Channel, Operator
 from pennylane.wires import Wires, WiresLike
 
+from .channel import ControlledChannel
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
@@ -185,6 +186,11 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             control=control + op.control_wires,
             control_values=control_values + op.control_values,
             work_wires=work_wires + op.work_wires,
+        )
+
+    if isinstance(op, Channel):
+        return ControlledChannel(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
 
     if isinstance(op, Operator):
