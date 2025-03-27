@@ -27,7 +27,6 @@ jobs:
     - uses: actions/checkout@v4
     - shell: bash
       run: |
-        apt install -y graphviz
         pip3 install -r doc/requirements.txt
         pip3 install .
         pip3 install openfermionpyscf
