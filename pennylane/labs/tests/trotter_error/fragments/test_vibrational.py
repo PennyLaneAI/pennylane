@@ -57,7 +57,7 @@ class TestHarmonic1Mode:
     n_states = 5
     omegas = np.array([freq])
     ham = _vibrational_hamiltonian(1, omegas, [])
-    states = [HOState.from_dict(1, 10, {(i,): 1}) for i in range(n_states)]
+    states = [HOState(1, 10, {(i,): 1}) for i in range(n_states)]
 
     @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
     def test_expectation_1_mode(self, n_states, freq, ham, states):
@@ -107,7 +107,7 @@ class TestHarmonicMultiMode:
     omegas = np.array([1, 2.3])
     ham = _vibrational_hamiltonian(2, omegas, [])
     states = [
-        HOState.from_dict(2, 10, {(i, j): 1})
+        HOState(2, 10, {(i, j): 1})
         for i, j in itertools.product(range(n_states), repeat=2)
     ]
     excitations = list(itertools.product(range(n_states), repeat=2))
@@ -317,5 +317,5 @@ class TestExpectation:
 
         for i, eigval in enumerate(eigvals):
             eigvec = eigvecs[:, i]
-            ho_state = HOState.from_scipy(n_modes, 2, csr_array(eigvec.reshape(2**n_modes, 1)))
+            ho_state = HOState(n_modes, 2, csr_array(eigvec.reshape(2**n_modes, 1)))
             assert np.isclose(ham.expectation(ho_state, ho_state), eigval)

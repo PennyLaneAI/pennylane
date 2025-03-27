@@ -37,7 +37,7 @@ class Test1Mode:
     n_states = 5
     omegas = np.array([freq])
     ham = _vibronic_hamiltonian(1, 1, omegas, [])
-    states = [VibronicHO(1, 1, 10, [HOState.from_dict(1, 10, {(i,): 1})]) for i in range(n_states)]
+    states = [VibronicHO(1, 1, 10, [HOState(1, 10, {(i,): 1})]) for i in range(n_states)]
 
     @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
     def test_expectation_1_mode(self, n_states, freq, ham, states):
@@ -89,7 +89,7 @@ class TestHarmonic:
     omegas = np.array([1, 2.3])
     ham = _vibronic_hamiltonian(1, 2, omegas, [])
     states = [
-        VibronicHO(1, 2, 10, [HOState.from_dict(2, 10, {(i, j): 1})])
+        VibronicHO(1, 2, 10, [HOState(2, 10, {(i, j): 1})])
         for i, j in product(range(n_states), repeat=2)
     ]
 

@@ -38,8 +38,10 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
     >>> from pennylane.labs.trotter_error import generic_fragments
     >>> import numpy as np
     >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
-    >>> generic_fragments(matrices)
+    >>> generic_fragments(matrices, norm_fn=np.linalg.norm)
     [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
+    >>> fragments[0].norm()
+    1.4142135623730951
     """
 
     if len(fragments) == 0:
