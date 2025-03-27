@@ -126,7 +126,7 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
 
 
 class AbstractState(ABC):
-    """Abstract class defining the methods a class needs to implement to be used to compute an expectation value.
+    """Abstract class used to define a state object for product formula error estimation.
 
     A class inheriting from ``AbstractState`` must implement the following dunder methods.
 
@@ -153,7 +153,7 @@ class AbstractState(ABC):
     @classmethod
     @abstractmethod
     def zero_state(cls) -> AbstractState:
-        """Return a representation of the zero state
+        """Return a representation of the zero state.
 
         Returns:
             AbstractState: an ``AbstractState`` representation of the zero state
@@ -162,7 +162,7 @@ class AbstractState(ABC):
 
     @abstractmethod
     def dot(self, other: AbstractState) -> float:
-        """Compute the dot product of two states
+        """Compute the dot product of two states.
 
         Args:
             other (AbstractState): the state to take the dot product with
