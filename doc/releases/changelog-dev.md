@@ -190,6 +190,7 @@
 
 * Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
 
@@ -636,6 +637,9 @@
 * Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
   [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
 
+* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``RealspaceMatrix``
+  [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
@@ -815,6 +819,9 @@
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
+* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
+  [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
+
 <h3>Bug fixes 🐛</h3>
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
@@ -896,6 +903,9 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -913,6 +923,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Diego Guala,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
