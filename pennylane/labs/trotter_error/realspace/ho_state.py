@@ -107,7 +107,7 @@ class HOState:
         Args:
             modes (int): the number of vibrational modes
             gridpoints (int): the number of gridpoints used to discretize the state
-            vector (csr_array): a sparse representation of the state vector
+            vector (scipy.sparse.csr_array): a sparse representation of the state vector
 
         Returns:
             HOState: an ``HOState`` representing the state vector
