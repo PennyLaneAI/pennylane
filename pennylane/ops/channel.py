@@ -113,7 +113,7 @@ if QubitChannel._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(QubitChannel, K_list, wires=wires)
 
 
-class ControlledChannel(Channel):
+class ControlledQubitChannel(QubitChannel):
     r"""
     Controlled quantum channel applying noise conditionally based on a control qubit state.
 
@@ -158,9 +158,29 @@ class ControlledChannel(Channel):
         work_wires: WiresLike = (),
     ):
         base_K_list = base.krause_matrix()
+        base_channel_n_wires = base.num_wires
         new_K_list = [np.eye(2)] + base_K_list
         #! TODO: expand the space, and make the correct new Kraus matrices
         #! TODO: they should depend on the given control values
+        basis = lambda x: [1-x, x]
+        projector = lambda x: np.outer(x, x)
+        
+        control_values = control_values or [1] * len(control_wires)
+        
+        # Get the projectors for each control value
+        control_projectors = [projector(basis(x)) for x in control_values]
+
+        # Combine all projectors using Kronecker product
+        control_projector = control_projectors[0]
+        for proj in control_projectors[1:]:
+            control_projector = np.kron(control_projector, proj)
+        # Complementary projector
+        control_projector_c = np.eye(control_projector.shape[0]) - control_projector
+        # Create the new Kraus matrices
+        new_K_list = [np.kron(control_projector_c, np.eye(2**base_channel_n_wires))]
+        for K in base_K_list:
+            new_K_list.append(np.kron(control_projector, K))
+        
         super().__init__(*new_K_list, wires=wires, id=id)
 
     @staticmethod
@@ -1017,6 +1037,7 @@ class ThermalRelaxationError(Channel):
 
 __qubit_channels__ = {
     "AmplitudeDamping",
+    "ControlledQubitChannel",
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
     "DepolarizingChannel",
