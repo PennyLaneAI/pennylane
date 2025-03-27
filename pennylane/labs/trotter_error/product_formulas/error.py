@@ -37,14 +37,14 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
 
     .. math:: e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
 
-    where :math:`\tilde{H} = H + \epsilon`. The leading term of the error operator :math:`\epsilon` is given by
+    where :math:`\tilde{H} = H + \hat{\epsilon}`. The leading term of the error operator :math:`\hat{\epsilon}` is given by
 
-    .. math:: \epsilon = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
+    .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
 
     Args:
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute Trotter error from
-        delta (float): the time step parameter
+        delta (float): time step for the trotter formula. 
 
     Returns:
         Fragment: the Trotter error operator
@@ -92,17 +92,17 @@ def perturbation_error(
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
-    The second-order Trotter error operator is given by the expression
+    The second-order Trotter error operator (:math:`\hat{\epsilon}`) is given by the expression
 
-    .. math:: \epsilon = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
+    .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
 
-    For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \epsilon \left| \psi \right\rangle`.
+    For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
 
     Args:
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute Trotter error from
         states: (Sequence[AbstractState]): the states to compute expectation values from
-        delta (float): the time step parameter
+        delta (float): time step for the trotter error operator. 
 
     Returns:
         List[float]: the list of expectation values computed from the Trotter error operator and the input states
