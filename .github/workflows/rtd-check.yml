@@ -1,0 +1,35 @@
+name: "Documentation check"
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions: write-all
+
+jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+
+  sphinx:
+    needs: [determine_runner] 
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    steps:
+    - uses: actions/checkout@v4
+    - shell: bash
+      run: |
+        apt install -y graphviz
+        pip3 install -r doc/requirements.txt
+        pip3 install .
+        pip3 install openfermionpyscf
+        pip3 install aiohttp fsspec h5py
+        sphinx-build -b html . _build -W --keep-going
