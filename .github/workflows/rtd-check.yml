@@ -1,4 +1,4 @@
-name: "Documentation check"
+name: "RTD check"
 on:
   merge_group:
     types:
