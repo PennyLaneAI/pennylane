@@ -184,7 +184,7 @@ class ControlledQubitChannel(QubitChannel):
         super().__init__(K_list=new_K_list, wires=wires, id=id)
 
     @staticmethod
-    def compute_kraus_matrices(base):
+    def compute_kraus_matrices(*base):
         return base
 
 

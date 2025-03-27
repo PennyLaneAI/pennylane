@@ -190,7 +190,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
 
     if isinstance(op, Channel):
         return ControlledQubitChannel(
-            op, control_wires=control, control_values=control_values, work_wires=work_wires
+            op, wires=control + op.wires, control_values=control_values, work_wires=work_wires
         )
 
     if isinstance(op, Operator):
