@@ -874,7 +874,9 @@ def apply_mid_measure(
     if postselect_mode == "fill-shots" and op.postselect is not None:
         sample = op.postselect
     else:
-        raise NotImplementedError("MidMeasureMP only supports postselection in 'fill-shots' mode on default.mixed.")
+        raise NotImplementedError(
+            "MidMeasureMP only supports postselection in 'fill-shots' mode on default.mixed."
+        )
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
@@ -897,7 +899,10 @@ def apply_mid_measure(
         dtype=float,
     )
     state = apply_operation(
-        qml.QubitUnitary(conditional_flipper, wire), state, is_state_batched=False, debugger=debugger
+        qml.QubitUnitary(conditional_flipper, wire),
+        state,
+        is_state_batched=False,
+        debugger=debugger,
     )
 
     return state
