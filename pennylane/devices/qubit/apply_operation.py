@@ -635,12 +635,12 @@ def apply_qft(op: qml.QFT, state, is_state_batched: bool = False, debugger=None,
         return _apply_cyclic_fft(state)
     if op.group == "Z2n":
         return _apply_Z2n_fft(state)
-    raise NotImplementedError(f"QFT is not implemented for group={group}.")
+    raise NotImplementedError(f"QFT is not implemented for group={op.group}.")
 
 
 def _apply_symmetric_fft(state):
     # TODO: use scipy's FFT? [need to check normalisation]
-    return np.ones(state.shape)
+    return state
 
 def _apply_Z2n_fft(state):
     # TODO: Implement FFT for Z2n
