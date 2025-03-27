@@ -27,7 +27,7 @@ class HOState:
     Args:
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        vector: (scipy.sparse.csr_array): a sparse vector representation of the state
+        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a of the state state vector
 
     ``HOState`` should be instantiated from the ``from_dict`` and ``from_scipy`` class methods.
 
@@ -62,15 +62,15 @@ class HOState:
 
     def __init__(self, modes: int, gridpoints: int, state: csr_array):
         if isinstance(state, csr_array):
-            if vector.shape == (gridpoints**modes,):
-                vector = vector.reshape((gridpoints**modes, 1))
+            if state.shape == (gridpoints**modes,):
+                state = state.reshape((gridpoints**modes, 1))
 
-            if vector.shape != (gridpoints**modes, 1):
+            if state.shape != (gridpoints**modes, 1):
                 raise ValueError(
-                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {vector.shape}."
+                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {state.shape}."
                 )
 
-            self.vector = vector
+            self.vector = state
         elif isinstance(state, dict):
             self.vector = self._vector_from_dict(modes, gridpoints, state)
         else:
