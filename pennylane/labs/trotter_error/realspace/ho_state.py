@@ -27,9 +27,9 @@ class HOState:
     Args:
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a of the state state vector
+        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a sparse state vector for the full wavefunction
+        or a dictionary containing the interacting modes and their non-zero coefficients
 
-    ``HOState`` should be instantiated from the ``from_dict`` and ``from_scipy`` class methods.
 
     **Examples**
 
