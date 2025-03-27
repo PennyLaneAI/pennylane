@@ -55,9 +55,6 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> Lis
     if not hasattr(frag_type, "__add__"):
         raise TypeError(f"Fragment of type {frag_type} does not implement __add__.")
 
-    if not hasattr(frag_type, "__sub__"):
-        raise TypeError(f"Fragment of type {frag_type} does not implement __sub__.")
-
     if not hasattr(frag_type, "__mul__"):
         raise TypeError(f"Fragment of type {frag_type} does not implement __mul__.")
 
@@ -78,7 +75,7 @@ class GenericFragment(Fragment):
             ``__add__``, ``__sub__``, ``__mul__``, and ``__matmul__``.
         norm_fn (optional, Callable): A function used to compute the norm of `fragment`.
 
-    :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
+    .. note:: :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
 
     **Example**
 
@@ -97,7 +94,7 @@ class GenericFragment(Fragment):
         return GenericFragment(self.fragment + other.fragment, norm_fn=self.norm_fn)
 
     def __sub__(self, other: GenericFragment):
-        return GenericFragment(self.fragment - other.fragment, norm_fn=self.norm_fn)
+        return GenericFragment(self.fragment + (-1)*other.fragment, norm_fn=self.norm_fn)
 
     def __mul__(self, scalar: float):
         return GenericFragment(scalar * self.fragment, norm_fn=self.norm_fn)
@@ -114,11 +111,11 @@ class GenericFragment(Fragment):
         return GenericFragment(self.fragment @ other.fragment, norm_fn=self.norm_fn)
 
     def apply(self, state: Any) -> Any:
-        """Apply the fragment to a state using the underlying object's __matmul__ method."""
+        """Apply the fragment to a state using the underlying object's ``__matmul__`` method."""
         return self.fragment @ state
 
     def expectation(self, left: Any, right: Any) -> float:
-        """Compute the expectation value using the underlying object's __matmul__ method."""
+        """Compute the expectation value using the underlying object's ``__matmul__`` method."""
         return left @ self.fragment @ right
 
     def norm(self, params: Dict = None) -> float:

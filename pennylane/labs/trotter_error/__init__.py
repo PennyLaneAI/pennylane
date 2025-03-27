@@ -22,7 +22,7 @@
 
 Trotter Base Classes
 ~~~~~~~~~~~~~~~~~~~~
-Abstract classes specifying the methods needed for fragments and states in the Trotter error workflow.
+Abstract classes specifying the methods needed for implementing fragments and states in the Trotter error workflow.
 
 .. autosummary::
     :toctree: api
