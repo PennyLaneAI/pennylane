@@ -51,8 +51,8 @@ Classes used to store representations of realspace Hamiltonians.
     ~RealspaceCoeffs
     ~RealspaceOperator
 
-Fragment Functions:
-~~~~~~~~~~~~~~~~~~~
+Fragment Functions
+~~~~~~~~~~~~~~~~~~
 Functions used to retrieve fragments of various Hamiltonians.
 
 .. autosummary::
@@ -62,8 +62,8 @@ Functions used to retrieve fragments of various Hamiltonians.
     ~vibrational_fragments
     ~vibronic_fragments
 
-Harmonic Oscillator Classes:
-~~~~~~~~~~~~~~
+Harmonic Oscillator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Classes used to construct the representation of harmonic oscillator states.
 
 .. autosummary::
@@ -72,8 +72,8 @@ Classes used to construct the representation of harmonic oscillator states.
     ~HOState
     ~VibronicHO
 
-Error Estimation Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Error Estimation Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 Functions for computing Trotter error estimates.
 
 .. autosummary::

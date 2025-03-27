@@ -44,7 +44,7 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     Args:
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute Trotter error from
-        delta (float): time step for the trotter formula. 
+        delta (float): time step for the trotter formula.
 
     Returns:
         Fragment: the Trotter error operator
@@ -102,7 +102,7 @@ def perturbation_error(
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute Trotter error from
         states: (Sequence[AbstractState]): the states to compute expectation values from
-        delta (float): time step for the trotter error operator. 
+        delta (float): time step for the trotter error operator.
 
     Returns:
         List[float]: the list of expectation values computed from the Trotter error operator and the input states
