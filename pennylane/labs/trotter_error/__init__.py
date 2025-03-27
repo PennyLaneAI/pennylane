@@ -47,5 +47,5 @@ Realspace Hamiltonian Classes
     ~RealspaceOperator
 """
 
-from .abstract_fragment import Fragment
+from .abstract import Fragment
 from .realspace import RealspaceCoeffs, RealspaceMatrix, RealspaceOperator, RealspaceSum
