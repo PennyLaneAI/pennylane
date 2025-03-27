@@ -23,10 +23,129 @@ from pennylane.operation import AnyWires, Channel
 from pennylane.wires import Wires, WiresLike
 
 
-class ControlledChannel(Channel):
+class QubitChannel(Channel):
+    r"""
+    Apply an arbitrary fixed quantum channel.
+
+    Kraus matrices that represent the fixed channel are provided
+    as a list of NumPy arrays.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        K_list (list[array[complex]]): list of Kraus matrices
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
+        id (str or None): String representing the operation (optional)
     """
-    Controlled Channels. Similar to the Controlled Operators,
-    with ch = sum Ei rho Ei^dagger
+
+    num_wires = AnyWires
+    grad_method = None
+
+    def __init__(self, K_list, wires: WiresLike, id=None):
+        wires = Wires(wires)
+        super().__init__(*K_list, wires=wires, id=id)
+
+        # check all Kraus matrices are square matrices
+        if any(K.shape[0] != K.shape[1] for K in K_list):
+            raise ValueError(
+                "Only channels with the same input and output Hilbert space dimensions can be applied."
+            )
+
+        # check all Kraus matrices have the same shape
+        if any(K.shape != K_list[0].shape for K in K_list):
+            raise ValueError("All Kraus matrices must have the same shape.")
+
+        # check the dimension of all Kraus matrices are valid
+        if any(K.ndim != 2 for K in K_list):
+            raise ValueError(
+                "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
+            )
+
+        # check that the channel represents a trace-preserving map
+        if not any(np.is_abstract(K) for K in K_list):
+            K_arr = np.array(K_list)
+            Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+            if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
+                warnings.warn(UserWarning("Only trace preserving channels can be applied."))
+
+    def _flatten(self):
+        return (self.data,), (self.wires, ())
+
+    # pylint: disable=arguments-differ, unused-argument
+    @classmethod
+    def _primitive_bind_call(cls, K_list, wires: WiresLike, id=None):
+        wires = Wires(wires)
+        return super()._primitive_bind_call(*K_list, wires=wires)
+
+    @staticmethod
+    def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the QubitChannel channel.
+
+        Args:
+            *K_list (list[array[complex]]): list of Kraus matrices
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
+        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)
+        >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
+        True
+        """
+        return list(kraus_matrices)
+
+
+# The primitive will be None if jax is not installed in the environment
+# If defined, we need to update the implementation to repack matrices
+# See capture module for more information
+if QubitChannel._primitive is not None:  # pylint: disable=protected-access
+
+    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, n_wires):
+        K_list = args[:-n_wires]
+        wires = args[-n_wires:]
+        return type.__call__(QubitChannel, K_list, wires=wires)
+
+
+class ControlledChannel(Channel):
+    r"""
+    Controlled quantum channel applying noise conditionally based on a control qubit state.
+
+    A controlled channel applies a noise channel only when one or more control qubits are in
+    a specific state (typically |1⟩). For a quantum channel with Kraus operators {K_i},
+    the controlled version creates new Kraus operators:
+
+    .. math::
+        \tilde{K}_0 = |0\rangle\langle0| \otimes I
+
+    .. math::
+        \tilde{K}_i = |1\rangle\langle1| \otimes K_{i-1}, \quad i = 1, \ldots, n+1
+
+    where :math:`n` is the number of Kraus operators in the original channel.
+
+    Similar to controlled operators, controlled channels allow for conditional
+    application of noise, which can be useful for modeling realistic quantum systems
+    and error processes that depend on the state of control qubits.
+
+    **Details:**
+
+    * Number of wires: Any (depends on base channel plus control wires)
+    * Number of parameters: Depends on base channel
+
+    Args:
+        base (QubitChannel): The channel to be controlled
+        control_wires (Union[Wires, Sequence[int], or int]): The control wire(s)
+        wires (Union[Wires, Sequence[int], or int]): The target wires for the channel
+        control_values (List[int, bool]): Values determining when to apply the channel
+            (default is the all 1s state)
+        work_wires (Union[Wires, Sequence[int], or int]): Ancillary wires that may be utilized
+            during decomposition
     """
 
     def __init__(
@@ -720,96 +839,6 @@ class PhaseFlip(Channel):
         return [K0, K1]
 
 
-class QubitChannel(Channel):
-    r"""
-    Apply an arbitrary fixed quantum channel.
-
-    Kraus matrices that represent the fixed channel are provided
-    as a list of NumPy arrays.
-
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
-    * Gradient recipe: None
-
-    Args:
-        K_list (list[array[complex]]): list of Kraus matrices
-        wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
-        id (str or None): String representing the operation (optional)
-    """
-
-    num_wires = AnyWires
-    grad_method = None
-
-    def __init__(self, K_list, wires: WiresLike, id=None):
-        wires = Wires(wires)
-        super().__init__(*K_list, wires=wires, id=id)
-
-        # check all Kraus matrices are square matrices
-        if any(K.shape[0] != K.shape[1] for K in K_list):
-            raise ValueError(
-                "Only channels with the same input and output Hilbert space dimensions can be applied."
-            )
-
-        # check all Kraus matrices have the same shape
-        if any(K.shape != K_list[0].shape for K in K_list):
-            raise ValueError("All Kraus matrices must have the same shape.")
-
-        # check the dimension of all Kraus matrices are valid
-        if any(K.ndim != 2 for K in K_list):
-            raise ValueError(
-                "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
-            )
-
-        # check that the channel represents a trace-preserving map
-        if not any(np.is_abstract(K) for K in K_list):
-            K_arr = np.array(K_list)
-            Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
-            if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
-                raise UserWarning("Only trace preserving channels can be applied.")
-
-    def _flatten(self):
-        return (self.data,), (self.wires, ())
-
-    # pylint: disable=arguments-differ, unused-argument
-    @classmethod
-    def _primitive_bind_call(cls, K_list, wires: WiresLike, id=None):
-        wires = Wires(wires)
-        return super()._primitive_bind_call(*K_list, wires=wires)
-
-    @staticmethod
-    def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
-        """Kraus matrices representing the QubitChannel channel.
-
-        Args:
-            *K_list (list[array[complex]]): list of Kraus matrices
-
-        Returns:
-            list (array): list of Kraus matrices
-
-        **Example**
-
-        >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
-        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)
-        >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
-        True
-        """
-        return list(kraus_matrices)
-
-
-# The primitive will be None if jax is not installed in the environment
-# If defined, we need to update the implementation to repack matrices
-# See capture module for more information
-if QubitChannel._primitive is not None:  # pylint: disable=protected-access
-
-    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, n_wires):
-        K_list = args[:-n_wires]
-        wires = args[-n_wires:]
-        return type.__call__(QubitChannel, K_list, wires=wires)
-
-
 class ThermalRelaxationError(Channel):
     r"""
     Thermal relaxation error channel.
@@ -987,7 +1016,6 @@ class ThermalRelaxationError(Channel):
 
 
 __qubit_channels__ = {
-    "SubChannel",
     "AmplitudeDamping",
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",

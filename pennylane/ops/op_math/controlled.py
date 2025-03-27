@@ -37,7 +37,7 @@ from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl
 from pennylane.operation import Channel, Operator
 from pennylane.wires import Wires, WiresLike
 
-from .channel import ControlledChannel
+from ..channel import ControlledChannel
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
