@@ -444,7 +444,7 @@ class RealspaceSum(Fragment):
 
         mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
 
-        return HOState.from_scipy(
+        return HOState(
             state.modes,
             state.gridpoints,
             mat @ state.vector,
