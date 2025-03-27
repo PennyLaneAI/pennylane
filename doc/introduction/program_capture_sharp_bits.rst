@@ -55,7 +55,7 @@ with ``default.qubit``).
         return qml.state()
 
 >>> circuit()
-NotImplementedError: devices must specify wires for integration with plxpr capture.
+NotImplementedError: devices must specify wires for integration with program capture.
 >>> circuit = circuit.update(device = qml.device('default.qubit', wires=1)) 
 >>> circuit()
 Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
