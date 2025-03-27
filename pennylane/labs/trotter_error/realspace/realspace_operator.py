@@ -38,7 +38,7 @@ class RealspaceOperator:
     r"""Represents a linear combination of a product of position and momentum operators.
 
     The ``RealspaceOperator`` class can be used to represent components of a vibrational
-    Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`
+    Hamiltonian, e.g., the following sum over a product of two position operators :math:`Q`:
 
     .. math:: \sum_{i,j=1}^n \phi_{i,j}Q_i Q_j,
 
