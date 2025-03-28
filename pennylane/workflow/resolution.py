@@ -122,7 +122,10 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
+    mcm_config: "qml.devices.MCMConfig",
+    device: "qml.devices.Device",
+    interface: Interface,
+    finite_shots: bool,
 ) -> "qml.devices.MCMConfig":
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
@@ -157,6 +160,12 @@ def _resolve_mcm_config(
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
         updated_values["postselect_mode"] = "pad-invalid-samples"
+
+    qml.devices.capabilities.validate_mcm_method(
+        device.capabilities,
+        mcm_config.mcm_method,
+        finite_shots,
+    )
 
     return replace(mcm_config, **updated_values)
 
@@ -275,7 +284,9 @@ def _resolve_execution_config(
         if execution_config.interface == Interface.NUMPY
         else interface
     )
-    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
+    mcm_config = _resolve_mcm_config(
+        execution_config.mcm_config, device, mcm_interface, finite_shots
+    )
 
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
