@@ -20,7 +20,7 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
@@ -38,7 +38,7 @@ from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
-ABC_ARRAY = np.array(list(ABC))
+ascii_letter_arr = np.array(list(ascii_letters))
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -888,13 +888,13 @@ class DefaultQubitLegacy(QubitDevice):
         mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
-        state_indices = ABC[: self.num_wires]
+        state_indices = ascii_letters[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
+        affected_indices = "".join(ascii_letter_arr[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
+        new_indices = ascii_letters[self.num_wires : self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices
@@ -936,8 +936,8 @@ class DefaultQubitLegacy(QubitDevice):
             shape.insert(0, batch_size)
         phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
 
-        state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
+        state_indices = ascii_letters[: self.num_wires]
+        affected_indices = "".join(ascii_letter_arr[list(device_wires)].tolist())
 
         einsum_indices = f"...{affected_indices},...{state_indices}->...{state_indices}"
         return self._einsum(einsum_indices, phases, state)
@@ -1058,8 +1058,8 @@ class DefaultQubitLegacy(QubitDevice):
         for i in range(n_qubits):
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
-                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
-                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
+                f"{ascii_letters[device_qubits - i + 1]}{ascii_letters[:device_qubits - i]},{ascii_letters[device_qubits - i + 1]}{ascii_letters[device_qubits - i]}{ascii_letters[1:device_qubits - i]}"
+                f"->{ascii_letters[device_qubits - i + 1]}a{ascii_letters[device_qubits - i]}",
                 stacked_state,
                 self._conj(stacked_state),
             )
