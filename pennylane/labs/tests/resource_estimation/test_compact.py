@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test the Compact input classes for resource estimation."""
+# pylint:disable=protected-access, no-self-use, too-many-arguments
 import math
 
 import pytest
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane import numpy as np
 
@@ -120,13 +120,11 @@ class TestIntegration:
 
         def circ():
             re.ResourceStatePrep(compact_state, wires)
-            return
 
         def expected_circ():
             state = np.random.rand(2 ** len(wires))
             state = state / np.linalg.norm(state)
             re.ResourceStatePrep(state, wires)
-            return
 
         assert re.get_resources(circ)() == re.get_resources(expected_circ)()
 
@@ -151,11 +149,9 @@ class TestIntegration:
 
         def circ():
             re.ResourceBasisState(compact_state, wires)
-            return
 
         def expected_circ():
             re.ResourceBasisState(state, wires)
-            return
 
         assert re.get_resources(circ)() == re.get_resources(expected_circ)()
 
@@ -181,7 +177,6 @@ class TestIntegration:
 
         def circ():
             re.ResourceSuperposition(state_vect=compact_state, wires=wires, work_wire=["w1"])
-            return
 
         coeffs = np.random.rand(num_coeffs)
         coeffs = coeffs / np.linalg.norm(coeffs)
@@ -194,7 +189,6 @@ class TestIntegration:
 
         def expected_circ():
             re.ResourceSuperposition(coeffs, bases, wires, work_wire=["w1"])
-            return
 
         assert re.get_resources(circ)() == re.get_resources(expected_circ)()
 
@@ -218,13 +212,11 @@ class TestIntegration:
 
         def circ():
             re.ResourceMottonenStatePreparation(compact_state, wires)
-            return
 
         def expected_circ():
             state = np.random.rand(2 ** len(wires))
             state = state / np.linalg.norm(state)
             re.ResourceMottonenStatePreparation(state, wires)
-            return
 
         assert re.get_resources(circ)() == re.get_resources(expected_circ)()
 
@@ -327,11 +319,9 @@ class TestIntegration:
 
         def circ():
             re.ResourceMPSPrep(compact_state, wires, work_wires)
-            return
 
         def expected_circ():
             re.ResourceMPSPrep(mps, wires, work_wires)
-            return
 
         assert (
             re.get_resources(circ, gate_set=gs)() == re.get_resources(expected_circ, gate_set=gs)()

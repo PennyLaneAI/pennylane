@@ -113,6 +113,7 @@ class TestStatePrep:
         ),
     )
     def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        """Test we can extract parameters from a compact state."""
         op = re.ResourceStatePrep(compact_state, wires)
         assert op.resource_params == expected_params
 
@@ -179,6 +180,7 @@ class TestResourceBasisState:
         ),
     )
     def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        """Test we can extract parameters from a compact state."""
         op = re.ResourceBasisState(compact_state, wires)
         assert op.resource_params == expected_params
 
@@ -324,6 +326,7 @@ class TestResourceSuperposition:
     def test_resource_params_with_compact_state(
         self, compact_state, wires, work_wire, expected_params
     ):
+        """Test we can extract parameters from a compact state."""
         op = re.ResourceSuperposition(state_vect=compact_state, wires=wires, work_wire=work_wire)
         assert op.resource_params == expected_params
 
@@ -467,6 +470,7 @@ class TestResourceMottonenStatePreparation:
         ),
     )
     def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        """Test we can extract parameters from a compact state."""
         op = re.ResourceMottonenStatePreparation(compact_state, wires)
         assert op.resource_params == expected_params
 
@@ -681,6 +685,7 @@ class TestResourceMPSPrep:
     def test_resource_params_with_compact_state(
         self, compact_state, wires, work_wires, expected_params
     ):
+        """Test we can extract parameters from a compact state."""
         op = re.ResourceMPSPrep(compact_state, wires, work_wires=work_wires)
         assert op.resource_params == expected_params
 
