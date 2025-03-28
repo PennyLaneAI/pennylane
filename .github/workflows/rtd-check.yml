@@ -62,9 +62,9 @@ jobs:
     - name: Build Sphinx
       run: |
         cd doc
-        python -m sphinx -b html ./ ./_build -W --keep-going
+#        python -m sphinx -b html ./ ./_build -W --keep-going
 
-    - name: Build Sphinx
+    - name: Build Sphinx zip
       run: |
         python -m sphinx -T -b singlehtml -W --keep-going -d ./_build/doctrees -D language=en . ./htmlzip        
   # sphinx:
