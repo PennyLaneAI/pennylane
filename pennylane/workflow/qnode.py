@@ -32,6 +32,12 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
+from .mcm_config_utils import (
+    MCM_METHOD,
+    POSTSELECT_MODE,
+    SupportedMCMMethodUserInput,
+    SupportedPostSelectModeUserInput,
+)
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
@@ -537,8 +543,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: Union[None, bool] = False,
-        postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-        mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
+        postselect_mode: SupportedPostSelectModeUserInput = POSTSELECT_MODE.NONE,
+        mcm_method: SupportedMCMMethodUserInput = MCM_METHOD.NONE,
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
