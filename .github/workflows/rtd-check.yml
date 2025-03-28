@@ -40,7 +40,9 @@ jobs:
         echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
 
     - name: Install dependencies
+      id: install_dependencies
       run: |
+        echo $PATH
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir sphinx 
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt         
