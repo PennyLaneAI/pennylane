@@ -19,7 +19,7 @@ jobs:
         python -m pip install --upgrade --no-cache-dir sphinx 
         python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt 
     - name: asdf
-      uses: asdf-vm/actions/plugins-add@v4
+      uses: asdf-vm/actions/plugins-add@v3
       with:
         tool: python
         args: "3.10.15"
