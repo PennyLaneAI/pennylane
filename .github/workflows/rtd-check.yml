@@ -2,8 +2,6 @@ name: "RTD check"
 on:
   pull_request: {}
 
-permissions: write-all
-
 jobs:
   sphinx:
     runs-on: ubuntu-latest
@@ -65,7 +63,11 @@ jobs:
       run: |
         cd doc
         python -m sphinx -b html ./ ./_build -W --keep-going
-        python -m sphinx -T -b singlehtml -d ./_build/doctrees -D language=en . ./htmlzip
+
+    - name: Build Sphinx
+      run: |
+        cd doc
+        python -m sphinx -T -b singlehtml -W --keep-going -d ./_build/doctrees -D language=en . ./htmlzip        
   # sphinx:
   #   needs: [determine_runner] 
   #   runs-on: ${{ needs.determine_runner.outputs.runner_group }}
