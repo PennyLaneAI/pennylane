@@ -10,7 +10,7 @@ jobs:
     # container:
     #   image: ubuntu:24.04
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: "3.10.15"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -25,7 +25,6 @@ jobs:
     
     - name: Install dependencies
       run: |
-        ls
         python -m pip install --upgrade --no-cache-dir pip setuptools 
         python -m pip install --upgrade --no-cache-dir sphinx 
         python -m pip install --exists-action=w --no-cache-dir -r doc/requirements.txt 
@@ -62,7 +61,10 @@ jobs:
     #   with:
     #     tool: python
     #     args: "3.10.15"
-
+    - name: Build Sphinx
+      run: |
+        python -m sphinx-build -b html doc/ doc/_build -W --keep-going
+        python -m sphinx -T -b singlehtml -d doc/_build/doctrees -D language=en . doc/htmlzip
   # sphinx:
   #   needs: [determine_runner] 
   #   runs-on: ${{ needs.determine_runner.outputs.runner_group }}
