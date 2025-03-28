@@ -26,8 +26,10 @@ from pennylane.labs.resource_estimation import (
     ResourceOperator,
     ResourcesNotDefined,
 )
+from pennylane.operation import Operation
 from pennylane.templates import TrotterProduct
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+from pennylane.ops.op_math import Sum, SProd
 
 # pylint: disable=arguments-differ
 
@@ -101,6 +103,68 @@ class ResourceTrotterProduct(
     defaultdict(<class 'int'>, {RX: 2, RZ: 1})
 
     """
+
+    def __init__(  # pylint: disable=too-many-arguments
+        self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
+    ):
+        r"""Initialize the TrotterProduct class"""
+
+        if order <= 0 or order != 1 and order % 2 != 0:
+            raise ValueError(
+                f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
+            )
+
+        if isinstance(hamiltonian, re.CompactHamiltonian):
+            self.compact_hamiltonian = hamiltonian
+            self._hyperparameters = {
+                "n": n,
+                "order": order,
+                "base": hamiltonian,
+                "check_hermitian": check_hermitian,
+            }
+
+            Operation.__init__(self, wires=("d_{j}" for j in range(hamiltonian.num_qubits)))
+            return
+
+        if isinstance(hamiltonian, qml.ops.LinearCombination):
+            coeffs, ops = hamiltonian.terms()
+            if len(coeffs) < 2:
+                raise ValueError(
+                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
+            hamiltonian = qml.dot(coeffs, ops)
+
+        if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
+            hamiltonian = hamiltonian.simplify()
+            if len(hamiltonian.terms()[0]) < 2:
+                raise ValueError(
+                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                )
+
+        if not isinstance(hamiltonian, Sum):
+            raise TypeError(
+                f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
+            )
+
+        if check_hermitian:
+            for op in hamiltonian.operands:
+                if not op.is_hermitian:
+                    raise ValueError(
+                        "One or more of the terms in the Hamiltonian may not be Hermitian"
+                    )
+
+        self._hyperparameters = {
+            "n": n,
+            "order": order,
+            "base": hamiltonian,
+            "check_hermitian": check_hermitian,
+        }
+        self.compact_hamiltonian = None
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     @staticmethod
     def _resource_decomp(
@@ -196,14 +260,17 @@ class ResourceTrotterProduct(
         base = self.hyperparameters["base"]
         order = self.hyperparameters["order"]
 
-        first_order_expansion = [
-            ResourceExp.resource_rep(
-                **re.ops.op_math.symbolic._extract_exp_params(  # pylint: disable=protected-access
-                    op, scalar=1j, num_steps=1
+        if cmpct_ham := self.compact_hamiltonian:
+            first_order_expansion = cmpct_ham.cost_per_exp_term
+        else:
+            first_order_expansion = [
+                ResourceExp.resource_rep(
+                    **re.ops.op_math.symbolic._extract_exp_params(  # pylint: disable=protected-access
+                        op, scalar=1j, num_steps=1
+                    )
                 )
-            )
-            for op in base.operands
-        ]
+                for op in base.operands
+            ]
 
         return {
             "n": n,

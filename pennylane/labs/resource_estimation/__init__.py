@@ -92,6 +92,7 @@ Symbolic Operators
     ~ResourceExp
     ~ResourcePow
     ~ResourceProd
+    ~ResourceConjugatedProd
 
 Templates
 ~~~~~~~~~
@@ -137,6 +138,7 @@ Compact Classes
     :toctree: api
 
     ~CompactState
+    ~CompactHamiltonian
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -179,6 +181,7 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceConjugatedProd,
     ResourceCRot,
     ResourceCRX,
     ResourceCRY,
@@ -248,4 +251,4 @@ from .templates import (
     ResourceQubitUnitary,
 )
 
-from .compact import CompactState
+from .compact import CompactState, CompactHamiltonian

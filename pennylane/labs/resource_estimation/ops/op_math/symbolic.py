@@ -1127,7 +1127,7 @@ class ResourceProd(Prod, re.ResourceOperator):
         *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
 
     Resource Parameters:
-        * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
+        * cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
 
     Resources:
         This symbolic class represents a product of operations. The resources are defined trivially as the counts for each operation in the product.
@@ -1157,7 +1157,7 @@ class ResourceProd(Prod, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+            cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed
                 representation, corresponding to the factors in the product.
 
         Resources:
@@ -1193,7 +1193,7 @@ class ResourceProd(Prod, re.ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
+                * cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
         """
         try:
             cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
@@ -1210,13 +1210,238 @@ class ResourceProd(Prod, re.ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+            cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed
                 representation, corresponding to the factors in the product.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
         return re.CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
+
+
+class ResourceConjugatedProd(Prod, re.ResourceOperator):
+    r"""Resource class for a special case of the symbolic Prod operation.
+
+    A product of operators (:math:`\Prod_{j=0}^{N-1} \hat{O}_{j} \coloneq \hat{O}`) can 
+    be represented as a conjugated product if it can be expresed as:
+
+    .. math:: \hat{O} = \hat{V} \cdot \hat{U} \cdot \hat{V}^{\dagger},
+
+    such that, for certain indices :math:`u_{0}` and :math:`u_{k}`, we can identify the 
+    :math:`\hat{U}` and :math:`\hat{V}` operators explicitly. 
+
+    .. math::
+
+        \begin{align}
+            \hat{V} \cdot \hat{U} \cdot \hat{V}^{\dagger} &= (\Prod_{j=0}^{u_{0} - 1} \hat{O}_{j}) \cdot (\Prod_{j=u_{0}}^{u_{k}-1} \hat{O}_{j}) (\Prod_{j=u_{k}}^{N-1} \hat{O}_{j}), \\
+            \hat{V} = \Prod_{j=0}^{u_{0} - 1} \hat{O}_{j}, \ \ \hat{U} &= \Prod_{j=u_{0}}^{u_{k}-1} \hat{O}_{j}, \ \ \hat{V}^{\dagger} = \Prod_{j=u_{k}}^{N-1} \hat{O}_{j}
+        \end{align}
+    
+    Args:
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together
+        conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+
+    Resource Parameters:
+        * cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
+        * conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+
+    Resources:
+        This symbolic class represents a product of operations. The resources are defined trivially as the counts for each operation in the product.
+
+    .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+    **Example**
+
+    The product of operations can be constructed as follows. Note, each operation in the
+    product must be a valid :class:`~.ResourceOperator`
+
+    >>> prod_op = re.ResourceConjugatedProd(
+    ...     re.ResourceQFT(range(3)),
+    ...     re.ResourceZ(0),
+    ...     re.ResourceAdjoint(re.ResourceQFT(range(3))),
+    ...     conjugated_indicies=(1, 2),
+    ... )
+    >>> prod_op
+    ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ (Adjoint(ResourceQFT(wires=[0, 1, 2])))
+    >>> prod_op.resources(**prod_op.resource_params)
+    defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, Adjoint(QFT(3)): 1})
+
+    """
+
+    def __init__(self, *operands: math.Operator, conjugated_indicies=None, id=None, _pauli_rep=None):
+        r"""Resource class for a special case of the symbolic Prod operation.
+
+        A product of operators (:math:`\Prod_{j=0}^{N-1} \hat{O}_{j} \coloneq \hat{O}`) can 
+        be represented as a conjugated product if it can be expresed as:
+
+        .. math:: \hat{O} = \hat{V} \cdot \hat{U} \cdot \hat{V}^{\dagger},
+
+        such that, for certain indices :math:`u_{0}` and :math:`u_{k}`, we can identify the 
+        :math:`\hat{U}` and :math:`\hat{V}` operators explicitly. 
+
+        .. math::
+
+            \begin{align}
+                \hat{V} \cdot \hat{U} \cdot \hat{V}^{\dagger} &= (\Prod_{j=0}^{u_{0} - 1} \hat{O}_{j}) \cdot (\Prod_{j=u_{0}}^{u_{k}-1} \hat{O}_{j}) (\Prod_{j=u_{k}}^{N-1} \hat{O}_{j}), \\
+                \hat{V} = \Prod_{j=0}^{u_{0} - 1} \hat{O}_{j}, \ \ \hat{U} &= \Prod_{j=u_{0}}^{u_{k} - 1} \hat{O}_{j}, \ \ \hat{V}^{\dagger} = \Prod_{j=u_{k}}^{N-1} \hat{O}_{j}
+            \end{align}
+        
+        Args:
+            *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together
+            conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+
+        Resource Parameters:
+            * cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
+            * conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+
+        Resources:
+            This symbolic class represents a product of operations. The resources are defined trivially as the counts for each operation in the product.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        The product of operations can be constructed as follows. Note, each operation in the
+        product must be a valid :class:`~.ResourceOperator`
+
+        >>> prod_op = re.ResourceConjugatedProd(
+        ...     re.ResourceQFT(range(3)),
+        ...     re.ResourceZ(0),
+        ...     re.ResourceAdjoint(re.ResourceQFT(range(3))),
+        ...     conjugated_indicies=(1, 2),
+        ... )
+        >>> prod_op
+        ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ (Adjoint(ResourceQFT(wires=[0, 1, 2])))
+        >>> prod_op.resources(**prod_op.resource_params)
+        defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, Adjoint(QFT(3)): 1})
+
+        """
+        super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
+        self.conjugated_indicies = conjugated_indicies
+
+    @staticmethod
+    def _resource_decomp(cmpr_factors, conjugated_indicies, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed
+                representation, corresponding to the factors in the product.
+            conjugated_indicies (Union[tuple[int], None]): A tuple containing the indicies that separate each 
+                operator in the product.
+
+        Resources:
+            This symbolic class represents a product of operations. The resources are defined
+                trivially as the counts for each operation in the product.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        The product of operations can be constructed as follows. Note, each operation in the
+        product must be a valid :class:`~.ResourceOperator`
+
+        >>> prod_op = re.ResourceConjugatedProd(
+        ...     re.ResourceQFT(range(3)),
+        ...     re.ResourceZ(0),
+        ...     re.ResourceAdjoint(re.ResourceQFT(range(3))),
+        ...     conjugated_indicies=(1, 2),
+        ... )
+        >>> prod_op
+        ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ (Adjoint(ResourceQFT(wires=[0, 1, 2])))
+        >>> prod_op.resources(**prod_op.resource_params)
+        defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, Adjoint(QFT(3)): 1})
+
+        """
+        res = defaultdict(int)
+        for factor in cmpr_factors:
+            res[factor] += 1
+        return res
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
+                * conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+        """
+        try:
+            cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
+        except AttributeError as error:
+            raise ValueError(
+                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        return {"cmpr_factors": cmpr_factors, "conjugated_indicies": self.conjugated_indicies}
+
+    @classmethod
+    def resource_rep(cls, cmpr_factors, conjugated_indicies) -> re.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
+            conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return re.CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors, "conjugated_indicies": conjugated_indicies})
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
+        num_work_wires: int,
+        cmpr_factors,
+        conjugated_indicies,
+        **kwargs,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of control qubits of the operation
+            num_ctrl_values (int): The subset of control qubits of the operation, that are controlled when in the :math:`|0\rangle` state.
+            num_work_wires (int): The number of additional qubits that can be used for the decomposition of the operation.
+            cmpr_factors (tuple[CompressedResourceOp]): A tuple of operations, in the compressed representation, corresponding to the factors in the product.
+            conjugated_indicies (Union[tuple[int], None]): a tuple containing the indicies that separate each operator in the product  
+
+        Resources:
+            The resources are derived from the following identity. If an operation :math:`\hat{A}`
+            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+            then the controlled operation :math:`C\hat{A}` can be expressed as:
+
+            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+
+            Specifically, the resources are obtained by controlling on the subset of operations which
+            fall within the :code:`conjugated_indicies` index values.
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+                values are the counts.
+        """
+        N,  = len(cmpr_factors)
+        res = defaultdict(int)
+        u_0, u_k = conjugated_indicies
+        
+        for index in range(0, u_0):
+            res[cmpr_factors[index]] += 1
+        
+        for index in range(u_0, u_k):
+            factor = cmpr_factors[index]
+            ctrl_factor = re.ResourceControlled.resource_rep(
+                factor.op_type, factor.params, num_ctrl_wires, num_ctrl_values, num_work_wires,
+            )
+
+            res[ctrl_factor] += 1
+
+        for index in range(u_k, N):
+            res[cmpr_factors[index]] += 1
+        
+        return res
 
 
 def _extract_exp_params(base_op, scalar, num_steps):

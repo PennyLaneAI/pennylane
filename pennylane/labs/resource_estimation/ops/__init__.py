@@ -55,6 +55,7 @@ from .op_math import (
     ResourceCZ,
     ResourceCSWAP,
     ResourceCCZ,
+    ResourceConjugatedProd,
     ResourceCRot,
     ResourceCRX,
     ResourceCRY,
