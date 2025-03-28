@@ -3,8 +3,8 @@
 
 .. _intro_ref_compile_circuits:
 
-Quantum compilation
-===================
+Compiling circuits
+==================
 
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
 here in a loose sense as the process of transforming one circuit 
