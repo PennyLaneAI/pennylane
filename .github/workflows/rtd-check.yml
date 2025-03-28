@@ -4,11 +4,11 @@ on:
 
 jobs:
   sphinx:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     # container:
     #   image: ubuntu:24.04
     env:
-      PYTHON_VERSION: "3.10.15"
+      PYTHON_VERSION: "3.10"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
