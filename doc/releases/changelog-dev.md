@@ -634,6 +634,7 @@
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
+<<<<<<< HEAD
 * Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
   [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
 
@@ -679,6 +680,11 @@
   >>> perturbation_error(frags, [state1, state2])
   [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
   ```
+=======
+* Added `CompactState`, a class to more efficiently represent quantum states for
+resource estimation.
+  [(#7126)](https://github.com/PennyLaneAI/pennylane/pull/7126)
+>>>>>>> 8b65d79e1 (changelog)
 
 <h3>Breaking changes 💔</h3>
 
@@ -978,4 +984,5 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
+Jay Soni,
 David Wierichs
