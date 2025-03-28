@@ -61,10 +61,12 @@ jobs:
     #     args: "3.10.15"
     - name: Build Sphinx
       run: |
-        python -m sphinx -b html doc/ doc/_build -W --keep-going
+        cd doc
+        python -m sphinx -T -b html -d doc/_build/doctrees -D language=en doc/_build -W --keep-going
 
     - name: Build Sphinx zip
       run: |
+        cd doc
         python -m sphinx -T -b singlehtml -W --keep-going -d doc/_build/doctrees -D language=en doc/ doc/htmlzip        
   # sphinx:
   #   needs: [determine_runner] 
