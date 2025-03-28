@@ -19,6 +19,7 @@ from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
+import scipy as sp
 from gate_data import CNOT, H, I
 from gate_data import Rotx as RX
 from gate_data import Roty as RY
@@ -49,6 +50,16 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 
 class TestSingleOperation:
+
+    def test_sparse_operators_unsupported(self):
+        """Test that an error is raised if the operation is sparse"""
+        X_csr = sp.sparse.csr_matrix(X)
+        op = qml.QubitUnitary(X_csr, wires=[0])
+        with pytest.raises(
+            TypeError, match="not supported for Operators defined with sparse matrices."
+        ):
+            qml.matrix(op)
+
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct
