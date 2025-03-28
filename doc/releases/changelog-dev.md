@@ -771,6 +771,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `Enum` objects to improve MCM configuration validation and handling.
+  [(#7161)](https://github.com/PennyLaneAI/pennylane/pull/7161)
+
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
