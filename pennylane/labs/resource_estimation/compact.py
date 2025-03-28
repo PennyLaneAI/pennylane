@@ -44,7 +44,7 @@ class CompactState:
             compact_statevector = re.CompactState.from_state_vector(num_qubits=20, num_coeffs=2**20)
 
             def circ():
-                re.ResourceSuperposition(compact_statevector, wires=range(20))
+                re.ResourceStatePrep(compact_statevector, wires=range(20))
                 return
 
         The resources can then be extracted as usual:
