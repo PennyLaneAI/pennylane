@@ -419,14 +419,45 @@ TracerIntegerConversionError: The __index__() method was called on traced array 
 The error occurred while tracing the function wrapper at <path to environment>/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
+Autograph and Pythonic control flow
+-----------------------------------
+
+Autograph is a feature that allows for users to use standard Pythonic control flow
+like ``for``, ``while``, etc., instead of :func:`~.pennylane.for_loop` and :func:`~.pennylane.while_loop` 
+and still have compatibility with program capture. This feature is enabled by default, 
+but can be switched off with the ``autograph`` keyword argument.
+
+.. code-block:: python
+
+    @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
+    def circuit():
+        for _ in range(10):
+            qml.RX(0.1, 0)
+
+        return qml.state()
+
+>>> circuit()
+array([0.87758256+0.j        , 0.        +0.j        ,
+       0.        -0.47942554j, 0.        +0.j        ])
+
+Note that this will unroll Pythonic control flow in your program.
+
 Dynamic shapes
 --------------
 
-Creating and manipulating dynamically shaped objects within a quantum function or 
-QNode when capture is enabled is supported with 
+A dynamically shaped array is an array whose shape depends on an abstract value 
+(e.g., a function argument). Creating and manipulating dynamically shaped objects 
+within a quantum function or QNode when capture is enabled is supported with 
 `JAX's experimental dynamic shapes <https://docs.jax.dev/en/latest/notebooks/Common_Gotchas_in_JAX.html#dynamic-shapes>`__. 
 Given the experimental nature of this feature, PennyLane's dynamic shapes support 
 is at best a subset of what is possible with purely classical programs using JAX. 
+
+To use JAX's experimental dynamic shapes support, you must add the following toggle 
+to the top level of your program: 
+
+.. code-block:: python
+
+    jax.config.update("jax_dynamic_shapes", True)
 
 Parameter broadcasting and vmap
 -------------------------------
