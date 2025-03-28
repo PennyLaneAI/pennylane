@@ -680,6 +680,10 @@
   [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
   ```
 
+* Added `CompactState`, a class to more efficiently represent quantum states for
+resource estimation.
+  [(#7126)](https://github.com/PennyLaneAI/pennylane/pull/7126)
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
@@ -981,4 +985,5 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
+Jay Soni,
 David Wierichs
