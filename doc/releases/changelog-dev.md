@@ -115,6 +115,22 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+  ```python
+  from qualtran.bloqs.basic_gates import CNOT
+  
+  # Execute on device
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.FromBloq(CNOT(), wires=[0, 1])
+      return qml.state()
+  
+  >>> circuit()
+  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  ```
+  [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
+
 * Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
 
