@@ -31,14 +31,14 @@ from pennylane.workflow.mcm_config_utils import (
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: MCM_METHOD = MCM_METHOD.NONE
+    mcm_method: Union[MCM_METHOD, None] = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: POSTSELECT_MODE = POSTSELECT_MODE.NONE
+    postselect_mode: Union[POSTSELECT_MODE, None] = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples

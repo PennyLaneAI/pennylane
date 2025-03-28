@@ -23,7 +23,6 @@ from typing import Literal, Union
 class MCM_METHOD(Enum):
     """Canonical set of mid-circuit measurement methods supported."""
 
-    NONE = None
     DEFERRED = "deferred"
     ONE_SHOT = "one-shot"
     TREE_TRAVERSAL = "tree-traversal"
@@ -36,7 +35,7 @@ class MCM_METHOD(Enum):
 
 
 MCM_METHOD_MAP = {
-    None: MCM_METHOD.NONE,
+    None: None,
     "deferred": MCM_METHOD.DEFERRED,
     "one-shot": MCM_METHOD.ONE_SHOT,
     "tree-traversal": MCM_METHOD.TREE_TRAVERSAL,
@@ -58,6 +57,9 @@ def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_ME
         MCM_METHOD: The canonical MCM_METHOD.
 
     """
+    if not user_input:
+        return None
+
     if isinstance(user_input, MCM_METHOD):
         return user_input
 
@@ -72,7 +74,6 @@ def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_ME
 class POSTSELECT_MODE(Enum):
     """Canonical set of postselection modes supported."""
 
-    NONE = None
     HW_LIKE = "hw-like"
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
@@ -84,7 +85,6 @@ class POSTSELECT_MODE(Enum):
 
 
 POSTSELECT_MODE_MAP = {
-    None: POSTSELECT_MODE.NONE,
     "hw-like": POSTSELECT_MODE.HW_LIKE,
     "fill-shots": POSTSELECT_MODE.FILL_SHOTS,
     "pad-invalid-samples": POSTSELECT_MODE.PAD_INVALID_SAMPLES,
@@ -104,6 +104,9 @@ def get_canonical_postselect_mode(user_input: Union[str, POSTSELECT_MODE, None])
     Returns:
         POSTSELECT_MODE: The canonical POSTSELECT_MODE.
     """
+    if not user_input:
+        return None
+
     if isinstance(user_input, POSTSELECT_MODE):
         return user_input
 
