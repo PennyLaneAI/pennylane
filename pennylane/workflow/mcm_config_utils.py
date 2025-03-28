@@ -69,10 +69,9 @@ def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_ME
 
     try:
         return MCM_METHOD_MAP[user_input]
-    except KeyError as exc:
-        raise ValueError(
-            f"Invalid mcm method {user_input}, must be one of {SUPPORTED_MCM_METHODS}."
-        ) from exc
+    except KeyError:
+        # Not natively supported but will see if device supports through capabilities file.
+        return user_input
 
 
 class POSTSELECT_MODE(Enum):
