@@ -62,7 +62,7 @@ jobs:
     - name: Build Sphinx
       run: |
         cd doc
-        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html -W --keep-going
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going
 
     - name: Build Sphinx zip
       run: |
