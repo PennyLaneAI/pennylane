@@ -13,8 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane state preparation templates."""
 import math
-from typing import Dict
 from collections import defaultdict
+from typing import Dict
 
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
@@ -255,7 +255,8 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
         if isinstance(state_vect, re.CompactState):
             self.compact_state = state_vect
-            Operation.__init__(self, state_vect, wires=wires)
+            all_wires = qml.wires.Wires(wires) + qml.wires.Wires(work_wire)
+            Operation.__init__(self, state_vect, wires=all_wires)
             return
 
         self.compact_state = None
@@ -468,7 +469,7 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
             this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
         right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
-    
+
     Resource Parameters:
         * num_wires (int): number of qubits corresponding to the state preparation register
         * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.

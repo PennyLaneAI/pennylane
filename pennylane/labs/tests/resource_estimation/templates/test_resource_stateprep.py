@@ -87,6 +87,35 @@ class TestStatePrep:
         """Test that the resource params are correct"""
         assert op.resource_params == expected_params
 
+    @pytest.mark.parametrize(
+        "compact_state, wires, expected_params",
+        (
+            (
+                re.CompactState.from_state_vector(num_qubits=3, num_coeffs=8),
+                range(3),
+                {"num_wires": 3},
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=100, num_coeffs=2**100),
+                range(100),
+                {"num_wires": 100},
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=3, num_coeffs=8, num_work_wires=5),
+                range(3),
+                {"num_wires": 3},
+            ),
+            (
+                re.CompactState.from_bitstring(num_qubits=7, num_bit_flips=10),
+                range(7),
+                {"num_wires": 7},
+            ),
+        ),
+    )
+    def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        op = re.ResourceStatePrep(compact_state, wires)
+        assert op.resource_params == expected_params
+
     @pytest.mark.parametrize("expected_params", resource_params_data)
     def test_resource_rep(self, expected_params):
         """Test the resource_rep returns the correct CompressedResourceOp"""
@@ -128,6 +157,30 @@ class TestResourceBasisState:
         op = re.ResourceBasisState(state, wires=wires)
 
         assert op.resource_params == {"num_bit_flips": 2}
+
+    @pytest.mark.parametrize(
+        "compact_state, wires, expected_params",
+        (
+            (
+                re.CompactState.from_bitstring(num_qubits=6, num_bit_flips=16),
+                range(6),
+                {"num_bit_flips": 16},
+            ),
+            (
+                re.CompactState.from_bitstring(num_qubits=7, num_bit_flips=10),
+                range(7),
+                {"num_bit_flips": 10},
+            ),
+            (
+                re.CompactState.from_bitstring(num_qubits=5, num_bit_flips=30),
+                range(5),
+                {"num_bit_flips": 30},
+            ),
+        ),
+    )
+    def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        op = re.ResourceBasisState(compact_state, wires)
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize(
         "num_bit_flips",
@@ -232,6 +285,47 @@ class TestResourceSuperposition:
             "num_basis_states": num_basis_states,
             "size_basis_state": size_basis_state,
         }
+
+    @pytest.mark.parametrize(
+        "compact_state, wires, work_wire, expected_params",
+        (
+            (
+                re.CompactState.from_state_vector(num_qubits=6, num_coeffs=16, num_work_wires=1),
+                range(6),
+                ["w1"],
+                {
+                    "num_stateprep_wires": 4,
+                    "num_basis_states": 16,
+                    "size_basis_state": 6,
+                },
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=100, num_coeffs=100, num_work_wires=1),
+                range(100),
+                ["w1"],
+                {
+                    "num_stateprep_wires": 7,
+                    "num_basis_states": 100,
+                    "size_basis_state": 100,
+                },
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=3, num_coeffs=8, num_work_wires=1),
+                range(3),
+                ["w1"],
+                {
+                    "num_stateprep_wires": 3,
+                    "num_basis_states": 8,
+                    "size_basis_state": 3,
+                },
+            ),
+        ),
+    )
+    def test_resource_params_with_compact_state(
+        self, compact_state, wires, work_wire, expected_params
+    ):
+        op = re.ResourceSuperposition(state_vect=compact_state, wires=wires, work_wire=work_wire)
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize(
         "num_stateprep_wires, num_basis_states, size_basis_state",
@@ -346,6 +440,35 @@ class TestResourceMottonenStatePreparation:
         op = re.ResourceMottonenStatePreparation(state_vector=state_vector, wires=wires)
 
         assert op.resource_params == {"num_wires": len(wires)}
+
+    @pytest.mark.parametrize(
+        "compact_state, wires, expected_params",
+        (
+            (
+                re.CompactState.from_state_vector(num_qubits=3, num_coeffs=8),
+                range(3),
+                {"num_wires": 3},
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=100, num_coeffs=2**100),
+                range(100),
+                {"num_wires": 100},
+            ),
+            (
+                re.CompactState.from_state_vector(num_qubits=3, num_coeffs=8, num_work_wires=5),
+                range(3),
+                {"num_wires": 3},
+            ),
+            (
+                re.CompactState.from_bitstring(num_qubits=7, num_bit_flips=10),
+                range(7),
+                {"num_wires": 7},
+            ),
+        ),
+    )
+    def test_resource_params_with_compact_state(self, compact_state, wires, expected_params):
+        op = re.ResourceMottonenStatePreparation(compact_state, wires)
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize(
         "num_wires",
@@ -518,7 +641,7 @@ class TestResourceMPSPrep:
                     qnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
                 ],
                 3,
-                2,
+                1,
             ),
         ],
     )
@@ -531,6 +654,35 @@ class TestResourceMPSPrep:
         )
 
         assert op.resource_params == {"num_wires": num_wires, "num_work_wires": num_work_wires}
+
+    @pytest.mark.parametrize(
+        "compact_state, wires, work_wires, expected_params",
+        (
+            (
+                re.CompactState.from_mps(num_mps_matrices=10, max_bond_dim=4),
+                range(10),
+                [f"w{j}" for j in range(2)],
+                {"num_wires": 10, "num_work_wires": 2},
+            ),
+            (
+                re.CompactState.from_mps(num_mps_matrices=3, max_bond_dim=7),
+                range(3),
+                [f"w{j}" for j in range(3)],
+                {"num_wires": 3, "num_work_wires": 3},
+            ),
+            (
+                re.CompactState.from_mps(num_mps_matrices=12, max_bond_dim=6),
+                range(12),
+                [f"w{j}" for j in range(3)],
+                {"num_wires": 12, "num_work_wires": 3},
+            ),
+        ),
+    )
+    def test_resource_params_with_compact_state(
+        self, compact_state, wires, work_wires, expected_params
+    ):
+        op = re.ResourceMPSPrep(compact_state, wires, work_wires=work_wires)
+        assert op.resource_params == expected_params
 
     @pytest.mark.parametrize(
         "num_wires, num_work_wires",
