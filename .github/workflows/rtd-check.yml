@@ -21,29 +21,27 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Setup Python virtual environment
-      id: setup_venv
-      env:
-        VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
-      run: |
-        # Clear any pre-existing venvs
-        rm -rf venv_*
+    # - name: Setup Python virtual environment
+    #   id: setup_venv
+    #   env:
+    #     VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
+    #   run: |
+    #     # Clear any pre-existing venvs
+    #     rm -rf venv_*
 
-        # Create new venv for this workflow_run
-        python --version
-        python -m venv ${{ env.VENV_NAME }}
+    #     # Create new venv for this workflow_run
+    #     python --version
+    #     python -m venv ${{ env.VENV_NAME }}
 
-        # Add the venv to PATH for subsequent steps
-        echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
+    #     # Add the venv to PATH for subsequent steps
+    #     echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
 
-        # Adding venv name as an output for subsequent steps to reference if needed
-        echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
+    #     # Adding venv name as an output for subsequent steps to reference if needed
+    #     echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
 
     - name: Install dependencies
-      id: install_dependencies
       run: |
-        echo $PATH
-        pip install --upgrade --no-cache-dir pip setuptools 
+        python -m pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir sphinx 
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt         
 
@@ -63,8 +61,7 @@ jobs:
     #     args: "3.10.15"
     - name: Build Sphinx
       run: |
-        cd doc
-#        python -m sphinx -b html ./ ./_build -W --keep-going
+        python -m sphinx -b html ./ ./_build -W --keep-going
 
     - name: Build Sphinx zip
       run: |
