@@ -1887,7 +1887,7 @@ class TestMCMConfiguration:
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Invalid postselection mode foo"):
+        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
             _ = qml.QNode(f, dev, postselect_mode="foo")
 
     @pytest.mark.jax

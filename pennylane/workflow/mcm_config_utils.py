@@ -121,5 +121,5 @@ def get_canonical_postselect_mode(user_input: Union[str, POSTSELECT_MODE, None])
         return POSTSELECT_MODE_MAP[user_input]
     except KeyError as exc:
         raise ValueError(
-            f"Invalid postselection mode {user_input}, must be one of {SUPPORTED_POSTSELECT_MODES}."
+            f"Invalid postselection mode '{user_input}', must be one of {SUPPORTED_POSTSELECT_MODES}."
         ) from exc
