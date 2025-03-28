@@ -68,16 +68,20 @@ _numpy_func_map = {name: getattr(np, name) for name in _numpy_funcs}
 
 class Environment:
 
-    def __init__(self):
+    def __init__(self, kwargs):
         self.num_qubits = 0
-        self._reg = {
-            "pi": np.pi,
-            "tau": 2 * np.pi,
-            "e": np.e,
-            "u": qml.U3,
-            "gphase": qml.GlobalPhase,
-        }
+        self._reg = kwargs
+        self._reg.update(
+            {
+                "pi": np.pi,
+                "tau": 2 * np.pi,
+                "e": np.e,
+                "u": qml.U3,
+                "gphase": qml.GlobalPhase,
+            }
+        )
         self._reg.update(_numpy_func_map)
+        self.output_identifiers = []
 
     def __getitem__(self, key):
         return self._reg[key]
@@ -107,6 +111,16 @@ def _(node: oq3_ast.Include, env):
         raise NotImplementedError(
             f"unknown filename {node.filename}. Currently only support stdgates.inc"
         )
+
+
+@visit.register
+def _(node: oq3_ast.IODeclaration, env: Environment):
+    if node.io_identifier == oq3_ast.IOKeyword.input:
+        if node.identifier.name not in env._reg:
+            raise ValueError(f"need value for {node.identifier.name} passed.")
+    else:
+        env.output_identifiers.append(node.identifier.name)
+        env[node.identifier.name] = None
 
 
 @visit.register
@@ -176,6 +190,12 @@ def _(node: oq3_ast.QuantumGate, env):
 @visit.register
 def _(node: oq3_ast.QuantumMeasurement, env):
     return qml.measure(visit(node.qubit, env))
+
+
+@visit.register
+def _(node: oq3_ast.QuantumMeasurementStatement, env):
+    mv = qml.measure(visit(node.measure.qubit, env))
+    env[node.target.name] = mv
 
 
 @visit.register
@@ -314,11 +334,13 @@ def _(node: oq3_ast.AliasStatement, env: Environment):
     env[node.target.name] = visit(node.value, env)
 
 
-def from_openqasm3(source: str):
+def from_openqasm3(source: str, **inputs):
     r"""Interpret a string of openqasm3 using pennylane.
 
     Args:
         source (str): a string containing valid openqasm3
+        **inputs (dict): Any variable inputs. Names must match those declared
+            in the openqasm.
 
     .. code-block::
 
@@ -334,7 +356,7 @@ def from_openqasm3(source: str):
         }
 
     >>> def f():
-    ...     from_openqasm3(example)
+    ...     from_openqasm3(example)()
     >>> print(qml.draw(f)())
     0: ──────╭●────────────────────┤
     1: ──┤↗├─╰S†──────╭●───────────┤
@@ -346,5 +368,6 @@ def from_openqasm3(source: str):
 
     """
     node = openqasm3.parse(source)
-    env = Environment()
-    return visit(node, env)
+    env = Environment(inputs)
+    visit(node, env)
+    return [env[output_expr] for output_expr in env.output_identifiers]
