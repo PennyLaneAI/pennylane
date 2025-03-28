@@ -489,6 +489,34 @@ Array([0.9950042 , 0.9800666 , 0.95533645], dtype=float32)
 More information for using ``jax.vmap`` can be found in the 
 `JAX documentation <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html#jax.vmap>`__.
 
+Decompositions
+--------------
+
+With program capture enabled, operators present in a circuit with control flow 
+in their ``compute_decomposition`` method and who also do not have a ``compute_qfunc_decomposition``
+method will cause an error. The ``StronglyEntanglingLayers`` template is an example
+of such an operator:
+
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=4)
+
+    @qml.qnode(dev)
+    def circuit(parameters):
+        qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
+        return qml.expval(qml.Z(0))
+
+    shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+    weights = np.random.random(size=shape)
+
+>>> circuit(weights)
+TODO
+
+This is not an issue for operators with a ``compute_qfunc_decomposition`` method, 
+TODO.
+
 while loops 
 -----------
 
