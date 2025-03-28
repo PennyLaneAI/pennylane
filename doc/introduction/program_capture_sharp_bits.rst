@@ -1,8 +1,8 @@
 .. role:: html(raw)
    :format: html
 
-🔪 Program capture sharp bits
-=============================
+Program capture sharp bits
+==========================
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
