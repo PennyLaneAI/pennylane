@@ -33,6 +33,10 @@ class MCM_METHOD(Enum):
             return super().__eq__(get_canonical_mcm_method(mcm_method))
         return super().__eq__(mcm_method)
 
+    def __hash__(self):
+        # pylint: disable=useless-super-delegation
+        return super().__hash__()
+
 
 MCM_METHOD_MAP = {
     None: None,
@@ -82,6 +86,10 @@ class POSTSELECT_MODE(Enum):
         if not isinstance(postselect_mode, MCM_METHOD):
             return super().__eq__(get_canonical_postselect_mode(postselect_mode))
         return super().__eq__(postselect_mode)
+
+    def __hash__(self):
+        # pylint: disable=useless-super-delegation
+        return super().__hash__()
 
 
 POSTSELECT_MODE_MAP = {
