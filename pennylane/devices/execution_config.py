@@ -15,24 +15,118 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from enum import Enum
+from typing import Literal, Optional, Union
 
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+
+class MCM_METHOD(Enum):
+    """Canonical set of mid-circuit measurement methods supported."""
+
+    AUTO = None
+    DEFERRED = "deferred"
+    ONE_SHOT = "one-shot"
+    TREE_TRAVERSAL = "tree-traversal"
+    SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
+
+    def __eq__(self, mcm_method):
+        if isinstance(mcm_method, str):
+            raise TypeError("Cannot compare MCMMethod Enum with str")
+        return super().__eq__(mcm_method)
+
+
+MCM_METHOD_MAP = {
+    None: MCM_METHOD.AUTO,
+    "deferred": MCM_METHOD.DEFERRED,
+    "one-shot": MCM_METHOD.ONE_SHOT,
+    "tree-traversal": MCM_METHOD.TREE_TRAVERSAL,
+    "single-branch-statistics": MCM_METHOD.SINGLE_BRANCH_STATISTICS,
+}
+SupportedMCMMethodUserInput = Literal[tuple(MCM_METHOD_MAP.keys())]
+
+SUPPORTED_MCM_METHODS = list(MCM_METHOD)
+
+
+def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_METHOD:
+    """Helper function to convert user input to a canonical MCM_METHOD.
+
+    Args:
+        user_input (str, None): The user input to convert.
+    Raises:
+        ValueError: key does not exist in MCM_METHOD_MAP
+    Returns:
+        MCM_METHOD: The canonical MCM_METHOD.
+
+    """
+    if isinstance(user_input, MCM_METHOD) and user_input in SUPPORTED_MCM_METHODS:
+        return user_input
+
+    try:
+        return MCM_METHOD_MAP[user_input]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown mcm method {user_input}, must be one of {SUPPORTED_MCM_METHODS}."
+        ) from exc
+
+
+class POSTSELECT_MODE(Enum):
+    """Canonical set of postselection modes supported."""
+
+    AUTO = None
+    HW_LIKE = "hw-like"
+    FILL_SHOTS = "fill-shots"
+
+    def __eq__(self, mcm_method):
+        if isinstance(mcm_method, str):
+            raise TypeError("Cannot compare POSTSELECT_MODE Enum with str")
+        return super().__eq__(mcm_method)
+
+
+POSTSELECT_MODE_MAP = {
+    None: POSTSELECT_MODE.AUTO,
+    "hw-like": POSTSELECT_MODE.HW_LIKE,
+    "fill-shots": POSTSELECT_MODE.FILL_SHOTS,
+}
+SupportedPostSelectModeUserInput = Literal[tuple(POSTSELECT_MODE_MAP.keys())]
+
+SUPPORTED_POSTSELECT_MODES = list(POSTSELECT_MODE)
+
+
+def get_canonical_postselect_mode(user_input: Union[str, POSTSELECT_MODE, None]) -> POSTSELECT_MODE:
+    """Helper function to convert user input to a canonical POSTSELECT_MODE.
+
+    Args:
+        user_input (str, None): The user input to convert.
+    Raises:
+        ValueError: key does not exist in POSTSELECT_MODE_MAP
+    Returns:
+        POSTSELECT_MODE: The canonical POSTSELECT_MODE.
+    """
+    if isinstance(user_input, POSTSELECT_MODE) and user_input in SUPPORTED_POSTSELECT_MODES:
+        return user_input
+
+    try:
+        return POSTSELECT_MODE_MAP[user_input]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown post select mode {user_input}, must be one of {SUPPORTED_POSTSELECT_MODES}."
+        ) from exc
 
 
 @dataclass
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Optional[str] = None
+    mcm_method: MCM_METHOD = MCM_METHOD.AUTO
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: POSTSELECT_MODE = POSTSELECT_MODE.AUTO
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -42,8 +136,8 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+        self.mcm_method = get_canonical_mcm_method(self.mcm_method)
+        self.postselect_mode = get_canonical_postselect_mode(self.postselect_mode)
 
 
 # pylint: disable=too-many-instance-attributes
