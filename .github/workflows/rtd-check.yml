@@ -21,29 +21,30 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Setup Python virtual environment
-      id: setup_venv
-      env:
-        VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
-      run: |
-        # Clear any pre-existing venvs
-        rm -rf venv_*
+    # - name: Setup Python virtual environment
+    #   id: setup_venv
+    #   env:
+    #     VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
+    #   run: |
+    #     # Clear any pre-existing venvs
+    #     rm -rf venv_*
 
-        # Create new venv for this workflow_run
-        python --version
-        python -m venv ${{ env.VENV_NAME }}
+    #     # Create new venv for this workflow_run
+    #     python --version
+    #     python -m venv ${{ env.VENV_NAME }}
 
-        # Add the venv to PATH for subsequent steps
-        echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
+    #     # Add the venv to PATH for subsequent steps
+    #     echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
 
-        # Adding venv name as an output for subsequent steps to reference if needed
-        echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
+    #     # Adding venv name as an output for subsequent steps to reference if needed
+    #     echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir sphinx graphviz
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt         
+        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
+        pip install .      
 
     # - name: Display Python-Path
     #   run: |
@@ -66,8 +67,7 @@ jobs:
 
     - name: Build Sphinx zip
       run: |
-        cd doc
-        python -m sphinx -T -b singlehtml -W --keep-going -d doc/_build/doctrees -D language=en doc/ doc/htmlzip        
+        python -m sphinx -T -b singlehtml --keep-going -d ./_build/doctrees -D language=en ./ ./htmlzip        
   # sphinx:
   #   needs: [determine_runner] 
   #   runs-on: ${{ needs.determine_runner.outputs.runner_group }}
