@@ -7,10 +7,10 @@ permissions: write-all
 jobs:
   sphinx:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:24.04
-      env:
-        PYTHON_VERSION: "3.10"
+    # container:
+    #   image: ubuntu:24.04
+    env:
+      PYTHON_VERSION: "3.10"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
-    - shell: bash
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade --no-cache-dir pip setuptools 
         python -m pip install --upgrade --no-cache-dir sphinx 
