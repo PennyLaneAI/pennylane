@@ -835,6 +835,9 @@
   Also use a different way of testing to see if something was compiled.
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
+* When using JAX interface, `jax.jit` the function `_givens_matrix`.
+  [(#7013)](https://github.com/PennyLaneAI/pennylane/pull/7013)
+
 <h3>Documentation 📝</h3>
 
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
