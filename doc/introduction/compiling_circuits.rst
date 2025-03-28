@@ -222,7 +222,7 @@ by their name, type, or by a set of rules they must follow.
 .. note::
 
     Using :func:`~.pennylane.decompositions.enable_graph` enables PennyLane's new 
-    experimental decomposition algorithm is enabled (introduced in v0.41). This 
+    experimental decomposition algorithm. This 
     new system uses a graph-based approach, which provides better overall performance 
     and versatility. By default, this new system is *not* enabled globally. 
     
@@ -349,8 +349,12 @@ From here, we can iterate through the stages of decomposition:
 Custom Operator Decomposition
 -----------------------------
 
-PennyLane decomposes gates unknown to the device into other, "lower-level" gates. 
-As a user, you may want to fine-tune this mechanism. The default behaviour in PennyLane
+When executing QNodes on a device, PennyLane will automatically decompose
+gates that are unsupported by the device using built-in decomposition rules.
+
+In addition, you can provide custom decomposition rules to be used.
+
+The default behaviour in PennyLane
 versus that of the new decompositions system (enabled with ``qml.decomposition.enable_graph``)
 differ in the following ways when it comes to injecting custom decompositions for
 operators:
