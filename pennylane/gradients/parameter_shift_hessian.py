@@ -64,10 +64,9 @@ def _process_jacs(jac, qhess):
         # contracting the quantum Hessian with the classical jacobian twice gives
         # a result with shape (num_qnode_args, num_qnode_args, output_shape)
 
-
         # contract the first axis of the jacobian with the first and second axes of the Hessian
-        qnode_ids_0 = ascii_letters[2:2 + jac_ndim - 1]
-        qnode_ids_1 = ascii_letters[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]
+        qnode_ids_0 = ascii_letters[2 : 2 + jac_ndim - 1]
+        qnode_ids_1 = ascii_letters[2 + jac_ndim - 1 : 2 + 2 * jac_ndim - 2]
 
         qh = qml.math.einsum(
             f"ab...,a{qnode_ids_0},b{qnode_ids_1}->{qnode_ids_0}{qnode_ids_1}...",
