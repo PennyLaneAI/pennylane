@@ -4,7 +4,7 @@ on:
 
 jobs:
   sphinx:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # container:
     #   image: ubuntu:24.04
     env:
@@ -42,7 +42,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade --no-cache-dir pip setuptools 
-        pip install --upgrade --no-cache-dir sphinx 
+        pip install --upgrade --no-cache-dir sphinx graphviz
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt         
 
     # - name: Display Python-Path
@@ -62,7 +62,7 @@ jobs:
     - name: Build Sphinx
       run: |
         cd doc
-        python -m sphinx -T -b html -d doc/_build/doctrees -D language=en doc/_build -W --keep-going
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html - W --keep-going
 
     - name: Build Sphinx zip
       run: |
