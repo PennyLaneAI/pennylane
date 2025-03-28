@@ -8,16 +8,21 @@ jobs:
   sphinx:
     runs-on: ubuntu-latest
     container:
-      image: readthedocs/build:latest
+      image: ubuntu:24.04
+      env:
+        PYTHON_VERSION: "3.10"
     steps:
     - uses: actions/checkout@v4
     - shell: bash
       run: |
-        asdf global python 3.10.15
         python -m pip install --upgrade --no-cache-dir pip setuptools 
         python -m pip install --upgrade --no-cache-dir sphinx 
         python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt 
-        sphinx-build -b html . _build -W --keep-going
+    - name: asdf
+      uses: asdf-vm/actions/setup@v4
+      with:
+        tool: python
+        args: "3.10.15"
 
   # sphinx:
   #   needs: [determine_runner] 
