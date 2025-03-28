@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,29 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
+"""Module containing functions to generate fragments for various Hamiltonians"""
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    resource_estimation
-    trotter_error
-
-"""
-
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import vibrational
-from pennylane.labs import trotter_error
-
-__all__ = []
+from .generic_fragments import GenericFragment, generic_fragments
+from .vibrational_fragments import vibrational_fragments
+from .vibronic_fragments import vibronic_fragments

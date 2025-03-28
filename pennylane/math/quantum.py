@@ -16,7 +16,7 @@ import functools
 
 # pylint: disable=import-outside-toplevel
 import itertools
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import scipy as sp
 import scipy.sparse.linalg as spla
@@ -32,7 +32,7 @@ from .matrix_manipulation import _permute_dense_matrix
 from .multi_dispatch import diag, dot, einsum, scatter_element_add
 from .utils import allclose, cast, cast_like, convert_like, is_abstract
 
-ABC_ARRAY = np.array(list(ABC))
+ascii_letter_arr = np.array(list(ascii_letters))
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -325,7 +325,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     # For loop over wires
     for i, target_index in enumerate(indices):
         target_index = target_index - i
-        state_indices = ABC[1 : rho_dim - 2 * i + 1]
+        state_indices = ascii_letters[1 : rho_dim - 2 * i + 1]
         state_indices = list(state_indices)
 
         target_letter = state_indices[target_index]
@@ -361,21 +361,21 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
     # For loop over wires
     for target_wire in indices:
         # Tensor indices of density matrix
-        state_indices = ABC[1 : rho_dim + 1]
+        state_indices = ascii_letters[1 : rho_dim + 1]
         # row indices of the quantum state affected by this operation
         row_wires_list = [target_wire + 1]
-        row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
+        row_indices = "".join(ascii_letter_arr[row_wires_list].tolist())
         # column indices are shifted by the number of wires
         col_wires_list = [w + num_indices for w in row_wires_list]
-        col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
+        col_indices = "".join(ascii_letter_arr[col_wires_list].tolist())
         # indices in einsum must be replaced with new ones
         num_partial_trace_wires = 1
-        new_row_indices = ABC[rho_dim + 1 : rho_dim + num_partial_trace_wires + 1]
-        new_col_indices = ABC[
+        new_row_indices = ascii_letters[rho_dim + 1 : rho_dim + num_partial_trace_wires + 1]
+        new_col_indices = ascii_letters[
             rho_dim + num_partial_trace_wires + 1 : rho_dim + 2 * num_partial_trace_wires + 1
         ]
         # index for summation over Kraus operators
-        kraus_index = ABC[
+        kraus_index = ascii_letters[
             rho_dim + 2 * num_partial_trace_wires + 1 : rho_dim + 2 * num_partial_trace_wires + 2
         ]
         # new state indices replace row and column indices with new ones
@@ -470,12 +470,16 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     # traced_system = [x + 1 for x in consecutive_wires if x not in indices]
 
     # trace out the subsystem
-    indices1 = ABC[1 : num_wires + 1]
+    indices1 = ascii_letters[1 : num_wires + 1]
     indices2 = "".join(
-        [ABC[num_wires + i + 1] if i in indices else ABC[i + 1] for i in consecutive_wires]
+        [
+            ascii_letters[num_wires + i + 1] if i in indices else ascii_letters[i + 1]
+            for i in consecutive_wires
+        ]
     )
     target = "".join(
-        [ABC[i + 1] for i in sorted(indices)] + [ABC[num_wires + i + 1] for i in sorted(indices)]
+        [ascii_letters[i + 1] for i in sorted(indices)]
+        + [ascii_letters[num_wires + i + 1] for i in sorted(indices)]
     )
     density_matrix = einsum(
         f"a{indices1},a{indices2}->a{target}",
