@@ -774,6 +774,9 @@
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
+* All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
+  [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
+
 * The error message when device wires are not specified when program capture is enabled is more clear.
   [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
 
