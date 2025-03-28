@@ -64,8 +64,9 @@ def _zero_measurement(
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
         shape = (batch_size,) + shape
-    res = _cached_zero_return(shape, interface, mp.numeric_type)
-    return res
+    if "jax" not in interface:
+        return _cached_zero_return(shape, interface, mp.numeric_type)
+    return math.zeros(shape, like=interface, dtype=mp.numeric_type)
 
 
 @lru_cache(maxsize=128)
