@@ -368,6 +368,14 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
+    if like == "scipy":
+        # See https://github.com/scipy/scipy/issues/18938 for the issue
+        # with scipy sparse and np dot product
+
+        # Avoid the case when one is a scalar - using a robust check for scalars
+        if onp.isscalar(x) or onp.isscalar(y):
+            return x * y
+        return x.dot(y)
     return np.dot(x, y, like=like)
 
 
