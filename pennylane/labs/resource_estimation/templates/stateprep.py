@@ -13,6 +13,7 @@
 # limitations under the License.
 r"""Resource operators for PennyLane state preparation templates."""
 import math
+from collections import defaultdict
 from typing import Dict
 
 import pennylane as qml
@@ -20,11 +21,11 @@ from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 from pennylane.operation import Operation
 
-# pylint: disable=arguments-differ, protected-access
+# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
 
 
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):
-    """Resource class for StatePrep.
+    r"""Resource class for StatePrep.
 
     Args:
         state (array[complex] or csr_matrix): the state vector to prepare
@@ -254,7 +255,8 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
 
         if isinstance(state_vect, re.CompactState):
             self.compact_state = state_vect
-            Operation.__init__(self, state_vect, wires=wires)
+            all_wires = qml.wires.Wires(wires) + qml.wires.Wires(work_wire)
+            Operation.__init__(self, state_vect, wires=all_wires)
             return
 
         self.compact_state = None
@@ -459,14 +461,31 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
     r"""Resource class for the MPSPrep template.
 
     Args:
-        num_wires (int): number of qubits corresponding to the state preparation register
-        num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
+            as a product of site matrices. See the usage details section for more information.
+        wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
+        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
+            of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
+            this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+        right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
+            Default is ``False``.
+
+    Resource Parameters:
+        * num_wires (int): number of qubits corresponding to the state preparation register
+        * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
 
     Resources:
-        The resources for MPSPrep are according to the decomposition.
+        The resources for MPSPrep are according to the decomposition, which uses generic :class:`~.QubitUnitary`.
+        The decomposition is based on the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceMPSPrep.resources(num_wires=5, num_work_wires=2)
+    defaultdict(<class 'int'>, {QubitUnitary(2): 2, QubitUnitary(3): 3})
     """
 
     def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
@@ -474,7 +493,14 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
         if isinstance(mps, re.CompactState):
             self.compact_state = mps
-            Operation.__init__(self, mps, wires=wires)
+
+            self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
+            all_wires = self.hyperparameters["input_wires"]
+            if work_wires:
+                self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+                all_wires += qml.wires.Wires(work_wires)
+
+            Operation.__init__(self, mps, wires=all_wires)
             return
 
         self.compact_state = None
@@ -494,24 +520,29 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
             num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
 
         Resources:
-            The resources for MPSPrep are according to the decomposition.
+        The resources for MPSPrep are according to the decomposition, which uses generic :class:`~.QubitUnitary`.
+        The decomposition is based on the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
         """
-        gate_types = {}
+        gate_types = defaultdict(int)
 
-        qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=num_work_wires + 1)
-        gate_types[qubit_unitary] = num_wires
+        log2_chi = min(num_work_wires, math.ceil(num_wires / 2))
+
+        for index in range(1, num_wires + 1):
+            qubit_unitary_wires = min(index + 1, log2_chi + 1, (num_wires - index) + 2)
+
+            qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=qubit_unitary_wires)
+            gate_types[qubit_unitary] += 1
+
         return gate_types
 
     @property
     def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            num_wires (int): number of qubits corresponding to the state preparation register
-            num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
-
         Returns:
-            dict: dictionary containing the resource parameters
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): number of qubits corresponding to the state preparation register
+                * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
         """
         if self.compact_state:
             return {
@@ -521,7 +552,7 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
         ww = self.hyperparameters["work_wires"]
         num_work_wires = len(ww) if ww else 0
-        num_wires = self.hyperparameters["input_wires"]
+        num_wires = len(self.hyperparameters["input_wires"])
 
         return {"num_wires": num_wires, "num_work_wires": num_work_wires}
 
