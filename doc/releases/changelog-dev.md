@@ -775,6 +775,9 @@ resource estimation.
 
 <h3>Internal changes ⚙️</h3>
 
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
+
 * All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
   [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
 
