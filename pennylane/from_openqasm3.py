@@ -1,3 +1,20 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""This module contains a converted for executing openqasm3."""
+
+
+from copy import deepcopy
 from functools import singledispatch
 from typing import Any, Callable
 
@@ -7,7 +24,7 @@ from openqasm3 import ast as oq3_ast
 
 import pennylane as qml
 
-gate_map = {
+std_gates = {
     "h": qml.H,
     "x": qml.X,
     "y": qml.Y,
@@ -20,26 +37,19 @@ gate_map = {
     "ry": qml.RY,
     "rz": qml.RZ,
     "p": qml.PhaseShift,
-    "u": qml.U3,
-    "gphase": qml.GlobalPhase,
 }
 
+
+_special_chars = {getattr(oq3_ast.BinaryOperator, "&&"), getattr(oq3_ast.BinaryOperator, "||")}
 Binary_operator_map: dict[oq3_ast.BinaryOperator, Callable[[Any, Any], Any]] = {
-    getattr(oq3_ast.BinaryOperator, ">"): lambda a, b: a > b,
-    getattr(oq3_ast.BinaryOperator, "<"): lambda a, b: a < b,
-    getattr(oq3_ast.BinaryOperator, ">="): lambda a, b: a >= b,
-    getattr(oq3_ast.BinaryOperator, "<="): lambda a, b: a <= b,
-    getattr(oq3_ast.BinaryOperator, "=="): lambda a, b: a == b,
-    getattr(oq3_ast.BinaryOperator, "!="): lambda a, b: a != b,
-    getattr(oq3_ast.BinaryOperator, "*"): lambda a, b: a * b,
-    getattr(oq3_ast.BinaryOperator, "+"): lambda a, b: a + b,
-    getattr(oq3_ast.BinaryOperator, "-"): lambda a, b: a - b,
-    getattr(oq3_ast.BinaryOperator, "/"): lambda a, b: a / b,
-    getattr(oq3_ast.BinaryOperator, "%"): lambda a, b: a % b,
+    op_enum: eval(f"lambda a, b: a {op_enum.name} b")
+    for op_enum in oq3_ast.BinaryOperator
+    if op_enum not in _special_chars
 }
+Binary_operator_map[getattr(oq3_ast.BinaryOperator, "&&")] = (lambda a, b: a and b,)
+Binary_operator_map[getattr(oq3_ast.BinaryOperator, "||")] = (lambda a, b: a or b,)
 
-
-numpy_funcs = {
+_numpy_funcs = {
     "arccos",
     "arcsin",
     "arctan",
@@ -53,18 +63,32 @@ numpy_funcs = {
     "sqrt",
     "tan",
 }
+_numpy_func_map = {name: getattr(np, name) for name in _numpy_funcs}
 
 
 class Environment:
 
     def __init__(self):
-        self.qubits = {}
-        self.c_reg = {"pi": np.pi, "tau": 2 * np.pi, "e": np.e}
-        self.inclusions = []
+        self.num_qubits = 0
+        self._reg = {
+            "pi": np.pi,
+            "tau": 2 * np.pi,
+            "e": np.e,
+            "u": qml.U3,
+            "gphase": qml.GlobalPhase,
+        }
+        self._reg.update(_numpy_func_map)
+
+    def __getitem__(self, key):
+        return self._reg[key]
+
+    def __setitem__(self, key, value):
+        self._reg[key] = value
 
 
 @singledispatch
-def visit(node, env: Environment) -> Any:
+def visit(node: oq3_ast.QASMNode, env: Environment) -> Any:
+    """A single dispatch function interpreting a ``openqasm3.ast.QASMNode``."""
     raise NotImplementedError(f"no registration for {node}")
 
 
@@ -77,21 +101,30 @@ def _(node: oq3_ast.Program, env):
 @visit.register
 def _(node: oq3_ast.Include, env):
     # or something else?
-    env.inclusions.append(node.filename)
+    if node.filename == "stdgates.inc":
+        env._reg.update(std_gates)
+    else:
+        raise NotImplementedError(
+            f"unknown filename {node.filename}. Currently only support stdgates.inc"
+        )
 
 
 @visit.register
 def _(node: oq3_ast.Identifier, env):
-    if node.name in env.qubits:
-        return env.qubits[node.name]
-    elif node.name in gate_map:
-        return gate_map[node.name]
-    return env.c_reg[node.name]
+    try:
+        return env[node.name]
+    except KeyError as e:
+        raise KeyError(f"variable {node.name} has no set value.") from e
+
+
+@visit.register
+def _(node: oq3_ast.Concatenation, env):
+    return visit(node.lhs, env) + visit(node.rhs, env)
 
 
 @visit.register
 def _(node: oq3_ast.DiscreteSet, env):
-    return [visit(v, env) for v in node.values]
+    return {visit(v, env) for v in node.values}
 
 
 @visit.register
@@ -114,39 +147,17 @@ def _(node: oq3_ast.RangeDefinition, env):
 
 
 @visit.register
-def _(node: oq3_ast.QubitDeclaration, env):
-    if not node.size:
-        env.qubits[node.qubit.name] = len(env.qubits)
-    else:
-        cur_num = len(env.qubits)
-        s = visit(node.size, env)
-        env.qubits[node.qubit.name] = list(range(cur_num, cur_num + s))
-
-
-@visit.register
 def _(node: oq3_ast.QuantumGate, env):
-    gate_type = visit(node.name, env)
-    args = [visit(sub_node, env) for sub_node in node.arguments]
     num_control_wires = 0
     control_values = []
     for mod in node.modifiers:
-        if mod.modifier == oq3_ast.GateModifierName.ctrl:
-            if mod.argument:
-                n = visit(mod.argument, env)
-                num_control_wires += n
-                control_values.extend([1] * n)
-            else:
-                num_control_wires += 1
-                control_values.append(1)
-        if mod.modifier == oq3_ast.GateModifierName.negctrl:
-            if mod.argument:
-                n = visit(mod.argument, env)
-                num_control_wires += n
-                control_values.extend([0] * n)
-            else:
-                num_control_wires += 1
-                control_values.append(0)
+        if mod.modifier in {oq3_ast.GateModifierName.ctrl, oq3_ast.GateModifierName.negctrl}:
+            n = visit(mod.argument, env) if mod.argument else 1
+            num_control_wires += n
+            control_values.extend([mod.modifier == oq3_ast.GateModifierName.ctrl] * n)
 
+    gate_type = visit(node.name, env)
+    args = [visit(sub_node, env) for sub_node in node.arguments]
     qubits = [visit(sub_node, env) for sub_node in node.qubits]
     controls = qubits[:num_control_wires]
     targets = qubits[num_control_wires:]
@@ -164,26 +175,40 @@ def _(node: oq3_ast.QuantumGate, env):
 
 @visit.register
 def _(node: oq3_ast.QuantumMeasurement, env):
-    return qml.measure(env.qubits[node.qubit.name])
+    return qml.measure(visit(node.qubit, env))
+
+
+@visit.register
+def _(node: oq3_ast.QuantumReset, env):
+    return qml.measure(visit(node.qubits, env), reset=True)
 
 
 @visit.register
 def _(node: oq3_ast.ClassicalDeclaration, env):
     if node.init_expression:
         init_value = visit(node.init_expression, env)
-        env.c_reg[node.identifier.name] = init_value
+        env[node.identifier.name] = init_value
     else:
         raise NotImplementedError
 
 
 @visit.register
+def _(node: oq3_ast.QubitDeclaration, env: Environment):
+    if not node.size:
+        env[node.qubit.name] = env.num_qubits
+        env.num_qubits += 1
+    else:
+        s = visit(node.size, env)
+        env[node.qubit.name] = list(range(env.num_qubits, env.num_qubits + s))
+        env.num_qubits += s
+
+
+@visit.register
 def _(node: oq3_ast.ClassicalAssignment, env):
-    rvalue = visit(node.rvalue, env)
-    name = node.lvalue.name
     if node.op == getattr(oq3_ast.AssignmentOperator, "="):
-        env.c_reg[name] = rvalue
+        env[node.lvalue.name] = visit(node.rvalue, env)
     if node.op == getattr(oq3_ast.AssignmentOperator, "+="):
-        env.c_reg[name] += rvalue
+        env[node.lvalue.name] += visit(node.rvalue, env)
     else:
         raise NotImplementedError(f"{node}")
 
@@ -193,7 +218,7 @@ def _(node: oq3_ast.ConstantDeclaration, env):
     if not node.init_expression:
         raise ValueError("constants must be initialized")
     init_value = visit(node.init_expression, env)
-    env.c_reg[node.identifier.name] = init_value
+    env[node.identifier.name] = init_value
 
 
 @visit.register(oq3_ast.BooleanLiteral)
@@ -207,21 +232,24 @@ def _(node: oq3_ast.BooleanLiteral, env):
 def _(node: oq3_ast.BinaryExpression, env):
     fn = Binary_operator_map.get(node.op)
     if fn is None:
-        raise NotImplementedError
+        raise NotImplementedError(f"no implemented function for {node.op}")
     lhs = visit(node.lhs, env)
     rhs = visit(node.rhs, env)
     return fn(lhs, rhs)
 
 
 @visit.register
+def _(node: oq3_ast.UnaryExpression, env):
+    if node.op == getattr(oq3_ast.UnaryOperator, "~"):
+        return ~visit(node.expression, env)
+    if node.op == getattr(oq3_ast.UnaryOperator, "-"):
+        return -visit(node.expression, env)
+    raise NotImplementedError(f"{node.op} is not yet implemented")
+
+
+@visit.register
 def _(node: oq3_ast.FunctionCall, env):
-    args = [visit(identifier, env) for identifier in node.arguments]
-    func_name = node.name.name
-    if func_name in env.c_reg:
-        return env.c_reg[func_name](*args)
-    if func_name in numpy_funcs:
-        return getattr(np, func_name)(*args)
-    raise NotImplementedError(f"unable to identify {func_name}")
+    return visit(node.name, env)(*(visit(identifier, env) for identifier in node.arguments))
 
 
 @visit.register
@@ -260,7 +288,7 @@ def _(node: oq3_ast.WhileLoop, env):
 @visit.register
 def _(node: oq3_ast.ForInLoop, env):
     for i in visit(node.set_declaration, env):
-        env.c_reg[node.identifier.name] = i
+        env[node.identifier.name] = i
         for stmt in node.block:
             visit(stmt, env)
 
@@ -270,18 +298,53 @@ def _(node: oq3_ast.SubroutineDefinition, env):
     name = node.name.name
 
     def f(*args):
-        new_env = Environment()
+        new_env = deepcopy(env)
         for a, target in zip(args, node.arguments, strict=True):
-            new_env.c_reg[target.name.name] = a
+            new_env[target.name.name] = a
         for stmt in node.body:
             if isinstance(stmt, oq3_ast.ReturnStatement):
                 return visit(stmt.expression, new_env)
             visit(stmt, new_env)
 
-    env.c_reg[name] = f
+    env[name] = f
+
+
+@visit.register
+def _(node: oq3_ast.AliasStatement, env: Environment):
+    env[node.target.name] = visit(node.value, env)
 
 
 def from_openqasm3(source: str):
+    r"""Interpret a string of openqasm3 using pennylane.
+
+    Args:
+        source (str): a string containing valid openqasm3
+
+    .. code-block::
+
+        OPENQASM 3;
+        include "stdgates.inc";
+
+        qubit[4] q;
+
+        // loop over a discrete set of values
+        for int[32] i in {1, 2, 3} {
+            bit b = measure q[i];
+            if (b == 0) ctrl @ inv @ s q[i-1], q[i];
+        }
+
+    >>> def f():
+    ...     from_openqasm3(example)
+    >>> print(qml.draw(f)())
+    0: ──────╭●────────────────────┤
+    1: ──┤↗├─╰S†──────╭●───────────┤
+    2: ───║───║───┤↗├─╰S†──────╭●──┤
+    3: ───║───║────║───║───┤↗├─╰S†─┤
+          ╚═══╝    ║   ║    ║   ║
+                   ╚═══╝    ║   ║
+                            ╚═══╝
+
+    """
     node = openqasm3.parse(source)
     env = Environment()
     return visit(node, env)
