@@ -157,6 +157,7 @@ _ABSTRACT_OR_META_TYPES = {
     PowOperation,
     PowObs,
     qml.StatePrep,
+    qml.FromBloq,
 }
 """Types that should not have actual instances created."""
 

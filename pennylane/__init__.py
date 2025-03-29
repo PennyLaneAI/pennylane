@@ -75,7 +75,17 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+)
 from pennylane.measurements import (
     counts,
     density_matrix,
