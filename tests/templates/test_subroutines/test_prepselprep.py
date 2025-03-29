@@ -335,6 +335,11 @@ class TestPrepSelPrep:
         assert op.label(cache={"matrices": [0.1]}) == "PrepSelPrep(M1)"
         assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
 
+        # use cache with same matrix existing
+        c = qml.math.array(op.coeffs)
+        assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
+        assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
+
 
 def test_control_in_ops():
     """Test that using an operation wire as a control wire results in an error"""
