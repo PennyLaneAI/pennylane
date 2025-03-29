@@ -88,21 +88,25 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
     max_w = max(mapped_wires)
-    max_b = max(mapped_bits) + n_wires
+    max_b = max(mapped_bits)
 
-    ctrl_symbol = "╩" if config.cur_layer != config.cwire_layers[max(mapped_bits)][-1] else "╝"
-    layer_str[max_b] = f"═{ctrl_symbol}"
+    ctrl_symbol = "╩"
+    if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[max_b]):
+        ctrl_symbol = "╝"
+    layer_str[max_b + n_wires] = f"═{ctrl_symbol}"
 
     for w in range(max_w + 1, max(config.wire_map.values()) + 1):
         layer_str[w] = "─║"
 
-    for b in range(n_wires, max_b):
-        if b - n_wires in mapped_bits:
-            intersection = "╣" if config.cur_layer == config.cwire_layers[b - n_wires][-1] else "╬"
-            layer_str[b] = f"═{intersection}"
+    for b in range(max_b):
+        if b in mapped_bits:
+            intersection = "╬"
+            if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[b]):
+                intersection = "╣"
+            layer_str[b + n_wires] = f"═{intersection}"
         else:
-            filler = " " if layer_str[b][-1] == " " else "═"
-            layer_str[b] = f"{filler}║"
+            filler = " " if layer_str[b + n_wires][-1] == " " else "═"
+            layer_str[b + n_wires] = f"{filler}║"
 
     return layer_str
 
@@ -244,7 +248,7 @@ def _add_measurement(m, layer_str, config):
     return layer_str
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def tape_text(
     tape,
     wire_order=None,
@@ -445,7 +449,6 @@ def tape_text(
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
-    n_bits = len(bit_map)
     if n_wires == 0:
         return ""
 
@@ -458,7 +461,8 @@ def tape_text(
 
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
-    cwire_layers, _ = cwire_connections(layers, bit_map)
+    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
+    n_bits = len(set(bit_map.values()))
 
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in wire_map]
@@ -488,8 +492,15 @@ def tape_text(
 
         # Create initial strings for the current layer using wire and cwire fillers
         layer_str = [w_filler] * n_wires + [" "] * n_bits
-        for b in bit_map.values():
-            cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
+        for b in range(n_bits):
+
+            cur_b_filler = " "
+            for layer_stretch in cwire_layers[b]:
+                if i <= layer_stretch[0]:
+                    break
+                if i < layer_stretch[-1]:
+                    cur_b_filler = b_filler
+                    break
             layer_str[b + n_wires] = cur_b_filler
 
         config.cur_layer = i
@@ -517,7 +528,14 @@ def tape_text(
 
         # Adjust width for bit filler on unused bits
         for b in range(n_bits):
-            cur_b_filler = b_filler if cwire_layers[b][0] <= i < cwire_layers[b][-1] else " "
+            cur_b_filler = " "
+            for layer_stretch in cwire_layers[b]:
+                if i < layer_stretch[0]:
+                    break
+                if i < layer_stretch[-1]:
+                    cur_b_filler = b_filler
+                    break
+
             layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
         line_length += max_label_len + 1  # one for the filler character
@@ -535,7 +553,13 @@ def tape_text(
             # current bit filler
             bit_totals = []
             for b in range(n_bits):
-                cur_b_filler = b_filler if cwire_layers[b][0] < i <= cwire_layers[b][-1] else " "
+                cur_b_filler = " "
+                for layer_stretch in cwire_layers[b]:
+                    if i <= layer_stretch[0]:
+                        break
+                    if i <= layer_stretch[-1]:
+                        cur_b_filler = b_filler
+                        break
                 bit_totals.append(cur_b_filler)
 
             line_length = 2 + max_label_len
@@ -546,8 +570,16 @@ def tape_text(
         # Joining is done by adding a filler at the end of the previous layer
         wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
 
-        for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
-            cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
+        for j, (bt, s) in enumerate(
+            zip(bit_totals, layer_str[n_wires : n_wires + n_bits], strict=True)
+        ):
+            cur_b_filler = " "
+            for layer_stretch in cwire_layers[j]:
+                if i <= layer_stretch[0]:
+                    break
+                if i <= layer_stretch[-1]:
+                    cur_b_filler = b_filler
+                    break
             bit_totals[j] = cur_b_filler.join([bt, s])
 
         ################################################
@@ -556,7 +588,7 @@ def tape_text(
         if i == final_operations_layer:
             wire_totals = [f"{s}─┤" for s in wire_totals]
             for b in range(n_bits):
-                if cwire_layers[b][-1] > final_operations_layer:
+                if cwire_layers[b][-1][-1] > final_operations_layer:
                     bit_totals[b] += "═╡"
                 else:
                     bit_totals[b] += "  "

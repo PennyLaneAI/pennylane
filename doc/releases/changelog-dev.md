@@ -194,6 +194,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The circuit drawer can now reuse lines for different classical wires, saving whitespace without
+  changing the represented circuit.
+  [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
+  
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 

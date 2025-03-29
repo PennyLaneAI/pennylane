@@ -71,7 +71,7 @@ with qml.queuing.AnnotatedQueue() as q_tape:
 tape = qml.tape.QuantumScript.from_queue(q_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments
+class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(
@@ -174,7 +174,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 wire_map=default_wire_map,
                 bit_map=bit_map,
                 cur_layer=cur_layer,
-                cwire_layers=[[0], [1]],
+                cwire_layers={0: [[0]], 1: [[1]]},
             ),
         )
 
@@ -353,7 +353,10 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             op,
             layer_str,
             _Config(
-                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, cwire_layers=[[0], [1]]
+                wire_map=default_wire_map,
+                bit_map=bit_map,
+                cur_layer=1,
+                cwire_layers={0: [[0]], 1: [[1]]},
             ),
         )
 

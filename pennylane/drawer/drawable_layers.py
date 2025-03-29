@@ -51,9 +51,7 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def _recursive_find_mcm_stats_layer(
-    layer_to_check, op_occupied_cwires, used_cwires_per_layer, bit_map
-):
+def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwires_per_layer):
     """Determine correct layer for a terminal measurement that is collectings statistics
     for mid-circuit measurement values.
 
@@ -78,7 +76,7 @@ def _recursive_find_mcm_stats_layer(
         return 0
     # keep pushing the operation to lower layers
     return _recursive_find_mcm_stats_layer(
-        layer_to_check - 1, op_occupied_cwires, used_cwires_per_layer, bit_map
+        layer_to_check - 1, op_occupied_cwires, used_cwires_per_layer
     )
 
 
@@ -179,7 +177,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             )
             op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
             op_layer = _recursive_find_mcm_stats_layer(
-                max_layer, op_occupied_cwires, used_cwires_per_layer, bit_map
+                max_layer, op_occupied_cwires, used_cwires_per_layer
             )
 
         else:

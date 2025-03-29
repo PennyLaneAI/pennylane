@@ -191,17 +191,20 @@ def _get_measured_wires(measurements, wires) -> set:
 
 
 def _add_classical_wires(drawer, layers, wires):
-    for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
-        xs, ys = [], []
 
-        len_diff = len(cwire_layers) - len(layer_wires)
-        if len_diff > 0:
-            layer_wires += [cwire] * len_diff
-        for l, w in zip(cwire_layers, layer_wires):
-            xs.extend([l, l, l])
-            ys.extend([cwire, w, cwire])
+    for cwire, cwire_stretch in layers.items():
+        wire_stretch = wires[cwire]
+        for cwire_layers, layer_wires in zip(cwire_stretch, wire_stretch, strict=True):
+            xs, ys = [], []
 
-        drawer.classical_wire(xs, ys)
+            len_diff = len(cwire_layers) - len(layer_wires)
+            if len_diff > 0:
+                layer_wires += [cwire + drawer.n_wires] * len_diff
+            for l, w in zip(cwire_layers, layer_wires, strict=True):
+                xs.extend([l, l, l])
+                ys.extend([cwire + drawer.n_wires, w, cwire + drawer.n_wires])
+
+            drawer.classical_wire(xs, ys)
 
 
 def _get_measured_bits(measurements, bit_map, offset):
@@ -237,7 +240,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
 
     drawer = MPLDrawer(
         n_layers=n_layers,
@@ -251,7 +254,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
         decimals=decimals,
         active_wire_notches=active_wire_notches,
         bit_map=bit_map,
-        terminal_layers=[cl[-1] for cl in cwire_layers],
+        terminal_layers=[cl[-1][-1] for cl in cwire_layers.values()],
     )
 
     if n_wires == 0:
