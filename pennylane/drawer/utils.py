@@ -153,8 +153,13 @@ def cwire_connections(layers, bit_map):
             classical conditions or measurement statistics as keys.
 
     Returns:
-        list, list: list of list of accessed layers for each classical wire, and largest wire
-        corresponding to the accessed layers in the list above.
+        dict, dict, dict: The first dictionary is the updated ``bit_map``, potentially with
+        some mid-circuit measurements mapped to new (smaller) classical wires. The second and third
+        dictionaries have the classical wires as keys and lists of lists as values, with the outer
+        list running over different (re)usages of the classical wire. For the second dictionary,
+        the inner lists contain the indices of the accessed layers, for the third dictionary,
+        they contain the measured quantum wires and the largest quantum wire of conditionally
+        applied operations (no entries for terminal statistics of mid-circuit measurements).
 
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
@@ -163,18 +168,19 @@ def cwire_connections(layers, bit_map):
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
     >>> layers = drawable_layers(tape)
-    >>> bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
-    >>> bit_map
-    {measure(wires=[0]): 0, measure(wires=[1]): 1}
+    >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    >>> new_bit_map == bit_map # No reusage happening
+    True
     >>> cwire_layers
-    [[0, 2, 3], [1, 2]]
+    {0: [[0, 2, 3]], 1: [[1, 2]]}
     >>> cwire_wires
-    [[0, 0, 3], [1, 0]]
+    {0: [[0, 0, 3]], 1: [[1, 0]]}
 
     From this information, we can see that the first classical wire is active in layers
-    0, 2, and 3 while the second classical wire is active in layers 1 and 2.  The first "active"
+    0, 2, and 3 while the second classical wire is active in layers 1 and 2, with both classical
+    wires being used only once (the outer lists all have length 1). The first "active"
     layer will always be the one with the mid circuit measurement.
-
     """
     if len(bit_map) == 0:
         return bit_map, {}, {}
