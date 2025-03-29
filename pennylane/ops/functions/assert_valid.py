@@ -319,7 +319,7 @@ def _check_capture(op):
         jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
         data, _ = jax.tree_util.tree_flatten(op)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert op == new_op
+        assert op == new_op, f"{op}\n{new_op}"
     except Exception as e:
         raise ValueError(
             (

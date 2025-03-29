@@ -194,6 +194,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `PrepSelPrep` now has a concise custom label method that defers the LCU coefficients to the
+  matrix cache which is also used for operations with matrix parameters.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
+
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
