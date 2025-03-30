@@ -357,9 +357,9 @@ def is_abstract(tensor, like=None):
             ),
         ):
             # Tracer objects will be used when computing gradients or applying transforms.
-            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # If the value of the tracer is known, it will contain a jax.Array.
             # Otherwise, it will be abstract.
-            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+            return not isinstance(tensor.aval, jax.Array)
 
         return isinstance(tensor, DynamicJaxprTracer)
 
