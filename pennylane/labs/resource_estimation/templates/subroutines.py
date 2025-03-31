@@ -1689,8 +1689,3 @@ class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
         """
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
-
-    @staticmethod
-    def tracking_name(num_wires) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return f"QubitUnitary({num_wires})"
