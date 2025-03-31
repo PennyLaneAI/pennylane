@@ -121,6 +121,55 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
     return interface
 
 
+def _resolve_mcm_config(
+    mcm_config: "qml.devices.MCMConfig",
+    device: "qml.devices.Device",
+    interface: Interface,
+    finite_shots: bool,
+) -> "qml.devices.MCMConfig":
+    """Helper function to resolve the mid-circuit measurements configuration based on
+    execution parameters"""
+    updated_values = {}
+
+    if not finite_shots:
+        updated_values["postselect_mode"] = None
+        if mcm_config.mcm_method == "one-shot":
+            raise ValueError(
+                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+            )
+
+    if mcm_config.mcm_method == "single-branch-statistics":
+        raise ValueError(
+            "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."
+        )
+
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        if mcm_config.postselect_mode == "hw-like":
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
+        updated_values["postselect_mode"] = "fill-shots"
+
+    if (
+        finite_shots
+        and interface in {Interface.JAX, Interface.JAX_JIT}
+        and mcm_config.mcm_method in (None, "one-shot")
+        and mcm_config.postselect_mode in (None, "hw-like")
+    ):
+        updated_values["postselect_mode"] = "pad-invalid-samples"
+
+    qml.devices.capabilities.validate_mcm_method(
+        device.capabilities,
+        mcm_config.mcm_method,
+        finite_shots,
+    )
+
+    return replace(mcm_config, **updated_values)
+
+
 @debug_logger
 def _resolve_diff_method(
     initial_config: "qml.devices.ExecutionConfig",
@@ -177,55 +226,6 @@ def _resolve_diff_method(
             )
 
     return replace(initial_config, **updated_values)
-
-
-def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig",
-    device: "qml.devices.Device",
-    interface: Interface,
-    finite_shots: bool,
-) -> "qml.devices.MCMConfig":
-    """Helper function to resolve the mid-circuit measurements configuration based on
-    execution parameters"""
-    updated_values = {}
-
-    if not finite_shots:
-        updated_values["postselect_mode"] = None
-        if mcm_config.mcm_method == "one-shot":
-            raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
-            )
-
-    if mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError(
-            "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."
-        )
-
-    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        updated_values["postselect_mode"] = "fill-shots"
-
-    if (
-        finite_shots
-        and interface in {Interface.JAX, Interface.JAX_JIT}
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        updated_values["postselect_mode"] = "pad-invalid-samples"
-
-    qml.devices.capabilities.validate_mcm_method(
-        device.capabilities,
-        mcm_config.mcm_method,
-        finite_shots,
-    )
-
-    return replace(mcm_config, **updated_values)
 
 
 def _resolve_execution_config(
