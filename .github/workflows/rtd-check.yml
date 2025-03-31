@@ -13,7 +13,7 @@ jobs:
       with:
         fetch-depth: 1
 
-    - name: Setup Python
+    - name: Setup Python Environment
       id: setup_python
       uses: actions/setup-python@v5
       with:
@@ -27,7 +27,7 @@ jobs:
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
 
 
-    - name: Build Sphinx
+    - name: Build Sphinx HTML
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going
