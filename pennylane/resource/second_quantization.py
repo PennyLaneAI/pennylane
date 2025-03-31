@@ -137,18 +137,6 @@ class DoubleFactorization(Operation):
         if not rank_max:
             self.rank_max = int(np.max([len(v) for v in self.eigvals]))
 
-        self.qubits = self.qubit_cost(
-            self.n,
-            self.lamb,
-            self.error,
-            self.rank_r,
-            self.rank_m,
-            self.rank_max,
-            self.br,
-            self.alpha,
-            self.beta,
-        )
-
         super().__init__(wires=range(self.qubits))
 
     def _flatten(self):
@@ -172,6 +160,20 @@ class DoubleFactorization(Operation):
     @property
     def gates(self):
         return self.gate_cost(
+            self.n,
+            self.lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
+        )
+
+    @property
+    def qubits(self):
+        return self.qubit_cost(
             self.n,
             self.lamb,
             self.error,
