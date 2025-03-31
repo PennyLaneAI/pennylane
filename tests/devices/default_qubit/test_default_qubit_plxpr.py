@@ -62,11 +62,9 @@ class TestPreprocess:
     def test_execution_config_invalid_mcm_method_error(self):
         """Test that an error is raised if mcm_method is invalid."""
         dev = qml.device("default.qubit", wires=1)
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="tree-traversal"))
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="foo"))
 
-        with pytest.raises(
-            qml.DeviceError, match="mcm_method='MCM_METHOD.TREE_TRAVERSAL' is not supported"
-        ):
+        with pytest.raises(qml.DeviceError, match="mcm_method='foo' is not supported"):
             _ = dev.preprocess(execution_config=config)
 
     def test_execution_config_default_mcm_config(self):
