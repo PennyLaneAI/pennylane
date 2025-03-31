@@ -4,9 +4,10 @@ on:
 
 jobs:
   sphinx:
-    runs-on: ${{ fromJson(steps.read_rtd.outputs.content).build.os }}
+    runs-on: ubuntu-22.04
     env:
-      PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.content).python.version }}
+      PYTHON_VERSION: "3.10"
+      PACKAGES_TO_INSTALL: "sphinx graphviz"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
-        pip install --upgrade --no-cache-dir sphinx graphviz
+        pip install --upgrade --no-cache-dir ${{ env.PACKAGES_TO_INSTALL }}
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
 
