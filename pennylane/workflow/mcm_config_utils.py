@@ -23,6 +23,7 @@ from typing import Literal, Union
 class MCM_METHOD(Enum):
     """Canonical set of mid-circuit measurement methods supported."""
 
+    DEVICE = "device"
     DEFERRED = "deferred"
     ONE_SHOT = "one-shot"
     TREE_TRAVERSAL = "tree-traversal"
@@ -40,6 +41,7 @@ class MCM_METHOD(Enum):
 
 MCM_METHOD_MAP = {
     None: None,
+    "device": MCM_METHOD.DEVICE,
     "deferred": MCM_METHOD.DEFERRED,
     "one-shot": MCM_METHOD.ONE_SHOT,
     "tree-traversal": MCM_METHOD.TREE_TRAVERSAL,
