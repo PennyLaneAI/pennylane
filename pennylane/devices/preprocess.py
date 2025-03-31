@@ -193,7 +193,7 @@ def mid_circuit_measurements(
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
     mcm_method = mcm_config.mcm_method
-    if mcm_method == "device":
+    if mcm_method is None:
         mcm_method = "one-shot" if tape.shots else "deferred"
 
     if mcm_method == "one-shot":
