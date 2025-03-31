@@ -274,25 +274,22 @@ def _resolve_execution_config(
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
 
+    finite_shots = any(tape.shots for tape in tapes)
     interface = _resolve_interface(execution_config.interface, tapes)
     updated_values["interface"] = interface
 
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    mcm_interface = (
+        _resolve_interface(Interface.AUTO, tapes)
+        if execution_config.interface == Interface.NUMPY
+        else interface
+    )
     # Mid-circuit measurement configuration validation and resolution
-    # if user has specified a natively supported MCM method. Otherwise
-    # the device should handle it in the setup_execution_config method.
-    if execution_config.mcm_config.mcm_method != "device":
-        # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-        # workflow still needs to know if jax-jit is used
-        finite_shots = any(tape.shots for tape in tapes)
-        mcm_interface = (
-            _resolve_interface(Interface.AUTO, tapes)
-            if execution_config.interface == Interface.NUMPY
-            else interface
-        )
-        mcm_config = _resolve_mcm_config(
-            execution_config.mcm_config, device, mcm_interface, finite_shots
-        )
-        updated_values["mcm_config"] = mcm_config
+    mcm_config = _resolve_mcm_config(
+        execution_config.mcm_config, device, mcm_interface, finite_shots
+    )
+    updated_values["mcm_config"] = mcm_config
 
     execution_config = replace(execution_config, **updated_values)
     execution_config = device.setup_execution_config(execution_config)
