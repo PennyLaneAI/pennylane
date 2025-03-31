@@ -6,7 +6,7 @@ jobs:
   sphinx:
     runs-on: ubuntu-22.04
     env:
-      PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.python_version).python }}
+      PYTHON_VERSION: "3.10"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
