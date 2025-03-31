@@ -31,7 +31,6 @@ from pennylane.typing import ResultBatch
 from pennylane.workflow.resolution import SupportedDiffMethods
 
 from ._setup_transform_program import _setup_transform_program
-from .mcm_config_utils import SupportedMCMMethodUserInput, SupportedPostSelectModeUserInput
 from .resolution import _resolve_execution_config, _resolve_interface
 from .run import run
 
@@ -52,8 +51,8 @@ def execute(
     cachesize: int = 10000,
     max_diff: int = 1,
     device_vjp: Union[bool, None] = False,
-    postselect_mode: SupportedPostSelectModeUserInput = "device",
-    mcm_method: SupportedMCMMethodUserInput = "device",
+    postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
+    mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
     mcm_config="unset",
     config="unset",
