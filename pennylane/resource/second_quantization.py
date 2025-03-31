@@ -159,10 +159,17 @@ class DoubleFactorization(Operation):
 
     @property
     def lamb(self):
+        r"""Return the 1-Norm of the Hamiltonian."""
         return self._lamb
 
     @property
     def gates(self):
+        r"""Return the total number of Toffoli gates needed to implement the double factorization
+        algorithm.
+
+        The expression for computing the cost is taken from Eqs. (45) and (C39) of
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        """
         return self.gate_cost(
             self.n,
             self.lamb,
@@ -177,6 +184,11 @@ class DoubleFactorization(Operation):
 
     @property
     def qubits(self):
+        r"""Return the number of logical qubits needed to implement the double factorization method.
+
+        The expression for computing the cost is taken from Eq. (C40) of
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        """
         return self.qubit_cost(
             self.n,
             self.lamb,
