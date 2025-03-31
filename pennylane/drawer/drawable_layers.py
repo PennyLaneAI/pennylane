@@ -52,7 +52,7 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
 
 
 def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwires_per_layer):
-    """Determine correct layer for a terminal measurement that is collectings statistics
+    """Determine correct layer for a terminal measurement that is collecting statistics
     for mid-circuit measurement values.
 
     Args:
