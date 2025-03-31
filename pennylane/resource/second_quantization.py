@@ -137,7 +137,30 @@ class DoubleFactorization(Operation):
         if not rank_max:
             self.rank_max = int(np.max([len(v) for v in self.eigvals]))
 
-        super().__init__(wires=range(self.qubits))
+        self._gates = self.gate_cost(
+            self.n,
+            self._lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
+        )
+        self._qubits = self.qubit_cost(
+            self.n,
+            self._lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
+        )
+
+        super().__init__(wires=range(self._qubits))
 
     def _flatten(self):
         return (self.one_electron, self.two_electron), (
@@ -170,17 +193,7 @@ class DoubleFactorization(Operation):
         The expression for computing the cost is taken from Eqs. (45) and (C39) of
         [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
         """
-        return self.gate_cost(
-            self.n,
-            self.lamb,
-            self.error,
-            self.rank_r,
-            self.rank_m,
-            self.rank_max,
-            self.br,
-            self.alpha,
-            self.beta,
-        )
+        return self._gates
 
     @property
     def qubits(self):
@@ -189,17 +202,7 @@ class DoubleFactorization(Operation):
         The expression for computing the cost is taken from Eq. (C40) of
         [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
         """
-        return self.qubit_cost(
-            self.n,
-            self.lamb,
-            self.error,
-            self.rank_r,
-            self.rank_m,
-            self.rank_max,
-            self.br,
-            self.alpha,
-            self.beta,
-        )
+        return self._qubits
 
     @staticmethod
     def estimation_cost(lamb, error):
