@@ -5,6 +5,10 @@ on:
 jobs:
   sphinx:
     runs-on: ${{ fromJson(steps.read_rtd.outputs.content).build.os }}
+    steps:
+    - id: read_rtd
+      name: Read .readthedocs.yml
+      run: echo "content=$(cat .readthedocs.yml)" >> $GITHUB_ENV
     env:
       PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.content).python.version }}
     steps:
