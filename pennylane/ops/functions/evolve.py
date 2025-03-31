@@ -61,7 +61,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         <html>
             <h3>Input: ParametrizedHamiltonian</h3>
             <hr>
-        </html>
+        
 
     Args:
         op (.ParametrizedHamiltonian): Hamiltonian to evolve. This must be passed as a *positional* argument.
