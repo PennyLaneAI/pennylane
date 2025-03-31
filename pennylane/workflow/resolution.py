@@ -190,7 +190,7 @@ def _resolve_mcm_config(
     updated_values = {}
 
     if not finite_shots:
-        updated_values["postselect_mode"] = None
+        updated_values["postselect_mode"] = "device"
         if mcm_config.mcm_method == "one-shot":
             raise ValueError(
                 "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
@@ -214,8 +214,8 @@ def _resolve_mcm_config(
     if (
         finite_shots
         and interface in {Interface.JAX, Interface.JAX_JIT}
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
+        and mcm_config.mcm_method in ("device", "one-shot")
+        and mcm_config.postselect_mode in ("device", "hw-like")
     ):
         updated_values["postselect_mode"] = "pad-invalid-samples"
 
