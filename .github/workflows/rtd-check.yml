@@ -4,13 +4,9 @@ on:
 
 jobs:
   sphinx:
-    runs-on: ${{ fromJson(steps.read_rtd.outputs.content).build.os }}
-    steps:
-    - id: read_rtd
-      name: Read .readthedocs.yml
-      run: echo "content=$(cat .readthedocs.yml)" >> $GITHUB_ENV
+    runs-on: ubuntu-22.04
     env:
-      PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.content).python.version }}
+      PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.python_version).python }}
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -28,10 +24,9 @@ jobs:
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir sphinx graphviz
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
-        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .     
+        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
  
 
     - name: Build Sphinx
       run: |
-        cd doc
-        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going -c 
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
