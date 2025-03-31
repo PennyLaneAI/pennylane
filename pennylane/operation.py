@@ -1053,8 +1053,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         params = self.parameters
-
-        if len(qml.math.shape(params[0])) != 0:
+        shape0 = qml.math.shape(params[0])
+        if len(shape0) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
             # this holds true for all current operations and templates unless parameter broadcasting
             # is used
@@ -1067,23 +1067,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 return op_label if self._id is None else f'{op_label}("{self._id}")'
 
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
-                    params[0], mat
-                ):
-                    return (
-                        f"{op_label}(M{i})"
-                        if self._id is None
-                        else f'{op_label}(M{i},"{self._id}")'
-                    )
+                if shape0 == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
+                    str_wo_id = f"{op_label}(M{i})"
+                    break
+            else:
+                mat_num = len(cache["matrices"])
+                cache["matrices"].append(params[0])
+                str_wo_id = f"{op_label}(M{mat_num})"
 
-            # matrix not in cache
-            mat_num = len(cache["matrices"])
-            cache["matrices"].append(params[0])
-            return (
-                f"{op_label}(M{mat_num})"
-                if self._id is None
-                else f'{op_label}(M{mat_num},"{self._id}")'
-            )
+            return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
 
         if decimals is None:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
@@ -1413,6 +1405,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
         function will also expect keyword arguments that match these keys when called with this
         operator type.
+
+        The default implementation is an empty set, which is suitable for most operators.
 
         .. seealso::
             :meth:`~.Operator.resource_params`

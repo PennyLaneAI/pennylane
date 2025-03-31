@@ -21,10 +21,12 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
     controlled_resource_rep,
+    custom_ctrl_op_to_base,
     resource_rep,
 )
 
 
+@pytest.mark.unit
 class TestResources:
     """Unit tests for the Resources data structure."""
 
@@ -89,6 +91,7 @@ class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
     resource_keys = {"foo", "bar"}
 
 
+@pytest.mark.unit
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
@@ -179,6 +182,7 @@ class TestCompressedResourceOp:
         assert repr(op) == "DummyOp(foo=2, bar=1)"
 
 
+@pytest.mark.unit
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
@@ -187,6 +191,17 @@ class TestResourceRep:
 
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = {}
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        with pytest.raises(TypeError, match="CustomOp.resource_keys must be a set"):
+            resource_rep(CustomOp)
 
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
@@ -205,6 +220,7 @@ class TestResourceRep:
         )
 
 
+@pytest.mark.unit
 class TestControlledResourceRep:
     """Tests the controlled_resource_rep function."""
 
@@ -343,7 +359,15 @@ class TestControlledResourceRep:
             },
         )
 
+    def test_custom_controlled_ops(self):
+        """Tests that the resource rep of custom controlled ops remain as the custom version."""
 
+        for op_type in custom_ctrl_op_to_base():
+            rep = resource_rep(op_type)
+            assert rep == CompressedResourceOp(op_type, {})
+
+
+@pytest.mark.unit
 class TestSymbolicResourceRep:
     """Tests resource reps of symbolic operators"""
 
@@ -402,3 +426,36 @@ class TestSymbolicResourceRep:
                 },
             },
         )
+
+    def test_adjoint_custom_controlled_ops(self):
+        """Tests that the adjoint of custom controlled ops remain as the custom version."""
+
+        for op_type in custom_ctrl_op_to_base():
+            rep = qml.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
+            assert rep == CompressedResourceOp(
+                qml.ops.Adjoint,
+                {
+                    "base_class": op_type,
+                    "base_params": {},
+                },
+            )
+
+    def test_pow_resource_rep(self):
+        """Tests the pow_resource_rep utility function."""
+
+        rep = qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3)
+        assert rep == CompressedResourceOp(
+            qml.ops.Pow, {"base_class": qml.MultiRZ, "base_params": {"num_wires": 3}, "z": 3}
+        )
+
+        op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
+        assert op.resource_params == rep.params
+
+    def test_non_integer_pow_not_supported(self):
+        """Tests that non-integer power is not supported yet."""
+
+        with pytest.raises(NotImplementedError, match="Non-integer powers"):
+            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
+
+        with pytest.raises(NotImplementedError, match="Non-integer powers"):
+            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)

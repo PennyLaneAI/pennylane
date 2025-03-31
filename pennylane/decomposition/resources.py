@@ -37,7 +37,7 @@ class Resources:
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Verify that the gate counts and the number of gates are consistent."""
+        """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
 
     @cached_property
@@ -82,7 +82,7 @@ class CompressedResourceOp:
     .. note::
 
         This class is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -143,6 +143,11 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
+    if not isinstance(op_type.resource_keys, set):
+        raise TypeError(
+            f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
+        )
+
     unexpected_arguments = set(params.keys()) - op_type.resource_keys
     if unexpected_arguments:
         raise TypeError(
@@ -164,7 +169,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qml.decompositions.enable_graph()``. This new way of
+        (introduced in v0.41) is enabled via ``qml.decomposition.enable_graph()``. This new way of
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
@@ -256,6 +261,8 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
+    if issubclass(op_type, qml.ops.Pow):
+        return pow_resource_rep(**params)
     return CompressedResourceOp(op_type, params)
 
 
@@ -263,8 +270,8 @@ def controlled_resource_rep(
     base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
-    num_zero_control_values: int,
-    num_work_wires: int,
+    num_zero_control_values: int = 0,
+    num_work_wires: int = 0,
 ):
     """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
 
@@ -318,7 +325,7 @@ def controlled_resource_rep(
     )
 
 
-def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
+def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -326,10 +333,29 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict):
         base_params (dict): the resource params of the base operator
 
     """
+    base_params = base_params or {}
     base_resource_rep = resource_rep(base_class, **base_params)  # flattens any nested structures
     return CompressedResourceOp(
         qml.ops.Adjoint,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params},
+    )
+
+
+def pow_resource_rep(base_class, base_params, z):
+    """Creates a ``CompressedResourceOp`` representation of the power of an operator.
+
+    Args:
+        base_class: the base operator type
+        base_params (dict): the resource params of the base operator
+        z (int or float): the power
+
+    """
+    if not isinstance(z, int) or z < 0:
+        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
+    base_resource_rep = resource_rep(base_class, **base_params)
+    return CompressedResourceOp(
+        qml.ops.Pow,
+        {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},
     )
 
 

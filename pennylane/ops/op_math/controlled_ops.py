@@ -256,19 +256,6 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
 
-    @property
-    def has_decomposition(self):
-        if not super().has_decomposition:
-            return False
-        with qml.QueuingManager.stop_recording():
-            # we know this is using try-except as logical control, but are favouring
-            # certainty in it being correct over explicitness in an edge case.
-            try:
-                self.decomposition()
-            except qml.operation.DecompositionUndefinedError:
-                return False
-        return True
-
 
 class CH(ControlledOp):
     r"""CH(wires)
@@ -327,6 +314,9 @@ class CH(ControlledOp):
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
+
+    def adjoint(self):
+        return CH(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -467,6 +457,9 @@ class CY(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CY(self.wires)
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -595,6 +588,9 @@ class CZ(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CZ(self.wires)
+
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -631,11 +627,22 @@ def _cz_to_cps_resources():
 
 
 @register_resources(_cz_to_cps_resources)
-def _cz(wires: WiresLike, **__):
+def _cz_to_cps(wires: WiresLike, **__):
     qml.ControlledPhaseShift(np.pi, wires=wires)
 
 
-add_decomps(CZ, _cz)
+def _cz_to_cnot_resources():
+    return {qml.H: 2, qml.CNOT: 1}
+
+
+@register_resources(_cz_to_cnot_resources)
+def _cz_to_cnot(wires: WiresLike, **__):
+    qml.H(wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.H(wires=wires[1])
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
 
 
 class CSWAP(ControlledOp):
@@ -703,6 +710,9 @@ class CSWAP(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CSWAP(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -851,6 +861,9 @@ class CCZ(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CCZ(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -1030,6 +1043,9 @@ class CNOT(ControlledOp):
         base = type.__call__(qml.X, wires=wires[1:])
         super().__init__(base, wires[:1], id=id)
 
+    def adjoint(self):
+        return CNOT(self.wires)
+
     @property
     def has_decomposition(self):
         return False
@@ -1170,6 +1186,9 @@ class Toffoli(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -1453,6 +1472,11 @@ class MultiControlledX(ControlledOp):
             "num_work_wires": len(self.work_wires),
         }
 
+    def adjoint(self):
+        return MultiControlledX(
+            wires=self.wires, control_values=self.control_values, work_wires=self.work_wires
+        )
+
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
     def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
@@ -1628,6 +1652,9 @@ class CRX(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return CRX(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1833,6 +1860,9 @@ class CRY(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CRY(-self.data[0], wires=self.wires)
+
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -2012,6 +2042,9 @@ class CRZ(ControlledOp):
     def resource_params(self) -> dict:
         return {}
 
+    def adjoint(self):
+        return CRZ(-self.data[0], wires=self.wires)
+
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -2131,14 +2164,14 @@ class CRZ(ControlledOp):
 
 
 def _crz_resources():
-    return {qml.PhaseShift: 2, qml.CNOT: 2}
+    return {qml.RZ: 2, qml.CNOT: 2}
 
 
 @register_resources(_crz_resources)
 def _crz(phi: TensorLike, wires: WiresLike, **__):
-    qml.PhaseShift(phi / 2, wires=wires[1])
+    qml.RZ(phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
-    qml.PhaseShift(-phi / 2, wires=wires[1])
+    qml.RZ(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
 
 
@@ -2228,6 +2261,10 @@ class CRot(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -2421,6 +2458,9 @@ class ControlledPhaseShift(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {}
+
+    def adjoint(self):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
