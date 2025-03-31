@@ -79,6 +79,7 @@ def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_ME
 class POSTSELECT_MODE(Enum):
     """Canonical set of postselection modes supported."""
 
+    DEVICE = "device"
     HW_LIKE = "hw-like"
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
@@ -94,6 +95,8 @@ class POSTSELECT_MODE(Enum):
 
 
 POSTSELECT_MODE_MAP = {
+    None: None,
+    "device": POSTSELECT_MODE.DEVICE,
     "hw-like": POSTSELECT_MODE.HW_LIKE,
     "fill-shots": POSTSELECT_MODE.FILL_SHOTS,
     "pad-invalid-samples": POSTSELECT_MODE.PAD_INVALID_SAMPLES,
