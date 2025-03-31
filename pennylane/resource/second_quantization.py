@@ -137,17 +137,6 @@ class DoubleFactorization(Operation):
         if not rank_max:
             self.rank_max = int(np.max([len(v) for v in self.eigvals]))
 
-        self.gates = self.gate_cost(
-            self.n,
-            self.lamb,
-            self.error,
-            self.rank_r,
-            self.rank_m,
-            self.rank_max,
-            self.br,
-            self.alpha,
-            self.beta,
-        )
         self.qubits = self.qubit_cost(
             self.n,
             self.lamb,
@@ -179,6 +168,20 @@ class DoubleFactorization(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
+
+    @property
+    def gates(self):
+        return self.gate_cost(
+            self.n,
+            self.lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
+        )
 
     @staticmethod
     def estimation_cost(lamb, error):
