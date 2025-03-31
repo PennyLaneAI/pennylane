@@ -19,12 +19,6 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Check branch
-      id: check_branch
-      run: |
-        echo "Commit hash: ${{ github.event.pull_request.head.sha }}"
-        echo "Branch name: ${{ github.event.pull_request.head.ref }}"
-
     - name: Install dependencies
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
