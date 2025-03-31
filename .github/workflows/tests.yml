@@ -29,8 +29,8 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
       # TODO: Remove _dev suffixes before merging
-      pennylane_oss_server_endpoint_url: ${{ secrets.PENNYLANE_OSS_SERVER_ENDPOINT_URL_DEV }}
-      pennylane_oss_server_api_key: ${{ secrets.PENNYLANE_OSS_SERVER_API_KEY_DEV }}
+      test_report_server_endpoint_url: ${{ secrets.PENNYLANE_OSS_SERVER_ENDPOINT_URL_DEV }}
+      test_report_server_api_key: ${{ secrets.PENNYLANE_OSS_SERVER_API_KEY_DEV }}
     with:
       branch: ${{ github.ref }}
 

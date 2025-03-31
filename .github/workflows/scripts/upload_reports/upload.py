@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import json
 import os
+import warnings
 
 
 class PLOSSSettings(BaseSettings):
@@ -34,7 +35,7 @@ def read_reports() -> dict:
     reports = []
     for test_report_dir in reports_dir.glob("test-report-*"):
         if test_report_dir.is_dir():
-            xml_files = list(test_report_dir.glob("*.xml"))
+            xml_files = list(test_report_dir.rglob("*.xml"))
             reports.extend([str(p) for p in xml_files])
 
     print(f"Found {len(reports)} report files")
@@ -50,7 +51,7 @@ def read_reports() -> dict:
             continue
 
     if not report_contents:
-        print("Warning: No report contents were read")
+        warnings.warn("No report contents were read")
 
     return report_contents
 
