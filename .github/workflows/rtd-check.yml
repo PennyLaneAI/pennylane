@@ -24,7 +24,7 @@ jobs:
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir sphinx graphviz
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
-        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .     
  
 
     - name: Build Sphinx
