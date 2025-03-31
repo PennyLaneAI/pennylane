@@ -22,7 +22,6 @@ from warnings import warn
 from packaging.version import Version
 
 import pennylane as qml
-from pennylane.devices.capabilities import validate_mcm_method
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
@@ -220,7 +219,7 @@ def _resolve_mcm_config(
     ):
         updated_values["postselect_mode"] = "pad-invalid-samples"
 
-    validate_mcm_method(
+    qml.devices.capabilities.validate_mcm_method(
         device.capabilities,
         mcm_config.mcm_method,
         finite_shots,
