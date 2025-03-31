@@ -128,7 +128,7 @@ class DoubleFactorization(Operation):
 
         feigvals = np.linalg.eigvalsh(self.factors)
         self.eigvals = [eigvals[np.where(np.abs(eigvals) > tol_eigval)] for eigvals in feigvals]
-        self.lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
+        self._lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
 
         if not rank_r:
             self.rank_r = len(self.factors)
@@ -156,6 +156,10 @@ class DoubleFactorization(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
+
+    @property
+    def lamb(self):
+        return self._lamb
 
     @property
     def gates(self):
