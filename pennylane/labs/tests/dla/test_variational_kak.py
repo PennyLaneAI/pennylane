@@ -19,8 +19,13 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import cartan_subalgebra, orthonormalize, validate_kak, variational_kak_adj
-from pennylane.liealg import cartan_decomp, check_cartan_decomp, concurrence_involution
+from pennylane.labs.dla import orthonormalize, validate_kak, variational_kak_adj
+from pennylane.liealg import (
+    cartan_decomp,
+    check_cartan_decomp,
+    concurrence_involution,
+    horizontal_cartan_subalgebra,
+)
 
 
 @pytest.mark.parametrize("dense", [False, True])
@@ -48,7 +53,7 @@ def test_kak_Ising(n, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
     kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
@@ -86,7 +91,7 @@ def test_kak_Heisenberg(n, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
     kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
@@ -126,8 +131,8 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True, is_orthogonal=is_orthogonal)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(
-        g, k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(
+        k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal
     )
 
     dims = (len(k), len(mtilde), len(h))
