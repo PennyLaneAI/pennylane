@@ -694,7 +694,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Cleans up logic in `qml.drawer.tape_text`
+* Clean up logic in `qml.drawer.tape_text`
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
 * Clean up logic in `_capture_qnode.py`.
