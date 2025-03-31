@@ -576,6 +576,7 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
 
 class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
+    # Works?
     r"""Resource class for the QROMStatePreparation template.
 
     This operation implements the state preparation method described
