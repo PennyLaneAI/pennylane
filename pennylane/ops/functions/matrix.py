@@ -21,7 +21,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.operation import Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError
@@ -219,12 +219,23 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
 
         return _matrix_transform(op, wire_order=wire_order)
-    if op.has_sparse_matrix and not op.has_matrix:
-        return op.sparse_matrix(wire_order=wire_order).todense()
-    try:
+
+    # Starting from now, op is an Operator
+    # Validate wire_order
+    if wire_order and not set(op.wires).issubset(wire_order):
+        raise TransformError(
+            f"Wires in circuit {list(op.wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
+        )
+    if op.has_matrix:
         return op.matrix(wire_order=wire_order)
-    except:  # pylint: disable=bare-except
+    if op.has_sparse_matrix:
+        return op.sparse_matrix(wire_order=wire_order).todense()
+    if op.has_decomposition:
         return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+    raise MatrixUndefinedError(
+        "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
+    )
 
 
 @partial(transform, is_informative=True)
