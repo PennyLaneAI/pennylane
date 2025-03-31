@@ -1,0 +1,33 @@
+name: "RTD check"
+on:
+  pull_request: {}
+
+jobs:
+  sphinx:
+    runs-on: ubuntu-22.04
+    env:
+      PYTHON_VERSION: "3.10"
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - name: Setup Python Environment
+      id: setup_python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade --no-cache-dir pip setuptools 
+        pip install --upgrade --no-cache-dir sphinx graphviz
+        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
+        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+
+
+    - name: Build Sphinx HTML
+      run: |
+        cd doc
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going
