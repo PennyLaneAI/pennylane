@@ -876,7 +876,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Raise error when `qml.matrix` is applied on a sparse operator.
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
   [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.

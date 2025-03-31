@@ -220,9 +220,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
         return _matrix_transform(op, wire_order=wire_order)
     if op.has_sparse_matrix and not op.has_matrix:
-        raise TypeError(
-            "using qml.matrix is not supported for Operators defined with sparse matrices."
-        )
+        return op.sparse_matrix(wire_order=wire_order).todense()
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except

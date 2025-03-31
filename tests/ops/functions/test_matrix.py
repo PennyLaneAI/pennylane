@@ -51,14 +51,17 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 class TestSingleOperation:
 
-    def test_sparse_operators_unsupported(self):
-        """Test that an error is raised if the operation is sparse"""
-        X_csr = sp.sparse.csr_matrix(X)
-        op = qml.QubitUnitary(X_csr, wires=[0])
-        with pytest.raises(
-            TypeError, match="not supported for Operators defined with sparse matrices."
-        ):
-            qml.matrix(op)
+    @pytest.mark.parametrize("op_class", [qml.QubitUnitary])
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    def test_sparse_operators_supported(self, op_class, n_wires):
+        """Test that sparse operators are supported and directly output as dense."""
+        matrix = X
+        for _ in range(n_wires - 1):
+            matrix = np.kron(matrix, X)
+        X_csr = sp.sparse.csr_matrix(matrix)
+        op = op_class(X_csr, wires=range(n_wires))
+        res = qml.matrix(op)
+        assert np.allclose(res, matrix, atol=0, rtol=0)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
