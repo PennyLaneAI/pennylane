@@ -75,7 +75,6 @@ def _add_grouping_symbols(op, layer_str, config):  # pylint: disable=unused-argu
 def _add_mid_measure_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object for mid-measure
     operators"""
-    print("here")
     if op not in config.bit_map:
         return layer_str
 

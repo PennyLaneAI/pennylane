@@ -65,9 +65,10 @@ class _Config:
         """The filler character for wires at the current layer."""
         return "─" if self.cur_layer < self.num_op_layers else " "
 
-    def bit_filler(self, bit) -> str:
+    def bit_filler(self, bit, next_layer: bool = False) -> str:
         """The filler character for bits at the current layer and the designated bit.."""
-        b_is_occupied = min(self.cwire_layers[bit]) < self.cur_layer < max(self.cwire_layers[bit])
+        layer = self.cur_layer + 1 if next_layer else self.cur_layer
+        b_is_occupied = self.cwire_layers[bit][0] < layer <= self.cwire_layers[bit][-1]
         return "═" if self.cur_layer < self.num_op_layers and b_is_occupied else " "
 
 
@@ -133,7 +134,8 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
 
     # Adjust width for bit filler on unused bits
     for b in range(len(config.bit_map)):
-        cur_b_filler = config.bit_filler(b)
+        # needs filler for next layer, as adding to the right of this one
+        cur_b_filler = config.bit_filler(b, next_layer=True)
         layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
     # one for the filler character
