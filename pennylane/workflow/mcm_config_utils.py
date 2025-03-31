@@ -23,7 +23,6 @@ from typing import Literal, Union
 class MCM_METHOD(Enum):
     """Canonical set of mid-circuit measurement methods supported."""
 
-    DEVICE = "device"
     DEFERRED = "deferred"
     ONE_SHOT = "one-shot"
     TREE_TRAVERSAL = "tree-traversal"
@@ -41,7 +40,6 @@ class MCM_METHOD(Enum):
 
 MCM_METHOD_MAP = {
     None: None,
-    "device": MCM_METHOD.DEVICE,
     "deferred": MCM_METHOD.DEFERRED,
     "one-shot": MCM_METHOD.ONE_SHOT,
     "tree-traversal": MCM_METHOD.TREE_TRAVERSAL,
@@ -79,7 +77,6 @@ def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_ME
 class POSTSELECT_MODE(Enum):
     """Canonical set of postselection modes supported."""
 
-    DEVICE = "device"
     HW_LIKE = "hw-like"
     FILL_SHOTS = "fill-shots"
     PAD_INVALID_SAMPLES = "pad-invalid-samples"
@@ -96,7 +93,6 @@ class POSTSELECT_MODE(Enum):
 
 POSTSELECT_MODE_MAP = {
     None: None,
-    "device": POSTSELECT_MODE.DEVICE,
     "hw-like": POSTSELECT_MODE.HW_LIKE,
     "fill-shots": POSTSELECT_MODE.FILL_SHOTS,
     "pad-invalid-samples": POSTSELECT_MODE.PAD_INVALID_SAMPLES,
