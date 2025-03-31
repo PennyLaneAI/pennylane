@@ -194,7 +194,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The circuit drawer can now reuse lines for different classical wires, saving whitespace without
+* `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
   changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
   

@@ -177,8 +177,8 @@ def cwire_connections(layers, bit_map):
     >>> cwire_wires
     {0: [[0, 0, 3]], 1: [[1, 0]]}
 
-    From this information, we can see that the first classical wire is active in layers
-    0, 2, and 3 while the second classical wire is active in layers 1 and 2, with both classical
+    From this information, we can see that classical wire ``0`` is active in layers
+    0, 2, and 3 while classical wire ``1`` is active in layers 1 and 2, with both classical
     wires being used only once (the outer lists all have length 1). The first "active"
     layer will always be the one with the mid circuit measurement.
     """
@@ -242,8 +242,8 @@ def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
         occ_ends[new_cwire] = occ[1]
     # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
     inv_cwire_map = {new_cwire: [] for new_cwire in cwire_map.values()}
-    for cwire in bit_map.values():
-        inv_cwire_map[cwire_map[cwire]].append(cwire)
+    for old_cwire in bit_map.values():
+        inv_cwire_map[cwire_map[old_cwire]].append(old_cwire)
 
     # Collect the connected layers from all old cwires that are being mapped to the same new cwire
     connected_layers = {
