@@ -608,7 +608,7 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
 
     The number of powers of two is given by the OEIS sequence
     `A007302 <https://oeis.org/A007302>`__ and can be computed as
-    ``np.bitwise_count(k ^ (3 * k))``. Note that we use zero-based indexing.
+    ``(k ^ (3 * k)).bit_count()``. Note that we use zero-based indexing.
 
     Args:
         k (int): Integer to be decomposed
