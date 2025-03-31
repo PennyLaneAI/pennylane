@@ -122,11 +122,9 @@ class PrepSelPrep(Operation):
         shape = qml.math.shape(coeffs)
         for i, mat in enumerate(cache["matrices"]):
             if shape == qml.math.shape(mat) and qml.math.allclose(coeffs, mat):
-                # matrix in cache. use known reference in label
                 str_wo_id = f"{op_label}(M{i})"
                 break
         else:
-            # matrix not in cache. Add to cache and use in label
             mat_num = len(cache["matrices"])
             cache["matrices"].append(coeffs)
             str_wo_id = f"{op_label}(M{mat_num})"
