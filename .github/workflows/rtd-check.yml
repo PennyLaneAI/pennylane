@@ -1,6 +1,11 @@
 name: "RTD check"
 on:
-  pull_request: {}
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
   sphinx:
@@ -29,4 +34,5 @@ jobs:
 
     - name: Build Sphinx
       run: |
+        cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
