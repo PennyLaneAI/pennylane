@@ -4091,4 +4091,4 @@ def test_decomp_int_to_powers_of_two(k, n, exp_R):
 
     R = decomp_int_to_powers_of_two(k, n)
     assert R == exp_R, f"\n{R}\n{exp_R}"
-    assert sum(val != 0 for val in R) == np.bitwise_count(k ^ (3 * k))
+    assert sum(val != 0 for val in R) == (k ^ (3 * k)).bit_count()

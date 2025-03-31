@@ -650,9 +650,9 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
          - —
        * - :math:`10`
          - —
-         - :math:`+1`
-         - —
          - :math:`-1`
+         - —
+         - :math:`+1`
        * - :math:`11`
          - :math:`+1`
          - —
@@ -719,9 +719,13 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
                 factor = 1
             else:
                 # Table entry from docstring
-                factor = (-1) ** int(bool(k & (2 * p)))
-                if bool(s & p) and not bool(s & (2 * p)):
-                    factor *= -1
+                in_middle_rows = (s & (p + 2 * p)).bit_count() == 1  # two bits of s are 01 or 10
+                in_last_cols = bool(k & (2 * p))  # latter bit of k is 1
+                if in_middle_rows != in_last_cols:  # xor between in_middle_rows and in_last_cols
+                    factor = -1
+                else:
+                    factor = 1
+
             s += factor * p
         R.insert(0, factor)
 
@@ -795,7 +799,7 @@ class PCPhase(Operation):
     :class:`~.GlobalPhase` operations which share the same control values on common control
     wires.
 
-    >>> pc_op = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4]) 
+    >>> pc_op = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
     >>> print(qml.draw(pc_op.decomposition)())
     1: ──GlobalPhase(-1.23)─╭●─────────╭●─────────╭●──────────────────┤
     2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●─────────├●──────────────────┤
