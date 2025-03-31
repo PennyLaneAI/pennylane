@@ -194,6 +194,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.PCPhase` now is decomposed significantly more efficiently for more than 2-3 qubits.
+  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 

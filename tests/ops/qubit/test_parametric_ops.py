@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
+from pennylane.ops.qubit.parametric_ops_multi_qubit import decomp_int_to_powers_of_two
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -219,13 +220,8 @@ class TestOperations:
             return qml.state()
 
         def _get_expected_state(phase, dim, size):
-            return (
-                np.array(
-                    [np.exp(1j * phase) if i < dim else np.exp(-1j * phase) for i in range(size)]
-                )
-                * 1
-                / 2
-            )
+            phase = np.exp(1j * phase)
+            return np.concatenate([phase * np.ones(dim), phase.conj() * np.ones(size - dim)]) / 2
 
         assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
 
@@ -653,26 +649,29 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "op", (qml.PCPhase(1.23, dim=1, wires=[0]), qml.PCPhase(1.23, dim=5, wires=[0, 1, 2]))
-    )
-    def test_pc_phase_decomposition(self, op):
+    two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
+    other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
+
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition(self, dim, wires):
         """Test that the PCPhase decomposition produces the same unitary"""
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) > 1 else decomp_ops[0]
 
-        expected_mat = qml.matrix(op)
-        decomp_mat = qml.matrix(decomp_op)
+        expected_mat = qml.matrix(op, wire_order=wires)
+        decomp_mat = qml.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
-    def test_pc_phase_decomposition_broadcasted(self):
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
-        op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
+        op = qml.PCPhase(np.random.random(3), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
 
-        expected_mats = qml.matrix(op)
-        decomp_mats = qml.matrix(decomp_op)
+        expected_mats = qml.matrix(op, wire_order=wires)
+        decomp_mats = qml.matrix(decomp_op, wire_order=wires)
 
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
@@ -2781,7 +2780,7 @@ class TestPauliRot:
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
         expected = qml.math.expand_matrix(
@@ -4059,3 +4058,37 @@ def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
     assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
+
+
+@pytest.mark.parametrize(
+    "k, n, exp_R",
+    [
+        (0, 1, [0]),
+        (0, 2, [0, 0]),
+        (1, 2, [0, 1]),
+        (0, 3, [0, 0, 0]),
+        (1, 3, [0, 0, 1]),
+        (2, 3, [0, 1, 0]),
+        (3, 3, [1, 0, -1]),
+        (4, 3, [1, 0, 0]),
+        (0, 4, [0, 0, 0, 0]),
+        (1, 4, [0, 0, 0, 1]),
+        (2, 4, [0, 0, 1, 0]),
+        (3, 4, [0, 1, 0, -1]),
+        (4, 4, [0, 1, 0, 0]),
+        (5, 4, [0, 1, 0, 1]),
+        (6, 4, [1, 0, -1, 0]),
+        (7, 4, [1, 0, 0, -1]),
+        (8, 4, [1, 0, 0, 0]),
+        (121, 8, [1, 0, 0, 0, -1, 0, 0, 1]),  # 121=01111001_2
+        (245, 10, [0, 1, 0, 0, 0, -1, 0, 1, 0, 1]),  # 245=0011110101_2
+        (8716, 15, [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0]),  # 8716=010001000001100_2
+    ],
+)
+def test_decomp_int_to_powers_of_two(k, n, exp_R):
+    """Tests for ``test_decomp_int_to_powers_of_two``, which is used to decompose
+    ``PCPhase`` operations."""
+
+    R = decomp_int_to_powers_of_two(k, n)
+    assert R == exp_R, f"\n{R}\n{exp_R}"
+    assert sum(val != 0 for val in R) == np.bitwise_count(k ^ (3 * k))

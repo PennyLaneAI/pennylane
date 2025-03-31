@@ -595,6 +595,149 @@ pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_ro
 add_decomps(PauliRot, pauli_rot_decomposition)
 
 
+def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
+    r"""Decompose an integer :math:`k<=2^{n-1}` into additions and subtractions of the
+    smallest-possible number of powers of two.
+
+    This is equivalent to computing the minimal bit operations required to produce
+    a bit string by subtraction and addition of weight-one bit strings:
+
+    .. math::
+
+        k = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
+
+    The number of powers of two is given by the OEIS sequence
+    `A007302 <https://oeis.org/A007302>`__ and can be computed as
+    ``np.bitwise_count(k ^ (3 * k))``. Note that we use zero-based indexing.
+
+    Args:
+        k (int): Integer to be decomposed
+        n (int): Number of bits to consider
+
+    Returns:
+        list[int]: A list with length ``n``, with entry :math:`c_i` at position :math:`i`.
+
+    This function follows the logic described in
+
+    **Algorithm
+    The algorithm works in the following steps, exploiting the insight from
+    `this post <https://stackoverflow.com/questions/57797157/minimum-number-of-powers-of-2-to-get-an-integer/57805889#57805889>`__ on stack overflow that two bits of :math:`k` can be set correctly
+    at a time. That is, given two bits of the target :math:`k` and the corresponding two bits of
+    some intermediate working bit string :math:`s` that we try to set to :math:`k`, we have
+    16 scenarios. We will only need to think about those scenarios where the less significant bit
+    already differs between :math:`k` and :math:`s`. In each such scenario, a single addition
+    or subtraction to :math:`s` suffices to set the bits of :math:`s` to those of :math:`k`:
+
+    .. list-table::
+       :widths: 5 5 5 5 5
+       :header-rows: 1
+       :stub-columns: 1
+
+       * - :math:`s` \ :math:`k`
+         - :math:`00`
+         - :math:`01`
+         - :math:`10`
+         - :math:`11`
+       * - :math:`00`
+         - —
+         - :math:`+1`
+         - —
+         - :math:`-1`
+       * - :math:`01`
+         - :math:`-1`
+         - —
+         - :math:`+1`
+         - —
+       * - :math:`10`
+         - —
+         - :math:`+1`
+         - —
+         - :math:`-1`
+       * - :math:`11`
+         - :math:`+1`
+         - —
+         - :math:`-1`
+         - —
+
+    Now let's lay out the algorithm itself. We will use this operation in step 3 below.
+
+    1. Set :math:`s=0=0\dots 0_2` to be the zero bit string of length :math:`n`.
+    2. Initialize :math:`i=n-1` and an empty list :math:`R=[]` that will hold 2-tuples, each
+       containing an exponent and a factor.
+    3. If :math:`k_i=s_i`, insert :math:`(i, 0)` at the beginning of :math:`R`.
+       Else, i.e., if :math:`k_i=1-s_i`, set :math:`\sigma=1` if :math:`i<2` and otherwise
+       look at :math:`k_{i-1}` and select the sign :math:`\sigma` from the table above that
+       will make :math:`s_{i-1}s_i` match :math:`k_{i-1}k_i`.
+       Insert :math:`(i, \sigma)` at the beginning of :math:`R` and add :math:`\sigma 2^{n-i-1}`
+       to :math:`s`.
+    4. If :math:`i=0`, terminate. Otherwise, update :math:`i=i-1` and go to step 3.
+
+    **Calculation example**
+
+    Take :math:`n=5` and :math:`k=7=00111_2`. If we only allowed for addition of powers of two,
+    we would simply aggregate the single non-zero bits :math:`00001_2`, :math:`00010_2` and
+    :math:`00100_2`, requiring three powers of two to be added. However, including substraction
+    allows us to decompose :math:`k` as :math:`k=8-1=01000_2 - 00001_2` instead, only
+    requiring two powers of two.
+    To compute this result, go through the following steps:
+
+    1. Set :math:`s=00000_2`.
+    2. Initialize :math:`i=n-1=4` and :math:`R=[]`.
+    3. :math:`k_4=1=1-s_4`, so look at :math:`k_3=1` as well. The sign at :math:`(00, 11)`
+       in the table above is :math:`-1`, so we insert :math:`(4, -1)`
+       and compute :math:`s=00000_2 - 00001_2=11111_2`.
+    4. Update :math:`i=4-1=3`.
+    3. :math:`k_3=1=s_3`, so we insert :math:`(3, 0)` and move on.
+    4. Update :math:`i=3-1=2`.
+    3. :math:`k_2=1=s_2`, so we insert :math:`(2, 0)` and move on.
+    4. Update :math:`i=2-1=1`.
+    3. :math:`k_1=0=1-s_1`, and :math:`i=1<2`, so we insert :math:`(1, +1)`
+       and compute :math:`s=11111_2 + 01000_2=00111_2=k`.
+    4. Update :math:`i=1-1=0`.
+    3. :math:`k_0=0=s_0`, so we insert :math:`(0, 0)` and move on.
+    4. we have :math:`i=0`, so we terminate.
+
+    Overall, this creates the list :math:`R=[(0,0), (1,+1), (2, 0), (3, 0), (4, -1)]`,
+    corresponding to the decomposition we were after, :math:`k=2^{n-1-1} - 2^{n-4-1}=2^3-2^0=8-1`.
+
+    In the code below, we will actually *skip* the first entry of the 2-tuples in :math:`R`,
+    because they always equal the position of the tuple within :math:`R` (after completing the
+    algorithm).
+    """
+    R = []
+    assert k <= 2 ** (n - 1)
+    s = 0
+    powers = 2 ** np.arange(n)
+    for p in powers:  # p = 2**(n-1-i)
+        if s & p == k & p:
+            # Equal bit, move on
+            factor = 0
+        else:
+            # Differing bit, consider pairs of bits
+            if p >= 2 ** (n - 2):
+                # 2**(n-1-i) >= 2**(n-2) is the same condition as i < 2
+                factor = 1
+            else:
+                # Table entry from docstring
+                factor = (-1) ** int(bool(k & (2 * p)))
+                if bool(s & p) and not bool(s & (2 * p)):
+                    factor *= -1
+            s += factor * p
+        R.insert(0, factor)
+
+    return R
+
+
+def _ctrl(ops, control_wires, control_values, work_wires):
+    """Shortcut to apply ``qml.ctrl`` to a list of operations, and to skip it if the
+    control wires and values have length 0."""
+    assert len(control_wires) == len(control_values)
+
+    if len(control_wires) == 0:
+        return ops
+    return [qml.ctrl(op, control_wires, control_values, work_wires) for op in ops]
+
+
 class PCPhase(Operation):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
@@ -626,30 +769,38 @@ class PCPhase(Operation):
 
     We can define a circuit using :class:`~.PCPhase` as follows:
 
-    >>> dev = qml.device('default.qubit', wires=2)
+    >>> dev = qml.device('default.qubit', wires=3)
     >>> @qml.qnode(dev)
     >>> def example_circuit():
-    ...     qml.PCPhase(0.27, dim = 2, wires=range(2))
+    ...     qml.PCPhase(0.27, dim = 3, wires=range(3))
     ...     return qml.state()
 
-    The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 2`
-    basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors.
+    The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 3`
+    basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors, as we can see from
+    the diagonal of the matrix for this circuit.
 
-    >>> print(np.round(qml.matrix(example_circuit)(),2))
-    [[0.96+0.27j 0.  +0.j   0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.96+0.27j 0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.96-0.27j 0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.  +0.j   0.96-0.27j]]
+    >>> print(np.round(np.diag(qml.matrix(example_circuit)()),2))
+    [0.96+0.27j 0.96+0.27j 0.96+0.27j 0.96-0.27j 0.96-0.27j 0.96-0.27j
+     0.96-0.27j 0.96-0.27j]
 
     We can also choose a different :math:`dim` value to apply the phase shift to a different set of
     basis vectors as follows:
 
-    >>> pc_op = qml.PCPhase(1.23, dim=3, wires=[1, 2])
-    >>> print(np.round(qml.matrix(pc_op),2))
-    [[0.33+0.94j 0.  +0.j   0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.33+0.94j 0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.33+0.94j 0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
+    >>> pc_op = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
+    >>> print(np.round(np.diag(qml.matrix(pc_op)),2))
+    [0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j
+     0.33+0.94j 0.33-0.94j]
+
+    ``PCPhase`` operations are decomposed into controlled :class:`~.PhaseShift` and controlled
+    :class:`~.GlobalPhase` operations which share the same control values on common control
+    wires.
+
+    >>> pc_op = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4]) 
+    >>> print(qml.draw(pc_op.decomposition)())
+    1: ──GlobalPhase(-1.23)─╭●─────────╭●─────────╭●──────────────────┤
+    2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●─────────├●──────────────────┤
+    3: ──GlobalPhase(-1.23)────────────├○─────────├○──────────────────┤
+    4: ──GlobalPhase(-1.23)────────────╰Rϕ(-2.46)─╰GlobalPhase(-2.46)─┤
     """
 
     num_wires = AnyWires
@@ -754,40 +905,66 @@ class PCPhase(Operation):
 
         Returns:
             list[Operator]: decomposition of the operator
+
+        This decomposition is based on decomposing the integer ``dim`` into sums and
+        differences of powers of two, corresponding to decomposing the projector with rank ``dim``
+        that generates the ``PCPhase`` into projectors with ranks that are powers of two.
+        Exponentiating these projectors (times :math:`i\phi`) then yields controlled phase shifts,
+        potentially combined with controlled global phases that make the phase shift act on the
+        :math:`|0\rangle` subspace instead of the :math:`|1\rangle` subspace.
+
+        This decomposition achieves a worst-case cost of :math:`\lceil\frac{n}{2}\rceil`
+        multi-controlled gates on :math:`n` qubits, with the number of controls given by
+        :math:`n-(2k+1)` for :math:`0\leq k<\frac{n}{2}`. For "easier" dimensions ``dim``,
+        the number of gates and/or their number of controls will be reduced.
+
+        The exact elementary gate counts would need to be counted still,
+        but the CNOT count of multi-controlled RZ gates is at 16n-40 for n-1 controls,
+        and the single-qubit rotation count appears to be constant, both according to
+        in `arxiv:2302.06377 <https://arxiv.org/abs/2302.06377>`__ (Thm. 3 and Fig. 5).
+        This formula likely is only applicable beyond a certain qubit count a priori.
         """
         phi = params[0]
-        k, n = hyperparams["dimension"]
+        k, _ = hyperparams["dimension"]
 
-        def _get_op_from_binary_rep(binary_rep, theta, wires):
-            if len(binary_rep) == 1:
-                op = (
-                    PhaseShift(theta, wires[0])
-                    if int(binary_rep)
-                    else PauliX(wires[0]) @ PhaseShift(theta, wires[0]) @ PauliX(wires[0])
-                )
-            else:
-                base_op = (
-                    PhaseShift(theta, wires[-1])
-                    if int(binary_rep[-1])
-                    else PauliX(wires[-1]) @ PhaseShift(theta, wires[-1]) @ PauliX(wires[-1])
-                )
-                op = qml.ctrl(
-                    base_op, control=wires[:-1], control_values=[int(i) for i in binary_rep[:-1]]
-                )
-            return op
+        # Unused wires of PCPhase can be used as work wires for controlled phase shifts
+        work_wires = list(wires)
+        # Use one more bit than there are wires, according to flipping all relevant bits for the
+        # projector decomposition, or a global phase on the gate level. Afterwards, we have
+        # k <= 2**len(wires)=2**(n-1), which is a requirement of decomp_int_to_powers_of_two.
+        flipped, *powers_of_two = decomp_int_to_powers_of_two(k, n=len(wires) + 1)
+        sign = (-1) ** flipped
+        decomp = [qml.GlobalPhase(sign * phi)]
+        powers_of_two = [sign * val for val in powers_of_two]
 
-        n_log2 = int(np.log2(n))
-        positive_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
-        negative_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k, n)]
+        control_wires = []
+        control_values = []
+        for i, (c_i, wire) in enumerate(zip(powers_of_two, wires, strict=True)):
+            # Remove newly considered wire from work_wires
+            work_wires = work_wires[1:]
+            # Projector with rank 2**(n-1-i) needs to be added
+            if c_i != 0:
+                # The following phase shift and global phase together produce a phase shift
+                # on the correct subspace (i.e., the global phase moves the phase shift to |0>)
+                base_ops = [qml.PhaseShift(-2 * phi, wires=wire)]
+                if (flipped and c_i < 0) or (not flipped and c_i > 0):
+                    base_ops.append(qml.GlobalPhase(-2 * phi, wire))
+                decomp.extend(_ctrl(base_ops, control_wires, control_values, work_wires))
 
-        positive_ops = [
-            _get_op_from_binary_rep(br, phi, wires=wires) for br in positive_binary_reps
-        ]
-        negative_ops = [
-            _get_op_from_binary_rep(br, -1 * phi, wires=wires) for br in negative_binary_reps
-        ]
+            # Now that the effect on the current wire is fixed, we will only add more fine-grained
+            # projectors (i.e. smaller rank), and they will be controlled on the current wire
+            control_wires.append(wire)
+            # The control value to be used on the current wire (it will be the same for all
+            # subsequent operations) depends on whether we add or subtract next)
+            next_sign = next(filter(lambda val: val, powers_of_two[i + 1 :]), None)
+            next_cval = 1 if next_sign == 1 else 0
+            # The control value is modified both if we are in the flipped global phase mode and if
+            # the current loop iteration did not add a bit string/projector/gate
+            if (flipped + int(c_i == 0)) % 2:
+                next_cval = 1 - next_cval
+            control_values.append(next_cval)
 
-        return positive_ops + negative_ops
+        return decomp
 
     def adjoint(self) -> "PCPhase":
         """Computes the adjoint of the operator."""
