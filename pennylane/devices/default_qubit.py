@@ -670,14 +670,14 @@ class DefaultQubit(Device):
                     "when program capture is enabled."
                 )
 
-            if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
+            if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode != "device":
                 warnings.warn(
                     "Setting 'postselect_mode' is not supported with mcm_method='single-branch-"
                     "statistics'. 'postselect_mode' will be ignored.",
                     UserWarning,
                 )
                 mcm_updated_values["postselect_mode"] = None
-            if mcm_method is None:
+            if mcm_method == "device":
                 mcm_updated_values["mcm_method"] = "deferred"
             updated_values["mcm_config"] = replace(mcm_config, **mcm_updated_values)
 

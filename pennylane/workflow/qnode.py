@@ -308,13 +308,13 @@ class QNode:
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
-            default is ``None``, in which case the device will automatically choose the best configuration. For
+            default is ``"device"``, in which case the device will automatically choose the best configuration. For
             usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
             or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
             ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
-            as the name suggests. If not provided,
+            as the name suggests. If not provided, the default is ``"device"``, in which case
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
@@ -539,8 +539,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: Union[None, bool] = False,
-        postselect_mode: SupportedPostSelectModeUserInput = None,
-        mcm_method: SupportedMCMMethodUserInput = None,
+        postselect_mode: SupportedPostSelectModeUserInput = "device",
+        mcm_method: SupportedMCMMethodUserInput = "device",
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,

@@ -40,7 +40,7 @@ class MCM_METHOD(Enum):
 
 
 MCM_METHOD_MAP = {
-    None: None,
+    None: MCM_METHOD.DEVICE,
     "device": MCM_METHOD.DEVICE,
     "deferred": MCM_METHOD.DEFERRED,
     "one-shot": MCM_METHOD.ONE_SHOT,
@@ -96,7 +96,7 @@ class POSTSELECT_MODE(Enum):
 
 
 POSTSELECT_MODE_MAP = {
-    None: None,
+    None: POSTSELECT_MODE.DEVICE,
     "device": POSTSELECT_MODE.DEVICE,
     "hw-like": POSTSELECT_MODE.HW_LIKE,
     "fill-shots": POSTSELECT_MODE.FILL_SHOTS,
