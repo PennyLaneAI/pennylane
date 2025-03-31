@@ -4,9 +4,9 @@ on:
 
 jobs:
   sphinx:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ fromJson(steps.read_rtd.outputs.content).build.os }}
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: ${{ fromJson(steps.read_rtd.outputs.content).python.version }}
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
@@ -29,4 +29,5 @@ jobs:
 
     - name: Build Sphinx
       run: |
-        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going -c ../doc/conf.py
+        cd doc
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going -c 
