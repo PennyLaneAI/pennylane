@@ -248,10 +248,11 @@ def _add_measurement(m, layer_str, config):
     return layer_str
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments
 def tape_text(
     tape,
     wire_order=None,
+    *,
     show_all_wires=False,
     decimals=None,
     max_length=100,
@@ -604,9 +605,9 @@ def tape_text(
         tape_str = tape_text(
             nested_tape,
             wire_order,
-            show_all_wires,
-            decimals,
-            max_length,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length,
             show_matrices=False,
             cache=cache,
         )
