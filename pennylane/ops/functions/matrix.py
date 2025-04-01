@@ -34,7 +34,10 @@ def catalyst_qjit(qnode):
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
-    r"""The matrix representation of an operation or quantum circuit.
+    r"""The dense matrix representation of an operation or quantum circuit.
+
+    .. note::
+        This method always returns the dense matrix representation, even if the input operator has only sparse matrix representation.
 
     Args:
         op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
