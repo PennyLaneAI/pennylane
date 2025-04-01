@@ -12,8 +12,8 @@ build:
   apt_packages:
     - graphviz
   pre_build:
-  - ls -la
-  - echo "Pre-build step"
+    - ls -la
+    - echo "Pre-build step"
   build:
     - echo "$READTHEDOCS_OUTPUT pwd -- during build"
     - ls -la
