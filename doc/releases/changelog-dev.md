@@ -774,6 +774,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add an informative error message for users if they try to `autograph` a function that has a `lambda` loop condition in `qml.while_loop`.
+  [(#7178)](https://github.com/PennyLaneAI/pennylane/pull/7178)
+
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
