@@ -876,7 +876,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `PSWAP` now supports parameter broadcasting.
+* `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
