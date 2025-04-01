@@ -26,15 +26,6 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.device_api import Device
-from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig
-from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.preprocess import (
-    decompose,
-    validate_device_wires,
-    validate_measurements,
-    validate_observables,
-)
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -49,6 +40,16 @@ from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
+
+from .device_api import Device
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
+from .preprocess import (
+    decompose,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
 
 has_quimb = True
 
