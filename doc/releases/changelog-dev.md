@@ -194,6 +194,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
+  [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
+
 * `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
@@ -875,9 +878,6 @@
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 <h3>Bug fixes 🐛</h3>
-
-* `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
-  [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
