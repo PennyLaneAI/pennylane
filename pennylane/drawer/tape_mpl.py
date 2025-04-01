@@ -190,17 +190,16 @@ def _get_measured_wires(measurements, wires) -> set:
     return measured_wires
 
 
-def _add_classical_wires(drawer, layers, wires):
+def _add_classical_wires(drawer, cwire_layers, cwire_wires):
 
-    for cwire, cwire_stretch in layers.items():
-        wire_stretch = wires[cwire]
-        for cwire_layers, layer_wires in zip(cwire_stretch, wire_stretch, strict=True):
+    for cwire, layer_ids_per_cwire in cwire_layers.items():
+        for layer_ids, layer_wires in zip(layer_ids_per_cwire, cwire_wires[cwire], strict=True):
             xs, ys = [], []
 
-            len_diff = len(cwire_layers) - len(layer_wires)
+            len_diff = len(layer_ids) - len(layer_wires)
             if len_diff > 0:
                 layer_wires += [cwire + drawer.n_wires] * len_diff
-            for l, w in zip(cwire_layers, layer_wires, strict=True):
+            for l, w in zip(layer_ids, layer_wires, strict=True):
                 xs.extend([l, l, l])
                 ys.extend([cwire + drawer.n_wires, w, cwire + drawer.n_wires])
 
