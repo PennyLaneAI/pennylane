@@ -103,6 +103,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qml.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
+    qml.PSWAP(np.array([0.123, -0.63, 0.235]), wires=["a", -1]),
     qml.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
@@ -2781,7 +2782,7 @@ class TestPauliRot:
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
         expected = qml.math.expand_matrix(
