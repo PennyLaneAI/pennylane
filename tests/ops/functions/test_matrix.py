@@ -51,6 +51,28 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 class TestSingleOperation:
 
+    def test_unsupported_operator(self):
+        """Test that an error is raised when the operator is not supported, that means,
+        it is an operator without matrix, sparse matrix or decomposition defined."""
+
+        class CustomOp(qml.operation.Operation):
+            has_matrix = False
+            has_sparse_matrix = False
+            has_decomposition = False
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, param, wires):
+                super().__init__(param, wires=wires)
+
+        dummy_op = CustomOp(0.5, wires=0)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="Operator must define a matrix, sparse matrix, or decomposition",
+        ):
+            qml.matrix(dummy_op)
+
     @pytest.mark.parametrize("op_class", [qml.QubitUnitary])
     @pytest.mark.parametrize("n_wires", [1, 2, 3])
     def test_sparse_operators_supported(self, op_class, n_wires):
