@@ -4,6 +4,18 @@
 
 <h3>New features since last release</h3>
 
+<h4>Decompositions 🔎</h4>
+
+<h4>Program Capture 📥</h4>
+
+<h4>Sparse Represenation Execution 🌌</h4>
+
+<h4>QROM State Preparation 📖</h4>
+
+<h4>New Module: Dynamical Lie Algebras 🕓</h4>
+
+<h4>Qualtran Integration 🔗</h4>
+
 * Device preprocessing is now being performed in the execution pipeline for program capture.
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
