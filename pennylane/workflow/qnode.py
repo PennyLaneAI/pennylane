@@ -69,7 +69,9 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: Optional["QNode"], diff_method=None, mcm_config=None
+    circuit: Optional["QNode"],
+    diff_method: Union[str, TransformDispatcher] = None,
+    mcm_config: MCMConfig = None,
 ) -> ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
@@ -90,7 +92,7 @@ def _make_execution_config(
     )
 
 
-def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) -> Result:
+def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: bool) -> Result:
 
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)

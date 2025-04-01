@@ -26,6 +26,7 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.devices import LegacyDevice
 from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -65,7 +66,7 @@ def execute(
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
     Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
         device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
@@ -223,18 +224,18 @@ def execute(
 
     interface = _resolve_interface(interface, tapes)
 
-    config = qml.devices.ExecutionConfig(
+    config = ExecutionConfig(
         interface=interface,
         gradient_method=diff_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
-        mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
+        mcm_config=MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
     )
     config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
+    transform_program = transform_program or TransformProgram()
     transform_program, inner_transform = _setup_transform_program(
         transform_program, device, config, cache, cachesize
     )
