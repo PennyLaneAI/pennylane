@@ -429,9 +429,12 @@ def decompose(
 
     .. seealso::
 
-        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` for a
+        For decomposing into Clifford + T, check out :func:`~.pennylane.clifford_t_decomposition`.
+
+        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
+        
 
     .. details::
         :title: Integration with the Graph-Based Decomposition System
