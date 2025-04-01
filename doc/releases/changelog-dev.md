@@ -7,6 +7,8 @@
 * Device preprocessing is now being performed in the execution pipeline for program capture.
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
   [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
+  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
@@ -84,10 +86,10 @@
   True
   ```
 
-  `qml.liealg.cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
+  `qml.liealg.horizontal_cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
 
   ```pycon
-  >>> newg, k, mtilde, a, new_adj = qml.liealg.cartan_subalgebra(k, m)
+  >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
   ```
 
   `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
@@ -107,15 +109,99 @@
 
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
+  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
+<h4>Gate-set targeted decompositions</h4>
+
+* A new module called `qml.decomposition` that contains PennyLane's new experimental graph-based 
+  gate-set-targeted decomposition system has been added.
+  [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+
+  * A decomposition rule in the new system is defined as a quantum function that declares its own
+    resource requirements using `qml.register_resources`.
+    ```python
+    import pennylane as qml
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(wires):
+        qml.H(wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.H(wires=wires[1])
+    ```
+
+  * Operators with dynamic resource requirements must be declared in a resource estimate using `qml.resource_rep`.
+    ```python
+    import pennylane as qml
+
+    def _resource_fn(num_wires):
+        return {
+            qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 1,
+            qml.resource_rep(qml.MultiRZ, num_wires=3): 2
+        }
+    
+    @qml.register_resources(_resource_fn)
+    def my_decomp(thata, wires):
+        qml.MultiRZ(theta, wires=wires[:3])
+        qml.MultiRZ(theta, wires=wires[1:])
+        qml.MultiRZ(theta, wires=wires[:3])
+    ```
+
+  * The new system allows multiple decomposition rules to be registered for the same operator. 
+    Use `qml.add_decomps` to register a decomposition with an operator; use `qml.list_decomps`
+    to inspect all known decompositions for an operator.
+    ```pycon
+    >>> import pennylane as qml
+    >>> qml.list_decomps(qml.CRX)
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+    >>> print(qml.list_decomps(qml.CRX)[0])
+    @register_resources(_crx_to_rx_cz_resources)
+    def _crx_to_rx_cz(phi, wires, **__):
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+    >>> qml.list_decomps(qml.CRX)[0].compute_resources()
+    {qml.RX: 2, qml.CZ: 2}
+    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+    ```
+* Decomposition rules are implemented using the new infrastructure for most PennyLane operators excluding templates.
+  [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+
+* A graph-based decomposition solver has been implemented that solves for the optimal decomposition
+  rule to use for an operator towards a target gate set.
+  [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+  [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
+  [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
+
+* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+
 <h3>Improvements 🛠</h3>
+
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
+
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+
+* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
+  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
 * `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
@@ -149,6 +235,7 @@
   
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
 
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
@@ -178,6 +265,7 @@
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
   [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
   ```pycon
   >>> import numpy as np
@@ -186,7 +274,7 @@
   >>> U_dense = np.eye(4)  # 2-wire identity
   >>> U_sparse = sp.sparse.csr_matrix(U_dense)
   >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.matrix())
+  >>> print(op.sparse_matrix())
   <Compressed Sparse Row sparse matrix of dtype 'float64'
           with 4 stored elements and shape (4, 4)>
     Coords        Values
@@ -194,7 +282,7 @@
     (1, 1)        1.0
     (2, 2)        1.0
     (3, 3)        1.0
-  >>> op.matrix().toarray()
+  >>> op.sparse_matrix().toarray()
   array([[1., 0., 0., 0.],
         [0., 1., 0., 0.],
         [0., 0., 1., 0.],
@@ -360,6 +448,11 @@
 
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
+  when capture is enabled.
+  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
+  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
 
 * Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
@@ -533,6 +626,9 @@
 * ``ResourceOperator.resource_params`` is changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
+* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``AmplitudeAmplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
+  [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
+
 * `pennylane.labs.khaneja_glaser_involution` is removed.
   `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
   `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
@@ -540,9 +636,55 @@
   `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
   `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
   `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
-  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.cartan_subalgebra`.
+  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.horizontal_cartan_subalgebra`.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+
+* Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
+  [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
+
+* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``RealspaceMatrix``
+  [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
+
+* Adding functions for Trotter error estimation and Hamiltonian fragment generation: ``trotter_error``, ``perturbation_error``, ``vibrational_fragments``, ``vibronic_fragments``, and ``generic_fragments``.
+  [(#7036)](https://github.com/PennyLaneAI/pennylane/pull/7036)
+
+  As an example we compute the peruturbation error of a vibrational Hamiltonian.
+  First we generate random harmonic frequences and Taylor coefficients to iniitialize the vibrational Hamiltonian.
+
+  ```pycon
+  >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
+  >>> import numpy as np
+  >>> n_modes = 2
+  >>> r_state = np.random.RandomState(42)
+  >>> freqs = r_state.random(n_modes)
+  >>> taylor_coeffs = [
+  >>>     np.array(0),
+  >>>     r_state.random(size=(n_modes, )),
+  >>>     r_state.random(size=(n_modes, n_modes)),
+  >>>     r_state.random(size=(n_modes, n_modes, n_modes))
+  >>> ]
+  ```
+    
+  We call ``vibrational_fragments`` to get the harmonic and anharmonic fragments of the vibrational Hamiltonian.
+  ```pycon
+  >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+  ```
+
+  We build state vectors in the harmonic oscilator basis with the ``HOState`` class. 
+
+  ```pycon
+  >>> gridpoints = 5
+  >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
+  >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
+  ```
+
+  Finally, we compute the error by calling ``perturbation_error``.
+
+  ```pycon
+  >>> perturbation_error(frags, [state1, state2])
+  [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
+  ```
 
 <h3>Breaking changes 💔</h3>
 
@@ -635,6 +777,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
+
+* All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
+  [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
+
+* The error message when device wires are not specified when program capture is enabled is more clear.
+  [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
@@ -723,7 +874,13 @@
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
+* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
+  [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
+
 <h3>Bug fixes 🐛</h3>
+
+* Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
+  [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
 
 * Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
   differ depending if equivalent gate generators are defined using
@@ -801,13 +958,18 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Daniela Angulo,
+Ali Asadi,
 Utkarsh Azad,
+Astral Cai,
 Joey Carter,
 Henry Chang,
 Yushao Chen,
@@ -816,6 +978,8 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Diego Guala,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
