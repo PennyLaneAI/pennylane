@@ -1,6 +1,4 @@
-
-
-name: "RTD check"
+name: "Read the Docs check"
 on:
   merge_group:
     types:
