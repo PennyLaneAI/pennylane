@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane.devices import LegacyDevice
 from pennylane.devices.device_api import Device
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+from pennylane.devices.legacy_facade import LegacyDeviceFacade
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -167,8 +168,8 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    if not isinstance(device, qml.devices.Device):
-        device = qml.devices.LegacyDeviceFacade(device)
+    if not isinstance(device, Device):
+        device = LegacyDeviceFacade(device)
 
     if config != "unset":
         warn(
