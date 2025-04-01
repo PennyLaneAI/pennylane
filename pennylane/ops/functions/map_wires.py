@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Union, overload
 from warnings import warn
 
 import pennylane as qml
-from pennylane.capture.base_interpreter import PlxprInterpreter
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -39,6 +38,7 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
+        from pennylane.capture.base_interpreter import PlxprInterpreter
     except ImportError:  # pragma: no cover
         return None, None
 
