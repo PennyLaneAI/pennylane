@@ -292,16 +292,17 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     if max_length is None:
         return _draw_layers(layers, tape.measurements, bit_map=bit_map, wire_map=wire_map, **kwargs)
 
-    figs_and_axes = []
-    while layers:
-        next_slice = layers[:max_length]
-        layers = layers[max_length:]
-        measurements = "dots" if layers else tape.measurements
-        figs_and_axes.append(
-            _draw_layers(next_slice, measurements, bit_map=bit_map, wire_map=wire_map, **kwargs)
+    layer_count = len(layers)
+    return [
+        _draw_layers(
+            layers=layers[i : i + max_length],
+            measurements=tape.measurements if i + max_length >= layer_count else "dots",
+            bit_map=bit_map,
+            wire_map=wire_map,
+            **kwargs,
         )
-
-    return figs_and_axes
+        for i in range(0, layer_count, max_length)
+    ]
 
 
 # pylint: disable=too-many-arguments
