@@ -37,7 +37,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
-        This method always returns the dense matrix representation, even if the input operator has only sparse matrix representation.
+        This method always returns a dense matrix. For workflows with sparse objects, consider using :func:`~pennylane.operation.Operator.sparse_matrix`.
 
     Args:
         op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
