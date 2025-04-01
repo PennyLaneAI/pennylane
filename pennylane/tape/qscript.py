@@ -576,8 +576,7 @@ class QuantumScript:
         to compute the Jacobian; parameters not marked as trainable will be
         automatically excluded from the Jacobian computation.
 
-        The number of trainable parameters determines the number of parameters
-        changes the default output size of method :meth:`~.get_parameters()`.
+        The number of trainable parameters changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
