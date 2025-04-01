@@ -18,7 +18,7 @@ Provides a transform to combine all ``qml.GlobalPhase`` gates in a circuit into 
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 

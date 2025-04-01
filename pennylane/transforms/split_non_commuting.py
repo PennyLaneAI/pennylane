@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike, Union
 
 

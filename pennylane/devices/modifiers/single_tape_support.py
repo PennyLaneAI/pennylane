@@ -14,7 +14,8 @@
 """Defines the ``single_tape_support`` device modifier."""
 from functools import wraps
 
-from pennylane.devices import DefaultExecutionConfig, Device
+from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import DefaultExecutionConfig
 from pennylane.tape import QuantumScript
 
 

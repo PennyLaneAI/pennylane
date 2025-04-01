@@ -16,10 +16,10 @@
 from functools import partial
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.devices import DefaultQubit
-from pennylane.gradients import adjoint_metric_tensor
+from pennylane.gradients.adjoint_metric_tensor import adjoint_metric_tensor
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 

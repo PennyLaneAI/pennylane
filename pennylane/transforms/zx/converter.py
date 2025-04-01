@@ -22,7 +22,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms.core import transform
+from pennylane.transforms.core.transform_dispatcher import TransformError
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

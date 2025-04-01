@@ -26,7 +26,7 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane.measurements import SampleMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

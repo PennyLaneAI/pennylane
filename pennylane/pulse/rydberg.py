@@ -18,8 +18,12 @@ from dataclasses import dataclass
 import numpy as np
 
 import pennylane as qml
-from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
-from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
+from pennylane.pulse.hardware_hamiltonian import (
+    HardwareHamiltonian,
+    HardwarePulse,
+    _reorder_parameters,
+    drive,
+)
 from pennylane.wires import Wires
 
 

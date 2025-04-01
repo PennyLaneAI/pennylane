@@ -23,7 +23,7 @@ from gate_data import CNOT, H, I, S, X, Y, Z
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms import TransformError
+from pennylane.transforms.core.transform_dispatcher import TransformError
 
 one_qubit_no_parameter = [
     qml.PauliX,

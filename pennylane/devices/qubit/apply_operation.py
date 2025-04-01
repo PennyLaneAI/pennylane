@@ -23,7 +23,8 @@ import scipy as sp
 import pennylane as qml
 from pennylane import math
 from pennylane.measurements import MidMeasureMP
-from pennylane.ops import Conditional
+from pennylane.ops.op_math import Conditional
+from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -657,7 +658,7 @@ def apply_snapshot(
 # pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
-    op: qml.pulse.ParametrizedEvolution,
+    op: ParametrizedEvolution,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -684,7 +685,7 @@ def apply_parametrized_evolution(
 
 
 def _evolve_state_vector_under_parametrized_evolution(
-    operation: qml.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
+    operation: ParametrizedEvolution, state, num_wires, is_state_batched
 ):
     """Uses an odeint solver to compute the evolution of the input ``state`` under the given
     ``ParametrizedEvolution`` operation.

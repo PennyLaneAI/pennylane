@@ -22,7 +22,7 @@ from pennylane.ops.qubit.attributes import (
     symmetric_over_control_wires,
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

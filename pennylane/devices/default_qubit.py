@@ -32,7 +32,7 @@ from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from . import Device
@@ -153,7 +153,7 @@ def all_state_postprocessing(results, measurements, wire_order):
     return result[0] if len(measurements) == 1 else result
 
 
-@qml.transform
+@transform
 def _conditional_broastcast_expand(tape):
     """Apply conditional broadcast expansion to the tape if needed."""
     # Currently, default.qubit does not support native parameter broadcasting with
@@ -163,7 +163,7 @@ def _conditional_broastcast_expand(tape):
     return (tape,), null_postprocessing
 
 
-@qml.transform
+@transform
 def no_counts(tape):
     """Throws an error on counts measurements."""
     if any(isinstance(mp, qml.measurements.CountsMP) for mp in tape.measurements):
@@ -171,7 +171,7 @@ def no_counts(tape):
     return (tape,), null_postprocessing
 
 
-@qml.transform
+@transform
 def adjoint_state_measurements(
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:

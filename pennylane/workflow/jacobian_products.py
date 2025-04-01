@@ -24,7 +24,10 @@ import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.tape import QuantumScriptBatch
+from pennylane.transforms.core.transform_dispatcher import TransformDispatcher
 from pennylane.typing import ResultBatch, TensorLike
 
 logger = logging.getLogger(__name__)
@@ -262,7 +265,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "qml.transforms.core.TransformDispatcher",
+        gradient_transform: TransformDispatcher,
         gradient_kwargs: Optional[dict] = None,
         cache_full_jacobian: bool = False,
     ):
@@ -417,8 +420,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: "qml.devices.Device",
-        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        device: Device,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         if execution_config is None:
             execution_config = qml.devices.DefaultExecutionConfig
@@ -667,9 +670,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(
-        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
-    ):
+    def __init__(self, device: Device, execution_config: ExecutionConfig):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device

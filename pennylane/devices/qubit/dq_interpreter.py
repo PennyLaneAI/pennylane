@@ -21,7 +21,7 @@ import numpy as np
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
-from pennylane.devices import ExecutionConfig
+from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.qubit import Projector

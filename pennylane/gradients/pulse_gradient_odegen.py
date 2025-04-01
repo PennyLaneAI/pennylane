@@ -20,10 +20,10 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (

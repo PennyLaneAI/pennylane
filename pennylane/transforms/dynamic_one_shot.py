@@ -24,6 +24,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -174,7 +175,7 @@ def get_legacy_capabilities(dev):
     return dev.target_device.capabilities()
 
 
-def _supports_one_shot(dev: "qml.devices.Device"):
+def _supports_one_shot(dev: Device):
     """Checks whether a device supports one-shot."""
 
     if isinstance(dev, qml.devices.LegacyDevice):

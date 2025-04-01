@@ -14,19 +14,22 @@
 """
 This module contains the qml.map_wires function.
 """
-from collections.abc import Callable
 from functools import lru_cache, partial
-from typing import Union, overload
+from typing import TYPE_CHECKING, Union, overload
 from warnings import warn
 
 import pennylane as qml
-from pennylane import transform
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.tape.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pennylane.workflow.qnode import QNode
 
 
 @lru_cache
@@ -136,18 +139,24 @@ def map_wires(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 @overload
 def map_wires(
-    input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
-) -> QNode: ...
+    input: "QNode", wire_map: dict, queue: bool = False, replace: bool = False
+) -> "QNode": ...
+
+
 @overload
 def map_wires(
-    input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
-) -> Callable: ...
+    input: "Callable", wire_map: dict, queue: bool = False, replace: bool = False
+) -> "Callable": ...
+
+
 @overload
 def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
+    input: Union[
+        Operator, MeasurementProcess, QuantumScript, "QNode", "Callable", QuantumScriptBatch
+    ],
     wire_map: dict,
     queue=False,
     replace=False,

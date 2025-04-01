@@ -16,7 +16,7 @@ from typing import Iterable, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence
+from pennylane.pauli.pauli_arithmetic import PauliSentence
 from pennylane.typing import TensorLike
 
 

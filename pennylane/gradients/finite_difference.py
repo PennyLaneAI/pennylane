@@ -27,10 +27,10 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import generate_shifted_tapes

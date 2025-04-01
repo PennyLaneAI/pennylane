@@ -17,7 +17,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli.pauli_arithmetic import PauliSentence, PauliWord
 
 
 def center(

@@ -24,7 +24,9 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import functions
+from pennylane.ops.functions import bind_new_parameters
+from pennylane.ops.functions.equal import _equal_dispatch, _equal_operators, equal
+from pennylane.ops.functions.evolve import evolve
 from pennylane.typing import TensorLike
 
 from .hardware_hamiltonian import HardwareHamiltonian
@@ -604,7 +606,7 @@ class ParametrizedEvolution(Operation):
         return f"{op_label}\n(p=[{p}], t={self.t})"
 
 
-@functions.bind_new_parameters.register
+@bind_new_parameters.register
 def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
     return ParametrizedEvolution(
         op.H,
@@ -615,3 +617,31 @@ def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Se
         dense=op.dense,
         **op.odeint_kwargs,
     )
+
+
+@_equal_dispatch.register
+def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
+    # check times match
+    if op1.t is None or op2.t is None:
+        if not (op1.t is None and op2.t is None):
+            return False
+    elif not qml.math.allclose(op1.t, op2.t):
+        return False
+
+    # check parameters passed to operator match
+    operator_check = _equal_operators(op1, op2, **kwargs)
+    if isinstance(operator_check, str):
+        return False
+
+    # check H.coeffs match
+    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs)):
+        return False
+
+    # check that all the base operators on op1.H and op2.H match
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
+
+
+# pylint: disable=missing-docstring
+@evolve.register
+def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
+    return ParametrizedEvolution(H=op, **kwargs)

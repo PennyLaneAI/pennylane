@@ -35,7 +35,7 @@ from typing import Optional, Union
 
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.ops.channel import __qubit_channels__ as channels
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import TransformProgram, transform
 from pennylane.tape import QuantumScript
 from pennylane.typing import Result, ResultBatch
 
@@ -156,7 +156,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return op.name in expected_set
 
 
-@qml.transform
+@transform
 def warn_readout_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:

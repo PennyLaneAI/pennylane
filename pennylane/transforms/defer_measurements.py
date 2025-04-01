@@ -30,7 +30,8 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms.core import transform
+from pennylane.transforms.core.transform_dispatcher import TransformError
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

@@ -19,7 +19,9 @@ from functools import wraps
 from typing import Literal, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
+from pennylane.tape.qscript import QuantumScriptBatch
+from pennylane.transforms.core.transform_dispatcher import TransformDispatcher
+from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.typing import PostprocessingFn
 
 from .qnode import QNode, _make_execution_config
@@ -30,7 +32,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDispatcher":
+def expand_fn_transform(expand_fn: Callable) -> TransformDispatcher:
     """Construct a transform from a tape-to-tape function.
 
     Args:
@@ -54,9 +56,7 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     return qml.transform(wrapped_expand_fn)
 
 
-def _get_full_transform_program(
-    qnode: QNode, gradient_fn
-) -> "qml.transforms.core.TransformProgram":
+def _get_full_transform_program(qnode: QNode, gradient_fn) -> TransformProgram:
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
 
     if getattr(gradient_fn, "expand_transform", False):
@@ -74,9 +74,7 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
-def get_transform_program(
-    qnode: "QNode", level=None, gradient_fn="unset"
-) -> "qml.transforms.core.TransformProgram":
+def get_transform_program(qnode: "QNode", level=None, gradient_fn="unset") -> TransformProgram:
     """Extract a transform program at a designated level.
 
     Args:

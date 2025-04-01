@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 # pylint: disable=too-many-branches

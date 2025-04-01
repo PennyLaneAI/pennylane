@@ -24,6 +24,8 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
+from pennylane.devices.legacy_facade import LegacyDeviceFacade
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -37,11 +39,13 @@ from .run import run
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+SupportedDeviceAPIs = Union[LegacyDeviceFacade, Device]
+
 
 # pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
-    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
+    device: SupportedDeviceAPIs,
     diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,

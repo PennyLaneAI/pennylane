@@ -34,6 +34,7 @@ from pennylane.measurements import (
     VarianceMP,
     find_post_processed_mcms,
 )
+from pennylane.transforms.core import transform
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
 
@@ -782,7 +783,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
-@qml.transform
+@transform
 def variance_transform(circuit):
     """Replace variance measurements by expectation value measurements of both the observable and the observable square.
 

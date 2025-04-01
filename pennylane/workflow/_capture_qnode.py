@@ -118,7 +118,7 @@ import pennylane as qml
 from pennylane.capture import CaptureError, FlatFn
 from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.logging import debug_logger
-from pennylane.typing import TensorLike
+from pennylane.typing import Result, TensorLike
 
 from .construct_execution_config import construct_execution_config
 
@@ -449,7 +449,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     return qfunc_jaxpr, flat_fn.out_tree
 
 
-def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
+def capture_qnode(qnode: "qml.workflow.qnode.QNode", *args, **kwargs) -> Result:
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:

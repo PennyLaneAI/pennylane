@@ -25,7 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import (

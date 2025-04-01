@@ -14,20 +14,24 @@
 """
 This module contains the qml.simplify function.
 """
-from collections.abc import Callable
 from copy import copy
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.tape.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pennylane.workflow import QNode
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
+def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, "QNode", "Callable"]):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 
@@ -100,7 +104,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Ca
     raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")
 
 
-@qml.transform
+@transform
 def _simplify_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     with qml.QueuingManager.stop_recording():
         new_operations = [op.simplify() for op in tape.operations]

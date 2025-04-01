@@ -21,8 +21,8 @@ from itertools import islice
 import numpy as np
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (

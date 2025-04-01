@@ -22,9 +22,11 @@ from warnings import warn
 from packaging.version import Version
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
-from pennylane.tape import QuantumScriptBatch
+from pennylane.tape.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 
 SupportedDiffMethods = Literal[
@@ -122,8 +124,8 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: MCMConfig, interface: Interface, finite_shots: bool
+) -> MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values = {}
@@ -163,10 +165,10 @@ def _resolve_mcm_config(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: ExecutionConfig,
+    device: Device,
+    tape: QuantumScript = None,
+) -> ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
@@ -220,11 +222,11 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: ExecutionConfig,
+    device: Device,
     tapes: QuantumScriptBatch,
     transform_program: Optional[TransformProgram] = None,
-) -> "qml.devices.ExecutionConfig":
+) -> ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:

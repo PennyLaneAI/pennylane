@@ -22,9 +22,10 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import pennylane as qml
+from pennylane.circuit_graph import CircuitGraph
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
@@ -32,6 +33,12 @@ from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
+
+if TYPE_CHECKING:
+    from pennylane.devices.device_api import Device
+    from pennylane.devices.legacy_facade import LegacyDeviceFacade
+
+    SupportedDeviceAPIs = Union[LegacyDeviceFacade, Device]
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -790,7 +797,7 @@ class QuantumScript:
     # ========================================================
 
     def shape(
-        self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
+        self, device: "SupportedDeviceAPIs"
     ) -> Union[tuple[int, ...], tuple[tuple[int, ...], ...]]:
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
@@ -1090,7 +1097,7 @@ class QuantumScript:
     # ========================================================
 
     @property
-    def graph(self) -> "qml.CircuitGraph":
+    def graph(self) -> CircuitGraph:
         """Returns a directed acyclic graph representation of the recorded
         quantum circuit:
 
@@ -1106,7 +1113,7 @@ class QuantumScript:
             .CircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = qml.CircuitGraph(
+            self._graph = CircuitGraph(
                 self.operations,
                 self.measurements,
                 self.wires,

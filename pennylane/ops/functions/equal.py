@@ -29,7 +29,6 @@ from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
 from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
 
@@ -625,28 +624,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
-
-
-@_equal_dispatch.register
-def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
-    # check times match
-    if op1.t is None or op2.t is None:
-        if not (op1.t is None and op2.t is None):
-            return False
-    elif not qml.math.allclose(op1.t, op2.t):
-        return False
-
-    # check parameters passed to operator match
-    operator_check = _equal_operators(op1, op2, **kwargs)
-    if isinstance(operator_check, str):
-        return False
-
-    # check H.coeffs match
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs)):
-        return False
-
-    # check that all the base operators on op1.H and op2.H match
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
 
 
 @_equal_dispatch.register

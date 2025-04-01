@@ -20,11 +20,13 @@ from functools import partial
 from typing import Callable
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.math import Interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import ResultBatch
-from pennylane.workflow import _cache_transform
+from pennylane.workflow._cache_transform import _cache_transform
 
 from .jacobian_products import (
     DeviceDerivatives,
@@ -38,8 +40,8 @@ ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 def _construct_tf_autograph_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: ExecutionConfig,
+    device: Device,
     inner_transform_program: TransformProgram,
 ):
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
@@ -102,8 +104,8 @@ def _construct_tf_autograph_pipeline(
 
 
 def _construct_ml_execution_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: ExecutionConfig,
+    device: Device,
     inner_transform_program: TransformProgram,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
@@ -173,7 +175,7 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: "qml.devices.ExecutionConfig", differentiable=False
+    resolved_execution_config: ExecutionConfig, differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
@@ -259,8 +261,8 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 def run(
     tapes: QuantumScriptBatch,
-    device: "qml.devices.Device",
-    config: "qml.devices.ExecutionConfig",
+    device: Device,
+    config: ExecutionConfig,
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.

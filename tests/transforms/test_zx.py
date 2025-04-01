@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.transforms import TransformError
+from pennylane.transforms.core.transform_dispatcher import TransformError
 
 pyzx = pytest.importorskip("pyzx")
 

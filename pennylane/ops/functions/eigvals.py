@@ -22,9 +22,9 @@ from functools import partial, reduce
 import scipy
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
+from pennylane.transforms.core import transform
+from pennylane.transforms.core.transform_dispatcher import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 

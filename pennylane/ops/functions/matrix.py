@@ -20,11 +20,11 @@ from functools import partial
 from typing import Union
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
+from pennylane.transforms.core import transform
+from pennylane.transforms.core.transform_dispatcher import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 

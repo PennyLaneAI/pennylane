@@ -41,7 +41,7 @@ from pennylane.measurements import (
 from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -118,7 +118,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     return obs.name in _OBSERVABLES_MAP
 
 
-@qml.transform
+@transform
 def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
     if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):

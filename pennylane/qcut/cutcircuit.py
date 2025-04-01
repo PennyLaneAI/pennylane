@@ -22,7 +22,7 @@ from typing import Optional, Union
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

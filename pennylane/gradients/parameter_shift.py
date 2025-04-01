@@ -21,9 +21,9 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.measurements import ExpectationMP, VarianceMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff

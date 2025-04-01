@@ -24,8 +24,8 @@ import pennylane as qml
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 

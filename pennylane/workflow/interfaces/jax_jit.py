@@ -42,6 +42,9 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
+from pennylane.devices.device_api import Device
+from pennylane.measurements.counts import CountsMP
+from pennylane.tape.qscript import QuantumScript
 from pennylane.typing import ResultBatch
 
 from ..jacobian_products import _compute_jvps
@@ -50,7 +53,7 @@ from .jax import _NonPytreeWrapper
 Zero = jax.custom_derivatives.SymbolicZero
 
 
-def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+def _to_jax(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, and numpy arrays
@@ -86,7 +89,7 @@ def _jax_dtype(m_type):
     return jnp.dtype(m_type)
 
 
-def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
+def _get_counts_shape(mp: CountsMP, num_device_wires=0):
     num_wires = len(mp.wires) if mp.wires else num_device_wires
     outcome_counts = {}
     binary_pattern = "{0:0" + str(num_wires) + "b}"
@@ -97,7 +100,7 @@ def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
     return outcome_counts
 
 
-def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
+def _result_shape_dtype_struct(tape: QuantumScript, device: Device):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
@@ -105,7 +108,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
 
     def struct(mp, shots):
         # depends on num_device_wires and tape.batch_size from closure
-        if isinstance(mp, qml.measurements.CountsMP):
+        if isinstance(mp, CountsMP):
             counts_shape = _get_counts_shape(mp, num_device_wires=num_device_wires)
             if tape.batch_size:
                 return tuple(counts_shape for _ in range(tape.batch_size))
@@ -126,7 +129,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
     return tuple(shape) if tape.shots.has_partitioned_shots else shape[0]
 
 
-def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
+def _jac_shape_dtype_struct(tape: QuantumScript, device: Device):
     """The shape of a jacobian for a single tape given a device.
 
     Args:
@@ -252,11 +255,7 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
 
     """
 
-    if any(
-        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
-        for t in tapes
-        for m in t.measurements
-    ):
+    if any(isinstance(m, CountsMP) and not (m.all_outcomes) for t in tapes for m in t.measurements):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
@@ -282,11 +281,7 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         the returned tuple corresponds in order to the provided tapes.
 
     """
-    if any(
-        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
-        for t in tapes
-        for m in t.measurements
-    ):
+    if any(isinstance(m, CountsMP) and not (m.all_outcomes) for t in tapes for m in t.measurements):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")

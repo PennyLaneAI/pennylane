@@ -16,8 +16,8 @@
 import warnings
 from collections.abc import MutableMapping
 
-from pennylane.tape import QuantumScript
-from pennylane.transforms import transform
+from pennylane.tape.qscript import QuantumScript
+from pennylane.transforms.core import transform
 from pennylane.typing import Result, ResultBatch
 
 _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (

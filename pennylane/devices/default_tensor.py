@@ -26,7 +26,8 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices.device_api import Device
+from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.preprocess import (
     decompose,

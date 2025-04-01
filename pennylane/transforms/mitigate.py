@@ -21,7 +21,7 @@ from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 

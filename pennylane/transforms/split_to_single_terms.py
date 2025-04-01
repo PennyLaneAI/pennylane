@@ -20,7 +20,7 @@ between different tapes.
 
 from functools import partial
 
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.transforms.split_non_commuting import (
     _processing_fn_no_grouping,
     _split_all_multi_term_obs_mps,

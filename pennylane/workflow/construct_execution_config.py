@@ -21,7 +21,7 @@ from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
 
-def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
+def construct_execution_config(qnode: "qml.workflow.qnode.QNode", resolve: bool = True):
     """Constructs the execution configuration of a QNode instance.
 
     Args:

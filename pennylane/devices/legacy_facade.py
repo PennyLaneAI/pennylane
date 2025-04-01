@@ -24,6 +24,7 @@ from dataclasses import replace
 import pennylane as qml
 from pennylane.math import get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.transforms.core import transform
 from pennylane.transforms.core.transform_program import TransformProgram
 
 from .device_api import Device
@@ -86,14 +87,14 @@ def null_postprocessing(results):
     return results[0]
 
 
-@qml.transform
+@transform
 def legacy_device_expand_fn(tape, device):
     """Turn the ``expand_fn`` from the legacy device interface into a transform."""
     new_tape = _set_shots(device, tape.shots)(device.expand_fn)(tape)
     return (new_tape,), null_postprocessing
 
 
-@qml.transform
+@transform
 def legacy_device_batch_transform(tape, device):
     """Turn the ``batch_transform`` from the legacy device interface into a transform."""
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)

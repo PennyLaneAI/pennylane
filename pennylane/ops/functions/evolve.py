@@ -18,7 +18,6 @@ from functools import singledispatch
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
-from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 @singledispatch
@@ -158,12 +157,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
     """
-
-
-# pylint: disable=missing-docstring
-@evolve.register
-def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
-    return ParametrizedEvolution(H=op, **kwargs)
 
 
 # pylint: disable=missing-docstring
