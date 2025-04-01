@@ -217,6 +217,7 @@ def _get_measured_bits(measurements, bit_map, offset):
 
 
 def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
+    """Private function drawing the given layers."""
     n_layers = len(layers)
     n_wires = len(wire_map)
 
@@ -277,7 +278,14 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
 
 
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kwargs):
-    """Private function wrapped with styling."""
+    """Internal implementation for matplotlib circuit visualization.
+    
+    Handles the core drawing logic while the public tape_mpl wrapper manages styling.
+    
+    Returns:
+        When max_length is None: tuple(Figure, Axes) for the complete circuit
+        Otherwise: list[tuple(Figure, Axes)] with one pair per circuit segment
+    """
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = transform_deferred_measurements_tape(tape)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
