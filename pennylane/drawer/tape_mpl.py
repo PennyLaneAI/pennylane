@@ -279,9 +279,9 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
 
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kwargs):
     """Internal implementation for matplotlib circuit visualization.
-    
+
     Handles the core drawing logic while the public tape_mpl wrapper manages styling.
-    
+
     Returns:
         When max_length is None: tuple(Figure, Axes) for the complete circuit
         Otherwise: list[tuple(Figure, Axes)] with one pair per circuit segment
