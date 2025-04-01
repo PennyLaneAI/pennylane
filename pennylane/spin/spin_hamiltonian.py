@@ -307,6 +307,7 @@ def fermi_hubbard(
 
     hamiltonian = hopping_ham + int_term
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
