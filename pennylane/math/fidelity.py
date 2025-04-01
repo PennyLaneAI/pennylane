@@ -131,7 +131,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     >>> state0 = [[1, 0], [0, 0]]
     >>> state1 = [[0, 0], [0, 1]]
-    >>> math.fidelity(state0, state1)
+    >>> qml.math.fidelity(state0, state1)
     0.0
 
     .. seealso:: :func:`pennylane.math.fidelity_statevector`
