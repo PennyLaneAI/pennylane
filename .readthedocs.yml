@@ -16,7 +16,7 @@ build:
       - ls -la
       - echo "Pre-build step"
     build:
-      - echo "$READTHEDOCS_OUTPUT pwd -- during build"
+      - echo "during build"
       - ls -la
     post_build:
       - ls -la
