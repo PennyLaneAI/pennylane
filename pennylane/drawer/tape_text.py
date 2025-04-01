@@ -158,15 +158,15 @@ def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentT
 
 def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _CurrentTotals:
     """Combine the current layer's string representation with the accumulated circuit representation.
-    
+
     This function joins each wire and bit string in the current layer with the corresponding
     accumulated string in totals, using appropriate filler characters.
-    
+
     Args:
         totals: Object containing the current state of the circuit representation
         layer_str: List of strings representing the current layer to be added
         config: Configuration object with drawing settings and current state
-        
+
     Returns:
         Updated totals with the current layer added
     """
