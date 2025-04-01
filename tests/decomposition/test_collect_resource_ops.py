@@ -14,7 +14,7 @@
 
 """Tests for the CollectResourceOps interpreter."""
 
-# pylint: disable=wrong-import-order
+# pylint: disable=wrong-import-position,wrong-import-order
 
 import pytest
 

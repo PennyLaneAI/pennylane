@@ -35,7 +35,7 @@ class CollectResourceOps(FlattenedInterpreter):
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):
+def _(self, *invals, jaxpr, lazy, n_consts):  # pylint: disable=unused-argument
     """Collect all operations in the base plxpr and create adjoint resource ops with them."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
@@ -81,7 +81,7 @@ def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slic
     conditions = invals[:n_branches]
     args = invals[args_slice]
     outvals = ()
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for _, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[const_slice]
         if jaxpr is not None:
             dummy = copy(self).eval(jaxpr, consts, *args)
