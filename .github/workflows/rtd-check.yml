@@ -23,11 +23,11 @@ jobs:
       with:
         fetch-depth: 1
 
-    - name: Install APT packages
-      run: |
-        sudo apt-get update --assume-yes --quiet
-        sudo apt install -y ${{ env.APT_PACKAGES_TO_INSTALL }}
-      run: sudo apt install -y libxml2-utils
+    # - name: Install APT packages
+    #   run: |
+    #     sudo apt-get update --assume-yes --quiet
+    #     sudo apt install -y ${{ env.APT_PACKAGES_TO_INSTALL }}
+    #   run: sudo apt install -y libxml2-utils
 
     - name: Setup Python Environment
       id: setup_python
