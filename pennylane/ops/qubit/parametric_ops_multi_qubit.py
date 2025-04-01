@@ -1700,7 +1700,9 @@ class PSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.stack([1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)])
+        e = qml.math.exp(1j * phi)
+        one = qml.math.ones_like(phi)
+        return qml.math.stack([one, one, -e, e])
 
     def adjoint(self) -> "PSWAP":
         (phi,) = self.parameters
