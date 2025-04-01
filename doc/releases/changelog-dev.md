@@ -771,6 +771,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Enable `rtol` option in `test_parameter_shift_shot_vec.py::TestHamiltonianExpvalGradients::test_trainable_coeffs` to suppress unexpected stochastic fails.
+
 * All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
   [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
 
