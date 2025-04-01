@@ -641,7 +641,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        num_state_qubits, num_precision_wires, num_work_wires, positive_and_real, **kwargs
+        num_state_qubits, num_precision_wires, num_work_wires, num_phase_gradient_wires, positive_and_real, **kwargs
     ):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -650,6 +650,8 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
             num_state_qubits (int): number of qubits required to represent the state-vector
             num_precision_wires (int): number of qubits that specify the precision of the rotation angles
             num_work_wires (int): additional qubits which optimize the implementation
+            num_phase_gradient_wires (int): number of qubits where the phase gradient state is stored. Must be equal
+                to ``num_precision_wires``
             positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
 
         Resources:
@@ -688,10 +690,13 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
                 )
             ] += 1
 
-        c_ry = re.ResourceCRY.resource_rep()
-        gate_types[c_ry] = num_precision_wires * num_state_qubits
 
-        c_gp = re.ResourceControlled.resource_rep(re.ResourceGlobalPhase, {}, 1, 0, 0)
+        t = re.ResourceT.resource_rep()
+        h = re.ResourceH.resource_rep()
+
+        # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+        gate_types[t] = 2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1) * num_state_qubits
+        gate_types[h] = 2 * num_state_qubits
 
         if not positive_and_real:
             gate_types[
@@ -705,7 +710,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
                 )
             ] += 1
 
-            gate_types[c_gp] = num_precision_wires
+            gate_types[t] += 2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1)
 
             gate_types[
                 re.ResourceAdjoint.resource_rep(
@@ -780,6 +785,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
             "num_state_qubits": num_state_qubits,
             "num_precision_wires": num_precision_wires,
             "num_work_wires": num_work_wires,
+            "num_phase_gradient_wires": num_precision_wires,
             "positive_and_real": positive_and_real,
         }
         return re.CompressedResourceOp(cls, params)

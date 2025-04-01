@@ -129,6 +129,7 @@ State Preparation Templates
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
+    ~ResourceQROMStatePreparation
 
 Compact Classes
 ~~~~~~~~~~~~~~~
