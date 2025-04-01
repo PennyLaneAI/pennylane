@@ -147,7 +147,9 @@ class TestSpectralNormError:
         res = SpectralNormError.get_error(approx_op, exact_op)
         assert np.isclose(res, expected)
 
-    @pytest.mark.xfail(reason="Interesting case affected by the improvement of `qml.matrix`, https://github.com/PennyLaneAI/pennylane/pull/7147")
+    @pytest.mark.xfail(
+        reason="Interesting case affected by the improvement of `qml.matrix`, https://github.com/PennyLaneAI/pennylane/pull/7147"
+    )
     def test_no_operator_matrix_defined(self):
         """Test that get_error fails if the operator matrix is not defined"""
 
