@@ -26,6 +26,7 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
+from pennylane.devices import LegacyDevice
 from pennylane.devices.device_api import Device
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.legacy_facade import LegacyDeviceFacade
@@ -47,7 +48,7 @@ from .resolution import SupportedDiffMethods, _validate_jax_version
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Union[LegacyDeviceFacade, Device]
+SupportedDeviceAPIs = Union[LegacyDevice, Device]
 
 
 def _convert_to_interface(result, interface: Interface):
@@ -574,7 +575,7 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if not isinstance(device, (LegacyDeviceFacade, Device)):
+        if not isinstance(device, (LegacyDevice, Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )

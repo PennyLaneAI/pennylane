@@ -35,10 +35,10 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 if TYPE_CHECKING:
+    from pennylane.devices import LegacyDevice
     from pennylane.devices.device_api import Device
-    from pennylane.devices.legacy_facade import LegacyDeviceFacade
 
-    SupportedDeviceAPIs = Union[LegacyDeviceFacade, Device]
+    SupportedDeviceAPIs = Union[LegacyDevice, Device]
 
 OPENQASM_GATES = {
     "CNOT": "cx",
