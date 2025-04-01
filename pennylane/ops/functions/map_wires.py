@@ -38,14 +38,12 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
-        from pennylane.capture.base_interpreter import PlxprInterpreter
-    except ImportError as e:  # pragma: no cover
-        print(e)
+    except ImportError:  # pragma: no cover
         return None, None
 
     # pylint: disable=redefined-outer-name
 
-    class MapWiresInterpreter(PlxprInterpreter):
+    class MapWiresInterpreter(qml.capture.PlxprInterpreter):
         """Interpreter that maps wires of operations and measurements.
 
         **Examples:**

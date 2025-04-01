@@ -228,7 +228,7 @@ def get_transform_program(qnode: "QNode", level=None, gradient_fn="unset") -> Tr
 
 # !TODO: remove KerasLayer in 0.42
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
+    qnode: Union["QNode", "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
