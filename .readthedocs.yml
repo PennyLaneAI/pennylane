@@ -11,6 +11,15 @@ build:
     python: "3.10"
   apt_packages:
     - graphviz
+  pre_build:
+  - ls -la
+  - echo "Pre-build step"
+  build:
+    - echo "$READTHEDOCS_OUTPUT pwd -- during build"
+    - ls -la
+  post_build:
+    - ls -la
+    - echo "Post-build step"
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
