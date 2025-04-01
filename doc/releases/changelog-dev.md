@@ -774,9 +774,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Adjusted `test_no_operator_matrix_defined` to correctly yield the documented, expected error.
-  [(#7182)](https://github.com/PennyLaneAI/pennylane/pull/7182)
-
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
@@ -881,6 +878,8 @@
 
 * Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
   [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
+  [(#7182)](https://github.com/PennyLaneAI/pennylane/pull/7182)
+
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
