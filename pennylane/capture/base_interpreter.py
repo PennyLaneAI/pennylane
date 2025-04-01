@@ -22,6 +22,7 @@ from typing import Callable, Optional, Sequence
 import jax
 
 import pennylane as qml
+from pennylane.measurements.measurements import MeasurementProcess
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -323,7 +324,7 @@ class PlxprInterpreter:
             mp = eqn.primitive.impl(*invals, **eqn.params)
         return self.interpret_measurement(mp)
 
-    def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+    def interpret_measurement(self, measurement: MeasurementProcess):
         """Interpret a measurement process instance.
 
         Args:
