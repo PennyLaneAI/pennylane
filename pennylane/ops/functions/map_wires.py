@@ -40,10 +40,8 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
 
         from pennylane.capture.base_interpreter import PlxprInterpreter
     except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "The map_wires transform requires jax to be installed. "
-            "Please install jax to use this feature."
-        ) from e
+        print(e)
+        return None, None
 
     # pylint: disable=redefined-outer-name
 
