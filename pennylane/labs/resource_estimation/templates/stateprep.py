@@ -692,7 +692,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
 
 
         t = re.ResourceT.resource_rep()
-        h = re.ResourceH.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
 
         # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
         gate_types[t] = 2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1) * num_state_qubits
