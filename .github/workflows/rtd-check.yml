@@ -1,3 +1,5 @@
+
+
 name: "RTD check"
 on:
   merge_group:
@@ -15,12 +17,19 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       PYTHON_VERSION: "3.10"
-      PACKAGES_TO_INSTALL: "sphinx graphviz"
+      PIP_PACKAGES_TO_INSTALL: "sphinx"
+      APT_PACKAGES_TO_INSTALL: "graphviz"
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
       with:
         fetch-depth: 1
+
+    - name: Install APT packages
+      run: |
+        sudo apt-get update --assume-yes --quiet
+        sudo apt install -y ${{ env.APT_PACKAGES_TO_INSTALL }}
+      run: sudo apt install -y libxml2-utils
 
     - name: Setup Python Environment
       id: setup_python
@@ -31,7 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
-        pip install --upgrade --no-cache-dir ${{ env.PACKAGES_TO_INSTALL }}
+        pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
         pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
 
@@ -41,6 +50,3 @@ jobs:
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going
 
-    - name: Check Read the Docs build
-      run: |
-        echo "Check the build on https://app.readthedocs.com/projects/xanaduai-pennylane/builds/"
