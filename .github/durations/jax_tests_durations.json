@@ -1263,7 +1263,7 @@
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestExpandPlxprTransformIntegration::test_example": 0.01593235400002868,
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_adjoint_transform_prim[False]": 0.00739768500000082,
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_adjoint_transform_prim[True]": 0.007436226999971041,
-  "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_cond_prim_all_cond_branches": 0.03961279000009199,
+  "capture/transforms/test_capture_merge_amplitude_.py::TestHigherOrderPrimitiveIntegration::test_cond_prim_all_cond_branches": 0.03961279000009199,
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_cond_prim_only_true_branch": 0.013546528999995644,
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_ctrl_transform_prim": 0.010946251999939705,
   "capture/transforms/test_capture_merge_amplitude_embedding.py::TestHigherOrderPrimitiveIntegration::test_for_loop_prim": 0.0171011869999802,
