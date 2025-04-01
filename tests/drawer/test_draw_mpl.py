@@ -677,6 +677,8 @@ def test_wire_sorting_if_no_wire_order(use_qnode):
     assert ax.texts[1].get_text() == "2"
     assert ax.texts[2].get_text() == "4"
 
+    plt.close()
+
 
 @pytest.mark.parametrize("use_qnode", (True, False))
 def test_wire_sorting_fallback_if_no_wire_order(use_qnode):
