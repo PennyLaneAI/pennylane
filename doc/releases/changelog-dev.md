@@ -772,6 +772,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Adjusted `test_no_operator_matrix_defined` to correctly yield the documented, expected error.
+  [(#7182)](https://github.com/PennyLaneAI/pennylane/pull/7182)
 
 * All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
   [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
