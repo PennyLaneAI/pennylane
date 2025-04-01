@@ -16,7 +16,6 @@ build:
       - ls -la
       - echo "Pre-build step"
     build:
-      - echo "during build"
       - ls -la
     post_build:
       - ls -la
