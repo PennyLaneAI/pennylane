@@ -128,7 +128,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     postselect_mode = kwargs.get("postselect_mode", None)
 
     def reshape_data(array):
-        return qml.math.asarray(array)
+        return qml.math.squeeze(qml.math.vstack(array))
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
