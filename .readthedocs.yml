@@ -11,15 +11,6 @@ build:
     python: "3.10"
   apt_packages:
     - graphviz
-  jobs: 
-    pre_build:
-      - ls -la
-      - pwd
-      - echo "Pre-build step"
-    post_build:
-      - ls -la
-      - pwd
-      - echo "Post-build step"
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

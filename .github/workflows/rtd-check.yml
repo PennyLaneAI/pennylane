@@ -44,5 +44,6 @@ jobs:
 
     - name: Build Sphinx HTML
       run: |
-        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going -c doc
+        cd doc
+        python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
 
