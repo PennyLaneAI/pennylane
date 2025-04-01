@@ -62,10 +62,7 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
-    ~ResourceMultiControlledX
     ~ResourceOrbitalRotation
-    ~ResourcePauliRot
-    ~ResourcePhaseShift
     ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePSWAP
@@ -107,6 +104,7 @@ Templates
     ~ResourcePrepSelPrep
     ~ResourceQFT
     ~ResourceQPE
+    ~ResourceQuantumPhaseEstimation
     ~ResourceQubitization
     ~ResourceQROM
     ~ResourceReflection
@@ -252,6 +250,8 @@ from .templates import (
     ResourceBasisState,
     ResourceMPSPrep,
     ResourceQubitUnitary,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState,
 )
 
 from .compact import CompactState

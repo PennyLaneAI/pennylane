@@ -150,7 +150,8 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
 
     Now we can apply Cartan decompositions of type AI and DIII in sequence:
 
-    >>> from pennylane.labs.dla import recursive_cartan_decomp, AI, DIII
+    >>> from pennylane.labs.dla import recursive_cartan_decomp
+    >>> from pennylane.liealg import AI, DIII
     >>> chain = [AI, DIII]
     >>> decompositions = recursive_cartan_decomp(g, chain)
     Iteration 0:   15 -----AI---->    6,   9
@@ -168,7 +169,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     explicitly above, we leave it in the algebra here, and see that it does not cause problems.
     We discuss the ``wire`` keyword argument below.
 
-    >>> from pennylane.labs.dla import AII, CI, BD, BDI
+    >>> from pennylane.liealg import AII, CI, BD, BDI
     >>> from functools import partial
     >>> chain = [
     ...     AII,
@@ -201,7 +202,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
 
     What about the wire keyword argument to the used involutions?
     A good rule of thumb is that it should start at ``0`` and increment by one every second
-    involution. For the involution :func:`~.pennylane.labs.dla.CI` it should additionally be
+    involution. For the involution :func:`~.pennylane.liealg.CI` it should additionally be
     increased by one. As ``0`` is the default for ``wire``, it usually does not have to be
     provided explicitly for the first two involutions, unless ``CI`` is among them.
 

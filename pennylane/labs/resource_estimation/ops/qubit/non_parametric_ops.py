@@ -23,8 +23,11 @@ import pennylane.labs.resource_estimation as re
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
-        The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
+        The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.Hadamard`
@@ -37,8 +40,11 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The Hadamard gate is treated as a terminal gate and thus it cannot be decomposed
+            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
         raise re.ResourcesNotDefined
 
@@ -46,11 +52,8 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -82,7 +85,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -148,18 +151,27 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceS(qml.S, re.ResourceOperator):
     r"""Resource class for the S-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
         The S-gate decomposes into two T-gates.
 
     .. seealso:: :class:`~.S`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceS.resources()
+    {T: 2}
     """
 
     @staticmethod
@@ -180,11 +192,8 @@ class ResourceS(qml.S, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -214,7 +223,7 @@ class ResourceS(qml.S, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -226,7 +235,7 @@ class ResourceS(qml.S, re.ResourceOperator):
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -265,16 +274,19 @@ class ResourceS(qml.S, re.ResourceOperator):
                 values are the counts.
         """
         if (mod_4 := z % 4) == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): mod_4}
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     r"""Resource class for the SWAP gate.
 
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
     Resources:
         The resources come from the following identity expressing SWAP as the product of
-        three CNOT gates:
+        three :class:`~.CNOT` gates:
 
         .. math::
 
@@ -305,6 +317,12 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
     .. seealso:: :class:`~.SWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSWAP.resources()
+    {CNOT: 3}
     """
 
     @staticmethod
@@ -353,11 +371,8 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -389,7 +404,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -438,15 +453,18 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceT(qml.T, re.ResourceOperator):
     r"""Resource class for the T-gate.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
     Resources:
-        The T-gate is treated as a terminal gate and thus it cannot be decomposed
+        The T-gate is treated as a fundamental gate and thus it cannot be decomposed
         further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
 
     .. seealso:: :class:`~.T`
@@ -459,8 +477,11 @@ class ResourceT(qml.T, re.ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Resources:
-            The T-gate is treated as a terminal gate and thus it cannot be decomposed
+            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
             further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
         raise re.ResourcesNotDefined
 
@@ -468,11 +489,8 @@ class ResourceT(qml.T, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -503,7 +521,7 @@ class ResourceT(qml.T, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -515,7 +533,7 @@ class ResourceT(qml.T, re.ResourceOperator):
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
             In this case the cost increases by two additional :class:`~.ResourceMultiControlledX` gates,
-            as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
+            as described in (Lemma 7.11) `Barenco et al. <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
@@ -554,12 +572,15 @@ class ResourceT(qml.T, re.ResourceOperator):
                 values are the counts.
         """
         if (mod_8 := z % 8) == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): mod_8}
 
 
 class ResourceX(qml.X, re.ResourceOperator):
     r"""Resource class for the X-gate.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
 
     Resources:
         The X-gate can be decomposed according to the following identities:
@@ -576,6 +597,12 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     .. seealso:: :class:`~.X`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceX.resources()
+    {S: 2, Hadamard: 2}
     """
 
     @staticmethod
@@ -609,11 +636,8 @@ class ResourceX(qml.X, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -643,7 +667,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -693,12 +717,15 @@ class ResourceX(qml.X, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceY(qml.Y, re.ResourceOperator):
     r"""Resource class for the Y-gate.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
 
     Resources:
         The Y-gate can be decomposed according to the following identities:
@@ -717,6 +744,12 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     .. seealso:: :class:`~.Y`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceY.resources()
+    {S: 6, Hadamard: 2}
     """
 
     @staticmethod
@@ -752,11 +785,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -788,7 +818,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -848,12 +878,15 @@ class ResourceY(qml.Y, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceZ(qml.Z, re.ResourceOperator):
     r"""Resource class for the Z-gate.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
 
     Resources:
         The Z-gate can be decomposed according to the following identities:
@@ -864,6 +897,12 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
     .. seealso:: :class:`~.Z`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceZ.resources()
+    {S: 2}
     """
 
     @staticmethod
@@ -889,11 +928,8 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -925,7 +961,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -984,5 +1020,5 @@ class ResourceZ(qml.Z, re.ResourceOperator):
                 values are the counts.
         """
         if z % 2 == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}

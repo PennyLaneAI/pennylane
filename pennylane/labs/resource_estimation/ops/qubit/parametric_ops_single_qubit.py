@@ -50,6 +50,11 @@ def _rotation_resources(epsilon=10e-3):
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
+
     Resources:
         The phase shift gate is equivalent to a Z-rotation upto some global phase,
         as defined from the following identity:
@@ -61,6 +66,12 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
     .. seealso:: :class:`~.PhaseShift`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourcePhaseShift.resources()
+    {RZ: 1, GlobalPhase: 1}
     """
 
     @staticmethod
@@ -89,11 +100,8 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -125,7 +133,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -174,12 +182,17 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceRX(qml.RX, re.ResourceOperator):
     r"""Resource class for the RX gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -191,6 +204,19 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     .. seealso:: :class:`~.RX`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRX(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_rx": 1e-3}
+    >>> re.get_resources(re.ResourceRX(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
     @staticmethod
@@ -216,11 +242,8 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -252,7 +275,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -260,8 +283,8 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
 
-            In the case where multiple controlled wires are provided, the resources are taken from
-            (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            In the case where multiple controlled wires are provided, the resources are taken
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
             .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
@@ -315,12 +338,17 @@ class ResourceRX(qml.RX, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceRY(qml.RY, re.ResourceOperator):
     r"""Resource class for the RY gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -332,6 +360,19 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     .. seealso:: :class:`~.RY`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRY(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_ry": 1e-3}
+    >>> re.get_resources(re.ResourceRY(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
     @staticmethod
@@ -356,11 +397,8 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -392,7 +430,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -401,7 +439,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are taken
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit
             unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the
             following identity:
 
@@ -448,12 +486,17 @@ class ResourceRY(qml.RY, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
     r"""Resource class for the RZ gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -465,6 +508,19 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     .. seealso:: :class:`~.RZ`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.get_resources(re.ResourceRZ(1.23, 0))
+    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+
+    The operation does not require any parameters directly, however, it will depend on the single
+    qubit error threshold, which can be set using a config dictionary.
+
+    >>> config = {"error_rz": 1e-3}
+    >>> re.get_resources(re.ResourceRZ(1.23, 0), config=config)
+    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}s
     """
 
     @staticmethod
@@ -489,11 +545,8 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -525,7 +578,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -534,7 +587,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are obtained
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
             .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
@@ -580,12 +633,19 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
 
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
     r"""Resource class for the Rot-gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Any, Wires): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     Resources:
         The resources are obtained according to the definition of the :class:`Rot` gate:
@@ -594,6 +654,12 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     .. seealso:: :class:`~.Rot`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceRot.resources()
+    {RY: 1, RZ: 2}
     """
 
     @staticmethod
@@ -617,11 +683,8 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-        Resource parameters:
-            The resources of this operation don't depend on any additional parameters.
-
         Returns:
-            dict: empty dictionary
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
         return {}
 
@@ -653,7 +716,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when off
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
@@ -662,7 +725,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             it is zero-controlled.
 
             In the case where multiple controlled wires are provided, the resources are derived
-            from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit unitary
+            from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
             identities:
 
@@ -728,5 +791,5 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
                 values are the counts.
         """
         if z == 0:
-            return {}
+            return {re.ResourceIdentity.resource_rep(): 1}
         return {cls.resource_rep(): 1}
