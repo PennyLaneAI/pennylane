@@ -21,10 +21,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import pennylane as qml
+from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
-
-from .cartan_subalgebra import adjvec_to_op, op_to_adjvec
 
 has_jax = True
 try:
@@ -43,7 +42,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     Given a Cartan decomposition (:func:`~cartan_decomp`) :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`,
     a Hermitian operator :math:`H \in \mathfrak{m}`,
-    and a horizontal Cartan subalgebra (:func:`~cartan_subalgebra`) :math:`\mathfrak{a} \subset \mathfrak{m}`,
+    and a horizontal Cartan subalgebra (:func:`~horizontal_cartan_subalgebra`) :math:`\mathfrak{a} \subset \mathfrak{m}`,
     this function computes
     :math:`a \in \mathfrak{a}` and :math:`K_c \in e^{i\mathfrak{k}}` such that
 
@@ -112,7 +111,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     Let us perform a KaK decomposition for the transverse field Ising model Hamiltonian, exemplarily for :math:`n=3` qubits on a chain.
     We start with some boilerplate code to perform a Cartan decomposition using the :func:`~concurrence_involution`, which places the Hamiltonian
     in the horizontal subspace :math:`\mathfrak{m}`. From this we re-order :math:`\mathfrak{g} = \mathfrak{k} + \mathfrak{m}` and finally compute a
-    :func:`~cartan_subalgebra` :math:`\mathfrak{a}` in :math:`\mathfrak{m} = \tilde{\mathfrak{m}} \oplus \mathfrak{a}`.
+    :func:`~horizontal_cartan_subalgebra` :math:`\mathfrak{a}` in :math:`\mathfrak{m} = \tilde{\mathfrak{m}} \oplus \mathfrak{a}`.
 
     .. code-block:: python
 
@@ -122,14 +121,16 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         import jax
 
         from pennylane import X, Z
-        from pennylane.labs.dla import (
+        from pennylane.liealg import (
             cartan_decomp,
-            cartan_subalgebra,
+            horizontal_cartan_subalgebra,
             check_cartan_decomp,
             concurrence_involution,
+            adjvec_to_op,
+        )
+        from pennylane.labs.dla import (
             validate_kak,
             variational_kak_adj,
-            adjvec_to_op,
         )
 
         n = 3
@@ -150,7 +151,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         g = k + m
         adj = qml.structure_constants(g)
 
-        g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+        g, k, mtilde, a, adj = horizontal_cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
 
     Due to the canonical ordering of all constituents, it suffices to tell ``variational_kak_adj`` the dimensions of ``dims = (len(k), len(mtilde), len(a))``,
     alongside the Hamiltonian ``H``, the Lie algebra ``g`` and its adjoint representation ``adj``. Internally, the function is performing a variational
@@ -247,6 +248,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
+    print([H], g[-dim_m:])
     [vec_H] = op_to_adjvec([H], g[-dim_m:], is_orthogonal=False)
 
     theta0 = opt_kwargs.pop("theta0", None)

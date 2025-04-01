@@ -570,31 +570,86 @@ def diagonalize_mcms(tape):
 
         from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
 
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", shots=1000)
 
         @diagonalize_mcms
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot")
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            ParametricMidMeasureMP(0, angle=x[1], plane="XY")
-            return qml.expval(qml.Z(0))
+            qml.RX(x, wires=0)
+            m = measure_y(0)
+            qml.cond(m, qml.X)(1)
+            return qml.expval(qml.Z(1))
 
     Applying the transform inserts the relevant gates before the measurement to allow
     measurements to be in the Z basis, so the original circuit
 
-    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi]))
-    0: ──RY(0.79)──┤↗ˣʸ(3.14)├─┤  <Z>
+    >>> print(qml.draw(circuit, level=0)(np.pi/4))
+    0: ──RX(0.79)──┤↗ʸ├────┤
+    1: ─────────────║────X─┤  <Z>
+                    ╚════╝
 
     becomes
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi]))
-    ──RY(0.79)──Rϕ(-3.14)──H──┤↗├─┤  <Z>
+    >>> print(qml.draw(circuit)(np.pi/4))
+    0: ──RX(0.79)──S†──H──┤↗├────┤
+    1: ────────────────────║───X─┤  <Z>
+                           ╚═══╝
+
+
+    .. details::
+        :title: Conditional measurements
+
+        The transform can also handle diagonalization of conditional measurements created by
+        :func:`qml.ftqc.cond_measure <pennylane.ftqc.cond_measure>`. This is done by replacing the
+        measurements for the true and false condition with conditional diagonalizing gates,
+        and a single measurement in the computational basis:
+
+        .. code-block:: python3
+
+            from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x
+
+            dev = qml.device("default.qubit")
+
+            @diagonalize_mcms
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RY(x[0], wires=0)
+                qml.RX(x[1], wires=1)
+                m = qml.measure(0)
+                m2 = cond_measure(m, measure_x, measure_y)(1)
+                qml.cond(m2, qml.X)(1)
+                return qml.expval(qml.Z(1))
+
+        The :func:`cond_measure <pennylane.ftqc.cond_measure>` function adds a conditional X-basis
+        measurement and a conditional Y basis measurement to the circuit, with opposite conditions.
+        When the transform is applied, the diagonalizing gates of the measurements are conditional.
+        The two conditional measurements then become equivalent measurements in the computational basis
+        with opposite conditions, and can be simplified to a single, unconditional measurement in the
+        computational basis.
+
+        This circuit thus diagonalizes to:
+
+        >>> print(qml.draw(circuit)([np.pi, np.pi/4]))
+        0: ──RY(3.14)──┤↗├───────────────────┤
+        1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
+                        ╚═══╩══╩═══╝   ║   ║
+                                       ╚═══╝
+
+        where the initial Hadamard gate on wire 1 has the same condition as the original X-basis
+        measurement, and the adjoint S gate and second Hadamard share a condition with the Y-basis
+        measurement.
     """
 
     new_operations = []
     mps_mapping = {}
 
-    for op in tape.operations:
+    curr_idx = 0
+
+    for i, op in enumerate(tape.operations):
+
+        if i != curr_idx:
+            continue
+
         if isinstance(op, ParametricMidMeasureMP):
 
             # add diagonalizing gates to tape
@@ -612,34 +667,54 @@ def diagonalize_mcms(tape):
         elif isinstance(op, qml.ops.Conditional):
 
             # from MCM mapping, map any MCMs in the condition if needed
-            processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
-            expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            if isinstance(op.base, ParametricMidMeasureMP):
-                # add conditional diagonalizing gates + conditional MCM to the tape
+            if isinstance(op.base, MidMeasureMP):
+                # the only user-facing API for creating Conditionals with MCMs is meas_cond,
+                # which ensures both and true_fn and false_fn are included, so here we assume the
+                # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
+                true_cond, false_cond = (op, tape.operations[i + 1])
+                # we process both the true_cond and the false_cond together, so we skip an index in the ops
+                curr_idx += 1
+
+                # add conditional diagonalizing gates + computational basis MCM to the tape
+                expr_true = MeasurementValue(mps, processing_fn=true_cond.meas_val.processing_fn)
+                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
+
                 with qml.QueuingManager.stop_recording():
-                    diag_gates = [
-                        qml.ops.Conditional(expr=expr, then_op=gate)
-                        for gate in op.diagonalizing_gates()
+                    diag_gates_true = [
+                        qml.ops.Conditional(expr=expr_true, then_op=gate)
+                        for gate in true_cond.diagonalizing_gates()
                     ]
+
+                    diag_gates_false = [
+                        qml.ops.Conditional(expr=expr_false, then_op=gate)
+                        for gate in false_cond.diagonalizing_gates()
+                    ]
+
                     new_mp = MidMeasureMP(
                         op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
                     )
-                    new_cond = qml.ops.Conditional(expr=expr, then_op=new_mp)
 
-                new_operations.extend(diag_gates)
-                new_operations.append(new_cond)
+                new_operations.extend(diag_gates_true)
+                new_operations.extend(diag_gates_false)
+                new_operations.append(new_mp)
 
                 # track mapping from original to computational basis MCMs
-                mps_mapping[op.base] = new_mp
+                mps_mapping[true_cond.base] = new_mp
+                mps_mapping[false_cond.base] = new_mp
             else:
+                processing_fn = op.meas_val.processing_fn
+                expr = MeasurementValue(mps, processing_fn=processing_fn)
+
                 with qml.QueuingManager.stop_recording():
                     new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
                 new_operations.append(new_cond)
 
         else:
             new_operations.append(op)
+
+        curr_idx += 1
 
     new_tape = tape.copy(operations=new_operations)
 

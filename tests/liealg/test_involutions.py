@@ -21,8 +21,21 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import AI, AII, AIII, BDI, CI, CII, DIII, ClassB, khaneja_glaser_involution
-from pennylane.labs.dla.involutions import Ipq, J, Kpq
+from pennylane.liealg import (
+    AI,
+    AII,
+    AIII,
+    BD,
+    BDI,
+    CI,
+    CII,
+    DIII,
+    A,
+    C,
+    concurrence_involution,
+    even_odd_involution,
+)
+from pennylane.liealg.involutions import Ipq, J, Kpq
 
 
 class TestMatrixConstructors:
@@ -112,16 +125,28 @@ class TestInvolutionExceptions:
                 with pytest.raises(ValueError, match="please specify p and q"):
                     invol(X(0) @ Y(1), p=p, q=q, wire=0)
 
-    def test_Khaneja_Glaser_exceptions(self):
-        """Test that the Khaneja-Glaser involution raises custom exceptions related
-        to wire and infering p and q."""
-        op = qml.X(0) @ qml.Y(1)
-        with pytest.raises(ValueError, match="Please specify the wire for the Khaneja"):
-            khaneja_glaser_involution(op)
-
-        [op] = op.pauli_rep
-        with pytest.raises(ValueError, match="Can't infer p and q from operator of type <class"):
-            khaneja_glaser_involution(op, wire=0)
+    @pytest.mark.parametrize(
+        "inv_func",
+        [
+            AI,
+            AII,
+            partial(AIII, q=2, p=2),
+            BD,
+            partial(BDI, p=2, q=2),
+            CI,
+            partial(CII, q=2, p=2),
+            DIII,
+            A,
+            C,
+            concurrence_involution,
+            even_odd_involution,
+        ],
+    )
+    def test_NotImplemented(self, inv_func):
+        """Test NotImplementedErrors in involutions"""
+        op = [qml.Hadamard(0) @ qml.Hadamard(1)]
+        with pytest.raises(NotImplementedError, match="Involution not implemented"):
+            _ = inv_func(op)
 
 
 AI_cases = [
@@ -171,7 +196,9 @@ DIII_cases = [  # I/Y on wire 0?
     (Z(0) + 0.2 * X(2) @ X(0), False),
 ]
 
-ClassB_cases = DIII_cases  # ClassB = DIII
+A_cases = DIII_cases  # A = DIII
+BD_cases = DIII_cases  # BD = DIII
+C_cases = DIII_cases  # C = DIII
 
 
 class TestInvolutions:
@@ -200,8 +227,6 @@ class TestInvolutions:
     def test_AIII(self, op, expected):
         """Test singledispatch for AIII involution"""
         self.run_test_case(op, expected, partial(AIII, p=4, q=4))
-        # Khaneja-Glaser is just AIII with automatically inferred p and q.
-        self.run_test_case(op, expected, partial(khaneja_glaser_involution, wire=0))
 
     @pytest.mark.parametrize("op, expected", BDI_cases)
     def test_BDI(self, op, expected):
@@ -223,7 +248,17 @@ class TestInvolutions:
         """Test singledispatch for DIII involution"""
         self.run_test_case(op, expected, DIII)
 
-    @pytest.mark.parametrize("op, expected", ClassB_cases)
-    def test_ClassB(self, op, expected):
-        """Test singledispatch for ClassB involution"""
-        self.run_test_case(op, expected, ClassB)
+    @pytest.mark.parametrize("op, expected", A_cases)
+    def test_A(self, op, expected):
+        """Test singledispatch for A involution"""
+        self.run_test_case(op, expected, A)
+
+    @pytest.mark.parametrize("op, expected", BD_cases)
+    def test_BD(self, op, expected):
+        """Test singledispatch for BD involution"""
+        self.run_test_case(op, expected, BD)
+
+    @pytest.mark.parametrize("op, expected", C_cases)
+    def test_C(self, op, expected):
+        """Test singledispatch for C involution"""
+        self.run_test_case(op, expected, C)
