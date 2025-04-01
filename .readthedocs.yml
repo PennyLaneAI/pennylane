@@ -14,9 +14,11 @@ build:
   jobs: 
     pre_build:
       - ls -la
+      - pwd
       - echo "Pre-build step"
     post_build:
       - ls -la
+      - pwd
       - echo "Post-build step"
 
 # Build documentation in the docs/ directory with Sphinx
