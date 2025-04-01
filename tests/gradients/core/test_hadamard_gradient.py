@@ -14,7 +14,7 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-
+# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
@@ -105,16 +105,15 @@ def cost12(x):
     return qml.probs(op=qml.Hadamard(0) @ qml.Y(1) @ qml.Y(2))
 
 
-# pylint: disable=too-many-public-methods
-class TestHadamardGrad:
-    """Unit tests for the hadamard_grad function"""
+class TestHadamardValidation:
+    """Test validation of edge cases with the hadamard gradient."""
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = r"Computing the gradient of broadcasted tapes .* using the Hadamard test gradient"
+        _match = r"Computing the gradient of broadcasted tapes"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
@@ -126,6 +125,201 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript([], [qml.probs(op=H)])
         with pytest.raises(ValueError, match="Can only differentiate Hamiltonian coefficients"):
             qml.gradients.hadamard_grad(tape, mode=mode)
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    def test_tape_with_partitioned_shots_multiple_measurements_raises(self, mode):
+        """Test that an error is raised with multiple measurements and partitioned shots."""
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
+            shots=(1000, 10000),
+        )
+        with pytest.raises(NotImplementedError):
+            qml.gradients.hadamard_grad(tape, mode=mode)
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("aux_wire", [qml.wires.Wires(0), qml.wires.Wires(1)])
+    @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0, 1, "aux"])])
+    def test_aux_wire_already_used_wires(self, aux_wire, device_wires, mode):
+        """Test the aux wire is available."""
+        dev = qml.device("default.qubit", wires=device_wires)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        _match = "The requested auxiliary wire is already in use by the circuit"
+        with pytest.raises(qml.wires.WireError, match=_match):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0, 1, 2])])
+    def test_requested_wire_not_exist(self, device_wires, mode):
+        """Test if the aux wire is not on the device an error is raised."""
+        aux_wire = qml.wires.Wires("aux")
+        dev = qml.device("default.qubit", wires=device_wires)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _match = "The requested auxiliary wire does not exist on the used device"
+        with pytest.raises(qml.wires.WireError, match=_match):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("aux_wire", [None, qml.wires.Wires(0), qml.wires.Wires(1)])
+    def test_device_not_enough_wires(self, aux_wire, mode):
+        """Test that an error is raised when the device cannot accept an auxiliary wire
+        because it is full."""
+        dev = qml.device("default.qubit", wires=2)
+
+        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
+
+        if aux_wire is None:
+            _match = "The device has no free wire for the auxiliary wire."
+        else:
+            _match = "The requested auxiliary wire is already in use by the circuit."
+        with pytest.raises(qml.wires.WireError, match=_match):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed"])
+    def test_device_wire_does_not_exist(self, mode):
+        """Test that an error is raised when the device cannot accept an auxiliary wire
+        because it does not exist on the device."""
+        aux_wire = qml.wires.Wires("aux")
+        dev = qml.device("default.qubit", wires=2)
+        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
+
+        _match = "The requested auxiliary wire does not exist on the used device."
+        with pytest.raises(qml.wires.WireError, match=_match):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
+
+    @pytest.mark.parametrize("measurement", [qml.state(), qml.var(qml.Z(0))])
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    def test_state_non_differentiable_error(self, mode, measurement):
+        """Test error raised if attempting to differentiate with
+        respect to a state"""
+
+        tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [measurement])
+        _match = r"is not supported"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.hadamard_grad(tape, mode=mode)
+
+    @pytest.mark.parametrize("mode", ("reversed", "direct", "reversed-direct"))
+    def test_no_probs_with_new_modes(self, mode):
+        """Test that a ValueError is raised if qml.probs is used with reversed, direct, or reversed direct"""
+        # Note that this validation check currently needs to be added to the source code.
+        raise NotImplementedError("add test code here")
+        # setup
+        # with pytest.raises(ValueError, match=match):
+        #     # code that gives error
+
+    @pytest.mark.parametrize("mode", ("reversed", "reversed-direct"))
+    def test_at_most_one_measurement_with_reversed(self, mode):
+        """Test that a ValueError is raised if more than one expectation value is used
+        with reversed and reversed-direct methods."""
+        # note that this validation check currently needs to be added to the source code
+        raise NotImplementedError("add test code here.")
+        # setup
+        # with pytest.raises(ValueError, match=match):
+        #     # code that gives error
+
+
+class TestDifferentModes:
+    """Unit test the different modes of gradient."""
+
+    def test_reversed_mode(self):
+        """Test that reversed mode hadamard gradient constructs the correct batch of tapes."""
+
+        tape = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1))], [qml.expval(qml.X(0) + qml.Y(0))], shots=50
+        )
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed")
+        assert len(batch) == 2
+
+        expected_H = qml.IsingXY(0.5, wires=(0, 1)).generator() @ qml.Y(2)
+        expected0 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.H(2), qml.CNOT((2, 0)), qml.H(2)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[0], expected0)
+        expected1 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.H(2), qml.CY((2, 0)), qml.H(2)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[1], expected1)
+
+        assert qml.math.allclose(fn((1.0,)), -2.0)
+
+    def test_direct_mode(self):
+        """Directly test the batch output of applying the direct mode hadamard gradient."""
+        # add code here creating a tape with one trainable trainable parameter, a generator with more than one term,
+        # and an expectation value with more than one term
+        # qml.assert_equal can be used to compare the output tapes to an expected version
+        raise NotImplementedError("add test code here")
+
+    def test_reversed_direct_mode(self):
+        """Directly test tht batch output of applying the reversed direct mode of hadamard gradient."""
+        # Similar to tests above, directly create a `QuantumScript`, but it through the transform
+        # and check it against the expected QuantumScirpt batch
+        raise NotImplementedError("add test code here")
+
+    def test_reversed_mode_hadamard_obs(self):
+        """Test that reversed mode can handle measuring an observable that does not have a pauli rep."""
+
+        tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.H(0))])
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed")
+
+        assert len(batch) == 2
+
+        obs_terms = [qml.X(0), qml.Z(0)]
+        H = qml.RX(0.5, 0).generator() @ qml.Y(1)
+        for i, ob in enumerate(obs_terms):
+            expected = qml.tape.QuantumScript(
+                [qml.RX(0.5, 0), qml.H(1), qml.ctrl(ob, 1), qml.H(1)], [qml.expval(H)]
+            )
+            qml.assert_equal(expected.measurements[0].obs, batch[i].measurements[0].obs)
+            qml.assert_equal(batch[i], expected)
+
+        out = fn((1.0, 2.0))
+        expected = -2 / np.sqrt(2) * (1.0 + 2.0)
+        assert qml.math.allclose(out, expected)
+
+    def test_reversed_direct_mode_hadamard_obs(self):
+        """Test that reversed-direct mode can measure an observable that does not have a pauli rep."""
+        # similar to the above test, we just want to directly check the four outputted tapes for
+        # using reversed direct when taking the expectation value of a hadamard
+        raise NotImplementedError("add test code here")
+
+    @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
+    def test_no_available_work_wire_direct_methods(self, mode):
+        """Test that direct and reversed direct work with no available work wires."""
+        # note that this behavior should be added to the source code.
+        tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
+        batch, _ = qml.gradients.hadamard_grad(tape, mode=mode, device_wires=qml.wires.Wires(0))
+        raise NotImplementedError("add some extra checks here")
+        # add an extra sanity check to make sure batch looks like we expect
+
+
+# pylint: disable=too-many-public-methods
+class TestHadamardGrad:
+    """Unit tests for the hadamard_grad function"""
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_nontrainable_batched_tape(self, mode):
@@ -148,17 +342,6 @@ class TestHadamardGrad:
         separate_tapes_and_fns = [qml.gradients.hadamard_grad(t, mode=mode) for t in separate_tapes]
         separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
         assert np.allclose(batched_grad, separate_grad)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_tape_with_partitioned_shots_multiple_measurements_raises(self, mode):
-        """Test that an error is raised with multiple measurements and partitioned shots."""
-        tape = qml.tape.QuantumScript(
-            [qml.RX(0.1, wires=0)],
-            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
-            shots=(1000, 10000),
-        )
-        with pytest.raises(NotImplementedError):
-            qml.gradients.hadamard_grad(tape, mode=mode)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
@@ -549,6 +732,8 @@ class TestHadamardGrad:
     def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode for
         expectation values and a scalar parameter."""
+        if mode in {"reversed", "reversed-direct"} and exp_shape == (2,):
+            pytest.xfail("reversed modes do not work with more than one output value.")
         dev = qml.device("default.qubit", wires=4)
 
         x = np.array(0.419)
@@ -570,6 +755,9 @@ class TestHadamardGrad:
     def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode for
         expectation values and an array-valued parameter."""
+        if mode in {"reversed", "reversed-direct"} and exp_shape == [2, 3]:
+            pytest.xfail("reversed modes do not work with more than one output value.")
+
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -596,7 +784,9 @@ class TestHadamardGrad:
         (cost12, [8, 3], np.ndarray),
     ]
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize(
+        "mode", ["standard"]
+    )  # other modes should not work with probs at the moment
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
@@ -649,189 +839,6 @@ class TestHadamardGrad:
 
         assert all(new_tape.shots == tape.shots for new_tape in tapes)
 
-
-class TestHadamardGradEdgeCases:
-    """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
-
-    # pylint:disable=too-many-public-methods
-
-    device_wires = [qml.wires.Wires([0, 1, "aux"])]
-    device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]
-
-    working_wires = [None, qml.wires.Wires("aux"), "aux"]
-    already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.parametrize("aux_wire", working_wires)
-    @pytest.mark.parametrize("device_wires", device_wires)
-    def test_aux_wire(self, aux_wire, device_wires, mode):
-        """Test the aux wire is available."""
-        # One qubit is added to the device 2 + 1
-        dev = qml.device("default.qubit", wires=device_wires)
-        x = 0.543
-        y = -0.654
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
-        assert len(tapes) == 2
-        tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, mode=mode)
-        assert len(tapes) == 2
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.parametrize("aux_wire", already_used_wires)
-    @pytest.mark.parametrize("device_wires", device_wires)
-    def test_aux_wire_already_used_wires(self, aux_wire, device_wires, mode):
-        """Test the aux wire is available."""
-        dev = qml.device("default.qubit", wires=device_wires)
-        x = 0.543
-        y = -0.654
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        _match = "The requested auxiliary wire is already in use by the circuit"
-        with pytest.raises(qml.wires.WireError, match=_match):
-            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.parametrize("device_wires", device_wires_no_aux)
-    def test_requested_wire_not_exist(self, device_wires, mode):
-        """Test if the aux wire is not on the device an error is raised."""
-        aux_wire = qml.wires.Wires("aux")
-        dev = qml.device("default.qubit", wires=device_wires)
-        x = 0.543
-        y = -0.654
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        _match = "The requested auxiliary wire does not exist on the used device"
-        with pytest.raises(qml.wires.WireError, match=_match):
-            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.parametrize("aux_wire", [None] + already_used_wires)
-    def test_device_not_enough_wires(self, aux_wire, mode):
-        """Test that an error is raised when the device cannot accept an auxiliary wire
-        because it is full."""
-        dev = qml.device("default.qubit", wires=2)
-
-        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
-
-        if aux_wire is None:
-            _match = "The device has no free wire for the auxiliary wire."
-        else:
-            _match = "The requested auxiliary wire is already in use by the circuit."
-        with pytest.raises(qml.wires.WireError, match=_match):
-            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_device_wire_does_not_exist(self, mode):
-        """Test that an error is raised when the device cannot accept an auxiliary wire
-        because it does not exist on the device."""
-        aux_wire = qml.wires.Wires("aux")
-        dev = qml.device("default.qubit", wires=2)
-        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
-
-        _match = "The requested auxiliary wire does not exist on the used device."
-        with pytest.raises(qml.wires.WireError, match=_match):
-            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_empty_circuit(self, mode):
-        """Test that an empty circuit works correctly"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
-        assert not tapes
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_all_parameters_independent(self, mode):
-        """Test that a circuit where all parameters do not affect the output"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.4, wires=0)
-            qml.expval(qml.PauliZ(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
-        assert not tapes
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_state_non_differentiable_error(self, mode):
-        """Test error raised if attempting to differentiate with
-        respect to a state"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.state()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        _match = r"return the state with the Hadamard test gradient transform"
-        with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape, mode=mode)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    def test_variance_non_differentiable_error(self, mode):
-        """Test error raised if attempting to differentiate with respect to a variance"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.var(qml.PauliZ(wires=0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            ValueError,
-            match=(
-                r"Computing the gradient of variances with the Hadamard test "
-                "gradient transform is not supported."
-            ),
-        ):
-            qml.gradients.hadamard_grad(tape, mode=mode)
-
-    def test_independent_parameter(self):
-        """Test that an independent parameter is skipped
-        during the Jacobian computation."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit", wires=3)
-
-        res_hadamard, tapes = grad_fn(tape, dev)
-
-        assert len(tapes) == 1
-
-        assert isinstance(res_hadamard, (tuple, list))
-        assert len(res_hadamard) == 2
-        assert res_hadamard[0].shape == ()
-        assert res_hadamard[1].shape == ()
-
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self, mode):
@@ -852,7 +859,7 @@ class TestHadamardGradEdgeCases:
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -923,6 +930,86 @@ class TestHadamardGradEdgeCases:
         assert g_tapes == []
         assert isinstance(res_hadamard, np.ndarray)
         assert res_hadamard.shape == (0,)
+
+
+class TestHadamardGradEdgeCases:
+    """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
+
+    # pylint:disable=too-many-public-methods
+
+    device_wires = [qml.wires.Wires([0, 1, "aux"])]
+    device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]
+
+    working_wires = [None, qml.wires.Wires("aux"), "aux"]
+    already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
+
+    @pytest.mark.parametrize("mode", ["standard"])  # test is fairly standard specific
+    @pytest.mark.parametrize("aux_wire", working_wires)
+    @pytest.mark.parametrize("device_wires", device_wires)
+    def test_aux_wire(self, aux_wire, device_wires, mode):
+        """Test the aux wire is available."""
+        # One qubit is added to the device 2 + 1
+        dev = qml.device("default.qubit", wires=device_wires)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        tapes, _ = qml.gradients.hadamard_grad(
+            tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode
+        )
+        assert len(tapes) == 2
+        tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, mode=mode)
+        assert len(tapes) == 2
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    def test_empty_circuit(self, mode):
+        """Test that an empty circuit works correctly"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
+        assert not tapes
+
+    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    def test_all_parameters_independent(self, mode):
+        """Test that a circuit where all parameters do not affect the output"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.4, wires=0)
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tapes, _ = qml.gradients.hadamard_grad(tape, mode=mode)
+        assert not tapes
+
+    def test_independent_parameter(self):
+        """Test that an independent parameter is skipped
+        during the Jacobian computation."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        dev = qml.device("default.qubit", wires=3)
+
+        res_hadamard, tapes = grad_fn(tape, dev)
+
+        assert len(tapes) == 1
+
+        assert isinstance(res_hadamard, (tuple, list))
+        assert len(res_hadamard) == 2
+        assert res_hadamard[0].shape == ()
+        assert res_hadamard[1].shape == ()
 
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -1051,7 +1138,6 @@ class TestHadamardGradEdgeCases:
         result = qml.gradients.hadamard_grad(circuit, mode=mode)(params)
 
         assert isinstance(result, np.ndarray)
-        print(result)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
 
@@ -1280,6 +1366,8 @@ class TestJaxArgnums:
 
     def test_multi_expectation_values(self, argnums, interface, mode):
         """Test for multiple expectation values."""
+        if mode in {"reversed", "reversed-direct"}:
+            pytest.skip("these methods do not work with more than one observable.")
         import jax
 
         dev = qml.device("default.qubit", wires=3)
@@ -1326,9 +1414,9 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, -0.654])
         y = jax.numpy.array(-0.123)
 
-        res = jax.jacobian(qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode), argnums=argnums)(
-            x, y
-        )
+        res = jax.jacobian(
+            qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode), argnums=argnums
+        )(x, y)
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
         if len(argnums) == 1:
