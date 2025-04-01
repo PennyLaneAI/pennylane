@@ -24,9 +24,6 @@ import autoray as ar
 
 from pennylane import math
 
-from .quantum import _check_density_matrix, _check_state_vector
-from .utils import cast
-
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
     r"""Compute the fidelity for two states (given as state vectors) acting on quantum
@@ -69,12 +66,13 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     """
     # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-    state1 = cast(state1, dtype=c_dtype)
+    state0 = math.cast(state0, dtype=c_dtype)
+    state1 = math.cast(state1, dtype=c_dtype)
 
+    # pylint: disable=protected-access
     if check_state:
-        _check_state_vector(state0)
-        _check_state_vector(state1)
+        math._check_state_vector(state0)
+        math._check_state_vector(state1)
 
     if math.shape(state0)[-1] != math.shape(state1)[-1]:
         raise ValueError("The two states must have the same number of wires.")
@@ -140,12 +138,13 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     """
     # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-    state1 = cast(state1, dtype=c_dtype)
+    state0 = math.cast(state0, dtype=c_dtype)
+    state1 = math.cast(state1, dtype=c_dtype)
 
+    # pylint: disable= protected-access
     if check_state:
-        _check_density_matrix(state0)
-        _check_density_matrix(state1)
+        math._check_density_matrix(state0)
+        math._check_density_matrix(state1)
 
     if math.shape(state0)[-1] != math.shape(state1)[-1]:
         raise ValueError("The two states must have the same number of wires.")
