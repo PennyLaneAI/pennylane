@@ -60,7 +60,7 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
     control_values = params.get("control_values")
     work_wires = params.get("work_wires")
     num_control_wires = len(control)
-    num_zero_control_values = sum([1 for v in control_values if not v]) if control_values else 0
+    num_zero_control_values = sum(1 for v in control_values if not v) if control_values else 0
     num_work_wires = len(work_wires) if work_wires else 0
 
     # Create resource reps
