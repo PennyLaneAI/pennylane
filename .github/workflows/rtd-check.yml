@@ -40,3 +40,7 @@ jobs:
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going
+
+    - name: Check Read the Docs build
+      run: |
+        echo "Check the build on https://app.readthedocs.com/projects/xanaduai-pennylane/builds/"
