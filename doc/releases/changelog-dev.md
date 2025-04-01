@@ -194,6 +194,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
+
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
@@ -772,6 +775,9 @@
 <h3>Internal changes ⚙️</h3>
 
 * Enable `rtol` option in `test_parameter_shift_shot_vec.py::TestHamiltonianExpvalGradients::test_trainable_coeffs` to suppress unexpected stochastic fails.
+
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
 * All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
   [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
