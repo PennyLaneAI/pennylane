@@ -59,7 +59,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
     >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
-    >>> math.fidelity_statevector(state0, state1)
+    >>> qml.math.fidelity_statevector(state0, state1)
     0.9905158135644924
 
     .. seealso:: :func:`pennylane.math.fidelity`
