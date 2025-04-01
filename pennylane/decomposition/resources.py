@@ -349,7 +349,7 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
 
 def _is_integer(x):
     """Checks if x is an integer."""
-    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype"), np.integer)
+    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
 
 
 def pow_resource_rep(base_class, base_params, z):
