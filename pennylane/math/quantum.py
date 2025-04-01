@@ -24,7 +24,7 @@ from autoray import numpy as np
 from numpy import float64, sqrt  # pylint:disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
-import pennylane as qml
+from pennylane import math
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
@@ -242,7 +242,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
         return _permute_dense_matrix(density_matrix, consecutive_indices, indices, batch_dim)
 
     if batch_dim is None:
-        density_matrix = qml.math.stack([density_matrix])
+        density_matrix = math.stack([density_matrix])
 
     # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
@@ -305,7 +305,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
     matrix = cast(matrix, dtype=c_dtype)
-    if qml.math.ndim(matrix) == 2:
+    if math.ndim(matrix) == 2:
         is_batched = False
         batch_dim, dim = 1, matrix.shape[1]
     else:
@@ -462,7 +462,7 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     consecutive_wires = list(range(num_wires))
 
     if batch_dim is None:
-        state = qml.math.stack([state])
+        state = math.stack([state])
 
     state = np.reshape(state, [batch_dim if batch_dim is not None else 1] + [2] * num_wires)
 
@@ -595,12 +595,13 @@ def _compute_purity(density_matrix):
     1
 
     """
-    batched = len(qml.math.shape(density_matrix)) > 2
+
+    batched = len(math.shape(density_matrix)) > 2
 
     if batched:
-        return qml.math.real(qml.math.einsum("abc,acb->a", density_matrix, density_matrix))
+        return math.real(math.einsum("abc,acb->a", density_matrix, density_matrix))
 
-    return qml.math.real(qml.math.einsum("ab,ba", density_matrix, density_matrix))
+    return math.real(math.einsum("ab,ba", density_matrix, density_matrix))
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
@@ -670,14 +671,14 @@ def _compute_vn_entropy(density_matrix, base=None):
     else:
         div_base = 1
 
-    evs = qml.math.eigvalsh(density_matrix)
-    evs = qml.math.where(evs > 0, evs, 1.0)
-    entropy = qml.math.entr(evs) / div_base
+    evs = math.eigvalsh(density_matrix)
+    evs = math.where(evs > 0, evs, 1.0)
+    entropy = math.entr(evs) / div_base
 
     return entropy
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def mutual_info(
     state,
     indices0,
@@ -751,7 +752,7 @@ def mutual_info(
     )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _compute_mutual_info(
     state,
     indices0,
@@ -802,7 +803,7 @@ def _check_hermitian_operator(operators):
         )
 
     if len(operators.shape) == 2:
-        operators = qml.math.stack([operators])
+        operators = math.stack([operators])
 
     if not is_abstract(operators):
         for ops in operators:
@@ -861,22 +862,20 @@ def expectation_value(
     if check_operator:
         _check_hermitian_operator(operator_matrix)
 
-    if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
-        raise qml.QuantumFunctionError(
-            "The operator and the state vector must have the same number of wires."
-        )
+    if math.shape(operator_matrix)[-1] != math.shape(state_vector)[-1]:
+        raise ValueError("The operator and the state vector must have the same number of wires.")
 
     # The overlap <psi|A|psi>
-    expval = qml.math.einsum(
+    expval = math.einsum(
         "...i,...i->...",
-        qml.math.conj(state_vector),
-        qml.math.einsum("...ji,...i->...j", operator_matrix, state_vector, optimize="greedy"),
+        math.conj(state_vector),
+        math.einsum("...ji,...i->...j", operator_matrix, state_vector, optimize="greedy"),
         optimize="greedy",
     )
     return expval
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def vn_entanglement_entropy(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
@@ -963,20 +962,20 @@ def sqrt_matrix(density_matrix):
     Returns:
         (tensor_like): Square root of the density matrix.
     """
-    evs, vecs = qml.math.linalg.eigh(density_matrix)
-    evs = qml.math.real(evs)
-    evs = qml.math.where(evs > 0.0, evs, 0.0)
+    evs, vecs = math.linalg.eigh(density_matrix)
+    evs = math.real(evs)
+    evs = math.where(evs > 0.0, evs, 0.0)
     if not is_abstract(evs):
-        evs = qml.math.cast_like(evs, vecs)
+        evs = math.cast_like(evs, vecs)
 
-    shape = qml.math.shape(density_matrix)
+    shape = math.shape(density_matrix)
     if len(shape) > 2:
         # broadcasting case
-        i = qml.math.cast_like(qml.math.convert_like(qml.math.eye(shape[-1]), evs), evs)
-        sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
-        return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
+        i = math.cast_like(math.convert_like(math.eye(shape[-1]), evs), evs)
+        sqrt_evs = math.expand_dims(math.sqrt(evs), 1) * i
+        return vecs @ sqrt_evs @ math.conj(math.transpose(vecs, (0, 2, 1)))
 
-    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
+    return vecs @ math.diag(math.sqrt(evs)) @ math.conj(math.transpose(vecs))
 
 
 def sqrt_matrix_sparse(sparse_matrix):
@@ -1108,22 +1107,22 @@ def _compute_relative_entropy(rho, sigma, base=None):
     else:
         div_base = 1
 
-    evs_rho, u_rho = qml.math.linalg.eigh(rho)
-    evs_sig, u_sig = qml.math.linalg.eigh(sigma)
+    evs_rho, u_rho = math.linalg.eigh(rho)
+    evs_sig, u_sig = math.linalg.eigh(sigma)
 
     # cast all eigenvalues to real
     evs_rho, evs_sig = np.real(evs_rho), np.real(evs_sig)
 
     # zero eigenvalues need to be treated very carefully here
     # we use the convention that 0 * log(0) = 0
-    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
-    rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
+    evs_sig = math.where(evs_sig == 0, 0.0, evs_sig)
+    rho_nonzero_mask = math.where(evs_rho == 0.0, False, True)
 
-    ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0))
+    ent = math.entr(math.where(rho_nonzero_mask, evs_rho, 1.0))
 
     # whether the inputs are batched
-    rho_batched = len(qml.math.shape(rho)) > 2
-    sig_batched = len(qml.math.shape(sigma)) > 2
+    rho_batched = len(math.shape(rho)) > 2
+    sig_batched = len(math.shape(sigma)) > 2
 
     indices_rho = "abc" if rho_batched else "bc"
     indices_sig = "abd" if sig_batched else "bd"
@@ -1131,7 +1130,7 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     # the matrix of inner products between eigenvectors of rho and eigenvectors
     # of sigma; this is a doubly stochastic matrix
-    rel = qml.math.einsum(
+    rel = math.einsum(
         f"{indices_rho},{indices_sig}->{target}",
         np.conj(u_rho),
         u_sig,
@@ -1140,10 +1139,10 @@ def _compute_relative_entropy(rho, sigma, base=None):
     rel = np.abs(rel) ** 2
 
     if sig_batched:
-        evs_sig = qml.math.expand_dims(evs_sig, 1)
+        evs_sig = math.expand_dims(evs_sig, 1)
 
-    rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), -1)
-    rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0), -1)
+    rel = math.sum(math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), -1)
+    rel = -math.sum(math.where(rho_nonzero_mask, evs_rho * rel, 0.0), -1)
 
     return (rel - ent) / div_base
 
@@ -1214,8 +1213,8 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         _check_density_matrix(state1)
 
     # Compare the number of wires on both subsystems
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+    if math.shape(state0)[-1] != math.shape(state1)[-1]:
+        raise ValueError("The two states must have the same number of wires.")
 
     return _compute_relative_entropy(state0, state1, base=base)
 
@@ -1231,7 +1230,7 @@ def _check_density_matrix(density_matrix):
         raise ValueError("Density matrix must be of shape (2**N, 2**N) or (batch_dim, 2**N, 2**N).")
 
     if len(density_matrix.shape) == 2:
-        density_matrix = qml.math.stack([density_matrix])
+        density_matrix = math.stack([density_matrix])
 
     if not is_abstract(density_matrix):
         for dm in density_matrix:
@@ -1246,7 +1245,7 @@ def _check_density_matrix(density_matrix):
                 raise ValueError("The matrix is not Hermitian.")
 
             # Check if positive semi-definite
-            evs, _ = qml.math.linalg.eigh(dm)
+            evs, _ = math.linalg.eigh(dm)
             evs = np.real(evs)
             evs_non_negative = [ev for ev in evs if ev >= -1e-7]
             if len(evs) != len(evs_non_negative):
@@ -1260,7 +1259,7 @@ def _check_state_vector(state_vector):
         raise ValueError("State vector must be of shape (2**wires,) or (batch_dim, 2**wires)")
 
     if len(state_vector.shape) == 1:
-        state_vector = qml.math.stack([state_vector])
+        state_vector = math.stack([state_vector])
 
     # Check norm
     if not is_abstract(state_vector):
@@ -1357,10 +1356,10 @@ def _compute_max_entropy(density_matrix, base):
     else:
         div_base = 1
 
-    evs = qml.math.eigvalsh(density_matrix)
-    evs = qml.math.real(evs)
-    rank = qml.math.sum(evs / qml.math.where(evs > 1e-8, evs, 1.0), -1)
-    maximum_entropy = qml.math.log(rank) / div_base
+    evs = math.eigvalsh(density_matrix)
+    evs = math.real(evs)
+    rank = math.sum(evs / math.where(evs > 1e-8, evs, 1.0), -1)
+    maximum_entropy = math.log(rank) / div_base
 
     return maximum_entropy
 
@@ -1442,9 +1441,9 @@ def _compute_min_entropy(density_matrix, base):
     # Change basis if necessary
     div_base = np.log(base) if base else 1
 
-    evs, _ = qml.math.linalg.eigh(density_matrix)
-    evs = qml.math.real(evs)
-    minimum_entropy = -qml.math.log(qml.math.max(evs)) / div_base
+    evs, _ = math.linalg.eigh(density_matrix)
+    evs = math.real(evs)
+    minimum_entropy = -math.log(math.max(evs)) / div_base
 
     return minimum_entropy
 
@@ -1512,7 +1511,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
         _check_density_matrix(state1)
 
     if state0.shape[-1] != state1.shape[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise ValueError("The two states must have the same number of wires.")
 
     if len(state0.shape) == len(state1.shape) == 3 and state0.shape[0] != state1.shape[0]:
         raise ValueError(
@@ -1520,6 +1519,6 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
             "element."
         )
 
-    eigvals = qml.math.abs(qml.math.eigvalsh(state0 - state1))
+    eigvals = math.abs(math.eigvalsh(state0 - state1))
 
-    return qml.math.sum(eigvals, axis=-1) / 2
+    return math.sum(eigvals, axis=-1) / 2
