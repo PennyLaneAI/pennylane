@@ -48,7 +48,7 @@ class FirstQuantization(Operation):
     >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
-    >>> algo = FirstQuantization(n, eta, vectors=vectors)
+    >>> algo = qml.resource.FirstQuantization(n, eta, vectors=vectors)
     >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits

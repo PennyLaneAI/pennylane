@@ -46,10 +46,10 @@ class DoubleFactorization(Operation):
     >>> symbols  = ['O', 'H', 'H']
     >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
     >>>                      [0.00000000,  1.45278171, -1.00662237],
-    >>>                      [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+    >>>                      [0.00000000, -1.45278171, -1.00662237]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> algo = DoubleFactorization(one, two)
+    >>> algo = qml.resource.DoubleFactorization(one, two)
     >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits
