@@ -16,7 +16,9 @@ build:
       - ls -la
       - echo "Pre-build step"
     build:
-      - ls -la
+      checkfolder:
+        - echo "during build"
+        - ls -la
     post_build:
       - ls -la
       - echo "Post-build step"
