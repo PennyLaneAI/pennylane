@@ -128,7 +128,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     postselect_mode = kwargs.get("postselect_mode", None)
 
     def reshape_data(array):
-        return qml.math.squeeze(qml.math.vstack(array))
+        return qml.math.squeeze(qml.math.vstack(qml.math.cast(array, dtype="int8")))
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
@@ -156,10 +156,10 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
         is_scalar = not isinstance(results[0], Sequence)
         if is_scalar:
-            results = [reshape_data(tuple(qml.math.cast(results, qml.numpy.int8)))]
+            results = [reshape_data(tuple(results))]
         else:
             results = [
-                reshape_data(tuple(qml.math.cast(res[i], qml.numpy.int8) for res in results)) for i, _ in enumerate(results[0])
+                reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
             ]
         return parse_native_mid_circuit_measurements(
             tape, aux_tapes, results, postselect_mode=postselect_mode
