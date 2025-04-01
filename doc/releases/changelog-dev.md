@@ -774,6 +774,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Clean-up the codebase to resolve circular import errors.
+  [(#7176)](https://github.com/PennyLaneAI/pennylane/pull/7176)
+
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
