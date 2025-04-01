@@ -611,8 +611,8 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
     ...     num_work_wires=3,
     ...     positive_and_real=True,
     ... )
-    defaultdict(<class 'int'>, {QROM: 1, Adjoint(QROM): 1, 
-    QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1, 
+    defaultdict(<class 'int'>, {QROM: 1, Adjoint(QROM): 1,
+    QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1,
     QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1, CRY: 15})
     """
 
@@ -641,7 +641,12 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        num_state_qubits, num_precision_wires, num_work_wires, num_phase_gradient_wires, positive_and_real, **kwargs
+        num_state_qubits,
+        num_precision_wires,
+        num_work_wires,
+        num_phase_gradient_wires,
+        positive_and_real,
+        **kwargs,
     ):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -690,12 +695,15 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
                 )
             ] += 1
 
-
         t = re.ResourceT.resource_rep()
         h = re.ResourceHadamard.resource_rep()
 
         # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
-        gate_types[t] = 2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1) * num_state_qubits
+        # TODO: Update once we have qml.SemiAdder
+        gate_types[t] = (
+            2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1) * num_state_qubits
+        )
+
         gate_types[h] = 2 * num_state_qubits
 
         if not positive_and_real:

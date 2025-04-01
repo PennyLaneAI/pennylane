@@ -982,8 +982,6 @@ class ResourcePrepSelPrep(qml.PrepSelPrep, ResourceOperator):
         gate_types[prep_dag] = 1
         return gate_types
 
-
-
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -1404,13 +1402,13 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
     @staticmethod
     def resources_via_ui(
-            num_bitstrings,
-            num_bit_flips,
-            num_control_wires,
-            num_work_wires,
-            size_bitstring,
-            clean,
-            **kwargs,
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+        **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""The resources for QROM are taken from the following two papers:
         (https://arxiv.org/pdf/1812.00954, figure 1.c) and
@@ -1447,34 +1445,33 @@ class ResourceQROM(qml.QROM, ResourceOperator):
             select_clean_prefactor = 2
 
         # SELECT cost:
-        num_groups = math.ceil(num_bitstrings / (2 ** num_swap_wires))
+        num_groups = math.ceil(num_bitstrings / (2**num_swap_wires))
 
         gate_types[x] = (
-                select_clean_prefactor * 2 * (num_groups - 1)
+            select_clean_prefactor * 2 * (num_groups - 1)
         )  # conjugate 0 controlled toffolis
         gate_types[cnot] = select_clean_prefactor * (num_groups - 1)
-        gate_types[t] = select_clean_prefactor * 4 * (num_groups - 1)
+        gate_types[t] = select_clean_prefactor * 4 * (num_groups - 2)
 
         gate_types[cnot] += (
-                select_clean_prefactor * num_bit_flips
+            select_clean_prefactor * num_bit_flips
         )  # each unitary in the select is just a CNOT
 
         # SWAP cost:
         ctrl_swap = re.ResourceCSWAP.resource_rep()
-        gate_types[ctrl_swap] = swap_clean_prefactor * ((2 ** num_swap_wires) - 1) * size_bitstring
+        gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
 
         return gate_types
 
-
     @staticmethod
     def resources_via_ui_opt(
-            num_bitstrings,
-            num_bit_flips,
-            num_control_wires,
-            num_work_wires,
-            size_bitstring,
-            clean,
-            **kwargs,
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+        **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""The resources for QROM are taken from the following two papers:
         (https://arxiv.org/pdf/1812.00954, figure 1.c) and
@@ -1488,7 +1485,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         resources = []
 
         for num_swap_wires in range(num_control_wires + 1):
-            used_work_wires = (2 ** num_swap_wires - 1) * size_bitstring
+            used_work_wires = (2**num_swap_wires - 1) * size_bitstring
             if used_work_wires > num_work_wires:
                 break
             resources.append(
