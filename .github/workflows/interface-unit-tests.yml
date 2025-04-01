@@ -788,4 +788,5 @@ jobs:
           python .github/workflows/scripts/upload_reports/upload.py \
             --commit-sha "${{ github.sha }}" \
             --branch "${{ inputs.branch }}" \
-            --workflow-id "${{ github.run_id }}"
+            --workflow-id "${{ github.run_id }}" \
+            --workspace-path "${{ github.workspace }}"

@@ -19,14 +19,13 @@ class PLOSSSettings(BaseSettings):
     """API key to be supplied to the PennyLane OSS Service."""
 
 
-def read_reports() -> dict:
+def read_reports(workspace_path: Path | None) -> dict:
     """Read the reports from the reports directory."""
 
     # Look for reports in the absolute path where GitHub Actions writes them
-    github_workspace = os.environ.get("GITHUB_WORKSPACE", "")
-    print(f"GitHub workspace: {github_workspace}")
-    if github_workspace:
-        reports_dir = Path(github_workspace) / ".github" / "test-reports"
+    print(f"GitHub workspace: {workspace_path}")
+    if workspace_path:
+        reports_dir = Path(workspace_path) / ".github" / "test-reports"
     else:
         reports_dir = Path(".github/test-reports")
     print(f"Reports directory: {reports_dir}")
@@ -103,12 +102,20 @@ def parse_args() -> Namespace:
         help="The ID of the workflow to upload the reports for.",
     )
 
+    parser.add_argument(
+        "--workspace-path",
+        type=Path,
+        required=False,
+        default=os.environ.get("GITHUB_WORKSPACE"),
+        help="Path to where the repository is cloned to."
+    )
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    report_contents = read_reports()
     args = parse_args()
+    report_contents = read_reports(workspace_path=args.workspace_path)
 
     report_contents["metadata"] = {
         "commit_sha": args.commit_sha,
