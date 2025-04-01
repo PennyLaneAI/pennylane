@@ -156,10 +156,10 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
         is_scalar = not isinstance(results[0], Sequence)
         if is_scalar:
-            results = [reshape_data(tuple(results))]
+            results = [reshape_data(tuple(qml.math.cast(results, qml.numpy.int8)))]
         else:
             results = [
-                reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
+                reshape_data(tuple(qml.math.cast(res[i], qml.numpy.int8) for res in results)) for i, _ in enumerate(results[0])
             ]
         return parse_native_mid_circuit_measurements(
             tape, aux_tapes, results, postselect_mode=postselect_mode
@@ -270,7 +270,7 @@ def parse_native_mid_circuit_measurements(
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
     mcm_samples = qml.math.hstack(
-        tuple(qml.math.reshape(res, (-1, 1)) for res in results[-n_mcms:])
+        tuple(qml.math.reshape(qml.math.cast(res, qml.numpy.int8), (-1, 1)) for res in results[-n_mcms:])
     )
     mcm_samples = qml.math.array(mcm_samples, like=interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
