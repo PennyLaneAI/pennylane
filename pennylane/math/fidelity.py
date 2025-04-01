@@ -22,10 +22,10 @@ from functools import lru_cache
 import autograd
 import autoray as ar
 
-from .interface_utils import get_interface
-from .multi_dispatch import einsum
-from .quantum import _check_density_matrix, _check_state_vector, sqrt_matrix
-from .utils import cast, cast_like
+import pennylane as qml
+
+from .quantum import _check_density_matrix, _check_state_vector
+from .utils import cast
 
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
@@ -76,21 +76,21 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
         _check_state_vector(state0)
         _check_state_vector(state1)
 
-    if ar.shape(state0)[-1] != ar.shape(state1)[-1]:
-        raise ValueError("The two states must have the same number of wires.")
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    batched0 = len(ar.shape(state0)) > 1
-    batched1 = len(ar.shape(state1)) > 1
+    batched0 = len(qml.math.shape(state0)) > 1
+    batched1 = len(qml.math.shape(state1)) > 1
 
     # Two pure states, squared overlap
     indices0 = "ab" if batched0 else "b"
     indices1 = "ab" if batched1 else "b"
     target = "a" if batched0 or batched1 else ""
-    overlap = einsum(
-        f"{indices0},{indices1}->{target}", state0, ar.numpy.conj(state1), optimize="greedy"
+    overlap = qml.math.einsum(
+        f"{indices0},{indices1}->{target}", state0, qml.math.conj(state1), optimize="greedy"
     )
 
-    overlap = ar.numpy.abs(overlap) ** 2
+    overlap = qml.math.abs(overlap) ** 2
     return overlap
 
 
@@ -147,21 +147,21 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 
-    if ar.shape(state0)[-1] != ar.shape(state1)[-1]:
-        raise ValueError("The two states must have the same number of wires.")
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    batch_size0 = ar.shape(state0)[0] if ar.ndim(state0) > 2 else None
-    batch_size1 = ar.shape(state1)[0] if ar.ndim(state1) > 2 else None
+    batch_size0 = qml.math.shape(state0)[0] if qml.math.ndim(state0) > 2 else None
+    batch_size1 = qml.math.shape(state1)[0] if qml.math.ndim(state1) > 2 else None
 
-    if get_interface(state0) == "jax" or get_interface(state1) == "jax":
+    if qml.math.get_interface(state0) == "jax" or qml.math.get_interface(state1) == "jax":
         if batch_size0 and not batch_size1:
-            state1 = ar.numpy.broadcast_to(state1, (batch_size0, *ar.shape(state1)))
+            state1 = qml.math.broadcast_to(state1, (batch_size0, *qml.math.shape(state1)))
         elif not batch_size0 and batch_size1:
-            state0 = ar.numpy.broadcast_to(state0, (batch_size1, *ar.shape(state0)))
+            state0 = qml.math.broadcast_to(state0, (batch_size1, *qml.math.shape(state0)))
 
     # Two mixed states
     _register_vjp(state0, state1)
-    fid = ar.numpy.compute_fidelity(state0, state1)
+    fid = qml.math.compute_fidelity(state0, state1)
     return fid
 
 
@@ -172,7 +172,7 @@ def _register_vjp(state0, state1):
     This function is needed because we don't want to register the custom
     VJPs at PennyLane import time.
     """
-    interface = get_interface(state0, state1)
+    interface = qml.math.get_interface(state0, state1)
     if interface == "jax":
         _register_jax_vjp()
     elif interface == "torch":
@@ -188,17 +188,17 @@ def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
             F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
     """
     # Implementation in single dispatches (sqrt(rho))
-    sqrt_mat = sqrt_matrix(density_matrix0)
+    sqrt_mat = qml.math.sqrt_matrix(density_matrix0)
 
     # sqrt(rho) * sigma * sqrt(rho)
     sqrt_mat_sqrt = sqrt_mat @ density_matrix1 @ sqrt_mat
 
     # extract eigenvalues
-    evs = ar.numpy.eigvalsh(sqrt_mat_sqrt)
-    evs = ar.numpy.real(evs)
-    evs = ar.numpy.where(evs > 0.0, evs, 0)
+    evs = qml.math.eigvalsh(sqrt_mat_sqrt)
+    evs = qml.math.real(evs)
+    evs = qml.math.where(evs > 0.0, evs, 0)
 
-    trace = (ar.numpy.sum(ar.numpy.sqrt(evs), -1)) ** 2
+    trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2
 
     return trace
 
@@ -208,42 +208,42 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
     Compute the VJP of fidelity with respect to the first density matrix
     """
     # sqrt of sigma
-    sqrt_dm1 = sqrt_matrix(dm1)
+    sqrt_dm1 = qml.math.sqrt_matrix(dm1)
 
     # eigendecomposition of sqrt(sigma) * rho * sqrt(sigma)
-    evs0, u0 = ar.numpy.linalg.eigh(sqrt_dm1 @ dm0 @ sqrt_dm1)
-    evs0 = ar.numpy.real(evs0)
-    evs0 = ar.numpy.where(evs0 > 1e-15, evs0, 1e-15)
-    evs0 = cast_like(evs0, sqrt_dm1)
+    evs0, u0 = qml.math.linalg.eigh(sqrt_dm1 @ dm0 @ sqrt_dm1)
+    evs0 = qml.math.real(evs0)
+    evs0 = qml.math.where(evs0 > 1e-15, evs0, 1e-15)
+    evs0 = qml.math.cast_like(evs0, sqrt_dm1)
 
-    if len(ar.shape(dm0)) == 2 and len(ar.shape(dm1)) == 2:
-        u0_dag = ar.numpy.transpose(ar.numpy.conj(u0))
-        grad_dm0 = sqrt_dm1 @ u0 @ (1 / ar.numpy.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
+    if len(qml.math.shape(dm0)) == 2 and len(qml.math.shape(dm1)) == 2:
+        u0_dag = qml.math.transpose(qml.math.conj(u0))
+        grad_dm0 = sqrt_dm1 @ u0 @ (1 / qml.math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
         # torch and tensorflow use the Wirtinger derivative which is a different convention
         # than the one autograd and jax use for complex differentiation
-        if get_interface(dm0) in ["torch", "tensorflow"]:
-            grad_dm0 = ar.numpy.sum(ar.numpy.sqrt(evs0), -1) * grad_dm0
+        if qml.math.get_interface(dm0) in ["torch", "tensorflow"]:
+            grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1) * grad_dm0
         else:
-            grad_dm0 = ar.numpy.sum(ar.numpy.sqrt(evs0), -1) * ar.numpy.transpose(grad_dm0)
+            grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1) * qml.math.transpose(grad_dm0)
 
-        res = grad_dm0 * cast_like(grad_out, grad_dm0)
+        res = grad_dm0 * qml.math.cast_like(grad_out, grad_dm0)
         return res
 
     # broadcasting case
-    u0_dag = ar.numpy.transpose(ar.numpy.conj(u0), (0, 2, 1))
-    grad_dm0 = sqrt_dm1 @ u0 @ (1 / ar.numpy.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
+    u0_dag = qml.math.transpose(qml.math.conj(u0), (0, 2, 1))
+    grad_dm0 = sqrt_dm1 @ u0 @ (1 / qml.math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
     # torch and tensorflow use the Wirtinger derivative which is a different convention
     # than the one autograd and jax use for complex differentiation
-    if get_interface(dm0) in ["torch", "tensorflow"]:
-        grad_dm0 = ar.numpy.sum(ar.numpy.sqrt(evs0), -1)[:, None, None] * grad_dm0
+    if qml.math.get_interface(dm0) in ["torch", "tensorflow"]:
+        grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1)[:, None, None] * grad_dm0
     else:
-        grad_dm0 = ar.numpy.sum(ar.numpy.sqrt(evs0), -1)[:, None, None] * ar.numpy.transpose(
+        grad_dm0 = qml.math.sum(qml.math.sqrt(evs0), -1)[:, None, None] * qml.math.transpose(
             grad_dm0, (0, 2, 1)
         )
 
-    return grad_dm0 * cast_like(grad_out, grad_dm0)[:, None, None]
+    return grad_dm0 * qml.math.cast_like(grad_out, grad_dm0)[:, None, None]
 
 
 def _compute_fidelity_vjp1(dm0, dm1, grad_out):
