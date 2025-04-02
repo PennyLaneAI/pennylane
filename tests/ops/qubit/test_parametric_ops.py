@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.ops.qubit.parametric_ops_multi_qubit import decomp_int_to_powers_of_two
+from pennylane.ops.qubit.parametric_ops_multi_qubit import _decomp_int_to_powers_of_two
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -650,9 +650,10 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
+    five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
     other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
 
-    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition(self, dim, wires):
         """Test that the PCPhase decomposition produces the same unitary"""
         op = qml.PCPhase(np.random.random(), dim, wires=wires)
@@ -4088,9 +4089,9 @@ def test_op_aliases_are_valid():
     ],
 )
 def test_decomp_int_to_powers_of_two(k, n, exp_R):
-    """Tests for ``test_decomp_int_to_powers_of_two``, which is used to decompose
+    """Tests for ``_decomp_int_to_powers_of_two``, which is used to decompose
     ``PCPhase`` operations."""
 
-    R = decomp_int_to_powers_of_two(k, n)
+    R = _decomp_int_to_powers_of_two(k, n)
     assert R == exp_R, f"\n{R}\n{exp_R}"
     assert sum(val != 0 for val in R) == (k ^ (3 * k)).bit_count()
