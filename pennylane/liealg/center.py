@@ -67,7 +67,7 @@ def center(
     g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
 ) -> list[Union[Operator, PauliSentence]]:
     r"""
-    A function to compute the center of a Lie algebra.
+    Compute the center of a Lie algebra.
 
     Given a Lie algebra :math:`\mathfrak{g} = \{h_1,.., h_d\}`, the center :math:`\mathfrak{\xi}(\mathfrak{g})`
     is given by all elements in :math:`\mathfrak{g}` that commute with `all` other elements in :math:`\mathfrak{g}`,

@@ -136,7 +136,9 @@ def _resolve_mcm_config(
             )
 
     if mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+        raise ValueError(
+            "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."
+        )
 
     if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
