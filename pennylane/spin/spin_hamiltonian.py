@@ -17,7 +17,8 @@ This file contains functions to create spin Hamiltonians.
 
 from pennylane import math, qchem
 from pennylane.fermi import FermiWord
-from pennylane.ops import I, X, Y, Z
+from pennylane.ops import X, Y, Z
+from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
 
