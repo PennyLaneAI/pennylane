@@ -25,6 +25,7 @@ from numpy import float64, sqrt  # pylint:disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 from pennylane import math
+from pennylane.math.matrix_manipulation import _permute_dense_matrix
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
@@ -234,7 +235,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     # Return the full density matrix if all the wires are given, potentially permuted
     if len(indices) == num_indices:
         # pylint: disable =protected-access
-        return math._permute_dense_matrix(density_matrix, consecutive_indices, indices, batch_dim)
+        return _permute_dense_matrix(density_matrix, consecutive_indices, indices, batch_dim)
 
     if batch_dim is None:
         density_matrix = math.stack([density_matrix])
@@ -247,8 +248,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
         density_matrix = density_matrix[0]
 
     # Permute the remaining indices of the density matrix
-    # pylint: disable = protected-access
-    return math._permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
 def partial_trace(matrix, indices, c_dtype="complex128"):
@@ -494,8 +494,7 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
             density_matrix, (batch_dim, 2 ** len(indices), 2 ** len(indices))
         )
 
-    # pylint: disable = protected-access
-    return math._permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
 def dm_from_state_vector(state, check_state=False, c_dtype="complex128"):
