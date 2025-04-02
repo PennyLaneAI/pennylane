@@ -195,6 +195,7 @@ class TestFromBloq:
             circuit_bloq.tensor_contract(),
         )
 
+    # TODO: Undo Xfail when new version of Qualtran is released
     @pytest.mark.xfail  # no longer a method we can rely on
     def test_atomic_bloqs(self):
         """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
@@ -214,6 +215,7 @@ class TestFromBloq:
             qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
         )
 
+    # TODO: Delete this when new version of Qualtran is released
     def test_to_pl_op(self):  # Correctness is validated in Qualtran's tests
         """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
         from qualtran.bloqs.basic_gates import (

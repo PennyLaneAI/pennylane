@@ -29,6 +29,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
+# TODO: Delete this when new version of Qualtran is released
 # pylint: disable=unused-argument
 @lru_cache
 def _get_to_pl_op():
