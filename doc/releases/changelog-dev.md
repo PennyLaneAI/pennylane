@@ -221,6 +221,7 @@
 
 * `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
   [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+  [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
 
 * `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
   with the default being `'csr'`
@@ -777,6 +778,9 @@
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
+
+* Clean up logic in `qml.drawer.tape_text`
+  [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
