@@ -2112,7 +2112,7 @@ class TestHamiltonianExpvalGradients:
         # This test is mostly for the shot vector pipeline check
         # therefore only check a rough accuracy
         assert qml.math.shape(res)[1] == qml.math.shape(shot_vec)[0]
-        assert np.allclose(res, expected, atol=2*tol, rtol=0)
+        assert np.allclose(res, expected, atol=2 * tol, rtol=0)
 
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two (broadcasted if broadcast=True) shifts per rotation gate
