@@ -214,7 +214,7 @@ class TestFromBloq:
             qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
         )
 
-    def test_to_pl_op(self):
+    def test_to_pl_op(self):  # Correctness is validated in Qualtran's tests
         """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
         from qualtran.bloqs.basic_gates import (
             GlobalPhase,
