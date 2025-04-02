@@ -25,14 +25,12 @@ from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
-    import qualtran.bloqs.basic_gates
-    import qualtran.bloqs.bookkeeping
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
 @lru_cache
-def _get_to_pl_op():
+def _get_to_pl_op():  # pylint: disable=unusued-argument
 
     @singledispatch
     def _to_pl_op(bloq, wires):
@@ -398,7 +396,7 @@ class FromBloq(Operation):
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
                 ghost_wires = [f"alloc_free_{val}" for val in total_wires if val >= len(wires)]
                 op = _get_to_pl_op()(binst.bloq, mapped_wires + ghost_wires)
-
+                print(op)
                 if op:
                     ops.append(op)
         except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
