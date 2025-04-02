@@ -562,7 +562,7 @@ class StatePrep(StatePrepBase):
         if np.issubdtype(state.dtype, np.integer):
             state = state.astype(float)
 
-        norm = sp.sparse.linalg.norm(state, axis=-1)
+        norm = sp.sparse.linalg.norm(state)
 
         if normalize:
             state /= norm
