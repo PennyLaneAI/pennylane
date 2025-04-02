@@ -840,7 +840,8 @@
 
 <h3>Documentation 📝</h3>
 
-* Fix the wrong Sphinx usages in `QubitUnitary`.
+* Typos were fixed in the docstring for `qml.QubitUnitary`.
+  [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
 
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
