@@ -61,6 +61,7 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
 
 .. currentmodule:: pennylane.devices.default_tensor
 .. autoclass:: DefaultTensor
+    :noindex:
 
 Preprocessing Transforms
 ------------------------
