@@ -1,4 +1,4 @@
-layers = ["tertiary", "auxiliary", "core"]
+layers = ["ui", "tertiary", "auxiliary", "core"]
 
 exclude = [
     "**/*__pycache__",
@@ -18,7 +18,7 @@ forbid_circular_dependencies = false
 
 [[modules]]
 path = "pennylane"
-depends_on = ["pennylane.kernels", "pennylane.circuit_graph", "pennylane.noise", "pennylane.drawer", "pennylane.qnn", "pennylane.transforms", "pennylane.about", "pennylane.capture", "pennylane._grad", "pennylane.control_flow", "pennylane.logging", "pennylane.spin", "pennylane.measurements", "pennylane.data", "pennylane.templates", "pennylane.optimize", "pennylane.configuration", "pennylane.numpy", "pennylane.fourier", "pennylane.debugging", "pennylane.io", "pennylane.qcut", "pennylane.pauli", "pennylane.ops", "pennylane.shadows", "pennylane.boolean_fn", "pennylane.resource", "pennylane.qaoa", "pennylane._version", "pennylane.registers", "pennylane.bose", "pennylane.fermi", "pennylane.tracker", "pennylane.queuing", "pennylane.workflow", "pennylane.compiler", "pennylane.decomposition", "pennylane.qchem", "pennylane.pulse", "pennylane.operation", "pennylane.gradients", "pennylane.liealg", "pennylane.math", "pennylane.devices"]
+layer = "ui"
 
 ## CLOSED modules
 # No module can import from the following set of modules.
@@ -122,8 +122,11 @@ layer = "core"
 # These modulescan only import from CORE or AUXILIARY modules.
 
 [[modules]]
+path = "pennylane.spin"
+layer = "tertiary"
+
+[[modules]]
 path = "pennylane.drawer"
-cannot_depend_on = ["pennylane"]
 layer = "tertiary"
 
 ## UNSORTED
@@ -154,9 +157,7 @@ depends_on = ["pennylane.measurements", "pennylane.queuing", "pennylane.capture"
 path = "pennylane.qcut"
 depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.wires", "pennylane.measurements", "pennylane.numpy", "pennylane.typing", "pennylane.transforms", "pennylane", "pennylane.tape", "pennylane.pauli"]
 
-[[modules]]
-path = "pennylane.spin"
-depends_on = ["pennylane.math", "pennylane", "pennylane.fermi"]
+
 
 [[modules]]
 path = "pennylane.qchem"

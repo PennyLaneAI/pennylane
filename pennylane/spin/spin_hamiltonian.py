@@ -15,9 +15,9 @@
 This file contains functions to create spin Hamiltonians.
 """
 
-import pennylane as qml
-from pennylane import I, X, Y, Z, math
+from pennylane import math, qchem
 from pennylane.fermi import FermiWord
+from pennylane.ops import I, X, Y, Z
 
 from .lattice import Lattice, generate_lattice
 
@@ -82,7 +82,7 @@ def transverse_ising(
         coupling = [coupling]
     coupling = math.asarray(coupling)
 
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
@@ -168,7 +168,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
             f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
         )
 
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     if coupling.shape == (neighbour_order, 3):
         for edge in lattice.edges:
             i, j, order = edge
@@ -312,7 +312,7 @@ def fermi_hubbard(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -477,7 +477,7 @@ def emery(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -618,7 +618,7 @@ def haldane(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -698,7 +698,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         custom_edges=custom_edges,
     )
     opmap = {"X": X, "Y": Y, "Z": Z}
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
         op1, op2 = edge[2][0]
@@ -753,7 +753,7 @@ def spin_hamiltonian(lattice):
         )
 
     opmap = {"I": I, "X": X, "Y": Y, "Z": Z}
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
         op1, op2 = edge[2][0]
