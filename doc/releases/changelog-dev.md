@@ -494,45 +494,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Improvements 🛠</h3>
 
-<h4>Experimental FTQC Module</h4>
-
-* A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
-  [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
-  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
-
-* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
-  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
-
-* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
-  model for mappings between logical and physical qubits. This representation allows for nesting of
-  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
-  abstractions between logical qubits and physical qubits.
-  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
-
-* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
-  [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
-
-* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions
-  apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for
-  the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
-  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
-  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
-
-* The function `cond_measure` is added to the experimental `ftqc` module to apply a mid-circuit 
-  measurement with a measurement basis conditional on the function input.
-  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
-
-* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
-  measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
-  X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
-  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
-  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
-
-* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices
-  that only natively support mid-circuit measurements in the computational basis.
-  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
-  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
-
 <h4>QNode improvements</h4>
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
@@ -945,6 +906,43 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
   Also use a different way of testing to see if something was compiled.
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
+
+* A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
+  [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
+  [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
+
+* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
+  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
+
+* A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
+  model for mappings between logical and physical qubits. This representation allows for nesting of
+  lower-level qubits with arbitrary depth to allow easy insertion of arbitrarily many levels of
+  abstractions between logical qubits and physical qubits.
+  [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
+
+* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
+  [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
+
+* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions
+  apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for
+  the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
+  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
+
+* The function `cond_measure` is added to the experimental `ftqc` module to apply a mid-circuit 
+  measurement with a measurement basis conditional on the function input.
+  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
+
+* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+  measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
+  X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
+
+* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices
+  that only natively support mid-circuit measurements in the computational basis.
+  [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
+  [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
 <h3>Documentation 📝</h3>
 
