@@ -221,6 +221,7 @@
 
 * `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
   [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+  [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
 
 * `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
   with the default being `'csr'`
