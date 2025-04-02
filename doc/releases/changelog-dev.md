@@ -246,30 +246,18 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
   [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
 
-* `Device.jaxpr_jvp` has been added to the device API to allow the definition of device derivatives
-  when using program capture to jaxpr.
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
 
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
   [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
-* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
-  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
-
-* `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
-  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
-
-* The adjoint jvp of a jaxpr can be computed using default.qubit tooling.
-  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
-
 * `cond`, `adjoint`, `ctrl`, and the `QNode` can now handle accepting dynamically
   shaped arrays with the abstract shape matching another argument.
   [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
-
-* Device-provided derivatives are integrated into the program capture pipeline.
-  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
-  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
 
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
@@ -297,11 +285,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
   [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
 
-  * Autograph can now be used with custom operations defined outside of the pennylane namespace.
+* Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
-
-  * Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
@@ -634,6 +619,15 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Other improvements</h4>
+
+* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+* `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
