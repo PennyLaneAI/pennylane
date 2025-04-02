@@ -206,8 +206,15 @@
 
 * Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
+
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
+
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
 * A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
@@ -271,6 +278,7 @@
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
   [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
 
   ```pycon
   >>> import numpy as np
@@ -279,7 +287,7 @@
   >>> U_dense = np.eye(4)  # 2-wire identity
   >>> U_sparse = sp.sparse.csr_matrix(U_dense)
   >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.matrix())
+  >>> print(op.sparse_matrix())
   <Compressed Sparse Row sparse matrix of dtype 'float64'
           with 4 stored elements and shape (4, 4)>
     Coords        Values
@@ -287,7 +295,7 @@
     (1, 1)        1.0
     (2, 2)        1.0
     (3, 3)        1.0
-  >>> op.matrix().toarray()
+  >>> op.sparse_matrix().toarray()
   array([[1., 0., 0., 0.],
         [0., 1., 0., 0.],
         [0., 0., 1., 0.],
@@ -645,6 +653,52 @@
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
+* Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
+  [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
+
+* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``RealspaceMatrix``
+  [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
+
+* Adding functions for Trotter error estimation and Hamiltonian fragment generation: ``trotter_error``, ``perturbation_error``, ``vibrational_fragments``, ``vibronic_fragments``, and ``generic_fragments``.
+  [(#7036)](https://github.com/PennyLaneAI/pennylane/pull/7036)
+
+  As an example we compute the peruturbation error of a vibrational Hamiltonian.
+  First we generate random harmonic frequences and Taylor coefficients to iniitialize the vibrational Hamiltonian.
+
+  ```pycon
+  >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
+  >>> import numpy as np
+  >>> n_modes = 2
+  >>> r_state = np.random.RandomState(42)
+  >>> freqs = r_state.random(n_modes)
+  >>> taylor_coeffs = [
+  >>>     np.array(0),
+  >>>     r_state.random(size=(n_modes, )),
+  >>>     r_state.random(size=(n_modes, n_modes)),
+  >>>     r_state.random(size=(n_modes, n_modes, n_modes))
+  >>> ]
+  ```
+    
+  We call ``vibrational_fragments`` to get the harmonic and anharmonic fragments of the vibrational Hamiltonian.
+  ```pycon
+  >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+  ```
+
+  We build state vectors in the harmonic oscilator basis with the ``HOState`` class. 
+
+  ```pycon
+  >>> gridpoints = 5
+  >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
+  >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
+  ```
+
+  Finally, we compute the error by calling ``perturbation_error``.
+
+  ```pycon
+  >>> perturbation_error(frags, [state1, state2])
+  [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
@@ -736,6 +790,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
+
+* All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
+  [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
+
+* The error message when device wires are not specified when program capture is enabled is more clear.
+  [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
@@ -799,6 +862,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Typos were fixed in the docstring for `qml.QubitUnitary`.
+  [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
+
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 
@@ -824,7 +890,13 @@
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
+* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
+  [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+  [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
@@ -905,6 +977,9 @@
   skips the check ensuring that the operator types match.
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
+* Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
+  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -922,6 +997,7 @@ Diksha Dhawan,
 Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Marcus Gisslén,
+Diego Guala,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
