@@ -846,6 +846,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Typos were fixed in the docstring for `qml.QubitUnitary`.
+  [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
+
 * A typo in the docstring for `ControlledOp` was fixed and the `Controlled` docstring recommends using `ctrl` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
@@ -878,6 +881,9 @@
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+  [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
