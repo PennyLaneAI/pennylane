@@ -30,7 +30,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @lru_cache
-# pylint: disable=unusued-argument
+# pylint: disable=unused-argument
 def _get_to_pl_op():
 
     @singledispatch
