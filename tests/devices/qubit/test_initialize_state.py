@@ -125,3 +125,5 @@ class TestInitializeState:
         assert not sp.sparse.issparse(state), "State should be converted to dense."
         # The single 1 should be at index 1
         assert state[0, 1] == 1.0
+        assert qml.math.get_interface(state) == "numpy"
+        assert state.shape == (2, 2)
