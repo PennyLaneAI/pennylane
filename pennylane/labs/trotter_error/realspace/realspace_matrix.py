@@ -474,7 +474,15 @@ class RealspaceMatrix(Fragment):
 
     @classmethod
     def zero(cls, states: int, modes: int) -> RealspaceMatrix:
-        """Return a RealspaceMatrix representation of the zero operator"""
+        """Return a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` representation of the zero operator.
+
+        Args:
+            states: the number of electronic states
+            modes: the number of vibrational modes
+
+        Returns:
+            RealspaceMatrix: a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` on `states` electronic states and `modes` vibrational modes such that all coefficients are zero
+        """
         return cls(states, modes, {})
 
     def __repr__(self):
