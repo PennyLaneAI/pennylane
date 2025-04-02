@@ -101,9 +101,7 @@ def _initialize_layer_str(config: _Config) -> list[str]:
     n_bits = len(config.bit_map)
 
     # Create initial strings for the current layer using wire and cwire fillers
-    layer_str = [config.wire_filler] * n_wires + [" "] * n_bits
-    for b in config.bit_map.values():
-        layer_str[b + n_wires] = config.bit_filler(b)
+    layer_str = [config.wire_filler] * n_wires + [config.bit_filler(b) for b in config.bit_map.values()]
 
     return layer_str
 
