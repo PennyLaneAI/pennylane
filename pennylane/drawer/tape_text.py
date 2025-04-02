@@ -66,7 +66,7 @@ class _Config:
         return "─" if self.cur_layer < self.num_op_layers else " "
 
     def bit_filler(self, bit, next_layer: bool = False) -> str:
-        """The filler character for bits at the current layer and the designated bit.."""
+        """The filler character for bits at the current layer and the designated bit."""
         layer = self.cur_layer + 1 if next_layer else self.cur_layer
         b_is_occupied = self.cwire_layers[bit][0] < layer <= self.cwire_layers[bit][-1]
         return "═" if self.cur_layer < self.num_op_layers and b_is_occupied else " "
@@ -90,7 +90,7 @@ def _initialize_wire_and_bit_totals(
 def _initialize_layer_str(config: _Config) -> list[str]:
     """Initialize the list of strings for a new layer.
 
-    For example, we have three wires and two classical wires, we will get:
+    For example, if we have three wires and two classical wires, we will get:
 
     .. code-block::
 
@@ -138,7 +138,6 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
         cur_b_filler = config.bit_filler(b, next_layer=True)
         layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
-    # one for the filler character
     return layer_str
 
 
