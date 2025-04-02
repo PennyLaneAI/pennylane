@@ -20,7 +20,9 @@ import warnings
 from functools import wraps
 from typing import Literal, Union
 
-import pennylane as qml
+from pennylane import math
+from pennylane.tape import make_qscript
+from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
@@ -267,7 +269,7 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -302,7 +304,7 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -331,7 +333,7 @@ def _draw_qnode(
         if show_matrices and cache["matrices"]:
             mat_str = ""
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
+                if math.requires_grad(mat) and hasattr(mat, "detach"):
                     mat = mat.detach()
                 mat_str += f"\nM{i} = \n{mat}"
             if mat_str:
@@ -672,7 +674,7 @@ def draw_mpl(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
         if wire_order:
             _wire_order = wire_order
         else:
@@ -708,7 +710,7 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
         if len(tapes) > 1:
             warnings.warn(

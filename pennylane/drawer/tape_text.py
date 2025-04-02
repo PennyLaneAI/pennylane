@@ -20,7 +20,6 @@ This module contains logic for the text based circuit drawer through the ``tape_
 from dataclasses import dataclass
 from typing import Optional
 
-import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -31,6 +30,8 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .utils import (
@@ -130,7 +131,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
 
 def _add_op(op, layer_str, config):
     """Updates ``layer_str`` with ``op`` operation."""
-    if isinstance(op, qml.ops.Conditional):  # pylint: disable=no-member
+    if isinstance(op, Conditional):  # pylint: disable=no-member
         layer_str = _add_cond_grouping_symbols(op, layer_str, config)
         return _add_op(op.base, layer_str, config)
 
@@ -498,7 +499,7 @@ def tape_text(
         # Update current layer strings with labels
         ##########################################
         for op in layer:
-            if isinstance(op, qml.tape.QuantumScript):
+            if isinstance(op, QuantumScript):
                 layer_str = _add_grouping_symbols(op, layer_str, config)
                 label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
                 for w in op.wires:
