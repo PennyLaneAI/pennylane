@@ -763,7 +763,13 @@ jobs:
       - device-tests
 
     # Run this if any of the test jobs failed
-    if: ${{ always() && (contains(join(needs.*.result, ','), 'failure') || contains(join(needs.*.conclusion, ','), 'failure')) }}
+    if: >-
+      ${{
+        always() &&
+        (contains(join(needs.*.result, ','), 'failure') ||
+         contains(join(needs.*.conclusion, ','), 'failure') ||
+         contains(join(needs.*.status, ','), 'failure'))
+      }}
 
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
