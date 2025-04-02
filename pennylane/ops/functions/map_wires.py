@@ -16,7 +16,7 @@ This module contains the qml.map_wires function.
 """
 from collections.abc import Callable
 from functools import lru_cache, partial
-from typing import Union, overload
+from typing import Union, overload, TYPE_CHECKING
 from warnings import warn
 
 import pennylane as qml
@@ -26,7 +26,9 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from pennylane.workflow import QNode
 
 
 @lru_cache
@@ -136,8 +138,8 @@ def map_wires(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 @overload
 def map_wires(
-    input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
-) -> QNode: ...
+    input: "QNode", wire_map: dict, queue: bool = False, replace: bool = False
+) -> "QNode": ...
 @overload
 def map_wires(
     input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
@@ -147,7 +149,9 @@ def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
+    input: Union[
+        Operator, MeasurementProcess, QuantumScript, "QNode", Callable, QuantumScriptBatch
+    ],
     wire_map: dict,
     queue=False,
     replace=False,
