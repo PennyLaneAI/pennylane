@@ -14,3 +14,4 @@
 """Module containing functions for computing product formulas"""
 
 from .error import trotter_error, perturbation_error
+from .product_formula import ProductFormula
