@@ -245,11 +245,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
   [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
 
-* Device-provided derivatives are integrated into the program capture pipeline.
-  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
-  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
-  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
-
 * `qml.cond` can return arrays with dynamic shapes.
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
   [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
@@ -258,9 +253,24 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   shaped arrays with the abstract shape matching another argument.
   [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
 
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
+  of arrays with dynamic shapes.
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
 * The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
   [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
+
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 * Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control
   and target qubits of controlled operations when experimental program capture is enabled.
@@ -278,21 +288,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
-
-* The higher order primitives in program capture can now accept inputs with abstract shapes.
-  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
-
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
-
-* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
-  of arrays with dynamic shapes.
-  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
-
-* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
-  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
-  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
 
 * Device preprocessing is now being performed in the execution pipeline for program capture.
   [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
@@ -343,6 +338,11 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * With program capture enabled, `QNode`'s can now be differentiated with `diff_method="finite-diff"`.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
+
+* Device-provided derivatives are integrated into the program capture pipeline.
+  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
@@ -533,76 +533,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
-<h4>Better drawing functionality</h4>
-
-* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
-  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
-
-<h4>Decompositions</h4>
-
-* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
-  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-  
-* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
-  [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
-
-* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
-  [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
-
-* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
-  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
-  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
-
-* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
-  The `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical form.
-  [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
-
-* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
-  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
-
-* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
-  [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
-
-* The `assert_valid` method now validates that an operator's decomposition does not contain 
-  the operator itself, instead of checking that it does not contain any operators of the same class as the operator.
-  [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
-
-<h4>Gradients and differentiability</h4>
-
-* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
-  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
-
-* The coefficients of observables now have improved differentiability.
-  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
-
-* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
-  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
-
-* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
-  function.
-  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-
-<h4>Device improvements</h4>
-
-* Devices can now configure whether or not ML framework data is sent to them
-  via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
-  `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
-  [(#6899)](https://github.com/PennyLaneAI/pennylane/pull/6899)
-  [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
-  [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
-
-* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
-  [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
-
-* The `default.mixed` device now adheres to the newer device API introduced in
-  [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
-  This means that `default.mixed` now supports not having to specify the number of wires,
-  more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
-  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
-
-* `null.qubit` can now execute jaxpr.
-  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
-
 <h4>QNode improvements</h4>
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
@@ -661,6 +591,76 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+<h4>Decompositions</h4>
+
+* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  
+* The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
+  [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
+
+* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
+  [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
+
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
+  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+  [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
+
+* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
+  The `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical form.
+  [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
+
+* The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
+  [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
+
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
+  [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
+
+* The `assert_valid` method now validates that an operator's decomposition does not contain 
+  the operator itself, instead of checking that it does not contain any operators of the same class as the operator.
+  [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
+
+<h4>Better drawing functionality</h4>
+
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
+
+<h4>Gradients and differentiability</h4>
+
+* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
+* The coefficients of observables now have improved differentiability.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
+* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
+* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
+  function.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
+
+<h4>Device improvements</h4>
+
+* Devices can now configure whether or not ML framework data is sent to them
+  via an `ExecutionConfig.convert_to_numpy` parameter. End-to-end jitting on
+  `default.qubit` is used if the user specified a `jax.random.PRNGKey` as a seed.
+  [(#6899)](https://github.com/PennyLaneAI/pennylane/pull/6899)
+  [(#6788)](https://github.com/PennyLaneAI/pennylane/pull/6788)
+  [(#6869)](https://github.com/PennyLaneAI/pennylane/pull/6869)
+
+* The `reference.qubit` device now enforces `sum(probs)==1` in `sample_state`.
+  [(#7076)](https://github.com/PennyLaneAI/pennylane/pull/7076)
+
+* The `default.mixed` device now adheres to the newer device API introduced in
+  [v0.33](https://docs.pennylane.ai/en/stable/development/release_notes.html#release-0-33-0).
+  This means that `default.mixed` now supports not having to specify the number of wires,
+  more predictable behaviour with interfaces, support for `qml.Snapshot`, and more.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+
+* `null.qubit` can now execute jaxpr.
+  [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
 <h4>Other improvements</h4>
 
