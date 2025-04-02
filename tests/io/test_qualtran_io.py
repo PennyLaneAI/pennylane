@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.io.qualtran_io import _get_to_pl_op
+from pennylane.operation import DecompositionUndefinedError
 
 
 @pytest.fixture
@@ -217,19 +217,19 @@ class TestFromBloq:
     def test_to_pl_op(self):  # Correctness is validated in Qualtran's tests
         """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
         from qualtran.bloqs.basic_gates import (
+            CZ,
+            CYGate,
             GlobalPhase,
             Identity,
-            Ry,
             Rx,
+            Ry,
             Rz,
             SGate,
-            TwoBitCSwap,
             TGate,
+            TwoBitCSwap,
             XGate,
             YGate,
-            CYGate,
             ZGate,
-            CZ,
         )
 
         to_pl = _get_to_pl_op()
