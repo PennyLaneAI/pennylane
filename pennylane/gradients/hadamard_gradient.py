@@ -296,6 +296,11 @@ def hadamard_grad(
         )
     if mode in ['reversed', 'direct', 'reversed-direct']:
         assert_no_probability(tape.measurements, transform_name)
+    if mode in ['reversed', 'reversed-direct']:
+        if len(tape.measurements) > 1:
+            raise NotImplementedError(
+                "Reversed hadamard gradient does not support multiple measurements."
+            )
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

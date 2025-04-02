@@ -233,11 +233,13 @@ class TestHadamardValidation:
     def test_at_most_one_measurement_with_reversed(self, mode):
         """Test that a ValueError is raised if more than one expectation value is used
         with reversed and reversed-direct methods."""
-        # note that this validation check currently needs to be added to the source code
-        raise NotImplementedError("add test code here.")
-        # setup
-        # with pytest.raises(ValueError, match=match):
-        #     # code that gives error
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.543, 0), qml.RY(-0.654, 0)],
+            [qml.expval(qml.Z(0)), qml.expval(qml.X(0))]
+        )
+        with pytest.raises(NotImplementedError):
+            qml.gradients.hadamard_grad(tape, mode=mode)
 
 
 class TestDifferentModes:
