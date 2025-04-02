@@ -15,6 +15,7 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 from collections import defaultdict
+from functools import lru_cache, singledispatch
 
 import numpy as np
 
@@ -26,6 +27,95 @@ try:
     import qualtran as qt
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+# TODO: Delete this when new version of Qualtran is released
+# pylint: disable=unused-argument
+@lru_cache
+def _get_to_pl_op():
+
+    @singledispatch
+    def _to_pl_op(bloq, wires):
+        return FromBloq(bloq=bloq, wires=wires)
+
+    @_to_pl_op.register
+    def _cnot(bloq: qt.bloqs.basic_gates.CNOT, wires):
+        return qml.CNOT(wires=wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.GlobalPhase, wires):
+        return qml.GlobalPhase(bloq.exponent * np.pi, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Hadamard, wires):
+        return qml.Hadamard(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Identity, wires):
+        return qml.Identity(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Rx, wires):
+        return qml.RX(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Ry, wires):
+        return qml.RY(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Rz, wires):
+        return qml.RZ(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.SGate, wires):
+        return qml.adjoint(qml.S(wires)) if bloq.is_adjoint else qml.S(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TwoBitSwap, wires):
+        return qml.SWAP(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TwoBitCSwap, wires):
+        return qml.CSWAP(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TGate, wires):
+        return qml.T(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Toffoli, wires):
+        return qml.Toffoli(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.XGate, wires):
+        return qml.X(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.YGate, wires):
+        return qml.Y(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.CYGate, wires):
+        return qml.CY(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.ZGate, wires):
+        return qml.Z(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.CZ, wires):
+        return qml.CZ(wires)
+
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Allocate)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Cast)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Free)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Join)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Partition)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Split)
+    def _(bloq, wires):
+        return None
+
+    return _to_pl_op
 
 
 def bloq_registers(bloq):
@@ -307,8 +397,7 @@ class FromBloq(Operation):
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
                 ghost_wires = [f"alloc_free_{val}" for val in total_wires if val >= len(wires)]
-                op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
-
+                op = _get_to_pl_op()(binst.bloq, mapped_wires + ghost_wires)
                 if op:
                     ops.append(op)
         except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
