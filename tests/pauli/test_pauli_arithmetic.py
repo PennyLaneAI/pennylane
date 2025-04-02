@@ -63,7 +63,7 @@ def test_pw_pw_multiplication_non_commutativity():
     res1 = X0 @ Y0
     res2 = Y0 @ X0
     assert res1 == 1j * Z0
-    assert 1==2
+    assert 1 == 2
 
 
 def test_ps_ps_multiplication_non_commutativity():
