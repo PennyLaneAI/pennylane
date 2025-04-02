@@ -359,7 +359,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * The requested `diff_method` is now validated when program capture is enabled.
   [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
-<h4>Sparse Representation Execution 🌌</h4>
+<h4>End-to-end Sparse Execution 🌌</h4>
 
 * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
   [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
