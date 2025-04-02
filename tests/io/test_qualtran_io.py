@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.io.qualtran_io import _get_to_pl_op
 
 
 @pytest.fixture
@@ -212,6 +213,42 @@ class TestFromBloq:
         assert np.allclose(
             qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
         )
+
+    def test_to_pl_op(self):
+        """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
+        from qualtran.bloqs.basic_gates import (
+            GlobalPhase,
+            Identity,
+            Ry,
+            Rx,
+            Rz,
+            SGate,
+            TwoBitCSwap,
+            TGate,
+            XGate,
+            YGate,
+            CYGate,
+            ZGate,
+            CZ,
+        )
+
+        to_pl = _get_to_pl_op()
+
+        assert to_pl(GlobalPhase(exponent=1), 0) == qml.GlobalPhase(
+            GlobalPhase(exponent=1).exponent * np.pi, 0
+        )
+        assert to_pl(Identity(), 0) == qml.Identity(0)
+        assert to_pl(Ry(angle=np.pi / 2), 0) == qml.RY(np.pi / 2, 0)
+        assert to_pl(Rx(angle=np.pi / 4), 0) == qml.RX(np.pi / 4, 0)
+        assert to_pl(Rz(angle=np.pi / 3), 0) == qml.RZ(np.pi / 3, 0)
+        assert to_pl(SGate(), 0) == qml.S(0)
+        assert to_pl(TwoBitCSwap(), [0, 1, 2]) == qml.CSWAP([0, 1, 2])
+        assert to_pl(TGate(), 0) == qml.T(0)
+        assert to_pl(XGate(), 0) == qml.PauliX(0)
+        assert to_pl(YGate(), 0) == qml.PauliY(0)
+        assert to_pl(CYGate(), [0, 1]) == qml.CY([0, 1])
+        assert to_pl(ZGate(), 0) == qml.PauliZ(0)
+        assert to_pl(CZ(), [0, 1]) == qml.CZ([0, 1])
 
     def test_bloqs(self):
         """Tests that bloqs with decompositions have the correct PennyLane decompositions after
