@@ -481,7 +481,7 @@ class RealspaceMatrix(Fragment):
             modes: the number of vibrational modes
 
         Returns:
-            RealspaceMatrix: a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` on `states` electronic states and `modes` vibrational modes such that all coefficients are zero
+            RealspaceMatrix: a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` on ``states`` electronic states and ``modes`` vibrational modes such that all coefficients are zero
         """
         return cls(states, modes, {})
 
