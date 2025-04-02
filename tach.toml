@@ -161,15 +161,13 @@ depends_on = ["pennylane.measurements", "pennylane.queuing", "pennylane.capture"
 path = "pennylane.qcut"
 depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.wires", "pennylane.measurements", "pennylane.numpy", "pennylane.typing", "pennylane.transforms", "pennylane", "pennylane.tape", "pennylane.pauli"]
 
-
-
 [[modules]]
 path = "pennylane.qchem"
 depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops", "pennylane.pauli", "pennylane.bose", "pennylane.numpy"]
 
 [[modules]]
 path = "pennylane.fourier"
-depends_on = ["pennylane", "pennylane.tape", "pennylane.typing"]
+layer = "tertiary"
 
 [[modules]]
 path = "pennylane.fermi"
