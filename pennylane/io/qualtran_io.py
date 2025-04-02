@@ -39,7 +39,7 @@ def _get_to_pl_op():
         return FromBloq(bloq=bloq, wires=wires)
 
     @_to_pl_op.register
-    def _cnot(bloq: qt.bloqs.basic_gates.CNOT, wires):
+    def _(bloq: qt.bloqs.basic_gates.CNOT, wires):
         return qml.CNOT(wires=wires)
 
     @_to_pl_op.register
@@ -80,7 +80,7 @@ def _get_to_pl_op():
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.TGate, wires):
-        return qml.T(wires)
+        return qml.adjoint(qml.T(wires)) if bloq.is_adjoint else qml.T(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Toffoli, wires):

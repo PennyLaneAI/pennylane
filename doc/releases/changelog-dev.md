@@ -130,7 +130,6 @@
   >>> circuit()
   array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
   ```
-  [(#6921)](https://github.com/PennyLaneAI/pennylane/pull/6921)
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
 
 * Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
