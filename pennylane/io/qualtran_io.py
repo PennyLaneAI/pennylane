@@ -31,7 +31,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @lru_cache
 # pylint: disable=unusued-argument
-def _get_to_pl_op():  
+def _get_to_pl_op():
 
     @singledispatch
     def _to_pl_op(bloq, wires):
