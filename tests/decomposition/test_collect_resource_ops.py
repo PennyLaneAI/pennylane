@@ -154,13 +154,16 @@ class TestCollectResourceOps:
                 qml.CRZ(x, wires=wires)
 
             qml.cond(x > 0.5, true_fn, false_fn)()
+            qml.cond(x > 0.5, qml.RX, qml.RY)(x, wires=wires[0])
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1])
         ops = collector.state["ops"]
-        assert len(ops) == 2
+        assert len(ops) == 4
         assert ops == {
             qml.resource_rep(qml.CRX),
             qml.resource_rep(qml.CRZ),
+            qml.resource_rep(qml.RX),
+            qml.resource_rep(qml.RY),
         }
