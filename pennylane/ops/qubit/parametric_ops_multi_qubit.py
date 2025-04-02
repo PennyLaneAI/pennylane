@@ -653,7 +653,7 @@ def _ctrl_phase_shift(phi, wire, subspace, control_data):
 
     The decomposition for subspace=1 always is a simple ``PhaseShift`` gate, or its controlled
     counterpart.
-    The decomposition of a non-controlled phase shift for subspace=0 can be achieved in two ways: 
+    The decomposition of a non-controlled phase shift for subspace=0 can be achieved in two ways:
     The first is to flip the angle of the phase shift and complementing it with a global phase,
     so that the (diagonal of the) gate is decomposed as
 
@@ -881,8 +881,8 @@ class PCPhase(Operation):
         Our first step is to move to a slightly different convention in order to arrive at a
         *projector* that has ones and zeros, instead of ones and
         minus ones (note how :math:`G` is not a projector because :math:`G^2=\mathbb{I}_N\neq G`).
-        To do this, we define 
-        
+        To do this, we define
+
         .. math::
 
             \Pi = \begin{cases}
@@ -896,7 +896,7 @@ class PCPhase(Operation):
         two cases.
 
         Now we want to decompose :math:`\Pi`, a sum of the computational basis state projectors
-        :math:`|j\rangle\langle j|` onto the :math:`d` consecutive smallest (largest, for 
+        :math:`|j\rangle\langle j|` onto the :math:`d` consecutive smallest (largest, for
         :math:`\sigma=-1`) basis states,
         into projectors that contain a power of two basis state projectors. We will see below that
         these are exactly the generators of (multi-controlled) phase shift gates, allowing us
@@ -904,10 +904,10 @@ class PCPhase(Operation):
         gates, we may also use subtraction when decomposing :math:`\Pi`.
 
         This decomposition of :math:`\Pi` is based on decomposing the integer :math:`d` into sums
-        and differences of powers of two, which is detailed in a separate section below. This 
+        and differences of powers of two, which is detailed in a separate section below. This
         decomposition reads
 
-        .. math:: 
+        .. math::
 
             d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
 
@@ -920,10 +920,10 @@ class PCPhase(Operation):
 
             \Pi = \sum_{i=0}^{n-1} c_i \sum_{j=s_i}^{e_i} |j\rangle\langle j|,
 
-        where :math:`s_i` and :math:`e_i` are the start and end positions 
+        where :math:`s_i` and :math:`e_i` are the start and end positions
         for the :math:`i`\ th contribution to :math:`\Pi`.
         Besides computing the integer decomposition itself, this decomposition function is mostly
-        about figuring out the right control structure to realize the correct positioning 
+        about figuring out the right control structure to realize the correct positioning
         according to :math:`s_i` and :math:`e_i`.
 
         Initialize empty lists of control wires and control values, corresponding to :math:`s_0=0`.
@@ -971,7 +971,7 @@ class PCPhase(Operation):
         The sign of all phases is multiplied by :math:`2\sigma` to realize the first term of
         :math:`G=\sigma(2\Pi -\mathbb{I}_N)`, and a global phase with angle multiplied by
         :math:`\sigma` is added to realize the second term.
-           
+
         .. details::
             :title: Decomposing an integer into powers of two
 
@@ -1073,6 +1073,7 @@ class PCPhase(Operation):
             In the code below, we will actually *skip* the first entry of the 2-tuples in :math:`R`,
             because they always equal the position of the tuple within :math:`R`
             (after completing the algorithm).
+
         """
         phi = params[0]
         dim, _ = hyperparams["dimension"]
