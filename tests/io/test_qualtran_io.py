@@ -82,7 +82,9 @@ class TestFromBloq:
         with pytest.raises(ValueError, match="The length of wires must"):
             qml.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
 
-    @pytest.mark.xfail(reason="Fails since CZPowGate does not have a decomposition in Qualtran v0.5")
+    @pytest.mark.xfail(
+        reason="Fails since CZPowGate does not have a decomposition in Qualtran v0.5"
+    )
     def test_allocated_and_freed_wires(self):
         """Tests that FromBloq properly handles bloqs that have allocate and free qubits"""
 
