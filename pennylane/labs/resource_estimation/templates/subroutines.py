@@ -1459,6 +1459,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
             select_clean_prefactor * 2 * (num_groups - 1)
         )  # conjugate 0 controlled toffolis
         gate_types[cnot] = select_clean_prefactor * (num_groups - 1)
+        # gate_types[toffoli] = select_clean_prefactor * 2 * (num_groups - 1)
         gate_types[t] = select_clean_prefactor * 4 * (num_groups - 1)
 
         gate_types[cnot] += (
