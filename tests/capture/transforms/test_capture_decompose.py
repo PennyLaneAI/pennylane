@@ -20,7 +20,6 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
-    adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
