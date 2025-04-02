@@ -118,14 +118,13 @@
 
 * Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
   ```python
-  from qualtran.bloqs.basic_gates import CNOT
+  >>> from qualtran.bloqs.basic_gates import CNOT
   
-  # Execute on device
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
-  def circuit():
-      qml.FromBloq(CNOT(), wires=[0, 1])
-      return qml.state()
+  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...    qml.FromBloq(CNOT(), wires=[0, 1])
+  ...    return qml.state()
   
   >>> circuit()
   array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
