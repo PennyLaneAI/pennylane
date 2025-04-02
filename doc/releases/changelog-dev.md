@@ -984,6 +984,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Bug fixes 🐛</h3>
 
+* PennyLane is now compatible with `pyzx 0.9`.
+  [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
+
 * Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
   [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
