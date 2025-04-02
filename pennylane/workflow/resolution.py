@@ -122,7 +122,10 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
+    mcm_config: "qml.devices.MCMConfig",
+    device: "qml.devices.Device",
+    interface: Interface,
+    finite_shots: bool,
 ) -> "qml.devices.MCMConfig":
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
@@ -157,6 +160,12 @@ def _resolve_mcm_config(
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
         updated_values["postselect_mode"] = "pad-invalid-samples"
+
+    qml.devices.capabilities.validate_mcm_method(
+        device.capabilities,
+        mcm_config.mcm_method,
+        finite_shots,
+    )
 
     return replace(mcm_config, **updated_values)
 
@@ -265,19 +274,21 @@ def _resolve_execution_config(
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
 
-    # Mid-circuit measurement configuration validation
+    finite_shots = any(tape.shots for tape in tapes)
+    interface = _resolve_interface(execution_config.interface, tapes)
+    updated_values["interface"] = interface
+
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = _resolve_interface(execution_config.interface, tapes)
-    finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
         _resolve_interface(Interface.AUTO, tapes)
         if execution_config.interface == Interface.NUMPY
         else interface
     )
-    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
-
-    updated_values["interface"] = interface
+    # Mid-circuit measurement configuration validation and resolution
+    mcm_config = _resolve_mcm_config(
+        execution_config.mcm_config, device, mcm_interface, finite_shots
+    )
     updated_values["mcm_config"] = mcm_config
 
     execution_config = replace(execution_config, **updated_values)
