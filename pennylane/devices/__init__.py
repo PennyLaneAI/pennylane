@@ -60,6 +60,9 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     DefaultQutritMixed
     LegacyDeviceFacade
 
+.. currentmodule:: pennylane.devices.default_tensor
+.. autoclass:: DefaultTensor
+
 Preprocessing Transforms
 ------------------------
 
