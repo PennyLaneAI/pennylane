@@ -774,9 +774,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Enable `rtol` option in `test_parameter_shift_shot_vec.py::TestHamiltonianExpvalGradients::test_trainable_coeffs` to suppress unexpected stochastic fails.
-  [(#7183)](https://github.com/PennyLaneAI/pennylane/pull/7183)
-
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
