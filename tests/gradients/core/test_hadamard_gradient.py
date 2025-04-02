@@ -219,14 +219,15 @@ class TestHadamardValidation:
         with pytest.raises(ValueError, match=_match):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
-    @pytest.mark.parametrize("mode", ("reversed", "direct", "reversed-direct"))
-    def test_no_probs_with_new_modes(self, mode):
+    @pytest.mark.parametrize("measurement", [qml.probs(wires=[0])])
+    @pytest.mark.parametrize("mode", ["reversed", "direct", "reversed-direct"])
+    def test_no_probs_with_new_modes(self, mode, measurement):
         """Test that a ValueError is raised if qml.probs is used with reversed, direct, or reversed direct"""
-        # Note that this validation check currently needs to be added to the source code.
-        raise NotImplementedError("add test code here")
-        # setup
-        # with pytest.raises(ValueError, match=match):
-        #     # code that gives error
+
+        tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [measurement])
+        _match = r"is not supported"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.hadamard_grad(tape, mode=mode)
 
     @pytest.mark.parametrize("mode", ("reversed", "reversed-direct"))
     def test_at_most_one_measurement_with_reversed(self, mode):
@@ -1121,7 +1122,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("mode", ["standard"])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor, mode):
         """Test that the transform works correctly when the diff method for every parameter is

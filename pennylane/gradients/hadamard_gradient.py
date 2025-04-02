@@ -32,6 +32,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
+    assert_no_probability,
     choose_trainable_param_indices,
 )
 from .metric_tensor import _get_aux_wire
@@ -293,6 +294,8 @@ def hadamard_grad(
         raise NotImplementedError(
             "hadamard gradient does not support multiple measurements with partitioned shots."
         )
+    if mode in ['reversed', 'direct', 'reversed-direct']:
+        assert_no_probability(tape.measurements, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

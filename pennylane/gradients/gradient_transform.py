@@ -81,6 +81,19 @@ def assert_no_variance(measurements, transform_name):
             "gradient transform is not supported."
         )
 
+def assert_no_probability(measurements, transform_name):
+    """Check whether a set of measurements contains a probability measurement
+    raise an error if this is the case.
+
+    Args:
+        measurements (list[MeasurementProcess]): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the measurements
+    """
+    if any(isinstance(m, ProbabilityMP) for m in measurements):
+        raise ValueError(
+            f"Computing the gradient of probabilities with the {transform_name} "
+            "gradient transform is not supported."
+        )
 
 def assert_no_trainable_tape_batching(tape, transform_name):
     """Check whether a tape is broadcasted and raise an error if this is the case.
