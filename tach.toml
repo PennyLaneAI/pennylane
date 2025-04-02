@@ -129,6 +129,10 @@ layer = "tertiary"
 path = "pennylane.drawer"
 layer = "tertiary"
 
+[[modules]]
+path = "pennylane.shadows"
+layer = "tertiary"
+
 ## UNSORTED
 # Due to circular import problems, these modulesbelow have incorrect dependencies and need to be 
 # parsed and fixed accordingly.
@@ -187,9 +191,6 @@ depends_on = ["pennylane.wires", "pennylane"]
 path = "pennylane.capture"
 depends_on = ["pennylane.measurements", "pennylane.control_flow", "pennylane.workflow", "pennylane", "pennylane.ops"]
 
-[[modules]]
-path = "pennylane.shadows"
-depends_on = ["pennylane.tape", "pennylane.typing", "pennylane"]
 
 [[modules]]
 path = "pennylane.measurements"

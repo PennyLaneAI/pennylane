@@ -19,10 +19,17 @@ from itertools import product
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.measurements import shadow_expval
+from pennylane.ops import X, Y, Z
+from pennylane.ops.functions import matrix
+from pennylane.ops.identity import I
+from pennylane.queuing import AnnotatedQueue, apply
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+
+from .classical_shadow import ClassicalShadow
 
 
 @transform
@@ -32,10 +39,10 @@ def _replace_obs(
     """
     Tape transform to replace the measurement processes with the given one
     """
-    with qml.queuing.AnnotatedQueue() as q:
+    with AnnotatedQueue() as q:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
-            qml.apply(op)
+            apply(op)
 
         # queue the new observable
         obs(*args, **kwargs)
@@ -62,18 +69,18 @@ def _shadow_state_diffable(tape, wires):
     for w in wires_list:
         observables = []
         # Create all combinations of possible Pauli products P_i P_j P_k.... for w wires
-        for obs in product(*[[qml.Identity, qml.X, qml.Y, qml.Z] for _ in range(len(w))]):
+        for obs in product(*[[I, X, Y, Z] for _ in range(len(w))]):
             # Perform tensor product (((P_i @ P_j) @ P_k ) @ ....)
             observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
         all_observables.extend(observables)
 
-    tapes, _ = _replace_obs(tape, qml.shadow_expval, all_observables)
+    tapes, _ = _replace_obs(tape, shadow_expval, all_observables)
 
     def post_processing_fn(results):
         """Post process the classical shadows."""
         results = results[0]
         # cast to complex
-        results = qml.math.cast(results, np.complex64)
+        results = math.cast(results, np.complex64)
 
         states = []
         start = 0
@@ -81,14 +88,14 @@ def _shadow_state_diffable(tape, wires):
             # reconstruct the state given the observables and the expectations of
             # those observables
 
-            obs_matrices = qml.math.stack(
+            obs_matrices = math.stack(
                 [
-                    qml.math.cast_like(qml.math.convert_like(qml.matrix(obs), results), results)
+                    math.cast_like(math.convert_like(matrix(obs), results), results)
                     for obs in all_observables[start : start + 4 ** len(w)]
                 ]
             )
 
-            s = qml.math.einsum(
+            s = math.einsum(
                 "a,abc->bc", results[start : start + 4 ** len(w)], obs_matrices
             ) / 2 ** len(w)
             states.append(s)
@@ -106,9 +113,9 @@ def _shadow_state_undiffable(tape, wires):
 
     def post_processing(results):
         bits, recipes = results[0]
-        shadow = qml.shadows.ClassicalShadow(bits, recipes)
+        shadow = ClassicalShadow(bits, recipes)
 
-        states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
+        states = [math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
         return states if isinstance(wires[0], list) else states[0]
 
     return [tape], post_processing
