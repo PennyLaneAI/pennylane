@@ -71,6 +71,16 @@ class _Config:
         b_is_occupied = self.cwire_layers[bit][0] < layer <= self.cwire_layers[bit][-1]
         return "═" if self.cur_layer < self.num_op_layers and b_is_occupied else " "
 
+    @property
+    def n_bits(self) -> int:
+        """The number of bits."""
+        return len(self.bit_map)
+
+    @property
+    def n_wires(self) -> int:
+        """The number of wires."""
+        return len(self.wire_map)
+
 
 def _initialize_wire_and_bit_totals(
     config: _Config, show_wire_labels: bool
@@ -79,7 +89,7 @@ def _initialize_wire_and_bit_totals(
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in config.wire_map]
     else:
-        wire_totals = [""] * len(config.wire_map)
+        wire_totals = [""] * config.n_wires
     line_length = max(len(s) for s in wire_totals)
 
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
@@ -97,13 +107,9 @@ def _initialize_layer_str(config: _Config) -> list[str]:
         ['─', '─', '─', ' ', ' ']
 
     """
-    n_wires = len(config.wire_map)
-    n_bits = len(config.bit_map)
-
-    # Create initial strings for the current layer using wire and cwire fillers
-    layer_str = [config.wire_filler] * n_wires + [config.bit_filler(b) for b in config.bit_map.values()]
-
-    return layer_str
+    return [config.wire_filler] * config.n_wires + [
+        config.bit_filler(b) for b in range(config.n_bits)
+    ]
 
 
 def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
@@ -125,16 +131,17 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
 
     """
     max_label_len = max(len(s) for s in layer_str)
-    n_wires = len(config.wire_map)
 
-    for w in range(n_wires):
+    for w in range(config.n_wires):
         layer_str[w] = layer_str[w].ljust(max_label_len, config.wire_filler)
 
     # Adjust width for bit filler on unused bits
-    for b in range(len(config.bit_map)):
+    for b in range(config.n_bits):
         # needs filler for next layer, as adding to the right of this one
         cur_b_filler = config.bit_filler(b, next_layer=True)
-        layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
+        layer_str[b + config.n_wires] = layer_str[b + config.n_wires].ljust(
+            max_label_len, cur_b_filler
+        )
 
     return layer_str
 
@@ -144,11 +151,11 @@ def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentT
     totals.finished_lines += totals.wire_totals + totals.bit_totals
     totals.finished_lines[-1] += "\n"
 
-    totals.wire_totals = [config.wire_filler] * len(config.wire_map)
+    totals.wire_totals = [config.wire_filler] * config.n_wires
 
     # Bit totals for new lines for warped drawings need to be consistent with the
     # current bit filler
-    totals.bit_totals = [config.bit_filler(b) for b in range(len(config.bit_map))]
+    totals.bit_totals = [config.bit_filler(b) for b in range(config.n_bits)]
 
     return totals
 
@@ -167,15 +174,16 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     Returns:
         Updated totals with the current layer added
     """
-    n_wires = len(config.wire_map)
-    n_bits = len(config.bit_map)
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
-        config.wire_filler.join([t, s]) for t, s in zip(totals.wire_totals, layer_str[:n_wires])
+        config.wire_filler.join([t, s])
+        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings
-    for j, (bt, s) in enumerate(zip(totals.bit_totals, layer_str[n_wires : n_wires + n_bits])):
+    for j, (bt, s) in enumerate(
+        zip(totals.bit_totals, layer_str[config.n_wires : config.n_wires + config.n_bits])
+    ):
         totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
     return totals
@@ -184,8 +192,7 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
 def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     """Add ending characters to separate the operation layers from the measurement layers"""
     totals.wire_totals = [f"{s}─┤" for s in totals.wire_totals]
-    n_bits = len(config.bit_map)
-    for b in range(n_bits):
+    for b in range(config.n_bits):
         if config.cwire_layers[b][-1] >= config.num_op_layers:
             totals.bit_totals[b] += "═╡"
         else:
