@@ -276,14 +276,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   should be considered static when capturing the quantum program.
   [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
-* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow).
-  This method is only used when capture is enabled with `qml.capture.enable()`.
-  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
-  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
-  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
-  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
-  [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
-
 * Autograph can now be used with custom operations defined outside of the pennylane namespace.
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
@@ -297,10 +289,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
   of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
-
-* Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
-  that return new dynamically shaped arrays.
-  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
 
 * Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
   [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
@@ -355,9 +343,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * With program capture enabled, `QNode`'s can now be differentiated with `diff_method="finite-diff"`.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-
-* The requested `diff_method` is now validated when program capture is enabled.
-  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
@@ -618,16 +603,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `null.qubit` can now execute jaxpr.
   [(#6924)](https://github.com/PennyLaneAI/pennylane/pull/6924)
 
-<h4>Other improvements</h4>
-
-* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
-  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
-
-* `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
-  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
-
-* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+<h4>QNode improvements</h4>
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
@@ -683,9 +659,31 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
                   convert_to_numpy=True)
   ```
 
-* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
-  is greater than `0.4.28`.
-  [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
+* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+<h4>Other improvements</h4>
+
+* `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
+  [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
+
+* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
+* The requested `diff_method` is now validated when program capture is enabled.
+  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
+  that return new dynamically shaped arrays.
+  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
+
+* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow).
+  This method is only used when capture is enabled with `qml.capture.enable()`.
+  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
+  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
+  [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
 
 * Improves support when specifying wires as type `jax.numpy.ndarray` if program capture is enabled.
   [(#7108)](https://github.com/PennyLaneAI/pennylane/pull/7108)
@@ -705,6 +703,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * `qml.qchem.taper` now handles wire ordering for the tapered observables more robustly.
   [(#6954)](https://github.com/PennyLaneAI/pennylane/pull/6954)
+
+* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
+  is greater than `0.4.28`.
+  [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
 
 * Bump `rng_salt` to `v0.40.0`.
   [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
