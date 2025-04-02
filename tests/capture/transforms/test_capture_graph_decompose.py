@@ -209,7 +209,6 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.CNOT(wires=[2, 0]),
         ]
 
-    @pytest.mark.xfail(reason="DecomposeInterpreter cannot handle adjoint transforms [sc-87096]")
     @pytest.mark.integration
     def test_decompose_adjoint(self):
         """Tests that an adjoint operation is decomposed."""
@@ -244,12 +243,11 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.CNOT(wires=[1, 0]),
             qml.RZ(0.1, wires=[0]),
             qml.CNOT(wires=[1, 0]),
-            qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
-            qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
             qml.RX(qml.math.array(-0.1, like="jax"), wires=[0]),
+            qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
+            qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
         ]
 
-    @pytest.mark.xfail(reason="DecomposeInterpreter cannot handle adjoint transforms [sc-87096]")
     @pytest.mark.integration
     def test_adjoint_transform(self):
         """Tests that an adjoint transform can be decomposed correctly."""
@@ -267,7 +265,7 @@ class TestDecomposeInterpreterGraphEnabled:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
-            qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
-            qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
             qml.RX(qml.math.array(-0.1, like="jax"), wires=[0]),
+            qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
+            qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
         ]
