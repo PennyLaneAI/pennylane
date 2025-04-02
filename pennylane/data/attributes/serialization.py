@@ -23,7 +23,7 @@ from pennylane.measurements.shots import Shots
 from pennylane.typing import JSON
 from pennylane.wires import Wires
 
-from .pytrees import PyTreeStructure, get_typename, get_typename_type, leaf
+from ...pytrees.pytrees import PyTreeStructure, get_typename, get_typename_type, leaf
 
 
 @overload

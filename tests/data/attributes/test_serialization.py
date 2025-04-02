@@ -32,7 +32,7 @@ from pennylane.pytrees.pytrees import (
     typename_to_type,
     unflatten_registrations,
 )
-from pennylane.pytrees.serialization import pytree_structure_dump, pytree_structure_load
+from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.wires import Wires
 
 
