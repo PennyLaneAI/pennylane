@@ -194,6 +194,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The qchem functions that accept a string input have been updated to consistently work with both
+  lower-case and upper-case inputs.
+  [(#7186)](https://github.com/PennyLaneAI/pennylane/pull/7186)
+
 * `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
@@ -980,6 +984,7 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Diego Guala,
 Austin Huang,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
