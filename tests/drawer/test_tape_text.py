@@ -361,7 +361,6 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
         """Test adding the first MidMeasureMP to array of strings"""
-        print(out)
         config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=0)
         assert out == _add_obj(op, layer_str, config)
 
