@@ -234,7 +234,6 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
 
     # Return the full density matrix if all the wires are given, potentially permuted
     if len(indices) == num_indices:
-        # pylint: disable =protected-access
         return _permute_dense_matrix(density_matrix, consecutive_indices, indices, batch_dim)
 
     if batch_dim is None:
