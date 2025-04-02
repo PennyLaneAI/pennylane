@@ -762,29 +762,42 @@ jobs:
       - data-tests
       - device-tests
 
-    # Run this if any of the test jobs failed
-    if: >-
-      ${{
-        always() &&
-        (contains(join(needs.*.result, ','), 'failure') ||
-         contains(join(needs.*.conclusion, ','), 'failure') ||
-         contains(join(needs.*.status, ','), 'failure'))
-      }}
+    # Run this job regardless of previous job results
+    if: always()
 
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
+      - name: Check for test failures
+        id: check_failures
+        # This exposes the raw JSON of all job results to parse for failures
+        run: |
+          echo "Job results: ${{ toJSON(needs) }}" >> $GITHUB_STEP_SUMMARY
+
+          # Check if the JSON contains any failure status
+          if [[ "${{ toJSON(needs) }}" == *"failure"* ]]; then
+            echo "Found failures in test jobs"
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+          else
+            echo "No failures detected in test jobs"
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Only run the rest of the job if we detected failures
       - name: Checkout repository
+        if: steps.check_failures.outputs.has_failures == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
 
       - name: Download Artifacts
+        if: steps.check_failures.outputs.has_failures == 'true'
         uses: actions/download-artifact@v4
         with:
           pattern: test-report-*
           path: .github/test-reports
 
       - name: Upload Test Failure Reports
+        if: steps.check_failures.outputs.has_failures == 'true'
         env:
           PENNYLANE_OSS_SERVER_ENDPOINT_URL: ${{ secrets.test_report_server_endpoint_url }}
           PENNYLANE_OSS_SERVER_API_KEY: ${{ secrets.test_report_server_api_key }}
