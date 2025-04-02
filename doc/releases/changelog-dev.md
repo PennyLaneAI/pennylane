@@ -230,6 +230,7 @@
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
