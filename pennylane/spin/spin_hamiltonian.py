@@ -473,6 +473,7 @@ def emery(
 
     hamiltonian = hopping_term + coulomb_term + intersite_term
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
@@ -614,6 +615,7 @@ def haldane(
                     math.exp(-1j * phi_term) * FermiWord({(0, s2): "+", (1, s1): "-"})
                 )
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."

@@ -582,7 +582,7 @@ def _molecular_hamiltonian(
         )
 
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
-        mapping = mapping.strip().lower()
+
         qubits = len(hf.wires)
 
         if mapping == "jordan_wigner":
