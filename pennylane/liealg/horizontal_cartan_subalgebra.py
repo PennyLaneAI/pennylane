@@ -76,7 +76,7 @@ def horizontal_cartan_subalgebra(
     Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
 
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
-    Note that this is sometimes called a horizontal CSA, and is different from the `other definitions of a CSA<https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
+    Note that this is sometimes called a horizontal CSA, and is different from the `other definitions of a CSA <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
 
     The final decomposition yields
 
