@@ -664,6 +664,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Other improvements</h4>
 
+* `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
+  [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
+
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
