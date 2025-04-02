@@ -110,6 +110,7 @@
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+  [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -193,6 +194,9 @@
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 
 <h3>Improvements 🛠</h3>
+
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
@@ -635,6 +639,52 @@
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
+* Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
+  [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
+
+* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``RealspaceMatrix``
+  [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
+
+* Adding functions for Trotter error estimation and Hamiltonian fragment generation: ``trotter_error``, ``perturbation_error``, ``vibrational_fragments``, ``vibronic_fragments``, and ``generic_fragments``.
+  [(#7036)](https://github.com/PennyLaneAI/pennylane/pull/7036)
+
+  As an example we compute the peruturbation error of a vibrational Hamiltonian.
+  First we generate random harmonic frequences and Taylor coefficients to iniitialize the vibrational Hamiltonian.
+
+  ```pycon
+  >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
+  >>> import numpy as np
+  >>> n_modes = 2
+  >>> r_state = np.random.RandomState(42)
+  >>> freqs = r_state.random(n_modes)
+  >>> taylor_coeffs = [
+  >>>     np.array(0),
+  >>>     r_state.random(size=(n_modes, )),
+  >>>     r_state.random(size=(n_modes, n_modes)),
+  >>>     r_state.random(size=(n_modes, n_modes, n_modes))
+  >>> ]
+  ```
+    
+  We call ``vibrational_fragments`` to get the harmonic and anharmonic fragments of the vibrational Hamiltonian.
+  ```pycon
+  >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+  ```
+
+  We build state vectors in the harmonic oscilator basis with the ``HOState`` class. 
+
+  ```pycon
+  >>> gridpoints = 5
+  >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
+  >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
+  ```
+
+  Finally, we compute the error by calling ``perturbation_error``.
+
+  ```pycon
+  >>> perturbation_error(frags, [state1, state2])
+  [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
@@ -726,6 +776,18 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Clean up logic in `qml.drawer.tape_text`
+  [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
+
+* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+  [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
+
+* All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
+  [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
+
+* The error message when device wires are not specified when program capture is enabled is more clear.
+  [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
+
 * Clean up logic in `_capture_qnode.py`.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
@@ -789,6 +851,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Typos were fixed in the docstring for `qml.QubitUnitary`.
+  [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
+
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 
@@ -818,6 +883,9 @@
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+  [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
@@ -923,6 +991,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
