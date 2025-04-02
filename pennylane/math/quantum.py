@@ -1201,7 +1201,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
 
     # Cannot be cast_like if jit
     if not math.is_abstract(state0):
-        state1 = math.cast_like((state1, state0))
+        state1 = math.cast_like(state1, state0)
 
     if check_state:
         # pylint: disable=expression-not-assigned
@@ -1500,7 +1500,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
 
     # Cannot be cast_like if jit
     if not math.is_abstract(state0):
-        state1 = math.cast_like((state1, state0))
+        state1 = math.cast_like(state1, state0)
 
     if check_state:
         _check_density_matrix(state0)
