@@ -28,9 +28,9 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
-
+# pylint: disable=unused-argument
 @lru_cache
-def _get_to_pl_op():  # pylint: disable=unused-argument
+def _get_to_pl_op():  
 
     @singledispatch
     def _to_pl_op(bloq, wires):
