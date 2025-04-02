@@ -430,10 +430,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             ["─"] * 4,
             config,
         )
-        assert out == _add_obj(
-            op,
-            start,
-        )
+        assert out == _add_obj(op, start, config)
 
     def test_add_obj_cache(self):
         """Test private _add_obj method functions with a matrix cache."""
