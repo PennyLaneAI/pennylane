@@ -196,7 +196,7 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.adjoint` can be now applied in the execution pipeline for program capture.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#7192)](https://github.com/PennyLaneAI/pennylane/pull/7192)
 
 * `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
