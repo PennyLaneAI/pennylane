@@ -164,7 +164,6 @@ from .legacy_facade import LegacyDeviceFacade
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
-from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit
 from .default_qutrit import DefaultQutrit
