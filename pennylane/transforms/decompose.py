@@ -44,7 +44,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.capture.primitives import ctrl_transform_prim
+        from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
     except ImportError:  # pragma: no cover
@@ -71,6 +71,19 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     work_wires=self.work_wires,
                 )
             super().interpret_operation(ctrl_op)
+
+    class AdjointTransformInterpreter(qml.capture.PlxprInterpreter):
+        """Interpreter for replacing adjoint transforms with individually adjoint ops."""
+
+        def __init__(self, lazy):
+            super().__init__()
+            self.lazy = lazy
+
+        def interpret_operation(self, op):
+            """Interpret operation."""
+            with qml.capture.pause():
+                adj_op = qml.adjoint(op, lazy=self.lazy)
+            super().interpret_operation(adj_op)
 
     # pylint: disable=too-many-instance-attributes
     class DecomposeInterpreter(qml.capture.PlxprInterpreter):
@@ -357,6 +370,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def wrapper(*inner_args):
             return unroller.eval(jaxpr, consts, *inner_args)
+
+        jaxpr = jax.make_jaxpr(wrapper)(*args)
+        return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+    @DecomposeInterpreter.register_primitive(adjoint_transform_prim)
+    def _(self, *invals, jaxpr, lazy, n_consts):
+        consts = invals[:n_consts]
+        args = invals[n_consts:]
+
+        def wrapper(*inner_args):
+            return AdjointTransformInterpreter(lazy=lazy).eval(jaxpr, consts, *inner_args)
 
         jaxpr = jax.make_jaxpr(wrapper)(*args)
         return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)

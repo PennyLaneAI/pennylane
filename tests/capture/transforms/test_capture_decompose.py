@@ -292,15 +292,15 @@ class TestDecomposeInterpreter:
             qml.adjoint(g, lazy=lazy)(x, y, z)
 
         jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[0].params["lazy"] == lazy
+        assert len(jaxpr.eqns) == 6
 
-        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert inner_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert inner_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[0].primitive.name == "neg"
+        assert jaxpr.eqns[1].primitive.name == "neg"
+        assert jaxpr.eqns[2].primitive.name == "neg"
+
+        assert jaxpr.eqns[3].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[4].primitive == qml.RY._primitive
+        assert jaxpr.eqns[5].primitive == qml.RZ._primitive
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
