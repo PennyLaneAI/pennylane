@@ -4,76 +4,159 @@
 
 <h3>New features since last release</h3>
 
-<h4>Gate-set Targeted Decompositions 🔎</h4>
+<h4>Resource-efficient decompositions 🔎</h4>
 
-* A new module called `qml.decomposition` that contains PennyLane's new experimental graph-based 
-  gate-set-targeted decomposition system has been added.
-  [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
+module. 
+[(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+[(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+[(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
+[(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
+[(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
+[(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 
-  * A decomposition rule in the new system is defined as a quantum function that declares its own
-    resource requirements using `qml.register_resources`.
-    ```python
-    import pennylane as qml
+PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
+better resource efficiency and versatility by traversing an internal graph structure that is weighted 
+by the resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
-    @qml.register_resources({qml.H: 2, qml.CZ: 1})
-    def my_cnot(wires):
-        qml.H(wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.H(wires=wires[1])
-    ```
+This new system is experimental and is disabled by default, but it can be enabled by adding `qml.decompositions.enable_graph()` 
+to the top of your program. Conversely, `qml.decompositions.disable_graph` disables the new system from 
+being active.
 
-  * Operators with dynamic resource requirements must be declared in a resource estimate using `qml.resource_rep`.
-    ```python
-    import pennylane as qml
+With `qml.decompositions.enable_graph()`, the following new features are available:
 
-    def _resource_fn(num_wires):
-        return {
-            qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 1,
-            qml.resource_rep(qml.MultiRZ, num_wires=3): 2
-        }
-    
-    @qml.register_resources(_resource_fn)
-    def my_decomp(thata, wires):
-        qml.MultiRZ(theta, wires=wires[:3])
-        qml.MultiRZ(theta, wires=wires[1:])
-        qml.MultiRZ(theta, wires=wires[:3])
-    ```
+* Operators in PennyLane can now accommodate multiple decompositions, which can be queried with the 
+  new `qml.list_decomps` function:
 
-  * The new system allows multiple decomposition rules to be registered for the same operator. 
-    Use `qml.add_decomps` to register a decomposition with an operator; use `qml.list_decomps`
-    to inspect all known decompositions for an operator.
-    ```pycon
-    >>> import pennylane as qml
-    >>> qml.list_decomps(qml.CRX)
-    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
-    >>> print(qml.list_decomps(qml.CRX)[0])
-    @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.RX(-phi / 2, wires=wires[1])
-        qml.CZ(wires=wires)
-    >>> qml.list_decomps(qml.CRX)[0].compute_resources()
-    {qml.RX: 2, qml.CZ: 2}
-    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
-    0: ───────────╭●────────────╭●─┤
-    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
-    ```
-* Decomposition rules are implemented using the new infrastructure for most PennyLane operators excluding templates.
-  [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+  ```pycon
+  >>> import pennylane as qml
+  >>> qml.decomposition.enable_graph()
+  >>> qml.list_decomps(qml.CRX)
+  [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
+    <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
+    <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+  >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  ```
 
-* A graph-based decomposition solver has been implemented that solves for the optimal decomposition
-  rule to use for an operator towards a target gate set.
-  [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
-  [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
-  [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
-  [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
+  When an operator within a circuit needs to be decomposed (e.g., when `qml.transforms.decompose` is 
+  present), the chosen decomposition rule is that which leads to the most resource efficient set of 
+  gates (i.e., the least amount of gates produced).
 
-* Integrate the graph-based decomposition solver with `qml.transforms.decompose`.
+* New decomposition rules can be globally added to operators in PennyLane with the new `qml.add_decomps` 
+  function. Creating a valid decomposition rule requires:
+
+  * Defining quantum function that represents the decomposition.
+  * Adding resource requirements (gate counts) to the above quantum function by decorating it with the 
+    new `qml.register_resources` function, which requires a dictionary mapping operator types present 
+    in the quantum function to their number of occurrences.
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
+  def my_cnot(wires):
+      qml.H(wires=wires[1])
+      qml.CZ(wires=wires)
+      qml.H(wires=wires[1])
+
+  qml.add_decomps(qml.CNOT, my_cnot)
+  ```
+
+  This newly added rule for `qml.CNOT` can be verified as being available to use:
+
+  ```pycon
+  >>> my_new_rule = qml.list_decomps(qml.CNOT)[-1]
+  >>> print(my_new_rule)
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
+  def my_cnot(wires):
+      qml.H(wires=wires[1])
+      qml.CZ(wires=wires)
+      qml.H(wires=wires[1])
+  ```
+
+  Operators with dynamic resource requirements must be declared in a resource estimate using the new
+  `qml.resource_rep` function. For each operator class, the set of parameters that affects the type 
+  of gates and their number of occurrences in its decompositions is given by the `resource_keys` attribute.
+
+  ```pycon
+  >>> qml.MultiRZ.resource_keys
+  {'num_wires'}
+  ```
+
+  The output of `resource_keys` indicates that custom decompositions for the operator should be registered 
+  to a resource function (as opposed to a static dictionary) that accepts those exact arguments and 
+  returns a dictionary. Consider this dummy example of a ficticious decomposition rule comprising three 
+  `qml.MultiRZ` gates:
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  def resource_fn(num_wires):
+      return {
+          qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 1,
+          qml.resource_rep(qml.MultiRZ, num_wires=3): 2
+      }
+  
+  @qml.register_resources(resource_fn)
+  def my_decomp(theta, wires):
+      qml.MultiRZ(theta, wires=wires[:3])
+      qml.MultiRZ(theta, wires=wires[1:])
+      qml.MultiRZ(theta, wires=wires[:3])
+  ```
+
+  More information for defining complex decomposition rules can be found in the documentation for `qml.register_resources`.
+
+* The `qml.transforms.decompose` transform works when the new decompositions system is enabled, and 
+  offers the ability to inject new decomposition rules via two new keyword arguments:
+
+  * `fixed_decomps`: decomposition rules provided to this keyword argument are guaranteed to be used 
+    by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
+  * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
+    rules that the new system may choose if they're the most resource efficient.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+
+  Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
+  Here is an example of both keyword arguments in use:
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+  def my_isingxx(phi, wires, **__):
+      qml.CNOT(wires=wires)
+      qml.RX(phi, wires=[wires[0]])
+      qml.CNOT(wires=wires)
+
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
+  def my_cnot(wires, **__):
+      qml.H(wires=wires[1])
+      qml.CZ(wires=wires)
+      qml.H(wires=wires[1])
+
+  @partial(
+      qml.transforms.decompose,
+      gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+      alt_decomps={qml.CNOT: my_cnot},
+      fixed_decomps={qml.IsingXX: my_isingxx},
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.CNOT(wires=[0, 1])
+      qml.IsingXX(0.5, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([ 9.68912422e-01+2.66934210e-16j, -1.57009246e-16+3.14018492e-16j,
+        8.83177008e-17-2.94392336e-17j,  5.44955495e-18-2.47403959e-01j])
+  ```
+
+  More details about using `fixed_decomps` and `alt_decomps` can be found in the usage details section
+  in the `qml.transforms.decompose` documentation.
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
