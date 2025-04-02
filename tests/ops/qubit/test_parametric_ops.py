@@ -661,6 +661,8 @@ class TestDecompositions:
 
         expected_mat = qml.matrix(op, wire_order=wires)
         decomp_mat = qml.matrix(decomp_op, wire_order=wires)
+        print(expected_mat)
+        print(decomp_mat)
         assert np.allclose(expected_mat, decomp_mat)
 
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)

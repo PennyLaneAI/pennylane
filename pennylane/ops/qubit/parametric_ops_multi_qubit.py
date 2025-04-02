@@ -732,14 +732,67 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     return R
 
 
-def _ctrl(ops, control_wires, control_values, work_wires):
-    """Shortcut to apply ``qml.ctrl`` to a list of operations, and to skip it if the
-    control wires and values have length 0."""
-    assert len(control_wires) == len(control_values)
+def _ctrl_phase_shift(phi, wire, subspace, control_data):
+    r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
+    target qubit/wire.
+
+    Args:
+        phi (float): Phase shift angle
+        wire (~.Wires): Target wire
+        subspace (int): which subspace of the target wire the phase shift is applied to. 0 or 1.
+        control_data (tuple): A three-tuple containing control wires, control values, and work
+            wires of the ((multi-)controlled) phase shift gate.
+
+    Returns:
+        list[~.Operation]: The operations implementing the phase shift.
+
+    The decomposition for subspace=1 always is a simple ``PhaseShift`` gate, or its controlled
+    counterpart.
+    The decomposition of a non-controlled phase shift for subspace=0 can be achieved in two ways: 
+    The first is to flip the angle of the phase shift and complementing it with a global phase,
+    so that the (diagonal of the) gate is decomposed as
+
+    .. math::
+
+        (\exp(i\phi), 1) = (1, \exp(-i\phi)) (\exp(i\phi), \exp(i\phi)).
+
+    The second is to conjugate a phase shift by Pauli-X operators on the same qubit, decomposing
+    the gate matrix as
+
+    / e^(i\phi)   0 \ _ / 0   1 \/ 1     0     \/ 0   1 \
+    \     0       1 / ¯ \ 1   0 /\ 0 e^(i\phi) /\ 1   0 /.
+
+    Without controls, the first approach is nicer, because global phases usually are free
+    operations. With controls, however, this approach would lead to a controlled global
+    phase, which is equivalent to a phase shift on top of the controlled phase shift required
+    anyways. For the second approach, we may use the ctrl(compute-uncompute) pattern to avoid
+    controlling the Pauli-X operations, yielding two non-controlled Pauli-X gates and the
+    "main" controlled phase shift operation. We deem this decomposition to be better.
+
+    Note that such considerations will be less relevant in the new decomposition framework in
+    PennyLane.
+    """
+    control_wires, control_values, work_wires = control_data
+    if subspace == 1:
+        base_op = qml.PhaseShift(phi, wires=wire)
+        if len(control_wires) == 0:
+            return [base_op]
+        return [qml.ctrl(base_op, control_wires, control_values, work_wires)]
 
     if len(control_wires) == 0:
-        return ops
-    return [qml.ctrl(op, control_wires, control_values, work_wires) for op in ops]
+        # Flip angle for phase_shift(subspace=0) = phase_shift(subspace=1)*global_phase
+        phase_shift = qml.PhaseShift(-phi, wires=wire)
+        return [phase_shift, qml.GlobalPhase(-phi, wires=wire)]
+    return [
+        qml.X(wire),
+        qml.ctrl(
+            qml.PhaseShift(phi, wires=wire),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        ),
+        qml.X(wire),
+    ]
 
 
 class PCPhase(Operation):
@@ -859,7 +912,7 @@ class PCPhase(Operation):
             return r
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
+        prefactors = qml.math.array([1] * d + [-1] * (t - d), like=phi)
 
         if qml.math.ndim(arg) == 0:
             return qml.math.diag(qml.math.exp(arg * prefactors))
@@ -879,7 +932,7 @@ class PCPhase(Operation):
             return stack_last([phase if index < d else minus_phase for index in range(t)])
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
+        prefactors = qml.math.array([1] * d + [-1] * (t - d), like=phi)
 
         if qml.math.ndim(phi) == 0:
             product = arg * prefactors
@@ -946,14 +999,14 @@ class PCPhase(Operation):
         for i, (c_i, wire) in enumerate(zip(powers_of_two, wires, strict=True)):
             # Remove newly considered wire from work_wires
             work_wires = work_wires[1:]
-            # Projector with rank 2**(n-1-i) needs to be added
             if c_i != 0:
-                # The following phase shift and global phase together produce a phase shift
-                # on the correct subspace (i.e., the global phase moves the phase shift to |0>)
-                base_ops = [qml.PhaseShift(-2 * phi, wires=wire)]
-                if (flipped and c_i < 0) or (not flipped and c_i > 0):
-                    base_ops.append(qml.GlobalPhase(-2 * phi, wire))
-                decomp.extend(_ctrl(base_ops, control_wires, control_values, work_wires))
+                # Projector with rank 2**(n-1-i) needs to be added/subtracted
+                subspace = 0 if (flipped and c_i < 0) or (not flipped and c_i > 0) else 1
+                # The sign is flipped for subspace=0
+                angle = (-1) ** subspace * 2 * phi
+                control_data = (control_wires, control_values, work_wires)
+                ops = _ctrl_phase_shift(angle, wire, subspace, control_data)
+                decomp.extend(ops)
 
             # Now that the effect on the current wire is fixed, we will only add more fine-grained
             # projectors (i.e. smaller rank), and they will be controlled on the current wire
