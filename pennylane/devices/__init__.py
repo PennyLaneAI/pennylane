@@ -60,8 +60,10 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     LegacyDeviceFacade
 
 .. currentmodule:: pennylane.devices.default_tensor
-.. autoclass:: DefaultTensor
-    :noindex:
+.. autosummary::
+    :toctree: api
+
+    DefaultTensor
 
 Preprocessing Transforms
 ------------------------
