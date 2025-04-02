@@ -396,7 +396,6 @@ class FromBloq(Operation):
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
                 ghost_wires = [f"alloc_free_{val}" for val in total_wires if val >= len(wires)]
                 op = _get_to_pl_op()(binst.bloq, mapped_wires + ghost_wires)
-                print(op)
                 if op:
                     ops.append(op)
         except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
