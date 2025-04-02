@@ -137,7 +137,7 @@ class CompressedResourceOp:
 
 def _make_hashable(d):
     if isinstance(d, dict):
-        return tuple((k, _make_hashable(v)) for k, v in d.items())
+        return tuple(sorted(((k, _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]))
     if hasattr(d, "tolist"):
         return d.tolist()
     return d
@@ -361,7 +361,7 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if not qml.math.is_abstract(z) and (not _is_integer(z) or z < 0):
+    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
         raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
