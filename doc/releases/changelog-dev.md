@@ -194,8 +194,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.PCPhase` now is decomposed significantly more efficiently for more than 2-3 qubits.
+* `qml.PCPhase` now is decomposed significantly more efficiently for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
+* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
@@ -875,6 +878,9 @@
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+  [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
