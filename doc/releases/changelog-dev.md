@@ -110,6 +110,7 @@
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+  [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
@@ -849,6 +850,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Typos were fixed in the docstring for `qml.QubitUnitary`.
+  [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
+
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 
@@ -878,6 +882,9 @@
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+  [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
@@ -983,6 +990,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
