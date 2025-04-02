@@ -874,6 +874,9 @@
 * The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
+* The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
+  [(#7174)](https://github.com/PennyLaneAI/pennylane/pull/7174)
+
 <h3>Bug fixes 🐛</h3>
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
@@ -983,5 +986,6 @@ Joseph Lee,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 David Wierichs
