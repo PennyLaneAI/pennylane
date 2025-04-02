@@ -15,12 +15,15 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 from collections import defaultdict
+from functools import cached_property
 
 import numpy as np
 
 import pennylane as qml
+
+from attrs import frozen
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
 try:
     import qualtran as qt
@@ -337,3 +340,34 @@ class FromBloq(Operation):
             raise MatrixUndefinedError
 
         return matrix
+    
+@frozen
+class ToBloq(qt.Bloq):
+    r"""
+    Adapter class to convert PennyLane operators into Qualtran Bloqs
+    """
+    op: Operation
+
+    @cached_property
+    def signature(self) -> 'qt.Signature':
+        num_wires = len(self.op.wires)
+        if num_wires == 1:
+            return qt.Signature([qt.Register('wires', qt.QBit(), shape=())])
+        return qt.Signature([qt.Register('wires', qt.QBit(), shape=num_wires)])
+
+    def build_composite_bloq(self, bb, **kwargs):
+        try:
+            ops = self.op.decomposition()
+        except:
+            raise TypeError
+        
+        for op in ops:
+            pass
+
+
+
+
+    def __str__(self):
+        return "PL" + self.op.name
+
+
