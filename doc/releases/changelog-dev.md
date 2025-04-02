@@ -782,6 +782,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Clean up logic in `qml.drawer.tape_text`
+  [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
+
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
