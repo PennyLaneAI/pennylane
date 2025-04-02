@@ -54,7 +54,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     Device
     DefaultMixed
     DefaultQubit
-    DefaultTensor
     NullQubit
     ReferenceQubit
     DefaultQutritMixed
