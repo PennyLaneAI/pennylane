@@ -20,7 +20,7 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 import inspect
 import logging
 from dataclasses import replace
-from functools import singledispatch
+from functools import lru_cache, singledispatch
 from numbers import Number
 from typing import Optional, Union
 
@@ -64,7 +64,14 @@ def _zero_measurement(
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
         shape = (batch_size,) + shape
+    if "jax" not in interface:
+        return _cached_zero_return(shape, interface, mp.numeric_type)
     return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+
+
+@lru_cache(maxsize=128)
+def _cached_zero_return(shape, interface, dtype):
+    return math.zeros(shape, like=interface, dtype=dtype)
 
 
 @zero_measurement.register
