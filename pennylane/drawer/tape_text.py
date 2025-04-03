@@ -68,17 +68,12 @@ class _Config:
     def bit_filler(self, bit, next_layer: bool = False) -> str:
         """The filler character for bits at the current layer and the designated bit."""
         layer = self.cur_layer + 1 if next_layer else self.cur_layer
-        bit_is_occupied = False
-        # Iterate over different usages of the same classical wire
+        if self.cur_layer >= self.num_op_layers:
+            return " "
         for layer_stretch in self.cwire_layers[bit]:
-            if layer <= layer_stretch[0]:
-                # If smaller than start layer of this cwire usage, bit is currently not used
-                break
-            if layer <= layer_stretch[-1]:
-                # Was not smaller than start layer but is smaller than end layer: bit is used
-                bit_is_occupied = True
-                break
-        return "═" if self.cur_layer < self.num_op_layers and bit_is_occupied else " "
+            if layer_stretch[0] < layer <= layer_stretch[-1]:
+                return "═"
+        return " "
 
     @property
     def n_bits(self) -> int:
