@@ -17,8 +17,9 @@ Internally, program capture is supported by representing hybrid programs via a n
 intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
 ``plxpr`` IR is an adaptation of JAX's ``jaxpr`` IR.
 
-Our vision with ``plxpr`` is to supplant the quantum tape as our default program 
-representation, and to support *more* than just the core features of PennyLane.
+Our vision with ``plxpr`` is for it to be a vessel for unifying Catalyst with PennyLane, 
+and to support the versatility required for hybrid quantum-classical compilation 
+and dynamic programs.
 
 There are some **quirks and restrictions to be aware of while we strive towards 
 that ideal**. Additionally, we've added backward compatibility features that make 
