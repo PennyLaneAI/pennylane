@@ -34,6 +34,7 @@ visibility = []
 ## CORE modules
 # These modules are fundamental, and should not have any dependent modulesin lower levels.
 
+
 [[modules]]
 path = "pennylane.kernels"
 depends_on = ["pennylane.math"]
@@ -154,6 +155,10 @@ layer = "tertiary"
 # parsed and fixed accordingly.
 
 [[modules]]
+path = "pennylane.transforms.core"
+depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
+
+[[modules]]
 path = "pennylane.gradients"
 depends_on = ["pennylane.circuit_graph", "pennylane.typing", "pennylane.measurements", "pennylane.transforms", "pennylane.pulse", "pennylane.ops", "pennylane", "pennylane.queuing", "pennylane.devices", "pennylane.tape"]
 
@@ -181,10 +186,9 @@ depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "penn
 path = "pennylane.qchem"
 depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops", "pennylane.pauli", "pennylane.bose", "pennylane.numpy"]
 
-
 [[modules]]
 path = "pennylane.transforms"
-depends_on = ["pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
+depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
 
 [[modules]]
 path = "pennylane.circuit_graph"
@@ -197,7 +201,6 @@ depends_on = ["pennylane.wires", "pennylane"]
 [[modules]]
 path = "pennylane.capture"
 depends_on = ["pennylane.measurements", "pennylane.control_flow", "pennylane.workflow", "pennylane", "pennylane.ops"]
-
 
 [[modules]]
 path = "pennylane.measurements"
@@ -239,7 +242,6 @@ depends_on = ["pennylane.operation", "pennylane"]
 path = "pennylane.control_flow"
 depends_on = ["pennylane.typing", "pennylane.compiler", "pennylane.capture"]
 
-
 [[modules]]
 path = "pennylane.data"
 depends_on = ["pennylane", "pennylane.pytrees", "pennylane.math", "pennylane.operation", "pennylane.typing", "pennylane.wires", "pennylane.qchem", "pennylane.measurements"]
@@ -250,8 +252,8 @@ depends_on = ["pennylane.gradients", "pennylane.resource", "pennylane.decomposit
 
 [[modules]]
 path = "pennylane.devices"
-depends_on = ["pennylane.operation", "pennylane.templates", "pennylane.ops", "pennylane.queuing", "pennylane.measurements", "pennylane.math", "pennylane.pulse", "pennylane.numpy", "pennylane.pauli", "pennylane.capture", "pennylane.wires", "pennylane", "pennylane.tape", "pennylane.transforms", "pennylane.resource", "pennylane.typing", "pennylane._version", "pennylane.logging"]
+depends_on = ["pennylane.operation", "pennylane.templates", "pennylane.ops", "pennylane.queuing", "pennylane.measurements", "pennylane.math", "pennylane.pulse", "pennylane.numpy", "pennylane.pauli", "pennylane.capture", "pennylane.wires", "pennylane", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane.resource", "pennylane.typing", "pennylane._version", "pennylane.logging"]
 
 [[modules]]
 path = "pennylane.workflow"
-depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.logging", "pennylane.tape", "pennylane.transforms", "pennylane", "pennylane.debugging", "pennylane.typing", "pennylane.math"]
+depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.logging", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane", "pennylane.debugging", "pennylane.typing", "pennylane.math"]
