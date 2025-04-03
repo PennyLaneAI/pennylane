@@ -29,10 +29,10 @@ from .gradient_transform import (
     _contract_qjac_with_cjac,
     _no_trainable_grad,
     _try_zero_grad_from_graph_or_get_grad_method,
+    assert_no_probability,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
-    assert_no_probability,
     choose_trainable_param_indices,
 )
 from .metric_tensor import _get_aux_wire
