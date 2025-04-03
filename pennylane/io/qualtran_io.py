@@ -251,7 +251,6 @@ class FromBloq(Operation):
     ... def circuit():
     ...     qml.FromBloq(CNOT(), wires=[0, 1])
     ...     return qml.state()
-
     >>> circuit()
     array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
@@ -284,6 +283,7 @@ class FromBloq(Operation):
                 return qml.sample()
 
             print(f"The ket representation of the sum of 3 and 4 is {sum(3,4)}")
+            The ket representation of the sum of 3 and 4 is [0 1 1 1]
     """
 
     def __init__(self, bloq, wires: WiresLike):
