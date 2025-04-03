@@ -309,9 +309,42 @@ class TestDifferentModes:
 
     def test_reversed_direct_mode(self):
         """Directly test tht batch output of applying the reversed direct mode of hadamard gradient."""
-        # Similar to tests above, directly create a `QuantumScript`, but it through the transform
-        # and check it against the expected QuantumScirpt batch
-        raise NotImplementedError("add test code here")
+        tape = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1))], [qml.expval(qml.X(0) + qml.Y(0))], shots=50
+        )
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed-direct")
+        assert len(batch) == 4
+
+        expected_H = qml.IsingXY(0.5, wires=(0, 1)).generator()
+        expected0 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), np.pi/4)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[0], expected0)
+
+        expected1 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), -np.pi/4)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[1], expected1)
+
+        expected2 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), np.pi/4)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[2], expected2)
+
+        expected3 = qml.tape.QuantumScript(
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), -np.pi/4)],
+            [qml.expval(expected_H)],
+            shots=50,
+        )
+        qml.assert_equal(batch[3], expected3)
+
+        assert qml.math.allclose(fn((1.0,)), 1.0)
 
     def test_reversed_mode_hadamard_obs(self):
         """Test that reversed mode can handle measuring an observable that does not have a pauli rep."""
