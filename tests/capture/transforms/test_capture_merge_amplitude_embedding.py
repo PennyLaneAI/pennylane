@@ -543,6 +543,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[0].params["lazy"] == lazy
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+
         assert len(inner_jaxpr.eqns) == 2
         assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
