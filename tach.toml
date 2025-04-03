@@ -170,90 +170,115 @@ layer = "tertiary"
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
 
+# An unchecked module should be thought of as a ‘known’ module which does not have any restriction on its dependencies.
+# Please remove unchecked modules from this list as you fix them.
+
 [[modules]]
 path = "pennylane.transforms.core"
 depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.gradients"
 depends_on = ["pennylane.circuit_graph", "pennylane.typing", "pennylane.measurements", "pennylane.transforms", "pennylane.pulse", "pennylane.ops", "pennylane", "pennylane.queuing", "pennylane.devices", "pennylane.tape"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.operation"
 depends_on = ["pennylane.typing", "pennylane", "pennylane.math", "pennylane.wires", "pennylane.queuing", "pennylane.pytrees", "pennylane.capture"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.ops"
 depends_on = ["pennylane.tape", "pennylane.typing", "pennylane.transforms", "pennylane.math", "pennylane.wires", "pennylane.measurements", "pennylane", "pennylane.templates", "pennylane.compiler", "pennylane.capture", "pennylane.numpy", "pennylane.pauli", "pennylane.pulse", "pennylane.decomposition", "pennylane.operation", "pennylane.queuing"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.tape"
 depends_on = ["pennylane.measurements", "pennylane.queuing", "pennylane.capture", "pennylane", "pennylane.typing", "pennylane.pytrees", "pennylane.operation", "pennylane.wires"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.qcut"
 depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.wires", "pennylane.measurements", "pennylane.numpy", "pennylane.typing", "pennylane.transforms", "pennylane", "pennylane.tape", "pennylane.pauli"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.qchem"
 depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops", "pennylane.pauli", "pennylane.bose", "pennylane.numpy"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.transforms"
 depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.qaoa"
 depends_on = ["pennylane.wires", "pennylane"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.capture"
 depends_on = ["pennylane.measurements", "pennylane.control_flow", "pennylane.workflow", "pennylane", "pennylane.ops"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.measurements"
 depends_on = ["pennylane.wires", "pennylane.typing", "pennylane.pytrees", "pennylane.operation", "pennylane.capture", "pennylane", "pennylane.math"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.pauli"
 depends_on = ["pennylane", "pennylane.wires", "pennylane.math", "pennylane.ops", "pennylane.typing", "pennylane.operation"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.debugging"
 depends_on = ["pennylane.tape", "pennylane", "pennylane.transforms", "pennylane.typing"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.resource"
 depends_on = ["pennylane.measurements", "pennylane", "pennylane.operation", "pennylane.qchem"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.pulse"
 depends_on = ["pennylane.wires", "pennylane.typing", "pennylane.operation", "pennylane", "pennylane.ops"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.qnn"
 depends_on = ["pennylane"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.optimize"
 depends_on = ["pennylane.numpy", "pennylane.typing", "pennylane._grad", "pennylane.tape", "pennylane", "pennylane.measurements"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.noise"
 depends_on = ["pennylane.templates", "pennylane.ops", "pennylane.boolean_fn", "pennylane", "pennylane.measurements", "pennylane.operation", "pennylane.wires"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.decomposition"
 depends_on = ["pennylane.operation", "pennylane"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.templates"
 depends_on = ["pennylane.gradients", "pennylane.resource", "pennylane.decomposition", "pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane", "pennylane.qchem", "pennylane.math", "pennylane.wires"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.devices"
 depends_on = ["pennylane.operation", "pennylane.templates", "pennylane.ops", "pennylane.queuing", "pennylane.measurements", "pennylane.math", "pennylane.pulse", "pennylane.numpy", "pennylane.pauli", "pennylane.capture", "pennylane.wires", "pennylane", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane.resource", "pennylane.typing", "pennylane._version", "pennylane.logging"]
+unchecked = true
 
 [[modules]]
 path = "pennylane.workflow"
 depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.logging", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane", "pennylane.debugging", "pennylane.typing", "pennylane.math"]
+unchecked = true
