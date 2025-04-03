@@ -15,6 +15,7 @@
 # pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
 from collections import OrderedDict
+from fractions import Fraction
 from functools import partial
 
 import numpy as np
@@ -380,8 +381,7 @@ def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):
 
         # Apply wires and parameters
         map_gate = gate_types[name]
-
-        args = [*op.wires, *(p / np.pi for p in op.parameters)]
+        args = [*op.wires, *(Fraction(p / np.pi).limit_denominator() for p in op.parameters)]
 
         gate = map_gate(*args)
         gate.to_graph(graph, q_mapper, c_mapper)

@@ -155,9 +155,9 @@ class TestSpectralNormError:
                 return self.__class__.__name__
 
         approx_op = MyOp(0)
-        exact_op = qml.RX(0.1, 1)
+        exact_op = qml.RX(0.1, 0)
 
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
+        with pytest.raises(qml.operation.MatrixUndefinedError):
             SpectralNormError.get_error(approx_op, exact_op)
 
     def test_repr(self):

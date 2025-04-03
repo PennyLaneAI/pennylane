@@ -19,6 +19,7 @@ from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
+import scipy as sp
 from gate_data import CNOT, H, I
 from gate_data import Rotx as RX
 from gate_data import Roty as RY
@@ -49,6 +50,41 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 
 class TestSingleOperation:
+
+    def test_unsupported_operator(self):
+        """Test that an error is raised when the operator is not supported, that means,
+        it is an operator without matrix, sparse matrix or decomposition defined."""
+
+        class CustomOp(qml.operation.Operation):
+            has_matrix = False
+            has_sparse_matrix = False
+            has_decomposition = False
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, param, wires):
+                super().__init__(param, wires=wires)
+
+        dummy_op = CustomOp(0.5, wires=0)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="Operator must define a matrix, sparse matrix, or decomposition",
+        ):
+            qml.matrix(dummy_op)
+
+    @pytest.mark.parametrize("op_class", [qml.QubitUnitary])
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    def test_sparse_operators_supported(self, op_class, n_wires):
+        """Test that sparse operators are supported and directly output as dense."""
+        matrix = X
+        for _ in range(n_wires - 1):
+            matrix = np.kron(matrix, X)
+        X_csr = sp.sparse.csr_matrix(matrix)
+        op = op_class(X_csr, wires=range(n_wires))
+        res = qml.matrix(op)
+        assert np.allclose(res, matrix, atol=0, rtol=0)
+
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct

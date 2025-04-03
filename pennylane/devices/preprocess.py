@@ -312,7 +312,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``,
             the operator should be decomposed. If an operator cannot be decomposed and is not
             accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
-            specified by the ``error`` keyward argument).
+            specified by the ``error`` keyword argument).
 
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If

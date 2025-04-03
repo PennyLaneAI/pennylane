@@ -92,7 +92,7 @@ class QubitUnitary(Operation):
 
     .. warning::
 
-        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including ..method::`adjoint`, ..method::`pow`, ..method::`compute_sparse_matrix` and ..method::`compute_decomposition`. Differentiability is not supported for sparse matrices.
+        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including :func:`~.adjoint`, :func:`~.pow`, :meth:`~.QubitUnitary.compute_sparse_matrix` and :meth:`~.QubitUnitary.compute_decomposition`. Differentiability is not supported for sparse matrices.
 
     **Details:**
 
