@@ -29,7 +29,7 @@ from .channel import (
 )
 from .matrix_ops import QutritUnitary, ControlledQutritUnitary
 from .non_parametric_ops import TShift, TClock, TAdd, TSWAP, THadamard
-from .parametric_ops import TRX, TRY, TRZ
+from .parametric_ops import TRX, TRY, TRZ, validate_subspace
 from .observables import THermitian, GellMann
 from .state_preparation import QutritBasisState
 
