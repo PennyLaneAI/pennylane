@@ -393,7 +393,8 @@ def draw_mpl(
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
         the function will draw the QNode as a tuple of (``matplotlib.figure.Figure``,
-        ``matplotlib.axes._axes.Axes``)
+        ``matplotlib.axes._axes.Axes``). If ``max_length`` is less than the number of layers,
+        a list of tuples containing the figures and axes will be returned instead.
 
     .. warning::
 

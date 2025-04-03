@@ -278,9 +278,12 @@ class TestKwargs:
         assert len(ax1.patches) == 5
         assert len(ax2.patches) == 8  # three for measure box
 
-        assert ax0.texts[-1].get_text() == "..."
-        assert ax1.texts[-1].get_text() == "..."
+        assert ax0.texts[-1].get_text() == "···"
+        assert ax1.texts[-1].get_text() == "···"
         assert ax2.texts[-1].get_text() == "X"
+
+        assert ax1.texts[1].get_text() == "···"
+        assert ax2.texts[1].get_text() == "···"
 
 
 class TestWireBehaviour:

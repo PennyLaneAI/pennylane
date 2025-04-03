@@ -21,7 +21,7 @@ images.  If you change the docstring examples, please update this file.
 # pylint: disable=no-member
 from collections import namedtuple
 from functools import singledispatch
-from typing import Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane import ops
@@ -216,7 +216,7 @@ def _get_measured_bits(measurements, bit_map, offset):
     return measured_bits
 
 
-def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
+def _draw_layers(layers, measurements, bit_map, wire_map, starting_dots=False, **kwargs):
     """Private function drawing the given layers."""
     n_layers = len(layers)
     n_wires = len(wire_map)
@@ -229,6 +229,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
         c_wires=len(bit_map),
         wire_options=kwargs.get("wire_options", None),
         fig=kwargs.get("fig", None),
+        starting_dots=starting_dots,
     )
 
     config = _Config(
@@ -261,7 +262,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, **kwargs):
             drawer.ax.text(
                 n_layers + 0.25,
                 wire,
-                s="...",
+                s="···",
                 ha="center",
                 va="center_baseline",
                 fontsize=21,
@@ -307,6 +308,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
             measurements=tape.measurements if i + max_length >= layer_count else "dots",
             bit_map=bit_map,
             wire_map=wire_map,
+            starting_dots=i > 0,
             **kwargs,
         )
         for i in range(0, layer_count, max_length)
@@ -315,13 +317,13 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
 
 # pylint: disable=too-many-arguments
 def tape_mpl(
-    tape,
-    wire_order=None,
-    show_all_wires=False,
-    decimals=None,
-    style=None,
+    tape: qml.tape.QuantumScript,
+    wire_order: Optional[Sequence] = None,
+    show_all_wires: bool = False,
+    decimals: Optional[int] = None,
+    style: Optional[str] = None,
     *,
-    fig=None,
+    fig: Optional["mpl.figure.Figure"] = None,
     max_length: Optional[int] = None,
     **kwargs,
 ):
@@ -351,9 +353,13 @@ def tape_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
+        max_length (Optional[int]): When there is more than ``max_length`` layers, additional plots
+            will be produced with at most ``max_length`` individual layers.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
+        If ``max_length`` is less than the required number of layers, a list of tuples containing the figures
+        and axes will be returned instead.
 
     **Example:**
 
