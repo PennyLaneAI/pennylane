@@ -961,6 +961,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Documentation 📝</h3>
 
+* The :doc:`Compiling Circuits page <introduction/compiling_circuits>` has been updated to include information
+  on using the new experimental decompositions system.
+  [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
+
 * The docstring for `qml.transforms.decompose` now recommends the `qml.clifford_t_decomposition` 
   transform when decomposing to the Clifford + T gate set.
   [(#7177)](https://github.com/PennyLaneAI/pennylane/pull/7177)
