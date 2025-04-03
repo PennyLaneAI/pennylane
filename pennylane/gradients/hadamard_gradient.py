@@ -294,9 +294,9 @@ def hadamard_grad(
         raise NotImplementedError(
             "hadamard gradient does not support multiple measurements with partitioned shots."
         )
-    if mode in ['reversed', 'direct', 'reversed-direct']:
+    if mode in ["reversed", "direct", "reversed-direct"]:
         assert_no_probability(tape.measurements, transform_name)
-    if mode in ['reversed', 'reversed-direct']:
+    if mode in ["reversed", "reversed-direct"]:
         if len(tape.measurements) > 1:
             raise NotImplementedError(
                 "Reversed hadamard gradient does not support multiple measurements."
@@ -310,7 +310,9 @@ def hadamard_grad(
     # Validate or get default for aux_wire
     # unless using direct or reversed-direct modes
 
-    aux_wire = _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
+    aux_wire = (
+        _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
+    )
 
     g_tapes = []
     coeffs = []
@@ -360,6 +362,7 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
         new_batch.append(new_tape)
     return new_batch, sub_coeffs
 
+
 def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
@@ -375,8 +378,8 @@ def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, li
     new_batch = []
     new_coeffs = []
     for idx, gen in enumerate(generators):
-        pos_rot = [qml.evolve(gen, np.pi/4)]
-        neg_rot = [qml.evolve(gen, -np.pi/4)]
+        pos_rot = [qml.evolve(gen, np.pi / 4)]
+        neg_rot = [qml.evolve(gen, -np.pi / 4)]
         pos_ops = ops_to_trainable_op + pos_rot + ops_after_trainable_op
         neg_ops = ops_to_trainable_op + neg_rot + ops_after_trainable_op
 
@@ -384,16 +387,17 @@ def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, li
         neg_tape = qml.tape.QuantumScript(neg_ops, measurements, shots=tape.shots)
         new_batch.append(pos_tape)
         new_batch.append(neg_tape)
-        new_coeffs.append(-1/2 * sub_coeffs[idx])
-        new_coeffs.append(1/2 * sub_coeffs[idx])
+        new_coeffs.append(-1 / 2 * sub_coeffs[idx])
+        new_coeffs.append(1 / 2 * sub_coeffs[idx])
     return new_batch, new_coeffs
+
 
 def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
     ops_before_trainable_op = tape.operations[:]
-    ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1:])]
+    ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1 :])]
 
     # Create measurement with gate generators
     mp = qml.expval(trainable_op.generator() @ qml.Y(aux_wire))
@@ -414,12 +418,13 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
         new_batch.append(new_tape)
     return new_batch, coeffs
 
+
 def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
     ops_before_trainable_op = tape.operations[:]
-    ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1:])]
+    ops_after_trainable_op = [qml.adjoint(op) for op in reversed(tape.operations[idx + 1 :])]
 
     # Create measurement with gate generators
     measurements = [qml.expval(trainable_op.generator())]
@@ -431,8 +436,8 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     new_batch = []
     new_coeffs = []
     for idx, obs in enumerate(observables):
-        pos_rot = [qml.evolve(obs, np.pi/4)]
-        neg_rot = [qml.evolve(obs, -np.pi/4)]
+        pos_rot = [qml.evolve(obs, np.pi / 4)]
+        neg_rot = [qml.evolve(obs, -np.pi / 4)]
         pos_ops = ops_before_trainable_op + pos_rot + ops_after_trainable_op
         neg_ops = ops_before_trainable_op + neg_rot + ops_after_trainable_op
 
@@ -440,14 +445,16 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
         neg_tape = qml.tape.QuantumScript(neg_ops, measurements, shots=tape.shots)
         new_batch.append(pos_tape)
         new_batch.append(neg_tape)
-        new_coeffs.append(1/2 * coeffs[idx])
-        new_coeffs.append(-1/2 * coeffs[idx])
+        new_coeffs.append(1 / 2 * coeffs[idx])
+        new_coeffs.append(-1 / 2 * coeffs[idx])
     return new_batch, new_coeffs
+
 
 def _new_measurement(mp, aux_wire, all_wires: qml.wires.Wires):
     obs = mp.obs or qml.prod(*(qml.Z(w) for w in mp.wires or all_wires))
     new_obs = qml.simplify(obs @ qml.Y(aux_wire))
     return type(mp)(obs=new_obs)
+
 
 def _get_pauli_terms(op):
     """Extract the Pauli terms (generators) and their coefficients for an operator.
@@ -473,7 +480,12 @@ def _get_pauli_terms(op):
         del pauli_rep[qml.pauli.PauliWord({})]
 
     # qml.PauliZ has no defined terms() behavior
-    return pauli_rep.operation().terms() if isinstance(pauli_rep.operation(), qml.ops.op_math.Sum) else (1 * pauli_rep.operation()).terms()
+    return (
+        pauli_rep.operation().terms()
+        if isinstance(pauli_rep.operation(), qml.ops.op_math.Sum)
+        else (1 * pauli_rep.operation()).terms()
+    )
+
 
 def _get_pauli_generators(trainable_op):
     """From a trainable operation, extract the unitary generators and their coefficients.

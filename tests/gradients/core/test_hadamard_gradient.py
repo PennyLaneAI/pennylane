@@ -235,8 +235,7 @@ class TestHadamardValidation:
         with reversed and reversed-direct methods."""
 
         tape = qml.tape.QuantumScript(
-            [qml.RX(0.543, 0), qml.RY(-0.654, 0)],
-            [qml.expval(qml.Z(0)), qml.expval(qml.X(0))]
+            [qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))]
         )
         with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape, mode=mode)
@@ -281,25 +280,25 @@ class TestDifferentModes:
         measurement = tape.measurements
 
         expected0 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0) @ qml.X(1), np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0) @ qml.X(1), np.pi / 4)],
             measurement,
             shots=50,
         )
         qml.assert_equal(batch[0], expected0)
         expected1 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0) @ qml.X(1), -np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0) @ qml.X(1), -np.pi / 4)],
             measurement,
             shots=50,
         )
         qml.assert_equal(batch[1], expected1)
         expected2 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0) @ qml.Y(1), np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0) @ qml.Y(1), np.pi / 4)],
             measurement,
             shots=50,
         )
         qml.assert_equal(batch[2], expected2)
         expected3 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0) @ qml.Y(1), -np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0) @ qml.Y(1), -np.pi / 4)],
             measurement,
             shots=50,
         )
@@ -317,28 +316,28 @@ class TestDifferentModes:
 
         expected_H = qml.IsingXY(0.5, wires=(0, 1)).generator()
         expected0 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), np.pi / 4)],
             [qml.expval(expected_H)],
             shots=50,
         )
         qml.assert_equal(batch[0], expected0)
 
         expected1 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), -np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.X(0), -np.pi / 4)],
             [qml.expval(expected_H)],
             shots=50,
         )
         qml.assert_equal(batch[1], expected1)
 
         expected2 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), np.pi / 4)],
             [qml.expval(expected_H)],
             shots=50,
         )
         qml.assert_equal(batch[2], expected2)
 
         expected3 = qml.tape.QuantumScript(
-            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), -np.pi/4)],
+            [qml.IsingXY(0.5, wires=(0, 1)), qml.evolve(qml.Y(0), -np.pi / 4)],
             [qml.expval(expected_H)],
             shots=50,
         )
@@ -382,13 +381,13 @@ class TestDifferentModes:
             expected0 = qml.tape.QuantumScript(
                 [qml.RX(0.5, 0), qml.evolve(ob, np.pi / 4)], [qml.expval(H)]
             )
-            qml.assert_equal(expected0.measurements[0].obs, batch[2*i].measurements[0].obs)
-            qml.assert_equal(batch[2*i], expected0)
+            qml.assert_equal(expected0.measurements[0].obs, batch[2 * i].measurements[0].obs)
+            qml.assert_equal(batch[2 * i], expected0)
             expected1 = qml.tape.QuantumScript(
                 [qml.RX(0.5, 0), qml.evolve(ob, -np.pi / 4)], [qml.expval(H)]
             )
-            qml.assert_equal(expected1.measurements[0].obs, batch[2*i+1].measurements[0].obs)
-            qml.assert_equal(batch[2*i+1], expected1)
+            qml.assert_equal(expected1.measurements[0].obs, batch[2 * i + 1].measurements[0].obs)
+            qml.assert_equal(batch[2 * i + 1], expected1)
 
             out = fn((1.0, 2.0, 3.0, 4.0))
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
