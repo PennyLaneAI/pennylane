@@ -17,17 +17,8 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 from collections import defaultdict
 from functools import cached_property
 from typing import (
-    cast,
-    Collection,
     Dict,
-    Iterable,
     List,
-    Optional,
-    overload,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
 )
 
 import numpy as np
@@ -36,7 +27,7 @@ import pennylane as qml
 
 from attrs import frozen
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
-from pennylane.wires import WiresLike, Wires
+from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
@@ -380,7 +371,7 @@ def _ensure_in_reg_exists(
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
         qreg_to_qvar[
-            _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else QAny(n_alloc))
+            _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
         ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
