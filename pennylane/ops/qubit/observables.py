@@ -155,7 +155,7 @@ class Hermitian(Observable):
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
+            w, U = np.linalg.eig(Hmat)
             Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
         return Hermitian._eigs[Hkey]
