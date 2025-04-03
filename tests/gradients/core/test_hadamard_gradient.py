@@ -108,6 +108,10 @@ def cost12(x):
 class TestHadamardValidation:
     """Test validation of edge cases with the hadamard gradient."""
 
+    def test_invalid_mode(self):
+        """Test that a ValueError is raised if an invalid mode is provided."""
+        raise NotImplementedError("add test here")
+
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
@@ -397,7 +401,7 @@ class TestDifferentModes:
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
         tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
-        batch, _ = qml.gradients.hadamard_grad(tape, mode=mode, device_wires=qml.wires.Wires(0))
+        _ = qml.gradients.hadamard_grad(tape, mode=mode, device_wires=qml.wires.Wires(0))
 
 
 # pylint: disable=too-many-public-methods
