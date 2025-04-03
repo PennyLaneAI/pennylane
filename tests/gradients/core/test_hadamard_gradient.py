@@ -108,9 +108,13 @@ def cost12(x):
 class TestHadamardValidation:
     """Test validation of edge cases with the hadamard gradient."""
 
-    def test_invalid_mode(self):
+    @pytest.mark.parametrize("mode", ["invalid-mode"])
+    def test_invalid_mode(self, mode):
         """Test that a ValueError is raised if an invalid mode is provided."""
-        raise NotImplementedError("add test here")
+        tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0))])
+        _match = r"Invalid mode"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.hadamard_grad(tape, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
