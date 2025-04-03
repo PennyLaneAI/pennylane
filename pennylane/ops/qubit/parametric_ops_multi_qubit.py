@@ -966,9 +966,10 @@ class PCPhase(Operation):
         about figuring out the right control structure to realize the correct positioning
         according to :math:`s_i` and :math:`e_i`.
 
-        Initialize empty lists of control wires and control values, corresponding to :math:`s_0=0`.
-        Then, starting at :math:`i=0`, which also marks the current wire, go through
-        the integer decomposition :math:`\{c_i\}_i` from above and perform the following steps:
+        To begin, initialize empty lists of control wires and control values, corresponding
+        to :math:`s_0=0`. Then, starting at :math:`i=0`, which also marks the current wire,
+        go through the integer decomposition :math:`\{c_i\}_i` from above and perform the
+        following steps:
 
         1. If :math:`c_i=0`, go to step 2 immediately. Else, we want to
            add/subtract computational basis state projectors to the decomposition. The number of
@@ -1041,37 +1042,36 @@ class PCPhase(Operation):
             :math:`s`. In each such scenario, a single addition or subtraction to :math:`s`
             suffices to set the bits of :math:`s` to those of :math:`d`:
 
-            .. list-table::
-              :widths: 5 5 5 5 5
-              :align: center
-              :header-rows: 1
-              :stub-columns: 1
+            .. list-table:: Simultaneously setting two bits in :math:`s` to match :math:`d`
+               :widths: 5 5 5 5 5
+               :align: center
+               :header-rows: 1
 
-              * -
-                - :math:`d=00`
-                - :math:`d=01`
-                - :math:`d=10`
-                - :math:`d=11`
-              * - :math:`s=00`
-                - —
-                - :math:`+1`
-                - —
-                - :math:`-1`
-              * - :math:`s=01`
-                - :math:`-1`
-                - —
-                - :math:`+1`
-                - —
-              * - :math:`s=10`
-                - —
-                - :math:`-1`
-                - —
-                - :math:`+1`
-              * - :math:`s=11`
-                - :math:`+1`
-                - —
-                - :math:`-1`
-                - —
+               * -
+                 - :math:`d=00`
+                 - :math:`d=01`
+                 - :math:`d=10`
+                 - :math:`d=11`
+               * - :math:`s=00`
+                 - —
+                 - :math:`+1`
+                 - —
+                 - :math:`-1`
+               * - :math:`s=01`
+                 - :math:`-1`
+                 - —
+                 - :math:`+1`
+                 - —
+               * - :math:`s=10`
+                 - —
+                 - :math:`-1`
+                 - —
+                 - :math:`+1`
+               * - :math:`s=11`
+                 - :math:`+1`
+                 - —
+                 - :math:`-1`
+                 - —
 
             Now let's lay out the algorithm itself. We will use this operation in step 3 below.
 
