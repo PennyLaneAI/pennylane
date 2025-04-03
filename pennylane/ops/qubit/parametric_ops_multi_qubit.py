@@ -752,7 +752,7 @@ class PCPhase(Operation):
     [0.96+0.27j 0.96+0.27j 0.96+0.27j 0.96-0.27j 0.96-0.27j 0.96-0.27j
      0.96-0.27j 0.96-0.27j]
 
-    We can also choose a different :math:`dim` value to apply the phase shift to a different set of
+    We can also choose a different ``dim`` value to apply the phase shift to a different set of
     basis vectors as follows:
 
     >>> op_7 = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
@@ -760,7 +760,7 @@ class PCPhase(Operation):
     [0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j
      0.33+0.94j 0.33-0.94j]
 
-    ``PCPhase`` operations are decomposed into controlled :class:`~.PhaseShift`,
+    ``PCPhase`` operations are decomposed into (multi-)controlled :class:`~.PhaseShift`
     operations which share the same control values on common control wires, and Pauli-X operations,
     possibly complemented by a global phase.
 
@@ -770,6 +770,18 @@ class PCPhase(Operation):
     2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
     3: ──GlobalPhase(-1.23)────────────├○───────────┤
     4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+
+    If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
+
+    >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
+    >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
+    0: ──GlobalPhase(1.23)────╭○───────────┤
+    1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─┤
+    2: ──GlobalPhase(1.23)─────────────────┤
+    3: ──GlobalPhase(1.23)─────────────────┤
+    4: ──GlobalPhase(1.23)─────────────────┤
+    5: ──GlobalPhase(1.23)─────────────────┤
+
     """
 
     num_wires = AnyWires
@@ -788,10 +800,11 @@ class PCPhase(Operation):
 
         .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
 
-        where :math:`\Pi` is the projector onto the first ``dim`` computational basis states
-        and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
+        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
 
-        Correspondingly, the generator is :math:`2\Pi - \mathbb{I}_N`:
+        Correspondingly, the generator is
+        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
 
         >>> qml.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
         Hermitian(array([[ 1,  0,  0,  0],
@@ -961,13 +974,14 @@ class PCPhase(Operation):
            add/subtract computational basis state projectors to the decomposition. The number of
            projectors :math:`2^{n-1-i}` is stored in the number of control wires that we already
            aggregated. In addition, :math:`s_i` (and thus :math:`e_i`) is encoded in the control
-           *values*, up to whether the projectors should be located in the :math:`|0\rangle`
+           values, up to whether the projectors should be located in the :math:`|0\rangle`
            or :math:`|1\rangle` subspace of the current target wire :math:`i`. If we want to
            add projectors (:math:`c_i=+1`), we append at the beginning of the current subspace,
            so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`),
            we need to remove them from the end of the subspace, so from :math:`|1\rangle`.
            Having figured out the subspace, we add the corresponding projector to the
            decomposition. In code, we immediately apply the corresponding phase gate, see below.
+
         2. Add the current wire :math:`i` to the control wires. The control value to be added
            depends on the current :math:`c_i` and on the next non-zero coefficient, :math:`d_i`.
            For :math:`d_i=+1`, we are going to add more projectors, so we should control into
@@ -985,6 +999,7 @@ class PCPhase(Operation):
            All of this is easily summarized: If the next non-zero coefficient, :math:`d_i`,
            is positive (negative), set the next control value to :math:`1` (:math:`0`). If
            the current coefficient is :math:`c_i=0`, flip the control value.
+
         3. Increment :math:`i` by one. If :math:`i=n`, terminate, else go to step 1.
 
         If :math:`\sigma=-1` instead, i.e., :math:`d>\tfrac{N}{2}`, the start and end points
@@ -1027,35 +1042,36 @@ class PCPhase(Operation):
             suffices to set the bits of :math:`s` to those of :math:`d`:
 
             .. list-table::
-               :widths: 5 5 5 5 5
-               :header-rows: 1
-               :stub-columns: 1
+              :widths: 5 5 5 5 5
+              :align: center
+              :header-rows: 1
+              :stub-columns: 1
 
-               * -
-                 - :math:`d=00`
-                 - :math:`d=01`
-                 - :math:`d=10`
-                 - :math:`d=11`
-               * - :math:`s=00`
-                 - —
-                 - :math:`+1`
-                 - —
-                 - :math:`-1`
-               * - :math:`s=01`
-                 - :math:`-1`
-                 - —
-                 - :math:`+1`
-                 - —
-               * - :math:`s=10`
-                 - —
-                 - :math:`-1`
-                 - —
-                 - :math:`+1`
-               * - :math:`s=11`
-                 - :math:`+1`
-                 - —
-                 - :math:`-1`
-                 - —
+              * -
+                - :math:`d=00`
+                - :math:`d=01`
+                - :math:`d=10`
+                - :math:`d=11`
+              * - :math:`s=00`
+                - —
+                - :math:`+1`
+                - —
+                - :math:`-1`
+              * - :math:`s=01`
+                - :math:`-1`
+                - —
+                - :math:`+1`
+                - —
+              * - :math:`s=10`
+                - —
+                - :math:`-1`
+                - —
+                - :math:`+1`
+              * - :math:`s=11`
+                - :math:`+1`
+                - —
+                - :math:`-1`
+                - —
 
             Now let's lay out the algorithm itself. We will use this operation in step 3 below.
 
@@ -1080,19 +1096,30 @@ class PCPhase(Operation):
             To compute this result, we go through the steps from above:
 
             1. Set :math:`s=00000_2`.
+
             2. Initialize :math:`i=n-1=4` and :math:`R=[]`.
+
             3. :math:`d_4=1=1-s_4`, so look at :math:`d_3=1` as well. The sign at :math:`(00, 11)`
                in the table above is :math:`-1`, so we insert :math:`(4, -1)`
                and compute :math:`s=00000_2 - 00001_2=11111_2`.
+
             4. Update :math:`i=4-1=3`.
+
             5. :math:`d_3=1=s_3`, so we insert :math:`(3, 0)` and move on.
+
             6. Update :math:`i=3-1=2`.
+
             7. :math:`d_2=1=s_2`, so we insert :math:`(2, 0)` and move on.
+
             8. Update :math:`i=2-1=1`.
+
             9. :math:`d_1=0=1-s_1`, and :math:`i=1<2`, so we insert :math:`(1, +1)`
                and compute :math:`s=11111_2 + 01000_2=00111_2=d`.
+
             10. Update :math:`i=1-1=0`.
+
             11. :math:`d_0=0=s_0`, so we insert :math:`(0, 0)` and move on.
+
             12. we have :math:`i=0`, so we terminate.
 
             Overall, this creates the list :math:`R=[(0,0), (1,+1), (2, 0), (3, 0), (4, -1)]`,
