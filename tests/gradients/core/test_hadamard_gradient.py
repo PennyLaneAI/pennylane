@@ -312,7 +312,7 @@ class TestDifferentModes:
         )
         qml.assert_equal(batch[3], expected3)
 
-        assert qml.math.allclose(fn((1.0,2.0, 3.0, 4.0)), 0.5)
+        assert qml.math.allclose(fn((1.0, 2.0, 3.0, 4.0)), 0.5)
 
     def test_reversed_direct_mode(self):
         """Directly test tht batch output of applying the reversed direct mode of hadamard gradient."""
