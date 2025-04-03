@@ -19,9 +19,51 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
-from .channel import *
+from .channel import (
+    AmplitudeDamping,
+    GeneralizedAmplitudeDamping,
+    PhaseDamping,
+    DepolarizingChannel,
+    BitFlip,
+    ResetError,
+    PauliError,
+    PhaseFlip,
+    QubitChannel,
+    ThermalRelaxationError,
+)
 from .channel import __all__ as _channel__ops__
-from .cv import *
+from .cv import (
+    Identity,
+    Snapshot,
+    Beamsplitter,
+    ControlledAddition,
+    ControlledPhase,
+    Displacement,
+    Kerr,
+    CrossKerr,
+    QuadraticPhase,
+    Rotation,
+    Squeezing,
+    TwoModeSqueezing,
+    CubicPhase,
+    InterferometerUnitary,
+    CatState,
+    CoherentState,
+    FockDensityMatrix,
+    DisplacedSqueezedState,
+    FockState,
+    FockStateVector,
+    SqueezedState,
+    ThermalState,
+    GaussianState,
+    QuadOperator,
+    NumberOperator,
+    TensorN,
+    QuadP,
+    QuadX,
+    PolyXP,
+    FockStateProjector,
+)
 from .cv import __all__ as _cv__all__
 from .cv import __obs__ as _cv__obs__
 from .cv import __ops__ as _cv__ops__
