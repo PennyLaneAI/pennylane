@@ -182,7 +182,36 @@ class DoubleFactorization(Operation):
 
     @property
     def lamb(self):
-        r"""Return the 1-Norm of the Hamiltonian."""
+        r"""Return the 1-Norm of the Hamiltonian.
+
+        The 1-norm of a double-factorized molecular Hamiltonian is computed using Eqs. (15-17) of
+        [`Phys. Rev. Research 3, 033055 (2021) <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
+
+        .. math::
+
+            \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
+
+        where the Schatten 1-norm for a given matrix :math:`T` is defined as
+
+        .. math::
+
+            ||T|| = \sum_k |\text{eigvals}[T]_k|.
+
+        The matrices :math:`L^{(r)}` are obtained from factorization of the two-electron integral
+        tensor :math:`V` such that
+
+        .. math::
+
+            V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
+
+        The matrix :math:`T` is constructed from the one- and two-electron integrals as
+
+        .. math::
+
+            T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+
+        The two-electron integral tensor is arranged in chemist notation.
+        """
         return self._lamb
 
     @property
