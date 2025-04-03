@@ -151,7 +151,7 @@ path = "pennylane.fourier"
 layer = "tertiary"
 
 ## UNSORTED
-# Due to circular import problems, these modulesbelow have incorrect dependencies and need to be 
+# Due to circular import problems, these modules below have incorrect dependencies and need to be 
 # parsed and fixed accordingly.
 
 [[modules]]
