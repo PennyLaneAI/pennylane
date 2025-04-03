@@ -38,7 +38,7 @@ def bloq_registers(bloq):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
     The register names in the Qualtran bloq are used for the keys of the dictionary. The values
     are :class:`~.Wires` objects with a length of the total bitsize of its respective register. The
@@ -130,7 +130,7 @@ class FromBloq(Operation):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
@@ -154,17 +154,12 @@ class FromBloq(Operation):
 
     A simple example showcasing how to use ``qml.FromBloq`` inside a device:
 
-    .. code-block::
-
-        from qualtran.bloqs.basic_gates import CNOT
-
-        # Execute on device
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
-        def circuit():
-            qml.FromBloq(CNOT(), wires=[0, 1])
-            return qml.state()
-
+    >>> from qualtran.bloqs.basic_gates import CNOT
+    >>> dev = qml.device("default.qubit")
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.FromBloq(CNOT(), wires=[0, 1])
+    ...     return qml.state()
     >>> circuit()
     array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
@@ -198,10 +193,10 @@ class FromBloq(Operation):
             def circuit():
                 qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
                 return qml.probs(wires=[5, 6, 7])
-
-        >>> circuit()
-        array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
-        0.00290337, 0.00526717, 0.02099701])
+            
+            circuit()
+            array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
+            0.00290337, 0.00526717, 0.02099701])
 
     .. details::
         :title: Usage Details
