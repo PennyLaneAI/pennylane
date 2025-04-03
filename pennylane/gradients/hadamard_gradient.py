@@ -308,7 +308,9 @@ def hadamard_grad(
     trainable_param_indices = choose_trainable_param_indices(tape, argnum)
 
     # Validate or get default for aux_wire
-    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+    # unless using direct or reversed-direct modes
+
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
 
     g_tapes = []
     coeffs = []

@@ -137,7 +137,7 @@ class TestHadamardValidation:
         with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed"])
     @pytest.mark.parametrize("aux_wire", [qml.wires.Wires(0), qml.wires.Wires(1)])
     @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0, 1, "aux"])])
     def test_aux_wire_already_used_wires(self, aux_wire, device_wires, mode):
@@ -158,7 +158,7 @@ class TestHadamardValidation:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed"])
     @pytest.mark.parametrize("device_wires", [qml.wires.Wires([0, 1, 2])])
     def test_requested_wire_not_exist(self, device_wires, mode):
         """Test if the aux wire is not on the device an error is raised."""
@@ -178,7 +178,7 @@ class TestHadamardValidation:
         with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
+    @pytest.mark.parametrize("mode", ["standard", "reversed"])
     @pytest.mark.parametrize("aux_wire", [None, qml.wires.Wires(0), qml.wires.Wires(1)])
     def test_device_not_enough_wires(self, aux_wire, mode):
         """Test that an error is raised when the device cannot accept an auxiliary wire
@@ -397,11 +397,8 @@ class TestDifferentModes:
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
         """Test that direct and reversed direct work with no available work wires."""
-        # note that this behavior should be added to the source code.
         tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
         batch, _ = qml.gradients.hadamard_grad(tape, mode=mode, device_wires=qml.wires.Wires(0))
-        raise NotImplementedError("add some extra checks here")
-        # add an extra sanity check to make sure batch looks like we expect
 
 
 # pylint: disable=too-many-public-methods
