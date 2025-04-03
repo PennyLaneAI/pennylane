@@ -446,6 +446,10 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Applying transforms to a `QNode` now correctly transforms it with program capture enabled, rather than raising a
+  `NotImplementedError`.
+  [(#)]()
+
 * The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
   when capture is enabled.
   [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
