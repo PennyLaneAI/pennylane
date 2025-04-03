@@ -290,7 +290,17 @@ class TestDecomposeInterpreterGraphEnabled:
         # The PLxPR is constructed with the true_fn branch
         jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
         collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(np.pi / 2, wires=[1]),
+            qml.RY(qml.math.array(0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(qml.math.array(-0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(-np.pi / 2, wires=[1]),
+        ]
         # Tests that the false_fn branch is also decomposed
+        collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.2, *[0, 1])
         assert collector.state["ops"] == [
             qml.RZ(qml.math.array(0.1, like="jax"), wires=[1]),
@@ -317,7 +327,17 @@ class TestDecomposeInterpreterGraphEnabled:
         # The PLxPR is constructed with the true_fn branch
         jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
         collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(np.pi / 2, wires=[1]),
+            qml.RY(qml.math.array(0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(qml.math.array(-0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(-np.pi / 2, wires=[1]),
+        ]
         # Tests that the false_fn branch is also decomposed
+        collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.2, *[0, 1])
         assert collector.state["ops"] == [
             qml.RZ(qml.math.array(0.1, like="jax"), wires=[1]),

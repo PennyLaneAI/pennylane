@@ -81,13 +81,13 @@ def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slic
     conditions = invals[:n_branches]
     args = invals[args_slice]
     outvals = ()
-    for _, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = invals[const_slice]
+    for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
+        consts = invals[consts_slice]
         if jaxpr is not None:
             dummy = copy(self).eval(jaxpr, consts, *args)
             # The cond_prim may or may not expect outvals, so we need to check whether
             # the first branch returns something significant. If so, we use the return
             # value of the first branch as the outvals of this cond_prim.
             if dummy and not outvals:
-                outvals = (dummy,)
+                outvals = dummy
     return outvals
