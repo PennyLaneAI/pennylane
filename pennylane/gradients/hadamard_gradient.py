@@ -96,7 +96,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: str = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
