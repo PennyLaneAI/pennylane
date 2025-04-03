@@ -351,6 +351,31 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
+class TestUserTransforms:
+    """Integration tests for applying user transforms to a qnode with program capture."""
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_transform(self):
+        """Test that a transformed qnode is captured correctly."""
+
+    @pytest.mark.unit
+    def test_captured_program_qfunc_transform(self):
+        """Test that a qnode with a transformed qfunc is captured correctly."""
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_qfunc_transform(self):
+        """Test that a transformed qnode with a transformed qfunc is captured correctly."""
+
+    @pytest.mark.unit
+    def test_device_jaxpr(self):
+        """Test that jaxpr recieved by a device when executing a transformed qnode has been
+        transformed appropriately."""
+
+    @pytest.mark.integration
+    def test_execution(self):
+        """Test that a transformed qnode is executed correctly."""
+
+
 @pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
     """Integration tests for preprocessing and executing qnodes with program capture."""
