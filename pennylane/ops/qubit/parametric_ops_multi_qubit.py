@@ -608,6 +608,13 @@ def _decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
 
     This function follows the logic described in the documentation of
     PCPhase.compute_decomposition.
+
+    As an example, consider the number
+    :math:`k=121_{10}=01111001_2`, which can be (trivially) decomposed into a sum of
+    five powers of two by reading off the bits:
+    :math:`k = 2^6 + 2^5 + 2^4 + 2^3 + 2^0 = 64 + 32 + 16 + 8 + 1`.
+    The decomposition here, however, allows for minus signs and achieves the decomposition
+    :math:`k = 2^7 - 2^3 + 2^0 = 128 - 8 + 1`, which only requires three powers of two.
     """
     R = []
     assert k <= 2 ** (n - 1)
@@ -716,6 +723,9 @@ class PCPhase(Operation):
                 0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
 
+    This can also be written as :math:`\Pi(\phi) = \exp(i\phi(2\Pi-\mathbb{I}_N))`, where
+    :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
@@ -732,25 +742,21 @@ class PCPhase(Operation):
 
     We can define a circuit using :class:`~.PCPhase` as follows:
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> @qml.qnode(dev)
-    >>> def example_circuit():
-    ...     qml.PCPhase(0.27, dim = 3, wires=range(3))
-    ...     return qml.state()
+    >>> op_3 = qml.PCPhase(0.27, dim = 3, wires=range(3))
 
     The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 3`
     basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors, as we can see from
     the diagonal of the matrix for this circuit.
 
-    >>> print(np.round(np.diag(qml.matrix(example_circuit)()),2))
+    >>> print(np.round(np.diag(qml.matrix(op_3)),2))
     [0.96+0.27j 0.96+0.27j 0.96+0.27j 0.96-0.27j 0.96-0.27j 0.96-0.27j
      0.96-0.27j 0.96-0.27j]
 
     We can also choose a different :math:`dim` value to apply the phase shift to a different set of
     basis vectors as follows:
 
-    >>> pc_op = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
-    >>> print(np.round(np.diag(qml.matrix(pc_op)),2))
+    >>> op_7 = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
+    >>> print(np.round(np.diag(qml.matrix(op_7)),2))
     [0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j
      0.33+0.94j 0.33-0.94j]
 
@@ -758,8 +764,8 @@ class PCPhase(Operation):
     operations which share the same control values on common control wires, and Pauli-X operations,
     possibly complemented by a global phase.
 
-    >>> pc_op = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
-    >>> print(qml.draw(pc_op.decomposition)())
+    >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+    >>> print(qml.draw(op_13.decomposition)())
     1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
     2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
     3: ──GlobalPhase(-1.23)────────────├○───────────┤
@@ -777,8 +783,24 @@ class PCPhase(Operation):
     parameter_frequencies = [(2,)]
 
     def generator(self) -> "qml.Hermitian":
-        dim, shape = self.hyperparameters["dimension"]
-        mat = np.diag([1] * dim + [-1] * (shape - dim))
+        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
+        The operator reads
+
+        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
+
+        where :math:`\Pi` is the projector onto the first ``dim`` computational basis states
+        and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+
+        Correspondingly, the generator is :math:`2\Pi - \mathbb{I}_N`:
+
+        >>> qml.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
+        Hermitian(array([[ 1,  0,  0,  0],
+           [ 0,  1,  0,  0],
+           [ 0,  0,  1,  0],
+           [ 0,  0,  0, -1]]), wires=[0, 1])
+        """
+        dim, N = self.hyperparameters["dimension"]
+        mat = np.diag([1] * dim + [-1] * (N - dim))
         return qml.Hermitian(mat, wires=self.wires)
 
     def _flatten(self) -> FlatPytree:
@@ -875,7 +897,11 @@ class PCPhase(Operation):
 
         .. math::
 
-            G = 2 \left(\sum_{j=0}^{d-1} |j\rangle\langle j|\right) - \mathbb{I}_N
+            G &= 2 \left(\sum_{j=0}^{d-1} |j\rangle\langle j|\right) - \mathbb{I}_N\\
+            &= \text{diag}(
+            \underset{d\text{ times}}{\underbrace{1, \dots, 1}},
+            \underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}}
+            )
 
         where we denoted the overall dimension as :math:`N=2^n` for :math:`n` qubits and the
         subspace dimension as :math:`d`, which is called ``dim`` in code.
@@ -938,7 +964,7 @@ class PCPhase(Operation):
            *values*, up to whether the projectors should be located in the :math:`|0\rangle`
            or :math:`|1\rangle` subspace of the current target wire :math:`i`. If we want to
            add projectors (:math:`c_i=+1`), we append at the beginning of the current subspace,
-           so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`), 
+           so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`),
            we need to remove them from the end of the subspace, so from :math:`|1\rangle`.
            Having figured out the subspace, we add the corresponding projector to the
            decomposition. In code, we immediately apply the corresponding phase gate, see below.
@@ -992,39 +1018,40 @@ class PCPhase(Operation):
             **Algorithm**
 
             The algorithm works in the following steps, exploiting the insight from
-            `this post <https://stackoverflow.com/questions/57797157/minimum-number-of-powers-of-2-to-get-an-integer/57805889#57805889>`__ on stack overflow that two bits of :math:`d` can be set correctly
-            at a time. That is, given two bits of the target :math:`d` and the corresponding two bits of
-            some intermediate working bit string :math:`s` that we try to set to :math:`d`, we have
-            16 scenarios. We will only need to think about those scenarios where the less significant bit
-            already differs between :math:`d` and :math:`s`. In each such scenario, a single addition
-            or subtraction to :math:`s` suffices to set the bits of :math:`s` to those of :math:`d`:
+            `this post <https://stackoverflow.com/questions/57797157/minimum-number-of-powers-of-2-to-get-an-integer/57805889#57805889>`__ on stack overflow that two bits of :math:`d` can be set
+            correctly at a time. That is, given two bits of the target :math:`d` and the
+            corresponding two bits of some intermediate working bit string :math:`s` that we try
+            to set to :math:`d`, we have 16 scenarios. We will only need to think about those
+            scenarios where the less significant bit already differs between :math:`d` and
+            :math:`s`. In each such scenario, a single addition or subtraction to :math:`s`
+            suffices to set the bits of :math:`s` to those of :math:`d`:
 
             .. list-table::
                :widths: 5 5 5 5 5
                :header-rows: 1
                :stub-columns: 1
 
-               * - :math:`s` \ :math:`d`
-                 - :math:`00`
-                 - :math:`01`
-                 - :math:`10`
-                 - :math:`11`
-               * - :math:`00`
+               * -
+                 - :math:`d=00`
+                 - :math:`d=01`
+                 - :math:`d=10`
+                 - :math:`d=11`
+               * - :math:`s=00`
                  - —
                  - :math:`+1`
                  - —
                  - :math:`-1`
-               * - :math:`01`
+               * - :math:`s=01`
                  - :math:`-1`
                  - —
                  - :math:`+1`
                  - —
-               * - :math:`10`
+               * - :math:`s=10`
                  - —
                  - :math:`-1`
                  - —
                  - :math:`+1`
-               * - :math:`11`
+               * - :math:`s=11`
                  - :math:`+1`
                  - —
                  - :math:`-1`
@@ -1069,12 +1096,19 @@ class PCPhase(Operation):
             12. we have :math:`i=0`, so we terminate.
 
             Overall, this creates the list :math:`R=[(0,0), (1,+1), (2, 0), (3, 0), (4, -1)]`,
-            corresponding to the decomposition we were after, :math:`d=2^{n-1-1} - 2^{n-4-1}=2^3-2^0=8-1`.
+            corresponding to the decomposition we were after,
+            :math:`d=2^{n-1-1} - 2^{n-4-1}=2^3-2^0=8-1`.
 
-            In the code below, we will actually *skip* the first entry of the 2-tuples in :math:`R`,
-            because they always equal the position of the tuple within :math:`R`
+            In the code below, we will actually *skip* the first entry of the 2-tuples in
+            :math:`R`, because they always equal the position of the tuple within :math:`R`
             (after completing the algorithm).
 
+            As a second example, consider the number
+            :math:`k=121_{10}=01111001_2`, which can be (trivially) decomposed into a sum of
+            five powers of two by reading off the bits:
+            :math:`k = 2^6 + 2^5 + 2^4 + 2^3 + 2^0 = 64 + 32 + 16 + 8 + 1`.
+            The decomposition here, however, allows for minus signs and achieves the decomposition
+            :math:`k = 2^7 - 2^3 + 2^0 = 128 - 8 + 1`, which only requires three powers of two.
         """
         phi = params[0]
         dim, _ = hyperparams["dimension"]
