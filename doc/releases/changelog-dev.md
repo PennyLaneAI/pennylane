@@ -647,6 +647,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
   [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
 
+* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
+   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+
 * Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions
   apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for
   the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
@@ -669,9 +672,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
 <h4>Other improvements</h4>
-
-* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
-   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
 
 * The qchem functions that accept a string input have been updated to consistently work with both
   lower-case and upper-case inputs.
