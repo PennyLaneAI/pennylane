@@ -274,9 +274,9 @@ class QNode:
               as a fallback.
 
             * ``"hadamard"``: Use the standard analytic hadamard gradient test rule for
-             all supported quantum operation arguments. More info is in the documentation
-             for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
-             direct, and reversed-direct modes can be selected via a ``"mode"`` in ``gradient_kwargs``.
+              all supported quantum operation arguments. More info is in the documentation
+              for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
+              direct, and reversed-direct modes can be selected via a ``"mode"`` in ``gradient_kwargs``.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
