@@ -671,6 +671,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Other improvements</h4>
 
+* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
+  dedicated documentation.
+  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
+
 * The qchem functions that accept a string input have been updated to consistently work with both
   lower-case and upper-case inputs.
   [(#7186)](https://github.com/PennyLaneAI/pennylane/pull/7186)
