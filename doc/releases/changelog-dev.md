@@ -365,6 +365,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
