@@ -18,7 +18,7 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -118,8 +118,8 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
             )
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
         # wire_order specifies wires to use for Identity (PauliWord({}))
@@ -144,8 +144,8 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -265,8 +265,8 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
         qubit_operator @= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
         # wire_order specifies wires to use for Identity (PauliWord({}))
@@ -291,8 +291,8 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -535,8 +535,8 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             )
 
     for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
         # wire_order specifies wires to use for Identity (PauliWord({}))
@@ -561,8 +561,8 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+            if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
 

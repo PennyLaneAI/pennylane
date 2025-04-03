@@ -121,6 +121,18 @@ layer = "auxiliary"
 # These modules can only import from CORE or AUXILIARY modules.
 
 [[modules]]
+path = "pennylane.liealg"
+layer = "tertiary"
+
+[[modules]]
+path = "pennylane.fermi"
+layer = "tertiary"
+
+[[modules]]
+path = "pennylane.bose"
+layer = "tertiary"
+
+[[modules]]
 path = "pennylane.logging"
 depends_on = []
 layer = "tertiary"
@@ -169,9 +181,6 @@ depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "penn
 path = "pennylane.qchem"
 depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops", "pennylane.pauli", "pennylane.bose", "pennylane.numpy"]
 
-[[modules]]
-path = "pennylane.fermi"
-depends_on = ["pennylane.operation", "pennylane.pauli", "pennylane.typing", "pennylane"]
 
 [[modules]]
 path = "pennylane.transforms"
@@ -230,13 +239,6 @@ depends_on = ["pennylane.operation", "pennylane"]
 path = "pennylane.control_flow"
 depends_on = ["pennylane.typing", "pennylane.compiler", "pennylane.capture"]
 
-[[modules]]
-path = "pennylane.bose"
-depends_on = ["pennylane", "pennylane.typing", "pennylane.pauli"]
-
-[[modules]]
-path = "pennylane.liealg"
-depends_on = ["pennylane.pauli", "pennylane.operation", "pennylane", "pennylane.typing"]
 
 [[modules]]
 path = "pennylane.data"
