@@ -493,8 +493,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 <h4>Qualtran Integration 🔗</h4>
 
 <h3>Improvements 🛠</h3>
-  
 
+  
 <h4>QNode improvements</h4>
 
 * `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
