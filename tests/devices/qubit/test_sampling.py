@@ -107,7 +107,7 @@ class TestSampleState:
         samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(seed))
 
         assert samples.shape == (10, 2)
-        assert samples.dtype == np.int64
+        assert samples.dtype == np.bool
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
@@ -201,7 +201,7 @@ class TestMeasureSamples:
         result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == (shots.total_shots, 2)
-        assert result.dtype == np.int64
+        assert result.dtype == np.bool
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in result)
 
     def test_sample_measure_single_wire(self):
@@ -216,11 +216,11 @@ class TestMeasureSamples:
         result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == (shots.total_shots,)
-        assert result0.dtype == np.int64
+        assert result0.dtype == np.bool
         assert np.all(result0 == 0)
 
         assert result1.shape == (shots.total_shots,)
-        assert result1.dtype == np.int64
+        assert result1.dtype == np.bool
         assert len(np.unique(result1)) == 2
 
     def test_prob_measure(self):
@@ -387,7 +387,7 @@ class TestMeasureSamples:
             res = res[0]
 
             assert res.shape == (sh, 2)
-            assert res.dtype == np.int64
+            assert res.dtype == np.bool
             assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in res)
 
     @pytest.mark.parametrize(
@@ -798,7 +798,7 @@ class TestBroadcasting:
         res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
 
         assert res.shape == (3, shots.total_shots, 2)
-        assert res.dtype == np.int64
+        assert res.dtype == np.bool
 
         # first batch of samples is always |11>
         assert np.all(res[0] == 1)
@@ -870,7 +870,7 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == (3, s, 2)
-            assert r.dtype == np.int64
+            assert r.dtype == np.bool
 
             # first batch of samples is always |11>
             assert np.all(r[0] == 1)
@@ -966,7 +966,7 @@ class TestBroadcastingPRNG:
         spy.assert_called()
 
         assert res.shape == (3, shots.total_shots, 2)
-        assert res.dtype == np.int64
+        assert res.dtype == np.bool
 
         # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
         res = [np.array(r) for r in res]
@@ -1069,7 +1069,7 @@ class TestBroadcastingPRNG:
             assert r.shape == (3, s, 2)
             # this is has started randomly failing do to r.dtype being int32 instead of int64.
             # Not sure why they are getting returned as 32 instead, but maybe this will fix it?
-            assert res[0][0].dtype in [np.int32, np.int64]
+            assert res[0][0].dtype in [np.int32, np.int64, np.bool]
 
             # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
             r = [np.array(i) for i in r]

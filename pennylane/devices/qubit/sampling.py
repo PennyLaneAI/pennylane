@@ -539,7 +539,7 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int64)
+    return (states_sampled_base_ten > 0).astype(bool)
 
 
 def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, seed=None):
@@ -582,4 +582,4 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
 
     powers_of_two = 1 << jnp.arange(num_wires, dtype=int)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(int)
+    return (states_sampled_base_ten > 0).astype(bool)

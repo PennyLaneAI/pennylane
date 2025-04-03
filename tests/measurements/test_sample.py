@@ -317,11 +317,11 @@ class TestSample:
     )
     def test_numeric_type(self, obs):
         """Test that the numeric type is correct."""
-        eigval_type = type(obs.eigvals()[0]) if obs is not None else np.int64
+        eigval_type = type(obs.eigvals()[0]) if obs is not None else bool
 
         res = qml.sample(obs) if obs is not None else qml.sample()
-        if res.numeric_type == int:
-            expected_type = np.int64
+        if res.numeric_type == bool:
+            expected_type = bool
         elif res.numeric_type == float:
             expected_type = np.float64
         elif res.numeric_type == complex:

@@ -1522,7 +1522,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
-        assert np.issubdtype(result[1].dtype, np.int64)
+        assert np.issubdtype(result[1].dtype, bool)
         assert qs.numeric_type == (float, int)
 
 

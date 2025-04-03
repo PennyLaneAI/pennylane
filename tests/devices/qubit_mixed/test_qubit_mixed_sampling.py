@@ -123,7 +123,7 @@ class TestSampleState:
         state = qml.math.array(two_qubit_pure_state, like=interface)
         samples = sample_state(state, 10)
         assert samples.shape == (10, 2)
-        assert samples.dtype.kind == "i"
+        assert samples.dtype.kind == "b"
         assert_correct_sampled_two_qubit_pure_state(samples)
 
     @pytest.mark.parametrize(

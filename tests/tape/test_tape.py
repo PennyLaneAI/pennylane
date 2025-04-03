@@ -2051,10 +2051,10 @@ class TestNumericType:
         result = circuit()
 
         # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, int)
+        assert np.issubdtype(result.dtype, bool)
 
         tape = qml.workflow.construct_tape(circuit)()
-        assert tape.numeric_type is int
+        assert tape.numeric_type is bool
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2110,10 +2110,10 @@ class TestNumericType:
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert result[0].dtype == float
-        assert result[1].dtype == int
+        assert result[1].dtype == bool
 
         tape = qml.workflow.construct_tape(circuit)(0, 3)
-        assert tape.numeric_type == (float, int)
+        assert tape.numeric_type == (float, bool)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of

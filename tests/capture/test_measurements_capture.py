@@ -180,7 +180,7 @@ def test_mid_measure():
 
     shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
     assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        (), bool
     )
 
     mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
@@ -441,7 +441,7 @@ class TestSample:
             (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
         )
         assert shapes[0] == jax.core.ShapedArray(
-            shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+            shape, bool
         )
 
         with pytest.raises(ValueError, match="finite shots are required"):

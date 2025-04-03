@@ -197,7 +197,7 @@ class SampleMP(SampleMeasurement):
         if shots is None:
             raise ValueError("finite shots are required to use SampleMP")
         sample_eigvals = n_wires is None or has_eigvals
-        dtype = float if sample_eigvals else int
+        dtype = float if sample_eigvals else bool
 
         if n_wires == 0:
             dim = num_device_wires
@@ -217,7 +217,7 @@ class SampleMP(SampleMeasurement):
     def numeric_type(self):
         if self.obs is None:
             # Computational basis samples
-            return int
+            return bool
         return float
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
@@ -331,7 +331,7 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
+        outcome_samples = [bool(int(bit)) for bit in outcome]
 
         if self.eigvals() is not None:
             eigvals = self.eigvals()
