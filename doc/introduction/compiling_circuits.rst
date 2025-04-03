@@ -288,17 +288,13 @@ You can use the ``max_expansion`` argument to control the number of decompositio
 stages applied to the circuit. By default, the function will decompose the circuit 
 until the desired gate set is reached.
 
-.. note::
-
-    Using the ``max_expansion`` argument with :func:`~.pennylane.decompositions.enable_graph`
-    does not do anything.
-
 The example below shows how the user can visualize the decomposition. We begin 
 with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
 
 .. code-block:: python
 
-    qml.decompositions.disable_graph()
+    # Works with the new decomposition system, as well.
+    # qml.decompositions.enable_graph()
 
     phase = 1 
     target_wires = [0]
@@ -441,8 +437,8 @@ be used.
     To have better control over custom decompositions, consider using the new decompositions
     system functionality outlined in the next section.
 
-Behaviour with qml.decomposition.enable_graph
-*********************************************
+Custom decompositions with qml.decomposition.enable_graph
+*********************************************************
 
 With the new graph-based system enabled, custom decompositions for operators in PennyLane
 can be added in a few ways depending on the application. 
@@ -459,7 +455,8 @@ custom decompositions via two keyword arguments:
 
 Both keyword arguments above require a dictionary mapping PennyLane operator types to 
 custom decompositions. Creating custom decompositions that the system can use involves 
-a PennyLane quantum function that represents the decomposition, and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
+a PennyLane quantum function that represents the decomposition, and a declaration 
+of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
@@ -471,8 +468,8 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
         qml.CZ(wires=wires)
         qml.H(wires=wires[1])
 
-The :func:`~.pennylane.register_resources` accepts a dictionary mapping operators 
-within the custom decomposition to the number of times they occur in the decomposition. 
+The :func:`~.pennylane.register_resources` accepts a dictionary mapping operator 
+types within the custom decomposition to the number oftimes they occur in the decomposition. 
 With the resources registered, this can be used with ``fixed_decomps`` or ``alt_decomps``:
 
 .. code-block:: python
@@ -487,7 +484,8 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 0: ────╭●────┤  State
 1: ──H─╰Z──H─┤  State
 
-Note that the ``alt_decomps`` argument can handle multiple alternatives per operator:
+Note that the ``alt_decomps`` argument can handle multiple alternatives per operator
+type:
 
 .. code-block:: python
 
@@ -514,10 +512,24 @@ Note that the ``alt_decomps`` argument can handle multiple alternatives per oper
         qml.CNOT(wires=[0, 1])
         return qml.state()
 
-The decomposition that the algorithm chooses internally will be the most resource
-efficient (less gates).
+The decomposition that the algorithm chooses internally will be the most resource-efficient.
+More details on creating complex decomposition rules that may depend on runtime 
+parameters can be found in the usage details for :func:`~.pennylane.register_resources`.
 
-## TODO: add_decomps
+Alternatively, new decomposition rules can be added to operators *globally* with 
+the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``
+in every instance of the ``decompose`` transform. The following example globally 
+adds the ``my_cnot1`` and ``my_cnot2`` decomposition rules to the ``qml.CNOT`` gate:
+
+>>> qml.add_decomps(qml.CNOT, my_cnot1, my_cnot2)
+
+The newly added rules for the ``qml.CNOT`` operator can be verified or inspected 
+with the :func:`~.pennylane.list_decomps` function:
+
+>>> my_new_rules = qml.list_decomps(qml.CNOT)[-2:]
+>>> print(qml.draw(my_new_rules[1])(wires=[0, 1]))
+0: ──────────────╭●──────────────┤  
+1: ──RY(1.57)──Z─╰Z──RY(1.57)──Z─┤ 
 
 Circuit cutting
 ---------------
