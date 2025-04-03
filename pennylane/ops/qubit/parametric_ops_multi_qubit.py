@@ -1042,36 +1042,17 @@ class PCPhase(Operation):
             :math:`s`. In each such scenario, a single addition or subtraction to :math:`s`
             suffices to set the bits of :math:`s` to those of :math:`d`:
 
-            .. list-table:: Simultaneously setting two bits in :math:`s` to match :math:`d`
-               :widths: 5 5 5 5 5
-               :align: center
-               :header-rows: 1
-
-               * -
-                 - :math:`d=00`
-                 - :math:`d=01`
-                 - :math:`d=10`
-                 - :math:`d=11`
-               * - :math:`s=00`
-                 - —
-                 - :math:`+1`
-                 - —
-                 - :math:`-1`
-               * - :math:`s=01`
-                 - :math:`-1`
-                 - —
-                 - :math:`+1`
-                 - —
-               * - :math:`s=10`
-                 - —
-                 - :math:`-1`
-                 - —
-                 - :math:`+1`
-               * - :math:`s=11`
-                 - :math:`+1`
-                 - —
-                 - :math:`-1`
-                 - —
+            +--------------+--------------+--------------+--------------+--------------+
+            |              | :math:`d=00` | :math:`d=01` | :math:`d=10` | :math:`d=11` |
+            +==============+==============+==============+==============+==============+
+            | :math:`s=00` |      —       |  :math:`+1`  |      —       |  :math:`-1`  |
+            +--------------+--------------+--------------+--------------+--------------+
+            | :math:`s=01` |  :math:`-1`  |      —       |  :math:`+1`  |      —       |
+            +--------------+--------------+--------------+--------------+--------------+
+            | :math:`s=10` |      —       |  :math:`-1`  |      —       |  :math:`+1`  |
+            +--------------+--------------+--------------+--------------+--------------+
+            | :math:`s=11` |  :math:`+1`  |      —       |  :math:`-1`  |      —       |
+            +--------------+--------------+--------------+--------------+--------------+
 
             Now let's lay out the algorithm itself. We will use this operation in step 3 below.
 
