@@ -379,11 +379,31 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         consts = invals[:n_consts]
         args = invals[n_consts:]
 
-        def wrapper(*inner_args):
-            return AdjointTransformInterpreter(lazy=lazy).eval(jaxpr, consts, *inner_args)
+        # TODO: remove this when the adjoint can transform nested regions
+        with qml.capture.pause():
+            collector = CollectOpsandMeas()
+            collector.eval(jaxpr, consts, *args)
+            ops = collector.state["ops"]
 
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
-        return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        for op in ops[::-1]:
+            data, struct = jax.tree_util.tree_flatten(op)
+            op_jax = jax.tree_util.tree_unflatten(struct, data)
+            self.interpret_operation(qml.adjoint(op_jax, lazy=lazy))
+
+        return []
+
+    # @DecomposeInterpreter.register_primitive(adjoint_transform_prim)
+    # def _(self, *invals, jaxpr, lazy, n_consts):
+    #     consts = invals[:n_consts]
+    #     args = invals[n_consts:]
+
+    #     unroller = AdjointTransformInterpreter(lazy=lazy)
+
+    #     def wrapper(*inner_args):
+    #         return unroller.eval(jaxpr, consts, *inner_args)
+
+    #     jaxpr = jax.make_jaxpr(wrapper)(*args)
+    #     return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
     def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
         """Function for applying the ``decompose`` transform on plxpr."""
