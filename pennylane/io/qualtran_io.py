@@ -205,9 +205,9 @@ class FromBloq(Operation):
 
         >>> from qualtran.bloqs.basic_gates import CZPowGate
         >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
-        [FromBloq(And, wires=Wires([0, 1, 'alloc_free2'])),
-        FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
-        FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
+        [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
+        FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
+        FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
 
         This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
         which allocates and frees a wire all in the same ``bloq``. In this situation,
