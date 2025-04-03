@@ -34,7 +34,6 @@ visibility = []
 ## CORE modules
 # These modules are fundamental, and should not have any dependent modulesin lower levels.
 
-
 [[modules]]
 path = "pennylane.kernels"
 depends_on = ["pennylane.math"]
@@ -122,6 +121,10 @@ layer = "auxiliary"
 # These modules can only import from CORE or AUXILIARY modules.
 
 [[modules]]
+path = "pennylane.data"
+layer = "tertiary"
+
+[[modules]]
 path = "pennylane.liealg"
 layer = "tertiary"
 
@@ -136,7 +139,7 @@ layer = "tertiary"
 [[modules]]
 path = "pennylane.logging"
 depends_on = []
-layer = "tertiary"
+layer = "core"
 
 [[modules]]
 path = "pennylane.spin"
@@ -241,10 +244,6 @@ depends_on = ["pennylane.operation", "pennylane"]
 [[modules]]
 path = "pennylane.control_flow"
 depends_on = ["pennylane.typing", "pennylane.compiler", "pennylane.capture"]
-
-[[modules]]
-path = "pennylane.data"
-depends_on = ["pennylane", "pennylane.pytrees", "pennylane.math", "pennylane.operation", "pennylane.typing", "pennylane.wires", "pennylane.qchem", "pennylane.measurements"]
 
 [[modules]]
 path = "pennylane.templates"
