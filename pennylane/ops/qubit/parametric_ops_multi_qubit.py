@@ -680,8 +680,9 @@ def _ctrl_phase_shift(phi, wire, subspace, control_data):
     control_wires, control_values, work_wires = control_data
     if subspace == 1:
         base_op = qml.PhaseShift(phi, wires=wire)
-        if len(control_wires) == 0:
-            return [base_op]
+        # If there are no control wires, we are dealing with the very first phase shift of
+        # the decomposition, which should be adding projectors. So subspace should have been 0.
+        assert len(control_wires) > 0
         return [qml.ctrl(base_op, control_wires, control_values, work_wires)]
 
     if len(control_wires) == 0:
@@ -934,12 +935,11 @@ class PCPhase(Operation):
            add/subtract computational basis state projectors to the decomposition. The number of
            projectors :math:`2^{n-1-i}` is stored in the number of control wires that we already
            aggregated. In addition, :math:`s_i` (and thus :math:`e_i`) is encoded in the control
-           *values*, up to whether the projectors should be located in the
-           :math:`|0\rangle` or :math:`|1\rangle`
-           subspace of the current target wire :math:`i`. If we want to add projectors
-           (:math:`c_i=+1`), we append at the beginning of the current subspace, so in
-           the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`), we
-           need to remove them from the end of the subspace, so from :math:`|1\rangle`.
+           *values*, up to whether the projectors should be located in the :math:`|0\rangle`
+           or :math:`|1\rangle` subspace of the current target wire :math:`i`. If we want to
+           add projectors (:math:`c_i=+1`), we append at the beginning of the current subspace,
+           so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`), 
+           we need to remove them from the end of the subspace, so from :math:`|1\rangle`.
            Having figured out the subspace, we add the corresponding projector to the
            decomposition. In code, we immediately apply the corresponding phase gate, see below.
         2. Add the current wire :math:`i` to the control wires. The control value to be added
@@ -959,6 +959,7 @@ class PCPhase(Operation):
            All of this is easily summarized: If the next non-zero coefficient, :math:`d_i`,
            is positive (negative), set the next control value to :math:`1` (:math:`0`). If
            the current coefficient is :math:`c_i=0`, flip the control value.
+        3. Increment :math:`i` by one. If :math:`i=n`, terminate, else go to step 1.
 
         If :math:`\sigma=-1` instead, i.e., :math:`d>\tfrac{N}{2}`, the start and end points
         :math:`s_i` and :math:`e_i` need to be mapped via :math:`x\mapsto N-1-x`. This
