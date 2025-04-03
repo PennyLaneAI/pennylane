@@ -17,7 +17,7 @@ Contains the MultiplexedRotation template.
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.templates.state_preparations.mottonen import  _apply_uniform_rotation_dagger
+from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
 
 class MultiplexedRotation(Operation):
@@ -44,35 +44,85 @@ class MultiplexedRotation(Operation):
         control_wires (Sequence[int]): The control qubits used to select the rotation.
         target_wire (Sequence[int]): The wire where the rotations are applied.
         rot_axis (str): The axis about which the rotation is performed.
-        It can take the value `X`, `Y` or `Z`. Default is `Z`
+            It can take the value `X`, `Y` or `Z`. Default is `Z`.
+
+    Raises:
+        ValueError: If the length of the angles array is not :math:`2^n` where :math:`n` is the number
+            of ``control_wires``.
+        ValueError: If ``rot_axis`` has a value different from `X`, `Y` or `Z`.
+
     """
 
     num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 
-    def __init__(self, angles, control_wires, target_wire, rot_axis = "Z", id=None):
+    def __init__(self, angles, control_wires, target_wire, rot_axis="Z", id=None):
 
         self.hyperparameters["control_wires"] = qml.wires.Wires(control_wires)
         self.hyperparameters["target_wire"] = qml.wires.Wires(target_wire)
         self.hyperparameters["rot_axis"] = rot_axis
 
+        if len(angles) != 2 ** len(control_wires):
+            raise ValueError("Number of angles must be 2^(len(control_wires))")
+
+        if rot_axis not in ["X", "Y", "Z"]:
+            raise ValueError("'rot_axis' can only take the values 'X', 'Y' and 'Z'.")
+
         all_wires = self.hyperparameters["control_wires"] + self.hyperparameters["target_wire"]
         super().__init__(angles, wires=all_wires, id=id)
 
-    @property
-    def num_params(self):
-        return 1
+    def _flatten(self):
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return self.parameters[0], metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(data, **hyperparams_dict)
+
+    def map_wires(self, wire_map: dict):
+        new_dict = {
+            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            for key in ["control_wires", "target_wire"]
+        }
+        return MultiplexedRotation(
+            self.parameters[0],
+            new_dict["control_wires"],
+            new_dict["target_wire"],
+            rot_axis=self.hyperparameters["rot_axis"],
+        )
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    def decomposition(self):  # pylint: disable=arguments-differ
+        return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
 
     @staticmethod
-    def compute_decomposition(angles, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        angles, control_wires, target_wire, rot_axis
+    ):  # pylint: disable=arguments-differ
         r"""
+        Computes the decomposition operations for the given state vector.
 
+        Args:
+            angles (tensor_like): The rotation angles to be applied.
+
+            state_vector (tensor_like): The state vector to prepare.
+            wires (Sequence[int]): The wires which the operator acts on.
+            input_wires (Sequence[int]): The wires on which to prepare the state.
+            precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
+                rotation angles utilized in the template.
+            work_wires (Sequence[int]):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+
+        Returns:
+            list: List of decomposition operations.
         """
 
-        rot_axis = kwargs["rot_axis"]
-        control_wires = kwargs["control_wires"]
-        target_wire = kwargs["target_wire"]
+        control_wires = qml.wires.Wires(control_wires)
+        target_wire = qml.wires.Wires(target_wire)
 
         op_list = []
 
@@ -82,7 +132,9 @@ class MultiplexedRotation(Operation):
             op_list.append(qml.adjoint(qml.S(target_wire)))
             op_list.append(qml.Hadamard(target_wire))
 
-        op_list.extend(_apply_uniform_rotation_dagger(qml.RZ, angles, control_wires[::-1], target_wire))
+        op_list.extend(
+            _apply_uniform_rotation_dagger(qml.RZ, angles, control_wires[::-1], target_wire[0])
+        )
 
         if rot_axis == "X":
             op_list.append(qml.Hadamard(target_wire))
