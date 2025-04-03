@@ -393,6 +393,11 @@ def decompose(
         decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
         ``alt_decomps`` are only functional with this toggle present.
 
+    .. seealso::
+
+        For more information on PennyLane's decomposition tools and features, check out the 
+        :doc:`Compiling Circuits page <introduction/compiling_circuits>`__.
+
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
