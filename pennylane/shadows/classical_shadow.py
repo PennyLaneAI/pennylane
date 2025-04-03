@@ -20,9 +20,8 @@ from string import ascii_letters
 import numpy as np
 
 from pennylane import math
-from pennylane.ops import X, Y, Z
+from pennylane.ops import X, Y, Z, I
 from pennylane.ops.functions import matrix
-from pennylane.ops.identity import I
 
 
 class ClassicalShadow:
