@@ -450,16 +450,16 @@ can be added in a few ways depending on the application.
 The :func:`~.pennylane.transforms.decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
 
-* ``fixed_decomps``: any operator with a decomposition listed here will automatically 
-  be chosen by the new algorithm, regardless of how efficient it may or may not 
-  be.
-* ``alt_decomps``: any operator with a decomposition list here is added as a possible 
-  decomposition the algorithm can choose based on its resources.
+* ``fixed_decomps``: any decomposition for an operator type here will automatically 
+  be chosen by the new algorithm, regardless of how resource efficient it may or 
+  may not be.
+* ``alt_decomps``: any decompositions for an operator type list here are added as 
+  a *possible* decomposition rules the algorithm can choose based on its resource 
+  efficiency.
 
-Both keyword arguments above require a dictionary mapping PennyLane operators to 
+Both keyword arguments above require a dictionary mapping PennyLane operator types to 
 custom decompositions. Creating custom decompositions that the system can use involves 
-a PennyLane quantum function that represents the decomposition and a registering 
-resource data to it that tracks gate counts in the custom decomposition via :func:`~.pennylane.register_resources`.
+a PennyLane quantum function that represents the decomposition, and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
@@ -487,7 +487,7 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 0: ────╭●────┤  State
 1: ──H─╰Z──H─┤  State
 
-Note that the ``alt_decomps`` argument can handle multiple options per operator:
+Note that the ``alt_decomps`` argument can handle multiple alternatives per operator:
 
 .. code-block:: python
 
