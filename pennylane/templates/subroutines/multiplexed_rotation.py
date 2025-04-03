@@ -109,13 +109,10 @@ class MultiplexedRotation(Operation):
 
         Args:
             angles (tensor_like): The rotation angles to be applied.
-
-            state_vector (tensor_like): The state vector to prepare.
-            wires (Sequence[int]): The wires which the operator acts on.
-            input_wires (Sequence[int]): The wires on which to prepare the state.
-            precision_wires (Sequence[int]): The wires allocated for storing the binary representations of the
-                rotation angles utilized in the template.
-            work_wires (Sequence[int]):  The wires used as work wires for the QROM operations. Defaults to ``None``.
+            control_wires (Sequence[int]): The control qubits used to select the rotation.
+            target_wire (Sequence[int]): The wire where the rotations are applied.
+            rot_axis (str): The axis about which the rotation is performed.
+                It can take the value `X`, `Y` or `Z`. Default is `Z`.
 
         Returns:
             list: List of decomposition operations.
