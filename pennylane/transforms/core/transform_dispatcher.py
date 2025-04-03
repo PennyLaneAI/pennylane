@@ -182,6 +182,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                     processed_results = [fn(results[slice]) for fn, slice in processing_and_slices]
                     return expand_processing(processed_results)
 
+                # if getattr(post_processing_fn, "gradient_data", None) is not None:
+                # processing_fn.gradient_data = post_processing_fn.gradient_data
+
             else:
                 transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
 
