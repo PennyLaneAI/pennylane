@@ -9,9 +9,12 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  push:
+    branches:
+      - master
 
 jobs:
-  sphinx:
+  rtd_check:
     runs-on: ubuntu-22.04
     env:
       PYTHON_VERSION: "3.10"
