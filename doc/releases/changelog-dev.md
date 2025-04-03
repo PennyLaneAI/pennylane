@@ -494,18 +494,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Improvements 🛠</h3>
 
-* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
-  dedicated documentation.
-  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
-
-* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
-  [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
-
-* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
-  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-
-* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
-  [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
   
 <h4>QNode improvements</h4>
 
@@ -680,6 +668,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
 <h4>Other improvements</h4>
+
+* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
+  dedicated documentation.
+  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
 
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
@@ -1110,7 +1102,6 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Diego Guala,
 Austin Huang,
-Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
