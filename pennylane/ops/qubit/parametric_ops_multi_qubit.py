@@ -1054,19 +1054,19 @@ class PCPhase(Operation):
 
             1. Set :math:`s=00000_2`.
             2. Initialize :math:`i=n-1=4` and :math:`R=[]`.
-            3a. :math:`d_4=1=1-s_4`, so look at :math:`d_3=1` as well. The sign at :math:`(00, 11)`
+            3. :math:`d_4=1=1-s_4`, so look at :math:`d_3=1` as well. The sign at :math:`(00, 11)`
                in the table above is :math:`-1`, so we insert :math:`(4, -1)`
                and compute :math:`s=00000_2 - 00001_2=11111_2`.
-            4a. Update :math:`i=4-1=3`.
-            3b. :math:`d_3=1=s_3`, so we insert :math:`(3, 0)` and move on.
-            4b. Update :math:`i=3-1=2`.
-            3c. :math:`d_2=1=s_2`, so we insert :math:`(2, 0)` and move on.
-            4c. Update :math:`i=2-1=1`.
-            3d. :math:`d_1=0=1-s_1`, and :math:`i=1<2`, so we insert :math:`(1, +1)`
+            4. Update :math:`i=4-1=3`.
+            5. :math:`d_3=1=s_3`, so we insert :math:`(3, 0)` and move on.
+            6. Update :math:`i=3-1=2`.
+            7. :math:`d_2=1=s_2`, so we insert :math:`(2, 0)` and move on.
+            8. Update :math:`i=2-1=1`.
+            9. :math:`d_1=0=1-s_1`, and :math:`i=1<2`, so we insert :math:`(1, +1)`
                and compute :math:`s=11111_2 + 01000_2=00111_2=d`.
-            4d. Update :math:`i=1-1=0`.
-            3e. :math:`d_0=0=s_0`, so we insert :math:`(0, 0)` and move on.
-            4e. we have :math:`i=0`, so we terminate.
+            10. Update :math:`i=1-1=0`.
+            11. :math:`d_0=0=s_0`, so we insert :math:`(0, 0)` and move on.
+            12. we have :math:`i=0`, so we terminate.
 
             Overall, this creates the list :math:`R=[(0,0), (1,+1), (2, 0), (3, 0), (4, -1)]`,
             corresponding to the decomposition we were after, :math:`d=2^{n-1-1} - 2^{n-4-1}=2^3-2^0=8-1`.
