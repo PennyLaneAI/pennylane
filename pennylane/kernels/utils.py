@@ -18,6 +18,7 @@ from itertools import product
 
 from pennylane import math
 
+
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     r"""Computes the square matrix of pairwise kernel values for a given dataset.
 
