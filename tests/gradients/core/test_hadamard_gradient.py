@@ -371,7 +371,28 @@ class TestDifferentModes:
         """Test that reversed-direct mode can measure an observable that does not have a pauli rep."""
         # similar to the above test, we just want to directly check the four outputted tapes for
         # using reversed direct when taking the expectation value of a hadamard
-        raise NotImplementedError("add test code here")
+        tape = qml.tape.QuantumScript([qml.RX(0.5, 0)], [qml.expval(qml.H(0))])
+        batch, fn = qml.gradients.hadamard_grad(tape, mode="reversed-direct")
+
+        assert len(batch) == 4
+
+        obs_terms = [qml.X(0), qml.Z(0)]
+        H = qml.RX(0.5, 0).generator()
+        for i, ob in enumerate(obs_terms):
+            expected0 = qml.tape.QuantumScript(
+                [qml.RX(0.5, 0), qml.evolve(ob, np.pi / 4)], [qml.expval(H)]
+            )
+            qml.assert_equal(expected0.measurements[0].obs, batch[2*i].measurements[0].obs)
+            qml.assert_equal(batch[2*i], expected0)
+            expected1 = qml.tape.QuantumScript(
+                [qml.RX(0.5, 0), qml.evolve(ob, -np.pi / 4)], [qml.expval(H)]
+            )
+            qml.assert_equal(expected1.measurements[0].obs, batch[2*i+1].measurements[0].obs)
+            qml.assert_equal(batch[2*i+1], expected1)
+
+            out = fn((1.0, 2.0, 3.0, 4.0))
+            expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
+            assert qml.math.allclose(out, expected)
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
     def test_no_available_work_wire_direct_methods(self, mode):
