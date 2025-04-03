@@ -492,6 +492,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Qualtran Integration 🔗</h4>
 
+
 <h3>Improvements 🛠</h3>
   
 <h4>QNode improvements</h4>
