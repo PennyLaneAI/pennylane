@@ -493,6 +493,11 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Qualtran Integration 🔗</h4>
 
+<h4>Flexible Hadamard Gradient 🛠️</h4>
+
+* `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+
 <h3>Improvements 🛠</h3>
 
   
