@@ -121,6 +121,9 @@
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
+* Added additinoal Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+
 <h4>Gate-set targeted decompositions</h4>
 
 * A new module called `qml.decomposition` that contains PennyLane's new experimental graph-based 
@@ -980,6 +983,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Dantong Li,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
