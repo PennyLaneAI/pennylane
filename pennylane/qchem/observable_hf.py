@@ -122,6 +122,11 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+    else:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+        )
 
     if list(h.wires) != sorted(list(h.wires)):
         h = PauliSentence(
