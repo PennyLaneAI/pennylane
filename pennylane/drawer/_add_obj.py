@@ -38,21 +38,25 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
     max_w = max(mapped_wires)
-    max_b = max(mapped_bits) + n_wires
+    max_b = max(mapped_bits)
 
-    ctrl_symbol = "╩" if config.cur_layer != config.cwire_layers[max(mapped_bits)][-1] else "╝"
-    layer_str[max_b] = f"═{ctrl_symbol}"
+    ctrl_symbol = "╩"
+    if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[max_b]):
+        ctrl_symbol = "╝"
+    layer_str[max_b + n_wires] = f"═{ctrl_symbol}"
 
     for w in range(max_w + 1, max(config.wire_map.values()) + 1):
         layer_str[w] = "─║"
 
-    for b in range(n_wires, max_b):
-        if b - n_wires in mapped_bits:
-            intersection = "╣" if config.cur_layer == config.cwire_layers[b - n_wires][-1] else "╬"
-            layer_str[b] = f"═{intersection}"
+    for b in range(max_b):
+        if b in mapped_bits:
+            intersection = "╬"
+            if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[b]):
+                intersection = "╣"
+            layer_str[b + n_wires] = f"═{intersection}"
         else:
-            filler = " " if layer_str[b][-1] == " " else "═"
-            layer_str[b] = f"{filler}║"
+            filler = " " if layer_str[b + n_wires][-1] == " " else "═"
+            layer_str[b + n_wires] = f"{filler}║"
 
     return layer_str
 
