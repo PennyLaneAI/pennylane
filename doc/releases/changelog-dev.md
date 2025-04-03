@@ -994,6 +994,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
   [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
+  [(#7182)](https://github.com/PennyLaneAI/pennylane/pull/7182)
+
 
 * Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
