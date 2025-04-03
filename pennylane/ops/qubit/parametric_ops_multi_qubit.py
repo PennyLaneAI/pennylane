@@ -885,24 +885,32 @@ class PCPhase(Operation):
     def compute_decomposition(
         *params: TensorLike, wires: WiresLike, **hyperparams
     ) -> list["qml.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. note::
-
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        r"""Representation of the PCPhase operator as a product of other operators (static method).
 
         Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the
+                ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyper-parameters of the operator,
+                as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator
+
+        In short, this decomposition relies on decomposing the generator of the ``PCPhase``
+        gate into generators of multicontrolled :class:`~.PhaseShift` gates, potentially
+        complemented with (non-controlled) Pauli-X gates and/or a global phase.
+        For example, for ``dim=13`` on four qubits:
+
+        >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+        >>> print(qml.draw(op_13.decomposition)())
+        1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
+        2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
+        3: ──GlobalPhase(-1.23)────────────├○───────────┤
+        4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+
+
+        **Detailed description**
 
         For this decomposition, we will decompose the generator of the PCPhase gate,
         which we denote as :math:`G`, into multiple projectors, which generate (multi-controlled)
@@ -914,7 +922,7 @@ class PCPhase(Operation):
             &= \text{diag}(
             \underset{d\text{ times}}{\underbrace{1, \dots, 1}},
             \underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}}
-            )
+            ),
 
         where we denoted the overall dimension as :math:`N=2^n` for :math:`n` qubits and the
         subspace dimension as :math:`d`, which is called ``dim`` in code.
@@ -932,8 +940,8 @@ class PCPhase(Operation):
 
         so that :math:`G=2\Pi -\mathbb{I}_N` for :math:`d\leq \tfrac{N}{2}` and
         :math:`G=\mathbb{I}_N - 2 \Pi` for :math:`d>\tfrac{N}{2}`. We may summarize
-        this as :math:`G=\sigma (2\Pi -\mathbb{I}_N)` with the sign defined accordingly for the
-        two cases.
+        this as :math:`G=\sigma (2\Pi -\mathbb{I}_N)` with the sign :math:`\sigma=\pm 1`
+        defined accordingly for the two cases.
 
         Now we want to decompose :math:`\Pi`, a sum of the computational basis state projectors
         :math:`|j\rangle\langle j|` onto the :math:`d` consecutive smallest (largest, for
@@ -971,37 +979,37 @@ class PCPhase(Operation):
         go through the integer decomposition :math:`\{c_i\}_i` from above and perform the
         following steps:
 
-        1. If :math:`c_i=0`, go to step 2 immediately. Else, we want to
-           add/subtract computational basis state projectors to the decomposition. The number of
-           projectors :math:`2^{n-1-i}` is stored in the number of control wires that we already
-           aggregated. In addition, :math:`s_i` (and thus :math:`e_i`) is encoded in the control
-           values, up to whether the projectors should be located in the :math:`|0\rangle`
-           or :math:`|1\rangle` subspace of the current target wire :math:`i`. If we want to
-           add projectors (:math:`c_i=+1`), we append at the beginning of the current subspace,
-           so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`),
-           we need to remove them from the end of the subspace, so from :math:`|1\rangle`.
-           Having figured out the subspace, we add the corresponding projector to the
-           decomposition. In code, we immediately apply the corresponding phase gate, see below.
-
-        2. Add the current wire :math:`i` to the control wires. The control value to be added
-           depends on the current :math:`c_i` and on the next non-zero coefficient, :math:`d_i`.
-           For :math:`d_i=+1`, we are going to add more projectors, so we should control into
-           the :math:`|1\rangle` subspace (add onto just added projectors for :math:`c_i=+1`,
-           or re-add just removed projectors for :math:`c_i=-1`) unless we have :math:`c_i=0`,
-           in which case we
-           did not just modify the decomposition and need to control into the :math:`|0\rangle`
-           subspace instead. In either case, this sets :math:`s_{i+1}` to :math:`e_i+1`.
-           For :math:`d_i=-1`, we will subtract projectors. If we just subtracted projectors (from
-           the :math:`|1\rangle` subspace, :math:`c_i=-1`), we need to remove further from the
-           :math:`|0\rangle` subspace and control into it. If we just added projectors (to the
-           :math:`|0\rangle` subspace), we remove some of those again, and need to control into
-           the :math:`|0\rangle` subspace as well. For :math:`c_i=0`, we need to remove from
-           the upper end, i.e., the :math:`|1\rangle` subspace.
-           All of this is easily summarized: If the next non-zero coefficient, :math:`d_i`,
-           is positive (negative), set the next control value to :math:`1` (:math:`0`). If
-           the current coefficient is :math:`c_i=0`, flip the control value.
-
-        3. Increment :math:`i` by one. If :math:`i=n`, terminate, else go to step 1.
+          1. If :math:`c_i=0`, go to step 2 immediately. Else, we want to
+             add/subtract computational basis state projectors to the decomposition. The number of
+             projectors :math:`2^{n-1-i}` is stored in the number of control wires that we already
+             aggregated. In addition, :math:`s_i` (and thus :math:`e_i`) is encoded in the control
+             values, up to whether the projectors should be located in the :math:`|0\rangle`
+             or :math:`|1\rangle` subspace of the current target wire :math:`i`. If we want to
+             add projectors (:math:`c_i=+1`), we append at the beginning of the current subspace,
+             so in the :math:`|0\rangle` subspace. If we want to remove projectors (:math:`c_i=-1`),
+             we need to remove them from the end of the subspace, so from :math:`|1\rangle`.
+             Having figured out the subspace, we add the corresponding projector to the
+             decomposition. In code, we immediately apply the corresponding phase gate, see below.
+  
+          2. Add the current wire :math:`i` to the control wires. The control value to be added
+             depends on the current :math:`c_i` and on the next non-zero coefficient, :math:`d_i`.
+             For :math:`d_i=+1`, we are going to add more projectors, so we should control into
+             the :math:`|1\rangle` subspace (add onto just added projectors for :math:`c_i=+1`,
+             or re-add just removed projectors for :math:`c_i=-1`) unless we have :math:`c_i=0`,
+             in which case we
+             did not just modify the decomposition and need to control into the :math:`|0\rangle`
+             subspace instead. In either case, this sets :math:`s_{i+1}` to :math:`e_i+1`.
+             For :math:`d_i=-1`, we will subtract projectors. If we just subtracted projectors (from
+             the :math:`|1\rangle` subspace, :math:`c_i=-1`), we need to remove further from the
+             :math:`|0\rangle` subspace and control into it. If we just added projectors (to the
+             :math:`|0\rangle` subspace), we remove some of those again, and need to control into
+             the :math:`|0\rangle` subspace as well. For :math:`c_i=0`, we need to remove from
+             the upper end, i.e., the :math:`|1\rangle` subspace.
+             All of this is easily summarized: If the next non-zero coefficient, :math:`d_i`,
+             is positive (negative), set the next control value to :math:`1` (:math:`0`). If
+             the current coefficient is :math:`c_i=0`, flip the control value.
+  
+          3. Increment :math:`i` by one. If :math:`i=n`, terminate, else go to step 1.
 
         If :math:`\sigma=-1` instead, i.e., :math:`d>\tfrac{N}{2}`, the start and end points
         :math:`s_i` and :math:`e_i` need to be mapped via :math:`x\mapsto N-1-x`. This
@@ -1042,17 +1050,36 @@ class PCPhase(Operation):
             :math:`s`. In each such scenario, a single addition or subtraction to :math:`s`
             suffices to set the bits of :math:`s` to those of :math:`d`:
 
-            +--------------+--------------+--------------+--------------+--------------+
-            |              | :math:`d=00` | :math:`d=01` | :math:`d=10` | :math:`d=11` |
-            +==============+==============+==============+==============+==============+
-            | :math:`s=00` |      —       |  :math:`+1`  |      —       |  :math:`-1`  |
-            +--------------+--------------+--------------+--------------+--------------+
-            | :math:`s=01` |  :math:`-1`  |      —       |  :math:`+1`  |      —       |
-            +--------------+--------------+--------------+--------------+--------------+
-            | :math:`s=10` |      —       |  :math:`-1`  |      —       |  :math:`+1`  |
-            +--------------+--------------+--------------+--------------+--------------+
-            | :math:`s=11` |  :math:`+1`  |      —       |  :math:`-1`  |      —       |
-            +--------------+--------------+--------------+--------------+--------------+
+            .. list-table:: Coefficient :math:`c_i`
+               :widths: 19 19 19 19 19
+               :align: center
+               :header-rows: 1
+
+               * - Bits
+                 - :math:`d=00`
+                 - :math:`d=01`
+                 - :math:`d=10`
+                 - :math:`d=11`
+               * - :math:`s=00`
+                 - :math:`0`
+                 - :math:`+1`
+                 - :math:`0`
+                 - :math:`-1`
+               * - :math:`s=01`
+                 - :math:`-1`
+                 - :math:`0`
+                 - :math:`+1`
+                 - :math:`0`
+               * - :math:`s=10`
+                 - :math:`0`
+                 - :math:`-1`
+                 - :math:`0`
+                 - :math:`+1`
+               * - :math:`s=11`
+                 - :math:`+1`
+                 - :math:`0`
+                 - :math:`-1`
+                 - :math:`0`
 
             Now let's lay out the algorithm itself. We will use this operation in step 3 below.
 
