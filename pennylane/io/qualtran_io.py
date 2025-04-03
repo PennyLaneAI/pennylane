@@ -194,9 +194,7 @@ class FromBloq(Operation):
                 qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
                 return qml.probs(wires=[5, 6, 7])
 
-            >>> circuit()
-            array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
-            0.00290337, 0.00526717, 0.02099701])
+            circuit()
 
     .. details::
         :title: Usage Details
