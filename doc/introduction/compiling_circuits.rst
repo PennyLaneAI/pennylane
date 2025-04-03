@@ -215,20 +215,16 @@ Gate decompositions
 -------------------
 
 When compiling a circuit, it is often beneficial to decompose the circuit into a 
-set of basis gates. To do this, we can use the :func:`~.pennylane.transforms.decompose` 
+set of gates. To do this, we can use the :func:`~.pennylane.transforms.decompose` 
 function, which enables decomposition of circuits into a set of gates defined either 
 by their name, type, or by a set of rules they must follow.
 
 .. note::
 
     Using :func:`~.pennylane.decompositions.enable_graph` enables PennyLane's new 
-    experimental decomposition algorithm. This 
-    new system uses a graph-based approach, which provides better overall performance 
-    and versatility. By default, this new system is *not* enabled globally. 
-    
-    Unless otherwise indicated, features outlined below work with the current, default 
-    system or when the new decomposition system is enabled globally with :func:`~.pennylane.decompositions.enable_graph`.
-    The new decompositions system can be disabled with :func:`~.pennylane.decompositions.disable_graph`.
+    **experimental** decomposition algorithm (by default, this new system is *not* 
+    enabled). This new system uses a graph-based approach, which provides better 
+    overall versatility and resource efficiency.
 
 Using a gate set
 ****************
@@ -240,6 +236,9 @@ a pre-defined set of gates:
     
     from pennylane.transforms import decompose
     from functools import partial
+
+    # Works with the new decomposition system, as well.
+    # qml.decompositions.enable_graph()
 
     dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
@@ -267,6 +266,9 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
+    # lambda functions in gate_set can only be used with the new system disabled
+    qml.decompositions.disable_graph()
+
     @partial(decompose, gate_set=lambda op: len(op.wires)<=2) 
     @qml.qnode(dev)
 
@@ -279,11 +281,6 @@ or two-qubit gates using a rule:
 1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
 2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
 
-.. note::
-
-    Using gate rules with :func:`~.pennylane.decompositions.enable_graph` present 
-    is not currently supported. 
-
 Decomposition in stages
 ***********************
 
@@ -294,13 +291,14 @@ until the desired gate set is reached.
 .. note::
 
     Using the ``max_expansion`` argument with :func:`~.pennylane.decompositions.enable_graph`
-    does not do anything, as the new decompositions algorithm is not iterative in 
-    the same way.
+    does not do anything.
 
-The example below shows how the user can visualize the decomposition. 
-We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
+The example below shows how the user can visualize the decomposition. We begin 
+with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
 
 .. code-block:: python
+
+    qml.decompositions.disable_graph()
 
     phase = 1 
     target_wires = [0]
@@ -349,26 +347,15 @@ From here, we can iterate through the stages of decomposition:
 Custom Operator Decomposition
 -----------------------------
 
-When executing QNodes on a device, PennyLane will automatically decompose
-gates that are unsupported by the device using built-in decomposition rules.
+When executing QNodes on a device, PennyLane will automatically decompose gates 
+that are unsupported by the device using built-in decomposition rules.
 
-In addition, you can provide custom decomposition rules to be used.
+In addition, you can provide *new* decomposition rules to be used, but the behaviour
+and user-interface is different depending on if the new decompositions system is
+enabled.
 
-The default behaviour in PennyLane
-versus that of the new decompositions system (enabled with ``qml.decomposition.enable_graph``)
-differ in the following ways when it comes to injecting custom decompositions for
-operators:
-
-+-------------------+------------------------------+-----------------------------+--------------------------------------+
-|                   | QNode-level decomposition    | Device-level decomposition  | Multiple decompositions per operator |
-+===================+==============================+=============================+======================================+
-| ``disable_graph`` | No                           | Yes                         | No                                   |
-+-------------------+------------------------------+-----------------------------+--------------------------------------+
-| ``enable_graph``  | Yes                          | Yes                         | Yes                                  |
-+-------------------+------------------------------+-----------------------------+--------------------------------------+
-
-Behaviour with qml.decomposition.disable_graph
-**********************************************
+Default behaviour with custom decompositions
+********************************************
 
 For example, suppose we would like to implement the following QNode:
 
