@@ -35,6 +35,10 @@ visibility = []
 # These modules are fundamental, and should not have any dependent modulesin lower levels.
 
 [[modules]]
+path = "pennylane.control_flow"
+layer = "core"
+
+[[modules]]
 path = "pennylane.kernels"
 depends_on = ["pennylane.math"]
 layer = "core"
@@ -115,6 +119,14 @@ path = "pennylane.typing"
 depends_on = []
 layer = "core"
 
+[[modules]]
+path = "pennylane._grad"
+layer = "core"
+
+[[modules]]
+path = "pennylane.circuit_graph"
+layer = "core"
+
 ## AUXILIARY modules
 # These modules can only import from CORE modules.
 
@@ -170,10 +182,6 @@ path = "pennylane.operation"
 depends_on = ["pennylane.typing", "pennylane", "pennylane.math", "pennylane.wires", "pennylane.queuing", "pennylane.pytrees", "pennylane.capture"]
 
 [[modules]]
-path = "pennylane._grad"
-depends_on = ["pennylane.capture", "pennylane.compiler"]
-
-[[modules]]
 path = "pennylane.ops"
 depends_on = ["pennylane.tape", "pennylane.typing", "pennylane.transforms", "pennylane.math", "pennylane.wires", "pennylane.measurements", "pennylane", "pennylane.templates", "pennylane.compiler", "pennylane.capture", "pennylane.numpy", "pennylane.pauli", "pennylane.pulse", "pennylane.decomposition", "pennylane.operation", "pennylane.queuing"]
 
@@ -192,10 +200,6 @@ depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops"
 [[modules]]
 path = "pennylane.transforms"
 depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
-
-[[modules]]
-path = "pennylane.circuit_graph"
-depends_on = ["pennylane.measurements", "pennylane.operation", "pennylane.ops", "pennylane.wires", "pennylane.queuing", "pennylane.resource"]
 
 [[modules]]
 path = "pennylane.qaoa"
@@ -240,10 +244,6 @@ depends_on = ["pennylane.templates", "pennylane.ops", "pennylane.boolean_fn", "p
 [[modules]]
 path = "pennylane.decomposition"
 depends_on = ["pennylane.operation", "pennylane"]
-
-[[modules]]
-path = "pennylane.control_flow"
-depends_on = ["pennylane.typing", "pennylane.compiler", "pennylane.capture"]
 
 [[modules]]
 path = "pennylane.templates"
