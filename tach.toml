@@ -52,7 +52,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.numpy"
-depends_on = ["pennylane.operation"]
+depends_on = []
 layer = "core"
 
 [[modules]]
