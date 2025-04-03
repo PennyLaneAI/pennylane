@@ -997,6 +997,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
+* The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
+  [(#7174)](https://github.com/PennyLaneAI/pennylane/pull/7174)
+
 <h3>Bug fixes 🐛</h3>
 
 * PennyLane is now compatible with `pyzx 0.9`.
@@ -1120,5 +1123,6 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 David Wierichs
