@@ -45,7 +45,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         import jax
 
         from pennylane.capture.primitives import ctrl_transform_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.decomposition.collect_resource_ops import CollectResourceOps
 
     except ImportError:  # pragma: no cover
         return None, None
@@ -261,8 +261,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 with qml.capture.pause():
 
-                    # TODO: replace this with a collector that does not flatten the PLxPR
-                    collector = CollectOpsandMeas()
+                    collector = CollectResourceOps()
                     collector.eval(jaxpr, consts, *args)
                     operations = collector.state["ops"]
 
