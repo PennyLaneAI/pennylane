@@ -68,13 +68,17 @@ class _Config:
     def bit_filler(self, bit, next_layer: bool = False) -> str:
         """The filler character for bits at the current layer and the designated bit."""
         layer = self.cur_layer + 1 if next_layer else self.cur_layer
-        b_is_occupied = self.cwire_layers[bit][0] < layer <= self.cwire_layers[bit][-1]
-        return "═" if self.cur_layer < self.num_op_layers and b_is_occupied else " "
+        if self.cur_layer >= self.num_op_layers:
+            return " "
+        for layer_stretch in self.cwire_layers[bit]:
+            if layer_stretch[0] < layer <= layer_stretch[-1]:
+                return "═"
+        return " "
 
     @property
     def n_bits(self) -> int:
         """The number of bits."""
-        return len(self.bit_map)
+        return len(set(self.bit_map.values()))
 
     @property
     def n_wires(self) -> int:
@@ -88,12 +92,13 @@ def _initialize_wire_and_bit_totals(
     """Initialize the wire totals and bit_totals with the required wire labels."""
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in config.wire_map]
+        line_length = max(len(s) for s in wire_totals)
+        wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
+        bit_totals = [" " * line_length] * config.n_bits
     else:
         wire_totals = [""] * config.n_wires
-    line_length = max(len(s) for s in wire_totals)
+        bit_totals = [""] * config.n_bits
 
-    wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
-    bit_totals = [" " * line_length for _ in config.bit_map]
     return wire_totals, bit_totals
 
 
@@ -193,7 +198,7 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     """Add ending characters to separate the operation layers from the measurement layers"""
     totals.wire_totals = [f"{s}─┤" for s in totals.wire_totals]
     for b in range(config.n_bits):
-        if config.cwire_layers[b][-1] >= config.num_op_layers:
+        if config.cwire_layers[b][-1][-1] >= config.num_op_layers:
             totals.bit_totals[b] += "═╡"
         else:
             totals.bit_totals[b] += "  "
@@ -402,7 +407,8 @@ def tape_text(
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     bit_map = default_bit_map(tape)
-    if len(wire_map) == 0:
+    n_wires = len(wire_map)
+    if n_wires == 0:
         return ""
 
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
@@ -411,7 +417,7 @@ def tape_text(
 
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
-    cwire_layers, _ = cwire_connections(layers, bit_map)
+    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
 
     # Collect information needed for drawing layers
     config = _Config(
