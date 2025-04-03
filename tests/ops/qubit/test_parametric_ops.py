@@ -104,6 +104,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qml.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
+    qml.PSWAP(np.array([0.123, -0.63, 0.235]), wires=["a", -1]),
     qml.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
