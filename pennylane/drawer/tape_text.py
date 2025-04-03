@@ -92,12 +92,13 @@ def _initialize_wire_and_bit_totals(
     """Initialize the wire totals and bit_totals with the required wire labels."""
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in config.wire_map]
+        line_length = max(len(s) for s in wire_totals)
+        wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
+        bit_totals = [" " * line_length] * config.n_bits
     else:
         wire_totals = [""] * config.n_wires
-    line_length = max(len(s) for s in wire_totals)
+        bit_totals = [""] * config.n_bits
 
-    wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
-    bit_totals = [" " * line_length for _ in range(config.n_bits)]
     return wire_totals, bit_totals
 
 
