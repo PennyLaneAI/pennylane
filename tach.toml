@@ -61,6 +61,11 @@ depends_on = ["pennylane.math", "pennylane.pytrees"]
 layer = "core"
 
 [[modules]]
+path = "pennylane.logging"
+depends_on = []
+layer = "core"
+
+[[modules]]
 path = "pennylane.registers"
 depends_on = ["pennylane.wires"]
 layer = "core"
@@ -137,11 +142,6 @@ path = "pennylane.bose"
 layer = "tertiary"
 
 [[modules]]
-path = "pennylane.logging"
-depends_on = []
-layer = "core"
-
-[[modules]]
 path = "pennylane.spin"
 layer = "tertiary"
 
@@ -154,8 +154,8 @@ path = "pennylane.fourier"
 layer = "tertiary"
 
 ## UNSORTED
-# Due to circular import problems, these modules below have incorrect dependencies and need to be 
-# parsed and fixed accordingly.
+# Due to circular import problems, these modules below have incorrect dependencies 
+# and need to be parsed and fixed accordingly.
 
 [[modules]]
 path = "pennylane.transforms.core"
