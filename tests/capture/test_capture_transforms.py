@@ -24,7 +24,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qml
-from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.core import TransformError, transform
 
@@ -131,7 +131,8 @@ class TestCaptureTransforms:
             assert eqn1.primitive == eqn2.primitive
 
     def test_transform_qnode_capture(self):
-        """Test that a transformed QNode is captured correctly."""
+        """Test that a transformed QNode is captured correctly. The transform should be applied
+        to the qfunc instead of the QNode."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -146,14 +147,12 @@ class TestCaptureTransforms:
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert (transform_eqn := qfunc_jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
-        params = transform_eqn.params
-        qnode_jaxpr = params["inner_jaxpr"]
-        assert qnode_jaxpr.eqns[0].primitive == qml.capture.qnode_prim
-
-        qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        expected_jaxpr = jax.make_jaxpr(func)(*args).eqns[0].params["qfunc_jaxpr"]
+        qfunc_jaxpr = transform_eqn.params["inner_jaxpr"]
+        expected_jaxpr = jax.make_jaxpr(func.func)(*args)
         for eqn1, eqn2 in zip(qfunc_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
