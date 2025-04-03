@@ -117,6 +117,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
     rules that the new system may choose if they're the most resource efficient.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+  [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
@@ -669,6 +670,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Other improvements</h4>
 
+* The qchem functions that accept a string input have been updated to consistently work with both
+  lower-case and upper-case inputs.
+  [(#7186)](https://github.com/PennyLaneAI/pennylane/pull/7186)
+
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
 
@@ -1101,6 +1106,7 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Diego Guala,
 Austin Huang,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
