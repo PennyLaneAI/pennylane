@@ -54,16 +54,11 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     Device
     DefaultMixed
     DefaultQubit
+    default_tensor.DefaultTensor
     NullQubit
     ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
-
-.. currentmodule:: pennylane.devices.default_tensor
-.. autosummary::
-    :toctree: api
-
-    DefaultTensor
 
 Preprocessing Transforms
 ------------------------
