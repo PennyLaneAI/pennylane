@@ -254,7 +254,7 @@ class FromBloq(Operation):
     .. details::
         :title: Advanced Example
 
-        An example showcasing how to use ``qml.FromBloq`` inside a device:
+        This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
 
         .. code-block::
 
