@@ -22,7 +22,6 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.math import get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
@@ -243,7 +242,7 @@ class LegacyDeviceFacade(Device):
     def _setup_backprop_config(self, execution_config):
         tape = qml.tape.QuantumScript()
         if not self._validate_backprop_method(tape):
-            raise pennylane.errors.DeviceError("device does not support backprop.")
+            raise qml.DeviceError("device does not support backprop.")
         if execution_config.use_device_gradient is None:
             return replace(execution_config, use_device_gradient=True)
         return execution_config
@@ -251,7 +250,7 @@ class LegacyDeviceFacade(Device):
     def _setup_adjoint_config(self, execution_config):
         tape = qml.tape.QuantumScript([], [])
         if not self._validate_adjoint_method(tape):
-            raise pennylane.errors.DeviceError("device does not support device derivatives")
+            raise qml.DeviceError("device does not support device derivatives")
         updated_values = {
             "gradient_keyword_arguments": {"use_device_state": True, "method": "adjoint_jacobian"}
         }
@@ -266,7 +265,7 @@ class LegacyDeviceFacade(Device):
         tape = qml.tape.QuantumScript([], [])
 
         if not self._validate_device_method(tape):
-            raise pennylane.errors.DeviceError("device does not support device derivatives")
+            raise qml.DeviceError("device does not support device derivatives")
 
         updated_values = {}
         if execution_config.use_device_gradient is None:
@@ -357,7 +356,7 @@ class LegacyDeviceFacade(Device):
             program((tape,))
         except (
             qml.operation.DecompositionUndefinedError,
-            pennylane.errors.DeviceError,
+            qml.DeviceError,
             AttributeError,
         ):
             return False

@@ -22,7 +22,6 @@ import pytest
 from scipy.linalg import block_diag
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import numpy as np
 from pennylane.gradients.metric_tensor import _get_aux_wire
 
@@ -683,7 +682,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.torch
@@ -701,7 +700,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.tf
@@ -719,7 +718,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.jax
@@ -737,7 +736,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
@@ -1052,7 +1051,7 @@ class TestFullMetricTensor:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
@@ -1439,7 +1438,7 @@ def test_generator_no_expval(monkeypatch):
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="is not hermitian"):
+        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
             qml.metric_tensor(tape, approx="block-diag")
 
 

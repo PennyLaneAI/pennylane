@@ -15,13 +15,12 @@
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.gradients.hamiltonian_grad import hamiltonian_grad
 
 
 def test_hamiltonian_grad_deprecation():
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
         match="The 'hamiltonian_grad' function is deprecated",
     ):
         with qml.queuing.AnnotatedQueue() as q:
@@ -49,14 +48,14 @@ def test_behaviour():
     tape = qml.tape.QuantumScript.from_queue(q)
     tape.trainable_params = {2, 3}
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
         match="The 'hamiltonian_grad' function is deprecated",
     ):
         tapes, processing_fn = hamiltonian_grad(tape, idx=0)
     res1 = processing_fn(dev.execute(tapes))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
         match="The 'hamiltonian_grad' function is deprecated",
     ):
         tapes, processing_fn = hamiltonian_grad(tape, idx=1)

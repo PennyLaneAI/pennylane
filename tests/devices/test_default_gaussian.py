@@ -23,7 +23,6 @@ from scipy.linalg import block_diag
 from scipy.special import factorial as fac
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.devices.default_gaussian import (
     beamsplitter,
     coherent_state,
@@ -39,7 +38,6 @@ from pennylane.devices.default_gaussian import (
     two_mode_squeezing,
     vacuum_state,
 )
-from pennylane.errors import DeviceError
 from pennylane.wires import Wires
 
 U = np.array(
@@ -114,7 +112,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError,
+        qml.DeviceError,
         match=msg,
     ):
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
@@ -865,7 +863,7 @@ class TestDefaultGaussianIntegration:
             return qml.sample(qml.QuadX(0)), qml.expval(qml.QuadX(1))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Default gaussian only support single measurements.",
         ):
             circuit()

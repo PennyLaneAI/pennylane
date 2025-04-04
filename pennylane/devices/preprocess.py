@@ -24,7 +24,6 @@ from itertools import chain
 from typing import Optional, Type
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -53,7 +52,7 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
-        error = pennylane.errors.DeviceError
+        error = qml.DeviceError
 
     max_depth_reached = False
     if max_expansion is not None and max_expansion <= current_depth:
@@ -104,7 +103,7 @@ def no_sampling(
     adjoint and backprop validation.
     """
     if tape.shots:
-        raise pennylane.errors.DeviceError(f"Finite shots are not supported with {name}")
+        raise qml.DeviceError(f"Finite shots are not supported with {name}")
     return (tape,), null_postprocessing
 
 
@@ -253,7 +252,7 @@ def validate_multiprocessing_workers(
             )
 
         if device._debugger and device._debugger.active:
-            raise pennylane.errors.DeviceError(
+            raise qml.DeviceError(
                 "Debugging with ``Snapshots`` is not available with multiprocessing."
             )
 
@@ -278,7 +277,7 @@ def validate_adjoint_trainable_params(
 
     for op in tape.operations[: tape.num_preps]:
         if qml.operation.is_trainable(op):
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
@@ -380,7 +379,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     """
 
     if error is None:
-        error = pennylane.errors.DeviceError
+        error = qml.DeviceError
 
     if decomposer is None:
 
@@ -460,7 +459,7 @@ def validate_observables(
 
     for m in tape.measurements:
         if m.obs is not None and not stopping_condition(m.obs):
-            raise pennylane.errors.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+            raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
 
     return (tape,), null_postprocessing
 
@@ -524,14 +523,12 @@ def validate_measurements(
     if shots.total_shots is not None:
         for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
-                raise pennylane.errors.DeviceError(
-                    f"Measurement {m} not accepted with finite shots on {name}"
-                )
+                raise qml.DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
         for m in chain(snapshot_measurements, tape.measurements):
             if not analytic_measurements(m):
-                raise pennylane.errors.DeviceError(
+                raise qml.DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."
                 )
 

@@ -18,7 +18,6 @@ from itertools import product
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 import pennylane.numpy as np
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
@@ -39,7 +38,7 @@ class TestMeasure:
         """Test that an error is raised if multiple wires are passed to
         measure."""
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             qml.measure(wires=[0, 1])

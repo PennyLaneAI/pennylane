@@ -15,7 +15,6 @@
 import copy
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.math import requires_grad, unwrap
 from pennylane.operation import Operation
 from pennylane.ops import LinearCombination, Sum
@@ -208,7 +207,7 @@ class QDrift(Operation):
             )
 
         if any(requires_grad(coeff) for coeff in coeffs):
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "The QDrift template currently doesn't support differentiation through the "
                 "coefficients of the input Hamiltonian."
             )

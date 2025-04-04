@@ -19,7 +19,6 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 import pennylane.numpy as np
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.transforms.optimization.pattern_matching import (
@@ -838,7 +837,7 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="The pattern is not a valid quantum tape."
+            qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."
         ):
             optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
@@ -865,7 +864,7 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Pattern is not valid, it does not implement identity.",
         ):
             optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
@@ -887,7 +886,7 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="Circuit has less qubits than the pattern."
+            qml.QuantumFunctionError, match="Circuit has less qubits than the pattern."
         ):
             optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
@@ -918,9 +917,7 @@ class TestPatternMatchingOptimization:
         template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=10)
 
-        with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="The pattern contains measurements."
-        ):
+        with pytest.raises(qml.QuantumFunctionError, match="The pattern contains measurements."):
             optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()

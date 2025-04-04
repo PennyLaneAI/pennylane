@@ -20,7 +20,6 @@ from copy import copy
 from typing import Optional
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.wires import Wires
 
 from .measurements import MutualInfo, StateMeasurement
@@ -84,7 +83,7 @@ def mutual_info(wires0, wires1, log_base=None):
     if not any(qml.math.is_abstract(w) for w in wires0 + wires1) and [
         wire for wire in wires0 if wire in wires1
     ]:
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
     return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)

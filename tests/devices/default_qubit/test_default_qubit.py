@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
 max_workers_list = [
@@ -76,7 +75,7 @@ def test_snapshot_multiprocessing_qnode():
         return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     with pytest.raises(
-        pennylane.errors.DeviceError,
+        qml.DeviceError,
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()

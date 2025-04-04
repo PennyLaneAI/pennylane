@@ -24,7 +24,6 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -171,7 +170,7 @@ def execute(
             "The config argument has been deprecated and will be removed in v0.42. "
             "The provided config argument will be ignored. "
             "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
     if inner_transform != "unset":
@@ -179,13 +178,13 @@ def execute(
             "The inner_transform argument has been deprecated and will be removed in v0.42. "
             "The provided inner_transform argument will be ignored. "
             "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
     if mcm_config != "unset":
         warn(
             "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         mcm_method = mcm_config.mcm_method
         postselect_mode = mcm_config.postselect_mode

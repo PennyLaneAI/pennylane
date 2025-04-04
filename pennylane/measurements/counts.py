@@ -20,7 +20,6 @@ from typing import Optional
 import numpy as np
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -144,7 +143,7 @@ def counts(
             or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
             for o in op
         ):
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."

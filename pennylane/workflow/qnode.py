@@ -25,7 +25,6 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -166,7 +165,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
     ):
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "A quantum function must return either a single measurement, "
             "or a nonempty sequence of measurements."
         )
@@ -174,7 +173,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
     if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
 
@@ -191,7 +190,7 @@ def _validate_diff_method(
     if device.supports_derivatives(config):
         return
     if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
     if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
@@ -199,7 +198,7 @@ def _validate_diff_method(
     if isinstance(diff_method, TransformDispatcher):
         return
 
-    raise pennylane.errors.QuantumFunctionError(
+    raise qml.QuantumFunctionError(
         f"Differentiation method {diff_method} not recognized. Allowed "
         f"options are {tuple(get_args(SupportedDiffMethods))}."
     )
@@ -568,7 +567,7 @@ class QNode:
             )
 
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
 
@@ -581,7 +580,7 @@ class QNode:
                 warnings.warn(
                     f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
                     Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
-                    pennylane.errors.PennyLaneDeprecationWarning,
+                    qml.PennyLaneDeprecationWarning,
                 )
             gradient_kwargs |= kwargs
         _validate_gradient_kwargs(gradient_kwargs)
@@ -786,7 +785,7 @@ class QNode:
             return new_config.gradient_method, {}, device
 
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 f"Device {device} does not support {diff_method} with requested circuit."
             )
 
@@ -813,7 +812,7 @@ class QNode:
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )

@@ -24,7 +24,6 @@ import pytest
 import scipy
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
 from pennylane.ops import LinearCombination
@@ -1989,7 +1988,7 @@ class TestLinearCombinationDifferentiation:
 
         grad_fn = qml.grad(circuit)
         with pytest.raises(
-            pennylane.errors.DeviceError,
+            qml.DeviceError,
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)

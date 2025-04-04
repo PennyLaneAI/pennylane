@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.measurements import MeasurementShapeError
 from pennylane.operation import EigvalsUndefinedError, Operator
 
@@ -196,7 +195,7 @@ class TestSample:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0, qml.PauliZ(0)])
@@ -209,7 +208,7 @@ class TestSample:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0 + m1, m2])

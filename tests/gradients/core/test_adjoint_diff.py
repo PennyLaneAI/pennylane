@@ -18,7 +18,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import numpy as np
 
 
@@ -39,9 +38,7 @@ class TestAdjointJacobian:
             qml.var(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="Adjoint differentiation method does"
-        ):
+        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
             dev.adjoint_jacobian(tape)
 
     def test_finite_shots_warns(self):
@@ -85,9 +82,7 @@ class TestAdjointJacobian:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="The CRot operation is not"
-        ):
+        with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
             dev.adjoint_jacobian(tape)
 
     def test_trainable_hermitian_warns(self):

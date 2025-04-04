@@ -16,7 +16,6 @@ import warnings
 from typing import Union
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
@@ -181,7 +180,7 @@ def structure_constants(
     warnings.warn(
         "Calling structure_constants via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
         "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
     )
 
     return qml.structure_constants(g, pauli=pauli, matrix=matrix, is_orthogonal=is_orthogonal)

@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -86,7 +85,7 @@ class TestMutualInfoUnitTests:
         wires = qml.wires.Wires(range(2))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Subsystems for computing mutual information must not overlap.",
         ):
             qml.mutual_info(wires0=[0], wires1=[0, 1]).process_density_matrix(dm, wires)
@@ -170,7 +169,7 @@ class TestIntegration:
             return qml.mutual_info(wires0=[0], wires1=[1])
 
         with pytest.raises(
-            pennylane.errors.DeviceError, match="not accepted with finite shots on default.qubit"
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit(0.5)
 
@@ -485,7 +484,7 @@ class TestIntegration:
             return qml.mutual_info(wires0=[0, 1], wires1=[1, 2])
 
         msg = "Subsystems for computing mutual information must not overlap"
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match=msg):
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
 
     @pytest.mark.all_interfaces

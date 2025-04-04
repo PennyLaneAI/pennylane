@@ -21,7 +21,6 @@ import pytest
 from packaging.version import Version
 
 import pennylane as qml
-import pennylane.errors
 
 KerasLayer = qml.qnn.keras.KerasLayer
 
@@ -54,7 +53,7 @@ def model(get_circuit, n_qubits, output_dim):
     between Dense layers."""
     c, w = get_circuit
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         layer1 = KerasLayer(c, w, output_dim)
         layer2 = KerasLayer(c, w, output_dim)
@@ -77,7 +76,7 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
     """The Keras NN model."""
     c, w = get_circuit_dm
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         layer1 = KerasLayer(c, w, output_dim)
         layer2 = KerasLayer(c, w, output_dim)
@@ -149,7 +148,7 @@ def test_bad_tf_version(get_circuit, output_dim, monkeypatch):  # pylint: disabl
         m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
@@ -175,7 +174,7 @@ class TestKerasLayer:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             with pytest.raises(TypeError, match="QNode must include an argument with name"):
@@ -191,7 +190,7 @@ class TestKerasLayer:
         c, w = get_circuit
         w[qml.qnn.keras.KerasLayer._input_arg] = n_qubits  # pylint: disable=protected-access
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             with pytest.raises(
@@ -207,7 +206,7 @@ class TestKerasLayer:
         c, w = get_circuit
         del w["w1"]
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             with pytest.raises(
@@ -227,7 +226,7 @@ class TestKerasLayer:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
@@ -266,7 +265,7 @@ class TestKerasLayer:
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim=output_dim)
@@ -288,7 +287,7 @@ class TestKerasLayer:
         its first element while an int is left unchanged."""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim[0])
@@ -300,7 +299,7 @@ class TestKerasLayer:
         with values that are tuples."""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -349,7 +348,7 @@ class TestKerasLayer:
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim=output_dim)
@@ -369,7 +368,7 @@ class TestKerasLayer:
         dictionary, i.e., that each value of the dictionary has correct shape and name."""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -412,7 +411,7 @@ class TestKerasLayer:
             m.setattr(tf.keras.layers.Layer, "add_weight", add_weight_dummy)
             c, w = get_circuit
             with pytest.warns(
-                pennylane.errors.PennyLaneDeprecationWarning,
+                qml.PennyLaneDeprecationWarning,
                 match="The 'KerasLayer' class is deprecated",
             ):
                 layer = KerasLayer(c, w, output_dim, weight_specs=weight_specs)
@@ -431,7 +430,7 @@ class TestKerasLayer:
         output shape is of type tf.TensorShape"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -448,7 +447,7 @@ class TestKerasLayer:
         (batch_size, output_dim) with results that agree with directly calling the QNode"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -483,7 +482,7 @@ class TestKerasLayer:
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c_shuffled, w, output_dim)
@@ -521,7 +520,7 @@ class TestKerasLayer:
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c_default, w, output_dim)
@@ -546,7 +545,7 @@ class TestKerasLayer:
         """
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -566,7 +565,7 @@ class TestKerasLayer:
         """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -580,7 +579,7 @@ class TestKerasLayer:
         taken with respect to the trainable variables"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -618,7 +617,7 @@ class TestKerasLayer:
         weight_shapes = {"weights": (3, 2, 3)}
 
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
@@ -639,7 +638,7 @@ class TestKerasLayer:
         """Test that the compute_output_shape method returns the expected shape"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -655,7 +654,7 @@ class TestKerasLayer:
         """Test that the construct method builds the correct tape with correct differentiability"""
         c, w = get_circuit
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             layer = KerasLayer(c, w, output_dim)
@@ -685,7 +684,7 @@ def test_invalid_interface_error(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         with pytest.raises(ValueError, match="Invalid interface"):
             _ = KerasLayer(circuit, weight_shapes, output_dim=2)
@@ -707,7 +706,7 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
     assert (
@@ -763,7 +762,7 @@ class TestKerasLayerIntegration:
         method"""
         clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             qlayer = KerasLayer(*get_circuit, output_dim)
@@ -775,7 +774,7 @@ class TestKerasLayerIntegration:
 
         new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             new_qlayer = KerasLayer(*get_circuit, output_dim)
@@ -878,7 +877,7 @@ class TestKerasLayerIntegrationDM:
         method"""
         clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             qlayer = KerasLayer(*get_circuit_dm, output_dim)
@@ -890,7 +889,7 @@ class TestKerasLayerIntegrationDM:
 
         new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="The 'KerasLayer' class is deprecated",
         ):
             new_qlayer = KerasLayer(*get_circuit_dm, output_dim)
@@ -959,7 +958,7 @@ def test_batch_input_single_measure(tol):
 
     KerasLayer.set_input_argument("x")
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     layer.build((None, 2))
@@ -987,7 +986,7 @@ def test_batch_input_multi_measure(tol):
 
     KerasLayer.set_input_argument("x")
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
     layer.build((None, 4))
@@ -1017,7 +1016,7 @@ def test_draw():
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
 
@@ -1057,7 +1056,7 @@ def test_draw_mpl():
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
 
@@ -1095,7 +1094,7 @@ def test_specs():
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
 
@@ -1144,7 +1143,7 @@ def test_save_and_load_preserves_weights(tmpdir):
 
     weight_shapes = {"weights": (n_qubits,)}
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
+        qml.PennyLaneDeprecationWarning, match="The 'KerasLayer' class is deprecated"
     ):
         quantum_layer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
 

@@ -23,7 +23,6 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
@@ -126,18 +125,14 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
             with qml.queuing.QueuingManager.stop_recording():
                 qml.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
         except Exception as e:
-            raise pennylane.errors.DeviceError(
-                "Applying damping readout error results in error:\n" + str(e)
-            )
+            raise qml.DeviceError("Applying damping readout error results in error:\n" + str(e))
         measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxation_probs))
     if readout_misclassification_probs is not None:
         try:
             with qml.queuing.QueuingManager.stop_recording():
                 qml.TritFlip(*readout_misclassification_probs, wires=0)
         except Exception as e:
-            raise pennylane.errors.DeviceError(
-                "Applying trit flip readout error results in error:\n" + str(e)
-            )
+            raise qml.DeviceError("Applying trit flip readout error results in error:\n" + str(e))
         measure_funcs.append(partial(qml.TritFlip, *readout_misclassification_probs))
 
     return None if len(measure_funcs) == 0 else measure_funcs
@@ -323,7 +318,7 @@ class DefaultQutritMixed(Device):
         updated_values = {}
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise pennylane.errors.DeviceError(f"device option {option} not present on {self}")
+                raise qml.DeviceError(f"device option {option} not present on {self}")
 
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"

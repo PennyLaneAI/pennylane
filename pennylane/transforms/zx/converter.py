@@ -21,7 +21,6 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError, transform
@@ -376,7 +375,7 @@ def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):
         # Check that the gate is compatible with PyZX
         name = op.name
         if name not in gate_types:
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "The expansion of the quantum tape failed, PyZX does not support", name
             )
 
@@ -490,14 +489,14 @@ def from_zx(graph, decompose_phases=True):
 
             # The graph is not diagram like.
             if len(neighbors) != 1:
-                raise pennylane.errors.QuantumFunctionError(
+                raise qml.QuantumFunctionError(
                     "Graph doesn't seem circuit like: multiple parents. Try to use the PyZX function `extract_circuit`."
                 )
 
             neighbor_0 = neighbors[0]
 
             if qubits[neighbor_0] != qubit_1:
-                raise pennylane.errors.QuantumFunctionError(
+                raise qml.QuantumFunctionError(
                     "Cross qubit connections, the graph is not circuit-like."
                 )
 
@@ -572,7 +571,7 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
     """Return the list of two qubit gates giveeen the vertex and its neighbor."""
     if type_1 == type_2:
         if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "Two green or respectively two red nodes connected by a simple edge does not have a "
                 "circuit representation."
             )
@@ -587,7 +586,7 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
         return [op_1, op_2, op_3]
 
     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             "A green and red node connected by a Hadamard edge does not have a circuit representation."
         )
     # Type1 is always of type Z therefore the qubits are already ordered.

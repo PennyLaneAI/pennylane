@@ -19,7 +19,6 @@ from typing import Iterable, Union
 import numpy as np
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
@@ -138,7 +137,7 @@ def lie_closure(
     warnings.warn(
         "Calling lie_closure via qml.pauli.lie_closure is deprecated. lie_closure has moved to pennylane.liealg. "
         "Please call lie_closure from top level as qml.lie_closure or from the liealg module via qml.liealg.lie_closure.",
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
     )
 
     return qml.lie_closure(

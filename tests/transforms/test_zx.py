@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.tape import QuantumScript
 from pennylane.transforms import TransformError
 
@@ -213,9 +212,7 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-        with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="Graph doesn't seem circuit like"
-        ):
+        with pytest.raises(qml.QuantumFunctionError, match="Graph doesn't seem circuit like"):
             qml.transforms.from_zx(zx_g)
 
     @pytest.mark.parametrize("decompose", decompose_phases)
@@ -472,7 +469,7 @@ class TestConvertersZX:
         graph.set_outputs(tuple(outputs))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Cross qubit connections, the graph is not circuit-like.",
         ):
             qml.transforms.from_zx(graph)
@@ -484,7 +481,7 @@ class TestConvertersZX:
 
         qs = QuantumScript(operations, [])
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
             qml.transforms.to_zx(qs)
@@ -537,7 +534,7 @@ class TestConvertersZX:
         graph.set_outputs(tuple(outputs))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Two green or respectively two red nodes connected by a ",
         ):
             qml.transforms.from_zx(graph)
@@ -590,7 +587,7 @@ class TestConvertersZX:
         graph.set_outputs(tuple(outputs))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="A green and red node connected by a Hadamard edge ",
         ):
             qml.transforms.from_zx(graph)

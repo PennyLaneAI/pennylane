@@ -25,7 +25,7 @@ Modules
     :toctree: api
 
 """
-from pennylane.errors import ExperimentalWarning
+from pennylane import ExperimentalWarning
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,

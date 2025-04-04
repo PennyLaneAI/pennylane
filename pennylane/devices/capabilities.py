@@ -23,7 +23,6 @@ from typing import Callable, Optional, Union
 import tomlkit as toml
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.operation import Operator
 
 ALL_SUPPORTED_SCHEMAS = [3]
@@ -442,7 +441,7 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
         return  # no need to validate if requested deferred or if no method is requested.
 
     if mcm_method == "one-shot" and not shots_present:
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             'The "one-shot" MCM method is only supported with finite shots.'
         )
 
@@ -450,7 +449,7 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
         # If the device does not declare its supported mcm methods through capabilities,
         # simply check that the requested mcm method is something we recognize.
         if mcm_method not in ("deferred", "one-shot", "tree-traversal"):
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
                 f'are: "deferred", "one-shot", and "tree-traversal".'
             )
@@ -460,7 +459,7 @@ def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots
 
         supported_methods = capabilities.supported_mcm_methods + ["deferred"]
         supported_method_strings = [f'"{m}"' for m in supported_methods]
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
             f"are: {', '.join(supported_method_strings)}."
         )

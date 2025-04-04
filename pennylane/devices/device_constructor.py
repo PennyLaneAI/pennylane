@@ -21,7 +21,6 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 import pennylane as qml
-import pennylane.errors
 
 
 def _get_device_entrypoints():
@@ -255,7 +254,7 @@ def device(name, *args, **kwargs):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
             current_version = Version(qml.version())
             if current_version not in required_versions:
-                raise pennylane.errors.DeviceError(
+                raise qml.DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
                     f"however PennyLane version {qml.version()} is installed."
                 )
@@ -282,6 +281,6 @@ def device(name, *args, **kwargs):
 
         return dev
 
-    raise pennylane.errors.DeviceError(
+    raise qml.DeviceError(
         f"Device {name} does not exist. Make sure the required plugin is installed."
     )

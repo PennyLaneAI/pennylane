@@ -26,7 +26,6 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.preprocess import (
@@ -434,7 +433,7 @@ class DefaultTensor(Device):
 
         shots = kwargs.pop("shots", None)
         if shots is not None:
-            raise pennylane.errors.DeviceError(
+            raise qml.DeviceError(
                 "default.tensor only supports analytic simulations with shots=None."
             )
 
@@ -603,7 +602,7 @@ class DefaultTensor(Device):
                 new_device_options[option] = getattr(self, f"_{option}", None)
 
         if config.mcm_config.mcm_method not in {None, "deferred"}:
-            raise pennylane.errors.DeviceError(
+            raise qml.DeviceError(
                 f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
             )
 

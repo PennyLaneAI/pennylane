@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -95,7 +94,7 @@ def test_none_return_type():
     `None`"""
 
     with pytest.warns(
-        pennylane.errors.PennyLaneDeprecationWarning,
+        qml.PennyLaneDeprecationWarning,
         match="MeasurementProcess property return_type is deprecated",
     ):
 
@@ -572,7 +571,7 @@ class TestSampleMeasurement:
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
-            pennylane.errors.DeviceError,
+            qml.DeviceError,
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
@@ -620,7 +619,7 @@ class TestStateMeasurement:
             return MyMeasurement()
 
         with pytest.raises(
-            pennylane.errors.DeviceError, match="not accepted with finite shots on default.qubit"
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit()
 
@@ -693,7 +692,7 @@ class TestMeasurementProcess:
     def test_deprecation_return_type(self):
         """Test that the return_type property is deprecated."""
         with pytest.warns(
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
             match="MeasurementProcess property return_type is deprecated",
         ):
             _ = MeasurementProcess().return_type

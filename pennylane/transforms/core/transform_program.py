@@ -20,7 +20,6 @@ from functools import partial
 from typing import Optional, overload
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
@@ -42,19 +41,19 @@ def _get_interface(qnode, args, kwargs) -> str:
 
 
 def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
-    raise pennylane.errors.QuantumFunctionError("No trainable parameters.")
+    raise qml.QuantumFunctionError("No trainable parameters.")
 
 
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not qml.math.get_trainable_indices(args) and argnums is None:
-        raise pennylane.errors.QuantumFunctionError("No trainable parameters.")
+        raise qml.QuantumFunctionError("No trainable parameters.")
     return qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
 def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not qml.math.get_trainable_indices(args):
-        raise pennylane.errors.QuantumFunctionError("No trainable parameters.")
+        raise qml.QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
 
     with tf.GradientTape() as tape:
@@ -65,7 +64,7 @@ def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLi
 # pylint: disable=import-outside-toplevel, unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not qml.math.get_trainable_indices(args):
-        raise pennylane.errors.QuantumFunctionError("No trainable parameters.")
+        raise qml.QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian
 
     return jacobian(partial(classical_function, **kwargs), args)
@@ -77,7 +76,7 @@ def _jax_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorL
 
     if argnums is None:
         if not isinstance(args[0], jax.numpy.ndarray):
-            raise pennylane.errors.QuantumFunctionError("No trainable parameters.")
+            raise qml.QuantumFunctionError("No trainable parameters.")
         argnums = 0
     return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
@@ -520,7 +519,7 @@ class TransformProgram:
 
         interface = _get_interface(qnode, args, kwargs)
         if interface == "jax" and "argnum" in self[index].kwargs:
-            raise pennylane.errors.QuantumFunctionError(
+            raise qml.QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
             )
 

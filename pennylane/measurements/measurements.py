@@ -24,7 +24,6 @@ from enum import Enum
 from typing import Optional, Union
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
@@ -276,7 +275,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         warnings.warn(
             "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
             "Instead, please use isinstance for type checking directly.",
-            pennylane.errors.PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         return self._shortname
 
@@ -291,7 +290,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
@@ -320,7 +319,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ()
 
         """
-        raise pennylane.errors.QuantumFunctionError(
+        raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 

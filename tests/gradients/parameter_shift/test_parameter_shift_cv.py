@@ -19,7 +19,6 @@ from unittest import mock
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import numpy as np
 from pennylane.gradients import param_shift_cv
 from pennylane.gradients.gradient_transform import choose_trainable_param_indices
@@ -301,7 +300,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.torch
@@ -318,7 +317,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.tf
@@ -335,7 +334,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.jax
@@ -352,7 +351,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     def test_no_trainable_params_tape(self):

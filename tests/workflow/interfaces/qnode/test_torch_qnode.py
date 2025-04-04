@@ -20,7 +20,6 @@ import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
@@ -554,7 +553,7 @@ class TestShotsIntegration:
             return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        with pytest.raises(pennylane.errors.DeviceError):
+        with pytest.raises(qml.DeviceError):
             circuit(a, b)
 
         # execute with shots=100

@@ -24,7 +24,6 @@ from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
@@ -110,7 +109,7 @@ class TestValidation:
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
     def test_unknown_diff_method_string(self):
@@ -118,7 +117,7 @@ class TestValidation:
         dev = DefaultQubitLegacy(wires=1)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Differentiation method hello not recognized",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
@@ -141,7 +140,7 @@ class TestValidation:
         dev = DefaultQubitLegacy(wires=1, shots=1)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="does not support adjoint with requested circuit.",
         ):
 
@@ -163,7 +162,7 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
             qml.grad(circuit, argnum=0)([0.5])
@@ -330,7 +329,7 @@ class TestTapeConstruction:
         qn = QNode(func0, dev)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="must return either a single measurement"
+            qml.QuantumFunctionError, match="must return either a single measurement"
         ):
             qn(5, 1)
 
@@ -343,7 +342,7 @@ class TestTapeConstruction:
         qn = QNode(func2, dev)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="must return either a single measurement"
+            qml.QuantumFunctionError, match="must return either a single measurement"
         ):
             qn(5, 1)
 
@@ -356,7 +355,7 @@ class TestTapeConstruction:
         qn = QNode(func3, dev)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError, match="must return either a single measurement"
+            qml.QuantumFunctionError, match="must return either a single measurement"
         ):
             qn(5, 1)
 
@@ -375,7 +374,7 @@ class TestTapeConstruction:
         qn = QNode(func, dev)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="measurements must be returned in the order they are measured",
         ):
             qn(5, 1)

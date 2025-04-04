@@ -18,7 +18,6 @@ Tests for the gradients.hadamard_gradient module.
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import numpy as np
 
 
@@ -830,7 +829,7 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
@@ -846,7 +845,7 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
@@ -862,7 +861,7 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
@@ -878,7 +877,7 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
@@ -1221,7 +1220,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)

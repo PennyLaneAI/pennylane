@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane.measurements import CountsMP
 from pennylane.wires import Wires
 
@@ -254,7 +253,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0, qml.PauliZ(0)])
@@ -267,7 +266,7 @@ class TestProcessSamples:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            pennylane.errors.QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0 + m1, m2])

@@ -18,7 +18,6 @@ Unit tests for the optimization transform ``merge_amplitude_embedding``.
 import pytest
 
 import pennylane as qml
-import pennylane.errors
 from pennylane import numpy as np
 from pennylane.transforms.optimization import merge_amplitude_embedding
 
@@ -73,7 +72,7 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(pennylane.errors.DeviceError, match="applied in the same qubit"):
+        with pytest.raises(qml.DeviceError, match="applied in the same qubit"):
             qnode()
 
     def test_decorator(self):
