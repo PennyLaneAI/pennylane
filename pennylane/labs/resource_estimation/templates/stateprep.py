@@ -681,7 +681,7 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
 
         ww = self.hyperparameters["work_wires"]
         num_work_wires = len(ww) if ww else 0
-        num_wires = self.hyperparameters["input_wires"]
+        num_wires = len(self.hyperparameters["input_wires"])
 
         return {"num_wires": num_wires, "num_work_wires": num_work_wires}
 
