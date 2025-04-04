@@ -296,7 +296,8 @@ def hadamard_grad(
             ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
             ...     return qml.expval(qml.Z(0))
             ...
-            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, mode='reversed'))(qml.numpy.array(0.5)) )
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
             2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
@@ -308,7 +309,8 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, mode='direct'))(qml.numpy.array(0.5)) )
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤     
 
@@ -341,7 +343,8 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, mode='reversed-direct'))(qml.numpy.array(0.5)) )
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
 
