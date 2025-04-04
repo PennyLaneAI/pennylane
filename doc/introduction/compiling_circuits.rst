@@ -237,9 +237,6 @@ a pre-defined set of gates:
     from pennylane.transforms import decompose
     from functools import partial
 
-    # Works with the new decomposition system, as well.
-    # qml.decompositions.enable_graph()
-
     dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
 
@@ -292,9 +289,6 @@ The example below shows how the user can visualize the decomposition. We begin
 with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
 
 .. code-block:: python
-
-    # Works with the new decomposition system, as well.
-    # qml.decompositions.enable_graph()
 
     phase = 1 
     target_wires = [0]
