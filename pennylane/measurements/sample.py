@@ -29,7 +29,7 @@ from .mid_measure import MeasurementValue
 
 def sample(
     op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
-    wires=None,
+    wires=None, dtype=None
 ) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
@@ -134,7 +134,7 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
+    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires), dtype=dtype)
 
 
 class SampleMP(SampleMeasurement):
@@ -157,7 +157,7 @@ class SampleMP(SampleMeasurement):
 
     _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
 
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
 
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
@@ -185,6 +185,7 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        self._dtype = dtype
 
     @classmethod
     def _abstract_eval(
@@ -215,6 +216,8 @@ class SampleMP(SampleMeasurement):
 
     @property
     def numeric_type(self):
+        if self._dtype is not None:
+            return self._dtype
         if self.obs is None:
             # Computational basis samples
             return int
