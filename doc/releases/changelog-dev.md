@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+
 <h4>Resource-efficient decompositions 🔎</h4>
 
 A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
@@ -587,6 +590,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Better drawing functionality</h4>
 
+* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
+   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+
 * `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
   changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
@@ -1121,6 +1127,7 @@ Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Dantong Li,
 William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
