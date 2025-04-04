@@ -894,7 +894,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Clean up `__init__.py` import files to be explicit in what they import.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
-* Clean up logic in `qml.drawer.tape_text`
+* Clean up logic in `qml.drawer.tape_text`.
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
 * Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
