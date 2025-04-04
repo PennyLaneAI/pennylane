@@ -597,6 +597,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
+* `qml.draw` now re-displays wire labels at the start of each partitioned chunk when using the max_length keyword argument.
+   [(#7210)](https://github.com/PennyLaneAI/pennylane/pull/7210)
+
 <h4>Gradients and differentiability</h4>
 
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
@@ -1127,5 +1130,6 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Justin Pickering,
+Alex Preciado,
 Shuli Shu,
 David Wierichs
