@@ -57,13 +57,15 @@ class SelectPauliRot(Operation):
     grad_method = None
     ndim_params = (1,)
 
-    def __init__(self, angles, control_wires, target_wire, rot_axis="Z", id=None):
+    def __init__(
+        self, angles, control_wires, target_wire, rot_axis="Z", id=None
+    ):  # pylint: disable=too-many-arguments
 
         self.hyperparameters["control_wires"] = qml.wires.Wires(control_wires)
         self.hyperparameters["target_wire"] = qml.wires.Wires(target_wire)
         self.hyperparameters["rot_axis"] = rot_axis
 
-        if len(angles) != 2 ** len(control_wires):
+        if qml.math.shape(angles)[0] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
 
         if rot_axis not in ["X", "Y", "Z"]:
@@ -103,7 +105,7 @@ class SelectPauliRot(Operation):
     @staticmethod
     def compute_decomposition(
         angles, control_wires, target_wire, rot_axis
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ, too-many-arguments
         r"""
         Computes the decomposition operations for the given state vector.
 
