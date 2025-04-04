@@ -151,16 +151,18 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
     return layer_str
 
 
-def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
+def _add_to_finished_lines(
+    totals: _CurrentTotals, config: _Config, show_wire_labels: bool
+) -> _CurrentTotals:
     """Add current totals to the finished lines and initialize new totals."""
     totals.finished_lines += totals.wire_totals + totals.bit_totals
     totals.finished_lines[-1] += "\n"
 
-    totals.wire_totals = [config.wire_filler] * config.n_wires
-
-    # Bit totals for new lines for warped drawings need to be consistent with the
-    # current bit filler
-    totals.bit_totals = [config.bit_filler(b) for b in range(config.n_bits)]
+    # Reset wire and bit totals. Bit totals for new lines for warped drawings
+    # need to be consistent with the current bit filler
+    totals.wire_totals, totals.bit_totals = _initialize_wire_and_bit_totals(
+        config, show_wire_labels
+    )
 
     return totals
 
@@ -440,7 +442,7 @@ def tape_text(
         layer_str = _left_justify(layer_str, config)
 
         if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
-            totals = _add_to_finished_lines(totals, config)
+            totals = _add_to_finished_lines(totals, config, show_wire_labels)
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
 
