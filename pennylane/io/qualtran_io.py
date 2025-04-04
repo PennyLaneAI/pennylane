@@ -148,7 +148,7 @@ def bloq_registers(bloq):
 
     **Example**
 
-    Given a Qualtran bloq:
+    This example shows how to find the estimation wires of a textbook Quantum Phase Estimation Bloq.
 
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
     >>> from qualtran.bloqs.basic_gates import ZPowGate
@@ -222,8 +222,8 @@ class FromBloq(Operation):
 
     Args:
         bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
-        wires (WiresLike): The wires the operator acts on. The number of wires required can be determined by using the
-            signature of the ``bloq`` via ``bloq.signature.n_qubits()``.
+        wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
+            signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
