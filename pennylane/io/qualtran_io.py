@@ -32,7 +32,6 @@ except (ModuleNotFoundError, ImportError) as import_error:
 # pylint: disable=unused-argument
 @lru_cache
 def _get_to_pl_op():
-
     @singledispatch
     def _to_pl_op(bloq, wires):
         return FromBloq(bloq=bloq, wires=wires)
@@ -118,8 +117,8 @@ def _get_to_pl_op():
 
 
 def bloq_registers(bloq):
-    """Reads a Qualtran bloq's signature and returns a ``qml.registers`` object with wires
-    assigned to registers according to the bloq's signature.
+    """Reads a Qualtran bloq's signature and returns a dictionary mapping the bloq's register names
+    to :class:`~.Wires`.
 
     .. note::
         This function requires the latest version of Qualtran. We recommend installing the main
@@ -129,13 +128,12 @@ def bloq_registers(bloq):
 
             pip install qualtran
 
-    The register names in the Qualtran bloq are used for the keys of the dictionary. The values
-    are :class:`~.Wires` objects with a length of the total bitsize of its respective register. The
+    The keys of the dictionary are the register names in the Qualtran bloq. The values
+    are :class:`~.Wires` objects with a length equal to the bitsize of its respective register. The
     wires are indexed in ascending order, starting from 0.
 
-    This function is best used for when one wants to manually access the wires that a Bloq acts on.
-    For example, to find the estimation wires of a textbook Quantum Phase Estimation bloq, one can
-    use this function as shown in the example.
+    This function makes it easy to access the wires that a bloq acts on and use them to precisely
+    control how gates connect.
 
     Args:
         bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
