@@ -174,23 +174,6 @@ from pennylane.liealg import lie_closure, structure_constants, center
 default_config = Configuration("config.toml")
 
 
-# TODO: Remove this when Catalyst and Lightning PR is merged
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-class ExperimentalWarning(UserWarning):
-    """Warning raised to indicate experimental/non-stable feature or support."""
-
-
 def __getattr__(name):
 
     if name == "plugin_devices":
