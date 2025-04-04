@@ -20,6 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
@@ -258,7 +259,7 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.torch
@@ -274,7 +275,7 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.tf
@@ -290,7 +291,7 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.jax
@@ -306,7 +307,7 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])

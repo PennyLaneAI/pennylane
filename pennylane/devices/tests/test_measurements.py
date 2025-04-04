@@ -18,6 +18,7 @@ from flaky import flaky
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -1731,7 +1732,7 @@ class TestSampleMeasurement:
             qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.raises((ValueError, qml.DeviceError)):
+        with pytest.raises((ValueError, pennylane.errors.DeviceError)):
             circuit()
 
     def test_method_overriden_by_device(self, device):
@@ -1813,7 +1814,7 @@ class TestStateMeasurement:
                 match="MyMeasurement with finite shots; the returned state information is analytic",
             )
             if isinstance(dev, qml.devices.LegacyDevice)
-            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
+            else pytest.raises(pennylane.errors.DeviceError, match="not accepted with finite shots")
         ):
             circuit()
 
@@ -1854,7 +1855,7 @@ class TestCustomMeasurement:
             tape = qml.tape.QuantumScript([], [MyMeasurement()])
             try:
                 dev.preprocess_transforms()((tape,))
-            except qml.DeviceError:
+            except pennylane.errors.DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
         @qml.qnode(dev)

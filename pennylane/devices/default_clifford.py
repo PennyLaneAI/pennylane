@@ -24,6 +24,7 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -122,7 +123,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
     if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):
-        raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
+        raise pennylane.errors.DeviceError(f"Channel not supported on {name} without finite shots.")
 
     return (tape,), null_postprocessing
 
@@ -133,7 +134,7 @@ def _pl_op_to_stim(op):
         stim_op = _OPERATIONS_MAP[op.name]
         stim_tg = map(str, op.wires)
     except KeyError as e:
-        raise qml.DeviceError(
+        raise pennylane.errors.DeviceError(
             f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
@@ -627,7 +628,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise qml.DeviceError(
+                raise pennylane.errors.DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 
@@ -696,7 +697,7 @@ class DefaultClifford(Device):
                 )[0]
                 # Check if the rotation was permissible
                 if len(samples) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
                     )
                 # Process the result from samples

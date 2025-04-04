@@ -20,7 +20,7 @@ from typing import Optional, Text
 
 from packaging.version import Version
 
-import pennylane as qml
+import pennylane.errors as qml
 
 try:
     import tensorflow as tf

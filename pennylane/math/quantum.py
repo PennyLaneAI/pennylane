@@ -25,6 +25,7 @@ from numpy import float64, sqrt  # pylint:disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 import pennylane as qml
+import pennylane.errors
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
@@ -862,7 +863,7 @@ def expectation_value(
         _check_hermitian_operator(operator_matrix)
 
     if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
-        raise qml.QuantumFunctionError(
+        raise pennylane.errors.QuantumFunctionError(
             "The operator and the state vector must have the same number of wires."
         )
 
@@ -1215,7 +1216,9 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
 
     # Compare the number of wires on both subsystems
     if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise pennylane.errors.QuantumFunctionError(
+            "The two states must have the same number of wires."
+        )
 
     return _compute_relative_entropy(state0, state1, base=base)
 
@@ -1512,7 +1515,9 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
         _check_density_matrix(state1)
 
     if state0.shape[-1] != state1.shape[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise pennylane.errors.QuantumFunctionError(
+            "The two states must have the same number of wires."
+        )
 
     if len(state0.shape) == len(state1.shape) == 3 and state0.shape[0] != state1.shape[0]:
         raise ValueError(

@@ -19,6 +19,7 @@ from functools import partial
 from warnings import warn
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -174,7 +175,7 @@ def compile(
     if pipeline is None:
         warn(
             "Specifying pipeline=None is now deprecated. Please specify a sequence of transforms",
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
         )
         pipeline = default_pipeline
     else:

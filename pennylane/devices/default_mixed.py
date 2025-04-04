@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qml
 
+import pennylane.errors
 from pennylane.math import get_canonical_interface_name
 from pennylane.logging import debug_logger, debug_logger_init
 
@@ -312,7 +313,7 @@ class DefaultMixed(Device):
 
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise pennylane.errors.DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:

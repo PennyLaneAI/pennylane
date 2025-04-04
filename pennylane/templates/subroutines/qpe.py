@@ -18,6 +18,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.operation import AnyWires, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
@@ -162,14 +163,14 @@ class QuantumPhaseEstimation(ErrorOperation):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
-                raise qml.QuantumFunctionError(
+                raise pennylane.errors.QuantumFunctionError(
                     "The unitary is expressed as an operator, which already has target wires "
                     "defined, do not additionally specify target wires."
                 )
             target_wires = unitary.wires
 
         elif target_wires is None:
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "Target wires must be specified if the unitary is expressed as a matrix."
             )
 
@@ -179,14 +180,14 @@ class QuantumPhaseEstimation(ErrorOperation):
         # Estimation wires are required, but kept as an optional argument so that it can be
         # placed after target_wires for backwards compatibility.
         if estimation_wires is None:
-            raise qml.QuantumFunctionError("No estimation wires specified.")
+            raise pennylane.errors.QuantumFunctionError("No estimation wires specified.")
 
         target_wires = qml.wires.Wires(target_wires)
         estimation_wires = qml.wires.Wires(estimation_wires)
         wires = target_wires + estimation_wires
 
         if any(wire in target_wires for wire in estimation_wires):
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "The target wires and estimation wires must not overlap."
             )
 

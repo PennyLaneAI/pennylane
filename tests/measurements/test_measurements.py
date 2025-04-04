@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -61,7 +62,9 @@ def test_no_measure():
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+    with pytest.raises(
+        pennylane.errors.QuantumFunctionError, match="must return either a single measurement"
+    ):
         _ = circuit(0.65)
 
 
@@ -71,7 +74,7 @@ def test_numeric_type_unrecognized_error():
 
     mp = NotValidMeasurement()
     with pytest.raises(
-        qml.QuantumFunctionError,
+        pennylane.errors.QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
         _ = mp.numeric_type
@@ -83,7 +86,7 @@ def test_shape_unrecognized_error():
     dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(
-        qml.QuantumFunctionError,
+        pennylane.errors.QuantumFunctionError,
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
         mp.shape(dev, Shots(None))
@@ -94,7 +97,7 @@ def test_none_return_type():
     `None`"""
 
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
+        pennylane.errors.PennyLaneDeprecationWarning,
         match="MeasurementProcess property return_type is deprecated",
     ):
 
@@ -571,7 +574,7 @@ class TestSampleMeasurement:
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
-            qml.DeviceError,
+            pennylane.errors.DeviceError,
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
@@ -619,7 +622,7 @@ class TestStateMeasurement:
             return MyMeasurement()
 
         with pytest.raises(
-            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+            pennylane.errors.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit()
 
@@ -692,7 +695,7 @@ class TestMeasurementProcess:
     def test_deprecation_return_type(self):
         """Test that the return_type property is deprecated."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="MeasurementProcess property return_type is deprecated",
         ):
             _ = MeasurementProcess().return_type
@@ -715,5 +718,5 @@ class TestMeasurementProcess:
         measurement = qml.counts(wires=[0, 1])
         msg = "The shape of the measurement CountsMP is not defined"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match=msg):
             measurement.shape(shots=None, num_device_wires=2)
