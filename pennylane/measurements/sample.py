@@ -197,7 +197,7 @@ class SampleMP(SampleMeasurement):
         if shots is None:
             raise ValueError("finite shots are required to use SampleMP")
         sample_eigvals = n_wires is None or has_eigvals
-        dtype = float if sample_eigvals else bool
+        dtype = float if sample_eigvals else int
 
         if n_wires == 0:
             dim = num_device_wires

@@ -176,7 +176,7 @@ def test_overriding_shots():
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), bool
+        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
     )
 
     with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):

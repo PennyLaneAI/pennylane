@@ -710,7 +710,7 @@ class TestSample:
         res = circuit()
         assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
         assert qml.math.shape(res) == (dev.shots.total_shots,)
-        assert qml.math.get_dtype_name(res)[0:4] == "bool"  # either 32 or 64 precision.
+        assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol):
         """Tests if the samples returned by sample have

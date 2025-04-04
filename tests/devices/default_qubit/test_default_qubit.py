@@ -1398,7 +1398,7 @@ class TestPRNGKeySeed:
 
             assert len(result1) == len(result2)
             for r1, r2 in zip(result1, result2):
-                assert np.all(r1 == r2)
+                assert np.all(np.asarray(r1, "int") == np.asarray(r2, "int"))
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_prng_key(self, max_workers):

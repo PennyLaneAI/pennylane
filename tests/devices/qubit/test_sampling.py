@@ -107,7 +107,7 @@ class TestSampleState:
         samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(seed))
 
         assert samples.shape == (10, 2)
-        assert samples.dtype == np.bool
+        assert samples.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
