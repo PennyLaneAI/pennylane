@@ -95,10 +95,11 @@ Valid JAX data types
 
 Because of the nature of creating and executing plxpr, it is **best practice to 
 use JAX-compatible types whenever possible**, in particular for arguments to quantum 
-functions and QNodes, and positional arguments in PennyLane gate operations. Examples of 
-JAX-compatible types are ``jax.numpy`` arrays, regular NumPy arrays, dictionaries, standard
-Python ``int``\ s and ``float``\ s, and anything else with a valid `Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`__
-representation.
+functions and QNodes, and positional arguments in PennyLane gate operations. 
+
+Examples of JAX-compatible types are ``jax.numpy`` arrays, regular NumPy arrays, 
+and standard Python ``int``\ s and ``float``\ s. Functions can accept any valid 
+`Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`__ of Jax-compatible leaves.
 
 For example ``range``\ s or strings are not valid JAX types for the ``wires`` keyword 
 argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
@@ -138,8 +139,8 @@ lists
 ~~~~~
 
 Python ``lists`` are valid Pytrees, but there are cases with program capture enabled
-where they can lead to errors, and we recommend using ``jax.numpy.array`` objects
-in place of Python lists wherever possible.
+where they can lead to errors, and we recommend using ``jax.numpy`` arrays in place 
+of Python lists wherever possible.
 
 For example, the positional argument in ``qml.MultiRZ`` can't be a list:
 
@@ -220,9 +221,9 @@ Positional arguments
 
 Positional arguments in PennyLane are flexible in that their variable names can 
 instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
-``qml.RZ(phi=0.1, wires=0)``). However, to ensure differentiability and, in general,
-compatibility with program capture enabled, such arguments must be kept as positional, 
-regardless of whether they're provided as an acceptable JAX type. 
+``qml.RZ(phi=0.1, wires=0)``). However, to ensure compatibility with program capture 
+enabled, such arguments must be kept as positional, regardless of whether they're 
+provided as an acceptable JAX type. 
 
 For instance, consider this example with ``qml.RZ``:
 
