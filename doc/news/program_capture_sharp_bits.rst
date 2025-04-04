@@ -294,66 +294,10 @@ One of the core features of PennyLane is modularity, which has allowed users to
 transform QNodes in a NumPy-like way and to create their own transforms with ease. 
 Your favourite transforms will still work with program capture enabled (including
 custom transforms), but decorating QNodes with just ``@transform_name`` **will not 
-work** and will give a vague error. Additionally, decorating QNodes with the experimental 
-:func:`~.pennylane.capture.expand_plxpr_transforms` decorator is required.
+work** and will give a vague error. 
 
 Consider the following toy example, which shows a tape-based transform that shifts 
 all :class:`~.pennylane.RX` gates to the end of a circuit.
-
-.. code-block:: python 
-
-    qml.capture.enable()
-
-    @qml.transform
-    def shift_rx_to_end(tape):
-        """Transform that moves all RX gates to the end of the operations list."""
-        new_ops, rxs = [], []
-
-        for op in tape.operations:
-            if isinstance(op, qml.RX):
-                rxs.append(op)
-            else:
-                new_ops.append(op)
-        
-        operations = new_ops + rxs
-        new_tape = tape.copy(operations=operations)
-        return [new_tape], lambda res: res[0]
-
-Decorating with just ``@shift_rx_to_end`` will not work, and will give a vague error:
-
-.. code-block:: python 
-
-    qml.capture.enable()
-
-    @shift_rx_to_end
-    @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit():
-        qml.RX(0.1, wires=0)
-        qml.H(wires=0)
-        return qml.state()
-
->>> print(qml.draw(circuit)())
-...
-NotImplementedError: 
-
-A requirement for transforms to be compatible with program capture is to further 
-decorate QNodes with the experimental :func:`~.pennylane.capture.expand_plxpr_transforms` 
-decorator:
-
-.. code-block:: python 
-
-    qml.capture.enable()
-
-    @qml.capture.expand_plxpr_transforms
-    @shift_rx_to_end
-    @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit():
-        qml.RX(0.1, wires=0)
-        qml.H(wires=0)
-        return qml.state()
-
->>> print(qml.draw(circuit)())
-0: ──H──RX(0.10)─┤  State
 
 Higher-order primitives and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -368,7 +312,6 @@ this behaviour:
 
     dev = qml.device('default.qubit', wires=1)
 
-    @qml.capture.expand_plxpr_transforms
     @qml.transforms.merge_rotations
     @qml.qnode(dev)
     def circuit():
@@ -433,14 +376,34 @@ For transforms that do not natively work with program capture, they can continue
    #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
    #. ``qml.while_loop``.
 
-Here is an example with our toy ``shift_rx_to_end`` transform and a dynamic parameter
-for ``stop`` in ``qml.for_loop``.
+Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
+``RX`` gates to the end of the circuit.
 
 .. code-block:: python 
 
     qml.capture.enable()
 
-    @qml.capture.expand_plxpr_transforms
+    @qml.transform
+    def shift_rx_to_end(tape):
+        """Transform that moves all RX gates to the end of the operations list."""
+        new_ops, rxs = [], []
+
+        for op in tape.operations:
+            if isinstance(op, qml.RX):
+                rxs.append(op)
+            else:
+                new_ops.append(op)
+        
+        operations = new_ops + rxs
+        new_tape = tape.copy(operations=operations)
+        return [new_tape], lambda res: res[0]
+
+When used in a workflow that contains a dynamic parameter that affects the transform's
+action, an error will be raised. Consider this QNode that has a dynamic argument 
+corresponding to ``stop`` in ``qml.for_loop``.
+
+.. code-block:: python 
+
     @shift_rx_to_end
     @qml.qnode(qml.device("default.qubit", wires=4))
     def circuit(stop):
@@ -552,7 +515,6 @@ argument. If ``ratio_imprim`` is passed as a traced value, an error occurs:
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.capture.expand_plxpr_transforms
     @qml.transforms.decompose
     @qml.qnode(dev)
     def circuit(weights, arg):
@@ -578,7 +540,6 @@ As a workaround, we can pass ``ratio_imprim`` as a regular (non-traced) constant
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.capture.expand_plxpr_transforms
     @qml.transforms.decompose
     @qml.qnode(dev)
     def circuit(weights):
