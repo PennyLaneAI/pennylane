@@ -18,7 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 import warnings
 from collections.abc import Iterable
 from functools import lru_cache
-from typing import List, Union, Literal
+from typing import List, Literal, Union
 
 import numpy as np
 from scipy.linalg import block_diag

@@ -16,7 +16,7 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import numpy as np
 import numpy.linalg as npl

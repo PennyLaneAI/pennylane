@@ -23,10 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import ctrl_decomp_zyz
-from pennylane.ops.op_math.controlled import (
-    Controlled,
-    _is_single_qubit_special_unitary,
-)
+from pennylane.ops.op_math.controlled import Controlled, _is_single_qubit_special_unitary
 from pennylane.ops.op_math.controlled_decompositions import (
     _bisect_compute_a,
     _bisect_compute_b,
@@ -1228,6 +1225,65 @@ class TestMCXDecomposition:
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
+    def test_integration_multi_controlled_x(self, n_ctrl_wires, work_wire_type):
+        """Test that the new decompositions are integrated with the operation."""
+
+        # pylint: disable=protected-access
+        control_wires = list(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+
+        # one worker:
+        work_wires = n_ctrl_wires + 1
+        op = qml.MultiControlledX(
+            wires=control_wires + [target_wire],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        computed_decomp = op.decomposition()
+
+        if n_ctrl_wires > 3:
+            expected_decomp = _decompose_mcx_with_one_worker_kg24(
+                Wires(control_wires),
+                target_wire,
+                work_wires,
+                work_wire_type,
+            )
+        else:
+            expected_decomp = _decompose_mcx_with_many_workers(
+                Wires(control_wires),
+                target_wire,
+                Wires(work_wires),
+            )
+
+        assert computed_decomp == expected_decomp
+
+        # two worker:
+        work_wires = [n_ctrl_wires + 1, n_ctrl_wires + 2]
+        op = qml.MultiControlledX(
+            wires=control_wires + [target_wire],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        computed_decomp = op.decomposition()
+
+        if n_ctrl_wires > 4:
+            expected_decomp = _decompose_mcx_with_two_workers(
+                Wires(control_wires),
+                target_wire,
+                Wires(work_wires),
+                work_wire_type,
+            )
+        else:
+            expected_decomp = _decompose_mcx_with_many_workers(
+                Wires(control_wires),
+                target_wire,
+                Wires(work_wires),
+            )
+
+        assert computed_decomp == expected_decomp
 
 
 def test_ControlledQubitUnitary_has_decomposition_correct():
