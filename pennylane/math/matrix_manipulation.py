@@ -11,17 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains methods to expand the matrix representation of an operator
-to a higher hilbert space with re-ordered wires."""
+
+"""This module contains methods that manipulates matrices."""
+
 import itertools
 import numbers
-from collections.abc import Callable, Generator, Iterable
 from functools import reduce
+from typing import Callable, Iterable, Sequence
 
 import numpy as np
-from scipy.sparse import csr_matrix, eye, kron
+import scipy as sp
+from scipy.sparse import csr_matrix, eye, issparse, kron
 
 import pennylane as qml
+from pennylane import math
 from pennylane.wires import Wires
 
 
@@ -268,13 +271,13 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
     return csr_matrix((data, (index_i, index_j)))
 
 
-def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -> csr_matrix:
+def _permutation_sparse_matrix(expanded_wires: Sequence, wire_order: Sequence) -> csr_matrix:
     """Helper function which generates a permutation matrix in sparse format that swaps the wires
     in ``expanded_wires`` to match the order given by the ``wire_order`` argument.
 
     Args:
-        expanded_wires (Iterable): inital wires
-        wire_order (Iterable): final wires
+        expanded_wires (Sequence): inital wires
+        wire_order (Sequence): final wires
 
     Returns:
         csr_matrix: permutation matrix in CSR sparse format
@@ -295,15 +298,14 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Generator[tuple[np.ndarray, Wires], None, None], reduce_func: Callable
+    mats_and_wires_gen: Iterable[tuple[np.ndarray, Wires]], reduce_func: Callable
 ) -> tuple[np.ndarray, Wires]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
-    generator, from left to right, so as to reduce the sequence to a tuple containing a single
+    generator, from left to right, reducing the sequence to a tuple containing a single
     matrix and the wires it acts on.
 
     Args:
-        mats_and_wires_gen (Generator): generator of tuples containing the matrix and the wires of
-            each operator
+        mats_and_wires_gen (Iterable): tuples containing the matrix and the wires of each operator
         reduce_func (callable): function used to reduce the sequence of operators
 
     Returns:
@@ -401,3 +403,37 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, (qudit_order**M,))
+
+
+def convert_to_su2(U, return_global_phase=False):
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
+
+    Args:
+        U (array[complex]): A matrix with a batch dimension, presumed to be
+            of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(2)` representation is returned.
+
+    Returns:
+        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
+            equivalent to U up to a global phase. If ``return_global_phase=True``, a
+            2-element tuple is returned, with the first element being the :math:`SU(2)`
+            equivalent and the second, the global phase.
+
+    """
+
+    # We already know that U is 2x2, so no scaling problems from converting to dense
+    if issparse(U):
+        U = U.todense()
+
+    # Compute the determinant
+    U = qml.math.cast(U, "complex128")
+    batch_size = get_batch_size(U, (2, 2), 4)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        determinant = math.linalg.det(U)
+    phase = math.angle(determinant) / 2
+    if batch_size:
+        phase = math.reshape(phase, (batch_size, 1, 1))
+    U, phase = math.cast_like(U, determinant), math.cast_like(phase, 1j)
+    U = U * math.exp(-1j * phase)
+    return (U, phase) if return_global_phase else U

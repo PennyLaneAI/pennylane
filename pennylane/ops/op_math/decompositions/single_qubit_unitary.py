@@ -23,39 +23,6 @@ import pennylane as qml
 from pennylane import math
 
 
-def _convert_to_su2(U, return_global_phase=False):
-    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
-
-    Args:
-        U (array[complex]): A matrix with a batch dimension, presumed to be
-            of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
-        return_global_phase (bool): If `True`, the return will include the global phase.
-            If `False`, only the :math:`SU(2)` representation is returned.
-
-    Returns:
-        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
-            equivalent to U up to a global phase. If ``return_global_phase=True``, a
-            2-element tuple is returned, with the first element being the :math:`SU(2)`
-            equivalent and the second, the global phase.
-    """
-
-    # Compute the determinants
-    U = qml.math.cast(U, "complex128")
-    with np.errstate(divide="ignore", invalid="ignore"):
-        # we already know is 2x2, so no scaling problems from converting to dense
-        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
-        determinants = math.linalg.det(U_temp)
-    phase = math.angle(determinants) / 2
-    U = (
-        U * math.exp(-1j * phase)
-        if sp.sparse.issparse(U)
-        else math.cast_like(U, determinants)
-        * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
-    )
-
-    return (U, phase) if return_global_phase else U
-
-
 @singledispatch
 def _zyz_get_rotation_angles(U):
     r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
@@ -191,7 +158,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
         U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
     # Convert to SU(2) format and extract global phase
-    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
+    U_det1, alphas = math.convert_to_su2(U, return_global_phase=True)
 
     # If U is only one unitary and its value is not abstract, we can include a conditional
     # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
@@ -224,7 +191,7 @@ def _get_single_qubit_rot_angles_via_matrix(
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 and not sp.sparse.issparse(U) else U
 
     # Convert to SU(2) format and extract global phase
-    U_su2, global_phase = _convert_to_su2(U, return_global_phase=True)
+    U_su2, global_phase = math.convert_to_su2(U, return_global_phase=True)
 
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_su2)
@@ -318,7 +285,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
+    U_det1, gammas = math.convert_to_su2(U, return_global_phase=True)
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
@@ -385,7 +352,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
 
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
+    U_det1, gammas = math.convert_to_su2(U, return_global_phase=True)
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = RX(\phi) RZ(\theta) RX(\lambda)
@@ -455,7 +422,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     # Get global phase \alpha and U in SU(2) form (determinant is 1)
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
+    U_det1, alphas = math.convert_to_su2(U, return_global_phase=True)
 
     # Use top row to solve for \phi and \psi
     phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
