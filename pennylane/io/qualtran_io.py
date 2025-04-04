@@ -155,7 +155,7 @@ def bloq_registers(bloq):
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
     >>> from qualtran.bloqs.basic_gates import ZPowGate
     >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
-    >>> qml.get_bloq_registers_info(textbook_qpe_small)
+    >>> qml.bloq_registers(textbook_qpe_small)
     {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
     """
 
