@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+
 <h4>Resource-efficient decompositions 🔎</h4>
 
 A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
@@ -1121,6 +1124,7 @@ Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Dantong Li,
 William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
