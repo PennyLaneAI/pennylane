@@ -16,17 +16,21 @@ This module contains all the custom exceptions and warnings used in PennyLane.
 """
 
 
+# pragma: no cover
 class DeviceError(Exception):
     """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
 
+# pragma: no cover
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
+# pragma: no cover
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
+# pragma: no cover
 class ExperimentalWarning(UserWarning):
     """Warning raised to indicate experimental/non-stable feature or support."""
