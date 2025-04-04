@@ -403,6 +403,7 @@ def tape_text(
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
+    cache.setdefault("observables", [])
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
@@ -464,6 +465,9 @@ def tape_text(
         )
         tape_totals = "\n".join([tape_totals, label, tape_str])
 
+    if cache["observables"]:
+        obs_str = "".join(f"\nH{i} = {H}" for i, H in enumerate(cache["observables"]))
+        tape_totals = tape_totals + obs_str
     if show_matrices:
         mat_str = "".join(f"\nM{i} = \n{mat}" for i, mat in enumerate(cache["matrices"]))
         return tape_totals + mat_str

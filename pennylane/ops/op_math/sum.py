@@ -310,8 +310,16 @@ class Sum(CompositeOp):
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        decimals = None if (len(self.parameters) > 3) else decimals
-        return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+        if cache is None or not isinstance(cache.get("observables", None), list):
+            decimals = None if (len(self.parameters) > 3) else decimals
+            return Operator.label(
+                self, decimals=decimals, base_label=base_label or "𝓗", cache=cache
+            )
+        for i, obs in enumerate(cache["observables"]):
+            if obs == self:
+                return f"H:{i}"
+        cache["observables"].append(self)
+        return f"H:{len(cache["observables"])-1}"
 
     @handle_recursion_error
     def matrix(self, wire_order=None):
