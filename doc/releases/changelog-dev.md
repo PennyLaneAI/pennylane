@@ -561,6 +561,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Decompositions</h4>
 
+* `qml.PCPhase` now is decomposed significantly more efficiently for more than 2 qubits.
+  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+  
 * The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
   
