@@ -260,29 +260,50 @@ class FromBloq(Operation):
 
         .. code-block::
 
-            from qualtran.bloqs.qft import QFTTextBook
+            from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+            from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
+            from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
-            n_wires = 4
-            dev = qml.device("default.qubit", wires=n_wires, shots=1)
+            # Parameters for the TrotterizedUnitary
+            nsites = 5
+            j_zz, gamma_x = 2, 0.1
+            zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
+            x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
+            trott_unitary = TrotterizedUnitary(
+                bloqs=(x_bloq, zz_bloq),  timestep=0.01,
+                indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
+            )
 
-            def add_k_fourier(k, wires):
-                for j in range(len(wires)):
-                    qml.RZ(k * np.pi / (2**j), wires=wires[j])
+            # Instantiate the TextbookQPE and pass in our unitary
+            textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
+            # Execute on device
+            dev = qml.device("default.qubit")
             @qml.qnode(dev)
-            def sum(m, k):
-                qml.BasisEmbedding(m, wires=range(n_wires))
+            def circuit():
+                qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+                return qml.probs(wires=[5, 6, 7])
 
-                qml.FromBloq(QFTTextBook(n_wires), wires=range(n_wires))
+            circuit()
 
-                add_k_fourier(k, range(n_wires))
+    .. details::
+        :title: Usage Details
 
-                qml.adjoint(qml.FromBloq)(QFTTextBook(n_wires), wires=range(n_wires))
+        The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.
+        For example, when we wrap Qualtran's ``CZPowGate``, we get
 
-                return qml.sample()
+        >>> from qualtran.bloqs.basic_gates import CZPowGate
+        >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
+        [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
+        FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
+        FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
 
-            print(f"The ket representation of the sum of 3 and 4 is {sum(3,4)}")
-            The ket representation of the sum of 3 and 4 is [0 1 1 1]
+        This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
+        which allocates and frees a wire all in the same ``bloq``. In this situation,
+        PennyLane automatically allocates this wire under the hood, and that additional wire is
+        named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
+        signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
+        limitations of PennyLane, these wires cannot be accessed manually or mapped.
     """
 
     def __init__(self, bloq, wires: WiresLike):
