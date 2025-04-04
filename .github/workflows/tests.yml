@@ -32,6 +32,7 @@ jobs:
       test_report_server_api_key: ${{ secrets.PENNYLANE_OSS_SERVER_API_KEY_PROD }}
     with:
       branch: ${{ github.ref }}
+      use_large_runner: ${{ github.event_name == 'merge_group' }}
 
       # Run a 'lightened' version of the CI on Pull Requests by default
       # Unless the label `ci:run-full-test-suite` is attached to the PR.

@@ -52,22 +52,7 @@ from .symbolic_decomposition import (
     same_type_adjoint_decomp,
     same_type_adjoint_ops,
 )
-
-
-class DecompositionError(Exception):
-    """Base class for decomposition errors."""
-
-
-@dataclass(frozen=True)
-class _DecompositionNode:
-    """A node that represents a decomposition rule."""
-
-    rule: DecompositionRule
-    decomp_resource: Resources
-
-    def count(self, op: CompressedResourceOp):
-        """Find the number of occurrences of an operator in the decomposition."""
-        return self.decomp_resource.gate_counts.get(op, 0)
+from .utils import DecompositionError
 
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
@@ -88,7 +73,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
     will have a weight that is the total resource estimate of the decomposition minus the resource
-    estimate of the operator. For example the edge that connects a ``qml.CNOT`` to the following
+    estimate of the operator. For example the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python
@@ -109,7 +94,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     allows us to use Dijkstra's algorithm to find the most efficient decomposition.
 
     Args:
-        operations (list[Operator]): The list of operations to find decompositions for.
+        operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
         target_gate_set (set[str]): The names of the gates in the target gate set.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
@@ -136,7 +121,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        operations,
+        operations: list[Operator | CompressedResourceOp],
         target_gate_set: set[str],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
@@ -149,8 +134,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._fixed_decomps = fixed_decomps or {}
         self._alt_decomps = alt_decomps or {}
         self._graph = rx.PyDiGraph()
-        self._construct_graph()
         self._visitor = None
+
+        # Construct the decomposition graph
+        self._construct_graph()
 
     def _get_decompositions(self, op_type) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -161,8 +148,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = resource_rep(type(op), **op.resource_params)
-            idx = self._recursively_add_op_node(op_node)
+            if isinstance(op, Operator):
+                op = resource_rep(type(op), **op.resource_params)
+            idx = self._recursively_add_op_node(op)
             self._original_ops_indices.add(idx)
 
     def _recursively_add_op_node(self, op_node: CompressedResourceOp) -> int:
@@ -375,6 +363,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
 
         """
+        if not self.is_solved_for(op):
+            raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
+
         op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
         return self._visitor.distances[op_node_idx]
@@ -409,6 +400,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
 
         """
+        if not self.is_solved_for(op):
+            raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
+
         op_node = resource_rep(type(op), **op.resource_params)
         op_node_idx = self._op_node_indices[op_node]
         d_node_idx = self._visitor.predecessors[op_node_idx]
@@ -470,3 +464,15 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]
+
+
+@dataclass(frozen=True)
+class _DecompositionNode:
+    """A node that represents a decomposition rule."""
+
+    rule: DecompositionRule
+    decomp_resource: Resources
+
+    def count(self, op: CompressedResourceOp):
+        """Find the number of occurrences of an operator in the decomposition."""
+        return self.decomp_resource.gate_counts.get(op, 0)
