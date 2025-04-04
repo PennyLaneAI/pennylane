@@ -272,7 +272,7 @@ class FromBloq(Operation):
                 indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
             )
 
-            # Instantiate the TextbookQPE and pass in our unitary
+            # Instantiate the TextbookQPE and pass in the unitary
             textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
             # Execute on device
