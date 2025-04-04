@@ -624,7 +624,7 @@ function:
 
 >>> circuit()
 ...
-KeyError: <gast.gast.Lambda object at 0x136ff82b0>
+AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`. Please define the condition using a named function rather than a lambda function.
 
 As a workaround, set the ``lambda`` to a callable variable,
 
