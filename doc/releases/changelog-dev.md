@@ -164,6 +164,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
+* Transformations can now be directly applied to a `QNode` with program capture enabled without having
+  to use the `@qml.capture.expand_plxpr_transforms` decorator.
+  [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
+
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
   `autograph=True` at the QNode level.
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
@@ -491,6 +495,20 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+
+* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+  ```python
+  >>> from qualtran.bloqs.basic_gates import CNOT
+  
+  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...    qml.FromBloq(CNOT(), wires=[0, 1])
+  ...    return qml.state()
+  >>> circuit()
+  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  ```
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
 
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
@@ -971,6 +989,14 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
 <h3>Documentation 📝</h3>
+
+* The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
+  on using the new experimental decompositions system.
+  [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
+
+* The docstring for `qml.transforms.decompose` now recommends the `qml.clifford_t_decomposition` 
+  transform when decomposing to the Clifford + T gate set.
+  [(#7177)](https://github.com/PennyLaneAI/pennylane/pull/7177)
 
 * Typos were fixed in the docstring for `qml.QubitUnitary`.
   [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
