@@ -164,6 +164,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
+* Transformations can now be directly applied to a `QNode` with program capture enabled without having
+  to use the `@qml.capture.expand_plxpr_transforms` decorator.
+  [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
+
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
   `autograph=True` at the QNode level.
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
@@ -910,6 +914,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add an informative error message for users if they try to `autograph` a function that has a `lambda` loop condition in `qml.while_loop`.
+  [(#7178)](https://github.com/PennyLaneAI/pennylane/pull/7178)
 
 * Clean up logic in `qml.drawer.tape_text`
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
