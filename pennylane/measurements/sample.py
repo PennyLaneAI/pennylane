@@ -217,7 +217,7 @@ class SampleMP(SampleMeasurement):
     def numeric_type(self):
         if self.obs is None:
             # Computational basis samples
-            return bool
+            return int
         return float
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:

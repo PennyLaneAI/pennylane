@@ -226,7 +226,7 @@ def test_multiple_measurements():
     assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (50, 3), bool
+        (50, 3), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
     )
     assert jaxpr.out_avals[1] == jax.core.ShapedArray(
         (4,), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32

@@ -201,7 +201,7 @@ class TestMeasureSamples:
         result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == (shots.total_shots, 2)
-        assert result.dtype == np.bool
+        assert result.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in result)
 
     def test_sample_measure_single_wire(self):

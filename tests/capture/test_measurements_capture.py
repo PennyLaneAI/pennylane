@@ -441,7 +441,7 @@ class TestSample:
             (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
         )
         assert shapes[0] == jax.core.ShapedArray(
-            shape, bool
+            shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )
 
         with pytest.raises(ValueError, match="finite shots are required"):

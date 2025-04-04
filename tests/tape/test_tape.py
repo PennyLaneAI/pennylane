@@ -2110,10 +2110,10 @@ class TestNumericType:
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert result[0].dtype == float
-        assert result[1].dtype == bool
+        assert result[1].dtype == int
 
         tape = qml.workflow.construct_tape(circuit)(0, 3)
-        assert tape.numeric_type == (float, bool)
+        assert tape.numeric_type == (float, int)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of
