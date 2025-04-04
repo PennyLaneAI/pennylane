@@ -372,14 +372,14 @@ class TestUserTransforms:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         # pylint: disable=protected-access
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
         collector = CollectOpsandMeas()
-        collector.eval(inner_jaxpr, [], 1.5)
+        collector.eval(qfunc_jaxpr, [], 1.5)
         assert collector.state["ops"] == [qml.RX(1.5, 0), qml.X(0), qml.X(0)]
         assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
 
@@ -425,13 +425,14 @@ class TestUserTransforms:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        assert jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         # pylint: disable=protected-access
-        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
-        inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
-        assert inner_jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
-        inner_jaxpr2 = inner_jaxpr.eqns[0].params["inner_jaxpr"]
+        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        inner_jaxpr2 = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
 
         collector = CollectOpsandMeas()
         collector.eval(inner_jaxpr2, [], 1.5)

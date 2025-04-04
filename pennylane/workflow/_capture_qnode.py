@@ -216,7 +216,7 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
         temp_consts = consts
         temp_args = non_const_args
 
-    # Expand user transforms
+    # Expand user transforms applied to the qfunc
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
         transformed_func = qml.capture.expand_plxpr_transforms(
             partial(qml.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
@@ -226,6 +226,12 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
         temp_consts = qfunc_jaxpr.consts
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
+    # Expand user transforms applied to the qnode
+    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
+    temp_consts = qfunc_jaxpr.consts
+    qfunc_jaxpr = qfunc_jaxpr.jaxpr
+
+    # Apply device preprocessing transforms
     qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
