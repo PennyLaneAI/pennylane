@@ -20,7 +20,7 @@ from typing import Optional, Text
 
 from packaging.version import Version
 
-from pennylane import PennyLaneDeprecationWarning
+from pennylane.errors import PennyLaneDeprecationWarning
 
 try:
     import tensorflow as tf

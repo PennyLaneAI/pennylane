@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 
 # pylint: disable=expression-not-assigned
 
@@ -334,7 +335,7 @@ class TestHilbertSchmidt:
 
         v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             match="The argument v_function must be a callable quantum " "function.",
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
@@ -351,7 +352,8 @@ class TestHilbertSchmidt:
             qml.RZ(params[0], wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="U and V must have the same number of wires."
+            pennylane.errors.QuantumFunctionError,
+            match="U and V must have the same number of wires.",
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u_tape=U)
 
@@ -365,7 +367,8 @@ class TestHilbertSchmidt:
             qml.RZ(params[0], wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The argument u_tape must be a QuantumTape."
+            pennylane.errors.QuantumFunctionError,
+            match="The argument u_tape must be a QuantumTape.",
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=u_circuit)
 
@@ -381,7 +384,7 @@ class TestHilbertSchmidt:
             qml.RZ(params[0], wires=2)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
+            pennylane.errors.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
@@ -397,7 +400,8 @@ class TestHilbertSchmidt:
             qml.RZ(params[0], wires=0)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
+            pennylane.errors.QuantumFunctionError,
+            match="u_tape and v_tape must act on distinct wires.",
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
 
@@ -619,7 +623,7 @@ class TestLocalHilbertSchmidt:
 
         v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             match="The argument v_function must be a callable quantum " "function.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
@@ -636,7 +640,8 @@ class TestLocalHilbertSchmidt:
             qml.RZ(params[0], wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="U and V must have the same number of wires."
+            pennylane.errors.QuantumFunctionError,
+            match="U and V must have the same number of wires.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u_tape=U)
 
@@ -650,7 +655,8 @@ class TestLocalHilbertSchmidt:
             qml.RZ(params[0], wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The argument u_tape must be a QuantumTape."
+            pennylane.errors.QuantumFunctionError,
+            match="The argument u_tape must be a QuantumTape.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=u_circuit)
 
@@ -666,7 +672,7 @@ class TestLocalHilbertSchmidt:
             qml.RZ(params[0], wires=2)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
+            pennylane.errors.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
@@ -682,7 +688,8 @@ class TestLocalHilbertSchmidt:
             qml.RZ(params[0], wires=0)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
+            pennylane.errors.QuantumFunctionError,
+            match="u_tape and v_tape must act on distinct wires.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
 

@@ -22,6 +22,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
@@ -292,13 +293,13 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="device"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
     def test_adjoint_support(self):

@@ -20,16 +20,13 @@ from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
-
-
-class TapeError(ValueError):
-    """An error raised with a quantum tape."""
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):
@@ -89,7 +86,9 @@ def _validate_computational_basis_sampling(tape):
             if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
-                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+                raise pennylane.errors.QuantumFunctionError(
+                    _err_msg_for_some_meas_not_qwc(measurements)
+                )
 
 
 def rotations_and_diagonal_measurements(tape):
@@ -104,7 +103,7 @@ def rotations_and_diagonal_measurements(tape):
             rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
             if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
-                raise qml.QuantumFunctionError(
+                raise pennylane.errors.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
                     "Pauli words can be returned on the same wire.\n"
                     "Try removing all probability, sample and counts measurements "
@@ -112,7 +111,9 @@ def rotations_and_diagonal_measurements(tape):
                     "for each non-commuting observable."
                 ) from e
 
-            raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+            raise pennylane.errors.QuantumFunctionError(
+                _err_msg_for_some_meas_not_qwc(tape.measurements)
+            ) from e
 
         measurements = copy.copy(tape.measurements)
 

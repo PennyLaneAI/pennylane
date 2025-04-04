@@ -21,6 +21,7 @@ import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
@@ -459,7 +460,7 @@ class TestShotsIntegration:
             return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             res = circuit(a, b)
 
         # execute with shots=100
@@ -1630,7 +1631,7 @@ class TestSample:
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with requested"
+            pennylane.errors.QuantumFunctionError, match="does not support backprop with requested"
         ):
             circuit(shots=10)
 

@@ -18,6 +18,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as pnp
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
@@ -378,7 +379,9 @@ class TestState:
 
         with monkeypatch.context() as m:
             m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
+            with pytest.raises(
+                pennylane.errors.QuantumFunctionError, match="The current device is not capable"
+            ):
                 func()
 
     def test_state_not_supported(self):
@@ -390,7 +393,9 @@ class TestState:
         def func():
             return state()
 
-        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(
+            pennylane.errors.QuantumFunctionError, match="Returning the state is not supported"
+        ):
             func()
 
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
@@ -1007,7 +1012,9 @@ class TestDensityMatrix:
             qml.Hadamard(wires=0)
             return density_matrix(0), expval(qml.PauliZ(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="cannot be returned in combination"):
+        with pytest.raises(
+            pennylane.errors.QuantumFunctionError, match="cannot be returned in combination"
+        ):
             func()
 
     def test_no_state_capability(self, monkeypatch):
@@ -1024,7 +1031,7 @@ class TestDensityMatrix:
         with monkeypatch.context() as m:
             m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
-                qml.QuantumFunctionError,
+                pennylane.errors.QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",
             ):
                 func()
@@ -1038,7 +1045,9 @@ class TestDensityMatrix:
         def func():
             return density_matrix(0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(
+            pennylane.errors.QuantumFunctionError, match="Returning the state is not supported"
+        ):
             func()
 
     @pytest.mark.parametrize("wires", [[0, 2], ["a", -1]])

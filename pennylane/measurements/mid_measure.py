@@ -20,6 +20,7 @@ from functools import lru_cache
 from typing import Generic, Optional, TypeVar, Union
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
@@ -222,7 +223,7 @@ def _measure_impl(
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
-        raise qml.QuantumFunctionError(
+        raise pennylane.errors.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 

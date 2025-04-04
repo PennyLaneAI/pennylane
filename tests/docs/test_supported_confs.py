@@ -27,8 +27,9 @@ QNode without an exception being raised."""
 import pytest
 
 import pennylane as qml
-from pennylane import QuantumFunctionError
+import pennylane.errors
 from pennylane import numpy as np
+from pennylane.errors import QuantumFunctionError
 from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
 from pennylane.measurements.measurements import ObservableReturnTypes
 
@@ -275,12 +276,12 @@ class TestSupportedConfs:
         x = get_variable(None, wire_specs)
 
         msg = None
-        error_type = qml.DeviceError
+        error_type = pennylane.errors.DeviceError
         if diff_method == "adjoint" and (shots is not None or return_type is Sample):
-            error_type = qml.QuantumFunctionError
+            error_type = pennylane.errors.QuantumFunctionError
             msg = f"does not support {diff_method} with requested circuit"
         elif diff_method == "backprop" and shots:
-            error_type = qml.QuantumFunctionError
+            error_type = pennylane.errors.QuantumFunctionError
             msg = f"does not support {diff_method} with requested circuit"
         elif not shots and return_type is Sample:
             msg = "not accepted for analytic simulation"
@@ -347,7 +348,7 @@ class TestSupportedConfs:
         x = get_variable(interface, wire_specs, complex=True)
 
         if shots is not None:
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(pennylane.errors.QuantumFunctionError):
                 compute_gradient(x, interface, circuit, return_type)
         elif return_type == ObservableReturnTypes.Probability and interface == "tf":
             with pytest.raises(Exception):
@@ -373,7 +374,7 @@ class TestSupportedConfs:
             circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs)
             with pytest.raises(
-                qml.QuantumFunctionError,
+                pennylane.errors.QuantumFunctionError,
                 match="does not support adjoint with requested circuit",
             ):
                 compute_gradient(x, interface, circuit, return_type)
@@ -413,7 +414,9 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=complex)
         if shots is not None and interface != "jax":
-            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
+            with pytest.raises(
+                pennylane.errors.DeviceError, match="not accepted with finite shots"
+            ):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
             if interface == "torch" and return_type == "StateVector":
@@ -437,7 +440,9 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
-            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
+            with pytest.raises(
+                pennylane.errors.DeviceError, match="not accepted with finite shots"
+            ):
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)
@@ -477,10 +482,10 @@ class TestSupportedConfs:
         """Test sample measurement fails for all interfaces and diff_methods
         when shots=None"""
         if diff_method in {"adjoint"}:
-            error_type = qml.QuantumFunctionError
+            error_type = pennylane.errors.QuantumFunctionError
             msg = "does not support adjoint with requested circuit"
         else:
-            error_type = qml.DeviceError
+            error_type = pennylane.errors.DeviceError
             msg = "not accepted for analytic simulation"
 
         with pytest.raises(error_type, match=msg):
@@ -541,7 +546,7 @@ class TestSupportedConfs:
         x = get_variable(interface, wire_specs)
         if return_type in (VnEntropy, MutualInfo):
             if shots and interface != "jax":
-                err_cls = qml.DeviceError
+                err_cls = pennylane.errors.DeviceError
                 msg = "not accepted with finite shots"
             else:
                 err_cls = ValueError

@@ -25,6 +25,7 @@ from typing import Union
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import math
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
@@ -261,7 +262,7 @@ class Prod(CompositeOp):
         warnings.warn(
             "Accessing the terms of a tensor product operator via op.obs is deprecated and will be removed "
             "in Pennylane v0.42. Instead, please use op.operands.",
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
         )
         return self.operands
 
@@ -489,7 +490,7 @@ class Prod(CompositeOp):
         .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
             "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
         return coeffs
@@ -504,7 +505,7 @@ class Prod(CompositeOp):
         .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
         warnings.warn(
             "Prod.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()
         return ops

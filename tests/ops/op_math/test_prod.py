@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
@@ -93,14 +94,18 @@ ops_hermitian_status = (  # computed manually
 def test_legacy_ops():
     """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
     H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+    with pytest.warns(
+        pennylane.errors.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"
+    ):
         _ = H.ops
 
 
 def test_legacy_coeffs():
     """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
     H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+    with pytest.warns(
+        pennylane.errors.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"
+    ):
         _ = H.coeffs
 
 
@@ -108,7 +113,7 @@ def test_obs_attribute():
     """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
     op = qml.prod(X(0), X(1), X(2))
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
+        pennylane.errors.PennyLaneDeprecationWarning,
         match="Accessing the terms of a tensor product operator via op.obs is deprecated",
     ):
         obs = op.obs
@@ -1485,7 +1490,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             my_circ()
 
     def test_operation_integration(self):
