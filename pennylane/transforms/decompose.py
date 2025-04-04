@@ -396,7 +396,7 @@ def decompose(
     .. seealso::
 
         For more information on PennyLane's decomposition tools and features, check out the 
-        :doc:`Compiling Circuits page <introduction/compiling_circuits>`__.
+        :doc:`Compiling Circuits page <~/doc/introduction/compiling_circuits>`__.
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
