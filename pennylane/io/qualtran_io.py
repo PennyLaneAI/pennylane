@@ -117,8 +117,8 @@ def _get_to_pl_op():
 
 
 def bloq_registers(bloq):
-    """Reads a Qualtran bloq's signature and returns a dictionary mapping the bloq's register names
-    to :class:`~.Wires`.
+    """Reads a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_ 
+    signature and returns a dictionary mapping the bloq's register names to :class:`~.Wires`.
 
     .. note::
         This function requires the latest version of Qualtran. We recommend installing the main
