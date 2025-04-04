@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the MultiplexedRotation template.
+Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
@@ -20,11 +20,11 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
 
-class MultiplexedRotation(Operation):
-    r"""Applies the MultiplexedRotation operator.
+class SelectPauliRot(Operation):
+    r"""Applies the SelectPauliRot operator.
 
-    This operator applies a sequence of controlled rotations to a target qubit.
-    The rotations are selected based on the values encoded in the control qubits.
+    This operator, also called multiplexed rotation, applies a sequence of uniformly controlled
+    rotations to a target qubit. The rotations are selected based on the values encoded in the control qubits.
     Its definition is given by:
 
     .. math::
@@ -86,7 +86,7 @@ class MultiplexedRotation(Operation):
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["control_wires", "target_wire"]
         }
-        return MultiplexedRotation(
+        return SelectPauliRot(
             self.parameters[0],
             new_dict["control_wires"],
             new_dict["target_wire"],

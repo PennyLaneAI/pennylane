@@ -257,7 +257,7 @@ tested_modified_templates = [
     qml.MPSPrep,
     qml.GQSP,
     qml.QROMStatePreparation,
-    qml.MultiplexedRotation,
+    qml.SelectPauliRot,
 ]
 
 
@@ -768,7 +768,7 @@ class TestModifiedTemplates:
         qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
 
     def test_multiplexed_rotation(self):
-        """Test the primitive bind call of MultiplexedRotation."""
+        """Test the primitive bind call of SelectPauliRot."""
 
         kwargs = {
             "angles": np.array([1, 2, 3, 4, 5, 6, 7, 8]),
@@ -778,7 +778,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qml.MultiplexedRotation(**kwargs)
+            qml.SelectPauliRot(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -789,7 +789,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.MultiplexedRotation._primitive
+        assert eqn.primitive == qml.SelectPauliRot._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -799,7 +799,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.MultiplexedRotation(**kwargs))
+        qml.assert_equal(q.queue[0], qml.SelectPauliRot(**kwargs))
 
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
