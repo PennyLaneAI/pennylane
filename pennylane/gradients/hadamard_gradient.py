@@ -279,12 +279,12 @@ def hadamard_grad(
     .. details::
         :title: Variants of the standard hadamard gradient
 
-        This gradient method has three modes that are adaptations of the standard Hadamard gradient 
+        This gradient method has three modes that are adaptations of the standard Hadamard gradient
         method (these are outlined in detail in `arXiv:2408.05406 <https://arxiv.org/pdf/2408.05406>`__).
 
         **Reversed mode**
 
-        With the ``"reversed"`` mode, the observable being measured and the generators of the unitary 
+        With the ``"reversed"`` mode, the observable being measured and the generators of the unitary
         operations in the circuit are reversed; the generators are now the observables, and the Pauli
         decomposition of the observables are now gates in the circuit:
 
@@ -304,7 +304,7 @@ def hadamard_grad(
 
         **Direct mode**
 
-        With the ``"direct"`` mode, the additional auxiliary qubit needed in the standard Hadamard gradient 
+        With the ``"direct"`` mode, the additional auxiliary qubit needed in the standard Hadamard gradient
         is exchanged for additional circuit executions:
 
         .. code-block:: pycon
@@ -312,32 +312,32 @@ def hadamard_grad(
             >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
             >>> print(qml.draw(grad)(numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)────────────────┤     
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
 
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j X)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)───────────────┤     
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
 
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j X@X)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j X@X)─┤     
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j X@X)─┤
 
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j X@X)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j X@X)─┤     
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j X@X)─┤
 
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)────────────────┤     
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
 
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)───────────────┤     
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
 
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j Z@Z)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j Z@Z)─┤     
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j Z@Z)─┤
 
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j Z@Z)─┤  <Z>
-            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j Z@Z)─┤  
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j Z@Z)─┤
 
         **Reversed direct mode**
 
-        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"revered"`` modes, 
+        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"revered"`` modes,
         where the role of the observable and the generators of the unitary operations in the circuit
         swap, and the additional auxiliary qubit is exchanged for additional circuit executions:
 
