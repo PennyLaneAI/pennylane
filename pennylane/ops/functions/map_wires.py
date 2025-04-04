@@ -140,8 +140,10 @@ def map_wires(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 @overload
 def map_wires(
-    input: "QNode", wire_map: dict, queue: bool = False, replace: bool = False
-) -> "QNode": ...
+    input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
+) -> QNode: ...
+
+
 @overload
 def map_wires(
     input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
@@ -151,9 +153,7 @@ def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 def map_wires(
-    input: Union[
-        Operator, MeasurementProcess, QuantumScript, "QNode", Callable, QuantumScriptBatch
-    ],
+    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
     wire_map: dict,
     queue=False,
     replace=False,

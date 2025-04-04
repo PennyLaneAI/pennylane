@@ -16,6 +16,8 @@
 """
 Contains the drawing function.
 """
+from __future__ import annotations
+
 import warnings
 from functools import wraps
 from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
@@ -350,7 +352,7 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode: Union["QNode", Callable],
+    qnode: Union[QNode, Callable],
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,
