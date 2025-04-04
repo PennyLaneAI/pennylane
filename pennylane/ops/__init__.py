@@ -19,51 +19,9 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
-from .channel import (
-    AmplitudeDamping,
-    GeneralizedAmplitudeDamping,
-    PhaseDamping,
-    DepolarizingChannel,
-    BitFlip,
-    ResetError,
-    PauliError,
-    PhaseFlip,
-    QubitChannel,
-    ThermalRelaxationError,
-)
+from .channel import *
 from .channel import __all__ as _channel__ops__
-from .cv import (
-    Identity,
-    Snapshot,
-    Beamsplitter,
-    ControlledAddition,
-    ControlledPhase,
-    Displacement,
-    Kerr,
-    CrossKerr,
-    QuadraticPhase,
-    Rotation,
-    Squeezing,
-    TwoModeSqueezing,
-    CubicPhase,
-    InterferometerUnitary,
-    CatState,
-    CoherentState,
-    FockDensityMatrix,
-    DisplacedSqueezedState,
-    FockState,
-    FockStateVector,
-    SqueezedState,
-    ThermalState,
-    GaussianState,
-    QuadOperator,
-    NumberOperator,
-    TensorN,
-    QuadP,
-    QuadX,
-    PolyXP,
-    FockStateProjector,
-)
+from .cv import *
 from .cv import __all__ as _cv__all__
 from .cv import __obs__ as _cv__obs__
 from .cv import __ops__ as _cv__ops__
@@ -85,6 +43,6 @@ _qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 
 
-__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
+__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__ + _qutrit__channel__ops__
 __all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)
