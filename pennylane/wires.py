@@ -22,7 +22,7 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.pytrees import register_pytree
 
 if util.find_spec("jax") is not None:
@@ -63,7 +63,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
+    if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:

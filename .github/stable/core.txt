@@ -75,7 +75,7 @@ scipy-openblas32==0.3.29.0.0
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2
-tach==0.13.1
+tach==0.28.5
 termcolor==2.5.0
 toml==0.10.2
 tomli==2.2.1

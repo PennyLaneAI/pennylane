@@ -32,7 +32,7 @@ repos:
         ]
       files: ^(pennylane/|tests/)
 -   repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.24.0
+    rev: v0.28.5
     hooks:
     -   id: tach
 - repo: local

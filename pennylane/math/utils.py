@@ -22,8 +22,7 @@ import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
-from . import single_dispatch  # pylint:disable=unused-import
-from .interface_utils import get_interface
+from pennylane import math
 
 
 def allequal(tensor1, tensor2, **kwargs):
@@ -313,7 +312,7 @@ def convert_like(tensor1, tensor2):
     >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    interface = get_interface(tensor2)
+    interface = math.get_interface(tensor2)
 
     if interface == "torch":
         dev = tensor2.device
@@ -410,7 +409,7 @@ def is_abstract(tensor, like=None):
     Abstract: True
     <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
     """
-    interface = like or get_interface(tensor)
+    interface = like or math.get_interface(tensor)
 
     if interface == "jax":
         import jax
@@ -516,7 +515,7 @@ def requires_grad(tensor, interface=None):
     ...     print(requires_grad(x))
     True
     """
-    interface = interface or get_interface(tensor)
+    interface = interface or math.get_interface(tensor)
 
     if interface == "tensorflow":
         import tensorflow as tf
@@ -568,7 +567,7 @@ def in_backprop(tensor, interface=None):
 
     .. seealso:: :func:`~.requires_grad`
     """
-    interface = interface or get_interface(tensor)
+    interface = interface or math.get_interface(tensor)
 
     if interface == "tensorflow":
         import tensorflow as tf

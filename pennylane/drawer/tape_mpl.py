@@ -23,9 +23,11 @@ from collections import namedtuple
 from functools import singledispatch
 from typing import Optional, Sequence
 
-import pennylane as qml
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Operator
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -51,9 +53,7 @@ _Config = namedtuple(
 
 
 @singledispatch
-def _add_operation_to_drawer(
-    op: qml.operation.Operator, drawer: MPLDrawer, layer: int, config: _Config
-) -> None:
+def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config: _Config) -> None:
     """Adds the ``op`` to an ``MPLDrawer`` at the designated location.
 
     Args:
@@ -166,7 +166,7 @@ def _(op: MidMeasureMP, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
+def _(op: Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
@@ -284,13 +284,13 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     """
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = transform_deferred_measurements_tape(tape)
-    tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
+    tape = ops.functions.map_wires(tape, wire_map=wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
     layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
-        if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
+        if any(isinstance(o, MidMeasureMP) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
     bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
@@ -322,7 +322,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
 
 # pylint: disable=too-many-arguments
 def tape_mpl(
-    tape: qml.tape.QuantumScript,
+    tape: QuantumScript,
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,

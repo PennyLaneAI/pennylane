@@ -21,10 +21,11 @@ from typing import Generic, Type, TypeVar
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import ops as supported_ops
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 
 from ._wires import wires_to_json
 
@@ -55,132 +56,132 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         return frozenset(
             (
                 # pennylane/ops/qubit/arithmetic_qml.py
-                qml.QubitCarry,
-                qml.QubitSum,
+                supported_ops.QubitCarry,
+                supported_ops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
-                qml.ops.LinearCombination,
+                supported_ops.LinearCombination,
                 # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
-                qml.ops.Prod,
-                qml.ops.SProd,
-                qml.ops.Sum,
-                # pennylane/ops/qubit/matrix_qml.py
-                qml.QubitUnitary,
-                qml.DiagonalQubitUnitary,
+                supported_ops.Prod,
+                supported_ops.SProd,
+                supported_ops.Sum,
+                # pennylane/ops/qubit/matrix_supported_ops.py
+                supported_ops.QubitUnitary,
+                supported_ops.DiagonalQubitUnitary,
                 # pennylane/ops/qubit/non_parametric_qml.py
-                qml.Hadamard,
-                qml.PauliX,
-                qml.PauliY,
-                qml.PauliZ,
-                qml.X,
-                qml.Y,
-                qml.Z,
-                qml.T,
-                qml.S,
-                qml.SX,
-                qml.CNOT,
-                qml.CH,
-                qml.SWAP,
-                qml.ECR,
-                qml.SISWAP,
-                qml.CSWAP,
-                qml.CCZ,
-                qml.Toffoli,
-                qml.WireCut,
+                supported_ops.Hadamard,
+                supported_ops.PauliX,
+                supported_ops.PauliY,
+                supported_ops.PauliZ,
+                supported_ops.X,
+                supported_ops.Y,
+                supported_ops.Z,
+                supported_ops.T,
+                supported_ops.S,
+                supported_ops.SX,
+                supported_ops.CNOT,
+                supported_ops.CH,
+                supported_ops.SWAP,
+                supported_ops.ECR,
+                supported_ops.SISWAP,
+                supported_ops.CSWAP,
+                supported_ops.CCZ,
+                supported_ops.Toffoli,
+                supported_ops.WireCut,
                 # pennylane/ops/qubit/observables.py
-                qml.Hermitian,
-                qml.Projector,
+                supported_ops.Hermitian,
+                supported_ops.Projector,
                 # pennylane/ops/qubit/parametric_ops_multi_qubit.py
-                qml.MultiRZ,
-                qml.IsingXX,
-                qml.IsingYY,
-                qml.IsingZZ,
-                qml.IsingXY,
-                qml.PSWAP,
-                qml.CPhaseShift00,
-                qml.CPhaseShift01,
-                qml.CPhaseShift10,
+                supported_ops.MultiRZ,
+                supported_ops.IsingXX,
+                supported_ops.IsingYY,
+                supported_ops.IsingZZ,
+                supported_ops.IsingXY,
+                supported_ops.PSWAP,
+                supported_ops.CPhaseShift00,
+                supported_ops.CPhaseShift01,
+                supported_ops.CPhaseShift10,
                 # pennylane/ops/qubit/parametric_ops_single_qubit.py
-                qml.RX,
-                qml.RY,
-                qml.RZ,
-                qml.PhaseShift,
-                qml.Rot,
-                qml.U1,
-                qml.U2,
-                qml.U3,
-                # pennylane/ops/qubit/qchem_ops.py
-                qml.SingleExcitation,
-                qml.SingleExcitationMinus,
-                qml.SingleExcitationPlus,
-                qml.DoubleExcitation,
-                qml.DoubleExcitationMinus,
-                qml.DoubleExcitationPlus,
-                qml.OrbitalRotation,
-                qml.FermionicSWAP,
+                supported_ops.RX,
+                supported_ops.RY,
+                supported_ops.RZ,
+                supported_ops.PhaseShift,
+                supported_ops.Rot,
+                supported_ops.U1,
+                supported_ops.U2,
+                supported_ops.U3,
+                # pennylane/ops/qubit/qchem_supported_ops.py
+                supported_ops.SingleExcitation,
+                supported_ops.SingleExcitationMinus,
+                supported_ops.SingleExcitationPlus,
+                supported_ops.DoubleExcitation,
+                supported_ops.DoubleExcitationMinus,
+                supported_ops.DoubleExcitationPlus,
+                supported_ops.OrbitalRotation,
+                supported_ops.FermionicSWAP,
                 # pennylane/ops/special_unitary.py
-                qml.SpecialUnitary,
+                supported_ops.SpecialUnitary,
                 # pennylane/ops/state_preparation.py
-                qml.BasisState,
-                qml.StatePrep,
-                qml.QubitDensityMatrix,
+                supported_ops.BasisState,
+                supported_ops.StatePrep,
+                supported_ops.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
-                qml.QutritUnitary,
-                # pennylane/ops/qutrit/non_parametric_qml.py
-                qml.TShift,
-                qml.TClock,
-                qml.TAdd,
-                qml.TSWAP,
+                supported_ops.QutritUnitary,
+                # pennylane/ops/qutrit/non_parametric_supported_ops.py
+                supported_ops.TShift,
+                supported_ops.TClock,
+                supported_ops.TAdd,
+                supported_ops.TSWAP,
                 # pennylane/ops/qutrit/observables.py
-                qml.THermitian,
+                supported_ops.THermitian,
                 # pennylane/ops/channel.py
-                qml.AmplitudeDamping,
-                qml.GeneralizedAmplitudeDamping,
-                qml.PhaseDamping,
-                qml.DepolarizingChannel,
-                qml.BitFlip,
-                qml.ResetError,
-                qml.PauliError,
-                qml.PhaseFlip,
-                qml.ThermalRelaxationError,
+                supported_ops.AmplitudeDamping,
+                supported_ops.GeneralizedAmplitudeDamping,
+                supported_ops.PhaseDamping,
+                supported_ops.DepolarizingChannel,
+                supported_ops.BitFlip,
+                supported_ops.ResetError,
+                supported_ops.PauliError,
+                supported_ops.PhaseFlip,
+                supported_ops.ThermalRelaxationError,
                 # pennylane/ops/cv.py
-                qml.Rotation,
-                qml.Squeezing,
-                qml.Displacement,
-                qml.Beamsplitter,
-                qml.TwoModeSqueezing,
-                qml.QuadraticPhase,
-                qml.ControlledAddition,
-                qml.ControlledPhase,
-                qml.Kerr,
-                qml.CrossKerr,
-                qml.InterferometerUnitary,
-                qml.CoherentState,
-                qml.SqueezedState,
-                qml.DisplacedSqueezedState,
-                qml.ThermalState,
-                qml.GaussianState,
-                qml.FockState,
-                qml.FockStateVector,
-                qml.FockDensityMatrix,
-                qml.CatState,
-                qml.NumberOperator,
-                qml.TensorN,
-                qml.QuadX,
-                qml.QuadP,
-                qml.QuadOperator,
-                qml.PolyXP,
-                qml.FockStateProjector,
+                supported_ops.Rotation,
+                supported_ops.Squeezing,
+                supported_ops.Displacement,
+                supported_ops.Beamsplitter,
+                supported_ops.TwoModeSqueezing,
+                supported_ops.QuadraticPhase,
+                supported_ops.ControlledAddition,
+                supported_ops.ControlledPhase,
+                supported_ops.Kerr,
+                supported_ops.CrossKerr,
+                supported_ops.InterferometerUnitary,
+                supported_ops.CoherentState,
+                supported_ops.SqueezedState,
+                supported_ops.DisplacedSqueezedState,
+                supported_ops.ThermalState,
+                supported_ops.GaussianState,
+                supported_ops.FockState,
+                supported_ops.FockStateVector,
+                supported_ops.FockDensityMatrix,
+                supported_ops.CatState,
+                supported_ops.NumberOperator,
+                supported_ops.TensorN,
+                supported_ops.QuadX,
+                supported_ops.QuadP,
+                supported_ops.QuadOperator,
+                supported_ops.PolyXP,
+                supported_ops.FockStateProjector,
                 # pennylane/ops/identity.py
-                qml.Identity,
-                # pennylane/ops/op_math/controlled_ops.py
-                qml.ControlledQubitUnitary,
-                qml.ControlledPhaseShift,
-                qml.CRX,
-                qml.CRY,
-                qml.CRZ,
-                qml.CRot,
-                qml.CZ,
-                qml.CY,
+                supported_ops.Identity,
+                # pennylane/ops/op_math/controlled_supported_ops.py
+                supported_ops.ControlledQubitUnitary,
+                supported_ops.ControlledPhaseShift,
+                supported_ops.CRX,
+                supported_ops.CRY,
+                supported_ops.CRZ,
+                supported_ops.CRot,
+                supported_ops.CZ,
+                supported_ops.CY,
             )
         )
 
@@ -206,22 +207,22 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if isinstance(op, (qml.ops.Prod, qml.ops.SProd, qml.ops.Sum)):
+            if isinstance(op, (supported_ops.Prod, supported_ops.SProd, supported_ops.Sum)):
                 op = op.simplify()
             if type(op) not in self.supported_ops():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
-            if isinstance(op, qml.ops.LinearCombination):
+            if isinstance(op, supported_ops.LinearCombination):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
-            elif isinstance(op, (qml.ops.Prod, qml.ops.Sum)):
+            elif isinstance(op, (supported_ops.Prod, supported_ops.Sum)):
                 self._ops_to_hdf5(bind, op_key, op.operands)
                 op_wire_labels.append("null")
-            elif isinstance(op, qml.ops.SProd):
+            elif isinstance(op, supported_ops.SProd):
                 coeffs, ops = op.terms()
                 sprod_grp = self._ops_to_hdf5(bind, op_key, ops)
                 sprod_grp["sprod_scalar"] = coeffs
@@ -246,22 +247,22 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = [] if names_bind.shape == (0,) else names_bind.asstr()
         op_wire_labels = [] if wires_bind.shape == (0,) else wires_bind.asstr()
 
-        with qml.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
                 op_cls = self._supported_ops_dict()[op_class_name]
-                if op_cls is qml.ops.LinearCombination:
+                if op_cls is supported_ops.LinearCombination:
                     ops.append(
-                        qml.Hamiltonian(
+                        supported_ops.LinearCombination(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
-                elif op_cls in (qml.ops.Prod, qml.ops.Sum):
+                elif op_cls in (supported_ops.Prod, supported_ops.Sum):
                     ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls is qml.ops.SProd:
+                elif op_cls is supported_ops.SProd:
                     ops.append(
-                        qml.ops.s_prod(
+                        supported_ops.s_prod(
                             scalar=bind[op_key]["sprod_scalar"][0],
                             operator=self._hdf5_to_ops(bind[op_key])[0],
                         )
@@ -283,6 +284,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
         ops_dict = {op.__name__: op for op in cls.supported_ops()}
-        ops_dict["Hamiltonian"] = qml.ops.LinearCombination
-        ops_dict["Tensor"] = qml.ops.Prod
+        ops_dict["Hamiltonian"] = supported_ops.LinearCombination
+        ops_dict["Tensor"] = supported_ops.Prod
         return ops_dict

@@ -254,7 +254,7 @@ class TestRelativeEntropy:
         """Test that an error is raised when the dimensions do not match"""
         msg = "The two states must have the same number of wires"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(ValueError, match=msg):
             qml.math.relative_entropy(state0, state1)
 
 
