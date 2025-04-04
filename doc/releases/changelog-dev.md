@@ -891,6 +891,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Internal changes ⚙️</h3>
 
+* Add new `pennylane.errors` module for custom errors.
+  [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+
 * Clean up logic in `qml.drawer.tape_text`
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
