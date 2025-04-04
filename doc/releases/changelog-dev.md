@@ -969,6 +969,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Typos were fixed in the docstring for `qml.QubitUnitary`.
   [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
 
+* A typo in the docstring for `ControlledOp` was fixed and the `Controlled` docstring recommends using `ctrl` instead.
+  [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
+
 * The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 

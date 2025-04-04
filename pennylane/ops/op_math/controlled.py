@@ -371,12 +371,12 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
+    .. seealso:: The :func:`~.ctrl` function is recommended for use over ``Controlled``.
+
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
-
-    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
 
@@ -927,10 +927,7 @@ class ControlledOp(Controlled, operation.Operation):
     class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
     specific methods and properties.
 
-    When we no longer rely on certain functionality through ``Operation``, we can get rid of this
-    class.
-
-    .. seealso:: :class:`~.Controlled`
+    .. seealso:: This class is mostly for internal use. Please see :class:`~.Controlled` instead.
     """
 
     def __new__(cls, *_, **__):
