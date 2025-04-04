@@ -499,6 +499,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Added template `qml.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit.
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
 
+<h4>Qualtran Integration 🔗</h4>
 
 <h3>Improvements 🛠</h3>
 
