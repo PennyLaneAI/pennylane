@@ -45,7 +45,9 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
 
-_Config = namedtuple("_Config", ("decimals", "active_wire_notches", "bit_map", "terminal_layers"))
+_Config = namedtuple(
+    "_Config", ("decimals", "active_wire_notches", "bit_map", "cwire_layers", "cwire_wires")
+)
 
 
 @singledispatch
@@ -174,7 +176,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     )
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
-        erase_right = layer < config.terminal_layers[b]
+        erase_right = layer < config.cwire_layers[b][-1][-1]
         drawer.cwire_join(layer, b + drawer.n_wires, erase_right=erase_right)
 
 
@@ -218,27 +220,18 @@ def _get_measured_bits(measurements, bit_map, offset):
     return measured_bits
 
 
-def _draw_layers(layers, measurements, bit_map, wire_map, starting_dots=False, **kwargs):
+def _draw_layers(layers, measurements, wire_map, config, starting_dots=False, **kwargs):
     """Private function drawing the given layers."""
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
-
     drawer = MPLDrawer(
         n_layers=n_layers,
         wire_map=wire_map,
-        c_wires=len(bit_map),
+        c_wires=len(config.bit_map),
         wire_options=kwargs.get("wire_options", None),
         fig=kwargs.get("fig", None),
         starting_dots=starting_dots,
-    )
-
-    config = _Config(
-        decimals=kwargs.get("decimals", None),
-        active_wire_notches=kwargs.get("active_wire_notches", True),
-        bit_map=bit_map,
-        terminal_layers=[cl[-1][-1] for cl in cwire_layers.values()],
     )
 
     if n_wires == 0:
@@ -253,7 +246,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, starting_dots=False, *
     else:
         drawer.crop_wire_labels()
 
-    _add_classical_wires(drawer, cwire_layers, cwire_wires)
+    _add_classical_wires(drawer, config.cwire_layers, config.cwire_wires)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
@@ -273,7 +266,7 @@ def _draw_layers(layers, measurements, bit_map, wire_map, starting_dots=False, *
         for wire in _get_measured_wires(measurements, list(range(n_wires))):
             drawer.measure(n_layers, wire)
 
-        measured_bits = _get_measured_bits(measurements, bit_map, drawer.n_wires)
+        measured_bits = _get_measured_bits(measurements, config.bit_map, drawer.n_wires)
         if measured_bits:
             drawer.measure(n_layers, measured_bits)
 
@@ -300,15 +293,25 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
         if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
+    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+
+    config = _Config(
+        decimals=kwargs.get("decimals", None),
+        active_wire_notches=kwargs.get("active_wire_notches", True),
+        bit_map=bit_map,
+        cwire_layers=cwire_layers,
+        cwire_wires=cwire_wires,
+    )
+
     if max_length is None:
-        return _draw_layers(layers, tape.measurements, bit_map=bit_map, wire_map=wire_map, **kwargs)
+        return _draw_layers(layers, tape.measurements, config=config, wire_map=wire_map, **kwargs)
 
     layer_count = len(layers)
     return [
         _draw_layers(
             layers=layers[i : i + max_length],
             measurements=tape.measurements if i + max_length >= layer_count else "dots",
-            bit_map=bit_map,
+            config=config,
             wire_map=wire_map,
             starting_dots=i > 0,
             **kwargs,
