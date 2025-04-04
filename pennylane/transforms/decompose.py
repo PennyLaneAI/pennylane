@@ -395,7 +395,7 @@ def decompose(
 
     .. seealso::
 
-        For more information on PennyLane's decomposition tools and features, check out the 
+        For more information on PennyLane's decomposition tools and features, check out the
         :doc:`Compiling Circuits page <../../doc/introduction/compiling_circuits>`__.
 
     Args:
@@ -438,7 +438,6 @@ def decompose(
         :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
-        
 
     .. details::
         :title: Integration with the Graph-Based Decomposition System
