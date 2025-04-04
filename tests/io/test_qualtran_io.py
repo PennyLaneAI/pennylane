@@ -83,9 +83,6 @@ class TestFromBloq:
         with pytest.raises(ValueError, match="The length of wires must"):
             qml.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
 
-    @pytest.mark.xfail(
-        reason="Fails since CZPowGate does not have a decomposition in Qualtran v0.5"
-    )
     def test_allocated_and_freed_wires(self):
         """Tests that FromBloq properly handles bloqs that have allocate and free qubits"""
 
@@ -195,8 +192,6 @@ class TestFromBloq:
             circuit_bloq.tensor_contract(),
         )
 
-    # TODO: Undo Xfail when new version of Qualtran is released
-    @pytest.mark.xfail  # no longer a method we can rely on
     def test_atomic_bloqs(self):
         """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
@@ -215,8 +210,7 @@ class TestFromBloq:
             qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
         )
 
-    # TODO: Delete this when new version of Qualtran is released
-    def test_to_pl_op(self):  # Correctness is validated in Qualtran's tests
+    def test_to_pl_op(self):  # Correctness is also validated in Qualtran's tests
         """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
         from qualtran.bloqs.basic_gates import (
             CZ,
