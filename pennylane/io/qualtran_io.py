@@ -297,7 +297,7 @@ class FromBloq(Operation):
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
 
         This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
-        which allocates and frees a wire all in the same ``bloq``. In this situation,
+        which allocates and frees a wire in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
         named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
         signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
