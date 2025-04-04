@@ -534,30 +534,42 @@ More information for using ``jax.vmap`` can be found in the
 Decompositions
 --------------
 
-With program capture enabled, operators present in a circuit with control flow 
+With program capture enabled, operators present in a circuit with control flow
 in their ``compute_decomposition`` method and who also do not have a ``compute_qfunc_decomposition``
-method will cause an error. The ``StronglyEntanglingLayers`` template is an example
-of such an operator:
+method may raise an error if you apply the decompose transform. This can happen, 
+for example, if the predicate of a conditional control flow operation specified 
+in a decomposition is a traced argument. 
+
+For example, the :class:`~.pennylane.RandomLayers` template does not have a ``compute_qfunc_decomposition``
+method, and its ``compute_decomposition`` method contains an ``if`` statement that 
+predicates on a traced argument:
 
 .. code-block:: python 
 
     qml.capture.enable()
 
-    dev = qml.device('default.qubit', wires=4)
+    dev = qml.device("default.qubit", wires=2)
 
+    @qml.capture.expand_plxpr_transforms
+    @qml.transforms.decompose
     @qml.qnode(dev)
-    def circuit(parameters):
-        qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
+    def circuit(weights, arg):
+        qml.RandomLayers(weights, wires=[0, 1], ratio_imprim=arg)
         return qml.expval(qml.Z(0))
 
-    shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-    weights = np.random.random(size=shape)
+    weights=jax.numpy.array([[0.1, -2.1, 1.4]])
+    arg = 0.5
 
->>> circuit(weights)
-TODO
+    circuit(weights, arg)
 
-This is not an issue for operators with a ``compute_qfunc_decomposition`` method, 
-TODO.
+>>> weights=jax.numpy.array([[0.1, -2.1, 1.4]])
+>>> arg = 0.5
+>>> circuit(weights, arg)
+...
+The error occurred while tracing the function eval at pennylane/transforms/decompose.py:243 for jit. This value became a tracer due to JAX operations on these lines:
+  operation a:bool[] = lt b c
+    from line pennylane/templates/layers/random.py:245:19 (RandomLayers.compute_decomposition)
+See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerBoolConversionError
 
 while loops 
 -----------
