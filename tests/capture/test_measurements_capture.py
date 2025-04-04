@@ -490,7 +490,7 @@ class TestSample:
 
         shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(50))
         assert shapes[0] == jax.core.ShapedArray(
-            (50, 2), bool
+            (50, 2), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )
 
 
