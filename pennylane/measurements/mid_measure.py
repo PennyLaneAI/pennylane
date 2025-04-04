@@ -515,7 +515,7 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(qml.math.logical_or, other)
 
     def __mod__(self, other):
-        return self._transform_bin_op(qml.math.logical_mod, other)
+        return self._transform_bin_op(qml.math.mod, other)
 
     def __xor__(self, other):
         return self._transform_bin_op(qml.math.logical_xor, other)

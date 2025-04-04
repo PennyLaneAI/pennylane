@@ -92,7 +92,7 @@ class QubitUnitary(Operation):
 
     .. warning::
 
-        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including ..method::`adjoint`, ..method::`pow`, ..method::`compute_sparse_matrix` and ..method::`compute_decomposition`. Differentiability is not supported for sparse matrices.
+        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including :func:`~.adjoint`, :func:`~.pow`, :meth:`~.QubitUnitary.compute_sparse_matrix` and :meth:`~.QubitUnitary.compute_decomposition`. Differentiability is not supported for sparse matrices.
 
     **Details:**
 
@@ -131,6 +131,8 @@ class QubitUnitary(Operation):
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = {"num_wires"}
 
     grad_method = None
     """Gradient computation method."""
@@ -181,6 +183,10 @@ class QubitUnitary(Operation):
             qml.math.eye(dim),
             atol=1e-6,
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
@@ -269,7 +275,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
+            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -277,7 +283,10 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
-
+            if sp.sparse.issparse(U):
+                raise DecompositionUndefinedError(
+                    "The decomposition of a two-qubit sparse QubitUnitary is undefined."
+                )
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
@@ -295,7 +304,7 @@ class QubitUnitary(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
-        return len(self.wires) < 3
+        return len(self.wires) < 3 if self.has_matrix else len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:

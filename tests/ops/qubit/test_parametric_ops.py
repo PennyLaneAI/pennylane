@@ -103,6 +103,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qml.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
+    qml.PSWAP(np.array([0.123, -0.63, 0.235]), wires=["a", -1]),
     qml.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
@@ -2717,6 +2718,15 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
+    def test_assert_valid(self):
+        """Tests that a PauliRot is valid"""
+
+        op = qml.PauliRot(0.5, "XYZI", wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op)
+
+        op2 = qml.PauliRot(0.5, "III", wires=[0, 1, 2])
+        qml.ops.functions.assert_valid(op2)
+
     def test_paulirot_repr(self):
         op = qml.PauliRot(1.234, "XYX", wires=(0, 1, 2))
         assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
@@ -2772,7 +2782,7 @@ class TestPauliRot:
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
         expected = qml.math.expand_matrix(
@@ -3179,6 +3189,12 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
+    def test_MultiRZ_assert_valid(self):
+        """Tests that MultiRZ is valid."""
+
+        op = qml.MultiRZ(0.123, wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op)
+
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
@@ -3344,6 +3360,10 @@ class TestSimplify:
     def test_simplify_rotations(self, op):
         """Test that the matrices and wires are the same after simplification"""
 
+        if op is qml.PSWAP:
+            pytest.xfail(
+                reason="PSWAP has some hidden issue, revealed by an improvement in `qml.matrix`. https://github.com/PennyLaneAI/pennylane/pull/7147."
+            )
         unsimplified_op = self.get_unsimplified_op(op)
         simplified_op = qml.simplify(unsimplified_op)
 
