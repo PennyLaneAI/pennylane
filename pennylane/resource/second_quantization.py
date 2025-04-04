@@ -46,10 +46,10 @@ class DoubleFactorization(Operation):
     >>> symbols  = ['O', 'H', 'H']
     >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
     >>>                      [0.00000000,  1.45278171, -1.00662237],
-    >>>                      [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+    >>>                      [0.00000000, -1.45278171, -1.00662237]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> algo = DoubleFactorization(one, two)
+    >>> algo = qml.resource.DoubleFactorization(one, two)
     >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits
@@ -128,7 +128,7 @@ class DoubleFactorization(Operation):
 
         feigvals = np.linalg.eigvalsh(self.factors)
         self.eigvals = [eigvals[np.where(np.abs(eigvals) > tol_eigval)] for eigvals in feigvals]
-        self.lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
+        self._lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
 
         if not rank_r:
             self.rank_r = len(self.factors)
@@ -137,9 +137,9 @@ class DoubleFactorization(Operation):
         if not rank_max:
             self.rank_max = int(np.max([len(v) for v in self.eigvals]))
 
-        self.gates = self.gate_cost(
+        self._gates = self.gate_cost(
             self.n,
-            self.lamb,
+            self._lamb,
             self.error,
             self.rank_r,
             self.rank_m,
@@ -148,9 +148,9 @@ class DoubleFactorization(Operation):
             self.alpha,
             self.beta,
         )
-        self.qubits = self.qubit_cost(
+        self._qubits = self.qubit_cost(
             self.n,
-            self.lamb,
+            self._lamb,
             self.error,
             self.rank_r,
             self.rank_m,
@@ -160,7 +160,7 @@ class DoubleFactorization(Operation):
             self.beta,
         )
 
-        super().__init__(wires=range(self.qubits))
+        super().__init__(wires=range(self._qubits))
 
     def _flatten(self):
         return (self.one_electron, self.two_electron), (
@@ -179,6 +179,59 @@ class DoubleFactorization(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
+
+    @property
+    def lamb(self):
+        r"""Return the 1-Norm of the Hamiltonian.
+
+        The 1-norm of a double-factorized molecular Hamiltonian is computed using Eqs. (15-17) of
+        [`Phys. Rev. Research 3, 033055 (2021) <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
+
+        .. math::
+
+            \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
+
+        where the Schatten 1-norm for a given matrix :math:`T` is defined as
+
+        .. math::
+
+            ||T|| = \sum_k |\text{eigvals}[T]_k|.
+
+        The matrices :math:`L^{(r)}` are obtained from factorization of the two-electron integral
+        tensor :math:`V` such that
+
+        .. math::
+
+            V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
+
+        The matrix :math:`T` is constructed from the one- and two-electron integrals as
+
+        .. math::
+
+            T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+
+        The two-electron integral tensor is arranged in chemist notation.
+        """
+        return self._lamb
+
+    @property
+    def gates(self):
+        r"""Return the total number of Toffoli gates needed to implement the double factorization
+        algorithm.
+
+        The expression for computing the cost is taken from Eqs. (45) and (C39) of
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        """
+        return self._gates
+
+    @property
+    def qubits(self):
+        r"""Return the number of logical qubits needed to implement the double factorization method.
+
+        The expression for computing the cost is taken from Eq. (C40) of
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        """
+        return self._qubits
 
     @staticmethod
     def estimation_cost(lamb, error):
