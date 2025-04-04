@@ -28,6 +28,8 @@ jobs:
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      test_report_server_endpoint_url: ${{ secrets.PENNYLANE_OSS_SERVER_ENDPOINT_URL_PROD }}
+      test_report_server_api_key: ${{ secrets.PENNYLANE_OSS_SERVER_API_KEY_PROD }}
     with:
       branch: ${{ github.ref }}
       use_large_runner: ${{ github.event_name == 'merge_group' }}
