@@ -214,3 +214,16 @@ class TestResolveDiffMethod:
             "mode": "standard",
             "device_wires": dev.wires,
         }
+
+    @pytest.mark.parametrize(
+        "diff_method", ("reversed-hadamard", "direct-hadamard", "reversed-direct-hadamard")
+    )
+    def test_error_if_specific_hadamard_variant_and_mode(self, diff_method):
+
+        dev = qml.device("default.qubit")
+
+        initial_config = ExecutionConfig(
+            gradient_method=diff_method, gradient_keyword_arguments={"mode": "reversed"}
+        )
+        with pytest.raises(ValueError, match="cannot be provided with a 'mode'"):
+            _resolve_diff_method(initial_config, dev)
