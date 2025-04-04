@@ -117,6 +117,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
     rules that the new system may choose if they're the most resource efficient.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+  [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
@@ -364,6 +365,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
@@ -686,6 +688,14 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Other improvements</h4>
 
+* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
+  dedicated documentation.
+  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
+
+* The qchem functions that accept a string input have been updated to consistently work with both
+  lower-case and upper-case inputs.
+  [(#7186)](https://github.com/PennyLaneAI/pennylane/pull/7186)
+
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
 
@@ -1004,6 +1014,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
+* The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
+  [(#7174)](https://github.com/PennyLaneAI/pennylane/pull/7174)
+
 <h3>Bug fixes 🐛</h3>
 
 * PennyLane is now compatible with `pyzx 0.9`.
@@ -1094,7 +1107,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
 * Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
-  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+  [(#7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
+* Minor docstring upgrades for `qml.labs.trotter_error`.
+  [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
 
 <h3>Contributors ✍️</h3>
 
@@ -1115,12 +1131,15 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Diego Guala,
 Austin Huang,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 David Wierichs
