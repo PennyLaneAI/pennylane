@@ -341,7 +341,7 @@ When executing QNodes on a device, PennyLane will automatically decompose gates
 that are unsupported by the device using built-in decomposition rules.
 
 In addition, you can provide *new* decomposition rules to be used, but the behaviour
-and user-interface is different depending on if the new decompositions system is
+and user-interface is different depending on if the graph decompositions system is
 enabled.
 
 Default behaviour with custom decompositions
