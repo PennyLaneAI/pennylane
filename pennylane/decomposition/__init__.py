@@ -38,13 +38,13 @@ By default, this system is disabled.
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     False
     >>> qml.decomposition.enable_graph()
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     True
     >>> qml.decomposition.disable_graph()
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     False
 
 .. _decomps_rules:
@@ -104,7 +104,7 @@ Integration with the Decompose Transform
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
 decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
 flexible decompositions towards any target gate set. For example, the current system does not
-guarentee a decomposition to the desired target gate set:
+guarantee a decomposition to the desired target gate set:
 
 .. code-block:: python
 
@@ -144,7 +144,7 @@ as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section,
 to the transform via these arguments.
 
 The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
 for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
 In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
