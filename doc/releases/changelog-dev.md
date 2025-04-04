@@ -918,6 +918,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Internal changes ⚙️</h3>
 
+* Add an informative error message for users if they try to `autograph` a function that has a `lambda` loop condition in `qml.while_loop`.
+  [(#7178)](https://github.com/PennyLaneAI/pennylane/pull/7178)
+
 * Clean up logic in `qml.drawer.tape_text`
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
