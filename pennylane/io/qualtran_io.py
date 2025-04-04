@@ -117,8 +117,8 @@ def _get_to_pl_op():
 
 
 def bloq_registers(bloq):
-    """Reads a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
-    signature and returns a dictionary mapping the bloq's register names to :class:`~.Wires`.
+    """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
     .. note::
         This function requires the latest version of Qualtran. We recommend installing the main
@@ -128,19 +128,19 @@ def bloq_registers(bloq):
 
             pip install qualtran
 
-    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran bloq. The
+    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran Bloq. The
     values are :class:`~.Wires` objects with a length equal to the bitsize of its respective
     register. The wires are indexed in ascending order, starting from 0.
 
-    This function makes it easy to access the wires that a bloq acts on and use them to precisely
+    This function makes it easy to access the wires that a Bloq acts on and use them to precisely
     control how gates connect.
 
     Args:
-        bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
+        bloq (Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
 
     Returns:
-        dict: A dictionary built with information from the bloq's signature. The dictionary keys
-        are strings that come from the names of the bloq's registers. The values are :class:`~.Wires`
+        dict: A dictionary built with information from the Bloq's signature. The dictionary keys
+        are strings that come from the names of the Bloq's registers. The values are :class:`~.Wires`
         objects that are determined by the bitsizes of those same registers.
 
     Raises:
@@ -209,7 +209,7 @@ def _preprocess_bloq(bloq):
 
 class FromBloq(Operation):
     r"""
-    An adapter for using a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
     .. note::
@@ -221,7 +221,7 @@ class FromBloq(Operation):
             pip install qualtran
 
     Args:
-        bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
+        bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
         wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
             signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
 
@@ -287,7 +287,7 @@ class FromBloq(Operation):
     .. details::
         :title: Usage Details
 
-        The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.
+        The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
         For example, when we wrap Qualtran's ``CZPowGate``, we get
 
         >>> from qualtran.bloqs.basic_gates import CZPowGate
@@ -401,7 +401,7 @@ class FromBloq(Operation):
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     def has_matrix(self) -> bool:
-        r"""Return if the bloq has a valid matrix representation."""
+        r"""Return if the ``Bloq`` has a valid matrix representation."""
         bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
