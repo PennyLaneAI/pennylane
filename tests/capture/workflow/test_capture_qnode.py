@@ -465,7 +465,6 @@ class TestUserTransforms:
             return qml.expval(qml.Z(0))
 
         _ = circuit(1.5, 2.5, 3.5)
-        print(device_jaxpr)
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
         )

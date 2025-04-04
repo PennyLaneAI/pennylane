@@ -161,8 +161,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
-* Applying transforms to a `QNode` now correctly transforms it with program capture enabled, rather than raising a
-  `NotImplementedError`.
+* Transformations can now be directly applied to a `QNode` with program capture enabled without having
+  to use the `@qml.capture.expand_plxpr_transforms` decorator.
   [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
