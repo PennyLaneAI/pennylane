@@ -445,7 +445,7 @@ def decompose(
         This transform takes advantage of the new graph-based decomposition algorithm when
         ``qml.decomposition.enable_graph()`` is present, which allows for more flexible
         decompositions towards any target gate set. For example, the current system does not
-        guarentee a decomposition to the desired target gate set:
+        guarantee a decomposition to the desired target gate set:
 
         .. code-block:: python
 
@@ -487,7 +487,7 @@ def decompose(
         .. seealso:: :func:`qml.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-        certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+        certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
         In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
