@@ -115,7 +115,7 @@
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-* Added new `MultiControlledX` gate decompositions utilising conditionally clean ancillae, improving 
+* Added new `MultiControlledX` gate decompositions utilizing conditionally clean work wires, improving 
    circuit depth and efficiency.
    [(#7028)](https://github.com/PennyLaneAI/pennylane/pull/7028)
    * Implemented `_decompose_mcx_with_two_workers` and `_decompose_mcx_with_one_worker_kg24`.
