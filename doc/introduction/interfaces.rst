@@ -250,6 +250,25 @@ with the number of trainable circuit parameters.
 
 * ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
 
+* ``"reversed-hadamard"``: Use a variant of ``"hadamard"``, where the role of the
+  observable being measured and the generators of the unitary operations in the
+  circuit are reversed; the generators are now the observables, and the Pauli
+  decomposition of the observables are now gates in the circuit. More information 
+  can be found in the documentation for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` 
+  and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
+
+* ``"direct-hadamard"``: Use a variant of ``"hadamard"``, where the additional auxiliary
+  qubit needed in ``"hadamard"`` is exchanged for additional circuit executions.
+  More information can be found in the documentation for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` 
+  and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
+
+* ``"reversed-direct-hadamard"``: Use a variant of ``"direct-hadamard"``, where 
+  the role of the observable and the generators of the unitary operations in the 
+  circuit swap in a similar fashion to the ``"reversed-hadamard"`` method. More 
+  information can be found in the documentation for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` 
+  and the
+  `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
+
 * :func:`qml.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
   parameter-shift rule for pulse programs.
 
