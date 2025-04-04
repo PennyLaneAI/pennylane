@@ -26,6 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice
@@ -279,7 +280,7 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise qml.DeviceError(
+                raise pennylane.errors.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )

@@ -16,6 +16,7 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
+import pennylane.errors
 from pennylane.operation import AnyWires, Operation
 
 
@@ -122,13 +123,15 @@ class HilbertSchmidt(Operation):
         self._num_params = len(params)
 
         if not isinstance(u_tape, qml.tape.QuantumScript):
-            raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
+            raise pennylane.errors.QuantumFunctionError(
+                "The argument u_tape must be a QuantumTape."
+            )
 
         u_wires = u_tape.wires
         self.hyperparameters["u_tape"] = u_tape
 
         if not callable(v_function):
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "The argument v_function must be a callable quantum function."
             )
 
@@ -139,14 +142,18 @@ class HilbertSchmidt(Operation):
         self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
-            raise qml.QuantumFunctionError("U and V must have the same number of wires.")
+            raise pennylane.errors.QuantumFunctionError(
+                "U and V must have the same number of wires."
+            )
 
         if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
-            raise qml.QuantumFunctionError("All wires in v_tape must be in v_wires.")
+            raise pennylane.errors.QuantumFunctionError("All wires in v_tape must be in v_wires.")
 
         # Intersection of wires
         if len(qml.wires.Wires.shared_wires([u_tape.wires, v_tape.wires])) != 0:
-            raise qml.QuantumFunctionError("u_tape and v_tape must act on distinct wires.")
+            raise pennylane.errors.QuantumFunctionError(
+                "u_tape and v_tape must act on distinct wires."
+            )
 
         wires = qml.wires.Wires(u_wires + v_wires)
 

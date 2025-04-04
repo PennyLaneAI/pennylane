@@ -16,6 +16,7 @@
 import warnings
 
 import pennylane as qml
+import pennylane.errors
 
 
 def hamiltonian_grad(tape, idx):
@@ -33,7 +34,7 @@ def hamiltonian_grad(tape, idx):
     warnings.warn(
         "The 'hamiltonian_grad' function is deprecated and will be removed in v0.42. "
         "This gradient recipe is not required for the new operator arithmetic system.",
-        qml.PennyLaneDeprecationWarning,
+        pennylane.errors.PennyLaneDeprecationWarning,
     )
 
     op, m_pos, p_idx = tape.get_operation(idx)

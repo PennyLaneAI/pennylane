@@ -17,6 +17,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
@@ -135,7 +136,7 @@ class TestExpectationValueMath:
         ops = np.diag([0, 1, 0, 0])
         state_vectors = [1, 0]
         with pytest.raises(
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             match="The operator and the state vector must have the same number of wires.",
         ):
             qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)

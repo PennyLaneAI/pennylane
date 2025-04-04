@@ -21,6 +21,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
@@ -97,7 +98,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        qml.PennyLaneDeprecationWarning,
+        pennylane.errors.PennyLaneDeprecationWarning,
     )
     gen = op.generator
 
@@ -195,7 +196,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             gen = _generator_backcompatibility(gen_op)
 
         if not gen.is_hermitian:
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
             )
 

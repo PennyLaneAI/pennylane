@@ -22,6 +22,7 @@ import pytest
 from scipy import sparse
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane.ops import Prod, SProd, Sum
 
@@ -169,7 +170,7 @@ class TestValidation:
 
         op = SomeOp(0.5, wires=0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="is not hermitian"):
             qml.generator(op)
 
     def test_multi_param_op(self):

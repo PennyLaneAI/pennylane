@@ -22,6 +22,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as pnp
 from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
@@ -185,7 +186,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.torch
@@ -201,7 +202,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.tf
@@ -217,7 +218,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.jax
@@ -233,7 +234,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     def test_all_zero_diff_methods(self, seed):

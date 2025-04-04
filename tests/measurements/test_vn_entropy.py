@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
@@ -187,7 +188,7 @@ class TestIntegration:
             return qml.vn_entropy(wires=[0])
 
         with pytest.raises(
-            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+            pennylane.errors.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit(0.5)
 

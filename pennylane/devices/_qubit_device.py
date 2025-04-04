@@ -31,6 +31,7 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -184,9 +185,11 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if "float" not in str(r_dtype):
-            raise qml.DeviceError("Real datatype must be a floating point type.")
+            raise pennylane.errors.DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
-            raise qml.DeviceError("Complex datatype must be a complex floating point type.")
+            raise pennylane.errors.DeviceError(
+                "Complex datatype must be a complex floating point type."
+            )
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype
@@ -677,7 +680,7 @@ class QubitDevice(Device):
                     self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination "
                         "with other return types"
                     )
@@ -697,7 +700,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, VnEntropyMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
@@ -717,7 +720,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, MutualInfoMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
@@ -738,7 +741,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination "
                         "with other return types"
                     )
@@ -746,7 +749,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination "
                         "with other return types"
                     )
@@ -760,7 +763,7 @@ class QubitDevice(Device):
 
             else:
                 name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
-                raise qml.QuantumFunctionError(
+                raise pennylane.errors.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
 
@@ -812,14 +815,16 @@ class QubitDevice(Device):
             array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "The current device is not capable of returning the state"
             )
 
         state = getattr(self, "state", None)
 
         if state is None:
-            raise qml.QuantumFunctionError("The state is not available in the current device")
+            raise pennylane.errors.QuantumFunctionError(
+                "The state is not available in the current device"
+            )
 
         if wires:
             density_matrix = self.density_matrix(wires)
@@ -863,7 +868,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
             )
@@ -1004,7 +1009,7 @@ class QubitDevice(Device):
         try:
             state = self.density_matrix(wires=self.wires)
         except (
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             NotImplementedError,
         ) as e:  # pragma: no cover
             raise NotImplementedError(
@@ -1034,7 +1039,7 @@ class QubitDevice(Device):
         try:
             state = self.density_matrix(wires=self.wires)
         except (
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             NotImplementedError,
         ) as e:  # pragma: no cover
             raise NotImplementedError(
@@ -1649,7 +1654,7 @@ class QubitDevice(Device):
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
         if tape.batch_size is not None:
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 "Parameter broadcasting is not supported with adjoint differentiation"
             )
 
@@ -1660,18 +1665,18 @@ class QubitDevice(Device):
 
         for m in tape.measurements:
             if not isinstance(m, ExpectationMP):
-                raise qml.QuantumFunctionError(
+                raise pennylane.errors.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.__class__.__name__}"
                 )
 
             if not m.obs.has_matrix:
-                raise qml.QuantumFunctionError(
+                raise pennylane.errors.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )
 
         if self.shot_vector is not None:
-            raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
+            raise pennylane.errors.QuantumFunctionError("Adjoint does not support shot vectors.")
 
         if self.shots is not None:
             warnings.warn(
@@ -1698,7 +1703,7 @@ class QubitDevice(Device):
         for op in reversed(tape.operations):
             if op.num_params > 1:
                 if not isinstance(op, qml.Rot):
-                    raise qml.QuantumFunctionError(
+                    raise pennylane.errors.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
                     )

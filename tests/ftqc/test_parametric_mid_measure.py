@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.ftqc import (
     ParametricMidMeasureMP,
@@ -458,7 +459,7 @@ class TestMeasureFunctions:
         """Test that a QuanutmFunctionError is raised if too many wires are passed"""
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            pennylane.errors.QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             func([0, 1])

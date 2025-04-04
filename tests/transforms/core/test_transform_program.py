@@ -18,6 +18,7 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
     TransformContainer,
@@ -612,7 +613,7 @@ class TestClassicalCotransfroms:
         program.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters"):
+        with pytest.raises(pennylane.errors.QuantumFunctionError, match="No trainable parameters"):
             program((tape,))
 
 

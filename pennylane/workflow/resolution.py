@@ -22,6 +22,7 @@ from warnings import warn
 from packaging.version import Version
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
@@ -54,7 +55,7 @@ def _use_tensorflow_autograph():
     try:  # pragma: no cover
         import tensorflow as tf
     except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(  # pragma: no cover
+        raise pennylane.errors.QuantumFunctionError(  # pragma: no cover
             "tensorflow not found. Please install the latest "  # pragma: no cover
             "version of tensorflow supported by Pennylane "  # pragma: no cover
             "to enable the 'tensorflow' interface."  # pragma: no cover
@@ -111,7 +112,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         try:  # pragma: no cover
             import jax
         except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
+            raise pennylane.errors.QuantumFunctionError(  # pragma: no cover
                 "jax not found. Please install the latest "  # pragma: no cover
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
@@ -189,7 +190,7 @@ def _resolve_diff_method(
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
-        raise qml.QuantumFunctionError(
+        raise pennylane.errors.QuantumFunctionError(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
 
@@ -211,7 +212,7 @@ def _resolve_diff_method(
         elif isinstance(diff_method, TransformDispatcher):
             updated_values["gradient_method"] = diff_method
         else:
-            raise qml.QuantumFunctionError(
+            raise pennylane.errors.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
                 f"options are {tuple(get_args(SupportedDiffMethods))}."
             )
@@ -256,7 +257,7 @@ def _resolve_execution_config(
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
         execution_config, tapes[0]
     ):
-        raise qml.QuantumFunctionError(
+        raise pennylane.errors.QuantumFunctionError(
             f"device_vjp=True is not supported for device {device},"
             f" diff_method {execution_config.gradient_method},"
             " and the provided circuit."

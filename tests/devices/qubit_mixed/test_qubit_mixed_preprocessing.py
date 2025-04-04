@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_mixed import (
     DefaultMixed,
@@ -91,7 +92,7 @@ class TestPreprocessing:
         dev = DefaultMixed()
 
         config = ExecutionConfig(device_options={"invalid_option": "val"})
-        with pytest.raises(qml.DeviceError, match="device option invalid_option"):
+        with pytest.raises(pennylane.errors.DeviceError, match="device option invalid_option"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -318,7 +319,7 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(pennylane.errors.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(

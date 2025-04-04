@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_qutrit_mixed import (
     DefaultQutritMixed,
@@ -58,7 +59,7 @@ class TestPreprocessing:
         dev = DefaultQutritMixed()
 
         config = ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(pennylane.errors.DeviceError, match="device option bla"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -268,7 +269,7 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(pennylane.errors.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(

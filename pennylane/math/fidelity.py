@@ -23,6 +23,7 @@ import autograd
 import autoray as ar
 
 import pennylane as qml
+import pennylane.errors
 
 from .quantum import _check_density_matrix, _check_state_vector
 from .utils import cast
@@ -77,7 +78,9 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
         _check_state_vector(state1)
 
     if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise pennylane.errors.QuantumFunctionError(
+            "The two states must have the same number of wires."
+        )
 
     batched0 = len(qml.math.shape(state0)) > 1
     batched1 = len(qml.math.shape(state1)) > 1
@@ -148,7 +151,9 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         _check_density_matrix(state1)
 
     if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise pennylane.errors.QuantumFunctionError(
+            "The two states must have the same number of wires."
+        )
 
     batch_size0 = qml.math.shape(state0)[0] if qml.math.ndim(state0) > 2 else None
     batch_size1 = qml.math.shape(state1)[0] if qml.math.ndim(state1) > 2 else None

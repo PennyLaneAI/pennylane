@@ -15,6 +15,7 @@
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane.ops.op_math import Evolution, Exp
 
@@ -204,7 +205,7 @@ class TestEvolution:
         op = Evolution(qml.RX(np.pi / 3, 0), 1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
+            pennylane.errors.QuantumFunctionError, match="of operation Evolution is not hermitian"
         ):
             qml.generator(op)
 

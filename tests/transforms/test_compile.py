@@ -20,6 +20,7 @@ import pytest
 from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import numpy as np
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.compile import compile
@@ -54,7 +55,9 @@ def test_deprecation_pipeline_None():
     """Test that specifying `pipeline=None` is deprecated."""
 
     tape = qml.tape.QuantumScript()
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"):
+    with pytest.warns(
+        pennylane.errors.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"
+    ):
         qml.compile(tape, pipeline=None)
 
 

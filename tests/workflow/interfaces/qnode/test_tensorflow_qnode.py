@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.errors
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
@@ -443,7 +444,7 @@ class TestShotsIntegration:
             return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(pennylane.errors.DeviceError):
             circuit(weights)
 
         # execute with shots=100

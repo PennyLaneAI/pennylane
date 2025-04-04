@@ -23,6 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qml
+import pennylane.errors
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.wires import Wires
 
@@ -85,7 +86,7 @@ class TestControlledQubitUnitary:
         base_op = QubitUnitary(base_op, wires=1)
 
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="QubitUnitary input to ControlledQubitUnitary is deprecated",
         ):
             qml.ControlledQubitUnitary(base_op, wires=[0, 1])
@@ -98,11 +99,11 @@ class TestControlledQubitUnitary:
         base_op = QubitUnitary(base_op, wires=1)
 
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                pennylane.errors.PennyLaneDeprecationWarning,
                 match="QubitUnitary input to ControlledQubitUnitary is deprecated",
             ):
                 qml.ControlledQubitUnitary(base_op, wires=[1], control_wires=[0])
@@ -112,11 +113,11 @@ class TestControlledQubitUnitary:
         U = np.array([[0, 1], [1, 0]])
         U = qml.QubitUnitary(U, wires=0)
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                pennylane.errors.PennyLaneDeprecationWarning,
                 match="QubitUnitary input to ControlledQubitUnitary is deprecated",
             ):
                 qml.ControlledQubitUnitary(
@@ -127,7 +128,7 @@ class TestControlledQubitUnitary:
         """Test initialization with deprecated control_wires argument"""
         U = np.array([[0, 1], [1, 0]])
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.raises(TypeError, match="Must specify a set of wires"):
@@ -137,11 +138,11 @@ class TestControlledQubitUnitary:
     def test_deprecated_interface_still_available(self, base):
         """Test that the deprecated interface is still available"""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="The control_wires input to ControlledQubitUnitary is deprecated",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                pennylane.errors.PennyLaneDeprecationWarning,
                 match="QubitUnitary input to ControlledQubitUnitary is deprecated",
             ):
                 qml.ControlledQubitUnitary(base, control_wires=[1, 2, 3])
@@ -193,7 +194,7 @@ class TestControlledQubitUnitary:
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            pennylane.errors.PennyLaneDeprecationWarning,
             match="QubitUnitary input to ControlledQubitUnitary is deprecated",
         ):
             op1 = qml.ControlledQubitUnitary(X, wires=[0, 2, 1])
