@@ -100,8 +100,8 @@ JAX-compatible types are ``jax.numpy`` arrays, regular NumPy arrays, dictionarie
 Python ``int``\ s and ``float``\ s, and anything else with a valid `Pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`__
 representation.
 
-For example, ``list``\ s, ``range``\ s, and strings are not valid JAX types for 
-the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
+For example ``range``\ s or strings are not valid JAX types for the ``wires`` keyword 
+argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
 .. code-block:: python 
 
@@ -111,11 +111,12 @@ the positional argument in :class:`~.pennylane.MultiRZ`, and will result in an e
 
     @qml.qnode(dev)
     def circuit():
-        qml.MultiRZ([0.1, 0.2], wires=[0, 1])
+        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=range(2))
         return qml.expval(qml.X(0))
 
 >>> circuit()
-TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
+...
+TypeError: Argument '<pennylane.capture.autograph.ag_primitives.PRange object at 0x161b6bbd0>' of type '<class 'pennylane.capture.autograph.ag_primitives.PRange'>' is not a valid JAX type
 
 .. code-block:: python 
 
@@ -133,28 +134,67 @@ TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
 >>> circuit()
 Array([0., 0.], dtype=float32)
 
-Providing a ``list`` as input to a quantum function or QNode is accepted in cases 
-where the ``list`` is being indexed into, thereby retrieving a valid JAX type:
+lists
+~~~~~
+
+Python ``lists`` are valid Pytrees, but there are cases with program capture enabled
+where they can lead to errors, and we recommend using ``jax.numpy.array`` objects
+in place of Python lists wherever possible.
+
+For example, the positional argument in ``qml.MultiRZ`` can't be a list:
 
 .. code-block:: python 
 
     qml.capture.enable()
 
     dev = qml.device('default.qubit', wires=2)
-
     @qml.qnode(dev)
-    def circuit(x):
-        qml.RZ(x[0], wires=0)
-        qml.RX(x[1], wires=1)
+    def circuit():
+        qml.MultiRZ([0.1, 0.2], wires=[0, 1])
         return qml.expval(qml.X(0))
 
->>> circuit([0.1, 0.2])
-Array(0., dtype=float32)
+>>> circuit()
+...
+TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
+
+But a list can be passed to ``qml.MultiRZ`` as a keyword argument:
+
+.. code-block:: python 
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=2)
+    @qml.qnode(dev)
+    def circuit():
+        qml.MultiRZ(theta=[0.1, 0.2], wires=[0, 1])
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array([0., 0.], dtype=float32)
+
+Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
+
+.. code-block:: python 
+
+    import jax.numpy as jnp
+
+    qml.capture.enable()
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array([0., 0.], dtype=float32)
 
 Keyword arguments
 ~~~~~~~~~~~~~~~~~
 
-JAX-incompatible types, like Python ``range``\ s, are acceptable as **keyword arguments**:
+JAX-incompatible types, like Python ``range``\ s, are acceptable as **keyword arguments**
+to QNodes and quantum functions:
 
 .. code-block:: python 
 
