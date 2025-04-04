@@ -240,7 +240,7 @@ class FromBloq(Operation):
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
 
-    A simple example showcasing how to use ``qml.FromBloq`` inside a device:
+    This example shows how to use ``qml.FromBloq`` inside a device:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
     >>> dev = qml.device("default.qubit") # Execute on device
