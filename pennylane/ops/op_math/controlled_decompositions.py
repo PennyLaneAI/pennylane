@@ -842,7 +842,7 @@ def _build_logn_depth_ccx_ladder(
                 gates += _n_parallel_ccx_x(ccx_x, ccx_y, ccx_t)
             else:
                 gates.append(qml.Toffoli(wires=[ccx_x[0], ccx_y[0], ccx_t[0]]))
-            new_anc += nxt_batch[st:]  #                    # newly created cond. clean ancilla
+            new_anc += nxt_batch[st:]  # newly created cond. clean ancilla
             nxt_batch = ccx_t + nxt_batch[:st]
             anc = anc[:-ccx_n]
 
