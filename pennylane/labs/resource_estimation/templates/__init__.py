@@ -28,13 +28,18 @@ from .subroutines import (
     ResourceMultiplier,
     ResourcePhaseAdder,
     ResourceAmplitudeAmplification,
+    ResourceQubitUnitary,
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
 
+from .qsvt import ResourcePCPhase, ResourceQSVT
+
 from .stateprep import (
     ResourceSuperposition,
     ResourceStatePrep,
+    ResourceQROMStatePreparation,
     ResourceBasisState,
     ResourceMottonenStatePreparation,
+    ResourceMPSPrep,
 )
