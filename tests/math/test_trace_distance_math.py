@@ -262,12 +262,14 @@ class TestTraceDistanceMath:
         state0, state1 = states
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
+            qml.QuantumFunctionError,
+            match="The two states must have the same number of wires",
         ):
             qml.math.trace_distance(state0, state1, check_state=True)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
+            qml.QuantumFunctionError,
+            match="The two states must have the same number of wires",
         ):
             qml.math.trace_distance(state1, state0, check_state=True)
 

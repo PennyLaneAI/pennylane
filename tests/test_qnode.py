@@ -365,7 +365,8 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method hello not recognized"
+            qml.QuantumFunctionError,
+            match="Differentiation method hello not recognized",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
 
@@ -407,7 +408,8 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with requested circuit"
+            qml.QuantumFunctionError,
+            match="does not support backprop with requested circuit",
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
@@ -1673,14 +1675,16 @@ class TestGetGradientFn:
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
+            qml.QuantumFunctionError,
+            match=r"Device CustomDevice does not support adjoint",
         ):
             QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
 
     def test_error_for_backprop_with_custom_device(self):
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
+            qml.QuantumFunctionError,
+            match=r"Device CustomDevice does not support backprop",
         ):
             QNode.get_gradient_fn(self.dev, "autograd", "backprop")
 
@@ -1745,7 +1749,8 @@ class TestGetGradientFn:
     def test_invalid_diff_method(self):
         """Test that an invalid diff method raises an error."""
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method invalid-method not recognized"
+            qml.QuantumFunctionError,
+            match="Differentiation method invalid-method not recognized",
         ):
             QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
 

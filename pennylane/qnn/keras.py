@@ -20,7 +20,7 @@ from typing import Optional, Text
 
 from packaging.version import Version
 
-from pennylane import PennyLaneDeprecationWarning
+import pennylane as qml
 
 try:
     import tensorflow as tf
@@ -316,7 +316,7 @@ class KerasLayer(Layer):
     ):
         warnings.warn(
             "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
-            PennyLaneDeprecationWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:

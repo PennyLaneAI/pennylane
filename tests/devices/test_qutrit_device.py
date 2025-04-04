@@ -280,7 +280,8 @@ class TestObservables:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
             with pytest.raises(
-                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                qml.QuantumFunctionError,
+                match="Unsupported return type specified for observable",
             ):
                 dev.execute(tape)
 
@@ -333,7 +334,8 @@ class TestExtractStatistics:
             dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
-                qml.QuantumFunctionError, match="The state is not available in the current"
+                qml.QuantumFunctionError,
+                match="The state is not available in the current",
             ):
                 dev.statistics(qscript)
 

@@ -354,7 +354,11 @@ class LegacyDeviceFacade(Device):
         _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
         try:
             program((tape,))
-        except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+        except (
+            qml.operation.DecompositionUndefinedError,
+            qml.DeviceError,
+            AttributeError,
+        ):
             return False
         return True
 

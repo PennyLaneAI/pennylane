@@ -3509,7 +3509,8 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit", wires=2)
 
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The 'hamiltonian_grad' function is deprecated"
+            qml.PennyLaneDeprecationWarning,
+            match="The 'hamiltonian_grad' function is deprecated",
         ):
             with pytest.warns(UserWarning, match="Please use qml.gradients.split_to_single_terms"):
                 self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)

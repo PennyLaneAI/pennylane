@@ -1215,7 +1215,8 @@ class TestQubitDeviceNewUnits:
         dev = DefaultQubitLegacy(wires=3)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            qml.QuantumFunctionError,
+            match="Unsupported return type specified for observable",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
 
