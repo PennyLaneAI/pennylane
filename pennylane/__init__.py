@@ -18,7 +18,6 @@ PennyLane can be directly imported.
 import warnings
 
 from pennylane.boolean_fn import BooleanFn
-import pennylane.errors
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
