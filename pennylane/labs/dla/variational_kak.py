@@ -338,7 +338,7 @@ def run_opt(
     cost,
     theta,
     n_epochs=500,
-    optimizer=optax.adam(learning_rate=0.1),
+    optimizer=None,
     verbose=False,
     interrupt_tol=None,
 ):
@@ -374,6 +374,9 @@ def run_opt(
         raise ImportError(
             "jax and optax are required for run_opt. You can install them with pip install jax jaxlib optax."
         )  # pragma: no cover
+
+    if optimizer is None:
+        optimizer = (optax.adam(learning_rate=0.1),)
 
     value_and_grad = jax.jit(jax.value_and_grad(cost))
     compiled_cost = jax.jit(cost)
