@@ -503,9 +503,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   ```
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
 
-* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
-  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
-
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
