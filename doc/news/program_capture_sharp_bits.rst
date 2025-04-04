@@ -35,7 +35,7 @@ features that will help get your existing tape-based code working with program c
 Device compatibility
 --------------------
 
-Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatie 
+Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatible 
 with program capture.
 
 Device wires 
@@ -381,11 +381,7 @@ this behaviour:
         return qml.state()
 
 The above example should result in a single ``RX`` gate with an angle of ``1.0``, 
-but transforms are unable to transfer through the circuit in its entirety. Drawing
-this circuit will result in an inaccurate circuit:
-
->>> print(qml.draw(circuit)())
-0: ──RX(0.20)─┤  State
+but transforms are unable to transfer through the circuit in its entirety.
 
 To illustrate what is actually happening internally, consider the plxpr representation 
 of this program: 
