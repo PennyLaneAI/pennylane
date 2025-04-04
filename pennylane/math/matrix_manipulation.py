@@ -19,9 +19,11 @@ from collections.abc import Callable, Generator, Iterable
 from functools import reduce
 
 import numpy as np
+import scipy as sp
 from scipy.sparse import csr_matrix, eye, kron
 
 import pennylane as qml
+from pennylane import math
 from pennylane.wires import Wires
 
 
@@ -401,3 +403,36 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, (qudit_order**M,))
+
+
+def convert_to_su2(U, return_global_phase=False):
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
+
+    Args:
+        U (array[complex]): A matrix with a batch dimension, presumed to be
+            of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(2)` representation is returned.
+
+    Returns:
+        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
+            equivalent to U up to a global phase. If ``return_global_phase=True``, a
+            2-element tuple is returned, with the first element being the :math:`SU(2)`
+            equivalent and the second, the global phase.
+    """
+
+    # Compute the determinants
+    U = qml.math.cast(U, "complex128")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        # we already know is 2x2, so no scaling problems from converting to dense
+        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
+        determinants = math.linalg.det(U_temp)
+    phase = math.angle(determinants) / 2
+    U = (
+        U * math.exp(-1j * phase)
+        if sp.sparse.issparse(U)
+        else math.cast_like(U, determinants)
+        * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
+    )
+
+    return (U, phase) if return_global_phase else U

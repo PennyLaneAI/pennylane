@@ -34,7 +34,13 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
+from .matrix_manipulation import (
+    expand_matrix,
+    expand_vector,
+    reduce_matrices,
+    get_batch_size,
+    convert_to_su2,
+)
 from .multi_dispatch import (
     add,
     array,
@@ -153,6 +159,7 @@ __all__ = [
     "cast_like",
     "concatenate",
     "convert_like",
+    "convert_to_su2",
     "cov_matrix",
     "detach",
     "diag",
