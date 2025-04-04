@@ -534,16 +534,21 @@ More information for using ``jax.vmap`` can be found in the
 Decompositions
 --------------
 
-With program capture enabled, operators used in circuits may raise an error when the ``decompose`` transform is applied.
+With program capture enabled, operators used in circuits may raise an error when 
+the ``decompose`` transform is applied. This can happen if the operator
 
-This can happen if the operator:
-- defines a ``compute_decomposition`` method that contains control flow (e.g., ``if`` statements),
-- does not define a ``compute_qfunc_decomposition`` method, and
-- receives a traced argument as part of the control flow condition.
+#. defines a ``compute_decomposition`` method that contains control flow (e.g., ``if`` statements),
+#. does not define a ``compute_qfunc_decomposition`` method, and/or
+#. receives a traced argument as part of the control flow condition.
 
-For example, the :class:`~.pennylane.RandomLayers` template does not implement a ``compute_qfunc_decomposition`` method. Its ``compute_decomposition`` method includes an ``if`` statement where the condition depends on the ``ratio_imprim`` argument. If ``ratio_imprim`` is passed as a traced JAX value, an error occurs:
+For example, the :class:`~.pennylane.RandomLayers` template does not implement a 
+``compute_qfunc_decomposition`` method, and its ``compute_decomposition`` method 
+includes an ``if`` statement where the condition depends on its ``ratio_imprim`` 
+argument. If ``ratio_imprim`` is passed as a traced value, an error occurs:
 
 .. code-block:: python 
+
+    import jax.numpy as jnp
 
     qml.capture.enable()
 
@@ -556,12 +561,7 @@ For example, the :class:`~.pennylane.RandomLayers` template does not implement a
         qml.RandomLayers(weights, wires=[0, 1], ratio_imprim=arg)
         return qml.expval(qml.Z(0))
 
-    weights=jax.numpy.array([[0.1, -2.1, 1.4]])
-    arg = 0.5
-
-    circuit(weights, arg)
-
->>> weights=jax.numpy.array([[0.1, -2.1, 1.4]])
+>>> weights = jnp.array([[0.1, -2.1, 1.4]])
 >>> arg = 0.5
 >>> circuit(weights, arg)
 ...
@@ -569,6 +569,32 @@ The error occurred while tracing the function eval at pennylane/transforms/decom
   operation a:bool[] = lt b c
     from line pennylane/templates/layers/random.py:245:19 (RandomLayers.compute_decomposition)
 See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerBoolConversionError
+
+As a workaround, we can pass ``ratio_imprim`` as a regular (non-traced) constant:
+
+.. code-block:: python 
+
+    import jax.numpy as jnp
+
+    qml.capture.enable()
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.capture.expand_plxpr_transforms
+    @qml.transforms.decompose
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.RandomLayers(weights, wires=[0, 1], ratio_imprim=0.5)
+        return qml.expval(qml.Z(0))
+
+>>> circuit(jnp.array([[0.1, -2.1, 1.4]]))
+Array(0.99500424, dtype=float32)
+
+Currently, the operators that define a ``compute_qfunc_decomposition`` are:
+
+#. :class:`~.StronglyEntanglingLayers`
+#. :class:`~.GroverOperator`
+#. :class:`~.QFT`
 
 while loops 
 -----------
