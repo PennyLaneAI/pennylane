@@ -223,7 +223,7 @@ def _resolve_diff_method(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
 
-    if "hadamard" in diff_method:
+    if "hadamard" in str(diff_method):
         return _resolve_hadamard(initial_config, device)
 
     if diff_method in {"best", "parameter-shift"}:
