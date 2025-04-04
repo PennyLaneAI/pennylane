@@ -331,7 +331,7 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [bool(int(bit)) for bit in outcome]
+        outcome_samples = [int(bit) for bit in outcome]
 
         if self.eigvals() is not None:
             eigvals = self.eigvals()
