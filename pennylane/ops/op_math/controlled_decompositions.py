@@ -687,6 +687,9 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
     In particular, this implements Step-1 and Step-2 on Fig. 3 of [1] except for the first and last
     CCX gates.
 
+    Preconditions:
+        - The number of wires must be greater than 2.
+
     Args:
         wires (Wires): Wires to apply the ladder operations on.
 
@@ -700,8 +703,7 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
     """
 
     n = len(wires)
-    if n <= 2:
-        raise ValueError("n_ctrls >= 2 to use MCX ladder. Otherwise, use CCX")
+    assert n > 2, "n_ctrls > 2 to use MCX ladder. Otherwise, use CCX"
 
     gates = []
     # up-ladder
@@ -791,8 +793,9 @@ def _n_parallel_ccx_x(
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
-    if len(control_wires_x) != len(control_wires_y) or len(control_wires_x) != len(target_wires):
-        raise ValueError("The number of wires must be the same for x, y, and target.")
+    assert (
+        len(control_wires_x) == len(control_wires_y) == len(target_wires)
+    ), "The number of wires must be the same for x, y, and target."
 
     gates = []
     for i in range(len(control_wires_x)):
