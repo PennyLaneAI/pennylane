@@ -681,8 +681,8 @@ Gradients with lightning.qubit
 ------------------------------
 
 When executing a QNode on ``lightning.qubit`` with capture enabled, calculating 
-the gradient, JVP, or VJP with JAX currently requires that we convert the plxpr 
-representation of the program back to a tape for the calculation of the gradient, 
+the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert the plxpr 
+representation of the program back to a tape for the calculation of the gradient, jacobian, 
 JVP, or VJP. 
 
 This conversion, in turn, requires that PennyLane make the assumption that each 
