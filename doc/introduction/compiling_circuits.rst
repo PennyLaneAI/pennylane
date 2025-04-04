@@ -263,12 +263,11 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    # lambda functions in gate_set can only be used with the new system disabled
+    # functions in gate_set can only be used with graph decomposition system disabled
     qml.decompositions.disable_graph()
 
-    @partial(decompose, gate_set=lambda op: len(op.wires)<=2) 
+    @partial(decompose, gate_set=lambda op: len(op.wires) <= 2) 
     @qml.qnode(dev)
-
     def circuit():
         qml.Toffoli(wires=[0,1,2])
         return qml.expval(qml.Z(0)) 
@@ -428,14 +427,14 @@ be used.
     0: ───────╭●───────┤  State
     1: ──H──H─╰Z──H──H─┤  State
 
-    To have better control over custom decompositions, consider using the new decompositions
-    system functionality outlined in the next section.
+    To have better control over custom decompositions, consider using the graph 
+    decompositions system functionality outlined in the next section.
 
 Custom decompositions with qml.decomposition.enable_graph
 *********************************************************
 
-With the new graph-based system enabled, custom decompositions for operators in PennyLane
-can be added in a few ways depending on the application. 
+With the graph decompositions system enabled, custom decompositions for operators 
+in PennyLane can be added in a few ways depending on the application. 
 
 The :func:`~.pennylane.transforms.decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
@@ -448,9 +447,9 @@ custom decompositions via two keyword arguments:
   efficiency.
 
 Both keyword arguments above require a dictionary mapping PennyLane operator types to 
-custom decompositions. Creating custom decompositions that the system can use involves 
-a PennyLane quantum function that represents the decomposition, and a declaration 
-of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
+custom decompositions. Creating custom decompositions that the graph-based system 
+can use involves a PennyLane quantum function that represents the decomposition, 
+and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
