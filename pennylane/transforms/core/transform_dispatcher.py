@@ -588,7 +588,6 @@ def _create_transform_primitive(name):
     ):  # pylint: disable=unused-argument
         args = all_args[args_slice]
         consts = all_args[consts_slice]
-
         return qml.capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
