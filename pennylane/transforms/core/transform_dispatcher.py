@@ -191,7 +191,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                return self._capture_qnode_transform(obj, targs, tkwargs)
+                new_qfunc = self._capture_callable_transform(obj.func, targs, tkwargs)
+                return obj.update(func=new_qfunc)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -318,12 +319,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         )
         return qnode
-
-    def _capture_qnode_transform(self, qnode, targs, tkwargs):
-        """Apply the transform to the quantum function of a qnode when capture is enabled."""
-
-        new_qfunc = self._capture_callable_transform(qnode.func, targs, tkwargs)
-        return qnode.update(func=new_qfunc)
 
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
