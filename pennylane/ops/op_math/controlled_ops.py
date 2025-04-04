@@ -1346,26 +1346,24 @@ class MultiControlledX(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
         work_wire_type (str): whether the work wires are 'clean' or 'dirty'. 'clean' indicates that
             the work wires are in the state :math:`|0\rangle`, while 'dirty' indicates that the
             work wires are in an arbitrary state. Defaults to 'clean'.
 
-
-
     .. note::
 
-        If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
+        If :class`~.MultiControlledX` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
         three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 of
         `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ and Sec 5 of `Khattar and Gidney
-         <https://arxiv.org/abs/2407.17966>`__  will be used. These methods require at least one
+        <https://arxiv.org/abs/2407.17966>`__  will be used. These methods require at least one
         work wire.
 
         The number of work wires provided determines the decomposition method used and the resulting
-        number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
+        number of Toffoli gates required. When :class`~.MultiControlledX` is controlling on :math:`n`
         wires:
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
