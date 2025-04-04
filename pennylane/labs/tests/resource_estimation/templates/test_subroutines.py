@@ -18,6 +18,7 @@ import math
 
 import numpy as np
 import pytest
+from scipy.linalg import expm
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
@@ -1039,3 +1040,28 @@ class TestResourceAmplitudeAmplification:
             )
             == "AmplitudeAmplification"
         )
+
+
+class TestResourceQubitUnitary:
+    """Test the ResourceQubitUnitary class"""
+
+    def test_resources(self):
+        """Test that the resource method raises an error"""
+        with pytest.raises(re.ResourcesNotDefined):
+            re.ResourceQubitUnitary.resources(num_wires=3)
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 5])
+    def test_resource_params(self, num_wires):
+        """Test that the resource params are correctly set"""
+        dummy_mat = np.random.rand(2**num_wires, 2**num_wires)
+        dummy_hermitian = dummy_mat + np.conj(dummy_mat.T)
+        dummy_unitary = expm(dummy_hermitian)
+
+        qu = re.ResourceQubitUnitary(dummy_unitary, wires=range(num_wires))
+        assert qu.resource_params == {"num_wires": num_wires}
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 5])
+    def test_resource_rep(self, num_wires):
+        """Test that the resource rep is as expected"""
+        expected = re.CompressedResourceOp(re.ResourceQubitUnitary, {"num_wires": num_wires})
+        assert re.ResourceQubitUnitary.resource_rep(num_wires=num_wires) == expected
