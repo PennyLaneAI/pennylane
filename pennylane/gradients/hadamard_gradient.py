@@ -17,6 +17,7 @@ of a qubit-based quantum tape.
 """
 from functools import partial
 from itertools import islice
+from typing import Literal
 
 import numpy as np
 
@@ -60,7 +61,7 @@ def _expand_transform_hadamard(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: str = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
     batch, postprocessing = qml.devices.preprocess.decompose(
@@ -96,7 +97,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: str = "standard",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct"] = "standard",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.

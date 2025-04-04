@@ -108,9 +108,13 @@ def cost12(x):
 class TestHadamardValidation:
     """Test validation of edge cases with the hadamard gradient."""
 
-    def test_invalid_mode(self):
+    @pytest.mark.parametrize("mode", ["invalid-mode"])
+    def test_invalid_mode(self, mode):
         """Test that a ValueError is raised if an invalid mode is provided."""
-        raise NotImplementedError("add test here")
+        tape = qml.tape.QuantumScript([qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0))])
+        _match = r"Invalid mode"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.hadamard_grad(tape, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_trainable_batched_tape_raises(self, mode):
@@ -271,7 +275,7 @@ class TestDifferentModes:
         )
         qml.assert_equal(batch[1], expected1)
 
-        assert qml.math.allclose(fn((1.0,)), -2.0)
+        assert qml.math.allclose(fn((1.0, 2.0)), -6.0)
 
     def test_direct_mode(self):
         """Directly test the batch output of applying the direct mode hadamard gradient."""
@@ -308,7 +312,7 @@ class TestDifferentModes:
         )
         qml.assert_equal(batch[3], expected3)
 
-        assert qml.math.allclose(fn((1.0,)), -0.25)
+        assert qml.math.allclose(fn((1.0, 2.0, 3.0, 4.0)), 0.5)
 
     def test_reversed_direct_mode(self):
         """Directly test tht batch output of applying the reversed direct mode of hadamard gradient."""
@@ -347,7 +351,7 @@ class TestDifferentModes:
         )
         qml.assert_equal(batch[3], expected3)
 
-        assert qml.math.allclose(fn((1.0,)), 1.0)
+        assert qml.math.allclose(fn((1.0, 2.0, 3.0, 4.0)), -2.0)
 
     def test_reversed_mode_hadamard_obs(self):
         """Test that reversed mode can handle measuring an observable that does not have a pauli rep."""

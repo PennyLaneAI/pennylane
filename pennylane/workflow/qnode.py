@@ -274,29 +274,9 @@ class QNode:
               as a fallback.
 
             * ``"hadamard"``: Use the standard analytic hadamard gradient test rule for
-            all supported quantum operation arguments. More info is in the documentation
-            for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
-
-            * ``"reversed-hadamard"``: A variant of ``"hadamard"``, where the role of the
-            observable being measured and the generators of the unitary operations in the
-            circuit are reversed; the generators are now the observables, and the Pauli
-            decomposition of the observables are now gates in the circuit. More
-            information can be found in the documentation for
-            :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` and the
-            `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
-
-            * ``"direct-hadamard"``: A variant of ``"hadamard"``, where the additional ancillary
-            qubit needed in ``"hadamard"`` is exchanged for additional circuit executions.
-            More information can be found in the documentation for
-            :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` and the
-            `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
-
-            * ``"reversed-direct-hadamard"``: A variant of ``"direct-hadamard"``, where the
-            role of the observable and the generators of the unitary operations in the circuit
-            swap in a similar fashion to the ``"reversed-hadamard"`` method. More information
-            can be found in the documentation for
-            :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>` and the
-            `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
+              all supported quantum operation arguments. More info is in the documentation
+              for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
+              direct, and reversed-direct modes can be selected via a ``"mode"`` in ``gradient_kwargs``.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
