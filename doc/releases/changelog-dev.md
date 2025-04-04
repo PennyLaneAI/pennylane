@@ -121,6 +121,9 @@
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
+* Added template `qml.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit.
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+
 <h4>Gate-set targeted decompositions</h4>
 
 * A new module called `qml.decomposition` that contains PennyLane's new experimental graph-based 
