@@ -37,12 +37,13 @@ from .qutrit import *
 from .qutrit import __all__ as _qutrit__all__
 from .qutrit import __obs__ as _qutrit__obs__
 from .qutrit import __ops__ as _qutrit__ops__
-from .qutrit import __channels__ as _qutrit__channel__ops__
+from .qutrit import __channels__ as _qutrit__channels__
 
 _qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 
 
-__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__ + _qutrit__channel__ops__
+__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
 __all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)
+__all_channels__ = list(_channel__ops__ | _qutrit__channels__)
