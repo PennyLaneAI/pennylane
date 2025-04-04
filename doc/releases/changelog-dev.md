@@ -587,6 +587,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Better drawing functionality</h4>
 
+* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
+   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+
 * `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
   changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
