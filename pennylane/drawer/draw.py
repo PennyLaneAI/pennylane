@@ -18,7 +18,7 @@ Contains the drawing function.
 """
 import warnings
 from functools import wraps
-from typing import Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -26,6 +26,9 @@ from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 
 def catalyst_qjit(qnode):
@@ -347,7 +350,7 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode: Union[qml.QNode, Callable],
+    qnode: Union["QNode", Callable],
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,

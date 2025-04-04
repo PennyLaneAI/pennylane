@@ -27,6 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
 from pennylane.ops.op_math.condition import Conditional
+from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -321,7 +322,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
 
 # pylint: disable=too-many-arguments
 def tape_mpl(
-    tape: qml.tape.QuantumScript,
+    tape: QuantumScript,
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,
