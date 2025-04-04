@@ -534,15 +534,14 @@ More information for using ``jax.vmap`` can be found in the
 Decompositions
 --------------
 
-With program capture enabled, operators present in a circuit with control flow
-in their ``compute_decomposition`` method and who also do not have a ``compute_qfunc_decomposition``
-method may raise an error if you apply the decompose transform. This can happen, 
-for example, if the predicate of a conditional control flow operation specified 
-in a decomposition is a traced argument. 
+With program capture enabled, operators used in circuits may raise an error when the ``decompose`` transform is applied.
 
-For example, the :class:`~.pennylane.RandomLayers` template does not have a ``compute_qfunc_decomposition``
-method, and its ``compute_decomposition`` method contains an ``if`` statement that 
-predicates on a traced argument:
+This can happen if the operator:
+- defines a ``compute_decomposition`` method that contains control flow (e.g., ``if`` statements),
+- does not define a ``compute_qfunc_decomposition`` method, and
+- receives a traced argument as part of the control flow condition.
+
+For example, the :class:`~.pennylane.RandomLayers` template does not implement a ``compute_qfunc_decomposition`` method. Its ``compute_decomposition`` method includes an ``if`` statement where the condition depends on the ``ratio_imprim`` argument. If ``ratio_imprim`` is passed as a traced JAX value, an error occurs:
 
 .. code-block:: python 
 
