@@ -25,7 +25,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from pennylane.workflow import QNode
 
 
