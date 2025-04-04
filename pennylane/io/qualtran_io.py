@@ -117,7 +117,7 @@ def _get_to_pl_op():
 
 
 def bloq_registers(bloq):
-    """Reads a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_ 
+    """Reads a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     signature and returns a dictionary mapping the bloq's register names to :class:`~.Wires`.
 
     .. note::
@@ -128,9 +128,9 @@ def bloq_registers(bloq):
 
             pip install qualtran
 
-    The keys of the dictionary are the register names in the Qualtran bloq. The values
-    are :class:`~.Wires` objects with a length equal to the bitsize of its respective register. The
-    wires are indexed in ascending order, starting from 0.
+    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran bloq. The
+    values are :class:`~.Wires` objects with a length equal to the bitsize of its respective
+    register. The wires are indexed in ascending order, starting from 0.
 
     This function makes it easy to access the wires that a bloq acts on and use them to precisely
     control how gates connect.
