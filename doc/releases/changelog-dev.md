@@ -492,6 +492,20 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+  ```python
+  >>> from qualtran.bloqs.basic_gates import CNOT
+  
+  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...    qml.FromBloq(CNOT(), wires=[0, 1])
+  ...    return qml.state()
+  >>> circuit()
+  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  ```
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
