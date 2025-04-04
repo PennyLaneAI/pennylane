@@ -15,14 +15,10 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-from pennylane.errors import (
-    DeviceError,
-    QuantumFunctionError,
-    PennyLaneDeprecationWarning,
-    ExperimentalWarning,
-)
 from pennylane.boolean_fn import BooleanFn
+import pennylane.errors
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
@@ -180,6 +176,18 @@ default_config = Configuration("config.toml")
 
 
 def __getattr__(name):
+    if name in {
+        "DeviceError",
+        "PennyLaneDeprecationWarning",
+        "QuantumFunctionError",
+        "ExperimentalWarning",
+    }:
+        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
+        # warnings.warn(
+        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.errors.{name}. Support for top-level access will be removed in v0.42.",
+        #     pennylane.errors.PennyLaneDeprecationWarning,
+        # )
+        return getattr(pennylane.errors, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
