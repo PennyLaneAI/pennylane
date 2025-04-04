@@ -371,7 +371,7 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
-    .. seealso:: The :func:`~.ctrl` function is recommended for use over ``Controlled``. 
+    .. seealso:: The :func:`~.ctrl` function is recommended for use over ``Controlled``.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
