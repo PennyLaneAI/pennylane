@@ -16,7 +16,22 @@ This module provides a collection of methods that help in the construction of
 QAOA workflows.
 """
 
-import pennylane.qaoa.cycle
-from .mixers import *
-from .cost import *
-from .layers import *
+from .mixers import x_mixer, xy_mixer, bit_flip_mixer
+from .cycle import (
+    edges_to_wires,
+    wires_to_edges,
+    cycle_mixer,
+    loss_hamiltonian,
+    out_flow_constraint,
+    net_flow_constraint,
+)
+from .cost import (
+    bit_driver,
+    edge_driver,
+    maxcut,
+    max_independent_set,
+    min_vertex_cover,
+    max_clique,
+    max_weight_cycle,
+)
+from .layers import cost_layer, mixer_layer
