@@ -230,7 +230,7 @@ class FromBloq(Operation):
 
     **Example**
 
-    Given a Qualtran bloq:
+    This example shows how to use ``qml.FromBloq``:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
     >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
