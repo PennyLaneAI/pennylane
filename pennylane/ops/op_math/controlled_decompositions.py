@@ -532,7 +532,7 @@ def decompose_mcx(
     if n_ctrl_wires == 2:
         return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
 
-    if n_work_wires >= n_ctrl_wires - 2 and (work_wire_type == "clean"):
+    if n_work_wires >= n_ctrl_wires - 2:
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
         return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
     if n_work_wires >= 2:
