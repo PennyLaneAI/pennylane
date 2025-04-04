@@ -798,9 +798,9 @@ def _n_parallel_ccx_x(
     ), "The number of wires must be the same for x, y, and target."
 
     gates = []
-    for i in range(len(control_wires_x)):
+    for i, ctrl_x in enumerate(control_wires_x):
         gates.append(qml.X(wires=target_wires[i]))
-        gates.append(qml.Toffoli(wires=[control_wires_x[i], control_wires_y[i], target_wires[i]]))
+        gates.append(qml.Toffoli(wires=[ctrl_x, control_wires_y[i], target_wires[i]]))
 
     return gates
 

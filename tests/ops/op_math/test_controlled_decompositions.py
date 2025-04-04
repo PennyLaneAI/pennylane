@@ -1285,6 +1285,19 @@ class TestMCXDecomposition:
 
         assert computed_decomp == expected_decomp
 
+    def test_private_mcx_decomposition_raises_error(self):
+        """Test that an error is raised if not enough work wires are provided"""
+
+        # pylint: disable=protected-access
+        control_wires = Wires(range(5))
+        target_wire = 5
+        work_wires = Wires([6])
+
+        with pytest.raises(ValueError, match="At least 2 work wires are needed"):
+            _ = _decompose_mcx_with_two_workers(
+                control_wires, target_wire, work_wires, work_wire_type="clean"
+            )
+
 
 def test_ControlledQubitUnitary_has_decomposition_correct():
     """Test that ControlledQubitUnitary reports has_decomposition=False if it is False"""
