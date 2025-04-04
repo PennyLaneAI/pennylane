@@ -11,7 +11,7 @@ structured control flow, and dynamicism.
 This new feature unlocks better performance, more functional and dynamic workflows, 
 and smoother integration with just-in-time compilation frameworks like 
 `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
-(via the :func:`~.pennylane.qjit` decorator) and JAX-jit.
+(via the :func:`~.pennylane.qjit` decorar) and JAX-jit.
 
 Internally, program capture is supported by representing hybrid programs via a new 
 intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
@@ -35,7 +35,7 @@ features that will help get your existing tape-based code working with program c
 Device compatibility
 --------------------
 
-Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatible 
+Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatie 
 with program capture.
 
 Device wires 
@@ -691,19 +691,3 @@ TransformError: Input is not an Operator, tape, QNode, or quantum function
 >>> circuit()
 ...
 NotImplementedError: 
-
-Section title 
--------------
-
-blah blah blah
-
-.. code-block:: python 
-
-    qml.capture.enable()
-
-    # nice code block!!!!!!!!!
-
->>> print("hello plxpr")
-hello plxpr
-
-blah blah blah
