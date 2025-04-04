@@ -246,8 +246,6 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         return (gammavec @ vec_H).real
 
-    value_and_grad = jax.jit(jax.value_and_grad(loss))
-
     print([H], g[-dim_m:])
     [vec_H] = op_to_adjvec([H], g[-dim_m:], is_orthogonal=False)
 
@@ -257,9 +255,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     opt_kwargs["verbose"] = verbose
 
-    thetas, energy, _ = run_opt(
-        partial(value_and_grad, vec_H=vec_H, adj=adj_cropped), theta0, **opt_kwargs
-    )
+    thetas, energy, _ = run_opt(partial(loss, vec_H=vec_H, adj=adj_cropped), theta0, **opt_kwargs)
 
     if verbose >= 1:
         plt.plot(energy - np.min(energy))
