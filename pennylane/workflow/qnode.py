@@ -273,9 +273,10 @@ class QNode:
               rule for all supported quantum operation arguments, with finite-difference
               as a fallback.
 
-            * ``"hadamard"``: Use the analytic hadamard gradient test
-              rule for all supported quantum operation arguments. More info is in the documentation
-              :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
+            * ``"hadamard"``: Use the standard analytic hadamard gradient test rule for
+              all supported quantum operation arguments. More info is in the documentation
+              for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
+              direct, and reversed-direct modes can be selected via a ``"mode"`` in ``gradient_kwargs``.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
@@ -578,7 +579,8 @@ class QNode:
         if kwargs:
             if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
                 warnings.warn(
-                    f"Specifying gradient keyword arguments {list(kwargs.keys())} is deprecated and will be removed in v0.42. Instead, please specify all arguments in the gradient_kwargs argument.",
+                    f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
+                    Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
                     qml.PennyLaneDeprecationWarning,
                 )
             gradient_kwargs |= kwargs

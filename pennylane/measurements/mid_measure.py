@@ -227,7 +227,7 @@ def _measure_impl(
         )
 
     # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
+    measurement_id = str(uuid.uuid4())
     mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
@@ -515,7 +515,7 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(qml.math.logical_or, other)
 
     def __mod__(self, other):
-        return self._transform_bin_op(qml.math.logical_mod, other)
+        return self._transform_bin_op(qml.math.mod, other)
 
     def __xor__(self, other):
         return self._transform_bin_op(qml.math.logical_xor, other)

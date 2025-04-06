@@ -19,8 +19,9 @@ import jax
 import numpy as np
 
 from pennylane.capture import pause
-from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
+from pennylane.devices import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.qubit import Projector
@@ -33,8 +34,8 @@ from .sampling import measure_with_samples
 from .simulate import _postselection_postprocess  # pylint: disable=protected-access
 
 
-# pylint: disable=attribute-defined-outside-init, access-member-before-definition
-class DefaultQubitInterpreter(PlxprInterpreter):
+# pylint: disable=attribute-defined-outside-init, access-member-before-definition,too-many-instance-attributes
+class DefaultQubitInterpreter(FlattenedInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
     Args:
@@ -74,14 +75,19 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         inst = DefaultQubitInterpreter.__new__(DefaultQubitInterpreter)
         inst.stateref = self.stateref
         inst.shots = self.shots
+        inst.execution_config = self.execution_config
         return inst
 
     def __init__(
-        self, num_wires: int, shots: int | None = None, key: None | jax.numpy.ndarray = None
+        self,
+        num_wires: int,
+        shots: int | None = None,
+        key: None | jax.numpy.ndarray = None,
+        execution_config: None | ExecutionConfig = None,
     ):
         self.num_wires = num_wires
-        self.shots = Shots(shots)
-        if self.shots.has_partitioned_shots:
+        self.original_shots = Shots(shots)
+        if self.original_shots.has_partitioned_shots:
             raise NotImplementedError(
                 "DefaultQubitInterpreter does not yet support partitioned shots."
             )
@@ -90,6 +96,8 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
         self.initial_key = key
         self.stateref = None
+        self.execution_config = execution_config or ExecutionConfig()
+
         super().__init__()
 
     @property
@@ -104,6 +112,21 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     def state(self, new_val):
         try:
             self.stateref["state"] = new_val
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @property
+    def shots(self):
+        """The shots"""
+        try:
+            return self.stateref["shots"]
+        except TypeError as e:
+            raise AttributeError("execution not yet initialized.") from e
+
+    @shots.setter
+    def shots(self, new_val):
+        try:
+            self.stateref["shots"] = new_val
         except TypeError as e:
             raise AttributeError("execution not yet initialized.") from e
 
@@ -141,6 +164,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         if self.stateref is None:
             self.stateref = {
                 "state": create_initial_state(range(self.num_wires), like="jax"),
+                "shots": self.original_shots,
                 "key": self.initial_key,
                 "is_state_batched": False,
             }
@@ -156,8 +180,13 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             self.is_state_batched = True
 
         if isinstance(op, Projector):
-            self.state, _ = _postselection_postprocess(
-                self.state, self.is_state_batched, self.shots
+            self.key, new_key = jax.random.split(self.key, 2)
+            self.state, self.shots = _postselection_postprocess(
+                self.state,
+                self.is_state_batched,
+                self.shots,
+                prng_key=new_key,
+                postselect_mode=self.execution_config.mcm_config.postselect_mode,
             )
 
         return op
@@ -187,10 +216,6 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             else:
                 output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
         return output
-
-
-# pylint: disable=protected-access
-DefaultQubitInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
 
 
 @DefaultQubitInterpreter.register_primitive(measure_prim)

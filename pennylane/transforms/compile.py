@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
+from collections.abc import Sequence
+
 # pylint: disable=too-many-branches
 from functools import partial
+from warnings import warn
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
@@ -28,12 +31,15 @@ from pennylane.transforms.optimization import (
 )
 from pennylane.typing import PostprocessingFn
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
+default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove_barrier)
 
 
 @transform
 def compile(
-    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1
+    tape: QuantumScript,
+    pipeline: Sequence[TransformDispatcher] = default_pipeline,
+    basis_set=None,
+    num_passes=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
@@ -48,7 +54,7 @@ def compile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        pipeline (list[Callable]): A list of
+        pipeline (Sequence[TransformDispatcher]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
@@ -166,6 +172,10 @@ def compile(
 
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
+        warn(
+            "Specifying pipeline=None is now deprecated. Please specify a sequence of transforms",
+            qml.PennyLaneDeprecationWarning,
+        )
         pipeline = default_pipeline
     else:
         for p in pipeline:

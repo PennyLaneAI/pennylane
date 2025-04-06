@@ -118,10 +118,6 @@ def _setup_transform_program(
         (not resolved_execution_config.convert_to_numpy)
         or resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
-        or (
-            getattr(device, "short_name", "") == "default.mixed"
-            and resolved_execution_config.gradient_method is None
-        )
     )
     if not interface_data_supported:
         inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)

@@ -21,7 +21,7 @@ import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
@@ -66,11 +66,14 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return True
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
+    if op.name == "FromBloq" and len(op.wires) > 3:
+        return False
 
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
         or op.has_matrix
+        or op.has_sparse_matrix
     )
 
 
@@ -544,6 +547,14 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        if qml.capture.enabled():
+
+            if config.mcm_config.mcm_method == "deferred":
+                transform_program.add_transform(qml.defer_measurements, num_wires=len(self.wires))
+            transform_program.add_transform(qml.transforms.decompose, gate_set=stopping_condition)
+
+            return transform_program, config
+
         if config.interface == qml.math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
@@ -580,6 +591,7 @@ class DefaultQubit(Device):
 
         return transform_program, config
 
+    # pylint: disable = too-many-branches
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
 
@@ -604,23 +616,31 @@ class DefaultQubit(Device):
 
         # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
         # we assume that if someone provides a PRNGkey, they want to jit end-to-end
-        jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
-        updated_values["convert_to_numpy"] = not (
-            self._prng_key is not None
-            and execution_config.interface in jax_interfaces
-            and execution_config.gradient_method != "adjoint"
-            # need numpy to use caching, and need caching higher order derivatives
-            and execution_config.derivative_order == 1
-        )
-        for option in execution_config.device_options:
+        if not qml.capture.enabled():
+            jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
+            updated_values["convert_to_numpy"] = not (
+                (
+                    self._prng_key is not None
+                    and execution_config.interface in jax_interfaces
+                    and execution_config.gradient_method != "adjoint"
+                    # need numpy to use caching, and need caching higher order derivatives
+                    and execution_config.derivative_order == 1
+                )
+            )
+
+        for option, value in execution_config.device_options.items():
             if option not in self._device_options:
                 raise qml.DeviceError(f"device option {option} not present on {self}")
+
+            if qml.capture.enabled():
+                if option == "max_workers" and value is not None:
+                    raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
 
         gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
             no_max_workers = (
                 execution_config.device_options.get("max_workers", self._max_workers) is None
-            )
+            ) or qml.capture.enabled()
             gradient_method = "backprop" if no_max_workers else "adjoint"
             updated_values["gradient_method"] = gradient_method
 
@@ -638,6 +658,31 @@ class DefaultQubit(Device):
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
+
+        if qml.capture.enabled():
+            mcm_config = execution_config.mcm_config
+            mcm_updated_values = {}
+            if (mcm_method := mcm_config.mcm_method) not in (
+                "deferred",
+                "single-branch-statistics",
+                None,
+            ):
+                raise qml.DeviceError(
+                    f"mcm_method='{mcm_method}' is not supported with default.qubit "
+                    "when program capture is enabled."
+                )
+
+            if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
+                warnings.warn(
+                    "Setting 'postselect_mode' is not supported with mcm_method='single-branch-"
+                    "statistics'. 'postselect_mode' will be ignored.",
+                    UserWarning,
+                )
+                mcm_updated_values["postselect_mode"] = None
+            if mcm_method is None:
+                mcm_updated_values["mcm_method"] = "deferred"
+            updated_values["mcm_config"] = replace(mcm_config, **mcm_updated_values)
+
         return replace(execution_config, **updated_values)
 
     @debug_logger
@@ -936,6 +981,7 @@ class DefaultQubit(Device):
         return tuple(zip(*results))
 
     # pylint: disable=import-outside-toplevel, unused-argument
+    @debug_logger
     def eval_jaxpr(
         self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
@@ -953,9 +999,54 @@ class DefaultQubit(Device):
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
         interpreter = DefaultQubitInterpreter(
-            num_wires=len(self.wires), shots=self.shots.total_shots, key=key
+            num_wires=len(self.wires),
+            shots=self.shots.total_shots,
+            key=key,
+            execution_config=execution_config,
         )
         return interpreter.eval(jaxpr, consts, *args)
+
+    def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
+        import jax
+
+        def _make_zero(tan, arg):
+            return (
+                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+            )
+
+        tangents = tuple(map(_make_zero, tangents, args))
+
+        def eval_wrapper(*inner_args):
+            n_consts = len(jaxpr.constvars)
+            consts = inner_args[:n_consts]
+            non_const_args = inner_args[n_consts:]
+            return self.eval_jaxpr(
+                jaxpr, consts, *non_const_args, execution_config=execution_config
+            )
+
+        return jax.jvp(eval_wrapper, args, tangents)
+
+    # pylint :disable=import-outside-toplevel, unused-argument
+    @debug_logger
+    def jaxpr_jvp(
+        self,
+        jaxpr,
+        args: Sequence[TensorLike],
+        tangents: Sequence[TensorLike],
+        execution_config=None,
+    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
+        gradient_method = getattr(execution_config, "gradient_method", "backprop")
+        if gradient_method == "backprop":
+            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
+
+        if gradient_method == "adjoint":
+            from .qubit.jaxpr_adjoint import execute_and_jvp
+
+            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
+
+        raise NotImplementedError(
+            f"DefaultQubit does not support gradient_method={gradient_method}"
+        )
 
 
 def _simulate_wrapper(circuit, kwargs):

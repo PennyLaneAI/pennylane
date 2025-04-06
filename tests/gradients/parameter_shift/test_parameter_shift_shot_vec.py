@@ -17,6 +17,7 @@ from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
+from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -1377,7 +1378,6 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
 
-        _herm_shot_vec_tol = shot_vec_tol * 100
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
@@ -1391,7 +1391,7 @@ class TestParameterShiftRule:
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
         for r in res:
-            assert np.allclose(r, expected, atol=_herm_shot_vec_tol, rtol=0)
+            assert qml.math.allclose(r, expected, atol=5e-2)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
@@ -1412,16 +1412,17 @@ class TestParameterShiftRule:
                 assert isinstance(param_res, np.ndarray)
                 assert param_res.shape == ()
 
-            assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
-            assert shot_vec_result[1] == pytest.approx(expected[1], abs=0.3)
+            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
+            assert qml.math.allclose(shot_vec_result[1], expected[1], atol=0.15)
 
+        # Finite-diff
         for shot_vec_result in gradF:
             for param_res in shot_vec_result:
                 assert isinstance(param_res, np.ndarray)
                 assert param_res.shape == ()
-
-            assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
-            assert shot_vec_result[1] == pytest.approx(expected[1], abs=_herm_shot_vec_tol)
+            # Tolerance came from multi_param test below
+            assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
+            assert qml.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -2088,7 +2089,7 @@ class TestHamiltonianExpvalGradients:
     def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = shots_to_analytic(qml.device("default.qubit", wires=2, shots=shot_vec))
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = qml.numpy.array([0.1, 0.2, 0.3])

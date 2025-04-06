@@ -34,6 +34,7 @@ SUPPORTED_GRADIENT_KWARGS = {
     "force_order2",
     "gradient_recipes",
     "h",
+    "mode",
     "n",
     "num_directions",
     "num_split_times",
@@ -81,6 +82,21 @@ def assert_no_variance(measurements, transform_name):
         )
 
 
+def assert_no_probability(measurements, transform_name):
+    """Check whether a set of measurements contains a probability measurement
+    raise an error if this is the case.
+
+    Args:
+        measurements (list[MeasurementProcess]): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the measurements
+    """
+    if any(isinstance(m, ProbabilityMP) for m in measurements):
+        raise ValueError(
+            f"Computing the gradient of probabilities with the {transform_name} "
+            "gradient transform is not supported."
+        )
+
+
 def assert_no_trainable_tape_batching(tape, transform_name):
     """Check whether a tape is broadcasted and raise an error if this is the case.
 
@@ -101,7 +117,7 @@ def assert_no_trainable_tape_batching(tape, transform_name):
             )
 
 
-def choose_trainable_params(tape, argnum=None):
+def choose_trainable_param_indices(tape, argnum=None):
     """Returns a list of trainable parameter indices in the tape.
 
     Chooses the subset of trainable parameters to compute the Jacobian for. The function
@@ -115,6 +131,17 @@ def choose_trainable_params(tape, argnum=None):
 
     Returns:
         list: list of the trainable parameter indices
+
+    Note that trainable param indices are a **double pointer**.
+
+    >>> tape = qml.tape.QuantumScript([qml.RX(0.0, 0), qml.RY(1.0, 0), qml.RZ(2.0, 0)], trainable_params=[1,2])
+    >>> chose_trainable_param_indices(tape, argnum=[0])
+    [0]
+    >>> tape.get_operation(0)
+    (RY(1.0, wires=[0]), 1, 0)
+
+    In this case ``[0]`` points to the ``RY`` parameter. ``0`` selects into ``tape.trainable_params``,
+    which selects into ``tape.data``.
 
     """
 
@@ -382,13 +409,13 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     num_measurements = len(tape.measurements)
     has_partitioned_shots = tape.shots.has_partitioned_shots
 
-    if isinstance(qjac, tuple) and len(qjac) == 1:
+    if isinstance(qjac, (tuple, list)) and len(qjac) == 1:
         qjac = qjac[0]
 
-    if isinstance(cjac, tuple) and len(cjac) == 1:
+    if isinstance(cjac, (tuple, list)) and len(cjac) == 1:
         cjac = cjac[0]
 
-    cjac_is_tuple = isinstance(cjac, tuple)
+    cjac_is_tuple = isinstance(cjac, (tuple, list))
 
     multi_meas = num_measurements > 1
 
@@ -402,7 +429,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
             _qjac = _qjac[0]
         if has_partitioned_shots:
             _qjac = _qjac[0]
-        single_tape_param = not isinstance(_qjac, tuple)
+        single_tape_param = not isinstance(_qjac, (tuple, list))
 
     if single_tape_param:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)

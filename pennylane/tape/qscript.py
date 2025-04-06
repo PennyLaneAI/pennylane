@@ -74,6 +74,21 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 QS = TypeVar("QS", bound="QuantumScript")
 
 
+class SpecsDict(dict):
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
+
+    def __getitem__(self, __k):
+        if __k == "num_diagonalizing_gates":
+            raise KeyError(
+                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
+                "and extreme performance costs."
+            )
+        try:
+            return super().__getitem__(__k)
+        except KeyError as e:
+            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
+
+
 class QuantumScript:
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
@@ -548,8 +563,7 @@ class QuantumScript:
 
     @property
     def data(self) -> list[TensorLike]:
-        """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
-        for backwards compatibilities with operations."""
+        """Alias to :meth:`~.get_parameters` for backwards compatibilities with operations."""
         return self.get_parameters(trainable_only=False)
 
     @property
@@ -562,8 +576,7 @@ class QuantumScript:
         to compute the Jacobian; parameters not marked as trainable will be
         automatically excluded from the Jacobian computation.
 
-        The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, and changes the default output size of method :meth:`~.get_parameters()`.
+        The number of trainable parameters changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
@@ -1102,7 +1115,7 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> dict[str, Any]:
+    def specs(self) -> SpecsDict[str, Any]:
         """Resource information about a quantum circuit.
 
         Returns:
@@ -1134,17 +1147,18 @@ class QuantumScript:
             resources = qml.resource.resource._count_resources(self)
             algo_errors = qml.resource.error._compute_algo_error(self)
 
-            self._specs = {
-                "resources": resources,
-                "errors": algo_errors,
-                "num_observables": len(self.observables),
-                "num_diagonalizing_gates": len(self.diagonalizing_gates),
-                "num_trainable_params": self.num_params,
-            }
+            self._specs = SpecsDict(
+                {
+                    "resources": resources,
+                    "errors": algo_errors,
+                    "num_observables": len(self.observables),
+                    "num_trainable_params": self.num_params,
+                }
+            )
 
         return self._specs
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Optional[Iterable[Hashable]] = None,

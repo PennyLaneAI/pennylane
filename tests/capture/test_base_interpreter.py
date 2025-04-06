@@ -143,7 +143,6 @@ def test_default_operator_handling():
 @pytest.mark.parametrize(
     "op_class, args, kwargs",
     [
-        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
         (qml.CH, ([0, 1],), {}),
         (qml.CY, ([0, 1],), {}),
         (qml.CZ, ([0, 1],), {}),
@@ -796,3 +795,17 @@ class TestDynamicShapes:
         assert len(output) == 2  # shape and array
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
+
+    def test_hstack(self):
+        """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
+        which currently does not work with dynamic shapes."""
+
+        def f(i):
+            x = jnp.zeros(i, int)
+            y = jnp.ones(i, int)
+            return jnp.hstack((x, y))
+
+        jaxpr = jax.make_jaxpr(f)(2)
+        [shape, res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert qml.math.allclose(shape, 8)
+        assert qml.math.allclose(res, jnp.hstack((jnp.zeros(4), jnp.ones(4))))

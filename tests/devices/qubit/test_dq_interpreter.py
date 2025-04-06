@@ -25,6 +25,7 @@ import pennylane as qml  # pylint: disable=wrong-import-position
 
 # must be below the importorskip
 # pylint: disable=wrong-import-position
+from pennylane.devices import ExecutionConfig
 from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
 
 
@@ -32,7 +33,7 @@ def test_initialization():
     """Test that relevant properties are set on initialization."""
     dq = DefaultQubitInterpreter(num_wires=3, shots=None)
     assert dq.num_wires == 3
-    assert dq.shots == qml.measurements.Shots(None)
+    assert dq.original_shots == qml.measurements.Shots(None)
     assert isinstance(dq.initial_key, jax.numpy.ndarray)
     assert dq.stateref is None
 
@@ -55,10 +56,13 @@ def test_setup_and_cleanup():
 
     dq.setup()
     assert isinstance(dq.stateref, dict)
-    assert list(dq.stateref.keys()) == ["state", "key", "is_state_batched"]
+    assert list(dq.stateref.keys()) == ["state", "shots", "key", "is_state_batched"]
 
     assert dq.stateref["key"] is key
     assert dq.key is key
+
+    assert dq.stateref["shots"] == qml.measurements.Shots(2)
+    assert dq.shots == qml.measurements.Shots(2)
 
     assert dq.state is dq.stateref["state"]
     assert dq.is_state_batched is False
@@ -70,7 +74,7 @@ def test_setup_and_cleanup():
     assert dq.stateref is None
 
 
-@pytest.mark.parametrize("name", ("state", "key", "is_state_batched"))
+@pytest.mark.parametrize("name", ("state", "key", "is_state_batched", "shots"))
 def test_working_state_key_before_setup(name):
     """Test that state and key can't be accessed before setup."""
 
@@ -193,8 +197,9 @@ def test_parameter_broadcasting():
 @pytest.mark.parametrize("basis_state", [0, 1])
 def test_projector(basis_state):
     """Test that Projectors are applied correctly as operations."""
+    config = ExecutionConfig()
 
-    @DefaultQubitInterpreter(num_wires=1, shots=None)
+    @DefaultQubitInterpreter(num_wires=1, shots=None, execution_config=config)
     def circuit(x):
         qml.RX(x, 0)
         qml.Projector(jnp.array([basis_state]), 0)
@@ -352,6 +357,42 @@ class TestSampling:
         s1 = f()
         s2 = f()  # should be done with different key, leading to different results.
         assert not qml.math.allclose(s1, s2)
+
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
+    def test_projector_samples_hw_like(self, seed, n_postselects):
+        """Test that hw-like postselect_mode causes the number of samples to change as expected."""
+        config = ExecutionConfig(mcm_config={"postselect_mode": "hw-like"})
+
+        @DefaultQubitInterpreter(
+            num_wires=1, shots=1000, key=jax.random.PRNGKey(seed), execution_config=config
+        )
+        def f():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.Projector(jnp.array([1]), 0)
+            return qml.sample(wires=0)
+
+        lens = [len(f()) for _ in range(10)]
+        assert qml.math.allclose(
+            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
+        )
+
+    @pytest.mark.parametrize("n_postselects", [1, 2, 3])
+    def test_projector_samples_fill_shots(self, seed, n_postselects):
+        """Test that hw-like postselect_mode causes the number of samples to change as expected."""
+        config = ExecutionConfig(mcm_config={"postselect_mode": "fill-shots"})
+
+        @DefaultQubitInterpreter(
+            num_wires=1, shots=1000, key=jax.random.PRNGKey(seed), execution_config=config
+        )
+        def f():
+            for _ in range(n_postselects):
+                qml.Hadamard(0)
+                qml.Projector(jnp.array([1]), 0)
+            return qml.sample(wires=0)
+
+        lens = [len(f()) for _ in range(10)]
+        assert all(l == 1000 for l in lens)
 
 
 class TestCustomPrimitiveRegistrations:
