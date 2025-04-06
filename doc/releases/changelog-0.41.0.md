@@ -1,8 +1,11 @@
 :orphan:
 
-# Release 0.41.0-dev (development release)
+# Release 0.41.0 (current release)
 
 <h3>New features since last release</h3>
+
+* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
@@ -117,6 +120,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
     rules that the new system may choose if they're the most resource efficient.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+  [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
@@ -159,6 +163,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   in the `qml.transforms.decompose` documentation.
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
+
+* Transformations can now be directly applied to a `QNode` with program capture enabled without having
+  to use the `@qml.capture.expand_plxpr_transforms` decorator.
+  [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
 
 * Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
   `autograph=True` at the QNode level.
@@ -364,6 +372,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
 * `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
   [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
@@ -487,6 +496,20 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
+* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+  ```python
+  >>> from qualtran.bloqs.basic_gates import CNOT
+  
+  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...    qml.FromBloq(CNOT(), wires=[0, 1])
+  ...    return qml.state()
+  >>> circuit()
+  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  ```
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
@@ -585,6 +608,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Better drawing functionality</h4>
 
+* `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
+   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+
 * `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
   changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
@@ -668,6 +694,14 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
 <h4>Other improvements</h4>
+
+* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
+  dedicated documentation.
+  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
+
+* The qchem functions that accept a string input have been updated to consistently work with both
+  lower-case and upper-case inputs.
+  [(#7186)](https://github.com/PennyLaneAI/pennylane/pull/7186)
 
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
@@ -881,6 +915,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Internal changes ⚙️</h3>
 
+* Add an informative error message for users if they try to `autograph` a function that has a `lambda` loop condition in `qml.while_loop`.
+  [(#7178)](https://github.com/PennyLaneAI/pennylane/pull/7178)
+
 * Clean up logic in `qml.drawer.tape_text`
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
@@ -956,6 +993,14 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Documentation 📝</h3>
 
+* The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
+  on using the new experimental decompositions system.
+  [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
+
+* The docstring for `qml.transforms.decompose` now recommends the `qml.clifford_t_decomposition` 
+  transform when decomposing to the Clifford + T gate set.
+  [(#7177)](https://github.com/PennyLaneAI/pennylane/pull/7177)
+
 * Typos were fixed in the docstring for `qml.QubitUnitary`.
   [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
 
@@ -986,6 +1031,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
+
+* The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
+  [(#7174)](https://github.com/PennyLaneAI/pennylane/pull/7174)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -1077,7 +1125,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7107)](https://github.com/PennyLaneAI/pennylane/pull/7107)
 
 * Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
-  [(7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+  [(#7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
+
+* Minor docstring upgrades for `qml.labs.trotter_error`.
+  [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
 
 <h3>Contributors ✍️</h3>
 
@@ -1098,12 +1149,16 @@ Pietropaolo Frisoni,
 Marcus Gisslén,
 Diego Guala,
 Austin Huang,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Joseph Lee,
+Dantong Li,
+William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 David Wierichs
