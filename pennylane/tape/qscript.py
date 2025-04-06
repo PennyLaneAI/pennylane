@@ -563,8 +563,7 @@ class QuantumScript:
 
     @property
     def data(self) -> list[TensorLike]:
-        """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
-        for backwards compatibilities with operations."""
+        """Alias to :meth:`~.get_parameters` for backwards compatibilities with operations."""
         return self.get_parameters(trainable_only=False)
 
     @property
@@ -577,8 +576,7 @@ class QuantumScript:
         to compute the Jacobian; parameters not marked as trainable will be
         automatically excluded from the Jacobian computation.
 
-        The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, and changes the default output size of method :meth:`~.get_parameters()`.
+        The number of trainable parameters changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
