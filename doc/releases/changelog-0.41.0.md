@@ -159,6 +159,23 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
+In the last several releases of PennyLane, we have been quietly working on a new feature called *program capture*. 
+Program capture is a new feature of PennyLane that allows for compactly expressing details about hybrid 
+workflows, including quantum operations, classical processing, structured control flow, and dynamicism.
+
+Internally, program capture is supported by representing hybrid programs via a new intermediate representation 
+(IR) called ``plxpr``, rather than a quantum tape. The ``plxpr`` IR is an adaptation of JAX's ``jaxpr`` 
+IR.
+
+The longterm vision with program capture is smoother integration with just-in-time compilation frameworks 
+like `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>` (via the :func:`~.pennylane.qjit` 
+decorator) and JAX-jit. 
+
+There are some quirks and restrictions to be aware of while we strive towards that ideal, which are 
+outlined in the :doc:`../news/program_capture_sharp_bits` page. But with this release, many of the 
+core features of PennyLane—and more—are available with program capture enabled by adding 
+:func:`qml.capture.enable <pennylane.capture.enable>` to the top of your program:
+
 * Transformations can now be directly applied to a `QNode` with program capture enabled without having
   to use the `@qml.capture.expand_plxpr_transforms` decorator.
   [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
