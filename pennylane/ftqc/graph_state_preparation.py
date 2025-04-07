@@ -25,14 +25,16 @@ from pennylane.wires import Wires
 from .qubit_graph import QubitGraph
 
 
-def make_graph_state(graph, wires, state_prep_op=qml.H, entanglement_op=qml.CZ):
+def make_graph_state(graph, wires, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ):
     """A program-capture compatible way to create a GraphStatePrep template.
     We can't capture the graph object in plxpr, so instead, if capture is enabled,
     we capture the operations generated in computing the decomposition."""
     if qml.capture.enabled():
-        GraphStatePrep.compute_decomposition(wires, graph, state_prep_op, entanglement_op)
+        GraphStatePrep.compute_decomposition(wires, graph, one_qubit_ops, two_qubit_ops)
     else:
-        GraphStatePrep(graph, wires, state_prep_op, entanglement_op)
+        GraphStatePrep(
+            graph=graph, wires=wires, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
+        )
 
 
 class GraphStatePrep(Operation):
