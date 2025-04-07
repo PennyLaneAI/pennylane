@@ -8,6 +8,7 @@ A new, experimental graph-based decomposition system is now available in PennyLa
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+[(#7028)](https://github.com/PennyLaneAI/pennylane/pull/7028)
 [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
