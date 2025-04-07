@@ -352,7 +352,7 @@ def run_opt(
         n_epochs (int): Number of optimization iterations
         optimizer (optax.GradientTransformation): ``optax`` optimizer. Default is ``optax.adam(learning_rate=0.1)``.
         verbose (bool): Whether progress is output during optimization
-        interrupt_tol (float): Interrup the optimization if the norm of the gradient is smaller than ``interrupt_tol``.
+        interrupt_tol (float): If not None, interrupt the optimization if the norm of the gradient is smaller than ``interrupt_tol``.
 
     **Example**
 
