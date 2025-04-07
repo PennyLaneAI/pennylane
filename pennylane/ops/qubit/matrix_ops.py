@@ -27,6 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.decomposition.decomposition_rule import add_decomps
 from pennylane.math import (
     cast,
     conj,
@@ -39,6 +40,12 @@ from pennylane.math import (
     zeros,
 )
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    rot_decomposition,
+    xzx_decomposition,
+    zxz_decomposition,
+    zyz_decomposition,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -340,6 +347,11 @@ class QubitUnitary(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+add_decomps(
+    QubitUnitary, zyz_decomposition, zxz_decomposition, xzx_decomposition, rot_decomposition
+)
 
 
 class DiagonalQubitUnitary(Operation):

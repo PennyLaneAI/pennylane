@@ -22,7 +22,12 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import math
-from pennylane.math.decomposition import zyz_rotation_angles
+from pennylane.math.decomposition import (
+    xyx_rotation_angles,
+    xzx_rotation_angles,
+    zxz_rotation_angles,
+    zyz_rotation_angles,
+)
 
 
 def _rot_decomposition(U, wire, return_global_phase=False):
@@ -95,23 +100,6 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def _get_single_qubit_rot_angles_via_matrix(
-    U, return_global_phase=False
-) -> tuple[float, float, float]:
-    """Returns a triplet of angles representing the single-qubit decomposition
-    of the matrix of the target operation using ZYZ rotations.
-    """
-    # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 and not sp.sparse.issparse(U) else U
-
-    # Compute the zyz rotation angles
-    phis, thetas, omegas, global_phase = zyz_rotation_angles(U, return_global_phase=True)
-    angles = (phis, thetas, omegas)
-    if return_global_phase:
-        angles += (global_phase,)
-    return angles
-
-
 def _zyz_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of Z and Y rotations in the form
@@ -149,12 +137,9 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     """
     phis, thetas, omegas, global_phase = zyz_rotation_angles(U, return_global_phase=True)
-
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
         operations.append(qml.GlobalPhase(-global_phase))
-
     return operations
 
 
@@ -189,38 +174,10 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
     """
 
-    # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
-
-    # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gammas = math.convert_to_su2(U, return_global_phase=True)
-
-    # Compute \phi, \theta and \lambda after analytically solving for them from
-    # U_det1 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
-    lams_plus_phis = math.arctan2(-math.imag(U_det1[:, 0, 1]), math.real(U_det1[:, 0, 0]) + EPS)
-    lams_minus_phis = math.arctan2(math.imag(U_det1[:, 0, 0]), -math.real(U_det1[:, 0, 1]) + EPS)
-    lams = lams_plus_phis + lams_minus_phis
-    phis = lams_plus_phis - lams_minus_phis
-
-    # The following conditional attempts to avoid 0 / 0 errors. Either the
-    # sine is 0 or the cosine, but not both.
-    thetas = math.where(
-        math.isclose(math.sin(lams_plus_phis), math.zeros_like(lams_plus_phis)),
-        2 * math.arccos(math.real(U_det1[:, 1, 1]) / (math.cos(lams_plus_phis) + EPS)),
-        2 * math.arccos(-math.imag(U_det1[:, 0, 1]) / (math.sin(lams_plus_phis) + EPS)),
-    )
-
-    phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
-
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    lams = lams % (4 * np.pi)
-
+    lams, thetas, phis, gammas = xyx_rotation_angles(U, return_global_phase=True)
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
         operations.append(qml.GlobalPhase(-gammas))
-
     return operations
 
 
@@ -255,42 +212,10 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-
-    # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
-
-    # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gammas = math.convert_to_su2(U, return_global_phase=True)
-
-    # Compute \phi, \theta and \lambda after analytically solving for them from
-    # U_det1 = RX(\phi) RZ(\theta) RX(\lambda)
-    sum_diagonal_real = math.real(U_det1[:, 0, 0] + U_det1[:, 1, 1])
-    sum_off_diagonal_imag = math.imag(U_det1[:, 0, 1] + U_det1[:, 1, 0])
-    phi_plus_lambdas_d2 = math.arctan2(-sum_off_diagonal_imag, sum_diagonal_real + EPS)
-    diff_diagonal_imag = math.imag(U_det1[:, 0, 0] - U_det1[:, 1, 1])
-    diff_off_diagonal_real = math.real(U_det1[:, 0, 1] - U_det1[:, 1, 0])
-    phi_minus_lambdas_d2 = math.arctan2(diff_off_diagonal_real, -diff_diagonal_imag + EPS)
-    lams = phi_plus_lambdas_d2 - phi_minus_lambdas_d2
-    phis = phi_plus_lambdas_d2 + phi_minus_lambdas_d2
-
-    # Compute \theta
-    thetas = math.where(
-        math.isclose(math.sin(phi_plus_lambdas_d2), math.zeros_like(phi_plus_lambdas_d2)),
-        2 * math.arccos(sum_diagonal_real / (2 * math.cos(phi_plus_lambdas_d2) + EPS)),
-        2 * math.arccos(-sum_off_diagonal_imag / (2 * math.sin(phi_plus_lambdas_d2) + EPS)),
-    )
-
-    phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
-
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    lams = lams % (4 * np.pi)
-
+    phis, thetas, lams, gammas = xzx_rotation_angles(U, return_global_phase=True)
     operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
         operations.append(qml.GlobalPhase(-gammas))
-
     return operations
 
 
@@ -326,38 +251,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     """
 
-    # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
-
-    # Get global phase \alpha and U in SU(2) form (determinant is 1)
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, alphas = math.convert_to_su2(U, return_global_phase=True)
-
-    # Use top row to solve for \phi and \psi
-    phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
-    phis_minus_psis = math.arctan2(-math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
-
-    phis = phis_plus_psis + phis_minus_psis
-    psis = phis_plus_psis - phis_minus_psis
-
-    # Conditional to avoid divide by 0 errors
-    thetas = math.where(
-        math.isclose(math.sin(phis_plus_psis), math.zeros_like(phis_plus_psis)),
-        math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS),
-        -math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS),
-    )
-
-    # Arcos is only defined between -1 and 1
-    thetas = qml.math.clip(thetas, -1.0, 1.0)
-    thetas = 2 * math.arccos(thetas)
-
-    phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
-
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    psis = psis % (4 * np.pi)
-
-    # Return gates in the order they will be applied on the qubit
+    psis, thetas, phis, alphas = zxz_rotation_angles(U, return_global_phase=True)
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
         operations.append(qml.GlobalPhase(-alphas))

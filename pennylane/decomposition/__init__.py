@@ -231,7 +231,13 @@ operator towards a target gate set.
 
 """
 
-from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
+from .utils import (
+    DecompositionError,
+    DecompositionNotApplicableError,
+    enable_graph,
+    disable_graph,
+    enabled_graph,
+)
 from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,
