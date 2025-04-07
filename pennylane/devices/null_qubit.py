@@ -229,6 +229,7 @@ class NullQubit(Device):
     def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        # TODO: Question for PR reviewers, would we prefer this to be documented and public, or hidden internally?
         self.track_resources = track_resources
 
     def _simulate(self, circuit, interface):

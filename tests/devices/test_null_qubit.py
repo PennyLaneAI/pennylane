@@ -61,6 +61,37 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
+def test_resource_tracking_attribute(capsys):
+    """Test NullQubit track_resources attribute"""
+    assert NullQubit().track_resources == False
+    assert NullQubit(track_resources=True).track_resources == True
+
+    dev = NullQubit(track_resources=True)
+
+    def small_circ():
+        qml.X(0)
+        qml.H(0)
+        return qml.state()
+
+    qnode = qml.QNode(small_circ, dev)
+    qnode()
+
+    # Since output is written directly to stdout, need to capture it and analyze
+    captured = capsys.readouterr()
+    captured = captured.out.splitlines()
+
+    RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+    assert len(captured) == 3
+    assert captured[0] == RESOURCE_PRINT_DELIMETER
+    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+
+    import json
+
+    assert captured[1] == json.dumps(
+        {"num_wires": 1, "num_gates": 2, "gate_types": {"PauliX": 1, "Hadamard": 1}}
+    )
+
+
 @pytest.mark.parametrize("shots", (None, 10))
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
