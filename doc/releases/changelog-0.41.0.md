@@ -349,59 +349,25 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
-* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
-  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+Many times, quantum operators and states are sparse. Why not exploit this to save
+memory and increase simulation speed? PennyLane v0.41 adds new functionality to allow working with
+sparse computational objects like the compressed sparse row (csr) array. We can use these to
+represent matrices and states for savings on memory usage and computational time.
 
+Additional operators now support sparse representation:
+
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 * `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
   [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
   [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-
-* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
-  with the default being `'csr'`
-  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
-
-* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
-  handle sparse matrices.
-  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
-
-* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
-  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
-  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
-  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
-
-* `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
-  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
-
 * `qml.SWAP` now has sparse representation.
   [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-
 * `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
   [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
   [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-
-  ```pycon
-  >>> import numpy as np
-  >>> import pennylane as qml
-  >>> import scipy as sp
-  >>> U_dense = np.eye(4)  # 2-wire identity
-  >>> U_sparse = sp.sparse.csr_matrix(U_dense)
-  >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.sparse_matrix())
-  <Compressed Sparse Row sparse matrix of dtype 'float64'
-          with 4 stored elements and shape (4, 4)>
-    Coords        Values
-    (0, 0)        1.0
-    (1, 1)        1.0
-    (2, 2)        1.0
-    (3, 3)        1.0
-  >>> op.sparse_matrix().toarray()
-  array([[1., 0., 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., 0., 0., 1.]])
-  ```
-
+* `Controlled` sparse supports `wire_order` configuration.
+  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 * `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
   [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
 
@@ -417,6 +383,59 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
     Coords        Values
     (0, 2)        1.0
   ```
+
+And all operators can now choose a format for the sparse matrix that supports the wire_order parameter.
+
+* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
+  with the default being `'csr'`
+
+```pycon
+>>> print(qml.PauliX(0).matrix())
+array([[0, 1],
+       [1, 0]])
+>>> print(qml.PauliX(0).sparse_matrix())
+(0, 1)	1
+(1, 0)	1
+```
+
+And we can use scipy sparse representations to define inputs to our circuits or define operators:
+
+```
+import scipy
+
+sparse_0ket = scipy.sparse.csr_array([[0,1],[1,0]])
+sparse_1ket = scipy.sparse.csr_array([0,1])
+sparse_paulix = qml.PauliX(0).sparse_matrix()
+
+dev = qml.device('default.qubit')
+@qml.qnode(dev)
+def circuit():
+  qml.StatePrep(sparse_vector, wires=[0,1])
+  qml.QubitUnitary(sparse_matrix, wires=0)
+  return qml.sample([qml.Z(wires=0), qml.Z(wires=1)])
+```
+```
+>>> circuit()
+array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
+```
+```pycon
+>>> circuit()
+array([0.+0.j, 1.+0.j])
+```
+
+
+* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
+  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
+
+* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
+  handle sparse matrices.
+  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
+
+* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
+  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
 <h4>QROM State Preparation 📖</h4>
 
@@ -491,11 +510,24 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+
+<h4>Qualtran Integration 🔗</h4>
+
+* This version of PennyLane makes it easy to use Qualtran circuits in PennyLane, making it possible
+  to access even more circuit subroutines from Qualtran bloqs and allowing validation of Qualtran
+  circuits with simulation in PennyLane.
+
+  The new ``qml.FromBloq`` class translates Qualtran bloqs into equivalent PennyLane operators
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148). `qml.FromBloq` requires:
+  * bloq: an initialized Qualtran Bloq
+  * wires: the wires the operator acts on
+
   ```python
   >>> from qualtran.bloqs.basic_gates import CNOT
   
-  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> dev = qml.device("default.qubit")
   >>> @qml.qnode(dev)
   ... def circuit():
   ...    qml.FromBloq(CNOT(), wires=[0, 1])
@@ -503,12 +535,42 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   >>> circuit()
   array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
   ```
-  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
 
-* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
-  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+  For more complicated ``Bloqs`` it can be useful to determine the required wires via
+  ``qml.bloq_registers``. This function returns a dictionary of register names and wires.
 
-<h4>Qualtran Integration 🔗</h4>
+  ```pycon
+  >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+  >>> from qualtran.bloqs.basic_gates import ZPowGate
+  >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
+  ```
+
+  ```pycon
+  >>> registers = qml.bloq_registers(textbook_qpe_small)
+  >>> registers
+  {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
+  ```
+
+  These can then be used to inform which registers should be used later in the circuit:
+
+  ```python
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+      return qml.probs(wires=registers['qpe_reg'])
+  ```
+
+  Printing the circuit, we measure the right register:
+  
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ─╭FromBloq─┤       
+  1: ─├FromBloq─┤ ╭Probs
+  2: ─├FromBloq─┤ ├Probs
+  3: ─╰FromBloq─┤ ╰Probs
+  ```
+
 
 <h3>Improvements 🛠</h3>
 
