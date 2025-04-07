@@ -897,9 +897,9 @@ class PCPhase(Operation):
         Returns:
             list[Operator]: decomposition of the operator
 
-        In short, this decomposition relies on decomposing the generator of the ``PCPhase``
-        gate into generators of multicontrolled :class:`~.PhaseShift` gates, potentially
-        complemented with (non-controlled) Pauli-X gates and/or a global phase.
+        In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
+        of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
+        potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
         For example, for ``dim=13`` on four qubits:
 
         >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
