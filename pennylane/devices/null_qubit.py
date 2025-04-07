@@ -226,13 +226,42 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        self.track_resources = track_resources
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
+
+        if self.track_resources:
+            import json
+            from collections import defaultdict
+
+            RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+
+            num_wires = len(circuit.wires)
+            gate_types = defaultdict(int)
+
+            for op in circuit.operations:
+                if op.name == "Barrier":
+                    continue
+                gate_types[op.name] += 1
+            # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+            #  In the future it may be better to return this information in a more structured way.
+            print(RESOURCE_PRINT_DELIMETER)
+            print(
+                json.dumps(
+                    {
+                        "num_wires": num_wires,
+                        "num_gates": sum(gate_types.values()),
+                        "gate_types": gate_types,
+                    }
+                )
+            )
+            print(RESOURCE_PRINT_DELIMETER)
+
         for s in circuit.shots or [None]:
             r = tuple(
                 zero_measurement(mp, num_device_wires, s, circuit.batch_size, interface)
