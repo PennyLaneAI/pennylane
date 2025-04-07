@@ -92,6 +92,38 @@ executes as expected:
 Array([0.99875027+0.j        , 0.        +0.j        ,
        0.        +0.j        , 0.        -0.04997917j], dtype=complex64)
 
+Gradients with lightning.qubit
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When executing a QNode on ``lightning.qubit`` with capture enabled, calculating 
+the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert 
+the plxpr representation of the program back to a tape for the calculation of the 
+gradient, jacobian, JVP, or VJP. 
+
+This conversion, in turn, requires that PennyLane make the assumption that each 
+of the QNode's arguments are trainable, which can lead to a host of unique errors.
+
+For instance, calculating the jacobian of this circuit with ``lightning.qubit`` 
+raises an error due to a discrepancy in the ordering of the positional arguments 
+when tape conversion happens.
+
+.. code-block:: python 
+
+    import pennylane as qml 
+    import jax 
+
+    qml.capture.enable() 
+
+    @qml.qnode(device=qml.device("lightning.qubit", wires=1)) 
+    def circuit(x, y): 
+        qml.RY(y, 0) 
+        qml.RX(x, 0) 
+        return qml.expval(qml.Z(0)) 
+
+>>> args = (0.1, 0.2) 
+>>> jax.jacobian(circuit)(*args)
+NotImplementedError: The provided arguments do not match the parameters of the jaxpr converted to quantum tape.
+
 Valid JAX data types 
 --------------------
 
@@ -639,38 +671,6 @@ or use a regular Python function,
 
 >>> circuit()
 Array([1.+0.j, 0.+0.j], dtype=complex64)
-
-Gradients with lightning.qubit
-------------------------------
-
-When executing a QNode on ``lightning.qubit`` with capture enabled, calculating 
-the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert 
-the plxpr representation of the program back to a tape for the calculation of the 
-gradient, jacobian, JVP, or VJP. 
-
-This conversion, in turn, requires that PennyLane make the assumption that each 
-of the QNode's arguments are trainable, which can lead to a host of unique errors.
-
-For instance, calculating the jacobian of this circuit with ``lightning.qubit`` 
-raises an error due to a discrepancy in the ordering of the positional arguments 
-when tape conversion happens.
-
-.. code-block:: python 
-
-    import pennylane as qml 
-    import jax 
-
-    qml.capture.enable() 
-
-    @qml.qnode(device=qml.device("lightning.qubit", wires=1)) 
-    def circuit(x, y): 
-        qml.RY(y, 0) 
-        qml.RX(x, 0) 
-        return qml.expval(qml.Z(0)) 
-
->>> args = (0.1, 0.2) 
->>> jax.jacobian(circuit)(*args)
-NotImplementedError: The provided arguments do not match the parameters of the jaxpr converted to quantum tape.
 
 Calculating operator matrices in QNodes
 ---------------------------------------
