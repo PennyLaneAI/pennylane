@@ -11,7 +11,7 @@ structured control flow, and dynamicism.
 This new feature unlocks better performance, more functional and dynamic workflows, 
 and smoother integration with just-in-time compilation frameworks like 
 `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
-(via the :func:`~.pennylane.qjit` decorar) and JAX-jit.
+(via the :func:`~.pennylane.qjit` decorator) and JAX-jit.
 
 Internally, program capture is supported by representing hybrid programs via a new 
 intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
@@ -32,7 +32,7 @@ features that will help get your existing tape-based code working with program c
     Using program capture requires that JAX be installed. Please consult the 
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__, 
     and ensure that the version of JAX that is installed corresponds to the version
-    in the "Interface dependencies" section in :doc:`our documentation </development/guide/installation>`__.
+    in the "Interface dependencies" section in :doc:`our documentation <development/guide/installation>`__.
 
 Device compatibility
 --------------------
@@ -49,6 +49,8 @@ program capture is disabled, where automatic qubit management takes place intern
 with ``default.qubit``).
 
 .. code-block:: python 
+
+    import pennylane as qml
 
     qml.capture.enable()
 
@@ -67,6 +69,8 @@ This also affects mid-circuit measurements (MCMs) with the deferred measurements
 method:
 
 .. code-block:: python
+
+    import pennylane as qml
 
     qml.capture.enable()
 
@@ -138,7 +142,10 @@ and standard Python ``int``\ s and ``float``\ s. Functions can accept any valid
 For example ``range``\ s or strings are not valid JAX types for the ``wires`` keyword 
 argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
+    import jax.numpy as jnp
 
     qml.capture.enable()
 
@@ -153,8 +160,9 @@ argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 ...
 TypeError: Argument '<pennylane.capture.autograph.ag_primitives.PRange object at 0x161b6bbd0>' of type '<class 'pennylane.capture.autograph.ag_primitives.PRange'>' is not a valid JAX type
 
-.. code-block:: python 
+.. code-block:: python
 
+    import pennylane as qml 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -178,7 +186,9 @@ of Python lists wherever possible.
 
 For example, the positional argument in ``qml.MultiRZ`` can't be a list:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -194,7 +204,9 @@ TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
 
 But a list can be passed to ``qml.MultiRZ`` as a keyword argument:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -209,7 +221,9 @@ Array([0., 0.], dtype=float32)
 
 Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     import jax.numpy as jnp
 
@@ -231,7 +245,9 @@ Keyword arguments
 JAX-incompatible types, like Python ``range``\ s, are acceptable as **keyword arguments**
 to QNodes and quantum functions:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
     
@@ -254,15 +270,16 @@ Positional arguments
 ~~~~~~~~~~~~~~~~~~~~
 
 Positional arguments in PennyLane are flexible in that their variable names can 
-instead be employed as keyword arguments (e.g., ``qml.RZ(0.1, wires=0)`` versus 
-``qml.RZ(phi=0.1, wires=0)``). However, to ensure compatibility with program capture 
+instead be employed as keyword arguments (e.g., ``RZ(0.1, wires=0)`` versus 
+``RZ(phi=0.1, wires=0)``). However, to ensure compatibility with program capture 
 enabled, such arguments must be kept as positional, regardless of whether they're 
 provided as an acceptable JAX type. 
 
-For instance, consider this example with ``qml.RZ``:
+For instance, consider this example with ``RZ``:
 
-.. code-block:: python 
+.. code-block:: python
 
+    import pennylane as qml 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -280,13 +297,15 @@ For instance, consider this example with ``qml.RZ``:
 UnexpectedTracerError: Encountered an unexpected tracer. A function transformed by JAX had a side effect, allowing for a reference to an intermediate value with type float32[] wrapped in a DynamicJaxprTracer to escape the scope of the transformation.
 ...
 
-Even though the value for ``phi`` in ``qml.RZ`` is given as a valid JAX type, the 
+Even though the value for ``phi`` in ``RZ`` is given as a valid JAX type, the 
 fact that it was provided as a keyword argument results in an error.
 
 But, when the angle is passed as a positional argument, the circuit executes as 
 expected:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -308,6 +327,8 @@ add the ``experimental_capture=True`` flag:
 
 .. code-block:: python
 
+    import pennylane as qml
+
     dev = qml.device('lightning.qubit', wires=1)
 
     @qml.qjit(experimental_capture=True)
@@ -325,11 +346,7 @@ Transforms
 One of the core features of PennyLane is modularity, which has allowed users to 
 transform QNodes in a NumPy-like way and to create their own transforms with ease. 
 Your favourite transforms will still work with program capture enabled (including
-custom transforms), but decorating QNodes with just ``@transform_name`` **will not 
-work** and will give a vague error. 
-
-Consider the following toy example, which shows a tape-based transform that shifts 
-all :class:`~.pennylane.RX` gates to the end of a circuit.
+custom transforms), but there are a few caveats to be aware of.
 
 Higher-order primitives and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -338,7 +355,9 @@ Transforms do not apply "through" higher-order primitives like mid-circuit measu
 gradients, and control flow when capture is enabled. An example is best to demonstrate 
 this behaviour:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -387,31 +406,35 @@ primitives.
 Dynamic variables and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some transforms in the :doc:`/code/qml_transforms` module have natively support program capture:
+Some transforms in the :doc:`/code/qml_transforms` module have natively support 
+program capture:
 
-#. :func:`~.pennylane.transforms.merge_rotations`
-#. :func:`~.pennylane.transforms.single_qubit_fusion`
-#. :func:`~.pennylane.transforms.unitary_to_rot`
-#. :func:`~.pennylane.transforms.merge_amplitude_embedding`
-#. :func:`~.pennylane.transforms.commute_controlled`
-#. :func:`~.pennylane.transforms.decompose`
-#. :func:`~.pennylane.map_wires`
-#. :func:`~.pennylane.transforms.cancel_inverses`
+* :func:`~.pennylane.transforms.merge_rotations`
+* :func:`~.pennylane.transforms.single_qubit_fusion`
+* :func:`~.pennylane.transforms.unitary_to_rot`
+* :func:`~.pennylane.transforms.merge_amplitude_embedding`
+* :func:`~.pennylane.transforms.commute_controlled`
+* :func:`~.pennylane.transforms.decompose`
+* :func:`~.pennylane.map_wires`
+* :func:`~.pennylane.transforms.cancel_inverses`
 
-For transforms that do not natively work with program capture, they can continue to be used with certain limitations:
+For transforms that do not natively work with program capture, they can continue 
+to be used with certain limitations:
 
-#. Transforms that return multiple tapes are not supported.
-#. Transforms that return non-trivial post-processing functions are not supported.
-#. Tape transforms will fail to execute if the transformed quantum function or QNode contains:
+* Transforms that return multiple tapes are not supported.
+* Transforms that return non-trivial post-processing functions are not supported.
+* Tape transforms will fail to execute if the transformed quantum function or QNode contains:
 
-   #. ``qml.cond`` with dynamic parameters as predicates.
-   #. ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
-   #. ``qml.while_loop``.
+   - ``qml.cond`` with dynamic parameters as predicates.
+   - ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
+   - ``qml.while_loop``.
 
 Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
 ``RX`` gates to the end of the circuit.
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -434,7 +457,9 @@ When used in a workflow that contains a dynamic parameter that affects the trans
 action, an error will be raised. Consider this QNode that has a dynamic argument 
 corresponding to ``stop`` in ``qml.for_loop``.
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     @shift_rx_to_end
     @qml.qnode(qml.device("default.qubit", wires=4))
@@ -464,6 +489,8 @@ but can be switched off with the ``autograph`` keyword argument.
 
 .. code-block:: python
 
+    import pennylane as qml
+
     @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
     def circuit():
         for _ in range(10):
@@ -492,19 +519,22 @@ to the top level of your program:
 
 .. code-block:: python
 
+    import jax
+
     jax.config.update("jax_dynamic_shapes", True)
 
 Parameter broadcasting and vmap
 -------------------------------
 
-Parameter-broadcasting is generally not compatible with program capture. There are 
+Parameter broadcasting is generally not compatible with program capture. There are 
 cases that magically work, but one shouldn't extrapolate beyond those particular 
 cases.
 
 Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_autosummary/jax.vmap.html>`__:
 
-.. code-block:: python 
+.. code-block:: python
 
+    import pennylane as qml 
     import jax
 
     qml.capture.enable()
@@ -528,19 +558,21 @@ Decompositions
 --------------
 
 With program capture enabled, operators used in circuits may raise an error when 
-the ``decompose`` transform is applied. This can happen if the operator
+the :func:`~.pennylane.transforms.decompose` transform is applied. This can happen 
+if the operator
 
-#. defines a ``compute_decomposition`` method that contains control flow (e.g., ``if`` statements),
-#. does not define a ``compute_qfunc_decomposition`` method, and/or
-#. receives a traced argument as part of the control flow condition.
+* defines a ``compute_decomposition`` method that contains control flow (e.g., ``if`` statements),
+* does not define a ``compute_qfunc_decomposition`` method, and/or
+* receives a traced argument as part of the control flow condition.
 
 For example, the :class:`~.pennylane.RandomLayers` template does not implement a 
 ``compute_qfunc_decomposition`` method, and its ``compute_decomposition`` method 
 includes an ``if`` statement where the condition depends on its ``ratio_imprim`` 
 argument. If ``ratio_imprim`` is passed as a traced value, an error occurs:
 
-.. code-block:: python 
+.. code-block:: python
 
+    import pennylane as qml 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -564,8 +596,9 @@ See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerBoolConver
 
 As a workaround, we can pass ``ratio_imprim`` as a regular (non-traced) constant:
 
-.. code-block:: python 
+.. code-block:: python
 
+    import pennylane as qml 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -583,9 +616,9 @@ Array(0.99500424, dtype=float32)
 
 Currently, the operators that define a ``compute_qfunc_decomposition`` are:
 
-#. :class:`~.StronglyEntanglingLayers`
-#. :class:`~.GroverOperator`
-#. :class:`~.QFT`
+* :class:`~.StronglyEntanglingLayers`
+* :class:`~.GroverOperator`
+* :class:`~.QFT`
 
 while loops 
 -----------
@@ -593,7 +626,9 @@ while loops
 While loops written with :func:`~.pennylane.while_loop` cannot accept a ``lambda``
 function:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -619,7 +654,9 @@ AutoGraph currently does not support lambda functions as a loop condition for `q
 
 As a workaround, set the ``lambda`` to a callable variable,
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -646,7 +683,9 @@ Array([1.+0.j, 0.+0.j], dtype=complex64)
 
 or use a regular Python function,
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -678,7 +717,9 @@ Calculating operator matrices in QNodes
 The matrix of an operator cannot be computed with :func:`~.pennylane.matrix` within
 a QNode, and will raise an error:
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
@@ -693,7 +734,9 @@ a QNode, and will raise an error:
 ...
 TransformError: Input is not an Operator, tape, QNode, or quantum function
 
-.. code-block:: python 
+.. code-block:: python
+
+    import pennylane as qml 
 
     qml.capture.enable()
 
