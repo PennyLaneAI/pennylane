@@ -368,6 +368,12 @@ def run_opt(
 
         thetas, energy, gradients = run_opt(cost, x0)
 
+    When no ``optimizer`` is passed, we use ``optax.adam(learning_rate=0.1)``.
+    We can also use other optimizers, like ``optax.lbfgs``.
+
+    >>> optimizer = optax.lbfgs(learning_rate=0.1, memory_size=1000)
+    >>> thetas, energy, gradients = run_opt(cost, x0, optimizer=optimizer)
+
     """
 
     if not has_jax:  # pragma: no cover
