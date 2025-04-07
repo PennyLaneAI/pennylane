@@ -113,6 +113,24 @@ class PrepSelPrep(Operation):
     def decomposition(self):
         return self.compute_decomposition(self.lcu, self.control)
 
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
+        op_label = base_label or self.__class__.__name__
+        if cache is None or not isinstance(cache.get("matrices", None), list):
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
+
+        coeffs = qml.math.array(self.coeffs)
+        shape = qml.math.shape(coeffs)
+        for i, mat in enumerate(cache["matrices"]):
+            if shape == qml.math.shape(mat) and qml.math.allclose(coeffs, mat):
+                str_wo_id = f"{op_label}(M{i})"
+                break
+        else:
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(coeffs)
+            str_wo_id = f"{op_label}(M{mat_num})"
+
+        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
+
     @staticmethod
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
