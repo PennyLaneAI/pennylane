@@ -35,7 +35,7 @@ class SelectPauliRot(Operation):
     and :math:`R(\alpha_i)` denotes a unitary rotation applied to the target qubit,
     parametrized by :math:`\alpha_i`.
 
-    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/abs/quant-ph/0504100>`_.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
 
     .. seealso:: :class:`~.Select`.
 
@@ -43,8 +43,8 @@ class SelectPauliRot(Operation):
         angles (tensor_like): The rotation angles to be applied.
         control_wires (Sequence[int]): The control qubits used to select the rotation.
         target_wire (Sequence[int]): The wire where the rotations are applied.
-        rot_axis (str): The axis about which the rotation is performed.
-            It can take the value `X`, `Y` or `Z`. Default is `Z`.
+        rot_axis (str): The axis around the rotation is performed.
+            It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
 
     Raises:
         ValueError: If the length of the angles array is not :math:`2^n` where :math:`n` is the number
@@ -113,8 +113,8 @@ class SelectPauliRot(Operation):
             angles (tensor_like): The rotation angles to be applied.
             control_wires (Sequence[int]): The control qubits used to select the rotation.
             target_wire (Sequence[int]): The wire where the rotations are applied.
-            rot_axis (str): The axis about which the rotation is performed.
-                It can take the value `X`, `Y` or `Z`. Default is `Z`.
+            rot_axis (str): The axis around the rotation is performed.
+                It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
 
         Returns:
             list: List of decomposition operations.
