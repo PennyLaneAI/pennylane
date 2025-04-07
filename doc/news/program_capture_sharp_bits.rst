@@ -484,6 +484,7 @@ will generally produce inconsistent or incorrect results. Consider the following
 example:
 
 .. code-block:: python
+    
     import pennylane as qml
 
     qml.capture.enable()
