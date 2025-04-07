@@ -376,7 +376,7 @@ def run_opt(
         )  # pragma: no cover
 
     if optimizer is None:
-        optimizer = (optax.adam(learning_rate=0.1),)
+        optimizer = optax.adam(learning_rate=0.1)
 
     value_and_grad = jax.jit(jax.value_and_grad(cost))
     compiled_cost = jax.jit(cost)
