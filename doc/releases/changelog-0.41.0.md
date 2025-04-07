@@ -884,7 +884,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
+  A follow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
   [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
@@ -1107,7 +1107,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
-* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+* The `workflow.construct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
