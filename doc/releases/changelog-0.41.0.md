@@ -4,8 +4,7 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
-module. 
+A new, experimental graph-based decomposition system is now available in PennyLane, offering a more resource-efficiency and versatility.
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
@@ -19,7 +18,7 @@ PennyLane's new experimental graph decomposition system offers a resource-effici
 to the current system. This is done by traversing an internal graph structure that is weighted by the 
 resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
-This new system is experimental and is disabled by default, but it can be enabled by adding 
+The graph-based system is experimental and is disabled by default, but it can be enabled by adding 
 :func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>` to the top of your 
 program. Conversely, :func:`qml.decompositions.disable_graph() <pennylane.decompositions.disable_graph>` 
 disables the new system from being active.
