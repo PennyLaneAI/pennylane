@@ -11,7 +11,7 @@ numpy
 pygments-github-lexers
 packaging
 scipy
-docutils==0.16
+docutils>=0.16
 # sphinx~=3.5.0; python_version < "3.10"
 sphinx>=7.0 #; python_version == "3.10"
 sphinx-automodapi==0.13
