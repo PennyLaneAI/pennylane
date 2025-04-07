@@ -17,8 +17,8 @@
 import numpy as np
 from scipy import sparse
 
-from pennylane.typing import TensorLike
 from pennylane import math
+from pennylane.typing import TensorLike
 
 
 def zyz_rotation_angles(U: TensorLike, return_global_phase=False):

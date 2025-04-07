@@ -392,7 +392,9 @@ class TestControlledBisectOD:
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(ValueError, match="Target operation's matrix must have real"):
-            _ = _ctrl_decomp_bisect_od(math.convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2])
+            _ = _ctrl_decomp_bisect_od(
+                math.convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2]
+            )
 
     su2_od_ops = [
         qml.QubitUnitary(
@@ -537,7 +539,9 @@ class TestControlledBisectMD:
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(ValueError, match="Target operation's matrix must have real"):
-            _ = _ctrl_decomp_bisect_md(math.convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2])
+            _ = _ctrl_decomp_bisect_md(
+                math.convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2]
+            )
 
     su2_md_ops = [
         qml.QubitUnitary(
