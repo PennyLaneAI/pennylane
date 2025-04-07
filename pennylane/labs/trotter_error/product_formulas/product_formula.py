@@ -41,8 +41,19 @@ class ProductFormula:
 
     def bch_ast(self) -> BCHTree:
         """Return an AST representation of the BCH expansion"""
-        bch_fragments = [coeff * BCHTree.fragment_node(fragment) for coeff, fragment in zip(self.coeffs, self.fragments)]
+        bch_fragments = [
+            coeff * BCHTree.fragment_node(fragment)
+            for coeff, fragment in zip(self.coeffs, self.fragments)
+        ]
         return _bch_ast(bch_fragments)
+
+    def bch_ast_2(self) -> BCHTree:
+        """Return an AST representation of the BCH expansion"""
+        bch_fragments = [
+            coeff * BCHTree.fragment_node(fragment)
+            for coeff, fragment in zip(self.coeffs, self.fragments)
+        ]
+        return _bch_ast_2(bch_fragments)
 
     def __repr__(self) -> str:
         reps = [
@@ -50,6 +61,10 @@ class ProductFormula:
         ]
 
         return "*".join(reps)
+
+
+def _bch_ast_2(ops):
+    return bch_approx(bch_approx(ops[0], ops[1]), bch_approx(ops[2], ops[3]))
 
 
 def _bch_ast(ops: Sequence[BCHTree]) -> BCHTree:
