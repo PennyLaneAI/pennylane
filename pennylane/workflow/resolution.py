@@ -182,7 +182,8 @@ def _resolve_hadamard(
         "reversed-direct-hadamard": "reversed-direct",
     }
     gradient_kwargs = copy(initial_config.gradient_keyword_arguments)
-    gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
+    if "mode" not in gradient_kwargs:
+        gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
 
     if "device_wires" not in gradient_kwargs and "aux_wire" not in gradient_kwargs:
         gradient_kwargs["device_wires"] = device.wires

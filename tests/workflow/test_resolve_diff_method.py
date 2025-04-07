@@ -227,3 +227,12 @@ class TestResolveDiffMethod:
         )
         with pytest.raises(ValueError, match="cannot be provided with a 'mode'"):
             _resolve_diff_method(initial_config, dev)
+
+    def test_specify_hadamard_and_mode(self):
+        dev = qml.device("default.qubit")
+        initial_config = ExecutionConfig(
+            gradient_method="hadamard", gradient_keyword_arguments={"mode": "reversed"}
+        )
+        processed = _resolve_diff_method(initial_config, dev)
+        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_keyword_arguments == {"mode": "reversed", "device_wires": None}
