@@ -348,6 +348,79 @@ transform QNodes in a NumPy-like way and to create their own transforms with eas
 Your favourite transforms will still work with program capture enabled (including
 custom transforms), but there are a few caveats to be aware of.
 
+Some transforms in the :doc:`/code/qml_transforms` module have natively support 
+program capture:
+
+* :func:`~.pennylane.transforms.merge_rotations`
+* :func:`~.pennylane.transforms.single_qubit_fusion`
+* :func:`~.pennylane.transforms.unitary_to_rot`
+* :func:`~.pennylane.transforms.merge_amplitude_embedding`
+* :func:`~.pennylane.transforms.commute_controlled`
+* :func:`~.pennylane.transforms.decompose`
+* :func:`~.pennylane.map_wires`
+* :func:`~.pennylane.transforms.cancel_inverses`
+
+For transforms that do not natively work with program capture, they can continue 
+to be used with certain limitations:
+
+* Transforms that return multiple tapes are not supported.
+* Transforms that return non-trivial post-processing functions are not supported.
+* Tape transforms will fail to execute if the transformed quantum function or QNode contains:
+
+   * ``qml.cond`` with dynamic parameters as predicates.
+   * ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
+   * ``qml.while_loop``.
+
+Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
+``RX`` gates to the end of the circuit.
+
+.. code-block:: python
+
+    import pennylane as qml 
+
+    qml.capture.enable()
+
+    @qml.transform
+    def shift_rx_to_end(tape):
+        """Transform that moves all RX gates to the end of the operations list."""
+        new_ops, rxs = [], []
+
+        for op in tape.operations:
+            if isinstance(op, qml.RX):
+                rxs.append(op)
+            else:
+                new_ops.append(op)
+        
+        operations = new_ops + rxs
+        new_tape = tape.copy(operations=operations)
+        return [new_tape], lambda res: res[0]
+
+When used in a workflow that contains a dynamic parameter that affects the transform's
+action, an error will be raised. Consider this QNode that has a dynamic argument 
+corresponding to ``stop`` in ``qml.for_loop``.
+
+.. code-block:: python
+
+    import pennylane as qml 
+
+    @shift_rx_to_end
+    @qml.qnode(qml.device("default.qubit", wires=4))
+    def circuit(stop):
+
+        @qml.for_loop(0, stop, 1)
+        def loop(i):
+            qml.RX(0.1, wires=i)
+            qml.H(wires=i)
+        
+        loop(stop)
+
+        return qml.state()
+
+>>> circuit(4)
+TracerIntegerConversionError: The __index__() method was called on traced array with shape int32[].
+The error occurred while tracing the function wrapper at <path to environment>/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
+See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
+
 Higher-order primitives and transforms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -403,81 +476,31 @@ nor does the transform merge all 4 iterations from the ``for`` loop. Generally s
 transform application is partitioned into "blocks" that are delimited by higher-order 
 primitives.
 
-Dynamic variables and transforms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Drawing circuits
+----------------
 
-Some transforms in the :doc:`/code/qml_transforms` module have natively support 
-program capture:
-
-* :func:`~.pennylane.transforms.merge_rotations`
-* :func:`~.pennylane.transforms.single_qubit_fusion`
-* :func:`~.pennylane.transforms.unitary_to_rot`
-* :func:`~.pennylane.transforms.merge_amplitude_embedding`
-* :func:`~.pennylane.transforms.commute_controlled`
-* :func:`~.pennylane.transforms.decompose`
-* :func:`~.pennylane.map_wires`
-* :func:`~.pennylane.transforms.cancel_inverses`
-
-For transforms that do not natively work with program capture, they can continue 
-to be used with certain limitations:
-
-* Transforms that return multiple tapes are not supported.
-* Transforms that return non-trivial post-processing functions are not supported.
-* Tape transforms will fail to execute if the transformed quantum function or QNode contains:
-
-   - ``qml.cond`` with dynamic parameters as predicates.
-   - ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
-   - ``qml.while_loop``.
-
-Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
-``RX`` gates to the end of the circuit.
+Using :func:`~.pennylane.draw` or :func:`~.pennylane.draw_mpl` with program capture 
+will generally produce inconsistent or incorrect results. Consider the following 
+example:
 
 .. code-block:: python
-
-    import pennylane as qml 
+    import pennylane as qml
 
     qml.capture.enable()
 
-    @qml.transform
-    def shift_rx_to_end(tape):
-        """Transform that moves all RX gates to the end of the operations list."""
-        new_ops, rxs = [], []
+    @qml.transforms.merge_rotations
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def f(x):
+        qml.X(0)
+        qml.X(0)
+        qml.RX(x, 0)
+        qml.RX(x, 0)
 
-        for op in tape.operations:
-            if isinstance(op, qml.RX):
-                rxs.append(op)
-            else:
-                new_ops.append(op)
-        
-        operations = new_ops + rxs
-        new_tape = tape.copy(operations=operations)
-        return [new_tape], lambda res: res[0]
+>>> print(qml.draw(f)(1.5))
+0: ──RX(Traced<ShapedArray(float32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>)─┤  
 
-When used in a workflow that contains a dynamic parameter that affects the transform's
-action, an error will be raised. Consider this QNode that has a dynamic argument 
-corresponding to ``stop`` in ``qml.for_loop``.
-
-.. code-block:: python
-
-    import pennylane as qml 
-
-    @shift_rx_to_end
-    @qml.qnode(qml.device("default.qubit", wires=4))
-    def circuit(stop):
-
-        @qml.for_loop(0, stop, 1)
-        def loop(i):
-            qml.RX(0.1, wires=i)
-            qml.H(wires=i)
-        
-        loop(stop)
-
-        return qml.state()
-
->>> circuit(4)
-TracerIntegerConversionError: The __index__() method was called on traced array with shape int32[].
-The error occurred while tracing the function wrapper at <path to environment>/site-packages/pennylane/transforms/core/transform_dispatcher.py:41 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument inner_args[0].
-See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
+The output does not show the two ``X`` gates, and the ``RX`` gate's value is inconsistent 
+with typical behaviour (it shows a JAX tracer).
 
 Autograph and Pythonic control flow
 -----------------------------------
