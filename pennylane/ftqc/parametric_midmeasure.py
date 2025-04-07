@@ -41,7 +41,7 @@ z_basis = Basis()
 
 
 @lru_cache
-def _create_mid_measure_primitive(measurement_class, basis):
+def _create_mid_measure_primitive(measurement_class):
     """Create a primitive corresponding to an mid-circuit measurement type.
 
     Called when using :func:`~pennylane.measure`.
@@ -56,14 +56,15 @@ def _create_mid_measure_primitive(measurement_class, basis):
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    mid_measure_p = NonInterpPrimitive("measure")
+    mid_measure_p = NonInterpPrimitive("p_measure")
 
     @mid_measure_p.def_impl
-    def _(wires, reset=False, postselect=None):
+    def _(wires, angle=0, plane="ZX", reset=False, postselect=None):
         return _measure_impl(
             wires,
             measurement_class=measurement_class,
-            basis=basis,
+            angle=angle,
+            plane=plane,
             reset=reset,
             postselect=postselect,
         )
@@ -178,11 +179,11 @@ def measure_arbitrary_basis(
     basis = Basis(plane, angle)
 
     if qml.capture.enabled():
-        primitive = _create_mid_measure_primitive(ParametricMidMeasureMP, basis)
-        return primitive.bind(wires, basis=basis, reset=reset, postselect=postselect)
+        primitive = _create_mid_measure_primitive(ParametricMidMeasureMP)
+        return primitive.bind(wires, angle=angle, plane=plane, reset=reset, postselect=postselect)
 
     return _measure_impl(
-        wires, ParametricMidMeasureMP, basis=basis, reset=reset, postselect=postselect
+        wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
     )
 
 
@@ -225,10 +226,10 @@ def measure_x(
     """
 
     if qml.capture.enabled():
-        primitive = _create_mid_measure_primitive(XMidMeasureMP, x_basis)
-        return primitive.bind(wires, basis=x_basis, reset=reset, postselect=postselect)
+        primitive = _create_mid_measure_primitive(XMidMeasureMP)
+        return primitive.bind(wires, reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, x_basis, reset=reset, postselect=postselect)
+    return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
 
 
 def measure_y(
@@ -270,10 +271,10 @@ def measure_y(
     """
 
     if qml.capture.enabled():
-        primitive = _create_mid_measure_primitive(YMidMeasureMP, y_basis)
-        return primitive.bind(wires, basis=y_basis, reset=reset, postselect=postselect)
+        primitive = _create_mid_measure_primitive(YMidMeasureMP)
+        return primitive.bind(wires, reset=reset, postselect=postselect)
 
-    return _measure_impl(wires, y_basis, reset=reset, postselect=postselect)
+    return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
 
 
 def measure_z(

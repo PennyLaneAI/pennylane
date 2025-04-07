@@ -14,12 +14,72 @@
 """
 Contains the condition transform.
 """
-from functools import wraps
+import uuid
+from collections.abc import Hashable
+from functools import lru_cache, wraps
 from typing import Callable, Union
+
+import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops.op_math.condition import CondCallable, Conditional
+from pennylane.wires import Wires
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires],
+    measurement_class=MidMeasureMP,
+    **kwargs,
+):
+    """Concrete implementation of qml.measure"""
+    wires = Wires(wires)
+    if len(wires) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())
+    mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
+    return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+@lru_cache
+def _create_mid_measure_primitive(measurement_class):
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import NonInterpPrimitive
+
+    mid_measure_p = NonInterpPrimitive("p_measure")
+
+    @mid_measure_p.def_impl
+    def _(wires, angle=0, plane="ZX", reset=False, postselect=None):
+        return _measure_impl(
+            wires,
+            measurement_class=measurement_class,
+            angle=angle,
+            plane=plane,
+            reset=reset,
+            postselect=postselect,
+        )
+
+    @mid_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return mid_measure_p
 
 
 def cond_measure(
