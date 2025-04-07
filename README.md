@@ -1,3 +1,4 @@
+test
 <p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
