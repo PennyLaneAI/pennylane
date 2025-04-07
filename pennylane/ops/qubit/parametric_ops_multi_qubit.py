@@ -606,8 +606,8 @@ def _decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     Returns:
         list[int]: A list with length ``n``, with entry :math:`c_i` at position :math:`i`.
 
-    This function follows the logic described in the documentation of
-    PCPhase.compute_decomposition.
+    This function is part of the logic for PCPhase.compute_decomposition and is
+    documented in ``pennylane/ops/qubit/pcphase_decomposition.md``.
 
     As an example, consider the number
     :math:`k=121_{10}=01111001_2`, which can be (trivially) decomposed into a sum of
@@ -909,12 +909,18 @@ class PCPhase(Operation):
         3: ──GlobalPhase(-1.23)────────────├○───────────┤
         4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
 
+        A detailed description of the algorithm and integer decomposition subroutine
+        is provided in ``pennylane/ops/qubit/pcphase_decomposition.md``. In the following
+        we provide a detailed example for illustration purposes.
 
         **Detailed example**
 
         Consider the projector-controlled phase gate on :math:`n=4` qubits and with
-        :math:`d=\texttt{dim}=3`. It acts on :math:`N=2^n=16`-dimensional vectors and is
-        described by
+        :math:`d=\texttt{dim}=3`, i.e,
+
+        >>> op_3 = qml.PCPhase(1.23, dim=3, wires=[0, 1, 2, 3])
+
+        It acts on :math:`N=2^n=16`-dimensional vectors and is described by
 
         .. math:: \Pi(\phi) = \exp(i\phi G) = \exp(i\phi(2\Pi-\mathbb{I}_N)),
 
@@ -940,35 +946,34 @@ class PCPhase(Operation):
 
         A singly-controlled phase shift gate applies a phase to a quarter of all computational
         basis states. For :math:`n=4`, this amounts to :math:`2^4/4=4` states, which is exactly
-        what we need for the first term above. To apply the phase to the first four states, we
-        control on the first qubit into the :math:`|0\rangle` state, act on the second qubit, and
-        we switch the state of that second qubit to which ``PhaseShift`` is applying the phase,
+        what we need for the first term above. To apply the phase to the *first* four states,
+        :math:`|0000\rangle`, :math:`|0001\rangle`, :math:`|0010\rangle`, and :math:`|0011\rangle`,
+        we control on the :math:`|0\rangle` state of qubit :math:`0`, act on qubit :math:`1`, and
+        switch the state of qubit :math:`1` to which ``PhaseShift`` is applying the phase,
         from the :math:`|1\rangle` state to the :math:`|0\rangle` state. This can be done simply
-        by flipping the second bit before and after the controlled phase shift.
+        by flipping qubit :math:`1` before and after the controlled phase shift.
         Thus, we conclude this first step by applying the gates
         ``qml.X(1)``, ``qml.ctrl(qml.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
-        and ``qml.X(1)`` (using zero-based qubit indexing).
+        and ``qml.X(1)``.
 
         Next, we implement the second term in the projector decomposition, applying a phase
         to a single computational basis state. This requires us to fully control a phase shift
         gate, i.e., we use the last qubit as target and the other three as controls (there is
-        some freedom of choice here, for fully-controlled gates).
-        We want to apply the phase to the state :math:`|3\rangle=|0011\rangle`, so that the first
-        two controls are set to zero and the third control is set to one. As we want to effect
-        the phase onto the :math:`|1\rangle` state of the fourth qubit, we don't need to flip the
-        target bit as we did before. However, given the negative sign in the projector
-        decomposition, we will multiply the phase with :math:`-1`.
+        some freedom of choice here, but this is a convenient choice).
+        We want to apply the phase to the state :math:`|3\rangle=|0011\rangle`. So the controls
+        :math:`0` and :math:`1` are set to zero and the control :math:`2` is set to one.
+        As we want to effect the phase onto the :math:`|1\rangle` state of qubit :math:`3`,
+        we don't need to flip the target bit as we did before. However, given the negative sign
+        in the projector decomposition, we need to multiply the phase with :math:`-1`.
         Overall, we apply the gate 
         ``qml.ctrl(qml.PhaseShift(-2 * phi, 3), control=[0, 1, 2], control_values=[0, 0, 1])``,
-        which concludes the decomposition.
-        Overall we get
+        which concludes the decomposition, now reading:
 
-        >>> op_3 = qml.PCPhase(1.23, dim=3, wires=[1, 2, 3, 4])
         >>> print(qml.draw(op_3.decomposition)())
-        1: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
-        2: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
-        3: ──GlobalPhase(1.23)─────────────────├●─────────┤
-        4: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
+        0: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
+        1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
+        2: ──GlobalPhase(1.23)─────────────────├●─────────┤
+        3: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
 
         """
         phi = params[0]
