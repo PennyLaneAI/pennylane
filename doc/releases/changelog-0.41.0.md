@@ -2,29 +2,34 @@
 
 # Release 0.41.0 (current release)
 
-<h4>Resource-efficient decompositions 🔎</h4>
+<h4>Resource-efficient Decompositions 🔎</h4>
 
 A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
 module. 
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+[(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+[(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
 [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
-[(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+[(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+[(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
-PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
-better resource efficiency and versatility by traversing an internal graph structure that is weighted 
-by the resources (e.g., gate counts) required to decompose down to a given set of gates. 
+PennyLane's new experimental graph decomposition system offers a resource-efficient and versatile alternative 
+to the current system. This is done by traversing an internal graph structure that is weighted by the 
+resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
-This new system is experimental and is disabled by default, but it can be enabled by adding `qml.decompositions.enable_graph()` 
-to the top of your program. Conversely, `qml.decompositions.disable_graph` disables the new system from 
-being active.
+This new system is experimental and is disabled by default, but it can be enabled by adding 
+:func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>` to the top of your 
+program. Conversely, :func:`qml.decompositions.disable_graph() <pennylane.decompositions.disable_graph>` 
+disables the new system from being active.
 
-With `qml.decompositions.enable_graph()`, the following new features are available:
+With :func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>`, the following 
+new features are available:
 
 * Operators in PennyLane can now accommodate multiple decompositions, which can be queried with the 
-  new `qml.list_decomps` function:
+  new :func:`qml.list_decomps <pennylane.list_decomps>` function:
 
   ```pycon
   >>> import pennylane as qml
@@ -38,17 +43,18 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
 
-  When an operator within a circuit needs to be decomposed (e.g., when `qml.transforms.decompose` is 
-  present), the chosen decomposition rule is that which leads to the most resource efficient set of 
-  gates (i.e., the least amount of gates produced).
+  When an operator within a circuit needs to be decomposed (e.g., when 
+  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen decomposition 
+  rule is that which leads to the most resource efficient set of gates (e.g., the least amount of gates 
+  produced).
 
-* New decomposition rules can be globally added to operators in PennyLane with the new `qml.add_decomps` 
-  function. Creating a valid decomposition rule requires:
+* New decomposition rules can be globally added to operators in PennyLane with the new 
+  :func:`qml.add_decomps <pennylane.add_decomps>` function. Creating a valid decomposition rule requires:
 
   * Defining quantum function that represents the decomposition.
   * Adding resource requirements (gate counts) to the above quantum function by decorating it with the 
-    new `qml.register_resources` function, which requires a dictionary mapping operator types present 
-    in the quantum function to their number of occurrences.
+    new :func:`qml.register_resources <pennylane.register_resources>` function, which requires a dictionary 
+    mapping operator types present in the quantum function to their number of occurrences.
 
   ```python
   qml.decomposition.enable_graph()
@@ -75,8 +81,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   ```
 
   Operators with dynamic resource requirements must be declared in a resource estimate using the new
-  `qml.resource_rep` function. For each operator class, the set of parameters that affects the type 
-  of gates and their number of occurrences in its decompositions is given by the `resource_keys` attribute.
+  :func:`qml.resource_rep <pennylane.resource_rep>` function. For each operator class, the set of parameters 
+  that affects the type of gates and their number of occurrences in its decompositions is given by the 
+  `resource_keys` attribute.
 
   ```pycon
   >>> qml.MultiRZ.resource_keys
@@ -104,18 +111,17 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
       qml.MultiRZ(theta, wires=wires[:3])
   ```
 
-  More information for defining complex decomposition rules can be found in the documentation for `qml.register_resources`.
+  More information for defining complex decomposition rules can be found in the documentation for 
+  :func:`qml.register_resources <pennylane.register_resources>`.
 
-* The `qml.transforms.decompose` transform works when the new decompositions system is enabled, and 
-  offers the ability to inject new decomposition rules via two new keyword arguments:
+* The :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform works when the new 
+  decompositions system is enabled, and offers the ability to inject new decomposition rules via two 
+  new keyword arguments:
 
   * `fixed_decomps`: decomposition rules provided to this keyword argument are guaranteed to be used 
     by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
   * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
     rules that the new system may choose if they're the most resource efficient.
-  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
-  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
-  [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
@@ -154,8 +160,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
         8.83177008e-17-2.94392336e-17j,  5.44955495e-18-2.47403959e-01j])
   ```
 
-  More details about using `fixed_decomps` and `alt_decomps` can be found in the usage details section
-  in the `qml.transforms.decompose` documentation.
+  More details about what `fixed_decomps` and `alt_decomps` do can be found in the usage details section
+  in the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` documentation.
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
