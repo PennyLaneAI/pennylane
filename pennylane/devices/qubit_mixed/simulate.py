@@ -64,7 +64,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
-    is_state_batched = bool(prep and prep.batch_size is not None)
+    is_state_batched = bool(prep and (prep.batch_size is not None) and (prep.batch_size > 1))
     key = prng_key
 
     for op in circuit.operations[bool(prep) :]:
