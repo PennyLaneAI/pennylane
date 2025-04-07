@@ -33,7 +33,7 @@ permissions: write-all
 
 jobs:
   determine_runner:
-    if: github.event.pull_request.draft == false
+    # if: github.event.pull_request.draft == false
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
