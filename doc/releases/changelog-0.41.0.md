@@ -2,11 +2,6 @@
 
 # Release 0.41.0 (current release)
 
-<h3>New features since last release</h3>
-
-* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
-  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
-
 <h4>Resource-efficient decompositions 🔎</h4>
 
 A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
@@ -619,6 +614,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
 <h4>Gradients and differentiability</h4>
+
+* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
 
 * `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
   [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
