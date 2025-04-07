@@ -22,7 +22,6 @@ from dataclasses import replace
 from functools import partial
 from numbers import Number
 from typing import Optional, Sequence, Union
-import time
 
 import numpy as np
 
@@ -489,7 +488,7 @@ class DefaultQubit(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
         
-        time.sleep(2.0)  # Give the debugger time to start
+        # time.sleep(2.0)  # Give the debugger time to start
 
     @debug_logger
     def supports_derivatives(
