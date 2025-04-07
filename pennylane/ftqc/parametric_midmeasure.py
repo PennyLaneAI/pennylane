@@ -33,7 +33,7 @@ from pennylane.wires import Wires
 
 
 @lru_cache
-def _create_mid_measure_primitive(measurement_class):
+def _create_parametrized_mid_measure_primitive():
     """Create a primitive corresponding to an mid-circuit measurement type.
 
     Called when using :func:`~pennylane.measure`.
@@ -54,7 +54,7 @@ def _create_mid_measure_primitive(measurement_class):
     def _(wires, angle=0, plane="ZX", reset=False, postselect=None):
         return _measure_impl(
             wires,
-            measurement_class=measurement_class,
+            measurement_class=ParametricMidMeasureMP,
             angle=angle,
             plane=plane,
             reset=reset,
@@ -170,7 +170,7 @@ def measure_arbitrary_basis(
     """
 
     if capture.enabled():
-        primitive = _create_mid_measure_primitive(ParametricMidMeasureMP)
+        primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(wires, angle=angle, plane=plane, reset=reset, postselect=postselect)
 
     return _measure_impl(
@@ -217,7 +217,7 @@ def measure_x(
     """
 
     if capture.enabled():
-        primitive = _create_mid_measure_primitive(XMidMeasureMP)
+        primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(wires, angle=0, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
@@ -262,7 +262,7 @@ def measure_y(
     """
 
     if capture.enabled():
-        primitive = _create_mid_measure_primitive(YMidMeasureMP)
+        primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(
             wires, angle=np.pi / 2, plane="XY", reset=reset, postselect=postselect
         )
