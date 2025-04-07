@@ -32,7 +32,7 @@ features that will help get your existing tape-based code working with program c
     Using program capture requires that JAX be installed. Please consult the 
     JAX documentation for `installation instructions <https://docs.jax.dev/en/latest/installation.html>`__, 
     and ensure that the version of JAX that is installed corresponds to the version
-    in the "Interface dependencies" section in :doc:`our documentation <../development/guide/installation>`__.
+    in the "Interface dependencies" section in :doc:`/development/guide/installation`.
 
 Device compatibility
 --------------------
