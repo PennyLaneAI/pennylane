@@ -1409,7 +1409,7 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None
