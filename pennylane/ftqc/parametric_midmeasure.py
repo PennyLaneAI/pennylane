@@ -24,11 +24,7 @@ import numpy as np
 
 from pennylane import QuantumFunctionError, capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
-from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
-from pennylane.measurements.mid_measure import (
-    _create_mid_measure_primitive as _default_create_mid_measure_primitive,
-)
-from pennylane.measurements.mid_measure import measure
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
 from pennylane.queuing import QueuingManager
@@ -268,7 +264,7 @@ def measure_y(
     if capture.enabled():
         primitive = _create_mid_measure_primitive(YMidMeasureMP)
         return primitive.bind(
-            wires, angle="XY", plane=np.pi / 2, reset=reset, postselect=postselect
+            wires, angle=np.pi / 2, plane="XY", reset=reset, postselect=postselect
         )
 
     return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
@@ -303,11 +299,7 @@ def measure_z(
         QuantumFunctionError: if multiple wires were specified
 
     """
-    if capture.enabled():
-        # use capture function from the standard PL mid_measure module
-        primitive = _default_create_mid_measure_primitive()
-        return primitive.bind(wires, reset=reset, postselect=postselect)
-
+    # capture is already handled inside qml.measure
     return measure(wires, reset=reset, postselect=postselect)
 
 
