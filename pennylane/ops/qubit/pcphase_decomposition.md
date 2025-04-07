@@ -8,13 +8,11 @@ phase shift gates. The generator of `PCPhase` is given as
 
 
 $$
-\begin{align}
-G &= 2 \left(\sum_{j=0}^{d-1} |j\rangle\langle j|\right) - \mathbb{I}_N\\
-&= \text{diag}(
+G = 2 \left(\sum_{j=0}^{d-1} |j\rangle\langle j|\right) - \mathbb{I}_N
+= \text{diag}(
 \underset{d\text{ times}}{\underbrace{1, \dots, 1}},
 \underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}}
 ),
-\end{align}
 $$
 
 where we denoted the overall dimension as $N=2^n$ for $n$ qubits and the
@@ -24,12 +22,12 @@ Our first step is to move to a slightly different convention in order to arrive 
 minus ones (note how $G$ is not a projector because $G^2=\mathbb{I}_N\neq G$).
 To do this, we define
 
-.. math::
-
-    \Pi = \begin{cases}
-        \sum_{j=0}^{d-1} |j\rangle\langle j| & \text{for }\ d\leq \tfrac{N}{2}\\
-        \sum_{j=d}^{N-1} |j\rangle\langle j| & \text{for }\ d> \tfrac{N}{2}
-    \end{cases},
+$$
+\Pi = \begin{cases}
+    \sum_{j=0}^{d-1} |j\rangle\langle j| & \text{for }\ d\leq \tfrac{N}{2}\\
+    \sum_{j=d}^{N-1} |j\rangle\langle j| & \text{for }\ d> \tfrac{N}{2}
+\end{cases},
+$$
 
 so that $G=2\Pi -\mathbb{I}_N$ for $d\leq \tfrac{N}{2}$ and
 $G=\mathbb{I}_N - 2 \Pi$ for $d>\tfrac{N}{2}$. We may summarize
@@ -48,18 +46,18 @@ This decomposition of $\Pi$ is based on decomposing the integer $d$ into sums
 and differences of powers of two, which is detailed in a separate section below. This
 decomposition reads
 
-.. math::
-
-    d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
+$$
+d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
+$$
 
 Now we need to use this decomposition to combine projectors of $2^{n-1-i}$
 computational basis state projectors into the desired $\Pi$.
 We start with the scenario $\sigma=+1$, i.e., $d\leq \tfrac{N}{2}$, in which
 case this decomposition has the form
 
-.. math::
-
-    \Pi = \sum_{i=0}^{n-1} c_i \sum_{j=s_i}^{e_i} |j\rangle\langle j|,
+$$
+\Pi = \sum_{i=0}^{n-1} c_i \sum_{j=s_i}^{e_i} |j\rangle\langle j|,
+$$
 
 where $s_i$ and $e_i$ are the start and end positions
 for the $i$\ th contribution to $\Pi$.
@@ -123,9 +121,10 @@ smallest-possible number of powers of two.
 This is equivalent to computing the minimal bit operations required to produce
 a bit string by subtraction and addition of weight-one bit strings:
 
-.. math::
 
-    d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
+$$
+d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
+$$
 
 The number of powers of two is given by the OEIS sequence
 [A007302](https://oeis.org/A007302) and can be computed as
@@ -142,48 +141,27 @@ scenarios where the less significant bit already differs between $d$ and
 $s$. In each such scenario, a single addition or subtraction to $s$
 suffices to set the bits of $s$ to those of $d$:
 
-.. list-table:: Coefficient $c_i$
-   :widths: 19 19 19 19 19
-   :align: center
-   :header-rows: 1
-
-   * - Bits
-     - $d=00$
-     - $d=01$
-     - $d=10$
-     - $d=11$
-   * - $s=00$
-     - $0$
-     - $+1$
-     - $0$
-     - $-1$
-   * - $s=01$
-     - $-1$
-     - $0$
-     - $+1$
-     - $0$
-   * - $s=10$
-     - $0$
-     - $-1$
-     - $0$
-     - $+1$
-   * - $s=11$
-     - $+1$
-     - $0$
-     - $-1$
-     - $0$
+| Bits | d=00 | d=01 | d=10 | d=11 |
+|------|------|------|------|------|
+| s=00 | 0    | +1   | 0    | -1   |
+| s=01 | -1   | 0    | +1   | 0    |
+| s=10 | 0    | -1   | 0    | +1   |
+| s=11 | +1   | 0    | -1   | 0    |
 
 Now let's lay out the algorithm itself. We will use this operation in step 3 below.
 
 1. Set $s=0=0\dots 0_2$ to be the zero bit string of length $n$.
+
 2. Initialize $i=n-1$ and an empty list $R=[]$ that will hold 2-tuples, each
    containing an exponent and a factor.
+
 3. If $d_i=s_i$, insert $(i, 0)$ at the beginning of $R$.
    Else, i.e., if $d_i=1-s_i$, set $\sigma=1$ if $i<2$ and otherwise
    look at $d_{i-1}$ and select the sign $\sigma$ from the table above that
    will make $s_{i-1}s_i$ match $d_{i-1}d_i$.
    Insert $(i, \sigma)$ at the beginning of $R$ and add $\sigma 2^{n-i-1}$
    to $s$.
+
 4. If $i=0$, terminate. Otherwise, update $i=i-1$ and go to step 3.
 
 ### Calculation example
