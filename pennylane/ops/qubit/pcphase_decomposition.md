@@ -7,13 +7,13 @@ which we denote as $G$, into multiple projectors, which generate (multi-controll
 phase shift gates. The generator of `PCPhase` is given as 
 
 
-$$
+\begin{align}
 G &= 2 \left(\sum_{j=0}^{d-1} |j\rangle\langle j|\right) - \mathbb{I}_N\\
 &= \text{diag}(
 \underset{d\text{ times}}{\underbrace{1, \dots, 1}},
 \underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}}
 ),
-$$
+\end{align}
 
 where we denoted the overall dimension as $N=2^n$ for $n$ qubits and the
 subspace dimension as $d$, which is called `dim` in code.
