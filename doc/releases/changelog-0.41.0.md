@@ -9,7 +9,6 @@ module.
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
-[(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
 [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
@@ -115,14 +114,18 @@ new features are available:
   :func:`qml.register_resources <pennylane.register_resources>`.
 
 * The :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform works when the new 
-  decompositions system is enabled, and offers the ability to inject new decomposition rules via two 
-  new keyword arguments:
+  decompositions system is enabled and offers the ability to inject new decomposition rules for operators
+  in QNodes.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
+
+  The with graph-based system enabled, the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
+  transform offers the ability to inject new decomposition rules via two new keyword arguments:
 
   * `fixed_decomps`: decomposition rules provided to this keyword argument are guaranteed to be used 
     by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
   * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
     rules that the new system may choose if they're the most resource efficient.
-
+  
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
 
