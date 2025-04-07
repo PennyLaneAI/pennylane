@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
     - uses: actions/checkout@v4
-    - uses: PennyLaneAI/sphinx-action@master
+    - uses: runora95/sphinx-action@sc-88376-upd-sphinx-pyth
       with:
         docs-folder: "doc/"
         pre-build-command: >
