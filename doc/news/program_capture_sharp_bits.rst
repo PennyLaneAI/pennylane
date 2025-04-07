@@ -620,6 +620,58 @@ Currently, the operators that define a ``compute_qfunc_decomposition`` are:
 * :class:`~.GroverOperator`
 * :class:`~.QFT`
 
+qml.cond
+--------
+
+When using :func:`~.cond`, if the ``True`` branch of a condition returns something, 
+then a ``False`` branch much be provided that returns the same generic type:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    qml.capture.enable()
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit():
+
+        def true_branch(x):
+            return qml.X(0)
+
+        m0 = qml.measure(0)
+        qml.cond(m0, true_branch)(4)
+
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+ValueError: The false branch must be provided if the true branch returns any variables
+
+In this particular example, to acheive the desired behaviour to "do nothing" when 
+the condition is ``False``, a ``false_fn`` must be provided:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    qml.capture.enable()
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit():
+
+        def true_branch(x):
+            return qml.X(0)
+
+        def false_branch(x):
+            return qml.Identity(0)
+
+        m0 = qml.measure(0)
+        qml.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
+
+        return qml.expval(qml.X(0))
+
+>>> circuit()
+Array(0., dtype=float32)
+
 while loops 
 -----------
 
