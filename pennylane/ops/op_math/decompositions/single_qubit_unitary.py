@@ -11,104 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains transforms and helpers functions for decomposing arbitrary unitary
+
+"""
+Contains transforms and helpers functions for decomposing arbitrary unitary
 operations into elementary gates.
 """
-from functools import singledispatch
 
 import numpy as np
 import scipy as sp
 
 import pennylane as qml
 from pennylane import math
-
-
-@singledispatch
-def _zyz_get_rotation_angles(U):
-    r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
-    for a unitary :math:`U` that is :math:`SU(2)`
-
-    Args:
-        U (array[complex]): A matrix that is :math:`SU(2)`
-
-    Returns:
-        tuple[array[float]]: A tuple containing the rotation angles
-            :math:`\phi`, :math:`\theta`, :math:`\omega`
-
-    """
-
-    # For batched U or single U with non-zero off-diagonal, compute the
-    # normal decomposition instead
-    off_diagonal_elements = math.clip(math.abs(U[:, 0, 1]), 0, 1)
-    thetas = 2 * math.arcsin(off_diagonal_elements)
-
-    # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small value to the real
-    # part to avoid division by zero.
-    epsilon = 1e-64
-    angles_U00 = math.arctan2(
-        math.imag(U[:, 0, 0]),
-        math.real(U[:, 0, 0]) + epsilon,
-    )
-    angles_U10 = math.arctan2(
-        math.imag(U[:, 1, 0]),
-        math.real(U[:, 1, 0]) + epsilon,
-    )
-
-    phis = -angles_U10 - angles_U00
-    omegas = angles_U10 - angles_U00
-
-    phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
-
-    # Normalize the angles
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    omegas = omegas % (4 * np.pi)
-
-    return phis, thetas, omegas
-
-
-@_zyz_get_rotation_angles.register(sp.sparse.csr_matrix)
-def _zyz_get_rotation_angles_sparse(U):
-    r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
-    for a unitary :math:`U` that is :math:`SU(2)`, sparse case
-
-    Args:
-        U (array[complex]): A matrix that is :math:`SU(2)`
-
-    Returns:
-        tuple[array[float]]: A tuple containing the rotation angles
-            :math:`\phi`, :math:`\theta`, :math:`\omega`
-
-    """
-
-    assert sp.sparse.issparse(U), "Do not use this method if U is not sparse"
-
-    u00 = U[0, 0]
-    u01 = U[0, 1]
-    u10 = U[1, 0]
-
-    # For batched U or single U with non-zero off-diagonal, compute the
-    # normal decomposition instead
-    off_diagonal_elements = math.clip(math.abs(u01), 0, 1)
-    thetas = 2 * math.arcsin(off_diagonal_elements)
-
-    # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi
-    angles_U00 = math.arctan2(math.imag(u00), math.real(u00))
-    angles_U10 = math.arctan2(math.imag(u10), math.real(u10))
-
-    phis = -angles_U10 - angles_U00
-    omegas = angles_U10 - angles_U00
-
-    phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
-
-    # Normalize the angles
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    omegas = omegas % (4 * np.pi)
-
-    return phis, thetas, omegas
+from pennylane.math.decomposition import zyz_rotation_angles
 
 
 def _rot_decomposition(U, wire, return_global_phase=False):
@@ -172,7 +86,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
             return operations
 
     # Compute the zyz rotation angles
-    phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
+    phis, thetas, omegas = zyz_rotation_angles(U_det1)
 
     operations = [qml.Rot(phis, thetas, omegas, wires=wire)]
     if return_global_phase:
@@ -190,11 +104,8 @@ def _get_single_qubit_rot_angles_via_matrix(
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 and not sp.sparse.issparse(U) else U
 
-    # Convert to SU(2) format and extract global phase
-    U_su2, global_phase = math.convert_to_su2(U, return_global_phase=True)
-
     # Compute the zyz rotation angles
-    phis, thetas, omegas = _zyz_get_rotation_angles(U_su2)
+    phis, thetas, omegas, global_phase = zyz_rotation_angles(U, return_global_phase=True)
     angles = (phis, thetas, omegas)
     if return_global_phase:
         angles += (global_phase,)
@@ -237,13 +148,11 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-    phis, thetas, omegas, *global_phase = _get_single_qubit_rot_angles_via_matrix(
-        U, return_global_phase=True
-    )
+    phis, thetas, omegas, global_phase = zyz_rotation_angles(U, return_global_phase=True)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase[0])
+        global_phase = math.squeeze(global_phase)
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations

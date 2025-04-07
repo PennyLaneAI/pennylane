@@ -20,7 +20,6 @@ from functools import reduce
 from typing import Callable, Iterable, Sequence
 
 import numpy as np
-import scipy as sp
 from scipy.sparse import csr_matrix, eye, issparse, kron
 
 import pennylane as qml
@@ -422,9 +421,8 @@ def convert_to_su2(U, return_global_phase=False):
 
     """
 
-    # We already know that U is 2x2, so no scaling problems from converting to dense
     if issparse(U):
-        U = U.todense()
+        U = U.todense()  # U is assumed to be 2x2 here, so dense representation is fine.
 
     # Compute the determinant
     U = qml.math.cast(U, "complex128")
