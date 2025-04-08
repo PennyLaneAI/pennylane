@@ -91,7 +91,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
             return operations
 
     # Compute the zyz rotation angles
-    phis, thetas, omegas = zyz_rotation_angles(U_det1)
+    phis, thetas, omegas = zyz_rotation_angles(U_det1)  # pylint: disable=unbalanced-tuple-unpacking
 
     operations = [qml.Rot(phis, thetas, omegas, wires=wire)]
     if return_global_phase:
