@@ -13,10 +13,10 @@ def Toffoli_cost(N, M, aleph, beth, br = 7):
     d = N/2 + M*(M+1)/2
     m = 2*nM + 2 + aleph
 
-    ks1 = np.min([np.ceil(d/2**n) + m*(2**n - 1) for n in range(1, 25)])
-    ks2 = np.min([np.ceil(d/ks2) + ks2 for ks2 in range(1, 25)])
-    kr1 = np.min([np.ceil(M/kr1) + np.ceil(N/(2*kr1)) + kr1 for kr1 in range(1, 25)])
-    kr2 = np.min([np.ceil(M/kr2) + kr2 for kr2 in range(1, 25)])
+    ks1 = 2**np.argmin([np.ceil(d/2**n) + m*(2**n - 1) for n in range(1, 25)])
+    ks2 = 2**np.argmin([np.ceil(d/2**n) + 2**n for n in range(1, 25)])
+    kr1 = 2**np.argmin([np.ceil(M/2**n) + np.ceil(N/(2*2**n)) + 2**n for n in range(1, 25)])
+    kr2 = 2**np.argmin([np.ceil(M/2**n) + 2**n for n in range(1, 25)])
 
     cost = 30*nM + 4*br - 16 + 2*nM**2 + 3*aleph + np.ceil(d/ks1) \
         + m*(ks1 - 1) + np.ceil(d/ks2) + ks2 \
@@ -27,7 +27,7 @@ def Toffoli_cost(N, M, aleph, beth, br = 7):
 
 def qubit_cost(N, M, aleph, beth, br = 7):
     r"""
-    Qubit cost of implementing THC according to eq 43 in https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305
+    Qubit cost of implementing THC according to eq 46 in https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305
 
     N is the number of qubits.
     M is the number of CDF terms.
@@ -39,7 +39,7 @@ def qubit_cost(N, M, aleph, beth, br = 7):
     d = N/2 + M*(M+1)/2
     m = 2*nM + 2 + aleph
 
-    ks1 = float(np.min([np.ceil(d/2**n) + m*(2**n - 1) for n in range(1, 25)]))
+    ks1 = 2**float(np.argmin([np.ceil(d/2**n) + m*(2**n - 1) for n in range(1, 25)]))
 
     cost = N + 2*nM + beth + np.log2(d) + aleph + 5 + \
         np.max([m*ks1 + np.ceil(np.log2(d/ks1)), m + beth*N/2 + beth - 2])
