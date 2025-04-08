@@ -20,6 +20,7 @@ from pennylane.decomposition.utils import DecompositionNotApplicableError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
     xzx_rotation_angles,
+    zxz_rotation_angles,
     zyz_rotation_angles,
 )
 
@@ -114,7 +115,7 @@ def _zxz_resource(num_wires):
 @register_resources(_zxz_resource)
 def zxz_decomposition(U, wires, **__):
     """Decomposes a QubitUnitary into a sequence of ZXZ rotations."""
-    phi, theta, omega, global_phase = xzx_rotation_angles(U, return_global_phase=True)
+    phi, theta, omega, global_phase = zxz_rotation_angles(U, return_global_phase=True)
     qml.RZ(phi, wires=wires[0])
     qml.RX(theta, wires=wires[0])
     qml.RZ(omega, wires=wires[0])

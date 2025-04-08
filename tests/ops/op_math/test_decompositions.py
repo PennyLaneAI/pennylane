@@ -339,7 +339,7 @@ test_cases_zxz = [
     (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
     (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
     (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.log(1j) / 1j]),
-    (X, [0, np.pi, 4 * np.pi, -np.log(1j) / 1j]),
+    (X, [4 * np.pi, np.pi, 0, -np.log(1j) / 1j]),
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
     (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [11.195574287564275, 0.5, 1.2707963267948965, 0]),

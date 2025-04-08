@@ -212,7 +212,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-    phis, thetas, lams, gammas = xzx_rotation_angles(U, return_global_phase=True)
+    lams, thetas, phis, gammas = xzx_rotation_angles(U, return_global_phase=True)
     operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
         operations.append(qml.GlobalPhase(-gammas))
