@@ -17,7 +17,6 @@ module.
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
-[(#7223)](https://github.com/PennyLaneAI/pennylane/pull/7223)
 
 PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
 better resource efficiency and versatility by traversing an internal graph structure that is weighted 
@@ -496,13 +495,6 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
-
-* Added new `MultiControlledX` gate decompositions utilizing conditionally clean work wires, improving 
-   circuit depth and efficiency.
-   [(#7028)](https://github.com/PennyLaneAI/pennylane/pull/7028)
-   * Implemented `_decompose_mcx_with_two_workers` and `_decompose_mcx_with_one_worker_kg24`.
-   * Introduced `work_wire_type: Literal["clean", "dirty"]` to `decompose_mcx`.
-   * Updated `decompose_mcx` to select decomposition strategy based on available work wires.
 
 * Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
   ```python
