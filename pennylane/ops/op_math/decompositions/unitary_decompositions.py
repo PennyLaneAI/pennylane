@@ -15,7 +15,7 @@
 """This module defines decomposition functions for unitary matrices."""
 
 import pennylane as qml
-from pennylane.decomposition.decomposition_rule import register_resources, resource_rep
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.utils import DecompositionNotApplicableError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
