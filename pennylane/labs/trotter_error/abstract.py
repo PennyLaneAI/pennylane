@@ -90,6 +90,16 @@ class Fragment(ABC):
         """
         return left.dot(self.apply(right))
 
+    @classmethod
+    @abstractmethod
+    def zero(cls):
+        """Return a representation of the zero operator.
+
+        Returns:
+            Fragment: a ``Fragment`` representation of the zero operator
+        """
+        raise NotImplementedError
+
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
     """Return the commutator of two :class:`~.Fragment` objects

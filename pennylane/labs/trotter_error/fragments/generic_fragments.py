@@ -129,5 +129,9 @@ class GenericFragment(Fragment):
             "GenericFragment was constructed without specifying the norm function."
         )
 
+    @classmethod
+    def zero(cls):
+        return 0
+
     def __repr__(self):
         return f"GenericFragment(type={type(self.fragment)})"
