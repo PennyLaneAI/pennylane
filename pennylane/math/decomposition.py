@@ -37,15 +37,11 @@ def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
 
-    a = U[..., 0, 0]
-    b = U[..., 0, 1]
+    abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
+    theta = 2 * math.arcsin(abs_b)
 
-    abs_a = math.clip(math.abs(a), 0, 1)
-    abs_b = math.clip(math.abs(b), 0, 1)
-    theta = math.where(abs_a > abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
-
-    half_phi_plus_omega = math.angle(U[..., 1, 1])
-    half_omega_minus_phi = math.angle(U[..., 1, 0])
+    half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
+    half_omega_minus_phi = math.angle(U[..., 1, 0] + EPS)
 
     phi = half_phi_plus_omega - half_omega_minus_phi
     omega = half_phi_plus_omega + half_omega_minus_phi
@@ -144,8 +140,8 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = math.where(abs_a > abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
 
-    half_phi_plus_omega = math.angle(U[..., 1, 1])
-    half_phi_minus_omega = math.angle(1j * U[..., 1, 0])
+    half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
+    half_phi_minus_omega = math.angle(1j * U[..., 1, 0] + EPS)
 
     phi = half_phi_plus_omega + half_phi_minus_omega
     omega = half_phi_plus_omega - half_phi_minus_omega
