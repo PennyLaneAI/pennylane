@@ -701,7 +701,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
         # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
         # TODO: Update once we have qml.SemiAdder
         gate_types[t] = (
-            2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1) * num_state_qubits
+            (2 * (2 * (num_precision_wires - 1)) + 4 * (2*num_precision_wires - 1)) * num_state_qubits
         )
 
         gate_types[h] = 2 * num_state_qubits
@@ -718,7 +718,9 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
                 )
             ] += 1
 
-            gate_types[t] += 2 * (2 * (num_precision_wires - 1) + 2 * num_precision_wires - 1)
+            # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+            # TODO: Update once we have qml.SemiAdder
+            gate_types[t] +=  (2 * (2 * (num_precision_wires - 1)) + 4 * (2*num_precision_wires - 1))
 
             gate_types[
                 re.ResourceAdjoint.resource_rep(

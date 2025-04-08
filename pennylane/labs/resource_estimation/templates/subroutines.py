@@ -74,6 +74,38 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
         return gate_types
 
+    @staticmethod
+    def resources_via_phase_gradient(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+        The number of wires used is 2 * num_wires.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are obtained from the `Efficient Controlled Phase Gradients post
+            <https://algassert.com/post/1708>`_.
+
+        """
+        gate_types = {}
+
+        t = re.ResourceT.resource_rep()
+        gate_types[t] = 0
+
+        for k in range(1, num_wires):
+            # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+            # TODO: Update once we have qml.SemiAdder
+            gate_types[t] += (
+                    2 * (2 * (k - 1)) + 4*(2 * k - 1)
+            )
+
+        hadamard = re.ResourceHadamard.resource_rep()
+
+        gate_types[hadamard] = num_wires
+
+        return gate_types
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
