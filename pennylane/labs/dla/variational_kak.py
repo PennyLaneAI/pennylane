@@ -361,6 +361,7 @@ def run_opt(
         from pennylane.labs.dla import run_opt
         import jax
         import jax.numpy as jnp
+        import optax
         jax.config.update("jax_enable_x64", True)
 
         def cost(x):
