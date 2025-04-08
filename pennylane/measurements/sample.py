@@ -29,7 +29,8 @@ from .mid_measure import MeasurementValue
 
 def sample(
     op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
-    wires=None, dtype=None
+    wires=None,
+    dtype=None,
 ) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
