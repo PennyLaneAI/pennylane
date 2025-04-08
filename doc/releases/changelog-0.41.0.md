@@ -1001,6 +1001,11 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Documentation 📝</h3>
 
+* A page on sharp bits and debugging tips has been added for PennyLane program-capture. 
+  This page is recommended to consult any time errors occur when `qml.capture.enable()` 
+  is present.
+  [(#7062)](https://github.com/PennyLaneAI/pennylane/pull/7062)
+
 * The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
   on using the new experimental decompositions system.
   [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
