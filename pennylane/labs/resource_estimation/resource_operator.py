@@ -116,8 +116,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 
@@ -136,8 +135,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
 
         raise ResourcesNotDefined
@@ -153,8 +151,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 
@@ -172,8 +169,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 
