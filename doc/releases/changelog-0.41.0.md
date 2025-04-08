@@ -17,6 +17,7 @@ module.
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+[(#7223)](https://github.com/PennyLaneAI/pennylane/pull/7223)
 
 PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
 better resource efficiency and versatility by traversing an internal graph structure that is weighted 
