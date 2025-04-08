@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains all the custom exceptions and warnings used in PennyLane.
+This file contains all the custom exceptions and warnings used in PennyLane.
 """
 
 
