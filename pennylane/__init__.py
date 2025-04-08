@@ -17,7 +17,7 @@ PennyLane can be directly imported.
 """
 import warnings
 
-import pennylane.errors
+import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -184,10 +184,10 @@ def __getattr__(name):
     }:
         # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
         # warnings.warn(
-        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.errors.{name}. Support for top-level access will be removed in v0.42.",
-        #     pennylane.errors.PennyLaneDeprecationWarning,
+        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
+        #     pennylane.exceptions.PennyLaneDeprecationWarning,
         # )
-        return getattr(pennylane.errors, name)
+        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
