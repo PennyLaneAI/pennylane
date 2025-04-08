@@ -52,5 +52,9 @@ def create_initial_state(
     dtype = "complex128" if like == "tensorflow" else dtype
     # sparse matrix VIP tunnel
     if sp.sparse.issparse(state_vector):
+        # currently, state_vector returns a flattened target shape.
+        target_shape = [prep_operation.batch_size] if prep_operation.batch_size else []
+        target_shape += [2] * len(wires)
         state_vector = state_vector.toarray()
+        state_vector = qml.math.reshape(state_vector, target_shape)
     return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)

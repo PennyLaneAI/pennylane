@@ -94,7 +94,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     allows us to use Dijkstra's algorithm to find the most efficient decomposition.
 
     Args:
-        operations (list[Operator]): The list of operations to find decompositions for.
+        operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
         target_gate_set (set[str]): The names of the gates in the target gate set.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
@@ -121,7 +121,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        operations,
+        operations: list[Operator | CompressedResourceOp],
         target_gate_set: set[str],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
@@ -148,8 +148,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = resource_rep(type(op), **op.resource_params)
-            idx = self._recursively_add_op_node(op_node)
+            if isinstance(op, Operator):
+                op = resource_rep(type(op), **op.resource_params)
+            idx = self._recursively_add_op_node(op)
             self._original_ops_indices.add(idx)
 
     def _recursively_add_op_node(self, op_node: CompressedResourceOp) -> int:

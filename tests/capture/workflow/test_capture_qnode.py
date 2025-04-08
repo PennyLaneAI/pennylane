@@ -30,6 +30,9 @@ jnp = jax.numpy
 
 # must be below jax importorskip
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
+from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
+    CollectOpsandMeas,
+)
 
 
 def get_qnode_output_eqns(jaxpr):
@@ -349,6 +352,148 @@ def test_qnode_pytree_output():
     assert qml.math.allclose(out["a"], jnp.cos(1.2))
     assert qml.math.allclose(out["b"], -jnp.sin(1.2))
     assert list(out.keys()) == ["a", "b"]
+
+
+class TestUserTransforms:
+    """Integration tests for applying user transforms to a qnode with program capture."""
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_transform(self):
+        """Test that a transformed qnode is captured correctly."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        # pylint: disable=protected-access
+        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, [], 1.5)
+        assert collector.state["ops"] == [qml.RX(1.5, 0), qml.X(0), qml.X(0)]
+        assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
+
+    @pytest.mark.unit
+    def test_captured_program_qfunc_transform(self):
+        """Test that a qnode with a transformed qfunc is captured correctly."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.transforms.cancel_inverses
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        # pylint: disable=protected-access
+        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+
+        inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
+        collector = CollectOpsandMeas()
+        collector.eval(inner_jaxpr, [], 1.5)
+        assert collector.state["ops"] == [qml.RX(1.5, 0), qml.X(0), qml.X(0)]
+        assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_qfunc_transform(self):
+        """Test that a transformed qnode with a transformed qfunc is captured correctly."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        @qml.transforms.merge_rotations
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        # pylint: disable=protected-access
+        assert jaxpr.eqns[0].primitive == qml.transforms.cancel_inverses._primitive
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert qfunc_jaxpr.eqns[0].primitive == qml.transforms.merge_rotations._primitive
+        inner_jaxpr2 = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
+
+        collector = CollectOpsandMeas()
+        collector.eval(inner_jaxpr2, [], 1.5)
+        assert collector.state["ops"] == [qml.RX(1.5, 0), qml.X(0), qml.X(0)]
+        assert collector.state["measurements"] == [qml.expval(qml.Z(0))]
+
+    @pytest.mark.unit
+    def test_device_jaxpr(self, monkeypatch):
+        """Test that jaxpr recieved by a device when executing a transformed qnode has been
+        transformed appropriately."""
+
+        device_jaxpr = None
+
+        def dummy_eval_jaxpr(
+            jaxpr, consts, *args, execution_config
+        ):  # pylint: disable=unused-argument
+            nonlocal device_jaxpr
+            device_jaxpr = jaxpr
+            return [1.0]
+
+        dev = qml.device("default.qubit", wires=3)
+        monkeypatch.setattr(dev, "eval_jaxpr", dummy_eval_jaxpr)
+
+        @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+        @qml.qnode(dev)
+        @qml.transforms.cancel_inverses
+        def circuit(x, y, z):
+            qml.Rot(x, y, z, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        _ = circuit(1.5, 2.5, 3.5)
+        assert all(
+            getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
+        )
+        assert device_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert device_jaxpr.eqns[1].primitive == qml.RY._primitive
+        assert device_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert device_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    @pytest.mark.integration
+    def test_execution(self):
+        """Test that a transformed qnode is executed correctly."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        @qml.transforms.merge_rotations
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.RX(4 * x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+        res = circuit(1.5)
+        expected = jnp.cos(5 * 1.5)
+        assert jnp.allclose(res, expected)
 
 
 @pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])

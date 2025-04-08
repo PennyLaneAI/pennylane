@@ -17,6 +17,7 @@ from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
+from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -2088,7 +2089,7 @@ class TestHamiltonianExpvalGradients:
     def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = shots_to_analytic(qml.device("default.qubit", wires=2, shots=shot_vec))
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = qml.numpy.array([0.1, 0.2, 0.3])

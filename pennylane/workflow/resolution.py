@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
 from collections.abc import Callable
+from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
@@ -35,6 +36,9 @@ SupportedDiffMethods = Literal[
     "adjoint",
     "parameter-shift",
     "hadamard",
+    "reversed-hadamard",
+    "direct-hadamard",
+    "reversed-direct-hadamard",
     "finite-diff",
     "spsa",
 ]
@@ -161,6 +165,33 @@ def _resolve_mcm_config(
     return replace(mcm_config, **updated_values)
 
 
+def _resolve_hadamard(
+    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
+) -> "qml.devices.ExecutionConfig":
+    diff_method = initial_config.gradient_method
+    updated_values = {"gradient_method": diff_method}
+    if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
+        raise ValueError(
+            f"diff_method={diff_method} cannot be provided with a 'mode' in the gradient_kwargs."
+        )
+
+    hadamard_mode_map = {
+        "hadamard": "standard",
+        "reversed-hadamard": "reversed",
+        "direct-hadamard": "direct",
+        "reversed-direct-hadamard": "reversed-direct",
+    }
+    gradient_kwargs = copy(initial_config.gradient_keyword_arguments)
+    if "mode" not in gradient_kwargs:
+        gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
+
+    if "device_wires" not in gradient_kwargs and "aux_wire" not in gradient_kwargs:
+        gradient_kwargs["device_wires"] = device.wires
+    updated_values["gradient_keyword_arguments"] = gradient_kwargs
+    updated_values["gradient_method"] = qml.gradients.hadamard_grad
+    return replace(initial_config, **updated_values)
+
+
 @debug_logger
 def _resolve_diff_method(
     initial_config: "qml.devices.ExecutionConfig",
@@ -193,9 +224,16 @@ def _resolve_diff_method(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
 
+    if "hadamard" in str(diff_method):
+        return _resolve_hadamard(initial_config, device)
+
     if diff_method in {"best", "parameter-shift"}:
         if tape and any(isinstance(op, qml.operation.CV) and op.name != "Identity" for op in tape):
             updated_values["gradient_method"] = qml.gradients.param_shift_cv
+            updated_values["gradient_keyword_arguments"] = dict(
+                initial_config.gradient_keyword_arguments
+            )
+            updated_values["gradient_keyword_arguments"]["dev"] = device
         else:
             updated_values["gradient_method"] = qml.gradients.param_shift
 
@@ -203,7 +241,6 @@ def _resolve_diff_method(
         gradient_transform_map = {
             "finite-diff": qml.gradients.finite_diff,
             "spsa": qml.gradients.spsa_grad,
-            "hadamard": qml.gradients.hadamard_grad,
         }
 
         if diff_method in gradient_transform_map:
@@ -237,7 +274,6 @@ def _resolve_execution_config(
         qml.devices.ExecutionConfig: resolved execution configuration
     """
     updated_values = {}
-    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
     if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
         execution_config.gradient_method, Callable
@@ -262,9 +298,6 @@ def _resolve_execution_config(
             " and the provided circuit."
         )
 
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
-
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
@@ -279,8 +312,6 @@ def _resolve_execution_config(
 
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
-
     execution_config = replace(execution_config, **updated_values)
     execution_config = device.setup_execution_config(execution_config)
-
     return execution_config

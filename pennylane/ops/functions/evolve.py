@@ -15,12 +15,18 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
+from typing import Optional, overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.typing import TensorLike
 
 
+@overload
+def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
+@overload
+def evolve(op: Operator, coeff: TensorLike = 1, num_steps: Optional[int] = None) -> Evolution: ...
 @singledispatch
 def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.

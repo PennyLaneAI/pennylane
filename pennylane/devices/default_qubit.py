@@ -66,6 +66,8 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return True
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
+    if op.name == "FromBloq" and len(op.wires) > 3:
+        return False
 
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))

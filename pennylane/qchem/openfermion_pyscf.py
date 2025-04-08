@@ -135,7 +135,9 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     """
     openfermion, _ = _import_of()
 
-    if mapping.strip().lower() not in ("jordan_wigner", "parity", "bravyi_kitaev"):
+    mapping = mapping.strip().lower()
+
+    if mapping not in ("jordan_wigner", "parity", "bravyi_kitaev"):
         raise TypeError(
             f"The '{mapping}' transformation is not available. \n "
             f"Please set 'mapping' to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
@@ -151,12 +153,12 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
         mb_obs += ops
 
     # Map the fermionic operator to a qubit operator
-    if mapping.strip().lower() == "bravyi_kitaev":
+    if mapping == "bravyi_kitaev":
         return qml.qchem.convert.import_operator(
             openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
         )
 
-    if mapping.strip().lower() == "parity":
+    if mapping == "parity":
         qubits = openfermion.count_qubits(mb_obs)
         if qubits == 0:
             return 0.0 * qml.I(0)

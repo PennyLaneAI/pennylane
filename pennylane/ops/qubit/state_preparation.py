@@ -357,10 +357,14 @@ class StatePrep(StatePrepBase):
         self.is_sparse = False
         if sp.sparse.issparse(state):
             state = state.tocsr()
-            state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+            state = self._preprocess_csr(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
             self.is_sparse = True
         else:
-            state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+            state = self._preprocess(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
 
         self._hyperparameters = {
             "pad_with": pad_with,
@@ -369,6 +373,12 @@ class StatePrep(StatePrepBase):
         }
 
         super().__init__(state, wires=wires, id=id)
+
+    def _check_batching(self):
+        if self.is_sparse:
+            self._batch_size = None
+        else:
+            super()._check_batching()
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -525,8 +535,10 @@ class StatePrep(StatePrepBase):
         shape = state.shape
 
         # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
-        if shape[0] != 1:
-            raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
+        if len(shape) == 2 and shape[0] != 1:
+            raise NotImplementedError(
+                "StatePrep does not yet support parameter broadcasting with sparse state vectors."
+            )
 
         n_states = shape[-1]
         dim = 2 ** len(Wires(wires))

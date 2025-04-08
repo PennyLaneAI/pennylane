@@ -503,10 +503,12 @@ def _molecular_hamiltonian(
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule."""
 
+    method = method.strip().lower()
     if method not in ["dhf", "pyscf", "openfermion"]:
         raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
 
-    if mapping.strip().lower() not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+    mapping = mapping.strip().lower()
+    if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"'{mapping}' is not supported."
             f"Please set the mapping to 'jordan_wigner', 'parity' or 'bravyi_kitaev'."
@@ -580,7 +582,7 @@ def _molecular_hamiltonian(
         )
 
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
-        mapping = mapping.strip().lower()
+
         qubits = len(hf.wires)
 
         if mapping == "jordan_wigner":

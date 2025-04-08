@@ -73,7 +73,7 @@ class GenericFragment(Fragment):
 
     Args:
         fragment (Any): An object that implements the following arithmetic methods:
-            ``__add__``, ``__sub__``, ``__mul__``, and ``__matmul__``.
+            ``__add__``, ``__mul__``, and ``__matmul__``.
         norm_fn (optional, Callable): A function used to compute the norm of ``fragment``.
 
     .. note:: :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
