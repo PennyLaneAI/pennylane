@@ -1002,7 +1002,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 <h3>Documentation 📝</h3>
 
 * The documentation for `qml.device` has been updated to include `null.qubit` in the list of readily available devices.
-  [(#)]()
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
 
 * The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
   on using the new experimental decompositions system.
@@ -1049,10 +1049,10 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 <h3>Bug fixes 🐛</h3>
 
 * Using transforms with program capture enabled now works correctly with functions that accept pytree arguments.
-  [(#)]()
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
 
 * `qml.math.requires_grad` no longer returns `True` for JAX inputs other than `jax.interpreters.ad.JVPTracer` instances.
-  [(#)]()
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
 
 * PennyLane is now compatible with `pyzx 0.9`.
   [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
