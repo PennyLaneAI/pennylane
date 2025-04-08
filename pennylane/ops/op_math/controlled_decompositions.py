@@ -705,7 +705,7 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
 
 
 def _decompose_mcx_with_one_worker_kg24(
-    control_wires: list[WiresLike],
+    control_wires: WiresLike,
     target_wire: int,
     work_wire: int,
     work_wire_type: Literal["clean", "dirty"] = "clean",
@@ -780,7 +780,7 @@ def _n_parallel_ccx_x(
 
 
 def _build_logn_depth_ccx_ladder(
-    work_wire: int, control_wires: list[WiresLike]
+    work_wire: int, control_wires: WiresLike
 ) -> tuple[list[Operator], list[Operator]]:
     r"""
     Helper function to build a log-depth ladder compose of CCX and X gates as shown in Fig. 4b of [1].
@@ -790,7 +790,7 @@ def _build_logn_depth_ccx_ladder(
         control_wires (list[Wire]): The control wires.
 
     Returns:
-        tuple[list[Operator], list[WiresLike]: log-depth ladder circuit of cond. clean ancillae and
+        tuple[list[Operator], WiresLike: log-depth ladder circuit of cond. clean ancillae and
         control_wires to apply the linear-depth MCX gate on.
 
     References:
