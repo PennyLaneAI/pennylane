@@ -82,8 +82,8 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: 
 copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
-    "demo": ("https://pennylane.ai/qml/", None),
-    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
+    'demo': ('https://pennylane.ai/qml/', None),
+    'catalyst': ('https://docs.pennylane.ai/projects/catalyst/en/stable', None),
 }
 
 mathjax_path = (
