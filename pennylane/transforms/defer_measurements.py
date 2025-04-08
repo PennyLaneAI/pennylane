@@ -694,9 +694,9 @@ def defer_measurements(
           measurements.
 
         * Using mid-circuit measurements as gate parameters is now possible. This feature currently
-          has the following restrictions:
-          - Mid-circuit measurement values cannot be used for multiple parameters of the same gate.
-          - Mid-circuit measurement values cannot be used as wires.
+          has the following restrictions. First, mid-circuit measurement values cannot be used
+          for multiple parameters of the same gate. Second, mid-circuit measurement values
+          cannot be used as wires.
 
           .. code-block:: python
 
