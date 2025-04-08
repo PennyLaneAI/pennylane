@@ -47,6 +47,18 @@ parity_matrix_tests = ((circ1, P1), (circ2, P2))
 @pytest.mark.parametrize("circ, P_true", parity_matrix_tests)
 def test_parity_matrix(circ, P_true):
     """Test parity matrix computation"""
-    P = parity_matrix(circ)
+    P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 
     assert np.allclose(P, P_true)
+
+
+wire_order_abcd = ["a", "b", "c", "d"]
+(circ1_letters,), _ = qml.map_wires(circ1, dict(enumerate(wire_order_abcd)))
+
+
+def test_parity_matrix_with_string_wires():
+    """Test parity matrix computation with string valued wires"""
+    wire_order1 = ["a", "b", "c", "d"]
+    P_re = parity_matrix(circ1_letters, wire_order=wire_order1)
+
+    assert np.allclose(P_re, P1)

@@ -15,8 +15,10 @@
 
 import numpy as np
 
+import pennylane as qml
 
-def parity_matrix(circ):
+
+def parity_matrix(circ, wire_order=None):
     r"""
     :doc:`Parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit
 
@@ -58,9 +60,20 @@ def parity_matrix(circ):
 
     """
     wires = circ.wires
-    P = np.eye(len(wires))
+
+    if wire_order is None:
+        wire_order = wires
+
+    if not qml.wires.Wires(wire_order).contains_wires(wires):
+        raise qml.wires.WireError(
+            f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
+        )
+
+    wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+
+    P = np.eye(len(wire_order))
     for op in circ.operations:
         control, target = op.wires
-        P[target] = P[target] + P[control]
+        P[wire_map[target]] = P[wire_map[target]] + P[wire_map[control]]
 
     return P % 2
