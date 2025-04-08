@@ -16,169 +16,10 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+import importlib as _importlib
 
-from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
-from pennylane.queuing import QueuingManager, apply
-
-import pennylane.compiler
-from pennylane.compiler import qjit
-import pennylane.capture
-import pennylane.control_flow
-from pennylane.control_flow import for_loop, while_loop
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.decomposition
-from pennylane.decomposition import (
-    register_resources,
-    add_decomps,
-    list_decomps,
-    resource_rep,
-)
-import pennylane.qnn
-import pennylane.templates
-import pennylane.pauli
-from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-import pennylane.resource
-import pennylane.qchem
-from pennylane.fermi import (
-    FermiC,
-    FermiA,
-    FermiWord,
-    FermiSentence,
-    jordan_wigner,
-    parity_transform,
-    bravyi_kitaev,
-)
-from pennylane.bose import (
-    BoseSentence,
-    BoseWord,
-    binary_mapping,
-    unary_mapping,
-    christiansen_mapping,
-)
-from pennylane.qchem import (
-    taper,
-    symmetry_generators,
-    paulix_ops,
-    taper_operation,
-    import_operator,
-    from_openfermion,
-    to_openfermion,
-)
-from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
-from pennylane.about import about
-from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.tracker import Tracker
-from pennylane.registers import registers
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-)
-from pennylane.measurements import (
-    counts,
-    density_matrix,
-    measure,
-    expval,
-    probs,
-    sample,
-    state,
-    var,
-    vn_entropy,
-    purity,
-    mutual_info,
-    classical_shadow,
-    shadow_expval,
-)
-from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
-from pennylane.ops import LinearCombination as Hamiltonian
-from pennylane.templates import layer
-from pennylane.templates.embeddings import *
-from pennylane.templates.layers import *
-from pennylane.templates.tensornetworks import *
-from pennylane.templates.swapnetworks import *
-from pennylane.templates.state_preparations import *
-from pennylane.templates.subroutines import *
-from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
-from pennylane.transforms import (
-    transform,
-    batch_params,
-    batch_input,
-    batch_partial,
-    compile,
-    defer_measurements,
-    dynamic_one_shot,
-    quantum_monte_carlo,
-    apply_controlled_Q,
-    commutation_dag,
-    pattern_matching,
-    pattern_matching_optimization,
-    clifford_t_decomposition,
-    add_noise,
-)
-from pennylane.ops.functions import (
-    dot,
-    eigvals,
-    equal,
-    assert_equal,
-    evolve,
-    generator,
-    is_commuting,
-    is_hermitian,
-    is_unitary,
-    map_wires,
-    matrix,
-    simplify,
-    iterative_qpe,
-    commutator,
-    comm,
-)
-from pennylane.ops.identity import I
-from pennylane.optimize import *
-from pennylane.debugging import (
-    snapshots,
-    breakpoint,
-    debug_expval,
-    debug_state,
-    debug_probs,
-    debug_tape,
-)
-from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-import pennylane.pulse
-
-import pennylane.fourier
-from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-import pennylane.gradients  # pylint:disable=wrong-import-order
-from pennylane.drawer import draw, draw_mpl
-
-# pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
-
-import pennylane.data
-
-import pennylane.noise
-from pennylane.noise import NoiseModel
-
-from pennylane.devices.device_constructor import device, refresh_devices
-
-import pennylane.spin
-
-import pennylane.liealg
-from pennylane.liealg import lie_closure, structure_constants, center
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -200,12 +41,54 @@ class ExperimentalWarning(UserWarning):
     """Warning raised to indicate experimental/non-stable feature or support."""
 
 
+top_level_accessible = {
+    # Define what modules are accessible at the top level
+}
+
+submodules = [
+    "numpy",
+    "compiler",
+    "capture",
+    "control_flow",
+    "kernels",
+    "math",
+    "operation",
+    "decomposition",
+    "qnn",
+    "templates",
+    "pauli",
+    "resource",
+    "qchem",
+    "qaoa",
+    "pulse",
+    "fourier",
+    "gradients",
+    "logging",
+    "data",
+    "noise",
+    "liealg",
+    "spin",
+]
+
+
+# pylint: disable=no-else-return
 def __getattr__(name):
 
+    # pylint: disable=import-outside-toplevel
     if name == "plugin_devices":
-        return pennylane.devices.device_constructor.plugin_devices
+        from pennylane.devices.device_constructor import plugin_devices
 
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
+        return plugin_devices
+
+    if name in submodules:
+        return _importlib.import_module(f"pennylane.{name}")
+    elif name in top_level_accessible:
+        return _importlib.import_module(f"{top_level_accessible[name]}.{name}")
+    else:
+        try:
+            return globals()[name]
+        except KeyError as exc:
+            raise AttributeError(f"module 'pennylane' has no attribute '{name}'") from exc
 
 
 def version():
