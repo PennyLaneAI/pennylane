@@ -429,11 +429,11 @@ def convert_to_su2(U, return_global_phase=False):
     batch_size = get_batch_size(U, (2, 2), 4)
     with np.errstate(divide="ignore", invalid="ignore"):
         determinant = math.linalg.det(U)
-    phase = math.angle(determinant) / 2
-    U, phase = math.cast_like(U, determinant), math.cast_like(phase, 1j)
+    global_phase = math.angle(determinant) / 2
+    U = math.cast_like(U, determinant)
     if batch_size:
-        batched_phase = math.reshape(phase, (batch_size, 1, 1))
+        batched_phase = math.reshape(global_phase, (batch_size, 1, 1))
         U = U * math.exp(-1j * batched_phase)
     else:
-        U = U * math.exp(-1j * phase)
-    return (U, phase) if return_global_phase else U
+        U = U * math.exp(-1j * global_phase)
+    return (U, global_phase) if return_global_phase else U
