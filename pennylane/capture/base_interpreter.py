@@ -726,7 +726,8 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
     >>> jaxpr = jax.make_jaxpr(f)(3)
     >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     [Array([0, 1], dtype=int32)]
-    >>>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+
+    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO
 
     """
