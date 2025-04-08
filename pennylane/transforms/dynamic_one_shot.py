@@ -226,8 +226,8 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasureMP):
-            if getattr(op, "sample_dtype", None): # Only ParametricMidMeasureMP has this attribute
-                new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res), dtype=op.sample_dtype))
+            if "ParametricMidMeasureMP" in str(type(op)): # Only ParametricMidMeasureMP has this attribute
+                new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res), dtype=np.int8))
             else:
                 new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
     return qml.tape.QuantumScript(

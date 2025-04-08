@@ -158,6 +158,7 @@ class SampleMP(SampleMeasurement):
     _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
+        self._dtype = dtype
 
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
@@ -185,7 +186,6 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-        self._dtype = dtype
 
     @classmethod
     def _abstract_eval(

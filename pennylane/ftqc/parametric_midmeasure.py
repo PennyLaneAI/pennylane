@@ -346,10 +346,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
         return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
 
     @property
-    def sample_dtype(self):
-        return np.int8
-
-    @property
     def has_diagonalizing_gates(self):
         """Whether there are gates that need to be applied to diagonalize the measurement"""
         return True
