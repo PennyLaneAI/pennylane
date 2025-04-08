@@ -1048,6 +1048,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Bug fixes 🐛</h3>
 
+* Using transforms with program capture enabled now works correctly with functions that accept pytree arguments.
+  [(#)]()
+
 * `qml.math.requires_grad` no longer returns `True` for JAX inputs other than `jax.interpreters.ad.JVPTracer` instances.
   [(#)]()
 
