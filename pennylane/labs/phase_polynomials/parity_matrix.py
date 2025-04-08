@@ -13,17 +13,20 @@
 # limitations under the License.
 """Parity matrix representation"""
 
+from typing import Iterable
+
 import numpy as np
 
 import pennylane as qml
 
 
-def parity_matrix(circ, wire_order=None):
+def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Iterable = None):
     r"""
     :doc:`Parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit
 
     Args:
-        circ (qml.tape.QuantumScript):
+        circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
+        wire_order (Iterable)
 
     Returns:
         np.ndarray: :math:`n \times n` Parity matrix
@@ -41,7 +44,7 @@ def parity_matrix(circ, wire_order=None):
             qml.CNOT((0, 2)),
         ], [])
 
-        P = parity_matrix(circ)
+        P = parity_matrix(circ, wire_order=range(4))
 
     >>> P
     array([[1., 0., 0., 1.],
