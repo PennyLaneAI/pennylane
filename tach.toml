@@ -77,7 +77,6 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.io"
-depends_on = []
 layer = "core"
 
 [[modules]]
