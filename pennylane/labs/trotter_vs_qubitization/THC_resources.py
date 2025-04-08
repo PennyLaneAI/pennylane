@@ -55,13 +55,14 @@ def qubitization_order(t, epsilon, one_norm):
     """
 
     n = 0
-    theta = np.linspace(0, np.pi, 1000)
+    t *= one_norm
+    theta = np.linspace(0, np.pi, 10000)
     target = np.exp(1j*t * np.cos(theta))
     ft = jv(0, t)
     error = np.abs(target - ft)
     errormax = np.max(error)
 
-    while np.any(errormax > epsilon/one_norm):
+    while np.any(errormax > epsilon):
         n += 1
         ft += (1j)**n * jv(n, t) * np.exp(1j*n*theta)
         ft += (1j)**(-n) * jv(-n, t) * np.exp(-1j*n*theta)
@@ -76,18 +77,18 @@ def qubitization_order(t, epsilon, one_norm):
 
 # Parameters from https://arxiv.org/abs/2501.06165 for QPE
 # System: P450 
-# M = 160
-# N = 2*58
-# aleph = 13
-# beth = 13
-# one_norm = 130.9
+M = 160
+N = 2*58
+aleph = 13
+beth = 13
+one_norm = 130.9
 
 # System: FeMoco
-M = 290
-N = 2*76
-aleph = 15
-beth = 16
-one_norm = 198.9
+#M = 290
+#N = 2*76
+#aleph = 15
+#beth = 16
+#one_norm = 198.9
 
 
 epsilon = 1e-3
@@ -95,7 +96,6 @@ time = 1e3
 br = 7
 
 
-a = np.pi*one_norm/(2*epsilon)
 qpe_cost = Toffoli_cost(N, M, aleph, beth, br) * np.pi*one_norm/(2*epsilon)
 print(f'QPE cost: {qpe_cost:.2e}')
 qubit_cost = qubit_cost(N, M, aleph, beth, br)

@@ -114,10 +114,14 @@ def scientific_notation(num):
     coef = num / 10**exp
     return f"${coef:.2f} \\times 10^{{{exp}}}$"
 
+print('System: P450')
 N = 58
-order = 2
+
+print('QPE')
+order = 4
 Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
 Y2kp1dN2 = 1e-2
+time = 1e3
 
 alg_t = Tgates_per_rot * np.sum([QPE_cost(N, order, Y2kp1dN2)[k] for k in ['RZ', 'RX', 'RY']])
 print(f'Number of T gates in algorithm = {scientific_notation(alg_t)}')
@@ -136,5 +140,13 @@ def simulation_time(N, order, time, Y2kp1dN2 = 1, epsilon = 1e-3):
     rotations = Trotter_cost(N, order)
 
     for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/order) * time**(1+1/order)
+        rotations[key] = value * (Y2kp1/epsilon)**(1/order) * time #**(1+1/order)
     return rotations
+
+print('Simulation')
+
+alg_t = Tgates_per_rot * np.sum([simulation_time(N, order, time)[k] for k in ['RZ', 'RX', 'RY']])
+print(f'Number of T gates in algorithm = {scientific_notation(alg_t)}')
+rotations = {k: v for k, v in simulation_time(N, order, time).items()}
+alg_av = active_volume(rotations)
+print(f'Active volume of the algorithm = {scientific_notation(alg_av)}')
