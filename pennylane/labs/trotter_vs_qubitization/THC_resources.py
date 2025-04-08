@@ -59,14 +59,17 @@ def qubitization_order(t, epsilon, one_norm):
     target = np.exp(1j*t * np.cos(theta))
     ft = jv(0, t)
     error = np.abs(target - ft)
+    errormax = np.max(error)
 
-    while np.any(error > epsilon/one_norm):
+    while np.any(errormax > epsilon/one_norm):
         n += 1
-        target += (-1j)**n * jv(n, t) * np.exp(1j*n*theta)
-        target += (-1j)**(-n) * jv(-n, t) * np.exp(-1j*n*theta)
+        ft += (1j)**n * jv(n, t) * np.exp(1j*n*theta)
+        ft += (1j)**(-n) * jv(-n, t) * np.exp(-1j*n*theta)
 
         error = np.abs(target - ft)
+        errormax = np.max(error)
 
+    print(f"Order of the polynomial: {n}")
     return n
 
 
@@ -92,7 +95,7 @@ time = 1e3
 br = 7
 
 
-
+a = np.pi*one_norm/(2*epsilon)
 qpe_cost = Toffoli_cost(N, M, aleph, beth, br) * np.pi*one_norm/(2*epsilon)
 print(f'QPE cost: {qpe_cost:.2e}')
 qubit_cost = qubit_cost(N, M, aleph, beth, br)
