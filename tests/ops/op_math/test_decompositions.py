@@ -1373,7 +1373,7 @@ class TestTwoQubitDecompositionWarnings:
             qnode(tf.constant(1.0))
 
     @pytest.mark.jax
-    def test_warning_parameterized_jax(self):
+    def test_warning_parameterized_jax(self, recwarn):
         """Test warning is raised for parameterized matrix with JAX"""
         try:
             # pylint: disable=import-outside-toplevel
@@ -1402,6 +1402,10 @@ class TestTwoQubitDecompositionWarnings:
         ):
             # Use JAX's grad to create a Tracer
             jax.grad(cost)(1.0)
+
+        # Check that no warning is raised when tracing is performed, but without differentiation
+        jax.jit(cost)(1.0)
+        assert len(recwarn) == 0
 
     def test_warning_complex_input(self):
         """Test warning is raised with complex input parameters"""

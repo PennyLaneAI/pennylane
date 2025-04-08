@@ -1044,6 +1044,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.requires_grad` no longer returns `True` for JAX inputs other than `jax.interpreters.ad.JVPTracer` instances.
+  [(#)]()
+
 * PennyLane is now compatible with `pyzx 0.9`.
   [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
 
