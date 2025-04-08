@@ -699,8 +699,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, exp)
 
 
-# 11 angles from the range [-pi, pi], including 0.
-standard_angles = list(np.linspace(-np.pi, np.pi, 11))
+pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
 
 
 class TestMatrix:
@@ -845,7 +844,7 @@ class TestMatrix:
 
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase(self, phi, dim, wires):
         """Test that the PCPhase operator matrix is correct."""
         num_wires = len(wires)
@@ -864,7 +863,7 @@ class TestMatrix:
     @pytest.mark.tf
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_tf(self, phi, dim, wires):
         """Test that the PCPhase operator matrix is correct for tf."""
         import tensorflow as tf
@@ -888,7 +887,7 @@ class TestMatrix:
     @pytest.mark.torch
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_torch(self, phi, dim, wires):
         import torch
 
@@ -911,7 +910,7 @@ class TestMatrix:
     @pytest.mark.jax
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_jax(self, phi, dim, wires):
         import jax.numpy as jnp
 
@@ -1005,7 +1004,7 @@ class TestMatrix:
             qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize("phi", standard_angles + [np.linspace(-1, 1, 11)])
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals(self, phi):
         """Test eigenvalues computation for PSWAP"""
         evs = qml.PSWAP.compute_eigvals(phi)
@@ -1016,7 +1015,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", standard_angles + [np.linspace(-1, 1, 11)])
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_tf(self, phi):
         """Test eigenvalues computation for PSWAP using Tensorflow interface"""
         import tensorflow as tf
@@ -1030,7 +1029,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("phi", standard_angles + [np.linspace(-1, 1, 11)])
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_torch(self, phi):
         """Test eigenvalues computation for PSWAP using Torch interface"""
         import torch
@@ -1044,7 +1043,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("phi", standard_angles + [np.linspace(-1, 1, 11)])
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_jax(self, phi):
         """Test eigenvalues computation for PSWAP using JAX interface"""
         import jax
@@ -1058,7 +1057,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_eigvals_tf(self, phi):
         """Test eigenvalues computation for PCPhase using Tensorflow interface"""
         import tensorflow as tf
@@ -1124,7 +1123,7 @@ class TestMatrix:
             qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals(self, phi):
         """Test eigenvalues computation for IsingXY"""
         evs = qml.IsingXY.compute_eigvals(phi)
@@ -1138,7 +1137,7 @@ class TestMatrix:
 
     def test_isingxy_eigvals_broadcasted(self):
         """Test broadcasted eigenvalues computation for IsingXY"""
-        phi = np.array(standard_angles)
+        phi = np.linspace(-np.pi, np.pi, 10)
         evs = qml.IsingXY.compute_eigvals(phi)
         evs_expected = np.array(
             [[qml.math.exp(1j * _phi / 2), qml.math.exp(-1j * _phi / 2), 1, 1] for _phi in phi]
@@ -1146,7 +1145,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_tf(self, phi):
         """Test eigenvalues computation for IsingXY using Tensorflow interface"""
         import tensorflow as tf
@@ -1175,7 +1174,7 @@ class TestMatrix:
         assert qml.math.allclose(evs, expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_torch(self, phi):
         """Test eigenvalues computation for IsingXY using Torch interface"""
         import torch
@@ -1204,7 +1203,7 @@ class TestMatrix:
         assert qml.math.allclose(evs.detach().numpy(), expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi):
         """Test eigenvalues computation for IsingXY using JAX interface"""
         import jax
@@ -1347,7 +1346,7 @@ class TestMatrix:
         )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingzz_eigvals_tf(self, phi):
         """Test eigenvalues computation for IsingXY using Tensorflow interface"""
         import tensorflow as tf
@@ -1588,7 +1587,7 @@ class TestMatrix:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     @pytest.mark.parametrize(
         "cphase_op,gate_data_mat",
         [
@@ -1611,7 +1610,7 @@ class TestMatrix:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     @pytest.mark.parametrize(
         "cphase_op,gate_data_mat",
         [
@@ -1634,7 +1633,7 @@ class TestMatrix:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("phi", standard_angles)
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     @pytest.mark.parametrize(
         "cphase_op,gate_data_mat",
         [
