@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/phase_polynomials/parity_matrix.py"""
+from itertools import permutations
 
 import numpy as np
 import pytest
@@ -62,3 +63,10 @@ def test_parity_matrix_with_string_wires():
     P_re = parity_matrix(circ1_letters, wire_order=wire_order1)
 
     assert np.allclose(P_re, P1)
+
+
+@pytest.mark.parametrize("wire_order", list(permutations(range(4), 4)))
+def test_parity_matrix_wire_order(wire_order):
+    """Test wire_order works as expected"""
+    P1_re = parity_matrix(circ1, wire_order=wire_order)
+    assert np.allclose(P1_re[np.argsort(wire_order)][:, np.argsort(wire_order)], P1)
