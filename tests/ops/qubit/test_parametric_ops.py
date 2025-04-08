@@ -698,8 +698,10 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, exp)
 
+
 # 11 angles from the range [-pi, pi], including 0.
 standard_angles = list(np.linspace(-np.pi, np.pi, 11))
+
 
 class TestMatrix:
     def test_phase_shift(self, tol):
