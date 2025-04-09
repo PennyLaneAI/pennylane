@@ -128,9 +128,9 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
 
-            >>> workflow(2)
-            (Array([1., 1., 1., 1., 2., 2., 4., 4.], dtype=float32),
-            Array([8., 8.], dtype=float32))
+        >>> workflow(2)
+        (Array([1., 1., 1., 1., 2., 2., 4., 4.], dtype=float32),
+        Array([8., 8.], dtype=float32))
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -150,8 +150,8 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
 
-            >>> workflow(2)
-            (Array([8., 8.], dtype=float32), Array([8., 8.], dtype=float32))
+        >>> workflow(2)
+        (Array([8., 8.], dtype=float32), Array([8., 8.], dtype=float32))
 
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
