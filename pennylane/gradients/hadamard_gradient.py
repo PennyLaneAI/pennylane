@@ -337,7 +337,7 @@ def hadamard_grad(
 
         **Reversed direct mode**
 
-        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"revered"`` modes,
+        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"reversed"`` modes,
         where the role of the observable and the generators of the unitary operations in the circuit
         swap, and the additional auxiliary qubit is exchanged for additional circuit executions:
 
