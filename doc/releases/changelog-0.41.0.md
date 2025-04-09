@@ -423,7 +423,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 Quantum Read-Only Memory (QROM) isn't just useful for loading bitstrings.
 It can be leveraged to prepare entire quantum states!
 
-* Added template :class:`qml.QROMStatePreparation <pennlyane.QROMStatePreparation>` that prepares arbitrary states using `qml.QROM`.
+* Added template :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` that prepares arbitrary states using `qml.QROM`.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
 
   ```python
@@ -447,7 +447,7 @@ It can be leveraged to prepare entire quantum states!
 
 <h4>Dynamical Lie Algebras 🕓</h4>
 
-* Created a new `qml.liealg` module for Lie algebra functionality.
+* Created a new :mod:`qml.liealg <pennylane.liealg>` module for Lie algebra functionality.
 
   `qml.liealg.cartan_decomp` allows to perform Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module, in particular the following:
