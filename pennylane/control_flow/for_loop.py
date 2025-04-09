@@ -140,6 +140,7 @@ def for_loop(
         an experimental jax mode that can be turned on with:
 
         >>> import jax
+        >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
         >>> qml.capture.enable()
 
@@ -154,11 +155,15 @@ def for_loop(
 
             @qml.for_loop(3, allow_array_resizing=True)
             def f(i, x, y):
-                return jax.numpy.hstack([x, y]), 2*y
+                return jnp.hstack([x, y]), 2*y
 
             def workflow(i0):
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
+
+        >>> workflow(2)
+        (Array([1., 1., 1., 1., 2., 2., 4., 4.], dtype=float32),
+        Array([8., 8.], dtype=float32))
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -177,6 +182,9 @@ def for_loop(
                 x0 = jnp.ones(i0)
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
+
+        >>> workflow(2)
+        (Array([8., 8.], dtype=float32), Array([8., 8.], dtype=float32))
 
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
