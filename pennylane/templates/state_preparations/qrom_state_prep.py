@@ -65,6 +65,7 @@ class QROMStatePreparation(Operation):
     **Example**
 
     .. code-block::
+
         import numpy as np
 
         probs_vector = np.array([0.5, 0., 0.25, 0.25])
