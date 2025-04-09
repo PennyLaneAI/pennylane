@@ -290,87 +290,100 @@ core features of PennyLane—and more—are available with program capture enabl
 
   Support for this can be disabled by setting `autograph=False` at the QNode level (by default, `autograph=True`).
 
-* Dynamically shaped arrays are now supported with program capture by adding `jax.config.update("jax_dynamic_shapes", True)`
-  to the top of your program.
-  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
-  [(#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
-  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
-
-
-
-
-* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
-  when capture is enabled.
-  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
-  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
-* `qml.cond` can return arrays with dynamic shapes.
-  [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
-  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
-* `cond`, `adjoint`, `ctrl`, and the `QNode` can now handle accepting dynamically
-  shaped arrays with the abstract shape matching another argument.
-  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
-
-* The higher order primitives in program capture can now accept inputs with abstract shapes.
-* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
-  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
-  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-
-* Execution
-* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
-  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
-  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
-  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
-* Device preprocessing is now being performed in the execution pipeline for program capture.
-  [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
-  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
-  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
-  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
-* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
-  should be considered static when capturing the quantum program.
-  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
-
-
-
-
-
-* MCMs
-* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
-  `qml.defer_measurements` can be executed on `default.qubit`.
+* QNodes can now contain mid-circuit measurements (MCMs) and classical processing on MCMs with `mcm_method = "deferred"` 
+  when program capture is enabled.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
   [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
   [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
 
-  Using `qml.defer_measurements` with program capture enables many new features, including:
-  * Significantly richer variety of classical processing on mid-circuit measurement values.
-  * Using mid-circuit measurement values as gate parameters.
-
-  Functions such as the following can now be captured:
+  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed when program
+  capture enabled. Additionally, program capture unlocks the ability to classically process MCM values
+  and use MCM values as gata parameters.
 
   ```python
+  import jax 
   import jax.numpy as jnp
+  jax.config.update("jax_enable_x64", True)
 
   qml.capture.enable()
 
+  @qml.qnode(qml.device("default.qubit", wires=3), mcm_method="deferred")
   def f(x):
       m0 = qml.measure(0)
       m1 = qml.measure(0)
+
+      # classical processing
       a = jnp.sin(0.5 * jnp.pi * m0)
       phi = a - (m1 + 1) ** 4
 
-      qml.s_prod(x, qml.RZ(phi, 0))
+      qml.s_prod(x.astype(float), qml.RX(phi, 0))
 
       return qml.expval(qml.Z(0))
   ```
 
-* Gradients
-* With program capture enabled, `QNode`'s can now be differentiated with `diff_method="finite-diff"`.
+  ```pycon
+  >>> f(0.1)
+  Array(0.00540302, dtype=float64)
+  ```
+
+  Note that, with capture enabled, the number of wires given to the device must coincide with how many
+  MCMs are present in the circuit, since deferred-measurements adds one auxiliary qubit per MCM.
+
+* Quantum circuits can now be differentiated on `default.qubit` and `lightning.qubit` with 
+  `diff_method="finite-diff"`, `"adjoint"`, and `"backprop"` when program capture is enabled.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-* Device-provided derivatives are integrated into the program capture pipeline.
-  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
+  def f(phi):
+      qml.RX(phi, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> qml.grad(f)(jnp.array(0.1))
+  Array(-0.09983342, dtype=float64, weak_type=True)
+  ```
+
+* QNode arguments can now be assigned as static. In turn, PennyLane can now smartly determine when plxpr 
+  needs to be reconstructed based on dynamic and static arguments, providing efficiency when repeatedly
+  executing a circuit.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+  Specifying static arguments can be done at the QNode level with the `static_argnums` keyword argument.
+  Its values (integers) indicate which arguments are to be treated as static. By default, all QNode
+  arguments are dynamic. Consider the following example, where the first argument is indicated to be 
+  static:
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1), static_argnums=0)
+  def f(x, y):
+      print("I constructed plxpr")
+      qml.RX(x, 0)
+      qml.RY(y, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  When the value of `x` changes, PennyLane must (re)construct the plxpr representation of the program
+  in order for the program top execute. However, if the value of `y` changes (a dynamic argument), PennyLane
+  does not need to reconstruct the plxpr representation of the program:
+
+  ```pycon
+  >>> f(0.1, 0.2)
+  I constructed plxpr
+  0.97517043
+  >>> f(0.1, 0.3) 
+  0.9505638
+  >>> f(0.2, 0.3)
+  I constructed plxpr
+  0.93629336
+  ```
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
@@ -715,6 +728,43 @@ core features of PennyLane—and more—are available with program capture enabl
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
+
+<h4>Program capture and dynamic shapes</h4>
+
+* The sizes of dynamically shaped arrays can now be updated in a `qml.while_loop` and `qml.for_loop` 
+  when capture is enabled.
+  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
+  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
+
+* `qml.cond` can return arrays with dynamic shapes.
+  [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
+
+* `qml.cond`, `qml.adjoint`, `qml.ctrl`, and the QNode can now handle accepting dynamically shaped arrays 
+  with the abstract shape matching another argument.
+  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
+
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` 
+  that can handle the creation of arrays with dynamic shapes.
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic 
+  shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
+
+* Device preprocessing is now being performed in the execution pipeline for program capture.
+  [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
+  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
+  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 <h4>Other improvements</h4>
 
