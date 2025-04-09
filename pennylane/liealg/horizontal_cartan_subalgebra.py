@@ -495,6 +495,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
+    >>> import numpy as np
     >>> from pennylane.liealg import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
@@ -509,7 +510,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     transform the old adjoint representation with the change of basis matrix.
 
     >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
-    np.allclose(new_adj, new_adj_re)
+    >>> np.allclose(new_adj, new_adj_re)
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
     new_adj = qml.math.einsum("mnp,im->inp", adj, qml.math.linalg.pinv(basis_change.T))
