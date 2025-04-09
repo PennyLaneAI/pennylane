@@ -414,28 +414,27 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   (3, 2)	1
   ```
 
-* All operators that support `Operator.sparse_matrix` can now choose a format for the sparse matrix
-  and support the wire_order parameter [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995).
+* All operators that support `Operator.sparse_matrix` can now choose a format for the sparse matrix and support the wire_order parameter [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995).
 
-```pycon
->>> op = qml.CNOT([0,1])
->>> type(op.sparse_matrix(format='dok'))
-scipy.sparse._dok.dok_matrix
->>> type(op.sparse_matrix(format='csc'))
-scipy.sparse._csc.csc_matrix
->>> print(op.sparse_matrix(wire_order=[1,0]))
-(0, 0)	1.0
-(1, 3)	1.0
-(2, 2)	1.0
-(3, 1)	1.0
->>> print(op.sparse_matrix(wire_order=[0,1]))
-(0, 0)	1
-(1, 1)	1
-(2, 3)	1
-(3, 2)	1
-```
+  ```pycon
+  >>> op = qml.CNOT([0,1])
+  >>> type(op.sparse_matrix(format='dok'))
+  scipy.sparse._dok.dok_matrix
+  >>> type(op.sparse_matrix(format='csc'))
+  scipy.sparse._csc.csc_matrix
+  >>> print(op.sparse_matrix(wire_order=[1,0]))
+  (0, 0)	1.0
+  (1, 3)	1.0
+  (2, 2)	1.0
+  (3, 1)	1.0
+  >>> print(op.sparse_matrix(wire_order=[0,1]))
+  (0, 0)	1
+  (1, 1)	1
+  (2, 3)	1
+  (3, 2)	1
+  ```
 
-* Sparse objects are now handled better in `qml.math`:
+* Sparse objects are now supported in `qml.math`:
 
   * `qml.math.sqrt_matrix_sparse` is available to compute the square root of a sparse Hermitian matrix.
     [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
