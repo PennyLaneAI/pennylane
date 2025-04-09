@@ -4,7 +4,7 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-A new, experimental graph-based decomposition system is now available in PennyLane, offering a more resource-efficiency and versatility.
+A new, experimental graph-based decomposition system is now available in PennyLane, offering more resource-efficiency and versatility.
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
@@ -43,9 +43,8 @@ new features are available:
   ```
 
   When an operator within a circuit needs to be decomposed (e.g., when 
-  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen decomposition 
-  rule is that which leads to the most resource efficient set of gates (e.g., the least amount of gates 
-  produced).
+  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen
+decomposition rule is that which is most resource efficient (results in the smallest gate count).
 
 * New decomposition rules can be globally added to operators in PennyLane with the new 
   :func:`qml.add_decomps <pennylane.add_decomps>` function. Creating a valid decomposition rule requires:
@@ -118,10 +117,10 @@ new features are available:
   in QNodes.
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
 
-  The with graph-based system enabled, the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
+  With the graph-based system enabled, the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
   transform offers the ability to inject new decomposition rules via two new keyword arguments:
 
-  * `fixed_decomps`: decomposition rules provided to this keyword argument are guaranteed to be used 
+  * `fixed_decomps`: decomposition rules provided to this keyword argument will be used 
     by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
   * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
     rules that the new system may choose if they're the most resource efficient.
