@@ -449,22 +449,11 @@ It can be leveraged to prepare entire quantum states!
 
 * Created a new :mod:`qml.liealg <pennylane.liealg>` module for Lie algebra functionality.
 
-  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
+  :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module, in particular the following:
 
   ```
-  even_odd_involution
-  concurrence_involution
-  A
-  AI
-  AII
-  AIII
-  BD
-  BDI
-  DIII
-  C
-  CI
-  CII
+  even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII
   ```
 
   ```pycon
@@ -476,20 +465,22 @@ It can be leveraged to prepare entire quantum states!
    [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
   ```
 
-  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
+  The vertical subspace `k` and `m` fulfill the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition.
+  These can be verified using the function :func:`qml.liealg.check_cartan_decomp <pennylane.liealg.check_cartan_decomp>`.
 
   ```pycon
-  >>> qml.liealg.check_cartan_decomp(k, m) # check Cartan commutation relations
+  >>> qml.liealg.check_cartan_decomp(k, m)
   True
   ```
 
-  `qml.liealg.horizontal_cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
+  :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>` computes a horizontal Cartan subalgebra `a` of `m`.
 
   ```pycon
   >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
   ```
 
-  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
+  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
+  and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
 
   ```pycon
   >>> qml.liealg.check_abelian(a)
@@ -500,7 +491,7 @@ It can be leveraged to prepare entire quantum states!
   * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
 
-  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to their adjoint vector representations and back.
+  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
 
   * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
 
@@ -509,8 +500,8 @@ It can be leveraged to prepare entire quantum states!
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
   [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
-* ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
-  Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
+* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.
+  Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 * Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
