@@ -349,27 +349,57 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
-Many times, quantum operators and states are sparse. Why not exploit this to save
-memory and increase simulation speed? PennyLane v0.41 adds new functionality to allow working with
-sparse computational objects like the compressed sparse row (csr) array. We can use these to
-represent matrices and states for savings on memory usage and computational time.
+PennyLane v0.41 adds functionality to use sparse computational objects like the compressed sparse
+row (csr) array to represent matrices and states for savings on memory usage and computational time.
 
-Additional operators now support sparse representation:
+* `default.qubit` now applies sparse matrices directly to the state vector under-the-hood, resulting
+  in faster execution for large sparse objects [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+  ```python
+  mat = np.kron(np.identity(2**12), qml.X.compute_matrix())
+  sparse_mat = sp.sparse.csr_array(mat)
 
-  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
-* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
-  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
-  [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-* `qml.SWAP` now has sparse representation.
-  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-* `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
-  [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
-  [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
-  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-* `Controlled` sparse supports `wire_order` configuration.
-  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
-* `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
-  [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev)
+  def circuit(mat):
+      qml.QubitUnitary(sparse_mat, wires=range(13))
+      return qml.state()
+  ```
+
+* Expanded support for sparse representation in operators, including:
+  * `qml.StatePrep` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  * `qml.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
+  * `qml.SWAP` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * `qml.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  * `Controlled` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+   ```python
+    import scipy
+
+    sparse_state = scipy.sparse.csr_array([0,1,0,0])
+    sparse_mat = scipy.sparse.csr_array(np.identity(2))
+
+    dev = qml.device('default.qubit')
+    @qml.qnode(dev)
+    def circuit():
+        qml.StatePrep(sparse_state, wires=range(2))
+        qml.QubitUnitary(sparse_mat, wires=range(1))
+        qml.ctrl(qml.QubitUnitary(sparse_mat,wires=0),control=1)
+        return qml.state()
+    ```
+    ```pycon
+    >>> circuit()
+    array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j])
+    >>> op = qml.SWAP
+    >>> print(type(qml.matrix(op)))
+    <class 'scipy.sparse._coo.coo_matrix'>
+    >>> print(qml.matrix(op))
+    (0, 0)	1.0
+    (1, 1)	1.0
+    (2, 2)	-1.0
+    (3, 3)	-1.0
+    >>> type(qml.SWAP(wires=[0,1]).sparse_matrix())
+    scipy.sparse._csr.csr_matrix
+    ```
+    
 
   ```pycon
   >>> import scipy as sp
@@ -384,10 +414,10 @@ Additional operators now support sparse representation:
     (0, 2)        1.0
   ```
 
-And all operators can now choose a format for the sparse matrix that supports the wire_order parameter.
+* All operators can now choose a format for the sparse matrix that supports the wire_order parameter.
 
 * `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
-  with the default being `'csr'`
+  with the default being `'csr'` [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
 ```pycon
 >>> print(qml.PauliX(0).matrix())
@@ -423,19 +453,15 @@ array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
 array([0.+0.j, 1.+0.j])
 ```
 
+* Additional support for sparsity in `qml.math`
 
-* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
-  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+  * Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
+    [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
 
 
-* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
-  handle sparse matrices.
-  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
-
-* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
-  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
-  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
-  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+  * Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
+    handle sparse matrices.
+    [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 <h4>QROM State Preparation 📖</h4>
 
