@@ -1353,7 +1353,7 @@ class MultiControlledX(ControlledOp):
 
     .. note::
 
-        If ``qml.MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
+        If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
         three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 and 7.3 of
         `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. These methods
