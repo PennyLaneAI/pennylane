@@ -152,7 +152,7 @@ def hadamard_grad(
 
     >>> import jax
     >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard"})
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
