@@ -77,29 +77,32 @@ def qubitization_order(t, epsilon, one_norm):
 
 # Parameters from https://arxiv.org/abs/2501.06165 for QPE
 # System: P450 
-M = 160
-N = 2*58
-aleph = 13
-beth = 13
-one_norm = 130.9
+#M = 160
+#N = 2*58
+#aleph = 13
+#beth = 13
+#one_norm = 130.9
 
 # System: FeMoco
-#M = 290
-#N = 2*76
-#aleph = 15
-#beth = 16
-#one_norm = 198.9
+M = 290
+N = 2*76
+aleph = 15
+beth = 16
+one_norm = 198.9
 
 
 epsilon = 1e-3
 time = 1e3
 br = 7
 
+# One step
+toffoli = Toffoli_cost(N, M, aleph, beth, br) * 4
+print(f'Tgate cost one step: {toffoli:.2e}')
 
-qpe_cost = Toffoli_cost(N, M, aleph, beth, br) * np.pi*one_norm/(2*epsilon)
+qpe_cost = Toffoli_cost(N, M, aleph, beth, br) * np.pi*one_norm/(2*epsilon) * 4
 print(f'QPE cost: {qpe_cost:.2e}')
 qubit_cost = qubit_cost(N, M, aleph, beth, br)
 print(f'Qubit cost: {qubit_cost:.2e}')
-simulation_cost = Toffoli_cost(N, M, aleph, beth, br) * qubitization_order(time, epsilon, one_norm)
+simulation_cost = Toffoli_cost(N, M, aleph, beth, br) * qubitization_order(time, epsilon, one_norm) * 4
 print(f'Simulation cost: {simulation_cost:.2e}')
 

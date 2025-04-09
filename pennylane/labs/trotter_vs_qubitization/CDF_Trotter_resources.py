@@ -1,5 +1,20 @@
 import numpy as np
 
+print('System: FeMoco')
+N = 2*76
+Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
+order = 4
+Y2kp1dN2 = 1
+time = 1e3
+
+def scientific_notation(num):
+    """Convert number to LaTeX scientific notation"""
+    if num == 0:
+        return "$0$"
+    exp = int(np.floor(np.log10(abs(num))))
+    coef = num / 10**exp
+    return f"${coef:.2f} \\times 10^{{{exp}}}$"
+
 
 def CDF_terms(N): return N
 
@@ -94,6 +109,13 @@ def active_volume(rotations: dict) -> float:
 
     return av
 
+alg_t = Tgates_per_rot * np.sum([Trotter_cost(N, order)[k] for k in ['RZ', 'RX', 'RY']])
+print(f'Number of T gates per step = {scientific_notation(alg_t)}')
+rotations = {k: v for k, v in Trotter_cost(N, order).items()}
+alg_av = active_volume(rotations)
+print(f'Active volume of per step = {scientific_notation(alg_av)}')
+
+
 def QPE_cost(N, order, Y2kp1dN2 = 1, epsilon = 1e-3):
     r"""
     This function computes the cost of implementing a QPE step for a given number of spatial orbitals.
@@ -103,31 +125,45 @@ def QPE_cost(N, order, Y2kp1dN2 = 1, epsilon = 1e-3):
     Y2kp1 = Y2kp1dN2 * N**2
     rotations = Trotter_cost(N, order)
     for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/(order+1)) * 1/epsilon
+        rotations[key] = value * (Y2kp1/epsilon)**(1/(order+1)) * 1/epsilon * np.pi/2
     return rotations
 
-def scientific_notation(num):
-    """Convert number to LaTeX scientific notation"""
-    if num == 0:
-        return "$0$"
-    exp = int(np.floor(np.log10(abs(num))))
-    coef = num / 10**exp
-    return f"${coef:.2f} \\times 10^{{{exp}}}$"
 
-print('System: FeMoco')
-N = 2*76
 
 print('QPE')
-order = 4
-Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
-Y2kp1dN2 = 1
-time = 1e3
+
 
 alg_t = Tgates_per_rot * np.sum([QPE_cost(N, order, Y2kp1dN2)[k] for k in ['RZ', 'RX', 'RY']])
 print(f'Number of T gates in algorithm = {scientific_notation(alg_t)}')
 rotations = {k: v for k, v in QPE_cost(N, order, Y2kp1dN2).items()}
 alg_av = active_volume(rotations)
 print(f'Active volume of the algorithm = {scientific_notation(alg_av)}')
+
+def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
+    r"""
+    This function computes the cost of implementing a QPE step for a given number of spatial orbitals.
+    N is the number of spin orbitals.
+    Each CDF term contains a basis rotation and a set of CZZ gates.
+    """
+    Y2kp1 = Y2kp1dN2 * N**2
+    rotations = Trotter_cost(N, order)
+    for key, value in rotations.items():
+        rotations[key] = value * (Y2kp1/epsilon)**(1/(order)) * time
+    return rotations
+
+print('Spectroscopy simulation time')
+order = 6
+Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
+Y2kp1dN2 = 1
+time = 1e3
+epsilon = 1e-3
+
+alg_t = Tgates_per_rot * np.sum([spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2)[k] for k in ['RZ', 'RX', 'RY']])
+print(f'Number of T gates in algorithm = {scientific_notation(alg_t)}')
+rotations = {k: v for k, v in spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2).items()}
+alg_av = active_volume(rotations)
+print(f'Active volume of the algorithm = {scientific_notation(alg_av)}')
+
 
 def simulation_time(N, order, time, Y2kp1dN2 = 1, epsilon = 1e-3):
     r"""
