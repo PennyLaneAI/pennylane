@@ -1369,9 +1369,9 @@ class MultiControlledX(ControlledOp):
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
         #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
-           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
         #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
-           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
