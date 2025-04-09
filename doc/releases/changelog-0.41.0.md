@@ -578,28 +578,64 @@ Here's a quick overview:
   ```
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
 
+* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+
+<h4>Qualtran Integration 🔗</h4>
+
+<h4>Hadamard Gradient Variants and Improvements 🌈</h4>
+
+* Variants of the Hadamard gradient outlined in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406) 
+  have been added as new differentiation methods: `diff_method="reversed-hadamard"`, `"direct-hamadard"`, 
+  and `"reversed-direct-hadamard`".
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+  [(#7198)](https://github.com/PennyLaneAI/pennylane/pull/7198)\
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev, diff_method="reversed-hadamard")
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> qml.grad(circuit)(qml.numpy.array(0.5))
+  np.float64(-0.47942553860420284)
+  ```
+
+  More information on how these three new gradient methods work can be found in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406).
+
+* :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` can now differentiate anything 
+  with a generator, and can accept circuits with non-commuting measurements.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 <h3>Improvements 🛠</h3>
 
-  
-<h4>QNode improvements</h4>
+<h4>QNode execution configuration</h4>
 
-* `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
+* QNodes now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, 
+  and more. This allows for easier on-the-fly adjustments to workflows.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
-  After constructing a `QNode`,
+  After constructing a QNode,
 
   ```python
   import pennylane as qml
 
   @qml.qnode(device=qml.device("default.qubit"))
   def circuit():
-    qml.H(0)
-    qml.CNOT([0,1])
-    return qml.probs()
+      qml.H(0)
+      qml.CNOT([0,1])
+      return qml.probs()
   ```
 
-  its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
-  of updating a QNode's `diff_method`:
+  its settings can be modified with `update`, which returns a new `QNode` object (note: any arguments 
+  not specified in `update` will retain their original value). Here is an example of updating a QNode's 
+  `diff_method`:
 
   ```pycon
   >>> print(circuit.diff_method)
@@ -609,8 +645,8 @@ Here's a quick overview:
   'parameter-shift'
   ```
 
-* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
-  Users can now construct the execution configuration from a particular `QNode` instance.
+* A new helper function called `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` is now
+  available, which allows users to construct an execution configuration from a given QNode instance.
   [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
 
   ```python
@@ -622,7 +658,7 @@ Here's a quick overview:
 
   ```pycon
   >>> config = qml.workflow.construct_execution_config(circuit)(1)
-  >>> pprint.pprint(config)
+  >>> print(config)
   ExecutionConfig(grad_on_execution=False,
                   use_device_gradient=True,
                   use_device_jacobian_product=False,
@@ -637,67 +673,53 @@ Here's a quick overview:
                   convert_to_numpy=True)
   ```
 
-* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
+* QNodes now store their `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
 <h4>Decompositions</h4>
 
-* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+* The decomposition of a single-qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
   
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
-* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
+* A new decomposition for multi-controlled global phases that uses a one less controlled phase shift
+  has been added.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
 
-* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
-  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly 
+  impacts the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` 
+  gates.
   [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
 
-* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
-  The `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical form.
+* `qml.MPSPrep` now has a gate decomposition. This enables its use with any device. Additionally, the 
+  `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical 
+  form.
   [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
 
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
-* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all 
+  operators that can be decomposed.
   [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
 
-* The `assert_valid` method now validates that an operator's decomposition does not contain 
-  the operator itself, instead of checking that it does not contain any operators of the same class as the operator.
+* The `assert_valid` method now validates that an operator's decomposition does not contain the operator 
+  itself, instead of checking that it does not contain any operators of the same class as the operator.
   [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
 
-<h4>Better drawing functionality</h4>
+<h4>Improved drawing</h4>
 
 * `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
    [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
 
-* `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
-  changing the represented circuit.
+* `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace 
+  without changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
 
-* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+* `qml.PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
-
-<h4>Gradients and differentiability</h4>
-
-* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
-  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
-
-* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
-  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
-
-* The coefficients of observables now have improved differentiability.
-  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
-
-* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
-  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
-
-* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
-  function.
-  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
 
 <h4>Device improvements</h4>
 
@@ -797,6 +819,16 @@ Here's a quick overview:
   [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 <h4>Other improvements</h4>
+
+* The coefficients of observables now have improved differentiability.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
+* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
+* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
+  function.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
 
 * The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
   dedicated documentation.
