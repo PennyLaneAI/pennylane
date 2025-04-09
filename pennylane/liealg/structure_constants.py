@@ -74,7 +74,7 @@ def structure_constants(
 
     Let us first generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> from pennylane import liealg, math 
+    >>> from pennylane import liealg, math
     >>> from pennylane import X, Y, Z, I
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
