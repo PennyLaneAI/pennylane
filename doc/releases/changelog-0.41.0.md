@@ -2,29 +2,33 @@
 
 # Release 0.41.0 (current release)
 
-<h4>Resource-efficient decompositions 🔎</h4>
+<h4>Resource-efficient Decompositions 🔎</h4>
 
-A new, experimental graph-based decomposition system is now available in PennyLane under the `qml.decomposition` 
-module. 
+A new, experimental graph-based decomposition system is now available in PennyLane, offering more resource-efficiency and versatility.
 [(#6950)](https://github.com/PennyLaneAI/pennylane/pull/6950)
+[(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
 [(#6952)](https://github.com/PennyLaneAI/pennylane/pull/6952)
+[(#7028)](https://github.com/PennyLaneAI/pennylane/pull/7028)
 [(#7045)](https://github.com/PennyLaneAI/pennylane/pull/7045)
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
-[(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+[(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
+[(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
 
-PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
-better resource efficiency and versatility by traversing an internal graph structure that is weighted 
-by the resources (e.g., gate counts) required to decompose down to a given set of gates. 
+PennyLane's new experimental graph decomposition system offers a resource-efficient and versatile alternative 
+to the current system. This is done by traversing an internal graph structure that is weighted by the 
+resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
-This new system is experimental and is disabled by default, but it can be enabled by adding `qml.decompositions.enable_graph()` 
-to the top of your program. Conversely, `qml.decompositions.disable_graph` disables the new system from 
-being active.
+The graph-based system is experimental and is disabled by default, but it can be enabled by adding 
+:func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>` to the top of your 
+program. Conversely, :func:`qml.decompositions.disable_graph() <pennylane.decompositions.disable_graph>` 
+disables the new system from being active.
 
-With `qml.decompositions.enable_graph()`, the following new features are available:
+With :func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>`, the following 
+new features are available:
 
 * Operators in PennyLane can now accommodate multiple decompositions, which can be queried with the 
-  new `qml.list_decomps` function:
+  new :func:`qml.list_decomps <pennylane.list_decomps>` function:
 
   ```pycon
   >>> import pennylane as qml
@@ -38,17 +42,17 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
 
-  When an operator within a circuit needs to be decomposed (e.g., when `qml.transforms.decompose` is 
-  present), the chosen decomposition rule is that which leads to the most resource efficient set of 
-  gates (i.e., the least amount of gates produced).
+  When an operator within a circuit needs to be decomposed (e.g., when 
+  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen
+decomposition rule is that which is most resource efficient (results in the smallest gate count).
 
-* New decomposition rules can be globally added to operators in PennyLane with the new `qml.add_decomps` 
-  function. Creating a valid decomposition rule requires:
+* New decomposition rules can be globally added to operators in PennyLane with the new 
+  :func:`qml.add_decomps <pennylane.add_decomps>` function. Creating a valid decomposition rule requires:
 
   * Defining quantum function that represents the decomposition.
   * Adding resource requirements (gate counts) to the above quantum function by decorating it with the 
-    new `qml.register_resources` function, which requires a dictionary mapping operator types present 
-    in the quantum function to their number of occurrences.
+    new :func:`qml.register_resources <pennylane.register_resources>` function, which requires a dictionary 
+    mapping operator types present in the quantum function to their number of occurrences.
 
   ```python
   qml.decomposition.enable_graph()
@@ -75,8 +79,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   ```
 
   Operators with dynamic resource requirements must be declared in a resource estimate using the new
-  `qml.resource_rep` function. For each operator class, the set of parameters that affects the type 
-  of gates and their number of occurrences in its decompositions is given by the `resource_keys` attribute.
+  :func:`qml.resource_rep <pennylane.resource_rep>` function. For each operator class, the set of parameters 
+  that affects the type of gates and their number of occurrences in its decompositions is given by the 
+  `resource_keys` attribute.
 
   ```pycon
   >>> qml.MultiRZ.resource_keys
@@ -104,19 +109,22 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
       qml.MultiRZ(theta, wires=wires[:3])
   ```
 
-  More information for defining complex decomposition rules can be found in the documentation for `qml.register_resources`.
+  More information for defining complex decomposition rules can be found in the documentation for 
+  :func:`qml.register_resources <pennylane.register_resources>`.
 
-* The `qml.transforms.decompose` transform works when the new decompositions system is enabled, and 
-  offers the ability to inject new decomposition rules via two new keyword arguments:
+* The :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform works when the new 
+  decompositions system is enabled and offers the ability to inject new decomposition rules for operators
+  in QNodes.
+  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
 
-  * `fixed_decomps`: decomposition rules provided to this keyword argument are guaranteed to be used 
+  With the graph-based system enabled, the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
+  transform offers the ability to inject new decomposition rules via two new keyword arguments:
+
+  * `fixed_decomps`: decomposition rules provided to this keyword argument will be used 
     by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
   * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
     rules that the new system may choose if they're the most resource efficient.
-  [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
-  [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
-  [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
-
+  
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
 
@@ -154,49 +162,55 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
         8.83177008e-17-2.94392336e-17j,  5.44955495e-18-2.47403959e-01j])
   ```
 
-  More details about using `fixed_decomps` and `alt_decomps` can be found in the usage details section
-  in the `qml.transforms.decompose` documentation.
+  More details about what `fixed_decomps` and `alt_decomps` do can be found in the usage details section
+  in the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` documentation.
 
 <h4>Capturing and Representing Hybrid Programs 📥</h4>
 
-* Transformations can now be directly applied to a `QNode` with program capture enabled without having
-  to use the `@qml.capture.expand_plxpr_transforms` decorator.
-  [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
+Quantum operations, classical processing, structured control flow, and dynamicism can be efficiently 
+expressed with *program capture* (enabled with :func:`qml.capture.enable <pennylane.capture.enable>`).
 
-* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled by setting
-  `autograph=True` at the QNode level.
-  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
+In the last several releases of PennyLane, we have been working on a new and experimental feature called 
+*program capture*, which allows for compactly expressing details about hybrid workflows while 
+also providing a smoother integration with just-in-time compilation frameworks like 
+[Catalyst](https://docs.pennylane.ai/projects/catalyst/en/stable/index.html) (via the :func:`~.pennylane.qjit` 
+decorator) and JAX-jit. 
 
-  ```python
-  qml.capture.enable()
-  dev = qml.device("default.qubit", wires=[0, 1, 2])
+Internally, program capture is supported by representing hybrid programs via a new intermediate representation 
+(IR) called ``plxpr``, rather than a quantum tape. The ``plxpr`` IR is an adaptation of JAX's ``jaxpr`` 
+IR.
 
-  @qml.qnode(dev, autograph=True)
-  def circuit(num_loops: int):
-      for i in range(num_loops):
-          if i % 2 == 0:
-              qml.H(i)
-          else:
-              qml.RX(1,i)
-      return qml.state()
-  ```
+There are some quirks and restrictions to be aware of, which are outlined in the :doc:`/news/program_capture_sharp_bits` 
+page. But with this release, many of the core features of PennyLane—and more!—are available with program 
+capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>` to the top of your program:
 
-  ```pycon
-  >>> print(qml.draw(circuit)(num_loops=3))
-  0: ──H────────┤  State
-  1: ──RX(1.00)─┤  State
-  2: ──H────────┤  State
-  >>> circuit(3)
-  Array([0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j,
-         0.43879125+0.j        , 0.43879125+0.j        ,
-         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
-  ```
-
-* Traditional tape transforms in PennyLane can be automatically converted to work with program capture enabled.
+* All PennyLane transforms that return one device execution are compatible with program capture, including 
+  those without a plxpr-native implementation.
+  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
+  [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+  [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
+  [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
+  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
+  [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
+  
+  The following transforms now have native support for program capture (i.e., they directly transform 
+  ``plxpr``) and can be used as you would normally use a transform in PennyLane:
 
-  As an example, here is a custom tape transform, working with capture enabled, that shifts every `qml.RX` gate to the end of the circuit:
+  * :func:`pennylane.transforms.merge_rotations`
+  * :func:`pennylane.transforms.single_qubit_fusion`
+  * :func:`pennylane.transforms.unitary_to_rot`
+  * :func:`pennylane.transforms.merge_amplitude_embedding`
+  * :func:`pennylane.transforms.commute_controlled`
+  * :func:`pennylane.transforms.decompose`
+  * :func:`pennylane.map_wires`
+  * :func:`pennylane.transforms.cancel_inverses`
+
+  Other transforms without a plxpr-native implementation are also supported by internally converting 
+  the tape implementation. As an example, here is a custom tape transform that shifts every `qml.RX` 
+  gate to the end of the circuit:
 
   ```python
   qml.capture.enable()
@@ -215,137 +229,172 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
       operations = new_ops + rxs
       new_tape = tape.copy(operations=operations)
       return [new_tape], lambda res: res[0]
-  ```
 
-  A requirement for tape transforms to be compatible with program capture is to further decorate QNodes with the experimental
-  `qml.capture.expand_plxpr_transforms` decorator.
-
-  ```python
-  @qml.capture.expand_plxpr_transforms
   @shift_rx_to_end
   @qml.qnode(qml.device("default.qubit", wires=1))
-  def circuit():
+  def circuit1():
       qml.RX(0.1, wires=0)
       qml.H(wires=0)
+      return qml.state()
+
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit2():
+      qml.H(wires=0)
+      qml.RX(0.1, wires=0)
       return qml.state()
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──H──RX(0.10)─┤  State
+  >>> circuit1() == circuit2()
+  Array([ True,  True], dtype=bool)
   ```
 
-  There are some exceptions to getting tape transforms to work with capture enabled:
-  * Transforms that return multiple tapes cannot be converted.
+  There are some exceptions to getting transforms without a plxpr-native implementation to work with 
+  capture enabled:
+  * Transforms that return multiple device executions cannot be converted.
   * Transforms that return non-trivial post-processing functions cannot be converted.
   * Transforms will fail to execute if the transformed quantum function or QNode contains:
     * `qml.cond` with dynamic parameters as predicates.
     * `qml.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
     * `qml.while_loop`.
 
-* The sizes of dynamically shaped arrays can now be updated in a `while_loop` and `for_loop`
-  when capture is enabled.
-  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
-  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
-
-* `qml.cond` can return arrays with dynamic shapes.
-  [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
-  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
-
-* `cond`, `adjoint`, `ctrl`, and the `QNode` can now handle accepting dynamically
-  shaped arrays with the abstract shape matching another argument.
-  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
-
-* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` that can handle the creation
-  of arrays with dynamic shapes.
-  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
-
-* The `qml.transforms.single_qubit_fusion` quantum transform can now be applied with program capture enabled.
-  [(#6945)](https://github.com/PennyLaneAI/pennylane/pull/6945)
-  [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
-
-* The higher order primitives in program capture can now accept inputs with abstract shapes.
-  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
-
-* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic shapes are being used.
-  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
-  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
-
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
-
-* Added class `qml.capture.transforms.CommuteControlledInterpreter` that moves commuting gates past control
-  and target qubits of controlled operations when experimental program capture is enabled.
-  It follows the same API as `qml.transforms.commute_controlled`.
-  [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
-
-* `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
-  be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
-  same shapes and data types will be able to use this cached plxpr instead of capturing the program again.
-  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
-
-* `qml.QNode` now accepts a `static_argnums` argument. This argument can be used to indicate any arguments that
-  should be considered static when capturing the quantum program.
-  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
-
-* Autograph can now be used with custom operations defined outside of the pennylane namespace.
+* Python control flow (`if/else`, `for`, `while`) is now supported when program capture is enabled.
+  [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
-* Device preprocessing is now being performed in the execution pipeline for program capture.
-  [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
-  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
-  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
-  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
+  One of the strengths of program capture is preserving a program's structure, eliminating the need 
+  to unroll control flow operations. In previous releases, this could only be accomplished by using 
+  :func:`pennylane.for_loop`, :func:`pennylane.cond`, and :func:`pennylane.while_loop`. With this release, 
+  standard Python control flow operations are now supported with program capture:
 
-* Added a class `qml.capture.transforms.MergeRotationsInterpreter` that merges rotation operators
-  following the same API as `qml.transforms.optimization.merge_rotations` when experimental program capture is enabled.
-  [(#6957)](https://github.com/PennyLaneAI/pennylane/pull/6957)
+  ```python
+  qml.capture.enable()
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-* `qml.defer_measurements` can now be used with program capture enabled. Programs transformed by
-  `qml.defer_measurements` can be executed on `default.qubit`.
+  @qml.qnode(dev)
+  def circuit(num_loops: int):
+      for i in range(num_loops):
+          if i % 2 == 0:
+              qml.H(i)
+          else:
+              qml.RX(1, i)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(num_loops=3))
+  0: ──H────────┤  State
+  1: ──RX(1.00)─┤  State
+  2: ──H────────┤  State
+  >>> circuit(3)
+  Array([0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j,
+         0.43879125+0.j        , 0.43879125+0.j        ,
+         0.        -0.23971277j, 0.        -0.23971277j], dtype=complex64)
+  ```
+
+  This is enabled internally by [diastatic-malt](https://github.com/PennyLaneAI/diastatic-malt), which 
+  is our home-brewed implementation of Autograph. 
+
+  Support for this can be disabled by setting `autograph=False` at the QNode level (by default, `autograph=True`).
+
+* QNodes can now contain mid-circuit measurements (MCMs) and classical processing on MCMs with `mcm_method = "deferred"` 
+  when program capture is enabled.
   [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
   [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
   [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
 
-  Using `qml.defer_measurements` with program capture enables many new features, including:
-  * Significantly richer variety of classical processing on mid-circuit measurement values.
-  * Using mid-circuit measurement values as gate parameters.
-
-  Functions such as the following can now be captured:
+  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed with program
+  capture enabled. Additionally, program capture unlocks the ability to classically process MCM values
+  and use MCM values as gate parameters.
 
   ```python
+  import jax 
   import jax.numpy as jnp
+  jax.config.update("jax_enable_x64", True)
 
   qml.capture.enable()
 
+  @qml.qnode(qml.device("default.qubit", wires=3), mcm_method="deferred")
   def f(x):
       m0 = qml.measure(0)
       m1 = qml.measure(0)
+
+      # classical processing on m0 and m1
       a = jnp.sin(0.5 * jnp.pi * m0)
       phi = a - (m1 + 1) ** 4
 
-      qml.s_prod(x, qml.RZ(phi, 0))
+      qml.s_prod(x, qml.RX(phi, 0))
 
       return qml.expval(qml.Z(0))
   ```
 
-* Added class `qml.capture.transforms.UnitaryToRotInterpreter` that decomposes `qml.QubitUnitary` operators
-  following the same API as `qml.transforms.unitary_to_rot` when experimental program capture is enabled.
-  [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
-  [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
+  ```pycon
+  >>> f(0.1)
+  Array(0.00540302, dtype=float64)
+  ```
 
-* Added a class `qml.capture.transforms.MergeAmplitudeEmbedding` that merges `qml.AmplitudeEmbedding` operators
-  following the same API as `qml.transforms.merge_amplitude_embedding` when experimental program capture is enabled.
-  [(#6925)](https://github.com/PennyLaneAI/pennylane/pull/6925)
+  Note that with capture enabled, automatic qubit management is not supported on devices; the number 
+  of wires given to the device must coincide with how many MCMs are present in the circuit, since 
+  deferred-measurements adds one auxiliary qubit per MCM.
 
-* With program capture enabled, `QNode`'s can now be differentiated with `diff_method="finite-diff"`.
+* Quantum circuits can now be differentiated on `default.qubit` and `lightning.qubit` with 
+  `diff_method="finite-diff"`, `"adjoint"`, and `"backprop"` when program capture is enabled.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-
-* Device-provided derivatives are integrated into the program capture pipeline.
-  `diff_method="adjoint"` can now be used with `default.qubit` when capture is enabled.
   [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
   [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
+  def f(phi):
+      qml.RX(phi, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> qml.grad(f)(jnp.array(0.1))
+  Array(-0.09983342, dtype=float64, weak_type=True)
+  ```
+
+* QNode arguments can now be assigned as static. In turn, PennyLane can now determine when plxpr 
+  needs to be reconstructed based on dynamic and static arguments, providing efficiency for repeated
+  circuit executions.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+  Specifying static arguments can be done at the QNode level with the `static_argnums` keyword argument.
+  Its values (integers) indicate which arguments are to be treated as static. By default, all QNode
+  arguments are dynamic. 
+  
+  Consider the following example, where the first argument is indicated to be static:
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1), static_argnums=0)
+  def f(x, y):
+      print("I constructed plxpr")
+      qml.RX(x, 0)
+      qml.RY(y, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  When the value of `x` changes, PennyLane must (re)construct the plxpr representation of the program
+  in order for the program top execute. In this example, the act of (re)constructing plxpr is indicated
+  by the `print` statement executing. However, if the value of `y` changes (a dynamic argument), PennyLane
+  does not need to reconstruct the plxpr representation of the program:
+
+  ```pycon
+  >>> f(0.1, 0.2)
+  I constructed plxpr
+  0.97517043
+  >>> f(0.1, 0.3)
+  0.9505638
+  >>> f(0.2, 0.3)
+  I constructed plxpr
+  0.93629336
+  ```
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
@@ -577,28 +626,59 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   ```
 
 
+<h4>Hadamard Gradient Variants and Improvements 🌈</h4>
+
+* Variants of the Hadamard gradient outlined in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406) 
+  have been added as new differentiation methods: `diff_method="reversed-hadamard"`, `"direct-hamadard"`, 
+  and `"reversed-direct-hadamard`".
+  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
+  [(#7198)](https://github.com/PennyLaneAI/pennylane/pull/7198)\
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev, diff_method="reversed-hadamard")
+  def circuit(x):
+      qml.RX(x, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> qml.grad(circuit)(qml.numpy.array(0.5))
+  np.float64(-0.47942553860420284)
+  ```
+
+  More information on how these three new gradient methods work can be found in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406).
+
+* :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` can now differentiate anything 
+  with a generator, and can accept circuits with non-commuting measurements.
+  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
+
 <h3>Improvements 🛠</h3>
 
-  
-<h4>QNode improvements</h4>
+<h4>QNode execution configuration</h4>
 
-* `QNode` objects now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, and more. This allows for easier on-the-fly adjustments to workflows. Any arguments not specified will retain their original value.
+* QNodes now have an `update` method that allows for re-configuring settings like `diff_method`, `mcm_method`, 
+  and more. This allows for easier on-the-fly adjustments to workflows.
   [(#6803)](https://github.com/PennyLaneAI/pennylane/pull/6803)
 
-  After constructing a `QNode`,
+  After constructing a QNode,
 
   ```python
   import pennylane as qml
 
   @qml.qnode(device=qml.device("default.qubit"))
   def circuit():
-    qml.H(0)
-    qml.CNOT([0,1])
-    return qml.probs()
+      qml.H(0)
+      qml.CNOT([0,1])
+      return qml.probs()
   ```
 
-  its settings can be modified with `update`, which returns a new `QNode` object. Here is an example
-  of updating a QNode's `diff_method`:
+  its settings can be modified with `update`, which returns a new `QNode` object (note: any arguments 
+  not specified in `update` will retain their original value). Here is an example of updating a QNode's 
+  `diff_method`:
 
   ```pycon
   >>> print(circuit.diff_method)
@@ -608,8 +688,8 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   'parameter-shift'
   ```
 
-* Added the `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` helper function.
-  Users can now construct the execution configuration from a particular `QNode` instance.
+* A new helper function called `qml.workflow.construct_execution_config(qnode)(*args,**kwargs)` is now
+  available, which allows users to construct an execution configuration from a given QNode instance.
   [(#6901)](https://github.com/PennyLaneAI/pennylane/pull/6901)
 
   ```python
@@ -621,7 +701,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
   ```pycon
   >>> config = qml.workflow.construct_execution_config(circuit)(1)
-  >>> pprint.pprint(config)
+  >>> print(config)
   ExecutionConfig(grad_on_execution=False,
                   use_device_gradient=True,
                   use_device_jacobian_product=False,
@@ -636,67 +716,53 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
                   convert_to_numpy=True)
   ```
 
-* The qnode primitive now stores the `ExecutionConfig` instead of `qnode_kwargs`.
+* QNodes now store their `ExecutionConfig` instead of `qnode_kwargs`.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
 <h4>Decompositions</h4>
 
-* The decomposition of a single qubit `qml.QubitUnitary` now includes the global phase.
+* The decomposition of a single-qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
   
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
-* Add a decomposition for multi-controlled global phases into a one-less-controlled phase shift.
+* A new decomposition for multi-controlled global phases that uses a one less controlled phase shift
+  has been added.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
 
-* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly impacts
-  the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` gates.
+* `qml.ops.sk_decomposition` has been improved to produce less gates for certain edge cases. This greatly 
+  impacts the performance of `qml.clifford_t_decomposition`, which should now give less extraneous `qml.T` 
+  gates.
   [(#6855)](https://github.com/PennyLaneAI/pennylane/pull/6855)
 
-* The template `MPSPrep` now has a gate decomposition. This enables its use with any device.
-  The `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical form.
+* `qml.MPSPrep` now has a gate decomposition. This enables its use with any device. Additionally, the 
+  `right_canonicalize_mps` function has also been added to transform an MPS into its right-canonical 
+  form.
   [(#6896)](https://github.com/PennyLaneAI/pennylane/pull/6896)
 
 * The `qml.clifford_t_decomposition` has been improved to use less gates when decomposing `qml.PhaseShift`.
   [(#6842)](https://github.com/PennyLaneAI/pennylane/pull/6842)
 
-* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all operators that can be decomposed.
+* An empty basis set in `qml.compile` is now recognized as valid, resulting in decomposition of all 
+  operators that can be decomposed.
   [(#6821)](https://github.com/PennyLaneAI/pennylane/pull/6821)
 
-* The `assert_valid` method now validates that an operator's decomposition does not contain 
-  the operator itself, instead of checking that it does not contain any operators of the same class as the operator.
+* The `assert_valid` method now validates that an operator's decomposition does not contain the operator 
+  itself, instead of checking that it does not contain any operators of the same class as the operator.
   [(#7099)](https://github.com/PennyLaneAI/pennylane/pull/7099)
 
-<h4>Better drawing functionality</h4>
+<h4>Improved drawing</h4>
 
 * `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
    [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
 
-* `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace without
-  changing the represented circuit.
+* `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace 
+  without changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
 
-* `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
+* `qml.PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
-
-<h4>Gradients and differentiability</h4>
-
-* Added additional Hadamard gradient modes and `"reversed"`, `"direct"`, and `"reversed-direct"` modes are now available for use with the hadamard gradient.
-  [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
-
-* `qml.gradients.hadamard_grad` can now differentiate anything with a generator, and can accept circuits with non-commuting measurements.
-  [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
-
-* The coefficients of observables now have improved differentiability.
-  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
-
-* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
-  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
-
-* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
-  function.
-  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
 
 <h4>Device improvements</h4>
 
@@ -758,7 +824,54 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
+<h4>Program capture and dynamic shapes</h4>
+
+* Workflows that create dynamically shaped arrays via `jnp.ones`, `jnp.zeros`, `jnp.arange`, and `jnp.full`
+  can now be captured.
+  [#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
+
+* Workflows wherein the sizes of dynamically shaped arrays are updated in a `qml.while_loop` or `qml.for_loop` 
+  are now capturable.
+  [(#7084)](https://github.com/PennyLaneAI/pennylane/pull/7084)
+  [(#7098)](https://github.com/PennyLaneAI/pennylane/pull/7098/)
+
+* Workflows containing `qml.cond` instances that return arrays with dynamic shapes can now be captured.
+  [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
+  [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
+
+* `qml.cond`, `qml.adjoint`, `qml.ctrl`, and QNodes can now handle accepting dynamically shaped arrays 
+  with the abstract shape matching another argument.
+  [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
+
+* A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` 
+  that can handle the creation of arrays with dynamic shapes.
+  [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* The higher order primitives in program capture can now accept inputs with abstract shapes.
+  [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
+
+* Execution interpreters and `qml.capture.eval_jaxpr` can now handle jax `pjit` primitives when dynamic 
+  shapes are being used.
+  [(#7078)](https://github.com/PennyLaneAI/pennylane/pull/7078)
+  [(#7117)](https://github.com/PennyLaneAI/pennylane/pull/7117)
+
+* Device preprocessing is now being performed in the execution pipeline for program capture.
+  [(#7057)](https://github.com/PennyLaneAI/pennylane/pull/7057)
+  [(#7089)](https://github.com/PennyLaneAI/pennylane/pull/7089)
+  [(#7131)](https://github.com/PennyLaneAI/pennylane/pull/7131)
+  [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
+
 <h4>Other improvements</h4>
+
+* The coefficients of observables now have improved differentiability.
+  [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
+
+* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+  [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
+
+* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
+  function.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
 
 * The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
   dedicated documentation.
@@ -1058,6 +1171,11 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Documentation 📝</h3>
 
+* A page on sharp bits and debugging tips has been added for PennyLane program-capture. 
+  This page is recommended to consult any time errors occur when `qml.capture.enable()` 
+  is present.
+  [(#7062)](https://github.com/PennyLaneAI/pennylane/pull/7062)
+
 * The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
   on using the new experimental decompositions system.
   [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
@@ -1223,6 +1341,7 @@ William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
+Vyom Patel,
 Andrija Paurevic,
 Justin Pickering,
 Shuli Shu,
