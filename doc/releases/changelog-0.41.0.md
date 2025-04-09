@@ -285,6 +285,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   and target qubits of controlled operations when experimental program capture is enabled.
   It follows the same API as `qml.transforms.commute_controlled`.
   [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+  [(#)]()
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
