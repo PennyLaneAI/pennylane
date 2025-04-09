@@ -532,7 +532,7 @@ def _decomposition_3_cnots(U, wires):
     D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(-alpha / 2)]
 
 
 def two_qubit_decomposition(U, wires):

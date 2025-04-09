@@ -479,6 +479,30 @@ class TestQubitUnitary:
             assert isinstance(decomp2[i], expected_gates[i])
             assert np.allclose(decomp2[i].parameters, expected_params[i], atol=1e-7)
 
+    @pytest.mark.parametrize(
+        "U",
+        [
+            (qml.matrix(qml.CRX(2, wires=[1, 0]))),
+            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),
+            (qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))),
+            (qml.matrix(qml.CRY(1, wires=[0, 1]))),
+            (qml.matrix(qml.QFT(wires=[0, 1]))),
+            (qml.matrix(qml.GroverOperator(wires=[0, 1]))),
+            (qml.matrix(qml.CRY(-1, wires=[0, 1]))),
+            (qml.matrix(qml.SWAP(wires=[0, 1]))),
+            (
+                qml.matrix(
+                    qml.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
+                )
+            ),
+        ],
+    )
+    def test_qubit_unitary_correct_global_phase(self, U):
+        """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
+
+        ops = qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+        assert qml.math.allclose(U, qml.matrix(qml.prod(*ops[::-1]), wire_order=[0, 1]), atol=1e-7)
+
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
         U = qml.IsingYY.compute_matrix(np.array([1.2, 2.3, 3.4]))
