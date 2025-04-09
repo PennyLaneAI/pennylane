@@ -502,6 +502,11 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * Cartan decompositions
 * Cartan subalgebras
 
+[(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+[(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+[(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+[(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
+
 Here's a quick overview:
 
 * :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
@@ -556,11 +561,6 @@ Here's a quick overview:
   * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
 
   * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
-
-  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
-  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
-  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
-  [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
 <h4>Qualtran Integration 🔗</h4>
 
