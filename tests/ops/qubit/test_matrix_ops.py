@@ -500,8 +500,8 @@ class TestQubitUnitary:
     def test_qubit_unitary_correct_global_phase(self, U):
         """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
 
-        ops = qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
-        assert qml.math.allclose(U, qml.matrix(qml.prod(*ops[::-1]), wire_order=[0, 1]), atol=1e-7)
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+        assert qml.math.allclose(U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
