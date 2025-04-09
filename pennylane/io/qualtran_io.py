@@ -446,8 +446,6 @@ class ToBloq(qt.Bloq):
     @cached_property
     def signature(self) -> "qt.Signature":
         num_wires = len(self.op.wires)
-        if num_wires == 1:
-            return qt.Signature([qt.Register("qubits", qt.QBit(), shape=())])
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
     def decompose_bloq(self, **kwargs):
@@ -481,7 +479,7 @@ class ToBloq(qt.Bloq):
                     soqs = np.array(soqs)
                 if in_quregs[reg.name].shape != soqs.shape:
                     raise ValueError(
-                        f"Shape {in_quregs[reg.name].shape} of cirq register "
+                        f"Shape {in_quregs[reg.name].shape} of qubit register "
                         f"{reg.name} should be {soqs.shape}."
                     )
                 qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
@@ -537,7 +535,7 @@ class ToBloq(qt.Bloq):
             cbloq = bb.finalize(**final_soqs_dict)
             return cbloq
         except:
-            raise TypeError
+            raise qt.DecomposeNotImplementedError
 
     def __str__(self):
         return "PL" + self.op.name
