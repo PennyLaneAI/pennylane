@@ -95,7 +95,7 @@ def horizontal_cartan_subalgebra(
         tol (float): Numerical tolerance for linear independence check.
         verbose (bool): Whether or not to output progress during computation.
         return_adjvec (bool): Determine the output format. If ``False``, returns operators in their original
-            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func`~op_to_adjvec` and `~adjvec_to_op`).
+            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func:`~op_to_adjvec` and :func:`~adjvec_to_op`).
         is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
             and between ``g``, ``k`` and ``m``.
 
