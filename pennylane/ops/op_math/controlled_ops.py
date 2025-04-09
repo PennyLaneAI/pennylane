@@ -1360,7 +1360,7 @@ class MultiControlledX(ControlledOp):
         require at least one work wire.
 
         The number of work wires provided determines the decomposition method used and the resulting
-        number of Toffoli gates required. When ``qml.MultiControlledX`` is controlling on :math:`n`
+        number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
         wires:
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
