@@ -648,6 +648,18 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
+        self._issparse = sp.sparse.issparse(A)
+
+    @property
+    def has_sparse_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return self._issparse
+
+    @property
+    def has_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return not self._issparse
+
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
@@ -720,6 +732,10 @@ class BlockEncode(Operation):
             u = _stack([col1, col2], h=True, like=interface)
 
         return u
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return BlockEncode.compute_matrix(*params, **hyperparams)
 
     def adjoint(self) -> "BlockEncode":
         A = self.parameters[0]
