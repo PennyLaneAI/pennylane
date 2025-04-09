@@ -453,6 +453,8 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * Cartan decompositions
 * Cartan subalgebras
 
+Here's a quick overview:
+
 * :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module, in particular the following:
 
@@ -492,24 +494,24 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   ```
 
 * :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.
-Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
-[(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+  Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
+  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
 * :func:`qml.structure_constants <pennylane.structure_constants>` now accepts and outputs matrix inputs using the `matrix` keyword.
-[(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-The following functions have also been added:
-* `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
-map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
+* The following functions have also been added:
+  * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
+  map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
 
-* `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
+  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
 
-* `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
+  * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
 
-[(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
-[(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
-[(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
-[(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
+  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+  [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
 <h4>Qualtran Integration 🔗</h4>
 
