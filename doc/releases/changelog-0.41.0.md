@@ -423,10 +423,12 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 Quantum Read-Only Memory (QROM) isn't just useful for loading bitstrings.
 It can be leveraged to prepare entire quantum states!
 
-* Added template :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` that prepares arbitrary states using `qml.QROM`.
+* A new state-of-the-art state preparation technique based on QROM is now available with the :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` template.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
 
-  ```python
+    Using :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` is analogous to using other state preparation techniques in PennyLane. 
+    
+    ```python
   state_vector = np.array([0.5, -0.5, 0.5, 0.5])
 
   dev = qml.device("default.qubit")
