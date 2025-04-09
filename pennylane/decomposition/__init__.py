@@ -143,8 +143,8 @@ arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom dec
 as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
 to the transform via these arguments.
 
-The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
+``fixed_decomps`` forces the transform to use the specified decomposition rules for
+certain operators, whereas ``alt_decomps`` is used to provide alternative decomposition rules
 for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
 In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
@@ -153,6 +153,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
 .. code-block:: python
 
+    from functools import partial
     import pennylane as qml
 
     qml.decomposition.enable_graph()
@@ -225,7 +226,12 @@ operator towards a target gate set.
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     graph.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
-    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
     <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
 

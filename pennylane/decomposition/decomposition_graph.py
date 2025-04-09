@@ -68,7 +68,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     There are also two types of directed edges: edges that connect operators to the decomposition
     rules that contain them, and edges that connect decomposition rules to the operators that they
     decompose. The edge weights represent the difference in the gate count between the two states.
-    Edges that connects decomposition rules to operators have a weight of 0 because an operator can
+    Edges that connect decomposition rules to operators have a weight of 0 because an operator can
     be replaced with its decomposition at no additional cost.
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
