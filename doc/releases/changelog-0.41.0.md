@@ -172,7 +172,7 @@ Internally, program capture is supported by representing hybrid programs via a n
 (IR) called ``plxpr``, rather than a quantum tape. The ``plxpr`` IR is an adaptation of JAX's ``jaxpr`` 
 IR.
 
-There are some quirks and restrictions to be aware of while we strive towards that ideal, which are 
+There are some quirks and restrictions to be aware of, which are 
 outlined in the :doc:`/news/program_capture_sharp_bits` page. But with this release, many of the 
 core features of PennyLane—and more—are available with program capture enabled by adding 
 :func:`qml.capture.enable <pennylane.capture.enable>` to the top of your program:
@@ -202,7 +202,7 @@ core features of PennyLane—and more—are available with program capture enabl
 
   Other transforms without a plxpr-native implementation and that return a single device execution are 
   also supported by internally converting the tape implementation. As an example, here is a custom tape 
-  transform, working with capture enabled, that shifts every `qml.RX` gate to the end of the circuit:
+  transform that shifts every `qml.RX` gate to the end of the circuit:
 
   ```python
   qml.capture.enable()
@@ -253,9 +253,9 @@ core features of PennyLane—and more—are available with program capture enabl
   [(#6837)](https://github.com/PennyLaneAI/pennylane/pull/6837)
   [(#6931)](https://github.com/PennyLaneAI/pennylane/pull/6931)
 
-  One of the values in using program capture is preserving a program's structure, which includes not 
-  unrolling control flow operations. In previous releases, this could only be accomplished by using 
-  :func:`pennylane.for_loop`, :func:`pennylane.cond`, and :func:`pennylane.while_loop`. 
+  One of the strengths of program capture is preserving a program's structure, eliminating
+  the need to unroll control flow operations. In previous releases, this could only be accomplished
+  by using :func:`pennylane.for_loop`, :func:`pennylane.cond`, and :func:`pennylane.while_loop`. 
 
   With this release, standard Python control flow operations are now supported with program capture:
 
@@ -269,7 +269,7 @@ core features of PennyLane—and more—are available with program capture enabl
           if i % 2 == 0:
               qml.H(i)
           else:
-              qml.RX(1,i)
+              qml.RX(1, i)
       return qml.state()
   ```
 
@@ -296,9 +296,9 @@ core features of PennyLane—and more—are available with program capture enabl
   [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
   [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
 
-  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed when program
+  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed with program
   capture enabled. Additionally, program capture unlocks the ability to classically process MCM values
-  and use MCM values as gata parameters.
+  and use MCM values as gate parameters.
 
   ```python
   import jax 
@@ -349,9 +349,9 @@ core features of PennyLane—and more—are available with program capture enabl
   Array(-0.09983342, dtype=float64, weak_type=True)
   ```
 
-* QNode arguments can now be assigned as static. In turn, PennyLane can now smartly determine when plxpr 
-  needs to be reconstructed based on dynamic and static arguments, providing efficiency when repeatedly
-  executing a circuit.
+* QNode arguments can now be assigned as static. In turn, PennyLane can now determine when plxpr 
+  needs to be reconstructed based on dynamic and static arguments, providing efficiency for repeated
+  circuit execution.
   [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
 
   Specifying static arguments can be done at the QNode level with the `static_argnums` keyword argument.
