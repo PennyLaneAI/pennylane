@@ -423,6 +423,25 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
 
+  ```python
+  state_vector = np.array([0.5, -0.5, 0.5, 0.5])
+
+  dev = qml.device("default.qubit")
+  wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.QROMStatePreparation(
+          state_vector, wires["state_wires"], wires["prec_wires"], wires["work_wires"]
+      )
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(circuit()[:4].real)
+  [ 0.5 -0.5  0.5  0.5]
+  ```
+
 <h4>Dynamical Lie Algebras 🕓</h4>
 
 * Created a new `qml.liealg` module for Lie algebra functionality.
