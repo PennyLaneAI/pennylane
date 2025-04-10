@@ -1412,7 +1412,7 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
     ):
         return cls._primitive.bind(
             *wires,
