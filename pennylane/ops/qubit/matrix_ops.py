@@ -695,55 +695,16 @@ class BlockEncode(Operation):
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
-        A = params[0]
-        if sp.sparse.issparse(A):
+        if sp.sparse.issparse(params[0]):
             raise qml.operation.MatrixUndefinedError(
                 "A is sparse matrix. Use sparse_matrix method instead."
             )
-        n, m, k = hyperparams["subspace"]
-        shape_a = qml.math.shape(A)
-
-        sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
-
-        def _stack(lst, h=False, like=None):
-            if like == "tensorflow":
-                axis = 1 if h else 0
-                return qml.math.concat(lst, like=like, axis=axis)
-            return qml.math.hstack(lst) if h else qml.math.vstack(lst)
-
-        interface = qml.math.get_interface(A)
-
-        if qml.math.sum(shape_a) <= 2:
-            col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
-            col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
-        else:
-            d1, d2 = shape_a
-            col1 = _stack(
-                [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
-                like=interface,
-            )
-            col2 = _stack(
-                [
-                    sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
-                    -transpose(conj(A)),
-                ],
-                like=interface,
-            )
-            u = _stack([col1, col2], h=True, like=interface)
-
-        if n + m < k:
-            r = k - (n + m)
-            col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
-            col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
-
-        return u
+        return _process_blockencode(*params, **hyperparams)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
         if sp.sparse.issparse(params[0]):
-            return BlockEncode.compute_matrix(*params, **hyperparams)
+            return _process_blockencode(*params, **hyperparams)
         raise qml.operation.SparseMatrixUndefinedError(
             "A is dense matrix. Use matrix method instead."
         )
@@ -759,3 +720,49 @@ class BlockEncode(Operation):
         cache: Optional[dict] = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
+
+
+def _process_blockencode(*params, **hyperparams):
+    """
+    Process the BlockEncode operation.
+    """
+    A = params[0]
+    n, m, k = hyperparams["subspace"]
+    shape_a = qml.math.shape(A)
+
+    sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+
+    def _stack(lst, h=False, like=None):
+        if like == "tensorflow":
+            axis = 1 if h else 0
+            return qml.math.concat(lst, like=like, axis=axis)
+        return qml.math.hstack(lst) if h else qml.math.vstack(lst)
+
+    interface = qml.math.get_interface(A)
+
+    if qml.math.sum(shape_a) <= 2:
+        col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
+        col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+    else:
+        d1, d2 = shape_a
+        col1 = _stack(
+            [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+            like=interface,
+        )
+        col2 = _stack(
+            [
+                sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                -transpose(conj(A)),
+            ],
+            like=interface,
+        )
+        u = _stack([col1, col2], h=True, like=interface)
+
+    if n + m < k:
+        r = k - (n + m)
+        col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
+        col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+
+    return u
