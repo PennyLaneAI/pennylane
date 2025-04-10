@@ -139,13 +139,13 @@ def for_loop(
             workflow function is executed. For instance, the function can be run
             directly as:
 
-            >>> workflow(2)
+            >>> arg = 2
+            >>> workflow(arg)
 
             Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
-            which captures the abstract computation graph for the given input shape. The resulting JAXPR can
-            then be manually interpreted using ``qml.capture.eval_jaxpr``:
+            which captures the abstract computation graph for the given input and generates the abstract shapes.
+            The resulting JAXPR can then be manually interpreted using ``qml.capture.eval_jaxpr``:
 
-            >>> arg = 2
             >>> jaxpr = jax.make_jaxpr(workflow)(arg)
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
