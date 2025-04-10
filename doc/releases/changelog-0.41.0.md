@@ -513,8 +513,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-
-* Added template `qml.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit.
+* Added `qml.SelectPauliRot` template that applies a sequence of uniformly controlled rotations to a target qubit.
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
 
 <h4>Qualtran Integration 🔗</h4>
