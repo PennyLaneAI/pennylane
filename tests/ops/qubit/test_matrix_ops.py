@@ -954,6 +954,20 @@ class TestBlockEncode:
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
+        ("input_matrix", "issparse"),
+        [
+            (np.array([[1, 0], [0, 1]]), False),
+            (X, False),
+            (csr_matrix([[1, 0], [0, 1]]), True),
+        ],
+    )
+    def test_property(self, input_matrix, issparse):
+        """Test that BlockEncode has the correct properties."""
+        op = qml.BlockEncode(input_matrix, wires=range(2))
+        assert op.has_matrix != issparse
+        assert op.has_sparse_matrix == issparse
+
+    @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
         [
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
