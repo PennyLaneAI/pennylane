@@ -1547,7 +1547,7 @@ class TestQNodeAutographIntegration:
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_conditional_statements(self, autograph):
-        """Test that a native Pennylane conditional statements can be used with the QNode."""
+        """Test that a native Pennylane conditional statement can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(dev, autograph=autograph)
