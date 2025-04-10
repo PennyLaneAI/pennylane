@@ -467,7 +467,11 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 
 .. code-block:: python
 
-    @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+    @partial(
+        qml.transforms.decompose, 
+        fixed_decomps={qml.CNOT: my_cnot},
+        gate_set={qml.H, qml.S, qml.T, qml.CZ},
+    )
     @qml.qnode(qml.device("default.qubit"))
     def circuit():
         qml.CNOT(wires=[0, 1])
