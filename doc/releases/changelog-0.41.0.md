@@ -726,11 +726,12 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>Experimental FTQC module</h4>
 
-* A template class, `qml.ftqc.GraphStatePrep`, is added for the Graph state construction.
+* A template class, `qml.ftqc.GraphStatePrep`, has been added for the Graph state construction.
   [(#6985)](https://github.com/PennyLaneAI/pennylane/pull/6985)
   [(#7092)](https://github.com/PennyLaneAI/pennylane/pull/7092)
 
-* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic qubit recycling.
+* A new utility module `qml.ftqc.utils` is provided, with support for functionality such as dynamic 
+  qubit recycling.
   [(#7075)](https://github.com/PennyLaneAI/pennylane/pull/7075/)
 
 * A new class, `qml.ftqc.QubitGraph`, is now available for representing a qubit memory-addressing
@@ -739,26 +740,28 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   abstractions between logical qubits and physical qubits.
   [(#6962)](https://github.com/PennyLaneAI/pennylane/pull/6962)
 
-* A `Lattice` class and a `generate_lattice` method is added to the `qml.ftqc` module. The `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
+* A `Lattice` class and a `generate_lattice` method has been added to the `qml.ftqc` module. The 
+  `generate_lattice` method is to generate 1D, 2D, 3D grid graphs with the given geometric parameters.
   [(#6958)](https://github.com/PennyLaneAI/pennylane/pull/6958)
 
-* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the experimental `ftqc` module. These functions
-  apply a mid-circuit measurement and return a `MeasurementValue`. They are analogous to `qml.measure` for
-  the computational basis, but instead measure in the X-basis, Y-basis, or an arbitrary basis, respectively.
-  Function `qml.ftqc.measure_z` is also added as an alias for `qml.measure`.
+* Measurement functions `measure_x`, `measure_y` and `measure_arbitrary_basis` are added in the 
+  experimental `ftqc` module. These functions apply a mid-circuit measurement and return a `MeasurementValue`. 
+  They are analogous to `qml.measure` for the computational basis, but instead measure in the X-basis, 
+  Y-basis, or an arbitrary basis, respectively. Function `qml.ftqc.measure_z` is also added as an alias 
+  for `qml.measure`.
   [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
 
-* The function `cond_measure` is added to the experimental `ftqc` module to apply a mid-circuit 
+* The function `cond_measure` has been added to the experimental `ftqc` module to apply a mid-circuit 
   measurement with a measurement basis conditional on the function input.
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
 
-* A `ParametrizedMidMeasure` class is added to represent a mid-circuit measurement in an arbitrary
+* A `ParametrizedMidMeasure` class has been added to represent a mid-circuit measurement in an arbitrary
   measurement basis in the XY, YZ or ZX plane. Subclasses `XMidMeasureMP` and `YMidMeasureMP` represent
   X-basis and Y-basis measurements. These classes are part of the experimental `ftqc` module.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#6953)](https://github.com/PennyLaneAI/pennylane/pull/6953)
 
-* A `diagonalize_mcms` transform is added that diagonalizes any `ParametrizedMidMeasure`, for devices
+* A `diagonalize_mcms` transform has been added that diagonalizes any `ParametrizedMidMeasure`, for devices
   that only natively support mid-circuit measurements in the computational basis.
   [(#6938)](https://github.com/PennyLaneAI/pennylane/pull/6938)
   [(#7037)](https://github.com/PennyLaneAI/pennylane/pull/7037)
@@ -778,6 +781,21 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#6888)](https://github.com/PennyLaneAI/pennylane/pull/6888/)
   [(#7080)](https://github.com/PennyLaneAI/pennylane/pull/7080)
 
+* A `qml.capture.pause()` context manager has been added for pausing program capture in an error-safe 
+  way.
+  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
+
+* The requested `diff_method` is now validated when program capture is enabled.
+  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
+
+* A `qml.capture.register_custom_staging_rule` has been added for handling higher-order primitives
+  that return new dynamically shaped arrays.
+  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
+
+* Support has been improved for when wires are specified as `jax.numpy.ndarray` if program capture is 
+  enabled.
+  [(#7108)](https://github.com/PennyLaneAI/pennylane/pull/7108)
+
 * `qml.cond`, `qml.adjoint`, `qml.ctrl`, and QNodes can now handle accepting dynamically shaped arrays 
   with the abstract shape matching another argument.
   [(#7059)](https://github.com/PennyLaneAI/pennylane/pull/7059)
@@ -785,6 +803,15 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * A new `qml.capture.eval_jaxpr` function has been implemented. This is a variant of `jax.core.eval_jaxpr` 
   that can handle the creation of arrays with dynamic shapes.
   [(#7052)](https://github.com/PennyLaneAI/pennylane/pull/7052)
+
+* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent 
+  decompositions with structure (e.g., control flow). This method is only used when capture is enabled 
+  with `qml.capture.enable()`.
+  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
+  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
+  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
+  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
+  [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
 
 * The higher order primitives in program capture can now accept inputs with abstract shapes.
   [(#6786)](https://github.com/PennyLaneAI/pennylane/pull/6786)
@@ -813,16 +840,11 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* An informative error is raised when a `QNode` with `diff_method=None` is differentiated.
+* An informative error is now raised when a QNode with `diff_method=None` is differentiated.
   [(#6770)](https://github.com/PennyLaneAI/pennylane/pull/6770)
 
-* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric
-  function.
+* `qml.gradients.finite_diff_jvp` has been added to compute the jvp of an arbitrary numeric function.
   [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-
-* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
-  dedicated documentation.
-  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
 
 * The qchem functions that accept a string input have been updated to consistently work with both
   lower-case and upper-case inputs.
@@ -834,35 +856,14 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
 
-* Add a `qml.capture.pause()` context manager for pausing program capture in an error-safe way.
-  [(#6911)](https://github.com/PennyLaneAI/pennylane/pull/6911)
-
-* The requested `diff_method` is now validated when program capture is enabled.
-  [(#6852)](https://github.com/PennyLaneAI/pennylane/pull/6852)
-
-* Add a `qml.capture.register_custom_staging_rule` for handling higher-order primitives
-  that return new dynamically shaped arrays.
-  [(#7086)](https://github.com/PennyLaneAI/pennylane/pull/7086)
-
-* A new, experimental `Operator` method called `compute_qfunc_decomposition` has been added to represent decompositions with structure (e.g., control flow).
-  This method is only used when capture is enabled with `qml.capture.enable()`.
-  [(#6859)](https://github.com/PennyLaneAI/pennylane/pull/6859)
-  [(#6881)](https://github.com/PennyLaneAI/pennylane/pull/6881)
-  [(#7022)](https://github.com/PennyLaneAI/pennylane/pull/7022)
-  [(#6917)](https://github.com/PennyLaneAI/pennylane/pull/6917)
-  [(#7081)](https://github.com/PennyLaneAI/pennylane/pull/7081)
-
-* Improves support when specifying wires as type `jax.numpy.ndarray` if program capture is enabled.
-  [(#7108)](https://github.com/PennyLaneAI/pennylane/pull/7108)
-
 * `merge_rotations` now correctly simplifies merged `qml.Rot` operators whose angles yield the identity operator.
   [(#7011)](https://github.com/PennyLaneAI/pennylane/pull/7011)
 
-* The `qml.measurements.NullMeasurement` measurement process is added to allow for profiling problems
+* The `qml.measurements.NullMeasurement` measurement process has been added to allow for profiling problems
   without the overheads associated with performing measurements.
   [(#6989)](https://github.com/PennyLaneAI/pennylane/pull/6989)
 
-* `pauli_rep` property is now accessible for `Adjoint` operator when there is a Pauli representation.
+* The `pauli_rep` property is now accessible for `Adjoint` operators when there is a Pauli representation.
   [(#6871)](https://github.com/PennyLaneAI/pennylane/pull/6871)
 
 * `qml.pauli.PauliVSpace` is now iterable.
@@ -871,45 +872,52 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * `qml.qchem.taper` now handles wire ordering for the tapered observables more robustly.
   [(#6954)](https://github.com/PennyLaneAI/pennylane/pull/6954)
 
-* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the installed version of JAX
-  is greater than `0.4.28`.
+* A `RuntimeWarning` is now raised by `qml.QNode` and `qml.execute` if executing JAX workflows and the 
+  installed version of JAX is greater than `0.4.28`.
   [(#6864)](https://github.com/PennyLaneAI/pennylane/pull/6864)
 
-* Bump `rng_salt` to `v0.40.0`.
+* The `rng_salt` version has been bumped to `v0.40.0`.
   [(#6854)](https://github.com/PennyLaneAI/pennylane/pull/6854)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* ``pennylane.labs.dla.lie_closure_dense`` is removed and integrated into ``qml.lie_closure`` using the new ``dense`` keyword.
+* `pennylane.labs.dla.lie_closure_dense` has been removed and integrated into `qml.lie_closure` 
+  using the new `dense` keyword.
   [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 
-* ``pennylane.labs.dla.structure_constants_dense`` is removed and integrated into ``qml.structure_constants`` using the new ``matrix`` keyword.
+* `pennylane.labs.dla.structure_constants_dense` has been removed and integrated into `qml.structure_constants` 
+  using the new `matrix` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-* ``ResourceOperator.resource_params`` is changed to a property.
+* `ResourceOperator.resource_params` has been changed to a property.
   [(#6973)](https://github.com/PennyLaneAI/pennylane/pull/6973)
 
-* Added ResourceOperator implementations for the ``ModExp``, ``PhaseAdder``, ``Multiplier``, ``ControlledSequence``, ``AmplitudeAmplification``, ``QROM``, ``SuperPosition``, ``MottonenStatePreparation``, ``StatePrep``, ``BasisState`` templates.
+* `ResourceOperator` implementations for the `ModExp`, `PhaseAdder`, `Multiplier`, `ControlledSequence`, 
+  `AmplitudeAmplification`, `QROM`, `SuperPosition`, `MottonenStatePreparation`, `StatePrep`, `BasisState` 
+  templates have been added.
   [(#6638)](https://github.com/PennyLaneAI/pennylane/pull/6638)
 
-* `pennylane.labs.khaneja_glaser_involution` is removed.
-  `pennylane.labs.check_commutation` is moved to `qml.liealg.check_commutation_relation`.
-  `pennylane.labs.check_cartan_decomp` is moved to `qml.liealg.check_cartan_decomp`.
-  All involution functions are moved to `qml.liealg`.
-  `pennylane.labs.adjvec_to_op` is moved to `qml.liealg.adjvec_to_op`.
-  `pennylane.labs.op_to_adjvec` is moved to `qml.liealg.op_to_adjvec`.
-  `pennylane.labs.change_basis_ad_rep` is moved to `qml.liealg.change_basis_ad_rep`.
-  `pennylane.labs.cartan_subalgebra` is moved to `qml.liealg.horizontal_cartan_subalgebra`.
+* `pennylane.labs.khaneja_glaser_involution` has been removed,
+  `pennylane.labs.check_commutation` has moved to `qml.liealg.check_commutation_relation`.
+  `pennylane.labs.check_cartan_decomp` has moved to `qml.liealg.check_cartan_decomp`.
+  All involution functions have been moved to `qml.liealg`.
+  `pennylane.labs.adjvec_to_op` has moved to `qml.liealg.adjvec_to_op`.
+  `pennylane.labs.op_to_adjvec` has moved to `qml.liealg.op_to_adjvec`.
+  `pennylane.labs.change_basis_ad_rep` has moved to `qml.liealg.change_basis_ad_rep`.
+  `pennylane.labs.cartan_subalgebra` has moved to `qml.liealg.horizontal_cartan_subalgebra`.
   [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
   [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 
-* Adding `HOState` and `VibronicHO` classes for representing harmonic oscillator states.
+* New classes called `HOState` and `VibronicHO` have been added for representing harmonic oscillator 
+  states.
   [(#7035)](https://github.com/PennyLaneAI/pennylane/pull/7035)
 
-* Adding base classes for Trotter error estimation on Realspace Hamiltonians: ``RealspaceOperator``, ``RealspaceSum``, ``RealspaceCoeffs``, and ``RealspaceMatrix``
+* Base classes for Trotter error estimation on Realspace Hamiltonians have been added: `RealspaceOperator`, 
+  `RealspaceSum`, `RealspaceCoeffs`, and `RealspaceMatrix`
   [(#7034)](https://github.com/PennyLaneAI/pennylane/pull/7034)
 
-* Adding functions for Trotter error estimation and Hamiltonian fragment generation: ``trotter_error``, ``perturbation_error``, ``vibrational_fragments``, ``vibronic_fragments``, and ``generic_fragments``.
+* Functions for Trotter error estimation and Hamiltonian fragment generation have been added: `trotter_error`,
+  `perturbation_error`, `vibrational_fragments`, `vibronic_fragments`, and `generic_fragments`.
   [(#7036)](https://github.com/PennyLaneAI/pennylane/pull/7036)
 
   As an example we compute the peruturbation error of a vibrational Hamiltonian.
@@ -929,12 +937,12 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   >>> ]
   ```
     
-  We call ``vibrational_fragments`` to get the harmonic and anharmonic fragments of the vibrational Hamiltonian.
+  We call `vibrational_fragments` to get the harmonic and anharmonic fragments of the vibrational Hamiltonian.
   ```pycon
   >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
   ```
 
-  We build state vectors in the harmonic oscilator basis with the ``HOState`` class. 
+  We build state vectors in the harmonic oscilator basis with the `HOState` class. 
 
   ```pycon
   >>> gridpoints = 5
@@ -942,7 +950,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
   ```
 
-  Finally, we compute the error by calling ``perturbation_error``.
+  Finally, we compute the error by calling `perturbation_error`.
 
   ```pycon
   >>> perturbation_error(frags, [state1, state2])
@@ -1149,6 +1157,10 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 * The docstring for `qml.labs.trotter_error` has been updated.
   [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
+
+* The `gates`, `qubits` and `lamb` attributes of `DoubleFactorization` and `FirstQuantization` have
+  dedicated documentation.
+  [(#7173)](https://github.com/PennyLaneAI/pennylane/pull/7173)
 
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
