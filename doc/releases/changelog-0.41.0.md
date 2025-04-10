@@ -1115,13 +1115,13 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h3>Documentation 📝</h3>
 
-* A page on sharp bits and debugging tips has been added for PennyLane program-capture. 
-  This page is recommended to consult any time errors occur when `qml.capture.enable()` 
-  is present.
+* A page on sharp bits and debugging tips has been added for PennyLane program capture: 
+  :doc:`/news/program_capture_sharp_bits`. This page is recommended to consult any time errors occur 
+  when `qml.capture.enable()` is present.
   [(#7062)](https://github.com/PennyLaneAI/pennylane/pull/7062)
 
-* The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
-  on using the new experimental decompositions system.
+* The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include 
+  information on using the new experimental decompositions system.
   [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
 
 * The docstring for `qml.transforms.decompose` now recommends the `qml.clifford_t_decomposition` 
@@ -1131,7 +1131,8 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * Typos were fixed in the docstring for `qml.QubitUnitary`.
   [(#7187)](https://github.com/PennyLaneAI/pennylane/pull/7187)
 
-* The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed but it is correct.
+* The docstring for `qml.prod` has been updated to explain that the order of the output may seem reversed,
+  but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
@@ -1142,21 +1143,22 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   code examples.
   [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
 
-* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated to include
-  examples that can be copied.
+* The docstrings for `qml.qchem.localize_normal_modes` and `qml.qchem.VibrationalPES` have been updated 
+  to include examples that can be copied.
   [(#6834)](https://github.com/PennyLaneAI/pennylane/pull/6834)
 
-* Fixed a typo in the code example for `qml.labs.dla.lie_closure_dense`.
+* A typo has been fixed in the code example for `qml.labs.dla.lie_closure_dense`.
   [(#6858)](https://github.com/PennyLaneAI/pennylane/pull/6858)
 
-* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` in the
-  call to `qml.matrix`.
+* The code example in the docstring for `qml.BasisRotation` was corrected by including `wire_order` 
+  in the call to `qml.matrix`.
   [(#6891)](https://github.com/PennyLaneAI/pennylane/pull/6891)
 
 * The docstring of `qml.noise.meas_eq` has been updated to make its functionality clearer.
   [(#6920)](https://github.com/PennyLaneAI/pennylane/pull/6920)
 
-* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation support.
+* The docstring for `qml.devices.default_tensor.DefaultTensor` has been updated to clarify differentiation 
+  support.
   [(#7150)](https://github.com/PennyLaneAI/pennylane/pull/7150)
 
 * The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
