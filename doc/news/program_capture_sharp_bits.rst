@@ -118,8 +118,9 @@ and will raise an error if used.
         qml.RX(x, wires=0)
         return qml.expval(qml.Z(0))
 
->>> bp_qn = circuit.update(diff_method="backprop")
->>> adj_qn = circuit.update(diff_method="adjoint")
+    bp_qn = circuit.update(diff_method="backprop")
+    adj_qn = circuit.update(diff_method="adjoint")
+
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
 >>> jax.jacobian(bp_qn)(x)
 Array(0.70710677, dtype=float32)
