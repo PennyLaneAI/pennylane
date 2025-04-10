@@ -512,7 +512,6 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
     >>> np.allclose(new_adj, new_adj_re)
     True
-    
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
     new_adj = qml.math.einsum("mnp,im->inp", adj, qml.math.linalg.pinv(basis_change.T))
