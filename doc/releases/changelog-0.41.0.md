@@ -2,6 +2,8 @@
 
 # Release 0.41.0 (current release)
 
+<h3>New features since last release</h3>
+
 <h4>Resource-efficient Decompositions 🔎</h4>
 
 A new, experimental graph-based decomposition system is now available in PennyLane, offering more resource-efficiency and versatility.
@@ -20,11 +22,11 @@ to the current system. This is done by traversing an internal graph structure th
 resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
 The graph-based system is experimental and is disabled by default, but it can be enabled by adding 
-:func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>` to the top of your 
-program. Conversely, :func:`qml.decompositions.disable_graph() <pennylane.decompositions.disable_graph>` 
+:func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>` to the top of your 
+program. Conversely, :func:`qml.decomposition.disable_graph() <pennylane.decomposition.disable_graph>` 
 disables the new system from being active.
 
-With :func:`qml.decompositions.enable_graph() <pennylane.decompositions.enable_graph>`, the following 
+With :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`, the following 
 new features are available:
 
 * Operators in PennyLane can now accommodate multiple decompositions, which can be queried with the 
