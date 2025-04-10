@@ -966,6 +966,13 @@ class TestBlockEncode:
         op = qml.BlockEncode(input_matrix, wires=range(2))
         assert op.has_matrix != issparse
         assert op.has_sparse_matrix == issparse
+        if issparse:
+            # Test if there's correct error out
+            with pytest.raises(qml.operation.MatrixUndefinedError):
+                op.matrix()
+        else:
+            with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+                op.sparse_matrix()
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
