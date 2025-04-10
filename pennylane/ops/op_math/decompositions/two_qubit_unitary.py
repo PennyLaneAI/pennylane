@@ -651,7 +651,8 @@ def two_qubit_decomposition(U, wires):
             decomp = _decomposition_3_cnots(U, wires)
 
     decomp_matrix = qml.matrix(qml.prod(*decomp[::-1]))
-    phase = decomp_matrix[0] @ qml.math.conj(U_copy[0]).T
+
+    phase = decomp_matrix[0] @ qml.math.transpose(qml.math.conj(U_copy[0]))
     decomp.append(qml.GlobalPhase(qml.math.angle(phase)))
 
     # If there is an active tape, queue the decomposition so that expand works

@@ -1293,7 +1293,9 @@ def test_two_qubit_decomposition_special_case_discontinuity():
         return mat
 
     mat = make_unitary(np.pi / 2)
-    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
+    decomp_mat = qml.matrix(
+        qml.prod(*two_qubit_decomposition(mat, wires=(0, 1))[::-1]), wire_order=(0, 1)
+    )
     assert qml.math.allclose(mat, decomp_mat)
 
 
