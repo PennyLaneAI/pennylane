@@ -495,10 +495,10 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>Dynamical Lie Algebras 🕓</h4>
 
-The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality, including:
-* Lie closure
+The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality:
 
-  :func:`qml.lie_closure <pennylane.lie_closure>` computes the dynamical Lie algebra from a set of generators.
+* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.
+
   ```python
   import pennylane as qml
   from pennylane import X, Y, Z, I
@@ -511,27 +511,25 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
   ```
 
-* Structure constants
+* Compute the structure constants that make up the adjoint representation of a Lie algebra
+  using :func:`qml.structure_constants <pennylane.structure_constants>`.
 
-  Using :func:`qml.structure_constants <pennylane.structure_constants>`, compute the structure constants that make up the adjoint representation of a Lie algebra.
   ```pycon
   >>> adjoint_rep = qml.structure_constants(dla)
   >>> adjoint_rep.shape
   (4, 4, 4)
   ```
 
-* The center of a Lie algebra
+* The center of a Lie algebra, which is the collection of operators that commute with all other operators in the DLA,
+  can be found with :func:`qml.center <pennylane.center>`.
 
-  The center is the collection of operators that commute with all other operators in the DLA.  
-  Compute it with :func:`qml.center <pennylane.center>`.
   ```pycon
   >>> qml.center(dla)
   [X(0)]
   ```
 
-* Cartan decompositions
-
-  :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
+* Cartan decompositions `g = k + m` can be performed with :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>`.  
+  These use _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module,
   such as `even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII`.
   ```python
@@ -549,9 +547,9 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   True
   ```
 
-* Cartan subalgebras
+* The horizontal Cartan subalgebra `a` of `m` can be computed with
+  :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>`.
 
-  :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>` computes a horizontal Cartan subalgebra `a` of `m`.
   ```python
   from pennylane.liealg import horizontal_cartan_subalgebra
   newg, k, mtilde, a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
