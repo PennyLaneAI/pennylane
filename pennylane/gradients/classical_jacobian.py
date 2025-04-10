@@ -18,8 +18,9 @@ Contains the classical Jacobian transform.
 import numpy as np
 
 from pennylane import math
-from pennylane.workflow import construct_tape
 from pennylane._grad import jacobian
+from pennylane.workflow import construct_tape
+
 
 def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     r"""Returns a function to extract the Jacobian
