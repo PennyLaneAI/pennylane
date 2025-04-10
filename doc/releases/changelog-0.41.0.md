@@ -939,91 +939,98 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h3>Breaking changes 💔</h3>
 
-* `num_diagonalizing_gates` is no longer accessible in `qml.specs` or `QuantumScript.specs`. The calculation of
-  this quantity is extremely expensive, and the definition is ambiguous for non-commuting observables.
+* Executing `qml.specs` is now much more efficient with the removal of accessing `num_diagonalizing_gates`. 
+  The calculation of this quantity is extremely expensive, and the definition is ambiguous for non-commuting 
+  observables.
   [(#7047)](https://github.com/PennyLaneAI/pennylane/pull/7047)
 
 * `qml.gradients.gradient_transform.choose_trainable_params` has been renamed to `choose_trainable_param_indices`
   to better reflect what it actually does.
   [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
-* `MultiControlledX` no longer accepts strings as control values.
+* `qml.MultiControlledX` no longer accepts strings as control values.
   [(#6835)](https://github.com/PennyLaneAI/pennylane/pull/6835)
 
-* The input argument `control_wires` of `MultiControlledX` has been removed.
+* The `control_wires` argument in `qml.MultiControlledX` has been removed.
   [(#6832)](https://github.com/PennyLaneAI/pennylane/pull/6832)
   [(#6862)](https://github.com/PennyLaneAI/pennylane/pull/6862)
 
 * `qml.execute` now has a collection of keyword-only arguments.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed.
+* The `decomp_depth` argument in `qml.transforms.set_decomposition` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed.
+* The `max_expansion` argument in `qml.devices.preprocess.decompose` has been removed.
   [(#6824)](https://github.com/PennyLaneAI/pennylane/pull/6824)
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed.
-  Instead, use the ``qml.workflow.construct_tape`` function.
+* The `tape` and `qtape` properties of `QNode` have been removed. Instead, use the `qml.workflow.construct_tape` 
+  function.
   [(#6825)](https://github.com/PennyLaneAI/pennylane/pull/6825)
 
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+* The `gradient_fn` keyword argument in `qml.execute` has been removed. Instead, it has been replaced 
+  with `diff_method`.
   [(#6830)](https://github.com/PennyLaneAI/pennylane/pull/6830)
   
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed.
-  Instead, use the ``qml.workflow.get_best_diff_method`` function.
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been removed. Instead, use the 
+  `qml.workflow.get_best_diff_method` function.
   [(#6823)](https://github.com/PennyLaneAI/pennylane/pull/6823)
 
-* The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information.
+* The `output_dim` property of `qml.tape.QuantumScript` has been removed. Instead, use method `shape` 
+  of `QuantumScript` or `MeasurementProcess` to get the same information.
   [(#6829)](https://github.com/PennyLaneAI/pennylane/pull/6829)
 
-* Removed method `qsvt_legacy` along with its private helper `_qsp_to_qsvt`
+* The `qsvt_legacy` method, along with its private helper `_qsp_to_qsvt`, has been removed.
   [(#6827)](https://github.com/PennyLaneAI/pennylane/pull/6827)
 
 <h3>Deprecations 👋</h3>
 
-* The `KerasLayer` in `qml.qnn.keras` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of `TensorFlow/Keras 2`.
+* The `qml.qnn.KerasLayer` class has been deprecated because Keras 2 is no longer actively maintained. 
+  Please consider using a different machine learning framework instead of `TensorFlow/Keras 2`, like
+  Pytorch or JAX.
   [(#7097)](https://github.com/PennyLaneAI/pennylane/pull/7097)
 
-* Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of
-  transforms should always be specified.
+* Specifying `pipeline=None` with `qml.compile` is now deprecated. A sequence of transforms should now 
+  always be specified.
   [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
 
-* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
+* `qml.ControlledQubitUnitary` will stop accepting `qml.QubitUnitary` objects as arguments as its `base`. 
+  Instead, use `qml.ctrl` to construct a controlled `qml.QubitUnitary`. A follow-up PR fixed accidental 
+  double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
   [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
-* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated.
-  Instead, use the `wires` argument as the second positional argument.
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been deprecated. Instead, use the 
+`wires` argument as the second positional argument.
   [(#6839)](https://github.com/PennyLaneAI/pennylane/pull/6839)
 
-* The `mcm_method` keyword in `qml.execute` has been deprecated.
-  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+* The `mcm_method` keyword in `qml.execute` has been deprecated. Instead, use the `mcm_method` and 
+  `postselect_mode` arguments.
   [(#6807)](https://github.com/PennyLaneAI/pennylane/pull/6807)
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
-  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
-  keyword argument `gradient_kwargs` via an explicit dictionary. This change will improve qnode argument
-  validation.
+  and will be removed in v0.42. The gradient keyword arguments should be passed to the new keyword argument `gradient_kwargs` 
+  via an explicit dictionary. This change will improve QNode argument validation.
   [(#6828)](https://github.com/PennyLaneAI/pennylane/pull/6828)
 
-* The `qml.gradients.hamiltonian_grad` function has been deprecated.
-  This gradient recipe is not required with the new operator arithmetic system.
+* The `qml.gradients.hamiltonian_grad` function has been deprecated. This gradient recipe is not required 
+  with the new operator arithmetic system.
   [(#6849)](https://github.com/PennyLaneAI/pennylane/pull/6849)
 
-* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
-  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
+* The `inner_transform_program` and `config` keyword arguments in `qml.execute` have been deprecated.
+  If more detailed control over the execution is required, use `qml.workflow.run` with these arguments instead.
   [(#6822)](https://github.com/PennyLaneAI/pennylane/pull/6822)
   [(#6879)](https://github.com/PennyLaneAI/pennylane/pull/6879)
 
-* The property `MeasurementProcess.return_type` has been deprecated.
-  If observable type checking is needed, please use direct `isinstance`; if other text information is needed, please use class name, or another internal temporary private member `_shortname`.
+* The property `MeasurementProcess.return_type` has been deprecated. If observable type checking is 
+  needed, please use direct `isinstance`; if other text information is needed, please use class name, 
+  or another internal temporary private member `_shortname`.
   [(#6841)](https://github.com/PennyLaneAI/pennylane/pull/6841)
   [(#6906)](https://github.com/PennyLaneAI/pennylane/pull/6906)
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
-* Pauli module level imports of ``lie_closure``, ``structure_constants`` and ``center`` are deprecated, as functionality is moved to new ``liealg`` module.
+* Pauli module level imports of `lie_closure`, `structure_constants`, and `center` are deprecated, as 
+  functionality is moved to new `liealg` module.
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
