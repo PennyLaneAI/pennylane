@@ -321,7 +321,7 @@ From here, we can iterate through the stages of decomposition:
 
 M0 = 
 [[0.87758256+0.j         0.        -0.47942554j]
- [0.        -0.47942554j 0.87758256+0.j        ]]
+[0.        -0.47942554j 0.87758256+0.j        ]]
 
 >>> print(qml.draw(decompose(circuit, max_expansion=2))())
 0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)

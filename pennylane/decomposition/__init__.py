@@ -234,7 +234,7 @@ operator towards a target gate set.
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
-    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
 
 """
 
@@ -242,7 +242,6 @@ from .utils import DecompositionError, enable_graph, disable_graph, enabled_grap
 from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,
-    # TODO: add CompressedResourceOp once the conflict with labs is resolved.
     resource_rep,
     controlled_resource_rep,
     adjoint_resource_rep,
