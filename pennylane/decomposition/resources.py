@@ -141,7 +141,7 @@ def _make_hashable(d):
             sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
         )
     if hasattr(d, "tolist"):
-        return d.tolist()
+        return tuple(d.tolist())
     return d
 
 
