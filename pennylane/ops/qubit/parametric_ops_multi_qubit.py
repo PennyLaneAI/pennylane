@@ -1586,6 +1586,9 @@ class PSWAP(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     resource_keys = set()
 
     grad_method = "A"
@@ -1654,13 +1657,15 @@ class PSWAP(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         e = qml.math.exp(1j * phi)
+        zero = qml.math.zeros_like(phi)
+        one = qml.math.ones_like(phi)
 
         return qml.math.stack(
             [
-                stack_last([1, 0, 0, 0]),
-                stack_last([0, 0, e, 0]),
-                stack_last([0, e, 0, 0]),
-                stack_last([0, 0, 0, 1]),
+                stack_last([one, zero, zero, zero]),
+                stack_last([zero, zero, e, zero]),
+                stack_last([zero, e, zero, zero]),
+                stack_last([zero, zero, zero, one]),
             ],
             axis=-2,
         )
@@ -1695,7 +1700,9 @@ class PSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.stack([1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)])
+        e = qml.math.exp(1j * phi)
+        one = qml.math.ones_like(phi)
+        return qml.math.transpose(qml.math.stack([one, one, -e, e]))
 
     def adjoint(self) -> "PSWAP":
         (phi,) = self.parameters

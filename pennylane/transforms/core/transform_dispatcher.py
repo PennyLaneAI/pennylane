@@ -191,7 +191,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(obj, qml.QNode):
             if qml.capture.enabled():
-                return self._capture_callable_transform(obj, targs, tkwargs)
+                new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
+                return self._capture_callable_transform(new_qnode, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
@@ -585,7 +586,9 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
-        raise NotImplementedError
+        args = all_args[args_slice]
+        consts = all_args[consts_slice]
+        return qml.capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):
