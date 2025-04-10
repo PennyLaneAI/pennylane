@@ -107,7 +107,6 @@ and will raise an error if used.
 
 .. code-block:: python
 
-    import pennylane as qml 
     import jax 
 
     qml.capture.enable() 
@@ -135,9 +134,9 @@ For example, the following code will raise an error:
 
 .. code-block:: python
 
-    qml.capture.enable()
     import jax
-    jax.config.update("jax_enable_x64", False)
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit",wires=2)
 
@@ -159,10 +158,9 @@ when using ``"adjoint"`` with ``default.qubit``. For example, the following code
 
 .. code-block:: python
 
-    qml.capture.enable()
-    import jax.numpy as jnp
     import jax
-    jax.config.update("jax_enable_x64", False)
+
+    qml.capture.enable()
 
     dev = qml.device("default.qubit",wires=2)
 
