@@ -482,25 +482,34 @@ class TestQubitUnitary:
     @pytest.mark.parametrize(
         "U",
         [
-            (qml.matrix(qml.CRX(2, wires=[1, 0]))),
-            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),
-            (qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))),
-            (qml.matrix(qml.CRY(1, wires=[0, 1]))),
-            (qml.matrix(qml.QFT(wires=[0, 1]))),
-            (qml.matrix(qml.GroverOperator(wires=[0, 1]))),
-            (qml.matrix(qml.CRY(-1, wires=[0, 1]))),
-            (qml.matrix(qml.SWAP(wires=[0, 1]))),
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qml.matrix(qml.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),  # cnots
+            (
+                qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))
+            ),  # 2 cnots
+            (qml.matrix(qml.CRY(1, wires=[0, 1]))),  # 2 cnots
+            (qml.matrix(qml.QFT(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.QFT(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.RZ(1, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qml.matrix(qml.CRY(-1, wires=[0, 1]))),  # 2 cnots
+            (qml.matrix(qml.SWAP(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.SWAP(wires=[0, 1]) @ qml.GlobalPhase(3))),  # 3 cnots
+            (qml.matrix(qml.Hadamard(wires=[0]) @ qml.RX(2, wires=1))),  # 0 cnots
+            (qml.matrix(qml.RX(-1, wires=[0]) @ qml.RZ(-5, wires=1))),  # 0 cnots
             (
                 qml.matrix(
                     qml.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
                 )
-            ),
+            ),  # 2 cnots
         ],
     )
     def test_qubit_unitary_correct_global_phase(self, U):
         """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
 
         ops_decompostion = qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+
         assert qml.math.allclose(
             U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
         )

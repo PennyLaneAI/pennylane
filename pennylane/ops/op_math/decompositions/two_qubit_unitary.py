@@ -532,7 +532,7 @@ def _decomposition_3_cnots(U, wires):
     D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(-alpha / 2)]
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
 
 def two_qubit_decomposition(U, wires):
@@ -629,6 +629,7 @@ def two_qubit_decomposition(U, wires):
         raise qml.operation.DecompositionUndefinedError(
             "two_qubit_decomposition does not accept sparse matrics."
         )
+    U_copy = U
     U = _convert_to_su4(U)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
@@ -648,6 +649,10 @@ def two_qubit_decomposition(U, wires):
             decomp = _decomposition_2_cnots(U, wires)
         else:
             decomp = _decomposition_3_cnots(U, wires)
+
+    decomp_matrix = qml.matrix(qml.prod(*decomp[::-1]))
+    phase = decomp_matrix[0] @ np.conj(U_copy[0]).T
+    decomp.append(qml.GlobalPhase(np.angle(phase)))
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.queuing.QueuingManager.active_context()
