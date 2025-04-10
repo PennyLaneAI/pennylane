@@ -106,23 +106,6 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 global_arrays_name = ["E", "Edag", "CNOT01", "CNOT10", "SWAP", "S_SX", "v_one_cnot", "q_one_cnot"]
 
 
-def _convert_to_su4(U):
-    r"""Convert a 4x4 matrix to :math:`SU(4)`.
-
-    Args:
-        U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
-
-    Returns:
-        array[complex]: A :math:`4 \times 4` matrix in :math:`SU(4)` that is
-        equivalent to U up to a global phase.
-    """
-    # Compute the determinant
-    det = math.linalg.det(U)
-
-    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
-    return math.cast_like(U, det) * math.exp(exp_angle)
-
-
 def _compute_num_cnots(U):
     r"""Compute the number of CNOTs required to implement a U in SU(4). This is based on
     the trace of
@@ -629,7 +612,7 @@ def two_qubit_decomposition(U, wires):
         raise qml.operation.DecompositionUndefinedError(
             "two_qubit_decomposition does not accept sparse matrics."
         )
-    U = _convert_to_su4(U)
+    U = math.convert_to_su4(U)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.

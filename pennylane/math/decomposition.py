@@ -166,3 +166,9 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     lam = math.squeeze(lam % (4 * np.pi))
 
     return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
+
+
+# This gate E is called the "magic basis". It can be used to convert between
+# SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
+E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+E_dag = E.conj().T

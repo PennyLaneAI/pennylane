@@ -439,3 +439,35 @@ def convert_to_su2(U, return_global_phase=False):
         c_shape = math.cast_like(global_phase, 1j)
         U = U * math.exp(-1j * c_shape)
     return (U, global_phase) if return_global_phase else U
+
+
+def convert_to_su4(U, return_global_phase=False):
+    r"""Convert a 4x4 matrix to :math:`SU(4)`.
+
+    Args:
+        U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(4)` representation is returned.
+
+    Returns:
+        array[complex]: A :math:`4 \times 4` matrix in :math:`SU(4)` that is
+            equivalent to U up to a global phase. If ``return_global_phase=True``, a
+            2-element tuple is returned, with the first element being the :math:`SU(4)`
+            equivalent and the second, the global phase.
+
+    """
+    if issparse(U):
+        U = U.todense()
+
+    # Compute the determinant
+    U = qml.math.cast(U, "complex128")
+    batch_size = get_batch_size(U, (4, 4), 16)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        determinant = math.linalg.det(U)
+    global_phase = math.angle(determinant) / 4
+    if batch_size:
+        batched_phase = math.reshape(global_phase, (batch_size, 1, 1))
+        U = U * math.exp(-1j * batched_phase)
+    else:
+        U = U * math.exp(-1j * global_phase)
+    return (U, global_phase) if return_global_phase else U

@@ -1285,35 +1285,41 @@ def _random_unitary(n):
     return Q
 
 
-class TestConvertToSU2:
-    """Tests for the convert_to_SU2 function."""
+@pytest.mark.parametrize(
+    "size, converter", [(2, qml.math.convert_to_su2), (4, qml.math.convert_to_su4)]
+)
+class TestConvertToSUMatrices:
+    """Tests for the convert_to_SU2 and convert_to_SU4 functions."""
 
     @staticmethod
-    def _assert_correct(original_matrix, su2, phase):
+    def _assert_correct(original_matrix, su, phase):
         """Verifies that the converted matrix is correct."""
-        assert qml.math.allclose(su2 * qml.math.exp(1j * phase), original_matrix)
-        assert qml.math.allclose(qml.math.conj(su2).T @ su2, np.eye(2))
-        assert qml.math.allclose(qml.math.linalg.det(su2), 1)
+        assert qml.math.allclose(su * qml.math.exp(1j * phase), original_matrix)
+        assert qml.math.allclose(qml.math.conj(su).T @ su, np.eye(su.shape[0]))
+        assert qml.math.allclose(qml.math.linalg.det(su), 1)
 
-    def test_simple_matrix(self):
+    def test_simple_matrix(self, size, converter):
         """Tests the conversion of a simple matrix to SU(2)"""
-        matrix = _random_unitary(2)
-        su2, phase = qml.math.convert_to_su2(matrix, return_global_phase=True)
-        self._assert_correct(matrix, su2, phase)
 
-    def test_sparse_matrix(self):
+        matrix = _random_unitary(size)
+        su, phase = converter(matrix, return_global_phase=True)
+        self._assert_correct(matrix, su, phase)
+
+    def test_sparse_matrix(self, size, converter):
         """Tests that the conversion of a sparse matrix to SU(2) works correctly"""
-        matrix = _random_unitary(2)
-        sparse_matrix = csr_matrix(matrix)
-        su2, phase = qml.math.convert_to_su2(sparse_matrix, return_global_phase=True)
-        self._assert_correct(matrix, su2, phase)
 
-    def test_batched(self):
+        matrix = _random_unitary(size)
+        sparse_matrix = csr_matrix(matrix)
+        su, phase = converter(sparse_matrix, return_global_phase=True)
+        self._assert_correct(matrix, su, phase)
+
+    def test_batched(self, size, converter):
         """Tests that the batched operation is correct."""
-        matrices = [_random_unitary(2) for _ in range(3)]
+
+        matrices = [_random_unitary(size) for _ in range(3)]
         matrices = np.stack(matrices)
-        su2s, phases = qml.math.convert_to_su2(matrices, return_global_phase=True)
-        assert qml.math.shape(su2s) == (3, 2, 2)
+        sus, phases = converter(matrices, return_global_phase=True)
+        assert qml.math.shape(sus) == (3, size, size)
         assert qml.math.shape(phases) == (3,)
-        for matrix, su2, phase in zip(matrices, su2s, phases):
+        for matrix, su2, phase in zip(matrices, sus, phases):
             self._assert_correct(matrix, su2, phase)

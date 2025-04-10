@@ -27,7 +27,6 @@ from pennylane import numpy as np
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
     _compute_num_cnots,
-    _convert_to_su4,
     _su2su2_to_tensor_products,
 )
 from pennylane.wires import Wires
@@ -956,16 +955,6 @@ samples_su2_su2 = [
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
 
-    @pytest.mark.parametrize("U", samples_3_cnots)
-    def test_convert_to_su4(self, U):
-        """Test a matrix in U(4) is correct converted to SU(4)."""
-
-        U_su4 = _convert_to_su4(np.array(U))
-
-        # Ensure the determinant is correct and the mats are equivalent up to a phase
-        assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
-        assert check_matrix_equivalence(np.array(U), U_su4)
-
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
@@ -979,7 +968,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
 
@@ -1002,7 +991,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
@@ -1023,7 +1012,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
 
@@ -1044,7 +1033,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U = qml.math.convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 

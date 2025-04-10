@@ -40,6 +40,7 @@ from .matrix_manipulation import (
     reduce_matrices,
     get_batch_size,
     convert_to_su2,
+    convert_to_su4,
 )
 from .multi_dispatch import (
     add,
@@ -160,6 +161,7 @@ __all__ = [
     "concatenate",
     "convert_like",
     "convert_to_su2",
+    "convert_to_su4",
     "cov_matrix",
     "detach",
     "diag",
