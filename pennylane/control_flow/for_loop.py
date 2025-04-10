@@ -133,6 +133,22 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        .. note::
+
+            The following examples may yield different results depending on how the
+            workflow function is executed. For instance, the function can be run
+            directly as:
+
+            >>> workflow(2)
+
+            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            which captures the abstract computation graph for the given input shape. The resulting JAXPR can
+            then be manually interpreted using ``qml.capture.eval_jaxpr``:
+
+            >>> arg = 2
+            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+
         The following discussion applies to the experimental capture infrastructure, which can be
         turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
 
@@ -161,9 +177,6 @@ def for_loop(
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
 
-        >>> workflow(2)
-        (Array([1., 1., 1., 1., 2., 2., 4., 4.], dtype=float32),
-        Array([8., 8.], dtype=float32))
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -183,8 +196,6 @@ def for_loop(
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
 
-        >>> workflow(2)
-        (Array([8., 8.], dtype=float32), Array([8., 8.], dtype=float32))
 
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
