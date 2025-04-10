@@ -569,14 +569,13 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>Qualtran Integration 🔗</h4>
 
-* This version of PennyLane makes it easy to use Qualtran circuits in PennyLane, making it possible
-  to access even more circuit subroutines from Qualtran bloqs and allowing validation of Qualtran
-  circuits with simulation in PennyLane.
-
-  The new ``qml.FromBloq`` class translates Qualtran bloqs into equivalent PennyLane operators
-  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148). `qml.FromBloq` requires:
+* It's now easy to use [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs in PennyLane. The new ``qml.FromBloq`` class translates [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) into equivalent PennyLane operators [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148).
+  
+  `qml.FromBloq` requires two inputs:
   * bloq: an initialized Qualtran Bloq
   * wires: the wires the operator acts on
+  
+  The following example applies a PennyLane Operator and Qualtran Bloq in the same circuit:
 
   ```python
   >>> from qualtran.bloqs.basic_gates import CNOT
@@ -584,28 +583,30 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   >>> dev = qml.device("default.qubit")
   >>> @qml.qnode(dev)
   ... def circuit():
+  ...    qml.X(wires=0)
   ...    qml.FromBloq(CNOT(), wires=[0, 1])
   ...    return qml.state()
   >>> circuit()
-  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
   ```
 
-  For more complicated ``Bloqs`` it can be useful to determine the required wires via
-  ``qml.bloq_registers``. This function returns a dictionary of register names and wires.
+* The new ``qml.bloq_registers`` helps to determine the required wires for more complicated ``Bloqs``.
+  This function returns a dictionary of register names and wires.
 
   ```pycon
   >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
   >>> from qualtran.bloqs.basic_gates import ZPowGate
-  >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
   ```
 
   ```pycon
-  >>> registers = qml.bloq_registers(textbook_qpe_small)
+  >>> textbook_qpe = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
+  >>> registers = qml.bloq_registers(textbook_qpe)
   >>> registers
   {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
   ```
 
-  These can then be used to inform which registers should be used later in the circuit:
+  In the following example, we use these registers to measure the correct qubits in quantum phase
+  estimation:
 
   ```python
   dev = qml.device("default.qubit")
@@ -615,8 +616,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
       return qml.probs(wires=registers['qpe_reg'])
   ```
 
-  Printing the circuit, we measure the right register:
-  
   ```pycon
   >>> print(qml.draw(circuit)())
   0: ─╭FromBloq─┤       
@@ -624,7 +623,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   2: ─├FromBloq─┤ ├Probs
   3: ─╰FromBloq─┤ ╰Probs
   ```
-
 
 <h4>Hadamard Gradient Variants and Improvements 🌈</h4>
 
