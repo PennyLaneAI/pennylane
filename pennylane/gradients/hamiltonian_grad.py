@@ -15,7 +15,9 @@
 # pylint: disable=protected-access,unnecessary-lambda
 import warnings
 
-import pennylane as qml
+from pennylane import PennyLaneDeprecationWarning, math
+from pennylane.measurements import expval
+from pennylane.ops.functions import bind_new_parameters, simplify
 
 
 def hamiltonian_grad(tape, idx):
@@ -33,7 +35,7 @@ def hamiltonian_grad(tape, idx):
     warnings.warn(
         "The 'hamiltonian_grad' function is deprecated and will be removed in v0.42. "
         "This gradient recipe is not required for the new operator arithmetic system.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
 
     op, m_pos, p_idx = tape.get_operation(idx)
@@ -43,11 +45,11 @@ def hamiltonian_grad(tape, idx):
     new_measurements = list(tape.measurements)
 
     new_parameters = [0 * d for d in op.data]
-    new_parameters[p_idx] = qml.math.ones_like(op.data[p_idx])
-    new_obs = qml.ops.functions.bind_new_parameters(op, new_parameters)
-    new_obs = qml.simplify(new_obs)
+    new_parameters[p_idx] = math.ones_like(op.data[p_idx])
+    new_obs = bind_new_parameters(op, new_parameters)
+    new_obs = simplify(new_obs)
 
-    new_measurements[queue_position] = qml.expval(new_obs)
+    new_measurements[queue_position] = expval(new_obs)
 
     new_tape = tape.copy(measurements=new_measurements)
 
@@ -55,11 +57,11 @@ def hamiltonian_grad(tape, idx):
 
         def processing_fn(results):
             res = results[0][queue_position]
-            zeros = qml.math.zeros_like(res)
+            zeros = math.zeros_like(res)
 
             final = [res if i == queue_position else zeros for i, _ in enumerate(tape.measurements)]
 
-            return qml.math.expand_dims(qml.math.stack(final), 0)
+            return math.expand_dims(math.stack(final), 0)
 
         return [new_tape], processing_fn
 
