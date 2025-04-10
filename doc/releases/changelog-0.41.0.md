@@ -398,8 +398,18 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
-* `default.qubit` now applies sparse matrices directly to the state vector under-the-hood, resulting
-  in faster execution for large sparse objects [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+* Sparse data structures in compressed-sparse-row (csr) format are now supported end-to-end in PennyLane, resulting
+  in faster execution for large sparse objects 
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) 
+  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+  Sparse-array input and execution is now supported on `default.qubit` with a variety of templates, 
+  preserving sparsity throughout the entire simulation. 
+  
+  The following templates support sparse data structures:
+  
+  <list of templates>
+  
   ```python
   import scipy
   import numpy as np
@@ -414,8 +424,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
       return qml.state()
   ```
 
-* Support for sparse representation in operators is expanded.
-  
+* Support for sparse representation in operators is expanded.  
   Sparse input is now possible for:
   * `qml.StatePrep` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
   * `qml.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
@@ -483,12 +492,12 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   (3, 2)	1
   ```
 
-* Sparse objects are now supported in `qml.math`:
+* Sparse functionality is now available in `qml.math`:
 
   * `qml.math.sqrt_matrix_sparse` is available to compute the square root of a sparse Hermitian matrix.
     [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
 
-  * General `qml.math` functions can now correctly handle sparse matrices by dispatching to  `scipy.sparse.linalg`. 
+  * Most `qml.math` functions can now correctly handle sparse matrices as input by dispatching to  `scipy.sparse.linalg` internally. 
     [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 <h4>QROM State Preparation 📖</h4>
@@ -569,11 +578,14 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>Qualtran Integration 🔗</h4>
 
-* It's now easy to use [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs in PennyLane. The new ``qml.FromBloq`` class translates [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) into equivalent PennyLane operators [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148).
+* It's now possible to use [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs in PennyLane
+  with the new :func:`qml.FromBloq <pennylane.FromBloq>` class. 
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
   
-  `qml.FromBloq` requires two inputs:
-  * bloq: an initialized Qualtran Bloq
-  * wires: the wires the operator acts on
+  :func:`qml.FromBloq <pennylane.FromBloq>` translates [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) 
+  into equivalent PennyLane operators. It requires two inputs:
+  * `bloq`: an initialized Qualtran Bloq
+  * `wires`: the wires the operator acts on
   
   The following example applies a PennyLane Operator and Qualtran Bloq in the same circuit:
 
@@ -590,15 +602,13 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
   ```
 
-* The new ``qml.bloq_registers`` helps to determine the required wires for more complicated ``Bloqs``.
-  This function returns a dictionary of register names and wires.
+* A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help determine 
+  the required wires for more complicated Qualtran ``Bloqs``.
+  This function returns a dictionary of register names and wires given a Qualtran Bloq.
 
   ```pycon
   >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
   >>> from qualtran.bloqs.basic_gates import ZPowGate
-  ```
-
-  ```pycon
   >>> textbook_qpe = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
   >>> registers = qml.bloq_registers(textbook_qpe)
   >>> registers
