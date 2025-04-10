@@ -458,7 +458,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure autograph=True or use native control "
+            "variable (a function input). Please ensure that autograph=True or use native control "
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
