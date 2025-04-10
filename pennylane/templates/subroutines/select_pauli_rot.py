@@ -47,7 +47,7 @@ class SelectPauliRot(Operation):
             It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
 
     Raises:
-        ValueError: If the length of the angles array is not :math:`2^n` where :math:`n` is the number
+        ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
             of ``control_wires``.
         ValueError: If ``rot_axis`` has a value different from `X`, `Y` or `Z`.
 
