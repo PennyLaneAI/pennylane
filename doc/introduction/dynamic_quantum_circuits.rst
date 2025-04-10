@@ -40,11 +40,10 @@ See the following sections for details on
 of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
-methods. Also consider our 
-:doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`,
-:doc:`how-to on collecting statistics of mid-circuit measurements <demos/tutorial_how_to_collect_mcm_stats>`,
-and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+methods. Also consider our
+:doc:`Introduction to mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_mcm_introduction>`,
+:doc:`how-to on collecting statistics of mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_collect_mcm_stats>`,
+and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 Resetting qubits
 ****************
@@ -129,7 +128,7 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+<https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 .. _mid_circuit_measurements_statistics:
 
