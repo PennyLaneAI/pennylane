@@ -1030,85 +1030,87 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#6910)](https://github.com/PennyLaneAI/pennylane/pull/6910)
 
 * Pauli module level imports of `lie_closure`, `structure_constants`, and `center` are deprecated, as 
-  functionality is moved to new `liealg` module.
+  functionality has moved to the new `liealg` module.
   [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 
 <h3>Internal changes ⚙️</h3>
 
-* Add an informative error message for users if they try to `autograph` a function that has a `lambda` loop condition in `qml.while_loop`.
+* An informative error message has been added if Autograph is employed on a function that has a `lambda` 
+  loop condition in `qml.while_loop`.
   [(#7178)](https://github.com/PennyLaneAI/pennylane/pull/7178)
 
-* Clean up logic in `qml.drawer.tape_text`
+* Logic in `qml.drawer.tape_text` has been cleaned.
   [(#7133)](https://github.com/PennyLaneAI/pennylane/pull/7133)
 
-* Add intermediate caching to `null.qubit` zero value generation to improve memory consumption for larger workloads.
+* An intermediate caching to `null.qubit` zero-value generation has been added to improve memory consumption 
+  for larger workloads.
   [(#7155)](https://github.com/PennyLaneAI/pennylane/pull/7155)
 
-* All use of `ABC` for intermediate variables will be renamed to preserve the label for the Python abstract base class `abc.ABC`.
+* All use of `ABC` for intermediate variables has been renamed to preserve the label for the Python 
+  abstract base class `abc.ABC`.
   [(#7156)](https://github.com/PennyLaneAI/pennylane/pull/7156)
 
 * The error message when device wires are not specified when program capture is enabled is more clear.
   [(#7130)](https://github.com/PennyLaneAI/pennylane/pull/7130)
 
-* Clean up logic in `_capture_qnode.py`.
+* Logic in `_capture_qnode.py` has been cleaned.
   [(#7115)](https://github.com/PennyLaneAI/pennylane/pull/7115)
 
-* The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random matrices are guaranteed positive.
+* The test for `qml.math.quantum._denman_beavers_iterations` has been improved such that tested random 
+  matrices are guaranteed positive.
   [(#7071)](https://github.com/PennyLaneAI/pennylane/pull/7071)
 
-* Replace `matrix_power` dispatch for `scipy` interface with an in-place implementation.
+* The `matrix_power` dispatch for the `scipy` interface has been replaced with an in-place implementation.
   [(#7055)](https://github.com/PennyLaneAI/pennylane/pull/7055)
 
-* Add support to `CollectOpsandMeas` for handling `qnode` primitives.
+* Support has been added to `CollectOpsandMeas` for handling QNode primitives.
   [(#6922)](https://github.com/PennyLaneAI/pennylane/pull/6922)
 
 * Change some `scipy` imports from submodules to whole module to reduce memory footprint of importing pennylane.
   [(#7040)](https://github.com/PennyLaneAI/pennylane/pull/7040)
 
-* Add `NotImplementedError`s for `grad` and `jacobian` in `CollectOpsandMeas`.
+* `NotImplementedError`s have been added for `grad` and `jacobian` in `CollectOpsandMeas`.
   [(#7041)](https://github.com/PennyLaneAI/pennylane/pull/7041)
 
-* Quantum transform interpreters now perform argument validation and will no longer
-  check if the equation in the `jaxpr` is a transform primitive.
+* Quantum transform interpreters now perform argument validation and will no longer check if the equation 
+  in the `jaxpr` is a transform primitive.
   [(#7023)](https://github.com/PennyLaneAI/pennylane/pull/7023)
 
-* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module
-  to a new `control_flow` module.
+* `qml.for_loop` and `qml.while_loop` have been moved from the `compiler` module to a new `control_flow` 
+  module.
   [(#7017)](https://github.com/PennyLaneAI/pennylane/pull/7017)
 
-* `qml.capture.run_autograph` is now idempotent.
-  This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
+* `qml.capture.run_autograph` is now idempotent. This means `run_autograph(fn) = run_autograph(run_autograph(fn))`.
   [(#7001)](https://github.com/PennyLaneAI/pennylane/pull/7001)
 
-* Minor changes to `DQInterpreter` for speedups with program capture execution.
+* Minor changes to `DQInterpreter` have been made for speedups with program capture execution.
   [(#6984)](https://github.com/PennyLaneAI/pennylane/pull/6984)
 
-* Globally silences `no-member` pylint issues from jax.
+* `no-member` pylint issues from JAX are now globally silenced
   [(#6987)](https://github.com/PennyLaneAI/pennylane/pull/6987)
 
-* Fix `pylint=3.3.4` errors in source code.
+* `pylint=3.3.4` errors in our source code have been fixed.
   [(#6980)](https://github.com/PennyLaneAI/pennylane/pull/6980)
   [(#6988)](https://github.com/PennyLaneAI/pennylane/pull/6988)
 
-* Remove `QNode.get_gradient_fn` from source code.
+* `QNode.get_gradient_fn` has been removed from the source code.
   [(#6898)](https://github.com/PennyLaneAI/pennylane/pull/6898)
   
-* The source code has been updated use black 25.1.0.
+* The source code has been updated use `black==25.1.0`.
   [(#6897)](https://github.com/PennyLaneAI/pennylane/pull/6897)
 
-* Improved the `InterfaceEnum` object to prevent direct comparisons to `str` objects.
+* The `InterfaceEnum` object has been improved to prevent direct comparisons to `str` objects.
   [(#6877)](https://github.com/PennyLaneAI/pennylane/pull/6877)
 
-* Added a `QmlPrimitive` class that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` module.
-  This class contains a `prim_type` property so that we can differentiate between different sets of PennyLane primitives.
-  Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
+* A `QmlPrimitive` class has been added that inherits `jax.core.Primitive` to a new `qml.capture.custom_primitives` 
+  module. This class contains a `prim_type` property so that we can differentiate between different 
+  sets of PennyLane primitives. Consequently, `QmlPrimitive` is now used to define all PennyLane primitives.
   [(#6847)](https://github.com/PennyLaneAI/pennylane/pull/6847)
 
 * The `RiemannianGradientOptimizer` has been updated to take advantage of newer features.
   [(#6882)](https://github.com/PennyLaneAI/pennylane/pull/6882)
 
-* Use `keep_intermediate=True` flag to keep Catalyst's IR when testing.
-  Also use a different way of testing to see if something was compiled.
+* The `keep_intermediate=True` flag is now used to keep Catalyst's IR when testing.
   [(#6990)](https://github.com/PennyLaneAI/pennylane/pull/6990)
 
 <h3>Documentation 📝</h3>
