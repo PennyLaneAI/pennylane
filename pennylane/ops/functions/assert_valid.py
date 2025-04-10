@@ -25,7 +25,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionRule, DecompositionNotApplicable
+from pennylane.decomposition import DecompositionNotApplicable, DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
