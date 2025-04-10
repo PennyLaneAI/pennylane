@@ -105,7 +105,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. note::
 
-            The following examples may yield different results depending on how the
+            The following examples may yield different outputs depending on how the
             workflow function is executed. For instance, the function can be run
             directly as:
 
@@ -113,8 +113,8 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
             >>> workflow(arg)
 
             Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
-            which captures the abstract computation graph for the given input and generates the abstract shapes.
-            The resulting JAXPR can then be manually interpreted using ``qml.capture.eval_jaxpr``:
+            which captures the abstract computational graph for the given input and generates the abstract shapes.
+            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
 
             >>> jaxpr = jax.make_jaxpr(workflow)(arg)
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
