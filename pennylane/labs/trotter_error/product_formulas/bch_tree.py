@@ -18,7 +18,7 @@ from __future__ import annotations
 import copy
 from collections import defaultdict
 from enum import Enum
-from typing import Dict, Sequence, Set
+from typing import Dict, Hashable, Sequence, Set
 
 from numpy import isclose
 
@@ -32,7 +32,6 @@ class BCHNode(Enum):
     ADD = "ADD"
     COMMUTATOR = "COMMUTATOR"
     FRAGMENT = "FRAGMENT"
-    MATMUL = "MATMUL"
     SCALAR = "SCALAR"
     ZERO = "ZERO"
 
@@ -47,13 +46,13 @@ class BCHTree:
         r_child: BCHTree = None,
         fragment: int = None,
         scalar: complex = None,
-        fragment_set: Set[int] = None,
+        fragment_set: Set[Hashable] = None,
     ):
 
         self.node_type = node_type
         self.fragment_set = fragment_set
 
-        if node_type in (BCHNode.ADD, BCHNode.COMMUTATOR, BCHNode.MATMUL):
+        if node_type in (BCHNode.ADD, BCHNode.COMMUTATOR):
             if not isinstance(l_child, BCHTree):
                 raise TypeError(f"`l_child` must be of type BCHTree, got type {type(l_child)}.")
 
@@ -118,25 +117,9 @@ class BCHTree:
         )
 
     @classmethod
-    def fragment_node(cls, fragment: int) -> BCHTree:
+    def fragment_node(cls, fragment: Hashable) -> BCHTree:
         """Instantiate a FRAGMENT node"""
         return cls(BCHNode.FRAGMENT, fragment=fragment, fragment_set={fragment})
-
-    @classmethod
-    def matmul_node(cls, l_child: BCHTree, r_child: BCHTree) -> BCHTree:
-        """Instantiate a MATMUL node"""
-
-        if l_child.node_type == BCHNode.ZERO:
-            return BCHTree.zero_node()
-        if r_child.node_type == BCHNode.ZERO:
-            return BCHTree.zero_node()
-
-        return cls(
-            BCHNode.MATMUL,
-            l_child=l_child,
-            r_child=r_child,
-            fragment_set=l_child.fragment_set.union(r_child.fragment_set),
-        )
 
     @classmethod
     def scalar_node(cls, child: BCHTree, scalar: complex) -> BCHTree:
@@ -158,7 +141,7 @@ class BCHTree:
         return cls(BCHNode.ZERO, fragment_set={})
 
     @classmethod
-    def nested_commutator(cls, fragments: Sequence[Fragment]) -> BCHTree:
+    def nested_commutator(cls, fragments: Sequence[BCHTree]) -> BCHTree:
         """Instantiate a nested commutator"""
 
         if len(fragments) == 2:
@@ -205,9 +188,6 @@ class BCHTree:
         if self.node_type == BCHNode.FRAGMENT:
             return f"H{self.fragment}"
 
-        if self.node_type == BCHNode.MATMUL:
-            return f"{wrap(self.l_child)}{wrap(self.r_child)}"
-
         if self.node_type == BCHNode.SCALAR:
             return f"{self.scalar}*{wrap(self.l_child)}"
 
@@ -223,7 +203,7 @@ class BCHTree:
         if self.node_type != other.node_type:
             return False
 
-        if self.node_type in (BCHNode.ADD, BCHNode.COMMUTATOR, BCHNode.MATMUL):
+        if self.node_type in (BCHNode.ADD, BCHNode.COMMUTATOR):
             return self.l_child == other.l_child and self.r_child == other.r_child
 
         if self.node_type == BCHNode.FRAGMENT:
@@ -260,13 +240,11 @@ class BCHTree:
 
         return _group_terms(_simplify(self, max_order))
 
-    def evaluate(self, fragments: Sequence[Fragment]):
+    def evaluate(self, fragments: Dict[Hashable, Fragment]):
         """Evaluate the AST"""
 
-        if len(self.fragment_set) != len(fragments):
-            raise ValueError(
-                f"Product formula requires {len(self.fragment_set)} fragments, but only {len(fragments)} were given"
-            )
+        if self.fragment_set != set(fragments.keys()):
+            raise ValueError("Fragment labels do not match leaf fragments of AST.")
 
         if self.node_type == BCHNode.ADD:
             return self.l_child.evaluate(fragments) + self.r_child.evaluate(fragments)
@@ -278,9 +256,6 @@ class BCHTree:
 
         if self.node_type == BCHNode.FRAGMENT:
             return fragments[self.fragment]
-
-        if self.node_type == BCHNode.MATMUL:
-            return self.l_child.evaluate(fragments) @ self.r_child.evaluate(fragments)
 
         if self.node_type == BCHNode.SCALAR:
             return self.scalar * self.l_child.evaluate(fragments)
@@ -300,13 +275,13 @@ def bch_approx(x: BCHTree, y: BCHTree) -> BCHTree:
         + (1 / 2) * BCHTree.commutator_node(x, y)
         + (1 / 12) * BCHTree.nested_commutator([x, x, y])
         + (1 / 12) * BCHTree.nested_commutator([y, y, x])
-        # + (1 / 24) * BCHTree.nested_commutator([y, x, x, y])
-        # - (1 / 720) * BCHTree.nested_commutator([y, y, y, y, x])
-        # - (1 / 720) * BCHTree.nested_commutator([x, x, x, x, y])
-        # + (1 / 360) * BCHTree.nested_commutator([x, y, y, y, x])
-        # + (1 / 360) * BCHTree.nested_commutator([y, x, x, x, y])
-        # + (1 / 120) * BCHTree.nested_commutator([y, x, y, x, y])
-        # + (1 / 120) * BCHTree.nested_commutator([x, y, x, y, x])
+        + (1 / 24) * BCHTree.nested_commutator([y, x, x, y])
+        - (1 / 720) * BCHTree.nested_commutator([y, y, y, y, x])
+        - (1 / 720) * BCHTree.nested_commutator([x, x, x, x, y])
+        + (1 / 360) * BCHTree.nested_commutator([x, y, y, y, x])
+        + (1 / 360) * BCHTree.nested_commutator([y, x, x, x, y])
+        + (1 / 120) * BCHTree.nested_commutator([y, x, y, x, y])
+        + (1 / 120) * BCHTree.nested_commutator([x, y, x, y, x])
         # + (1 / 240) * BCHTree.nested_commutator([x, y, x, y, x, y])
         # + (1 / 720) * BCHTree.nested_commutator([x, y, x, x, x, y])
         # - (1 / 720) * BCHTree.nested_commutator([x, x, y, y, x, y])

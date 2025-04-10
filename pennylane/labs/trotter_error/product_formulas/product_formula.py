@@ -13,39 +13,50 @@
 # limitations under the License.
 """The ProductFormula class"""
 
-from typing import Sequence
+from __future__ import annotations
 
-from pennylane.labs.trotter_error.product_formulas.bch_tree import BCHTree, bch_approx
+from typing import Hashable, Sequence, Union
+
+from pennylane.labs.trotter_error.product_formulas.bch_tree import BCHNode, BCHTree, bch_approx
 
 
 class ProductFormula:
     """Class for representing product formulas"""
 
-    def __init__(self, coeffs: Sequence[float], fragments: Sequence[int]):
+    def __init__(
+        self, coeffs: Sequence[float], fragments: Sequence[Union[Hashable, ProductFormula]]
+    ):
 
         if len(coeffs) != len(fragments):
             raise ValueError(f"Got {len(coeffs)} coefficients and {len(fragments)} fragments.")
 
-        uniq_frags = set(fragments)
-        n_frags = len(uniq_frags)
-
-        for i in range(n_frags):
-            if i not in uniq_frags:
-                raise ValueError(
-                    "Unique elements of `fragments` must be consecutive integers starting with 0."
+        for fragment in fragments:
+            if not isinstance(fragment, (Hashable, ProductFormula)):
+                raise TypeError(
+                    f"Fragments must have type Hashable or ProductFormula, got {type(fragment)} instead."
                 )
 
+        self.labels = set()
+        for fragment in fragments:
+            if isinstance(fragment, ProductFormula):
+                self.labels = set.union(self.labels, fragment.labels)
+            else:
+                self.labels.add(fragment)
+
         self.coeffs = coeffs
-        self.n_frags = n_frags
         self.fragments = fragments
 
-    def bch_ast(self) -> BCHTree:
+    def bch_ast(self, max_order: int) -> BCHTree:
         """Return an AST representation of the BCH expansion"""
-        bch_fragments = [
-            1j * coeff * BCHTree.fragment_node(fragment)
-            for coeff, fragment in zip(self.coeffs, self.fragments)
-        ]
-        return _bch_ast(bch_fragments)
+        bch_fragments = []
+
+        for coeff, fragment in zip(self.coeffs, self.fragments):
+            if isinstance(fragment, ProductFormula):
+                bch_fragments.append(coeff * fragment.bch_ast(max_order))
+            else:
+                bch_fragments.append(coeff * BCHTree.fragment_node(fragment))
+
+        return _bch_ast(bch_fragments, max_order)
 
     def __repr__(self) -> str:
         reps = [
@@ -55,10 +66,9 @@ class ProductFormula:
         return "*".join(reps)
 
 
-def _bch_ast(ops: Sequence[BCHTree]) -> BCHTree:
+def _bch_ast(fragments: Sequence[BCHTree], max_order: int) -> BCHTree:
+    if len(fragments) == 2:
+        return bch_approx(fragments[0], fragments[1])
 
-    if len(ops) == 2:
-        return bch_approx(ops[0], ops[1])
-
-    head, *tail = ops
-    return bch_approx(head, _bch_ast(tail))
+    head, *tail = fragments
+    return bch_approx(head, _bch_ast(tail, max_order)).simplify(max_order)
