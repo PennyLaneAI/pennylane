@@ -656,6 +656,10 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>Decompositions</h4>
 
+* The `qml.QROM` template has been upgraded to decompose more efficiently when `work_wires` are not 
+  used.
+  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
+
 * The decomposition of a single-qubit `qml.QubitUnitary` now includes the global phase.
   [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
   
@@ -797,6 +801,14 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#7135)](https://github.com/PennyLaneAI/pennylane/pull/7135)
 
 <h4>Other improvements</h4>
+
+* The `poly_to_angles` function has been improved to correctly work with different interfaces and no 
+  longer manipulate the input angles tensor internally.
+  [(#6979)](https://github.com/PennyLaneAI/pennylane/pull/6979)
+
+* Dynamic one-shot workloads are now faster for `null.qubit` by removing a redundant `functools.lru_cache` 
+  call that was capturing all `SampleMP` objects in a workload.
+  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
 
 * The coefficients of observables now have improved differentiability.
   [(#6598)](https://github.com/PennyLaneAI/pennylane/pull/6598)
@@ -1135,6 +1147,9 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   but it is correct.
   [(#7083)](https://github.com/PennyLaneAI/pennylane/pull/7083)
 
+* The docstring for `qml.labs.trotter_error` has been updated.
+  [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
+
 * The code example in the docstring for `qml.PauliSentence` now properly copy-pastes.
   [(#6949)](https://github.com/PennyLaneAI/pennylane/pull/6949)
 
@@ -1169,37 +1184,33 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * PennyLane is now compatible with `pyzx 0.9`.
   [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
 
-* Fix a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary epsilon inaccuracy.
+* Fixed a bug when `qml.matrix` is applied on a sparse operator, which caused the output to have unnecessary 
+  epsilon inaccuracy.
   [(#7147)](https://github.com/PennyLaneAI/pennylane/pull/7147)
   [(#7182)](https://github.com/PennyLaneAI/pennylane/pull/7182)
 
-
-* Revert [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance impact due to wire flattening.
+* Reverted [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933) to remove non-negligible performance 
+  impact due to wire flattening.
   [(#7136)](https://github.com/PennyLaneAI/pennylane/pull/7136)
 
-* Fixes a bug that caused the output of `qml.fourier.qnode_spectrum()` to
-  differ depending if equivalent gate generators are defined using
-  different PennyLane operators. This was resolved by updating
+* Fixed a bug that caused the output of `qml.fourier.qnode_spectrum()` to differ depending if equivalent 
+  gate generators are defined using different PennyLane operators. This was resolved by updating
   `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
   [(#7121)])(https://github.com/PennyLaneAI/pennylane/pull/7121)
 
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
   [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
 
-* Dynamic one-shot workloads are now faster for `null.qubit`.
-  Removed a redundant `functools.lru_cache` call that was capturing all `SampleMP` objects in a workload.
-  [(#7077)](https://github.com/PennyLaneAI/pennylane/pull/7077)
-
-* `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit measurements
-  when experimental program capture is enabled.
+* `qml.transforms.single_qubit_fusion` and `qml.transforms.cancel_inverses` now correctly handle mid-circuit 
+  measurements when program capture is enabled.
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
 
-* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
-  of sparse matrices.
+* `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array of 
+  sparse matrices.
   [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
 
-* `qml.ops.Controlled.has_sparse_matrix` now provides the correct information
-  by checking if the target operator has a sparse or dense matrix defined.
+* `qml.ops.Controlled.has_sparse_matrix` now provides the correct information by checking if the target 
+  operator has a sparse or dense matrix defined.
   [(#7025)](https://github.com/PennyLaneAI/pennylane/pull/7025)
 
 * `qml.capture.PlxprInterpreter` now flattens pytree arguments before evaluation.
@@ -1211,34 +1222,28 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * `qml.expval` no longer silently casts to a real number when observable coefficients are imaginary.
   [(#6939)](https://github.com/PennyLaneAI/pennylane/pull/6939)
 
-* Fixed `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels.
-  Now, `Wires` is idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
+* Fixed `qml.wires.Wires` initialization to disallow `Wires` objects as wires labels. Now, `Wires` is 
+  idempotent, e.g. `Wires([Wires([0]), Wires([1])])==Wires([0, 1])`.
   [(#6933)](https://github.com/PennyLaneAI/pennylane/pull/6933)
 
-* `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order primitives
-  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
-
-* `qml.capture.PlxprInterpreter` now uses `Primitive.get_bind_params` to resolve primitive calling signatures before binding
+* `qml.capture.PlxprInterpreter` now correctly handles propagation of constants when interpreting higher-order 
   primitives.
   [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
 
-* The interface is now detected from the data in the circuit, not the arguments to the `QNode`. This allows
+* `qml.capture.PlxprInterpreter` now uses `Primitive.get_bind_params` to resolve primitive calling signatures 
+  before binding primitives.
+  [(#6913)](https://github.com/PennyLaneAI/pennylane/pull/6913)
+
+* The interface is now detected from the data in the circuit, not the arguments to the QNode. This allows
   interface data to be strictly passed as closure variables and still be detected.
   [(#6892)](https://github.com/PennyLaneAI/pennylane/pull/6892)
 
-* `BasisState` now casts its input to integers.
+* `qml.BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
-* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
-  passed to the `QNode`, instead of assuming the method is always `deferred`.
+* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the 
+  `mcm_method` passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
-
-* The `poly_to_angles` function has been improved to correctly work with different interfaces and
-  no longer manipulate the input angles tensor internally.
-  [(#6979)](https://github.com/PennyLaneAI/pennylane/pull/6979)
-
-* The `QROM` template is upgraded to decompose more efficiently when `work_wires` are not used.
-  [#6967)](https://github.com/PennyLaneAI/pennylane/pull/6967)
 
 * Applying mid-circuit measurements inside `qml.cond` is not supported, and previously resulted in 
   unclear error messages or incorrect results. It is now explicitly not allowed, and raises an error when 
@@ -1255,9 +1260,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 * Downloading specific attributes of datasets in the `'other'` category via `qml.data.load` no longer fails.
   [(#7144)](https://github.com/PennyLaneAI/pennylane/pull/7144)
-
-* Minor docstring upgrades for `qml.labs.trotter_error`.
-  [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
 
 <h3>Contributors ✍️</h3>
 
