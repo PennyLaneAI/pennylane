@@ -15,7 +15,6 @@
 """This module contains methods that decomposes unitary matrices."""
 
 import numpy as np
-from scipy import sparse
 
 from pennylane import math
 from pennylane.typing import TensorLike
@@ -24,18 +23,21 @@ EPS = 1e-64
 
 
 def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Decomposes a 2x2 unitary into ZYZ rotation angles and optionally a global phase.
+    """Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
+    phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and Y rotations in the form
+    :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`
 
     Args:
         U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
+    Returns:
+        tuple: The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
+            global phase :math:`\alpha` if ``return_global_phase=True``.
+
     """
 
-    if sparse.issparse(U):
-        U = U.todense()  # U is assumed to be 2x2 here so dense representation is fine.
-
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arcsin(abs_b)
@@ -52,24 +54,27 @@ def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
     omega = math.squeeze(omega % (4 * np.pi))
 
     if return_global_phase:
-        return phi, theta, omega, global_phase
+        return phi, theta, omega, alpha
 
     return phi, theta, omega
 
 
 def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Decomposes a 2x2 unitary into XYX rotation angles and optionally a global phase.
+    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Y rotations in the form
+    :math:`e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
+    Returns:
+        tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+            global phase :math:`\alpha` if ``return_global_phase=True``.
+
     """
 
-    if sparse.issparse(U):
-        U = U.todense()  # U is assumed to be 2x2 here so dense representation is fine.
-
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
     half_lam_plus_phi = math.arctan2(-math.imag(U[..., 0, 1]), math.real(U[..., 0, 0]) + EPS)
     half_lam_minus_phi = math.arctan2(math.imag(U[..., 0, 0]), -math.real(U[..., 0, 1]) + EPS)
@@ -87,17 +92,23 @@ def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
     lam = math.squeeze(lam % (4 * np.pi))
 
     if return_global_phase:
-        return lam, theta, phi, global_phase
+        return lam, theta, phi, alpha
 
     return lam, theta, phi
 
 
 def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Decomposes a 2x2 unitary into XZX rotation angles and optionally a global phase.
+    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Z rotations in the form
+    :math:`e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
+
+    Returns:
+        tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+            global phase :math:`\alpha` if ``return_global_phase=True``.
 
     """
 
@@ -132,7 +143,19 @@ def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
 
 
 def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Decomposes a 2x2 unitary into ZXZ rotation angles and optionally a global phase."""
+    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and X rotations in the form
+    :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
+
+    Args:
+        U (array): 2x2 unitary matrix
+        return_global_phase (bool): if True, returns the global phase as well.
+
+    Returns:
+        tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+            global phase :math:`\alpha` if ``return_global_phase=True``.
+
+    """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
 
@@ -140,18 +163,18 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = math.where(abs_a > abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
 
-    half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
-    half_phi_minus_omega = math.angle(1j * U[..., 1, 0] + EPS)
+    half_phi_plus_lam = math.angle(U[..., 1, 1] + EPS)
+    half_phi_minus_lam = math.angle(1j * U[..., 1, 0] + EPS)
 
-    phi = half_phi_plus_omega + half_phi_minus_omega
-    omega = half_phi_plus_omega - half_phi_minus_omega
+    phi = half_phi_plus_lam + half_phi_minus_lam
+    lam = half_phi_plus_lam - half_phi_minus_lam
 
     # Normalize the angles
     phi = math.squeeze(phi % (4 * np.pi))
     theta = math.squeeze(theta % (4 * np.pi))
-    omega = math.squeeze(omega % (4 * np.pi))
+    lam = math.squeeze(lam % (4 * np.pi))
 
     if return_global_phase:
-        return omega, theta, phi, global_phase
+        return lam, theta, phi, global_phase
 
-    return omega, theta, phi
+    return lam, theta, phi
