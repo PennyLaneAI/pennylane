@@ -1140,6 +1140,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * Minor docstring upgrades for `qml.labs.trotter_error`.
   [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
 
+* Function `qml.labs.trotter_error.vibronic_fragments` now returns `RealspaceMatrix` objects with the correct number of electronic states.
+  [(#7251)](https://github.com/PennyLaneAI/pennylane/pull/7251)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
