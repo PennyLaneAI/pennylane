@@ -23,7 +23,7 @@ EPS = 1e-64
 
 
 def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
+    r"""Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`
 
@@ -53,14 +53,11 @@ def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     omega = math.squeeze(omega % (4 * np.pi))
 
-    if return_global_phase:
-        return phi, theta, omega, alpha
-
-    return phi, theta, omega
+    return (phi, theta, omega, alpha) if return_global_phase else (phi, theta, omega)
 
 
 def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Y rotations in the form
     :math:`e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
@@ -91,14 +88,11 @@ def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     lam = math.squeeze(lam % (4 * np.pi))
 
-    if return_global_phase:
-        return lam, theta, phi, alpha
-
-    return lam, theta, phi
+    return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
 
 
 def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Z rotations in the form
     :math:`e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
@@ -136,14 +130,11 @@ def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     lam = math.squeeze(lam % (4 * np.pi))
 
-    if return_global_phase:
-        return lam, theta, phi, global_phase
-
-    return lam, theta, phi
+    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
 
 
 def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
-    """Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
+    r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and X rotations in the form
     :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
@@ -174,7 +165,4 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     lam = math.squeeze(lam % (4 * np.pi))
 
-    if return_global_phase:
-        return lam, theta, phi, global_phase
-
-    return lam, theta, phi
+    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)

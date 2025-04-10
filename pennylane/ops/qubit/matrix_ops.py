@@ -43,6 +43,7 @@ from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytre
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     rot_decomposition,
     xzx_decomposition,
+    xyx_decomposition,
     zxz_decomposition,
     zyz_decomposition,
 )
@@ -350,7 +351,12 @@ class QubitUnitary(Operation):
 
 
 add_decomps(
-    QubitUnitary, zyz_decomposition, zxz_decomposition, xzx_decomposition, rot_decomposition
+    QubitUnitary,
+    zyz_decomposition,
+    zxz_decomposition,
+    xzx_decomposition,
+    xyx_decomposition,
+    rot_decomposition,
 )
 
 
