@@ -121,7 +121,7 @@ def _convert_to_su4(U, return_angle=False):
 
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
     if return_angle:
-        return math.cast_like(U, det) * math.exp(exp_angle), np.angle(math.exp(exp_angle))
+        return math.cast_like(U, det) * math.exp(exp_angle), qml.math.angle(math.exp(exp_angle))
     return math.cast_like(U, det) * math.exp(exp_angle)
 
 

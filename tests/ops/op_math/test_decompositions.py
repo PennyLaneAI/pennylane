@@ -1234,7 +1234,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
-    def _jax_jit(self, U_pair, wires):
+    def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
         # pylint: disable=import-outside-toplevel
@@ -1293,9 +1293,7 @@ def test_two_qubit_decomposition_special_case_discontinuity():
         return mat
 
     mat = make_unitary(np.pi / 2)
-    decomp_mat = qml.matrix(
-        qml.prod(*two_qubit_decomposition(mat, wires=(0, 1))[::-1]), wire_order=(0, 1)
-    )
+    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
     assert qml.math.allclose(mat, decomp_mat)
 
 
