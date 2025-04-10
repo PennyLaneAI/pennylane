@@ -400,11 +400,11 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
-* Sparse data structures in compressed-sparse-row (csr) format are now supported end-to-end in PennyLane, resulting
-  in faster execution for large sparse objects 
+* Sparse data structures in compressed-sparse-row (csr) format are now supported end-to-end
+  in PennyLane, resulting in faster execution for large sparse objects.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) 
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
-  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)  
   Sparse-array input and execution is now supported on `default.qubit` with a variety of templates, 
   preserving sparsity throughout the entire simulation. 
   
@@ -475,7 +475,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   ```
 
 * Operators that have a `sparse_matrix` method can now choose a sparse-matrix format and the order of their wires.
-  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995).
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
   ```pycon
   >>> op = qml.CNOT([0,1])
