@@ -472,7 +472,8 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   (3, 2)	1
   ```
 
-* All operators that support `Operator.sparse_matrix` can now choose a format for the sparse matrix and support the wire_order parameter [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995).
+* Operators that have a `sparse_matrix` method can now choose a sparse-matrix format and the order of their wires.
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995).
 
   ```pycon
   >>> op = qml.CNOT([0,1])
