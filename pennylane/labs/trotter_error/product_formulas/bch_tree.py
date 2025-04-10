@@ -18,7 +18,7 @@ from __future__ import annotations
 import copy
 from collections import defaultdict
 from enum import Enum
-from typing import Sequence, Set, Tuple, Union
+from typing import Dict, Sequence, Set
 
 from numpy import isclose
 
@@ -46,17 +46,11 @@ class BCHTree:
         l_child: BCHTree = None,
         r_child: BCHTree = None,
         fragment: int = None,
-        scalar: float = None,
-        order: int = None,
+        scalar: complex = None,
         fragment_set: Set[int] = None,
     ):
 
         self.node_type = node_type
-
-        if not isinstance(order, int):
-            raise TypeError(f"`order` must be of type int, got type {type(order)}.")
-
-        self.order = order
         self.fragment_set = fragment_set
 
         if node_type in (BCHNode.ADD, BCHNode.COMMUTATOR, BCHNode.MATMUL):
@@ -73,7 +67,7 @@ class BCHTree:
             if not isinstance(l_child, BCHTree):
                 raise TypeError(f"`l_child` must be of type BCHTree, got type {type(l_child)}.")
 
-            if not isinstance(scalar, (float, int)):
+            if not isinstance(scalar, (float, int, complex)):
                 raise TypeError(f"`scalar` must be of type float, got type {type(scalar)}.")
 
             self.l_child = l_child
@@ -102,7 +96,6 @@ class BCHTree:
             BCHNode.ADD,
             l_child=l_child,
             r_child=r_child,
-            order=max(l_child.order, r_child.order),
             fragment_set=l_child.fragment_set.union(r_child.fragment_set),
         )
 
@@ -121,14 +114,13 @@ class BCHTree:
             BCHNode.COMMUTATOR,
             l_child=l_child,
             r_child=r_child,
-            order=l_child.order + r_child.order,
             fragment_set=l_child.fragment_set.union(r_child.fragment_set),
         )
 
     @classmethod
     def fragment_node(cls, fragment: int) -> BCHTree:
         """Instantiate a FRAGMENT node"""
-        return cls(BCHNode.FRAGMENT, fragment=fragment, order=1, fragment_set={fragment})
+        return cls(BCHNode.FRAGMENT, fragment=fragment, fragment_set={fragment})
 
     @classmethod
     def matmul_node(cls, l_child: BCHTree, r_child: BCHTree) -> BCHTree:
@@ -143,12 +135,11 @@ class BCHTree:
             BCHNode.MATMUL,
             l_child=l_child,
             r_child=r_child,
-            order=l_child.order + r_child.order,
             fragment_set=l_child.fragment_set.union(r_child.fragment_set),
         )
 
     @classmethod
-    def scalar_node(cls, child: BCHTree, scalar: float) -> BCHTree:
+    def scalar_node(cls, child: BCHTree, scalar: complex) -> BCHTree:
         """Instantiate a SCALAR node"""
 
         if child.node_type == BCHNode.ZERO or isclose(scalar, 0):
@@ -158,14 +149,23 @@ class BCHTree:
             BCHNode.SCALAR,
             l_child=child,
             scalar=scalar,
-            order=child.order,
             fragment_set=child.fragment_set,
         )
 
     @classmethod
-    def zero_node(cls):
+    def zero_node(cls) -> BCHTree:
         """Instantiate a ZERO node"""
-        return cls(BCHNode.ZERO, order=0, fragment_set={})
+        return cls(BCHNode.ZERO, fragment_set={})
+
+    @classmethod
+    def nested_commutator(cls, fragments: Sequence[Fragment]) -> BCHTree:
+        """Instantiate a nested commutator"""
+
+        if len(fragments) == 2:
+            return cls.commutator_node(fragments[0], fragments[1])
+
+        head, *tail = fragments
+        return cls.commutator_node(head, cls.nested_commutator(tail))
 
     def __add__(self, other: BCHTree) -> BCHTree:
         return BCHTree.add_node(self, other)
@@ -237,10 +237,28 @@ class BCHTree:
 
         raise ValueError(f"Found invalid node type {self.node_type}.")
 
-    def simplify(self, max_order: int = 4) -> BCHTree:
+    def __hash__(self) -> int:
+        if self.node_type == BCHNode.ADD:
+            return hash((self.node_type, frozenset((self.l_child, self.r_child))))
+
+        if self.node_type == BCHNode.COMMUTATOR:
+            return hash((self.node_type, self.l_child, self.r_child))
+
+        if self.node_type == BCHNode.FRAGMENT:
+            return hash((self.node_type, self.fragment))
+
+        if self.node_type == BCHNode.SCALAR:
+            return hash((self.node_type, self.scalar, self.l_child))
+
+        if self.node_type == BCHNode.ZERO:
+            return 0
+
+        raise ValueError(f"Found invalid node type {self.node_type}.")
+
+    def simplify(self, max_order: int = 3) -> BCHTree:
         """Simplify the AST according to commutator identities"""
 
-        return _simplify(self, max_order)
+        return _group_terms(_simplify(self, max_order))
 
     def evaluate(self, fragments: Sequence[Fragment]):
         """Evaluate the AST"""
@@ -276,9 +294,25 @@ class BCHTree:
 def bch_approx(x: BCHTree, y: BCHTree) -> BCHTree:
     """Return first term of the BCH expansion"""
 
-    xy = BCHTree.commutator_node(x, y)
-
-    return x + y + (1 / 2) * xy
+    return (
+        x
+        + y
+        + (1 / 2) * BCHTree.commutator_node(x, y)
+        + (1 / 12) * BCHTree.nested_commutator([x, x, y])
+        + (1 / 12) * BCHTree.nested_commutator([y, y, x])
+        # + (1 / 24) * BCHTree.nested_commutator([y, x, x, y])
+        # - (1 / 720) * BCHTree.nested_commutator([y, y, y, y, x])
+        # - (1 / 720) * BCHTree.nested_commutator([x, x, x, x, y])
+        # + (1 / 360) * BCHTree.nested_commutator([x, y, y, y, x])
+        # + (1 / 360) * BCHTree.nested_commutator([y, x, x, x, y])
+        # + (1 / 120) * BCHTree.nested_commutator([y, x, y, x, y])
+        # + (1 / 120) * BCHTree.nested_commutator([x, y, x, y, x])
+        # + (1 / 240) * BCHTree.nested_commutator([x, y, x, y, x, y])
+        # + (1 / 720) * BCHTree.nested_commutator([x, y, x, x, x, y])
+        # - (1 / 720) * BCHTree.nested_commutator([x, x, y, y, x, y])
+        # + (1 / 1440) * BCHTree.nested_commutator([x, y, y, y, x, y])
+        # - (1 / 1440) * BCHTree.nested_commutator([x, x, y, x, x, y])
+    )
 
 
 def _simplify(x: BCHTree, max_order: int) -> BCHTree:
@@ -294,121 +328,82 @@ def _simplify(x: BCHTree, max_order: int) -> BCHTree:
     x = _distribute_scalar(x)
     x = _factor_scalar_from_commutator(x)
     x = _commutator_linearity(x)
-    x = _commutator_is_zero(x)
-    x = _order_commutator(x)
+    x = _order_commutator_terms(x)
     x = _drop_high_order(x, max_order)
 
-    return _group_terms(x) if x == old_ast else _simplify(x, max_order)
+    return x if x == old_ast else _simplify(x, max_order)
 
 
 def _group_terms(x: BCHTree) -> BCHTree:
 
-    fragments = [
-        coeff * BCHTree.fragment_node(fragment) for fragment, coeff in _fragment_dict(x).items()
-    ]
+    fragments = []
+    commutators = []
 
-    commutator_dict = _commutator_dict(x)
+    for term, coeff in _term_dict(x).items():
+        if isclose(coeff, 0):
+            continue
 
-    commutators = [
-        coeff * _tuple_to_commutator(commutator)
-        for commutator, coeff in _commutator_dict(x).items()
-    ]
+        if term.node_type == BCHNode.COMMUTATOR:
+            commutators.append(coeff * term)
+
+        if term.node_type == BCHNode.FRAGMENT:
+            fragments.append(coeff * term)
+
+    commutators = _combine_left_linearity(commutators)
 
     return sum(fragments + commutators, BCHTree.zero_node())
 
 
-def _commutator_dict(x: BCHTree) -> defaultdict:
+def _combine_left_linearity(commutators: Sequence[BCHTree]) -> Sequence[BCHTree]:
+    right_sides = {}
+
+    for commutator in commutators:
+        if commutator.node_type == BCHNode.COMMUTATOR:
+            left = commutator.l_child
+            right = commutator.r_child
+
+        elif commutator.node_type == BCHNode.SCALAR:
+            if commutator.l_child.node_type != BCHNode.COMMUTATOR:
+                raise ValueError(
+                    f"Expected child node type BCHNode.COMMUTATOR, got {commutator.l_child.node_type} instead."
+                )
+
+            left = commutator.scalar * commutator.l_child.l_child
+            right = commutator.l_child.r_child
+
+        else:
+            raise ValueError(
+                f"Expected node type BCHNode.COMMUTATOR or BCHNode.SCALAR, got {commutator.node_type} instead."
+            )
+
+        if right in right_sides:
+            right_sides[right] += left
+        else:
+            right_sides[right] = left
+
+    return [BCHTree.commutator_node(left, right) for right, left in right_sides.items()]
+
+
+def _term_dict(x: BCHTree) -> Dict[BCHTree, float]:
     d = defaultdict(int)
 
-    if x.node_type == BCHNode.ADD:
-        d_left = _commutator_dict(x.l_child)
-        d_right = _commutator_dict(x.r_child)
-
-        for commutator, coeff in d_left.items():
-            d[commutator] += coeff
-
-        for commutator, coeff in d_right.items():
-            d[commutator] += coeff
-
-    if x.node_type == BCHNode.COMMUTATOR:
-        d[_commutator_to_tuple(x)] += 1
-
-    if x.node_type == BCHNode.SCALAR:
-        d_child = _commutator_dict(x.l_child)
-        for fragment, coeff in d_child.items():
-            d[fragment] = x.scalar * coeff
-
-    return d
-
-
-def _commutator_to_tuple(x: BCHTree) -> Tuple[Union[int, Tuple], Union[int, Tuple]]:
-    if x.node_type != BCHNode.COMMUTATOR:
-        raise ValueError(f"Expected node type COMMUTATOR, got {x.node_type}.")
-
-    l_type = x.l_child.node_type
-    r_type = x.r_child.node_type
-    l_ret, r_ret = None, None
-
-    if l_type == BCHNode.FRAGMENT:
-        l_ret = x.l_child.fragment
-
-    if l_type == BCHNode.COMMUTATOR:
-        l_ret = _commutator_to_tuple(x.l_child)
-
-    if r_type == BCHNode.FRAGMENT:
-        r_ret = x.r_child.fragment
-
-    if r_type == BCHNode.COMMUTATOR:
-        r_ret = _commutator_to_tuple(x.r_child)
-
-    if l_ret is None or r_ret is None:
-        raise ValueError(
-            f"Children must be of type BCHNode.FRAGMENT, BCHNode.COMMUTATOR, got {x.l_child.node_type} and {x.r_child.node_type}."
-        )
-
-    return (l_ret, r_ret)
-
-
-def _tuple_to_commutator(x: Tuple[Union[int, Tuple], Union[int, Tuple]]) -> BCHTree:
-    left, right = x
-
-    if isinstance(left, int) and isinstance(right, int):
-        return BCHTree.commutator_node(BCHTree.fragment_node(left), BCHTree.fragment_node(right))
-
-    if isinstance(left, int) and isinstance(right, tuple):
-        return BCHTree.commutator_node(BCHTree.fragment_node(left), _tuple_to_commutator(right))
-
-    if isinstance(left, tuple) and isinstance(right, int):
-        return BCHTree.commutator_node(_tuple_to_commutator(left), BCHTree.fragment_node(right))
-
-    if isinstance(left, tuple) and isinstance(right, tuple):
-        return BCHTree.commutator_node(_tuple_to_commutator(left), _tuple_to_commutator(right))
-
-    raise ValueError(
-        f"Expected tuple compents to be of types int or tuple, got {type(left)} and {type(right)}."
-    )
-
-
-def _fragment_dict(x: BCHTree) -> defaultdict:
-    d = defaultdict(int)
+    if x.node_type in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
+        d[x] = 1
 
     if x.node_type == BCHNode.ADD:
-        d_left = _fragment_dict(x.l_child)
-        d_right = _fragment_dict(x.r_child)
+        d_left = _term_dict(x.l_child)
+        d_right = _term_dict(x.r_child)
 
-        for fragment, coeff in d_left.items():
-            d[fragment] += coeff
+        for term, coeff in d_left.items():
+            d[term] += coeff
 
-        for fragment, coeff in d_right.items():
-            d[fragment] += coeff
-
-    if x.node_type == BCHNode.FRAGMENT:
-        d[x.fragment] += 1
+        for term, coeff in d_right.items():
+            d[term] += coeff
 
     if x.node_type == BCHNode.SCALAR:
-        d_child = _fragment_dict(x.l_child)
-        for fragment, coeff in d_child.items():
-            d[fragment] = x.scalar * coeff
+        d_child = _term_dict(x.l_child)
+        for term, coeff in d_child.items():
+            d[term] = x.scalar * coeff
 
     return d
 
@@ -417,13 +412,16 @@ def _commutator_linearity(x: BCHTree) -> BCHTree:
     if x.node_type != BCHNode.COMMUTATOR:
         return x
 
-    if x.l_child.node_type == BCHNode.ADD:
+    l_type = x.l_child.node_type
+    r_type = x.r_child.node_type
+
+    if l_type == BCHNode.ADD:
         l_comm = BCHTree.commutator_node(x.l_child.l_child, x.r_child)
         r_comm = BCHTree.commutator_node(x.l_child.r_child, x.r_child)
 
         return l_comm + r_comm
 
-    if x.r_child.node_type == BCHNode.ADD:
+    if r_type == BCHNode.ADD:
         l_comm = BCHTree.commutator_node(x.l_child, x.r_child.l_child)
         r_comm = BCHTree.commutator_node(x.l_child, x.r_child.r_child)
 
@@ -471,43 +469,7 @@ def _distribute_scalar(x: BCHTree) -> BCHTree:
     return x
 
 
-def _commutator_is_zero(x: BCHTree) -> BCHTree:
-    if x.node_type != BCHNode.COMMUTATOR:
-        return x
-
-    l_type = x.l_child.node_type
-    r_type = x.r_child.node_type
-
-    if l_type == BCHNode.FRAGMENT and r_type == BCHNode.FRAGMENT:
-        return BCHTree.zero_node() if x.l_child.fragment == x.r_child.fragment else x
-
-    if l_type == BCHNode.COMMUTATOR and r_type == BCHNode.COMMUTATOR:
-        l_tuple = _commutator_to_tuple(x.l_child)
-        r_tuple = _commutator_to_tuple(x.r_child)
-
-        return BCHTree.zero_node() if l_tuple == (r_tuple[1], r_tuple[0]) else x
-
-    if l_type == BCHNode.SCALAR and r_type == BCHNode.SCALAR:
-        return (
-            x.l_child.scalar
-            * x.r_child.scalar
-            * _commutator_is_zero(BCHTree.commutator_node(x.l_child.l_child, x.r_child.l_child))
-        )
-
-    if l_type == BCHNode.SCALAR:
-        return x.l_child.scalar * _commutator_is_zero(
-            BCHTree.commutator_node(x.l_child.l_child, x.r_child)
-        )
-
-    if r_type == BCHNode.SCALAR:
-        return x.r_child.scalar * _commutator_is_zero(
-            BCHTree.commutator_node(x.l_child, x.r_child.l_child)
-        )
-
-    return x
-
-
-def _order_commutator(x: BCHTree) -> BCHTree:
+def _order_commutator_terms(x: BCHTree) -> BCHTree:
     if x.node_type != BCHNode.COMMUTATOR:
         return x
 
@@ -525,50 +487,48 @@ def _order_commutator(x: BCHTree) -> BCHTree:
     return x
 
 
-def _drop_high_order(x: BCHTree, max_order: int):
-    if x.node_type not in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
+def _compute_commutator_order(x: BCHTree) -> int:
+    l_type = x.l_child.node_type
+    r_type = x.r_child.node_type
+
+    if l_type == BCHNode.SCALAR:
+        l_term = x.l_child.l_child
+    else:
+        l_term = x.l_child
+
+    if r_type == BCHNode.SCALAR:
+        r_term = x.r_child.l_child
+    else:
+        r_term = x.r_child
+
+    if l_type == BCHNode.FRAGMENT and r_type == BCHNode.FRAGMENT:
+        return 2
+
+    if l_type == BCHNode.FRAGMENT and r_type == BCHNode.COMMUTATOR:
+        return _compute_commutator_order(r_term) + 1
+
+    if l_type == BCHNode.COMMUTATOR and r_type == BCHNode.FRAGMENT:
+        return _compute_commutator_order(l_term) + 1
+
+    if l_type == BCHNode.COMMUTATOR and r_type == BCHNode.COMMUTATOR:
+        return _compute_commutator_order(l_term) + _compute_commutator_order(r_term)
+
+    raise ValueError(
+        f"Expected child nodes to be of type BCHNode.FRAGMENT, BCHNode.COMMUTATOR, or BCHNode.SCALAR. Got {l_type} and {r_type} instead."
+    )
+
+
+def _drop_high_order(x: BCHTree, max_order: int) -> BCHTree:
+    if x.node_type != BCHNode.COMMUTATOR:
         return x
 
-    if x.order > max_order:
+    if x.l_child.node_type not in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
+        return x
+
+    if x.r_child.node_type not in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
+        return x
+
+    if _compute_commutator_order(x) > max_order:
         return BCHTree.zero_node()
 
     return x
-
-
-def _distribute_into_commutator(x: BCHTree):
-    if x.node_type != BCHNode.SCALAR:
-        return x
-
-    if x.l_child.node_type != BCHNode.COMMUTATOR:
-        return x
-
-    return BCHTree.commutator_node(x.scalar * x.l_child.l_child, x.l_child.r_child)
-
-
-def _combine_with_left_linearity(commutators: defaultdict) -> BCHTree:
-
-    combined = {}
-    for commutator, coeff in commutators.items():
-        left, right = commutator
-
-        if right in combined:
-            combined[right].append((left, coeff))
-        else:
-            combined[right] = [(left, coeff)]
-
-    ret = BCHTree.zero_node()
-    for right, left in combined.items():
-        term_sum = BCHTree.zero_node()
-        for term in left:
-            if isinstance(term[1], int):
-                term_sum += term[1] * BCHTree.fragment_node(term[0])
-
-            if isinstance(term[1], tuple):
-                term_sum += term[1] * _tuple_to_commutator(term[0])
-
-        right_node = (
-            BCHTree.fragment_node(right) if isinstance(right, int) else _tuple_to_commutator(right)
-        )
-        ret += BCHTree.commutator_node(term_sum, right_node)
-
-    return ret
