@@ -64,6 +64,7 @@ Defining Decomposition Rules
     ~pow_resource_rep
     ~DecompositionRule
     ~Resources
+    ~CompressedResourceOp
 
 In the new decomposition system, a decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -246,6 +247,7 @@ from .resources import (
     controlled_resource_rep,
     adjoint_resource_rep,
     pow_resource_rep,
+    CompressedResourceOp,
 )
 from .decomposition_rule import (
     register_resources,
