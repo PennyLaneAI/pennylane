@@ -285,6 +285,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   and target qubits of controlled operations when experimental program capture is enabled.
   It follows the same API as `qml.transforms.commute_controlled`.
   [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+  [(#7247)](https://github.com/PennyLaneAI/pennylane/pull/7247)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
@@ -713,6 +714,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
+  [(#7228)](https://github.com/PennyLaneAI/pennylane/pull/7228)
 
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)

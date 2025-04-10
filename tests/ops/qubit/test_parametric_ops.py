@@ -699,6 +699,9 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, exp)
 
 
+pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
+
+
 class TestMatrix:
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
@@ -1034,51 +1037,56 @@ class TestMatrix:
             qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals(self, phi):
         """Test eigenvalues computation for PSWAP"""
         evs = qml.PSWAP.compute_eigvals(phi)
-        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        if len(qml.math.shape(phi)) > 0:
+            evs_expected = np.stack([[1, 1, -exp, exp] for exp in qml.math.exp(1j * phi)])
+        else:
+            evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
-    def test_pswap_eigvals_broadcasted(self, tol):
-        """Test broadcasted eigenvalues computation for PSWAP"""
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.PSWAP.compute_eigvals(phi)
-        evs_expected = np.array([[1, 1, -np.exp(1j * p), np.exp(1j * p)] for p in phi])
-        assert qml.math.allclose(evs, evs_expected, atol=tol, rtol=0)
-
     @pytest.mark.tf
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_tf(self, phi):
         """Test eigenvalues computation for PSWAP using Tensorflow interface"""
         import tensorflow as tf
 
         param_tf = tf.Variable(phi)
         evs = qml.PSWAP.compute_eigvals(param_tf)
-        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        if len(qml.math.shape(phi)) > 0:
+            evs_expected = np.stack([[1, 1, -exp, exp] for exp in qml.math.exp(1j * phi)])
+        else:
+            evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_torch(self, phi):
         """Test eigenvalues computation for PSWAP using Torch interface"""
         import torch
 
         param_torch = torch.tensor(phi)
         evs = qml.PSWAP.compute_eigvals(param_torch)
-        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        if len(qml.math.shape(phi)) > 0:
+            evs_expected = np.stack([[1, 1, -exp, exp] for exp in qml.math.exp(1j * phi)])
+        else:
+            evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_jax(self, phi):
         """Test eigenvalues computation for PSWAP using JAX interface"""
         import jax
 
         param_jax = jax.numpy.array(phi)
         evs = qml.PSWAP.compute_eigvals(param_jax)
-        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        if len(qml.math.shape(phi)) > 0:
+            evs_expected = np.stack([[1, 1, -exp, exp] for exp in qml.math.exp(1j * phi)])
+        else:
+            evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
