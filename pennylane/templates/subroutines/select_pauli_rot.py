@@ -21,7 +21,7 @@ from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotat
 
 
 class SelectPauliRot(Operation):
-    r"""Applies the SelectPauliRot operator.
+    r"""Applies the multiplexer with Pauli rotations.
 
     This operator, also called multiplexed rotation, applies a sequence of uniformly controlled
     rotations to a target qubit. The rotations are selected based on the values encoded in the control qubits.
@@ -50,7 +50,7 @@ class SelectPauliRot(Operation):
         ValueError: If the length of the angles array is not :math:`2^n` where :math:`n` is the number
             of ``control_wires``.
         ValueError: If ``rot_axis`` has a value different from `X`, `Y` or `Z`.
-
+        ValueError: If the number of the target wires is not one.
     """
 
     num_wires = AnyWires
@@ -70,6 +70,9 @@ class SelectPauliRot(Operation):
 
         if rot_axis not in ["X", "Y", "Z"]:
             raise ValueError("'rot_axis' can only take the values 'X', 'Y' and 'Z'.")
+
+        if len(self.hyperparameters["target_wire"]) != 1:
+            raise ValueError("Only one target wire can be specified")
 
         all_wires = self.hyperparameters["control_wires"] + self.hyperparameters["target_wire"]
         super().__init__(angles, wires=all_wires, id=id)
@@ -128,8 +131,7 @@ class SelectPauliRot(Operation):
         if rot_axis == "X":
             op_list.append(qml.Hadamard(target_wire))
         elif rot_axis == "Y":
-            op_list.append(qml.adjoint(qml.S(target_wire)))
-            op_list.append(qml.Hadamard(target_wire))
+            op_list.extend([qml.adjoint(qml.S(target_wire)), qml.Hadamard(target_wire)])
 
         op_list.extend(
             _apply_uniform_rotation_dagger(qml.RZ, angles, control_wires[::-1], target_wire[0])
@@ -138,7 +140,6 @@ class SelectPauliRot(Operation):
         if rot_axis == "X":
             op_list.append(qml.Hadamard(target_wire))
         elif rot_axis == "Y":
-            op_list.append(qml.Hadamard(target_wire))
-            op_list.append(qml.S(target_wire))
+            op_list.extend([qml.Hadamard(target_wire), qml.S(target_wire)])
 
         return op_list

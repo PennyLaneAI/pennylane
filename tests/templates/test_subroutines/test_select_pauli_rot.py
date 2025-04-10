@@ -40,30 +40,38 @@ class TestSelectPauliRot:
         qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
-        ("angles", "rot_axis", "msg_match"),
+        ("angles", "rot_axis", "target_wire", "msg_match"),
         [
             (
                 np.array([1.0, 2.0, 3.0, 4.0]),
                 "K",
+                2,
                 "'rot_axis' can only take the values 'X', 'Y' and 'Z'.",
             ),
             (
                 np.array([1.0]),
                 "Z",
+                2,
                 "Number of angles must",
+            ),
+            (
+                np.array([1.0, 2.0, 3.0, 4.0]),
+                "Z",
+                [2, 3],
+                "Only one target wire can",
             ),
         ],
     )
-    def test_SelectPauliRot_error(self, angles, rot_axis, msg_match):
+    def test_SelectPauliRot_error(self, angles, rot_axis, target_wire, msg_match):
         """Test that proper errors are raised for SelectPauliRot"""
 
-        wires = qml.registers({"control_wires": 2, "target_wire": 1})
+        wires = qml.registers({"control_wires": 2})
 
         with pytest.raises(ValueError, match=msg_match):
             qml.SelectPauliRot(
                 angles=angles,
                 control_wires=wires["control_wires"],
-                target_wire=wires["target_wire"],
+                target_wire=target_wire,
                 rot_axis=rot_axis,
             )
 
