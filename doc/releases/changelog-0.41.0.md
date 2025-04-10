@@ -581,8 +581,6 @@ Here's a quick overview:
 * ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
   [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
 
-<h4>Qualtran Integration 🔗</h4>
-
 <h4>Hadamard Gradient Variants and Improvements 🌈</h4>
 
 * Variants of the Hadamard gradient outlined in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406) 
