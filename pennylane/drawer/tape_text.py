@@ -87,17 +87,20 @@ class _Config:
 
 
 def _initialize_wire_and_bit_totals(
-    config: _Config, show_wire_labels: bool
+    config: _Config, show_wire_labels: bool, continuation: bool = False
 ) -> tuple[list[str], list[str]]:
     """Initialize the wire totals and bit_totals with the required wire labels."""
+
+    prefix = "··· " if continuation else ""
+
     if show_wire_labels:
-        wire_totals = [f"{wire}: " for wire in config.wire_map]
+        wire_totals = [f"{wire}: " + prefix for wire in config.wire_map]
         line_length = max(len(s) for s in wire_totals)
         wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
         bit_totals = [" " * line_length] * config.n_bits
     else:
-        wire_totals = [""] * config.n_wires
-        bit_totals = [""] * config.n_bits
+        wire_totals = [prefix] * config.n_wires
+        bit_totals = [prefix] * config.n_bits
 
     return wire_totals, bit_totals
 
@@ -155,13 +158,17 @@ def _add_to_finished_lines(
     totals: _CurrentTotals, config: _Config, show_wire_labels: bool
 ) -> _CurrentTotals:
     """Add current totals to the finished lines and initialize new totals."""
-    totals.finished_lines += totals.wire_totals + totals.bit_totals
+    # totals.finished_lines += totals.wire_totals + totals.bit_totals
+    continuation = " ···"
+
+    totals.finished_lines += [line + continuation for line in totals.wire_totals]
+    totals.finished_lines += totals.bit_totals
     totals.finished_lines[-1] += "\n"
 
     # Reset wire and bit totals. Bit totals for new lines for warped drawings
     # need to be consistent with the current bit filler
     totals.wire_totals, totals.bit_totals = _initialize_wire_and_bit_totals(
-        config, show_wire_labels
+        config, show_wire_labels, continuation=True
     )
 
     return totals
