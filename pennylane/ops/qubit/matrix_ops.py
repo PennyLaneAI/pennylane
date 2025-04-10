@@ -653,11 +653,13 @@ class BlockEncode(Operation):
 
         self._issparse = sp.sparse.issparse(A)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_sparse_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
         return self._issparse
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
