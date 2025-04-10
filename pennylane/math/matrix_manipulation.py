@@ -432,12 +432,12 @@ def convert_to_su2(U, return_global_phase=False):
     global_phase = math.angle(determinant) / 2
     U = math.cast_like(U, determinant)
     if batch_size:
-        c_shape = math.cast_like(global_phase, 1j)
-        batched_phase = math.reshape(c_shape, (batch_size, 1, 1))
+        c_phase = math.cast_like(global_phase, 1j)
+        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
         U = U * math.exp(-1j * batched_phase)
     else:
-        c_shape = math.cast_like(global_phase, 1j)
-        U = U * math.exp(-1j * c_shape)
+        c_phase = math.cast_like(global_phase, 1j)
+        U = U * math.exp(-1j * c_phase)
     return (U, global_phase) if return_global_phase else U
 
 
@@ -466,8 +466,10 @@ def convert_to_su4(U, return_global_phase=False):
         determinant = math.linalg.det(U)
     global_phase = math.angle(determinant) / 4
     if batch_size:
-        batched_phase = math.reshape(global_phase, (batch_size, 1, 1))
+        c_phase = math.cast_like(global_phase, 1j)
+        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
         U = U * math.exp(-1j * batched_phase)
     else:
-        U = U * math.exp(-1j * global_phase)
+        c_phase = math.cast_like(global_phase, 1j)
+        U = U * math.exp(-1j * c_phase)
     return (U, global_phase) if return_global_phase else U
