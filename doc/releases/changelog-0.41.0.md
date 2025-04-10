@@ -405,76 +405,41 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) 
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
   [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)  
-  Sparse-array input and execution is now supported on `default.qubit` with a variety of templates, 
-  preserving sparsity throughout the entire simulation. 
+  Sparse-array input and execution is now supported on `default.qubit` and `lightning.qubit`
+  with a variety of templates, preserving sparsity throughout the entire simulation.
   
-  The following templates support sparse data structures:
+  Specifically, following templates now support sparse data structures:
   
-  <list of templates>
-  
+  * `qml.StatePrep` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  * `qml.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  * `qml.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
+  * `qml.SWAP` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * `Controlled` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+
   ```python
   import scipy
   import numpy as np
 
+  sparse_state = scipy.sparse.csr_array([0,1,0,0])
   mat = np.kron(np.identity(2**12), qml.X.compute_matrix())
   sparse_mat = scipy.sparse.csr_array(mat)
+  sparse_x = scipy.sparse.csr_array(qml.X.compute_matrix())
 
   dev = qml.device('default.qubit')
   @qml.qnode(dev)
-  def circuit(mat):
+  def circuit():
+      qml.StatePrep(sparse_state, wires=range(2))
       qml.QubitUnitary(sparse_mat, wires=range(13))
+      qml.ctrl(qml.QubitUnitary(sparse_x,wires=0),control=1)
       return qml.state()
-  ```
-
-* Support for sparse representation in operators is expanded.  
-  Sparse input is now possible for:
-  * `qml.StatePrep` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
-  * `qml.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-  * `qml.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-  ```python
-    import scipy
-
-    sparse_state = scipy.sparse.csr_array([0,1,0,0])
-    sparse_mat = scipy.sparse.csr_array(qml.X.compute_matrix())
-
-    dev = qml.device('default.qubit')
-    @qml.qnode(dev)
-    def circuit():
-        qml.StatePrep(sparse_state, wires=range(2))
-        # qml.BlockEncode(sparse_mat,wires=range(2))
-        qml.QubitUnitary(sparse_mat, wires=range(1))
-        qml.ctrl(qml.QubitUnitary(sparse_mat,wires=0),control=1)
-        return qml.state()
     ```
     ```pycon
     >>> circuit()
-    array([0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j])
+    array([0.+0.j, 0.+0.j, 0.+0.j, ..., 0.+0.j, 0.+0.j, 0.+0.j])
     ```
-  
-  Sparse representations can be obtained for:
-  * `qml.SWAP` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-  * `Controlled` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
-  
-  ```pycon
-  >>> op_matrix = qml.SWAP(wires=[0,1]).sparse_matrix()
-  >>> type(op_matrix)
-  <class 'scipy.sparse._coo.coo_matrix'>
-  >>> print(op_matrix)
-  (0, 0)	1
-  (1, 2)	1
-  (2, 1)	1
-  (3, 3)	1
-  >>> sparse_mat = scipy.sparse.csr_array(qml.X.compute_matrix())
-  >>> op = qml.ctrl(qml.QubitUnitary(sparse_mat,wires=0),control=1)
-  >>> type(op.sparse_matrix())
-  >>> print(op.sparse_matrix())
-  (0, 0)	1
-  (1, 1)	1
-  (2, 3)	1
-  (3, 2)	1
-  ```
 
 * Operators that have a `sparse_matrix` method can now choose a sparse-matrix format and the order of their wires.
+  `scipy` [sparse-matrix formats](https://docs.scipy.org/doc/scipy/tutorial/sparse.html#:~:text=the%20scipy.sparse,disadvantages) include `'bsr'`, `'csr'`, `'csc'`, `'coo'`, `'dia'`, `'dok'`, and `'lil'`.
   [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
   ```pycon
@@ -650,8 +615,10 @@ Additional changes:
   ```
 
 * A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help determine 
-  the required wires for more complicated Qualtran ``Bloqs``.
-  This function returns a dictionary of register names and wires given a Qualtran Bloq.
+  the required wires for more complicated Qualtran ``Bloqs`` with many wire registers that fulfill
+  different purposes.
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+  Given a Qualtran Bloq, this function returns a dictionary of register names and wires.
 
   ```pycon
   >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
