@@ -41,7 +41,7 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
+`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
 `how-to on collecting statistics of mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_collect_mcm_stats>`_,
 and `how-to on creating dynamic circuits with mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
