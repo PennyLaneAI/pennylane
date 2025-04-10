@@ -535,7 +535,8 @@ class TestMaxLength:
         out = tape_text(tape_ml)
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
-    @pytest.mark.parametrize("ml", [10, 15, 20])
+    # Here max_length must be at least 11 which is the shortest length possible
+    @pytest.mark.parametrize("ml", [11, 15, 20])
     def test_setting_max_length(self, ml):
         """Test several custom max_length parameters change the wrapping length."""
 
