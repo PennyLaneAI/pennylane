@@ -554,10 +554,10 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>` computes a horizontal Cartan subalgebra `a` of `m`.
   ```python
   from pennylane.liealg import horizontal_cartan_subalgebra
-  np_newg, np_k, np_mtilde, np_a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
+  newg, k, mtilde, a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
   ```
   ```pycon
-  >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_a.shape, new_adj.shape
+  >>> newg.shape, k.shape, mtilde.shape, a.shape, new_adj.shape
   ((4, 4), (1, 4), (1, 4), (2, 4), (4, 4, 4))
   ```
   `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
