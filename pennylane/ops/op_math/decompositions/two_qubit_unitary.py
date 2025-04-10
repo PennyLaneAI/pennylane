@@ -119,9 +119,8 @@ def _convert_to_su4(U, return_angle=False):
     # Compute the determinant
     det = math.linalg.det(U)
 
-    exp_angle = -1j * np.angle(det) / 4  # divide by 4 for SU(4)
+    exp_angle = -1j * np.angle(det) / 4
     if return_angle:
-        print(np.angle(math.exp(exp_angle)))
         return math.cast_like(U, det) * math.exp(exp_angle), np.angle(math.exp(exp_angle))
     return math.cast_like(U, det) * math.exp(exp_angle)
 
