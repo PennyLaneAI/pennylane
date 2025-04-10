@@ -113,13 +113,17 @@ and will raise an error if used.
 
     dev = qml.device('default.qubit', wires=1)
 
-    @qml.qnode(dev, diff_method="adjoint")
+    @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.Z(0))
 
+>>> bp_qn = circuit.update(diff_method="backprop")
+>>> adj_qn = circuit.update(diff_method="adjoint")
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
->>> jax.jacobian(circuit)(x)
+>>> jax.jacobian(bp_qn)(x)
+Array(0.70710677, dtype=float32)
+>>> jax.jacobian(adj_qn)(x)
 Array(0.70710677, dtype=float32)
 
 However, there are some limitations to be aware of 
