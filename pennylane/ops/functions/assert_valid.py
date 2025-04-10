@@ -25,7 +25,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition import DecompositionRule, DecompositionNotApplicable
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -117,7 +117,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     """Tests that a decomposition rule is consistent with the operator."""
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    try:
+        resources = rule.compute_resources(**op.resource_params)
+    except DecompositionNotApplicable:
+        return
+
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:
