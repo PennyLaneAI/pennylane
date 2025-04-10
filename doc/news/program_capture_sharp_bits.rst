@@ -123,9 +123,9 @@ and will raise an error if used.
 
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
 >>> jax.jacobian(bp_qn)(x)
-Array(0.70710677, dtype=float32)
+Array(-0.70710677, dtype=float32)
 >>> jax.jacobian(adj_qn)(x)
-Array(0.70710677, dtype=float32)
+Array(-0.70710677, dtype=float32)
 
 However, there are some limitations to be aware of 
 when using ``adjoint`` with ``default.qubit``.
