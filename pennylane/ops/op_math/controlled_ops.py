@@ -1409,7 +1409,7 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments
+    # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None
@@ -1446,6 +1446,11 @@ class MultiControlledX(ControlledOp):
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+            )
         self.work_wire_type = work_wire_type
 
         self._validate_control_values(control_values)
@@ -1589,6 +1594,11 @@ class MultiControlledX(ControlledOp):
         work_wires = work_wires or []
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
+
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+            )
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
