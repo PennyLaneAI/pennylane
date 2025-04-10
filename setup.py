@@ -67,7 +67,6 @@ info = {
     "provides": ["pennylane"],
     "install_requires": requirements,
     "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
-    "python_requires": ">=3.10",
     "package_data": {"pennylane": ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]},
     "include_package_data": True,
 }
