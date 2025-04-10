@@ -233,7 +233,7 @@ operator towards a target gate set.
 
 from .utils import (
     DecompositionError,
-    DecompositionNotApplicableError,
+    DecompositionNotApplicable,
     enable_graph,
     disable_graph,
     enabled_graph,

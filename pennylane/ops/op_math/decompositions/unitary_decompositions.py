@@ -16,7 +16,7 @@
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.decomposition.utils import DecompositionNotApplicableError
+from pennylane.decomposition.utils import DecompositionNotApplicable
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
     xzx_rotation_angles,
@@ -27,7 +27,7 @@ from pennylane.math.decomposition import (
 
 def _rot_resource(num_wires):
     if num_wires != 1:
-        raise DecompositionNotApplicableError
+        raise DecompositionNotApplicable
     return {
         qml.Rot: 1,
         qml.GlobalPhase: 1,
@@ -44,7 +44,7 @@ def rot_decomposition(U, wires, **__):
 
 def _zyz_resource(num_wires):
     if num_wires != 1:
-        raise DecompositionNotApplicableError
+        raise DecompositionNotApplicable
     return {
         qml.RZ: 2,
         qml.RY: 1,
@@ -64,7 +64,7 @@ def zyz_decomposition(U, wires, **__):
 
 def _xyx_resource(num_wires):
     if num_wires != 1:
-        raise DecompositionNotApplicableError
+        raise DecompositionNotApplicable
     return {
         qml.RX: 2,
         qml.RY: 1,
@@ -84,7 +84,7 @@ def xyx_decomposition(U, wires, **__):
 
 def _xzx_resource(num_wires):
     if num_wires != 1:
-        raise DecompositionNotApplicableError
+        raise DecompositionNotApplicable
     return {
         qml.RX: 2,
         qml.RZ: 1,
@@ -104,7 +104,7 @@ def xzx_decomposition(U, wires, **__):
 
 def _zxz_resource(num_wires):
     if num_wires != 1:
-        raise DecompositionNotApplicableError
+        raise DecompositionNotApplicable
     return {
         qml.RZ: 2,
         qml.RX: 1,

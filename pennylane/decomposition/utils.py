@@ -22,7 +22,7 @@ class DecompositionError(Exception):
     """Base class for decomposition errors."""
 
 
-class DecompositionNotApplicableError(Exception):
+class DecompositionNotApplicable(Exception):
     """Exception raised when a decomposition is not applicable to the given operator."""
 
 

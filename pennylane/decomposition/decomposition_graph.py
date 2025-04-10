@@ -52,7 +52,7 @@ from .symbolic_decomposition import (
     same_type_adjoint_decomp,
     same_type_adjoint_ops,
 )
-from .utils import DecompositionError, DecompositionNotApplicableError
+from .utils import DecompositionError, DecompositionNotApplicable
 
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
@@ -194,7 +194,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             decomp_resource = rule.compute_resources(**op_node.params)
             d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
-        except DecompositionNotApplicableError:
+        except DecompositionNotApplicable:
             pass  # ignore decompositions that are not applicable to the given op params.
 
     def _add_adjoint_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
