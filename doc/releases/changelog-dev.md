@@ -8,6 +8,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.gradients.hamiltonian_grad` function has been removed.
+  This gradient recipe is not required with the new operator arithmetic system.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

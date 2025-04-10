@@ -2040,7 +2040,6 @@ class TestHamiltonianExpvalGradients:
         """Test no trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         weights = np.array([0.4, 0.5])
 
@@ -2068,7 +2067,6 @@ class TestHamiltonianExpvalGradients:
         # two (broadcasted if broadcast=True) shifts per rotation gate
         assert len(tapes) == (2 if broadcast else 2 * 2)
         assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
-        spy.assert_not_called()
 
         all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)

@@ -15,14 +15,13 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-import warnings
 from functools import partial
 
 import numpy as np
 
 from pennylane import math
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import ExpectationMP, VarianceMP, expval
+from pennylane.measurements import VarianceMP, expval
 from pennylane.operation import (
     DecompositionUndefinedError,
     Operator,
@@ -55,7 +54,6 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
     reorder_grads,
 )
-from .hamiltonian_grad import hamiltonian_grad
 
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
 
@@ -380,28 +378,6 @@ def expval_param_shift(
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None, 0))
-            continue
-
-        op, op_idx, _ = tape.get_operation(idx)
-
-        if op.name == "LinearCombination":
-            warnings.warn(
-                "Please use qml.gradients.split_to_single_terms so that the ML framework "
-                "can compute the gradients of the coefficients.",
-                UserWarning,
-            )
-
-            # operation is a Hamiltonian
-            if not isinstance(tape[op_idx], ExpectationMP):
-                raise ValueError(
-                    "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {tape[op_idx]}"
-                )
-
-            g_tapes, h_fn = hamiltonian_grad(tape, idx)
-            gradient_tapes.extend(g_tapes)
-            # hamiltonian_grad always returns a list with a single tape!
-            gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
             continue
 
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)

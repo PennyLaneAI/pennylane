@@ -3390,7 +3390,6 @@ class TestHamiltonianExpvalGradients:
     def test_no_trainable_coeffs(self, mocker, tol, broadcast):
         """Test no trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = np.array([0.1, 0.2, 0.3], requires_grad=False)
@@ -3417,7 +3416,6 @@ class TestHamiltonianExpvalGradients:
         # two (broadcasted if broadcast=True) shifts per rotation gate
         assert len(tapes) == (2 if broadcast else 2 * 2)
         assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
-        spy.assert_not_called()
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
@@ -3494,25 +3492,6 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         jac = fn(dev.execute(tapes))
         return jac
-
-    @pytest.mark.jax
-    def test_jax(self, broadcast):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using JAX"""
-        import jax
-
-        jnp = jax.numpy
-
-        coeffs1 = jnp.array([0.1, 0.2, 0.3])
-        coeffs2 = jnp.array([0.7])
-        weights = jnp.array([0.4, 0.5])
-        dev = qml.device("default.qubit", wires=2)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The 'hamiltonian_grad' function is deprecated"
-        ):
-            with pytest.warns(UserWarning, match="Please use qml.gradients.split_to_single_terms"):
-                self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
 
 @pytest.mark.autograd
