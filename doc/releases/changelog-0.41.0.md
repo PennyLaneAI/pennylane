@@ -513,7 +513,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 
 * Structure constants
 
-  Using :func:`qml.structure_constants <pennylane.structure_constants`, compute the structure constants that make up the adjoint representation of a Lie algebra.
+  Using :func:`qml.structure_constants <pennylane.structure_constants>`, compute the structure constants that make up the adjoint representation of a Lie algebra.
   ```pycon
   >>> adjoint_rep = qml.structure_constants(dla)
   >>> adjoint_rep.shape
@@ -523,6 +523,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * The center of a Lie algebra
 
   The center is the collection of operators that commute with all other operators in the DLA.
+  
   Compute it with :func:`qml.center <pennylane.center>`.
   ```pycon
   >>> qml.center(dla)
