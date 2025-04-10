@@ -96,6 +96,85 @@ executes as expected:
 Array([0.99875027+0.j        , 0.        +0.j        ,
        0.        +0.j        , 0.        -0.04997917j], dtype=complex64)
 
+Gradients
+---------
+
+Currently the devices ``default.qubit`` and ``lightning.qubit`` are the only devices
+that support gradients with program capture enabled. ``default.qubit`` currently only supports
+``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit`` currently only supports 
+``adjoint``. The ``parameter_shift`` method is not yet supported with program capture enabled, 
+and will raise an error if used. 
+
+.. code-block:: python
+
+    import pennylane as qml 
+    import jax 
+
+    qml.capture.enable() 
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qml.qnode(dev, diff_method="adjoint")
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+>>> x = jax.numpy.array(jax.numpy.pi / 4)
+>>> jax.jacobian(circuit)(x)
+Array(0.70710677, dtype=float32)
+
+However, there are some limitations to be aware of 
+when using ``adjoint`` with ``default.qubit``.
+
+Control flow and gradients
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Control flow like ``for``, ``while`` and ``conditionals`` 
+are not currently supported when using ``"adjoint"`` with ``default.qubit``.
+For example, the following code will raise an error:
+
+.. code-block:: python
+
+    qml.capture.enable()
+    import jax
+    jax.config.update("jax_enable_x64", False)
+
+    dev = qml.device("default.qubit",wires=2)
+
+    @qml.qnode(dev, diff_method="adjoint")
+    def f(x):
+        for i in range(2):
+            qml.RX(x, wires=i)
+        return qml.expval(qml.Z(0))
+
+>>> x = jax.numpy.array(jax.numpy.pi / 4)
+>>> jax.jacobian(f)(x)
+NotImplementedError: Primitive for_loop does not have a jvp rule and is not supported.
+
+Higher-order primitives and gradients
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Higher-order primitives like ``qml.ctrl`` and ``qml.adjoint`` are not currently supported
+when using ``"adjoint"`` with ``default.qubit``. For example, the following code will raise an error:
+
+.. code-block:: python
+
+    qml.capture.enable()
+    import jax.numpy as jnp
+    import jax
+    jax.config.update("jax_enable_x64", False)
+
+    dev = qml.device("default.qubit",wires=2)
+
+    @qml.qnode(dev, diff_method="adjoint")
+    def f(x):
+        qml.ctrl(qml.RX, control=0)(x, 1)
+        return qml.expval(qml.Z(0))
+
+>>> x = jax.numpy.array(jax.numpy.pi / 4)
+>>> jax.jacobian(f)(x)
+NotImplementedError: Primitive for_loop does not have a jvp rule and is not supported.
+
 Gradients with lightning.qubit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
