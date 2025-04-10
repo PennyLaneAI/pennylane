@@ -158,7 +158,6 @@ def _add_to_finished_lines(
     totals: _CurrentTotals, config: _Config, show_wire_labels: bool
 ) -> _CurrentTotals:
     """Add current totals to the finished lines and initialize new totals."""
-    # totals.finished_lines += totals.wire_totals + totals.bit_totals
     continuation = " ···"
 
     totals.finished_lines += [line + continuation for line in totals.wire_totals]
