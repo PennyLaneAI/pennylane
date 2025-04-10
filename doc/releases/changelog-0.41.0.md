@@ -471,12 +471,12 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>QROM State Preparation 📖</h4>
 
-* A new state-of-the-art state preparation technique based on QROM is now available with the :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` template.
-  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
-
-    Using :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` is analogous to using other state preparation techniques in PennyLane. 
+* A new state-of-the-art state preparation technique based on QROM is now available with the
+  :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` template.
+  [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)  
+  Using :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` is analogous to using other state preparation techniques in PennyLane. 
     
-    ```python
+  ```python
   state_vector = np.array([0.5, -0.5, 0.5, 0.5])
 
   dev = qml.device("default.qubit")
