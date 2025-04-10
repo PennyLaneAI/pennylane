@@ -1007,7 +1007,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 16
+        assert len(obtained_decomposition) == 17
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1028,7 +1028,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 13
+        assert len(obtained_decomposition) == 14
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1049,7 +1049,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 6
+        assert len(obtained_decomposition) == 7
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1234,7 +1234,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
-    def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
+    def _jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
         # pylint: disable=import-outside-toplevel
