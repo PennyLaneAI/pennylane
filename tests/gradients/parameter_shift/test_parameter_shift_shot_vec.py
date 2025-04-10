@@ -2036,7 +2036,7 @@ class TestHamiltonianExpvalGradients:
         with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
-    def test_no_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_no_trainable_coeffs(self, broadcast, tol):
         """Test no trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)

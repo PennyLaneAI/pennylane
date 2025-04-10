@@ -3387,7 +3387,7 @@ class TestHamiltonianExpvalGradients:
         tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
         assert len(tapes) == (3 if broadcast else 5)
 
-    def test_no_trainable_coeffs(self, mocker, tol, broadcast):
+    def test_no_trainable_coeffs(self, tol, broadcast):
         """Test no trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
 
