@@ -471,76 +471,125 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>QROM State Preparation 📖</h4>
 
-* Added template `qml.QROMStatePreparation` that prepares arbitrary states using `qml.QROM`.
+* A new state-of-the-art state preparation technique based on QROM is now available with the :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` template.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)
+
+    Using :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` is analogous to using other state preparation techniques in PennyLane. 
+    
+    ```python
+  state_vector = np.array([0.5, -0.5, 0.5, 0.5])
+
+  dev = qml.device("default.qubit")
+  wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.QROMStatePreparation(
+          state_vector, wires["state_wires"], wires["prec_wires"], wires["work_wires"]
+      )
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(circuit()[:4].real)
+  [ 0.5 -0.5  0.5  0.5]
+  ```
 
 <h4>Dynamical Lie Algebras 🕓</h4>
 
-* Created a new `qml.liealg` module for Lie algebra functionality.
+The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality:
 
-  `qml.liealg.cartan_decomp` allows to perform Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
-  A variety of typically encountered involution functions are included in the module, in particular the following:
+* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.
 
+  ```python
+  import pennylane as qml
+  from pennylane import X, Y, Z, I
+  n = 2
+  gens = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
+  dla = qml.lie_closure(gens)
   ```
-  even_odd_involution
-  concurrence_involution
-  A
-  AI
-  AII
-  AIII
-  BD
-  BDI
-  DIII
-  C
-  CI
-  CII
+  ```pycon
+  >>> dla
+  [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
   ```
+
+* Compute the structure constants that make up the adjoint representation of a Lie algebra
+  using :func:`qml.structure_constants <pennylane.structure_constants>`.
 
   ```pycon
-  >>> g = qml.lie_closure([X(0) @ X(1), Y(0), Y(1)])
-  >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
-  >>> g, k, m
-  ([X(0) @ X(1), Y(0), Y(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)],
-   [Y(0), Y(1)],
-   [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
+  >>> adjoint_rep = qml.structure_constants(dla)
+  >>> adjoint_rep.shape
+  (4, 4, 4)
   ```
 
-  The vertical subspace `k` and `m` fulfil the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition. These can be checked using the function `qml.liealg.check_cartan_decomp`.
+* The center of a Lie algebra, which is the collection of operators that commute with all other operators in the DLA,
+  can be found with :func:`qml.center <pennylane.center>`.
 
   ```pycon
-  >>> qml.liealg.check_cartan_decomp(k, m) # check Cartan commutation relations
+  >>> qml.center(dla)
+  [X(0)]
+  ```
+
+* Cartan decompositions `g = k + m` can be performed with :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>`.  
+  These use _involution_ functions that return a boolean value.
+  A variety of typically encountered involution functions are included in the module,
+  such as `even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII`.
+  ```python
+  from pennylane.liealg import concurrence_involution
+  k, m = qml.liealg.cartan_decomp(dla, concurrence_involution)
+  ```
+  ```pycon
+  >>> k, m
+  ([Y(1)], [X(0), X(0) @ X(1), X(0) @ Z(1)])
+  ```
+  The vertical subspace `k` and `m` fulfill the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition.
+  These can be verified using the function :func:`qml.liealg.check_cartan_decomp <pennylane.liealg.check_cartan_decomp>`.
+  ```pycon
+  >>> qml.liealg.check_cartan_decomp(k, m)
   True
   ```
 
-  `qml.liealg.horizontal_cartan_subalgebra` computes a horizontal Cartan subalgebra `a` of `m`.
+* The horizontal Cartan subalgebra `a` of `m` can be computed with
+  :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>`.
 
-  ```pycon
-  >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
+  ```python
+  from pennylane.liealg import horizontal_cartan_subalgebra
+  newg, k, mtilde, a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
   ```
-
-  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`, and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
-
+  ```pycon
+  >>> newg.shape, k.shape, mtilde.shape, a.shape, new_adj.shape
+  ((4, 4), (1, 4), (1, 4), (2, 4), (4, 4, 4))
+  ```
+  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
+  and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
   ```pycon
   >>> qml.liealg.check_abelian(a)
   True
   ```
 
-  The following functions have also been added:
+Additional changes:
+
+* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.  
+  Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
+
+* :func:`qml.structure_constants <pennylane.structure_constants>` now accepts and outputs matrix inputs using the `matrix` keyword.
+
+* The following functions have also been added:
   * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
 
-  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to their adjoint vector representations and back.
+  * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
 
   * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
 
-  [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
-  [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
-  [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
-  [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
+[(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+[(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
+[(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
+[(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
+[(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
+[(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
-* ``qml.lie_closure`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
-  Also added ``qml.pauli.trace_inner_product`` that can handle batches of dense matrices.
-  [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
+<h4>Qualtran Integration 🔗</h4>
 
 * Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
   ```python
@@ -555,11 +604,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
   ```
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
-
-* ``qml.structure_constants`` now accepts and outputs matrix inputs using the ``matrix`` keyword.
-  [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
-
-<h4>Qualtran Integration 🔗</h4>
 
 <h4>Hadamard Gradient Variants and Improvements 🌈</h4>
 
