@@ -484,7 +484,7 @@ class TestQubitUnitary:
         [
             (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qml.matrix(qml.CRX(2, wires=[1, 0]))),  # 2 cnots
-            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),  # cnots
+            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),  # 0 cnots
             (
                 qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))
             ),  # 2 cnots
