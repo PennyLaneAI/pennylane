@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
 
   - Deprecated in v0.41

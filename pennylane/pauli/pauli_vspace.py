@@ -144,6 +144,12 @@ class PauliVSpace:
     def __len__(self):
         return len(self.basis)
 
+    def __iter__(self):
+        return self.basis.__iter__()
+
+    def __getitem__(self, idx):
+        return self.basis[idx]
+
     def add(self, other, tol=None):
         r"""Adding Pauli sentences if they are linearly independent.
 

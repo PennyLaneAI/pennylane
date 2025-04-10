@@ -200,3 +200,12 @@ def test_qubit_observable_cutoff(f_observable, cut_off):
     assert np.allclose(
         qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
     )
+
+
+def test_qubit_observable_error():
+    """Test that qubit_observable raises an error for unsupported mapping."""
+
+    f_observable = 0.01 * from_string("0+ 0-")
+
+    with pytest.raises(ValueError, match="transformation is not available"):
+        qchem.qubit_observable(f_observable, mapping="random")
