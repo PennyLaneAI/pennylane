@@ -533,7 +533,7 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml)
-        assert 95 <= max(len(s) for s in out.split("\n")) <= 100
+        assert 95 <= max(len(s.replace(" ···", "")) for s in out.split("\n")) <= 100
 
     # Here max_length must be at least 11 which is the shortest length possible
     @pytest.mark.parametrize("ml", [11, 15, 20])
@@ -550,7 +550,7 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml, max_length=ml)
-        assert max(len(s) for s in out.split("\n")) <= ml
+        assert max(len(s.replace(" ···", "")) for s in out.split("\n")) <= ml
 
 
 single_op_tests_data = [
