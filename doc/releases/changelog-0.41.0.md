@@ -497,55 +497,77 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality, including:
 * Lie closure
+  :func:`qml.lie_closure <pennylane.lie_closure>` computes the dynamical Lie algebra from a set of generators.
+  ```python
+  import pennylane as qml
+  from pennylane import X, Y, Z, I
+  n = 2
+  gens = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
+  dla = qml.lie_closure(gens)
+  ```
+  ```pycon
+  >>> dla
+  [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
+  ```
+
 * Structure constants
+  Using :func:`qml.structure_constants <pennylane.structure_constants`, compute the structure constants that make up the adjoint representation of a Lie algebra.
+  ```pycon
+  >>> adjoint_rep = qml.structure_constants(dla)
+  >>> adjoint_rep.shape
+  (4, 4, 4)
+  ```
+
 * The center of a Lie algebra
+  The center is the collection of operators that commute with all other operators in the DLA.
+  Compute it with :func:`qml.center <pennylane.center>`.
+  ```pycon
+  >>> qml.center(dla)
+  [X(0)]
+  ```
+
 * Cartan decompositions
+  :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
+  A variety of typically encountered involution functions are included in the module,
+  such as `even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII`.
+  ```python
+  from pennylane.liealg import concurrence_involution
+  k, m = qml.liealg.cartan_decomp(dla, concurrence_involution)
+  ```
+  ```pycon
+  >>> k, m
+  ([Y(1)], [X(0), X(0) @ X(1), X(0) @ Z(1)])
+  ```
+  The vertical subspace `k` and `m` fulfill the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition.
+  These can be verified using the function :func:`qml.liealg.check_cartan_decomp <pennylane.liealg.check_cartan_decomp>`.
+  ```pycon
+  >>> qml.liealg.check_cartan_decomp(k, m)
+  True
+  ```
+
 * Cartan subalgebras
+  :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>` computes a horizontal Cartan subalgebra `a` of `m`.
+  ```python
+  from pennylane.liealg import horizontal_cartan_subalgebra
+  np_newg, np_k, np_mtilde, np_a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
+  ```
+  ```pycon
+  >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_a.shape, new_adj.shape
+  ((4, 4), (1, 4), (1, 4), (2, 4), (4, 4, 4))
+  ```
+  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
+  and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
+  ```pycon
+  >>> qml.liealg.check_abelian(a)
+  True
+  ```
 
 [(#6935)](https://github.com/PennyLaneAI/pennylane/pull/6935)
 [(#7026)](https://github.com/PennyLaneAI/pennylane/pull/7026)
 [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
-Here's a quick overview:
-
-* :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>` allows performance of Cartan decompositions `g = k + m` using _involution_ functions that return a boolean value.
-  A variety of typically encountered involution functions are included in the module, in particular the following:
-
-  ```
-  even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII
-  ```
-
-  ```pycon
-  >>> g = qml.lie_closure([X(0) @ X(1), Y(0), Y(1)])
-  >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
-  >>> g, k, m
-  ([X(0) @ X(1), Y(0), Y(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)],
-    [Y(0), Y(1)],
-    [X(0) @ X(1), Z(0) @ X(1), X(0) @ Z(1), Z(0) @ Z(1)])
-  ```
-
-  The vertical subspace `k` and `m` fulfill the commutation relations `[k, m] ⊆ m`, `[k, k] ⊆ k` and `[m, m] ⊆ k` that make them a proper Cartan decomposition.
-  These can be verified using the function :func:`qml.liealg.check_cartan_decomp <pennylane.liealg.check_cartan_decomp>`.
-
-  ```pycon
-  >>> qml.liealg.check_cartan_decomp(k, m)
-  True
-  ```
-
-* :func:`qml.liealg.horizontal_cartan_subalgebra <pennylane.liealg.horizontal_cartan_subalgebra>` computes a horizontal Cartan subalgebra `a` of `m`.
-
-  ```pycon
-  >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
-  ```
-
-  `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
-  and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
-
-  ```pycon
-  >>> qml.liealg.check_abelian(a)
-  True
-  ```
+Additional changes:
 
 * :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.
   Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
