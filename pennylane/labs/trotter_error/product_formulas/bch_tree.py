@@ -15,10 +15,9 @@
 
 from __future__ import annotations
 
-import copy
 from collections import defaultdict
 from enum import Enum
-from typing import Dict, Hashable, Sequence, Set
+from typing import Dict, Hashable, Sequence, Set, Tuple
 
 from numpy import isclose
 
@@ -291,7 +290,8 @@ def bch_approx(x: BCHTree, y: BCHTree) -> BCHTree:
 
 
 def _simplify(x: BCHTree, max_order: int) -> BCHTree:
-    old_ast = copy.copy(x)
+
+    changed = False
 
     if x.node_type in (BCHNode.ADD, BCHNode.COMMUTATOR):
         x.l_child = _simplify(x.l_child, max_order)
@@ -300,13 +300,22 @@ def _simplify(x: BCHTree, max_order: int) -> BCHTree:
     if x.node_type == BCHNode.SCALAR:
         x.l_child = _simplify(x.l_child, max_order)
 
-    x = _distribute_scalar(x)
-    x = _factor_scalar_from_commutator(x)
-    x = _commutator_linearity(x)
-    x = _order_commutator_terms(x)
-    x = _drop_high_order(x, max_order)
+    x, y = _distribute_scalar(x)
+    changed = changed or y
 
-    return x if x == old_ast else _simplify(x, max_order)
+    x, y = _factor_scalar_from_commutator(x)
+    changed = changed or y
+
+    x, y = _commutator_linearity(x)
+    changed = changed or y
+
+    x, y = _order_commutator_terms(x)
+    changed = changed or y
+
+    x, y = _drop_high_order(x, max_order)
+    changed = changed or y
+
+    return _simplify(x, max_order) if changed else x
 
 
 def _group_terms(x: BCHTree) -> BCHTree:
@@ -383,9 +392,9 @@ def _term_dict(x: BCHTree) -> Dict[BCHTree, float]:
     return d
 
 
-def _commutator_linearity(x: BCHTree) -> BCHTree:
+def _commutator_linearity(x: BCHTree) -> Tuple[BCHTree, bool]:
     if x.node_type != BCHNode.COMMUTATOR:
-        return x
+        return x, False
 
     l_type = x.l_child.node_type
     r_type = x.r_child.node_type
@@ -394,72 +403,73 @@ def _commutator_linearity(x: BCHTree) -> BCHTree:
         l_comm = BCHTree.commutator_node(x.l_child.l_child, x.r_child)
         r_comm = BCHTree.commutator_node(x.l_child.r_child, x.r_child)
 
-        return l_comm + r_comm
+        return l_comm + r_comm, True
 
     if r_type == BCHNode.ADD:
         l_comm = BCHTree.commutator_node(x.l_child, x.r_child.l_child)
         r_comm = BCHTree.commutator_node(x.l_child, x.r_child.r_child)
 
-        return l_comm + r_comm
+        return l_comm + r_comm, True
 
-    return x
+    return x, False
 
 
-def _factor_scalar_from_commutator(x: BCHTree) -> BCHTree:
+def _factor_scalar_from_commutator(x: BCHTree) -> Tuple[BCHTree, bool]:
     if x.node_type != BCHNode.COMMUTATOR:
-        return x
+        return x, False
 
     if x.l_child.node_type == BCHNode.SCALAR and x.r_child.node_type == BCHNode.SCALAR:
         return (
             x.l_child.scalar
             * x.r_child.scalar
             * BCHTree.commutator_node(x.l_child.l_child, x.r_child.l_child)
-        )
+        ), True
 
     if x.l_child.node_type == BCHNode.SCALAR:
-        return x.l_child.scalar * BCHTree.commutator_node(x.l_child.l_child, x.r_child)
+        return x.l_child.scalar * BCHTree.commutator_node(x.l_child.l_child, x.r_child), True
 
     if x.r_child.node_type == BCHNode.SCALAR:
-        return x.r_child.scalar * BCHTree.commutator_node(x.l_child, x.r_child.l_child)
+        return x.r_child.scalar * BCHTree.commutator_node(x.l_child, x.r_child.l_child), True
 
-    return x
+    return x, False
 
 
-def _distribute_scalar(x: BCHTree) -> BCHTree:
+def _distribute_scalar(x: BCHTree) -> Tuple[BCHTree, bool]:
     if x.node_type != BCHNode.SCALAR:
-        return x
+        return x, False
 
     if x.l_child.node_type == BCHNode.ADD:
         l_child = x.scalar * x.l_child.l_child
         r_child = x.scalar * x.l_child.r_child
 
-        return l_child + r_child
+        return l_child + r_child, True
 
     if x.l_child.node_type == BCHNode.SCALAR:
-        return (x.scalar * x.l_child.scalar) * x.l_child.l_child
+        return (x.scalar * x.l_child.scalar) * x.l_child.l_child, True
 
     if x.l_child.node_type == BCHNode.ZERO:
-        return BCHTree.zero_node()
+        return BCHTree.zero_node(), True
 
-    return x
+    return x, False
 
 
-def _order_commutator_terms(x: BCHTree) -> BCHTree:
+def _order_commutator_terms(x: BCHTree) -> Tuple[BCHTree, bool]:
     if x.node_type != BCHNode.COMMUTATOR:
-        return x
+        return x, False
 
     l_type = x.l_child.node_type
     r_type = x.r_child.node_type
 
     if l_type == BCHNode.FRAGMENT and r_type == BCHNode.FRAGMENT:
         if x.l_child.fragment <= x.r_child.fragment:
-            return x
-        return -BCHTree.commutator_node(x.r_child, x.l_child)
+            return x, False
+
+        return -BCHTree.commutator_node(x.r_child, x.l_child), True
 
     if l_type == BCHNode.COMMUTATOR and r_type == BCHNode.FRAGMENT:
-        return -BCHTree.commutator_node(x.r_child, x.l_child)
+        return -BCHTree.commutator_node(x.r_child, x.l_child), True
 
-    return x
+    return x, False
 
 
 def _compute_commutator_order(x: BCHTree) -> int:
@@ -493,17 +503,17 @@ def _compute_commutator_order(x: BCHTree) -> int:
     )
 
 
-def _drop_high_order(x: BCHTree, max_order: int) -> BCHTree:
+def _drop_high_order(x: BCHTree, max_order: int) -> Tuple[BCHTree, bool]:
     if x.node_type != BCHNode.COMMUTATOR:
-        return x
+        return x, False
 
     if x.l_child.node_type not in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
-        return x
+        return x, False
 
     if x.r_child.node_type not in (BCHNode.COMMUTATOR, BCHNode.FRAGMENT):
-        return x
+        return x, False
 
     if _compute_commutator_order(x) > max_order:
-        return BCHTree.zero_node()
+        return BCHTree.zero_node(), True
 
-    return x
+    return x, False
