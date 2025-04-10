@@ -246,8 +246,12 @@ class NullQubit(Device):
             gate_types = defaultdict(int)
 
             for op in circuit.operations:
+                while hasattr(op, "base"):
+                    op = op.base
+
                 if op.name == "Barrier":
                     continue
+
                 gate_types[op.name] += 1
             # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
             #  In the future it may be better to return this information in a more structured way.

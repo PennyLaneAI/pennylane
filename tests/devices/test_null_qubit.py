@@ -71,6 +71,16 @@ def test_resource_tracking_attribute(capsys):
     def small_circ():
         qml.X(0)
         qml.H(0)
+
+        qml.Barrier()
+
+        # Add a more complex operation to check that the innermost operation is counted
+        op = qml.T(0)
+        op = qml.adjoint(op)
+        op = qml.ctrl(op, control=1, control_values=[1])
+        op = qml.exp(op, 2)
+        op = qml.pow(op, 3)
+
         return qml.state()
 
     qnode = qml.QNode(small_circ, dev)
@@ -88,7 +98,7 @@ def test_resource_tracking_attribute(capsys):
     import json
 
     assert captured[1] == json.dumps(
-        {"num_wires": 1, "num_gates": 2, "gate_types": {"PauliX": 1, "Hadamard": 1}}
+        {"num_wires": 2, "num_gates": 3, "gate_types": {"PauliX": 1, "Hadamard": 1, "T": 1}}
     )
 
 
