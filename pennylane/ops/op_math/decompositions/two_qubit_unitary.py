@@ -106,7 +106,7 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 global_arrays_name = ["E", "Edag", "CNOT01", "CNOT10", "SWAP", "S_SX", "v_one_cnot", "q_one_cnot"]
 
 
-def _convert_to_su4(U, return_angle=False):
+def _convert_to_su4(U, return_global_phase=False):
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
@@ -120,7 +120,7 @@ def _convert_to_su4(U, return_angle=False):
     det = math.linalg.det(U)
 
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
-    if return_angle:
+    if return_global_phase:
         return math.cast_like(U, det) * math.exp(exp_angle), qml.math.angle(math.exp(exp_angle))
     return math.cast_like(U, det) * math.exp(exp_angle)
 
@@ -350,10 +350,10 @@ def _decomposition_1_cnot(U, wires):
 
     # Recover the operators in the decomposition; note that because of the
     # initial SWAP, we exchange the order of A and B
-    A_ops = one_qubit_decomposition(A, wires[1], return_global_phase=True)
-    B_ops = one_qubit_decomposition(B, wires[0], return_global_phase=True)
-    C_ops = one_qubit_decomposition(C, wires[0], return_global_phase=True)
-    D_ops = one_qubit_decomposition(D, wires[1], return_global_phase=True)
+    A_ops = one_qubit_decomposition(A, wires[1])
+    B_ops = one_qubit_decomposition(B, wires[0])
+    C_ops = one_qubit_decomposition(C, wires[0])
+    D_ops = one_qubit_decomposition(D, wires[1])
 
     return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
@@ -632,7 +632,7 @@ def two_qubit_decomposition(U, wires):
             "two_qubit_decomposition does not accept sparse matrics."
         )
 
-    U, angle = _convert_to_su4(U, return_angle=True)
+    U, angle = _convert_to_su4(U, return_global_phase=True)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
