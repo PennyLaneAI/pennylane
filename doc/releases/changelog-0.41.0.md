@@ -567,7 +567,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 
 Additional changes:
 
-* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.
+* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.  
   Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
 
 * :func:`qml.structure_constants <pennylane.structure_constants>` now accepts and outputs matrix inputs using the `matrix` keyword.
