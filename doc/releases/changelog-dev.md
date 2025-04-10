@@ -10,7 +10,7 @@
 
 * The `qml.gradients.hamiltonian_grad` function has been removed.
   This gradient recipe is not required with the new operator arithmetic system.
-  [(#)]()
+  [(#7252)](https://github.com/PennyLaneAI/pennylane/pull/7252)
 
 <h3>Deprecations 👋</h3>
 
