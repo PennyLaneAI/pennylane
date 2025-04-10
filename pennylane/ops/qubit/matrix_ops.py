@@ -42,8 +42,8 @@ from pennylane.math import (
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     rot_decomposition,
-    xzx_decomposition,
     xyx_decomposition,
+    xzx_decomposition,
     zxz_decomposition,
     zyz_decomposition,
 )
