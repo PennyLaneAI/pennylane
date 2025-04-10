@@ -528,10 +528,10 @@ def _decomposition_3_cnots(U, wires):
     # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
     # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
 
-    A_ops = one_qubit_decomposition(A, wires[1], return_global_phase=True)
-    B_ops = one_qubit_decomposition(B, wires[0], return_global_phase=True)
-    C_ops = one_qubit_decomposition(C, wires[0], return_global_phase=True)
-    D_ops = one_qubit_decomposition(D, wires[1], return_global_phase=True)
+    A_ops = one_qubit_decomposition(A, wires[1])
+    B_ops = one_qubit_decomposition(B, wires[0])
+    C_ops = one_qubit_decomposition(C, wires[0])
+    D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
@@ -632,7 +632,6 @@ def two_qubit_decomposition(U, wires):
             "two_qubit_decomposition does not accept sparse matrics."
         )
 
-    U_copy = U
     U, angle = _convert_to_su4(U, return_angle=True)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
