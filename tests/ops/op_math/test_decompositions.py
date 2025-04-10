@@ -984,7 +984,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 18
+        assert len(obtained_decomposition) == 19
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
