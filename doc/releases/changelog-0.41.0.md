@@ -16,6 +16,8 @@ A new, experimental graph-based decomposition system is now available in PennyLa
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
 [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
+[(#7223)](https://github.com/PennyLaneAI/pennylane/pull/7223)
+[(#7263)](https://github.com/PennyLaneAI/pennylane/pull/7263)
 
 PennyLane's new experimental graph decomposition system offers a resource-efficient and versatile alternative 
 to the current system. This is done by traversing an internal graph structure that is weighted by the 
@@ -135,7 +137,7 @@ decomposition rule is that which is most resource efficient (results in the smal
     by the new system, bypassing all other decomposition rules that may exist for the relevant operators.
   * `alt_decomps`: decomposition rules provided to this keyword argument are alternative decomposition 
     rules that the new system may choose if they're the most resource efficient.
-  
+
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
 
@@ -304,6 +306,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#6977)](https://github.com/PennyLaneAI/pennylane/pull/6977)
   [(#7020)](https://github.com/PennyLaneAI/pennylane/pull/7020)
   [(#7199)](https://github.com/PennyLaneAI/pennylane/pull/7199)
+  [(#7247)](https://github.com/PennyLaneAI/pennylane/pull/7247)
   
   The following transforms now have native support for program capture (i.e., they directly transform 
   ``plxpr``) and can be used as you would normally use a transform in PennyLane:
@@ -975,6 +978,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
+  [(#7228)](https://github.com/PennyLaneAI/pennylane/pull/7228)
 
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -1079,6 +1083,9 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   >>> perturbation_error(frags, [state1, state2])
   [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
   ```
+
+* Function `qml.labs.trotter_error.vibronic_fragments` now returns `RealspaceMatrix` objects with the correct number of electronic states.
+  [(#7251)](https://github.com/PennyLaneAI/pennylane/pull/7251)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1314,7 +1321,16 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * The docstring for `QuantumScripts` has been updated to remove outdated references to `set_parameters`.
   [(#7174)](https://github.com/PennyLaneAI/pennylane/pull/7174)
 
+* The documentation for `qml.device` has been updated to include `null.qubit` in the list of readily available devices.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
+
 <h3>Bug fixes 🐛</h3>
+
+* Using transforms with program capture enabled now works correctly with functions that accept pytree arguments.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
+
+* `qml.math.requires_grad` no longer returns `True` for JAX inputs other than `jax.interpreters.ad.JVPTracer` instances.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
 
 * PennyLane is now compatible with `pyzx 0.9`.
   [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
@@ -1331,7 +1347,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * Fixed a bug that caused the output of `qml.fourier.qnode_spectrum()` to differ depending if equivalent 
   gate generators are defined using different PennyLane operators. This was resolved by updating
   `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
-  [(#7121)])(https://github.com/PennyLaneAI/pennylane/pull/7121)
+  [(#7121)](https://github.com/PennyLaneAI/pennylane/pull/7121)
 
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
   [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
@@ -1375,6 +1391,10 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 
 * `qml.BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
+
+* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
+  `jnp.arange`, and `jnp.full`.
+  [(#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
 
 * The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the 
   `mcm_method` passed to the `QNode`, instead of assuming the method is always `deferred`.
