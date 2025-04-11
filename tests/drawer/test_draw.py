@@ -245,10 +245,7 @@ class TestMaxLength:
 
         out = draw(long_circuit)()
 
-        # Ensure the continuation characters ( " ···" ) in a partitioned circuit
-        # are not considered in the max length
-        continuation_chars = " ···"
-        assert 95 <= max(len(s.replace(continuation_chars, "")) for s in out.split("\n")) <= 100
+        assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
     # Here max_length must be at least 11 which is the shortest length possible
     @pytest.mark.parametrize("ml", [11, 15, 20])
@@ -263,9 +260,7 @@ class TestMaxLength:
 
         out = draw(long_circuit, max_length=ml)()
 
-        # Ensure no line exceeds the max length, ignoring the continuation characters ( " ···" )
-        continuation_chars = " ···"
-        assert max(len(s.replace(continuation_chars, "")) for s in out.split("\n")) <= ml
+        assert max(len(s) for s in out.split("\n")) <= ml
 
 
 class TestLayering:
