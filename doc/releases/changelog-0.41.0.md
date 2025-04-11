@@ -808,7 +808,7 @@ Additional changes:
 <h4>Improved drawing</h4>
 
 * `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
-   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
+  [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
 
 * `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace 
   without changing the represented circuit.
