@@ -308,14 +308,14 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   The following transforms now have native support for program capture (i.e., they directly transform 
   ``plxpr``) and can be used as you would normally use a transform in PennyLane:
 
-  * :func:`pennylane.transforms.merge_rotations`
-  * :func:`pennylane.transforms.single_qubit_fusion`
-  * :func:`pennylane.transforms.unitary_to_rot`
-  * :func:`pennylane.transforms.merge_amplitude_embedding`
-  * :func:`pennylane.transforms.commute_controlled`
-  * :func:`pennylane.transforms.decompose`
-  * :func:`pennylane.map_wires`
-  * :func:`pennylane.transforms.cancel_inverses`
+  * :func:`merge_rotations <pennylane.transforms.merge_rotations>`
+  * :func:`single_qubit_fusion <pennylane.transforms.single_qubit_fusion>`
+  * :func:`unitary_to_rot <pennylane.transforms.unitary_to_rot>`
+  * :func:`merge_amplitude_embedding <pennylane.transforms.merge_amplitude_embedding>`
+  * :func:`commute_controlled <pennylane.transforms.commute_controlled>`
+  * :func:`decompose <pennylane.transforms.decompose>`
+  * :func:`map_wires <pennylane.map_wires>`
+  * :func:`cancel_inverses <pennylane.transforms.cancel_inverses>`
 
   Other transforms without a plxpr-native implementation are also supported by internally converting 
   the tape implementation. As an example, here is a custom tape transform that shifts every `qml.RX` 
@@ -373,7 +373,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
   One of the strengths of program capture is preserving a program's structure, eliminating the need 
   to unroll control flow operations. In previous releases, this could only be accomplished by using 
-  :func:`pennylane.for_loop`, :func:`pennylane.cond`, and :func:`pennylane.while_loop`. With this release, 
+  :func:`qml.for_loop <pennylane.for_loop>`, :func:`qml.cond <pennylane.cond>`, and :func:`qml.while_loop <pennylane.while_loop>`. With this release, 
   standard Python control flow operations are now supported with program capture:
 
   ```python
@@ -431,7 +431,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
     [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
   * :class:`qml.SWAP <pennylane.SWAP>`
     [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-  * :func:`Controlled <pennylane.ctrl>` operations
+  * :func:`Controlled <pennylane.ops.op_math.Controlled>` operations
     [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
   
   ```python
@@ -500,6 +500,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 * A new state-of-the-art state preparation technique based on QROM is now available with the
   :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` template.
   [(#6974)](https://github.com/PennyLaneAI/pennylane/pull/6974)  
+  
   Using :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>` is analogous to using other state preparation techniques in PennyLane. 
     
   ```python
@@ -525,7 +526,8 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality:
 
-* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.
+* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.  
+  This function accepts and outputs matrices when `matrix=True`.
 
   ```python
   import pennylane as qml
@@ -540,7 +542,8 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   ```
 
 * Compute the structure constants that make up the adjoint representation of a Lie algebra
-  using :func:`qml.structure_constants <pennylane.structure_constants>`.
+  using :func:`qml.structure_constants <pennylane.structure_constants>`.  
+  This function accepts and outputs matrices when `matrix=True`.
 
   ```pycon
   >>> adjoint_rep = qml.structure_constants(dla)
@@ -556,7 +559,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   [X(0)]
   ```
 
-* Cartan decompositions `g = k + m` can be performed with :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>`.  
+* Cartan decompositions, `g = k + m`, can be performed with :func:`qml.liealg.cartan_decomp <pennylane.liealg.cartan_decomp>`.  
   These use _involution_ functions that return a boolean value.
   A variety of typically encountered involution functions are included in the module,
   such as `even_odd_involution, concurrence_involution, A, AI, AII, AIII, BD, BDI, DIII, C, CI, CII`.
@@ -593,20 +596,12 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   True
   ```
 
-Additional changes:
-
-* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.  
-  Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
-
-* :func:`qml.structure_constants <pennylane.structure_constants>` now accepts and outputs matrix inputs using the `matrix` keyword.
-
 * The following functions have also been added:
   * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
-
   * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
-
   * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
+  * `qml.pauli.trace_inner_product` can handle batches of dense matrices.
 
 [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
