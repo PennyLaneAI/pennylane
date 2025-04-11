@@ -44,7 +44,6 @@ def draw(
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
-
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
         wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
