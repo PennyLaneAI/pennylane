@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional, Type
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 
@@ -133,8 +135,14 @@ class CompressedResourceOp:
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
-def _make_hashable(d) -> tuple:
-    return tuple((k, _make_hashable(v)) for k, v in d.items()) if isinstance(d, dict) else d
+def _make_hashable(d):
+    if isinstance(d, dict):
+        return tuple(
+            sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
+        )
+    if hasattr(d, "tolist"):
+        return d.tolist()
+    return d
 
 
 def _validate_resource_rep(op_type, params):
@@ -341,6 +349,11 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     )
 
 
+def _is_integer(x):
+    """Checks if x is an integer."""
+    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
+
+
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
@@ -350,7 +363,7 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if not isinstance(z, int) or z < 0:
+    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
         raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(

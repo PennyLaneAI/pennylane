@@ -45,7 +45,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         import jax
 
         from pennylane.capture.primitives import ctrl_transform_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.decomposition.collect_resource_ops import CollectResourceOps
 
     except ImportError:  # pragma: no cover
         return None, None
@@ -261,8 +261,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 with qml.capture.pause():
 
-                    # TODO: replace this with a collector that does not flatten the PLxPR
-                    collector = CollectOpsandMeas()
+                    collector = CollectResourceOps()
                     collector.eval(jaxpr, consts, *args)
                     operations = collector.state["ops"]
 
@@ -336,7 +335,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
             # a solution is found for this operator in the graph.
             if (
-                op.has_plxpr_decomposition
+                op.has_qfunc_decomposition
                 or qml.decomposition.enabled_graph()
                 and self._decomp_graph.is_solved_for(op)
             ):
@@ -394,6 +393,11 @@ def decompose(
         decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
         ``alt_decomps`` are only functional with this toggle present.
 
+    .. seealso::
+
+        For more information on PennyLane's decomposition tools and features, check out the
+        :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
+
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
@@ -429,7 +433,9 @@ def decompose(
 
     .. seealso::
 
-        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` for a
+        For decomposing into Clifford + T, check out :func:`~.pennylane.clifford_t_decomposition`.
+
+        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
 
