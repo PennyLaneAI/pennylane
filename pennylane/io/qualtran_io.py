@@ -121,7 +121,7 @@ def _get_to_pl_op():
     return _to_pl_op
 
 
-def bloq_registers(bloq: qt.Bloq):
+def bloq_registers(bloq: "qt.Bloq"):
     """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
