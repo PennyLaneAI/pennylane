@@ -137,7 +137,9 @@ class CompressedResourceOp:
 
 def _make_hashable(d):
     if isinstance(d, dict):
-        return tuple(sorted(((k, _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]))
+        return tuple(
+            sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
+        )
     if hasattr(d, "tolist"):
         return d.tolist()
     return d
