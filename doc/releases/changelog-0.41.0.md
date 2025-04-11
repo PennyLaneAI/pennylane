@@ -527,7 +527,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality:
 
 * Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.  
-  This function accepts and outputs matrix inputs when `matrix=True`.
+  This function accepts and outputs matrices when `matrix=True`.
 
   ```python
   import pennylane as qml
@@ -543,7 +543,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 
 * Compute the structure constants that make up the adjoint representation of a Lie algebra
   using :func:`qml.structure_constants <pennylane.structure_constants>`.  
-  This function accepts and outputs matrix inputs when `matrix=True`.
+  This function accepts and outputs matrices when `matrix=True`.
 
   ```pycon
   >>> adjoint_rep = qml.structure_constants(dla)
