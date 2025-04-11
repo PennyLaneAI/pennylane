@@ -39,7 +39,16 @@ new features are available:
   [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
-  >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+  >>> decomp_rule = qml.list_decomps(qml.CRX)[0]
+  >>> print(decomp_rule, "\n")
+  @register_resources(_crx_to_rx_cz_resources)
+  def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+      qml.RX(phi / 2, wires=wires[1])
+      qml.CZ(wires=wires)
+      qml.RX(-phi / 2, wires=wires[1])
+      qml.CZ(wires=wires) 
+      
+  >>> print(qml.draw(decomp_rule)(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
