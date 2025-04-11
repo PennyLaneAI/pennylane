@@ -130,8 +130,8 @@ Array(-0.70710677, dtype=float32)
 However, there are some limitations to be aware of 
 when using ``adjoint`` with ``default.qubit``.
 
-Control flow and gradients
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Control flow and diff_method="adjoint"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Control flow like ``for``, ``while`` and ``if/else`` 
 are not currently supported when using ``"adjoint"`` with ``default.qubit``.
