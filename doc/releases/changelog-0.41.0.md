@@ -285,6 +285,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   and target qubits of controlled operations when experimental program capture is enabled.
   It follows the same API as `qml.transforms.commute_controlled`.
   [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+  [(#7247)](https://github.com/PennyLaneAI/pennylane/pull/7247)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
@@ -626,7 +627,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `PrepSelPrep` now has a concise representation when drawn with `qml.draw` or `qml.draw_mpl`.
   [(#7164)](https://github.com/PennyLaneAI/pennylane/pull/7164)
 
-* `qml.draw` now re-displays wire labels at the start of each partitioned chunk when using the max_length keyword argument.
+* `qml.draw` now re-displays wire labels at the start of each partitioned chunk when using the `max_length` keyword argument.
   [(#7250)](https://github.com/PennyLaneAI/pennylane/pull/7250)
 
 <h4>Gradients and differentiability</h4>
