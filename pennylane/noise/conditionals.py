@@ -57,7 +57,7 @@ from pennylane.ops.functions import simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
-# pylint: disable = unnecessary-lambda, too-few-public-methods, too-many-statements, too-many-branches
+# pylint: disable = too-many-branches
 
 
 class WiresIn(BooleanFn):
@@ -252,7 +252,7 @@ class OpIn(BooleanFn):
                 )
                 for x, c in zip(xs, cs)
             )
-        except:  # pylint: disable = bare-except # pragma: no cover
+        except:  # pragma: no cover
             raise ValueError(
                 "OpIn does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
@@ -311,7 +311,7 @@ class OpEq(BooleanFn):
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
-        except:  # pylint: disable = bare-except # pragma: no cover
+        except:  # pragma: no cover
             raise ValueError(
                 "OpEq does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
