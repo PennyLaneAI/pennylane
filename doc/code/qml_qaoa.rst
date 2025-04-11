@@ -7,13 +7,14 @@ Overview
 This module provides a collection of methods that help in the construction of
 QAOA workflows.
 
-.. currentmodule:: pennylane.qaoa
+.. automodapi:: pennylane.qaoa
 
 Mixer Hamiltonians
 ------------------
 
 .. automodapi:: pennylane.qaoa.mixers
     :no-heading:
+    :include-all-objects:
     :no-inherited-members:
 
 Cost Hamiltonians
@@ -21,6 +22,7 @@ Cost Hamiltonians
 
 .. automodapi:: pennylane.qaoa.cost
     :no-heading:
+    :include-all-objects:
     :no-inherited-members:
 
 QAOA Layers
@@ -28,6 +30,7 @@ QAOA Layers
 
 .. automodapi:: pennylane.qaoa.layers
     :no-heading:
+    :include-all-objects:
     :no-inherited-members:
 
 Cycle Optimization
@@ -36,12 +39,10 @@ Cycle Optimization
 The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
 cycle problem.
 
-.. currentmodule:: pennylane.qaoa
-
-.. autosummary::
-    :toctree: api
-
-    cycle
+.. automodapi:: pennylane.qaoa.cycle
+    :no-heading:
+    :include-all-objects:
+    :no-inherited-members:
 
 
 Solving the MaxCut problem using QAOA
