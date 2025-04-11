@@ -408,13 +408,13 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   Sparse-array input and execution is now supported on `default.qubit` and `lightning.qubit`
   with a variety of templates, preserving sparsity throughout the entire simulation.
   
-  Specifically, following templates now support sparse data structures:
+  Specifically, the following templates now support sparse data structures:
   
-  * `qml.StatePrep` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
-  * `qml.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-  * `qml.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-  * `qml.SWAP` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-  * `Controlled` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+  * :class:`qml.StatePrep <pennylane.StatePrep>` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  * :class:`qml.QubitUnitary <pennylane.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  * :class:`qml.BlockEncode <pennylane.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
+  * :classl:`qml.SWAP <pennylane.SWAP>` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * :func:`Controlled <pennylane.ctrl>` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
   ```python
   import scipy
@@ -438,7 +438,8 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
     array([0.+0.j, 0.+0.j, 0.+0.j, ..., 0.+0.j, 0.+0.j, 0.+0.j])
     ```
 
-* Operators that have a `sparse_matrix` method can now choose a sparse-matrix format and the order of their wires.
+* Operators that have a :func:`sparse_matrix <pennylane.Operator.sparse_matrix` method can now 
+  choose a sparse-matrix format and the order of their wires. Available
   `scipy` [sparse-matrix formats](https://docs.scipy.org/doc/scipy/tutorial/sparse.html#:~:text=the%20scipy.sparse,disadvantages) include `'bsr'`, `'csr'`, `'csc'`, `'coo'`, `'dia'`, `'dok'`, and `'lil'`.
   [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
@@ -615,9 +616,9 @@ Additional changes:
   ```
 
 * A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help determine 
-  the required wires for more complicated Qualtran ``Bloqs`` with many wire registers that fulfill
-  different purposes.
+  the required wires for Qualtran ``Bloqs`` with multiple registers.
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+  
   Given a Qualtran Bloq, this function returns a dictionary of register names and wires.
 
   ```pycon
