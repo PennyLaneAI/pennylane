@@ -536,8 +536,9 @@ class TestMaxLength:
 
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
-    # Here max_length must be at least 11 which is the shortest length possible
-    @pytest.mark.parametrize("ml", [11, 15, 20])
+    # We choose values of max_length that allow us to include continuation dots
+    # when the circuit is partitioned
+    @pytest.mark.parametrize("ml", [25, 50, 75])
     def test_setting_max_length(self, ml):
         """Test several custom max_length parameters change the wrapping length."""
 
