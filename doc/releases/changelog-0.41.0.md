@@ -431,7 +431,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
     [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
   * :class:`qml.SWAP <pennylane.SWAP>`
     [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-  * :func:`Controlled <pennylane.ctrl>` operations
+  * :func:`Controlled <pennylane.ops.op_math.Controlled>` operations
     [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
   
   ```python
