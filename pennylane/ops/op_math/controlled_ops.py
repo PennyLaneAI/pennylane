@@ -1413,6 +1413,7 @@ class MultiControlledX(ControlledOp):
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
+
     ):
         return cls._primitive.bind(
             *wires,
@@ -1446,6 +1447,7 @@ class MultiControlledX(ControlledOp):
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+        self.work_wire_type = work_wire_type
 
         if work_wire_type not in {"clean", "dirty"}:
             raise ValueError(
