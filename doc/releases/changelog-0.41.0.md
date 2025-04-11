@@ -122,6 +122,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#6966)](https://github.com/PennyLaneAI/pennylane/pull/6966)
   [(#7149)](https://github.com/PennyLaneAI/pennylane/pull/7149)
   [(#7184)](https://github.com/PennyLaneAI/pennylane/pull/7184)
+  [(#7263)](https://github.com/PennyLaneAI/pennylane/pull/7263)
 
   Each keyword argument must be assigned a dictionary that maps operator types to decomposition rules.
   Here is an example of both keyword arguments in use:
