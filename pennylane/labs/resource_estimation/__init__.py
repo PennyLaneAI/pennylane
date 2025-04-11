@@ -116,6 +116,7 @@ Templates
     ~ResourceModExp
     ~ResourceMultiplier
     ~ResourcePhaseAdder
+    ~ResourceQubitUnitary
 
 State Preparation Templates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,9 +125,18 @@ State Preparation Templates
     :toctree: api
 
     ~ResourceBasisState
+    ~ResourceMPSPrep
     ~ResourceStatePrep
     ~ResourceSuperposition
     ~ResourceMottonenStatePreparation
+
+Compact Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactState
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -234,4 +244,8 @@ from .templates import (
     ResourceSuperposition,
     ResourceAmplitudeAmplification,
     ResourceBasisState,
+    ResourceMPSPrep,
+    ResourceQubitUnitary,
 )
+
+from .compact import CompactState

@@ -16,6 +16,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Added `CompactState`, a class to more efficiently represent quantum states for
+resource estimation.
+  [(#7126)](https://github.com/PennyLaneAI/pennylane/pull/7126)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Jay Soni
