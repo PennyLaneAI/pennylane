@@ -15,8 +15,6 @@
 import numbers
 from collections.abc import Iterable
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.gradients.metric_tensor import metric_tensor
@@ -361,7 +359,6 @@ def _unflatten_np(flat, model):
     Raises:
         ValueError: if ``flat`` has more elements than ``model``
     """
-    # pylint:disable=len-as-condition
     res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
     if len(tail) != 0:
         raise ValueError("Flattened iterable has more elements than the model.")

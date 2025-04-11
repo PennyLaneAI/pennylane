@@ -165,7 +165,7 @@ class SPSAOptimizer:
             <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
 
-    # pylint: disable-msg=too-many-arguments
+    # pylint: disable=too-many-positional-arguments, too-many-arguments
     def __init__(self, maxiter=None, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         self.a = a
         self.A = A
@@ -265,7 +265,6 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            # pylint: disable=protected-access
             dev_shots = objective_fn.device.shots
 
             shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)
