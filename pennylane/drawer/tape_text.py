@@ -158,10 +158,10 @@ def _add_to_finished_lines(
     totals: _CurrentTotals, config: _Config, show_wire_labels: bool
 ) -> _CurrentTotals:
     """Add current totals to the finished lines and initialize new totals."""
-    # totals.finished_lines += totals.wire_totals + totals.bit_totals
-    continuation = " ···"
 
-    totals.finished_lines += [line + continuation for line in totals.wire_totals]
+    suffix = " ···"
+
+    totals.finished_lines += [line + suffix for line in totals.wire_totals]
     totals.finished_lines += totals.bit_totals
     totals.finished_lines[-1] += "\n"
 
@@ -448,7 +448,10 @@ def tape_text(
             layer_str = _add_obj(op, layer_str, config, tape_cache)
         layer_str = _left_justify(layer_str, config)
 
-        if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
+        len_suffix = 4  # Suffix dots at then of a partitioned circuit (' ...') hasve length 4
+        cur_max_length = max_length - len_suffix if cur_layer < len(layers) - 1 else max_length
+        if len(totals.wire_totals[0]) + len(layer_str[0]) > cur_max_length - 1:
+            # if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
             totals = _add_to_finished_lines(totals, config, show_wire_labels)
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
