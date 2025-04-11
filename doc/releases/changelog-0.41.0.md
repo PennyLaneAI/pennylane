@@ -404,17 +404,26 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   in PennyLane, resulting in faster execution for large sparse objects.
   [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) 
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
-  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)  
+  [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
+
   Sparse-array input and execution is now supported on `default.qubit` and `lightning.qubit`
   with a variety of templates, preserving sparsity throughout the entire simulation.
   
   Specifically, the following templates now support sparse data structures:
   
-  * :class:`qml.StatePrep <pennylane.StatePrep>` [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
-  * :class:`qml.QubitUnitary <pennylane.QubitUnitary` [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889) [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986) [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-  * :class:`qml.BlockEncode <pennylane.BlockEncode` [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963) [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-  * :classl:`qml.SWAP <pennylane.SWAP>` [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
-  * :func:`Controlled <pennylane.ctrl>` operations [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+  * :class:`qml.StatePrep <pennylane.StatePrep>`
+    [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  * :class:`qml.QubitUnitary <pennylane.QubitUnitary` 
+    [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+    [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+    [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  * :class:`qml.BlockEncode <pennylane.BlockEncode`
+    [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+    [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
+  * :class:`qml.SWAP <pennylane.SWAP>`
+    [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * :func:`Controlled <pennylane.ctrl>` operations
+    [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
 
   ```python
   import scipy
@@ -429,6 +438,11 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   @qml.qnode(dev)
   def circuit():
       qml.StatePrep(sparse_state, wires=range(2))
+
+      for i in range(10):
+        qml.H(i)
+        qml.CNOT(wires=[i, i + 1])
+
       qml.QubitUnitary(sparse_mat, wires=range(13))
       qml.ctrl(qml.QubitUnitary(sparse_x,wires=0),control=1)
       return qml.state()
@@ -615,8 +629,8 @@ Additional changes:
   array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
   ```
 
-* A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help determine 
-  the required wires for Qualtran ``Bloqs`` with multiple registers.
+* A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help
+  determine the required wires for complex Qualtran ``Bloqs`` with multiple registers.
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
   
   Given a Qualtran Bloq, this function returns a dictionary of register names and wires.
