@@ -29,7 +29,7 @@ The operations are divided into the following files:
 * ``special_unitary.py``: The ``SpecialUnitary`` operation.
 """
 
-from ..identity import GlobalPhase, Identity
+from ..identity import GlobalPhase, Identity, I
 from ..meta import Barrier, Snapshot, WireCut
 from .arithmetic_ops import *
 from .matrix_ops import *

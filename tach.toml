@@ -177,6 +177,10 @@ layer = "tertiary"
 path = "pennylane.qaoa"
 layer = "tertiary"
 
+[[modules]]
+path = "pennylane.noise"
+layer = "tertiary"
+
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
@@ -254,10 +258,6 @@ path = "pennylane.qnn"
 depends_on = ["pennylane"]
 unchecked = true
 
-[[modules]]
-path = "pennylane.noise"
-depends_on = ["pennylane.templates", "pennylane.ops", "pennylane.boolean_fn", "pennylane", "pennylane.measurements", "pennylane.operation", "pennylane.wires"]
-unchecked = true
 
 [[modules]]
 path = "pennylane.decomposition"

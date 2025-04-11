@@ -20,7 +20,7 @@ The operations are in one file:
   either unitary or hermitian depending.
 """
 
-from ..identity import Identity
+from ..identity import Identity, I
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
