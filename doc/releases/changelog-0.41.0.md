@@ -429,22 +429,24 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   import scipy
   import numpy as np
 
-  sparse_state = scipy.sparse.csr_array([0,1,0,0])
+  sparse_state = scipy.sparse.csr_array([0, 1, 0, 0])
   mat = np.kron(np.identity(2**12), qml.X.compute_matrix())
   sparse_mat = scipy.sparse.csr_array(mat)
   sparse_x = scipy.sparse.csr_array(qml.X.compute_matrix())
 
-  dev = qml.device('default.qubit')
+  dev = qml.device("default.qubit")
+
+
   @qml.qnode(dev)
   def circuit():
       qml.StatePrep(sparse_state, wires=range(2))
 
       for i in range(10):
-        qml.H(i)
-        qml.CNOT(wires=[i, i + 1])
+          qml.H(i)
+          qml.CNOT(wires=[i, i + 1])
 
       qml.QubitUnitary(sparse_mat, wires=range(13))
-      qml.ctrl(qml.QubitUnitary(sparse_x,wires=0),control=1)
+      qml.ctrl(qml.QubitUnitary(sparse_x, wires=0), control=1)
       return qml.state()
     ```
     ```pycon
