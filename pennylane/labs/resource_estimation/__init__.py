@@ -234,4 +234,5 @@ from .templates import (
     ResourceSuperposition,
     ResourceAmplitudeAmplification,
     ResourceBasisState,
+    ResourceGQSP,
 )

@@ -28,6 +28,8 @@ from .subroutines import (
     ResourceMultiplier,
     ResourcePhaseAdder,
     ResourceAmplitudeAmplification,
+    ResourceQubitUnitary,
+    ResourceGQSP,
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
