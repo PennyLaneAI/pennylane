@@ -514,9 +514,7 @@ def _gather_input_soqs(
     return qvars_in
 
 
-try:
-    import qualtran as qt
-
+def to_bloq(op: Operation):
     class ToBloq(qt.Bloq):
         r"""
         Adapter class to convert PennyLane operators into Qualtran Bloqs
@@ -630,5 +628,4 @@ try:
         def __str__(self):
             return "PL" + self.op.name
 
-except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+    return ToBloq(op)
