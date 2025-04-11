@@ -1413,7 +1413,6 @@ class MultiControlledX(ControlledOp):
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
-
     ):
         return cls._primitive.bind(
             *wires,
