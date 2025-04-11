@@ -15,18 +15,12 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 from collections import defaultdict
-
-from typing import (
-    Dict,
-    List,
-    TYPE_CHECKING
-)
-from functools import lru_cache, singledispatch, cached_property
+from functools import cached_property, lru_cache, singledispatch
+from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
 
@@ -39,6 +33,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 if TYPE_CHECKING:
     import qualtran as qt
+
 
 # pylint: disable=unused-argument
 @lru_cache
@@ -443,7 +438,9 @@ def split_qubits(registers, qubits):  # type: ignore[type-var]
 
 
 def _ensure_in_reg_exists(
-    bb: qt.BloqBuilder, in_reg: qt.cirq_interop._cirq_to_bloq._QReg, qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet]
+    bb: qt.BloqBuilder,
+    in_reg: qt.cirq_interop._cirq_to_bloq._QReg,
+    qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet],
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.bloqs.bookkeeping import Cast
@@ -453,7 +450,9 @@ def _ensure_in_reg_exists(
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
         qreg_to_qvar[
-            qt.cirq_interop._cirq_to_bloq._QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
+            qt.cirq_interop._cirq_to_bloq._QReg(
+                qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc)
+            )
         ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
@@ -467,7 +466,8 @@ def _ensure_in_reg_exists(
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
             new_qreg_to_qvar |= {
-                qt.cirq_interop._cirq_to_bloq._QReg(q, qt.QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
+                qt.cirq_interop._cirq_to_bloq._QReg(q, qt.QBit()): s
+                for q, s in zip(qreg.qubits, bb.split(soq=soq))
             }
         else:
             new_qreg_to_qvar[qreg] = soq
