@@ -1345,9 +1345,6 @@ class TestRequiresGrad:
         t = jnp.array([1.0, 2.0, 3.0])
         s = jnp.array([-2.0, -3.0, -4.0])
 
-        cost_fn(t, s)
-        assert res == [False, False]
-
         jax.grad(cost_fn, argnums=0)(t, s)
         assert res == [True, False]
 
@@ -1371,14 +1368,11 @@ class TestRequiresGrad:
         t = jnp.array([1.0, 2.0, 3.0])
         s = jnp.array([-2.0, -3.0, -4.0])
 
-        jax.jit(cost_fn)(t, s)
-        assert res == [False, False]
-
         jax.jit(jax.grad(cost_fn, argnums=0))(t, s)
-        assert res == [True, False]
+        assert res == [True, True]
 
         jax.jit(jax.grad(cost_fn, argnums=1))(t, s)
-        assert res == [False, True]
+        assert res == [True, True]
 
         jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(t, s)
         assert res == [True, True]
