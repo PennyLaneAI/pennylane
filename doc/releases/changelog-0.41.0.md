@@ -1392,10 +1392,6 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * `qml.BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
-* The `PlxprInterpreter` classes can now handle creating dynamic arrays via `jnp.ones`, `jnp.zeros`,
-  `jnp.arange`, and `jnp.full`.
-  [(#6865)](https://github.com/PennyLaneAI/pennylane/pull/6865)
-
 * The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the 
   `mcm_method` passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
