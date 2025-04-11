@@ -17,6 +17,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, Dict
 
+from pennylane.wires import Wires
+from pennylane.queuing import QueuingManager
+
+
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
 
@@ -75,6 +79,13 @@ class ResourceOperator(ABC):
 
     """
 
+    _queue_category = "_resource_op"
+
+    def __init__(self, *args, wires=None, **kwargs) -> None:
+        self.wires = Wires([]) if wires is None else Wires(wires)
+        self.queue()
+        super().__init__()
+    
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -185,6 +196,11 @@ class ResourceOperator(ABC):
     def tracking_name_from_op(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return self.__class__.tracking_name(**self.resource_params)
+
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.append(self)
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
 class ResourcesNotDefined(Exception):

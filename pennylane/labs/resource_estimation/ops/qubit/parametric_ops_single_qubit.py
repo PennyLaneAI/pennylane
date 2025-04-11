@@ -17,6 +17,8 @@ from typing import Dict
 import numpy as np
 
 import pennylane as qml
+from pennylane.wires import Wires
+
 import pennylane.labs.resource_estimation as re
 
 # pylint: disable=arguments-differ
@@ -47,13 +49,11 @@ def _rotation_resources(epsilon=10e-3):
     return gate_types
 
 
-class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
+class ResourcePhaseShift(re.ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
-    Args:
-        phi (float): rotation angle :math:`\phi`
+    Keyword Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation upto some global phase,
@@ -186,13 +186,12 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
 
-class ResourceRX(qml.RX, re.ResourceOperator):
+class ResourceRX(re.ResourceOperator):
     r"""Resource class for the RX gate.
 
-    Args:
-        phi (float): rotation angle :math:`\phi`
+    Keyword Args:
+        eps (float): error threshold for clifford plus T decomposition of this operation
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -219,13 +218,17 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
+    def __init__(self, eps=None, wires=None) -> None:
+        self.eps = eps
+        super().__init__(wires=wires)
+
     @staticmethod
-    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(eps=None, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
-        Args:
-            config (dict): a dictionary containing the error threshold
+        Keyword Args:
+            eps (float): the error threshold
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -236,27 +239,29 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
 
         """
-        return _rotation_resources(epsilon=config["error_rx"])
+        eps = eps or kwargs["config"]["error_rx"]
+        return _rotation_resources(epsilon=eps)
 
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            dict: A dictionary containing the resource parameters:
+                * eps (Union[float, None]): the number of qubits the operation is controlled on
         """
-        return {}
+        return {"eps": self.eps}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
-
+        
         Resources:
             The adjoint of a single qubit rotation changes the sign of the rotation angle,
             thus the resources of the adjoint operation result in the original operation.
@@ -265,11 +270,11 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -299,7 +304,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRX.resource_rep(): 1}
+            gate_types = {re.ResourceCRX.resource_rep(eps): 1}
 
             if num_ctrl_values:
                 gate_types[re.ResourceX.resource_rep()] = 2
@@ -309,7 +314,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         gate_types = {}
 
         h = re.ResourceHadamard.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
+        rz = re.ResourceRZ.resource_rep(eps)
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
@@ -323,7 +328,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         return gate_types
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -339,16 +344,15 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         """
         if z == 0:
             return {re.ResourceIdentity.resource_rep(): 1}
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
 
-class ResourceRY(qml.RY, re.ResourceOperator):
+class ResourceRY(re.ResourceOperator):
     r"""Resource class for the RY gate.
 
-    Args:
-        phi (float): rotation angle :math:`\phi`
+    Keyword Args:
+        eps (float): error threshold for clifford plus T decomposition of this operation
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -375,10 +379,17 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
 
+    def __init__(self, eps=None, wires=None) -> None:
+        self.eps = eps
+        super().__init__(wires=wires)
+
     @staticmethod
-    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(eps=None, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
+
+        Keyword Args:
+            eps (float): the error threshold
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -391,7 +402,8 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         Args:
             config (dict): a dictionary containing the error threshold
         """
-        return _rotation_resources(epsilon=config["error_ry"])
+        eps = eps or kwargs["config"]["error_ry"]
+        return _rotation_resources(epsilon=eps)
 
     @property
     def resource_params(self) -> dict:
@@ -400,16 +412,16 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {}
+        return {"eps": self.eps}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -420,11 +432,11 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -432,6 +444,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
+            eps (float): error threshold
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.
@@ -454,14 +467,14 @@ class ResourceRY(qml.RY, re.ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRY.resource_rep(): 1}
+            gate_types = {re.ResourceCRY.resource_rep(eps): 1}
 
             if num_ctrl_values:
                 gate_types[re.ResourceX.resource_rep()] = 2
 
             return gate_types
 
-        ry = re.ResourceRY.resource_rep()
+        ry = re.ResourceRY.resource_rep(eps)
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
@@ -471,7 +484,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         return {ry: 2, mcx: 2}
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -487,16 +500,15 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         """
         if z == 0:
             return {re.ResourceIdentity.resource_rep(): 1}
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
 
-class ResourceRZ(qml.RZ, re.ResourceOperator):
+class ResourceRZ(re.ResourceOperator):
     r"""Resource class for the RZ gate.
 
-    Args:
-        phi (float): rotation angle :math:`\phi`
+    Keyword Args:
+        eps (float): error threshold for clifford plus T decomposition of this operation
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -523,8 +535,12 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}s
     """
 
+    def __init__(self, eps=None, wires=None) -> None:
+        self.eps = eps
+        super().__init__(wires=wires)
+
     @staticmethod
-    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(eps=None, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -539,7 +555,8 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         Args:
             config (dict): a dictionary containing the error threshold
         """
-        return _rotation_resources(epsilon=config["error_rz"])
+        eps = eps or kwargs["config"]["error_rz"]
+        return _rotation_resources(epsilon=eps)
 
     @property
     def resource_params(self) -> dict:
@@ -548,16 +565,16 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {}
+        return {"eps": self.eps}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -568,11 +585,11 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -601,14 +618,14 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRZ.resource_rep(): 1}
+            gate_types = {re.ResourceCRZ.resource_rep(eps): 1}
 
             if num_ctrl_values:
                 gate_types[re.ResourceX.resource_rep()] = 2
 
             return gate_types
 
-        rz = re.ResourceRZ.resource_rep()
+        rz = re.ResourceRZ.resource_rep(eps)
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
@@ -618,7 +635,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         return {rz: 2, mcx: 2}
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -634,10 +651,10 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         """
         if z == 0:
             return {re.ResourceIdentity.resource_rep(): 1}
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
 
-class ResourceRot(qml.Rot, re.ResourceOperator):
+class ResourceRot(re.ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Args:
@@ -662,8 +679,12 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     {RY: 1, RZ: 2}
     """
 
+    def __init__(self, eps=None, wires=None) -> None:
+        self.eps = eps
+        super().__init__(wires=wires)
+
     @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(eps=None, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -673,8 +694,8 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             .. math:: \hat{R}(\omega, \theta, \phi) = \hat{RZ}(\omega) \cdot \hat{RY}(\theta) \cdot \hat{RZ}(\phi).
 
         """
-        ry = ResourceRY.resource_rep()
-        rz = ResourceRZ.resource_rep()
+        ry = ResourceRY.resource_rep(eps)
+        rz = ResourceRZ.resource_rep(eps)
 
         gate_types = {ry: 1, rz: 2}
         return gate_types
@@ -686,16 +707,16 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {}
+        return {"eps": self.eps}
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
+    def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -706,11 +727,11 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -752,7 +773,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourceCRot.resource_rep(): 1}
+            gate_types = {re.ResourceCRot.resource_rep(eps): 1}
 
             if num_ctrl_values:
                 gate_types[re.ResourceX.resource_rep()] = 2
@@ -761,8 +782,8 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
         gate_types = {}
 
-        rz = re.ResourceRZ.resource_rep()
-        ry = re.ResourceRY.resource_rep()
+        rz = re.ResourceRZ.resource_rep(eps)
+        ry = re.ResourceRY.resource_rep(eps)
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
@@ -776,7 +797,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         return gate_types
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -792,4 +813,4 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         """
         if z == 0:
             return {re.ResourceIdentity.resource_rep(): 1}
-        return {cls.resource_rep(): 1}
+        return {cls.resource_rep(eps): 1}
