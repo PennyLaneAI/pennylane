@@ -18,10 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-<<<<<<< HEAD
-=======
 from pennylane.io.qualtran_io import _get_to_pl_op
->>>>>>> master
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -213,8 +210,6 @@ class TestFromBloq:
             qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
         )
 
-<<<<<<< HEAD
-=======
     def test_to_pl_op(self):  # Correctness is also validated in Qualtran's tests
         """Tests that _get_to_pl_op produces the correct PennyLane equivalent"""
         from qualtran.bloqs.basic_gates import (
@@ -251,7 +246,6 @@ class TestFromBloq:
         assert to_pl(ZGate(), 0) == qml.PauliZ(0)
         assert to_pl(CZ(), [0, 1]) == qml.CZ([0, 1])
 
->>>>>>> master
     def test_bloqs(self):
         """Tests that bloqs with decompositions have the correct PennyLane decompositions after
         being wrapped with `FromBloq`"""

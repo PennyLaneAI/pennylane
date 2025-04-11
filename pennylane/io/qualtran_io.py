@@ -20,7 +20,7 @@ from typing import (
     Dict,
     List,
 )
-from functools import lru_cache, singledispatch,cached_property
+from functools import lru_cache, singledispatch, cached_property
 
 import numpy as np
 
