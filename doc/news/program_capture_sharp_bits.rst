@@ -176,7 +176,7 @@ when using ``"adjoint"`` with ``default.qubit``. For example, the following code
 
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
 >>> jax.jacobian(f)(x)
-NotImplementedError: Primitive ctrl_prim does not have a jvp rule and is not supported.
+NotImplementedError: Primitive ctrl_transform does not have a jvp rule and is not supported.
 
 Gradients with lightning.qubit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
