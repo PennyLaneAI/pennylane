@@ -60,7 +60,7 @@ decomposition rule is that which is most resource efficient (results in the smal
 * New decomposition rules can be globally added to operators in PennyLane with the new 
   :func:`qml.add_decomps <pennylane.add_decomps>` function. Creating a valid decomposition rule requires:
 
-  * Defining quantum function that represents the decomposition.
+  * Defining a quantum function that represents the decomposition.
   * Adding resource requirements (gate counts) to the above quantum function by decorating it with the 
     new :func:`qml.register_resources <pennylane.register_resources>` function, which requires a dictionary 
     mapping operator types present in the quantum function to their number of occurrences.
@@ -347,7 +347,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
   Note that with capture enabled, automatic qubit management is not supported on devices; the number 
   of wires given to the device must coincide with how many MCMs are present in the circuit, since 
-  deferred-measurements adds one auxiliary qubit per MCM.
+  deferred measurements add one auxiliary qubit per MCM.
 
 * Quantum circuits can now be differentiated on `default.qubit` and `lightning.qubit` with 
   `diff_method="finite-diff"`, `"adjoint"`, and `"backprop"` when program capture is enabled.
@@ -392,7 +392,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   ```
 
   When the value of `x` changes, PennyLane must (re)construct the plxpr representation of the program
-  in order for the program top execute. In this example, the act of (re)constructing plxpr is indicated
+  for the program to execute. In this example, the act of (re)constructing plxpr is indicated
   by the `print` statement executing. However, if the value of `y` changes (a dynamic argument), PennyLane
   does not need to reconstruct the plxpr representation of the program:
 
@@ -415,7 +415,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
   [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
-  Sparse-array input and execution is now supported on `default.qubit` and `lightning.qubit`
+  Sparse-array input and execution are now supported on `default.qubit` and `lightning.qubit`
   with a variety of templates, preserving sparsity throughout the entire simulation.
   
   Specifically, the following templates now support sparse data structures:
@@ -587,7 +587,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   ((4, 4), (1, 4), (1, 4), (2, 4), (4, 4, 4))
   ```
   `newg` is ordered such that the elements are `newg = k + mtilde + a`, where `mtilde` is the remainder of `m` without `a`. A Cartan subalgebra is an Abelian subalgebra of `m`,
-  and we can confirm that indeed all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
+  and we can confirm that all elements in `a` are mutually commuting via `qml.liealg.check_abelian`.
   ```pycon
   >>> qml.liealg.check_abelian(a)
   True
@@ -780,7 +780,7 @@ Additional changes:
 * The decompositions of `qml.SX`, `qml.X` and `qml.Y` use `qml.GlobalPhase` instead of `qml.PhaseShift`.
   [(#7073)](https://github.com/PennyLaneAI/pennylane/pull/7073)  
 
-* A new decomposition for multi-controlled global phases that uses a one less controlled phase shift
+* A new decomposition for multi-controlled global phases that uses one less controlled phase shift
   has been added.
   [(#6936)](https://github.com/PennyLaneAI/pennylane/pull/6936)
 
@@ -1056,7 +1056,7 @@ Additional changes:
   >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
   ```
 
-  We build state vectors in the harmonic oscilator basis with the `HOState` class. 
+  We build state vectors in the harmonic oscillator basis with the `HOState` class. 
 
   ```pycon
   >>> gridpoints = 5
