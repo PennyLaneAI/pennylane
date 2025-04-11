@@ -400,74 +400,91 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
-* Added method `qml.math.sqrt_matrix_sparse` to compute the square root of a sparse Hermitian matrix.
-  [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
-
-* `qml.BlockEncode` now accepts sparse input and outputs sparse matrices.
-  [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
-  [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
-
-* `Operator.sparse_matrix` now supports `format` parameter to specify the returned scipy sparse matrix format,
-  with the default being `'csr'`
-  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
-
-* Dispatch the linear algebra methods of `scipy` backend to `scipy.sparse.linalg` explicitly. Now `qml.math` can correctly
-  handle sparse matrices.
-  [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
-
-* `default.qubit` now supports the sparse matrices to be applied to the state vector. Specifically, `QubitUnitary` initialized with a sparse matrix can now be applied to the state vector in the `default.qubit` device.
-  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883)
-  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139)
+* Sparse data structures in compressed-sparse-row (csr) format are now supported end-to-end
+  in PennyLane, resulting in faster execution for large sparse objects.
+  [(#6883)](https://github.com/PennyLaneAI/pennylane/pull/6883) 
+  [(#7139)](https://github.com/PennyLaneAI/pennylane/pull/7139) 
   [(#7191)](https://github.com/PennyLaneAI/pennylane/pull/7191)
 
-* `Controlled` operators now have a full implementation of `sparse_matrix` that supports `wire_order` configuration.
-  [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+  Sparse-array input and execution is now supported on `default.qubit` and `lightning.qubit`
+  with a variety of templates, preserving sparsity throughout the entire simulation.
+  
+  Specifically, the following templates now support sparse data structures:
 
-* `qml.SWAP` now has sparse representation.
-  [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * :class:`qml.StatePrep <pennylane.StatePrep>`
+    [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+  * :class:`qml.QubitUnitary <pennylane.QubitUnitary>` 
+    [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
+    [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
+    [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  * :class:`qml.BlockEncode <pennylane.BlockEncode>`
+    [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
+    [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
+  * :class:`qml.SWAP <pennylane.SWAP>`
+    [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
+  * :func:`Controlled <pennylane.ctrl>` operations
+    [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
+  
+  ```python
+  import scipy
+  import numpy as np
 
-* `qml.QubitUnitary` now accepts sparse CSR matrices (from `scipy.sparse`). This allows efficient representation of large unitaries with mostly zero entries. Note that sparse unitaries are still in early development and may not support all features of their dense counterparts.
-  [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
-  [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
-  [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
+  sparse_state = scipy.sparse.csr_array([0, 1, 0, 0])
+  mat = np.kron(np.identity(2**12), qml.X.compute_matrix())
+  sparse_mat = scipy.sparse.csr_array(mat)
+  sparse_x = scipy.sparse.csr_array(qml.X.compute_matrix())
+
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.StatePrep(sparse_state, wires=range(2))
+
+      for i in range(10):
+          qml.H(i)
+          qml.CNOT(wires=[i, i + 1])
+
+      qml.QubitUnitary(sparse_mat, wires=range(13))
+      qml.ctrl(qml.QubitUnitary(sparse_x, wires=0), control=1)
+      return qml.state()
+    ```
+
+    ```pycon
+    >>> circuit()
+    array([ 0.     +0.j,  0.03125+0.j,  0.     +0.j, ..., -0.03125+0.j,
+            0.     +0.j,  0.     +0.j])
+    ```
+
+* Operators that have a :func:`sparse_matrix <pennylane.Operator.sparse_matrix>` method can now 
+  choose a sparse-matrix format and the order of their wires. Available
+  `scipy` [sparse-matrix formats](https://docs.scipy.org/doc/scipy/tutorial/sparse.html#:~:text=the%20scipy.sparse,disadvantages) include `'bsr'`, `'csr'`, `'csc'`, `'coo'`, `'dia'`, `'dok'`, and `'lil'`.
+  [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
 
   ```pycon
-  >>> import numpy as np
-  >>> import pennylane as qml
-  >>> import scipy as sp
-  >>> U_dense = np.eye(4)  # 2-wire identity
-  >>> U_sparse = sp.sparse.csr_matrix(U_dense)
-  >>> op = qml.QubitUnitary(U_sparse, wires=[0, 1])
-  >>> print(op.sparse_matrix())
-  <Compressed Sparse Row sparse matrix of dtype 'float64'
-          with 4 stored elements and shape (4, 4)>
-    Coords        Values
-    (0, 0)        1.0
-    (1, 1)        1.0
-    (2, 2)        1.0
-    (3, 3)        1.0
-  >>> op.sparse_matrix().toarray()
-  array([[1., 0., 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., 0., 0., 1.]])
+  >>> op = qml.CNOT([0,1])
+  >>> type(op.sparse_matrix(format='dok'))
+  scipy.sparse._dok.dok_matrix
+  >>> type(op.sparse_matrix(format='csc'))
+  scipy.sparse._csc.csc_matrix
+  >>> print(op.sparse_matrix(wire_order=[1,0]))
+  (0, 0)	1.0
+  (1, 3)	1.0
+  (2, 2)	1.0
+  (3, 1)	1.0
+  >>> print(op.sparse_matrix(wire_order=[0,1]))
+  (0, 0)	1
+  (1, 1)	1
+  (2, 3)	1
+  (3, 2)	1
   ```
 
-* `qml.StatePrep` now accepts sparse state vectors. Users can create `StatePrep` using `scipy.sparse.csr_matrix`. Note that non-zero `pad_with` is forbidden.
-  [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
+* Sparse functionality is now available in `qml.math`:
 
-  ```pycon
-  >>> import scipy as sp
-  >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
-  >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
-  >>> wire_order = [0, 1, 2]
-  >>> ket = qsv_op.state_vector(wire_order=wire_order)
-  >>> print(ket)
-  <Compressed Sparse Row sparse matrix of dtype 'float64'
-         with 1 stored elements and shape (1, 8)>
-    Coords        Values
-    (0, 2)        1.0
-  ```
+  * `qml.math.sqrt_matrix_sparse` is available to compute the square root of a sparse Hermitian matrix.
+    [(#6976)](https://github.com/PennyLaneAI/pennylane/pull/6976)
+
+  * Most `qml.math` functions can now correctly handle sparse matrices as input by dispatching to  `scipy.sparse.linalg` internally. 
+    [(#6947)](https://github.com/PennyLaneAI/pennylane/pull/6947)
 
 <h4>QROM State Preparation 📖</h4>
 
@@ -591,19 +608,63 @@ Additional changes:
 
 <h4>Qualtran Integration 🔗</h4>
 
-* Added class ``qml.FromBloq`` that takes Qualtran bloqs and translates them into equivalent PennyLane operators. For example, we can now import Bloqs and use them in a way similar to how we use PennyLane templates:
+* It's now possible to use [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs in PennyLane
+  with the new :func:`qml.FromBloq <pennylane.FromBloq>` class. 
+  [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+  
+  :func:`qml.FromBloq <pennylane.FromBloq>` translates [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library) 
+  into equivalent PennyLane operators. It requires two inputs:
+  * `bloq`: an initialized Qualtran Bloq
+  * `wires`: the wires the operator acts on
+  
+  The following example applies a PennyLane Operator and Qualtran Bloq in the same circuit:
+
   ```python
   >>> from qualtran.bloqs.basic_gates import CNOT
   
-  >>> dev = qml.device("default.qubit") # Execute on device
+  >>> dev = qml.device("default.qubit")
   >>> @qml.qnode(dev)
   ... def circuit():
+  ...    qml.X(wires=0)
   ...    qml.FromBloq(CNOT(), wires=[0, 1])
   ...    return qml.state()
   >>> circuit()
-  array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+  array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
   ```
+
+* A new function called :func:`qml.bloq_registers <pennylane.bloq_registers>` is available to help
+  determine the required wires for complex Qualtran ``Bloqs`` with multiple registers.
   [(#7148)](https://github.com/PennyLaneAI/pennylane/pull/7148)
+  
+  Given a Qualtran Bloq, this function returns a dictionary of register names and wires.
+
+  ```pycon
+  >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+  >>> from qualtran.bloqs.basic_gates import ZPowGate
+  >>> textbook_qpe = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
+  >>> registers = qml.bloq_registers(textbook_qpe)
+  >>> registers
+  {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
+  ```
+
+  In the following example, we use these registers to measure the correct qubits in quantum phase
+  estimation:
+
+  ```python
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+      return qml.probs(wires=registers['qpe_reg'])
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ─╭FromBloq─┤       
+  1: ─├FromBloq─┤ ╭Probs
+  2: ─├FromBloq─┤ ├Probs
+  3: ─╰FromBloq─┤ ╰Probs
+  ```
 
 <h4>Hadamard Gradient Variants and Improvements 🌈</h4>
 
