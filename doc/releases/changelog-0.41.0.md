@@ -413,11 +413,11 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   
   * :class:`qml.StatePrep <pennylane.StatePrep>`
     [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
-  * :class:`qml.QubitUnitary <pennylane.QubitUnitary` 
+  * :class:`qml.QubitUnitary <pennylane.QubitUnitary>` 
     [(#6889)](https://github.com/PennyLaneAI/pennylane/pull/6889)
     [(#6986)](https://github.com/PennyLaneAI/pennylane/pull/6986)
     [(#7143)](https://github.com/PennyLaneAI/pennylane/pull/7143)
-  * :class:`qml.BlockEncode <pennylane.BlockEncode`
+  * :class:`qml.BlockEncode <pennylane.BlockEncode>`
     [(#6963)](https://github.com/PennyLaneAI/pennylane/pull/6963)
     [(#7140)](https://github.com/PennyLaneAI/pennylane/pull/7140)
   * :class:`qml.SWAP <pennylane.SWAP>`
