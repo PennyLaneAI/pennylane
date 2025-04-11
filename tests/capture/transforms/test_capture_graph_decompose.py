@@ -184,9 +184,32 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.Toffoli(wires=[2, 1, 0]),
         ]
 
-    @pytest.mark.xfail(
-        reason="The DecomposeInterpreter does not support adjoint transforms [sc-87096]"
-    )
+    @pytest.mark.integration
+    def test_control_transform(self):
+        """Tests that a controlled transform can be decomposed correctly."""
+
+        def inner_f(theta, wires):
+            qml.RZ(theta, wires=wires[0])
+            qml.CNOT(wires=wires[:2])
+            qml.X(wires=wires[0])
+
+        @DecomposeInterpreter(gate_set={"RZ", "CNOT", "Toffoli"})
+        def f(x):
+            qml.ctrl(inner_f, control=[2])(x, wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5)
+        assert collector.state["ops"] == [
+            qml.RZ(qml.math.array(0.25, like="jax"), wires=[0]),
+            qml.CNOT(wires=[2, 0]),
+            qml.RZ(qml.math.array(-0.25, like="jax"), wires=[0]),
+            qml.CNOT(wires=[2, 0]),
+            qml.Toffoli(wires=[2, 0, 1]),
+            qml.CNOT(wires=[2, 0]),
+        ]
+
+    @pytest.mark.xfail(reason="DecomposeInterpreter cannot handle adjoint transforms [sc-87096]")
     @pytest.mark.integration
     def test_decompose_adjoint(self):
         """Tests that an adjoint operation is decomposed."""
@@ -224,4 +247,101 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
             qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
             qml.RX(qml.math.array(-0.1, like="jax"), wires=[0]),
+        ]
+
+    @pytest.mark.xfail(reason="DecomposeInterpreter cannot handle adjoint transforms [sc-87096]")
+    @pytest.mark.integration
+    def test_adjoint_transform(self):
+        """Tests that an adjoint transform can be decomposed correctly."""
+
+        def inner_f(theta, phi, omega, wires):
+            qml.RX(theta, wires[0])
+            qml.RY(phi, wires[0])
+            qml.RZ(omega, wires[0])
+
+        @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
+        def f(x, y, z):
+            qml.adjoint(inner_f)(x, y, z, wires=[0])
+
+        jaxpr = jax.make_jaxpr(f)(0.1, 0.2, 0.3)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
+        assert collector.state["ops"] == [
+            qml.RZ(qml.math.array(-0.3, like="jax"), wires=[0]),
+            qml.RY(qml.math.array(-0.2, like="jax"), wires=[0]),
+            qml.RX(qml.math.array(-0.1, like="jax"), wires=[0]),
+        ]
+
+    @pytest.mark.integration
+    def test_cond(self):
+        """Tests that a circuit containing conditionals can be decomposed correctly."""
+
+        @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
+        def f(x, wires):
+
+            def true_fn():
+                qml.CRX(x, wires=wires)
+
+            def false_fn():
+                qml.CRZ(x, wires=wires)
+
+            qml.cond(x > 0.5, true_fn, false_fn)()
+
+        # The PLxPR is constructed with the true_fn branch
+        jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(np.pi / 2, wires=[1]),
+            qml.RY(qml.math.array(0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(qml.math.array(-0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(-np.pi / 2, wires=[1]),
+        ]
+        # Tests that the false_fn branch is also decomposed
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.2, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(qml.math.array(0.1, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(qml.math.array(-0.1, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+    @pytest.mark.integration
+    def test_ctrl_cond(self):
+        """Tests that a circuit containing a cond nested in a ctrl is decomposed correctly."""
+
+        @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
+        def f(x, wires):
+
+            def true_fn():
+                qml.RX(x, wires=wires[1])
+
+            def false_fn():
+                qml.RZ(x, wires=wires[1])
+
+            qml.ctrl(qml.cond(x > 0.5, true_fn, false_fn), control=wires[0])()
+
+        # The PLxPR is constructed with the true_fn branch
+        jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(np.pi / 2, wires=[1]),
+            qml.RY(qml.math.array(0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(qml.math.array(-0.6 / 2, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(-np.pi / 2, wires=[1]),
+        ]
+        # Tests that the false_fn branch is also decomposed
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.2, *[0, 1])
+        assert collector.state["ops"] == [
+            qml.RZ(qml.math.array(0.1, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(qml.math.array(-0.1, like="jax"), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
         ]

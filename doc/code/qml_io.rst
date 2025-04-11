@@ -4,8 +4,8 @@ qml.io
 Overview
 --------
 
-This module contains functions and classes for translating quantum objects from various frameworks
-into circuits and operators.
+This module contains functions and classes for translating quantum objects from external frameworks
+into PennyLane circuits and operators.
 
 .. currentmodule:: pennylane.io
 

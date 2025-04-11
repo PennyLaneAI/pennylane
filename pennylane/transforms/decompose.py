@@ -45,7 +45,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         import jax
 
         from pennylane.capture.primitives import ctrl_transform_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.decomposition.collect_resource_ops import CollectResourceOps
 
     except ImportError:  # pragma: no cover
         return None, None
@@ -259,10 +259,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             if qml.decomposition.enabled_graph() and not self._decomp_graph:
 
-                # TODO: replace this with a collector that does not flatten the PLxPR
-                collector = CollectOpsandMeas()
-                collector.eval(jaxpr, consts, *args)
-                operations = collector.state["ops"]
+                with qml.capture.pause():
+
+                    collector = CollectResourceOps()
+                    collector.eval(jaxpr, consts, *args)
+                    operations = collector.state["ops"]
 
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
@@ -392,6 +393,11 @@ def decompose(
         decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
         ``alt_decomps`` are only functional with this toggle present.
 
+    .. seealso::
+
+        For more information on PennyLane's decomposition tools and features, check out the
+        :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
+
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
@@ -427,7 +433,9 @@ def decompose(
 
     .. seealso::
 
-        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` for a
+        For decomposing into Clifford + T, check out :func:`~.pennylane.clifford_t_decomposition`.
+
+        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
 

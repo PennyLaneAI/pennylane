@@ -27,11 +27,13 @@ Modules
 
     dla
     resource_estimation
+    trotter_error
 
 """
 
 from pennylane.labs import dla
 from pennylane.labs import resource_estimation
 from pennylane.labs import vibrational
+from pennylane.labs import trotter_error
 
 __all__ = []

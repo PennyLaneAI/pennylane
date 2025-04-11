@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions to load circuits and objects from other frameworks as
-PennyLane templates.
+This module contains functions to import circuits and objects from external frameworks into PennyLane.
 """
 
 from .io import (

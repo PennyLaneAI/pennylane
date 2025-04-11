@@ -15,11 +15,12 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 from collections import defaultdict
-from functools import cached_property
+
 from typing import (
     Dict,
     List,
 )
+from functools import lru_cache, singledispatch,cached_property
 
 import numpy as np
 
@@ -36,9 +37,96 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
+# pylint: disable=unused-argument
+@lru_cache
+def _get_to_pl_op():
+    @singledispatch
+    def _to_pl_op(bloq, wires):
+        return FromBloq(bloq=bloq, wires=wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.CNOT, wires):
+        return qml.CNOT(wires=wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.GlobalPhase, wires):
+        return qml.GlobalPhase(bloq.exponent * np.pi, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Hadamard, wires):
+        return qml.Hadamard(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Identity, wires):
+        return qml.Identity(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Rx, wires):
+        return qml.RX(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Ry, wires):
+        return qml.RY(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Rz, wires):
+        return qml.RZ(bloq.angle, wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.SGate, wires):
+        return qml.adjoint(qml.S(wires)) if bloq.is_adjoint else qml.S(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TwoBitSwap, wires):
+        return qml.SWAP(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TwoBitCSwap, wires):
+        return qml.CSWAP(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.TGate, wires):
+        return qml.adjoint(qml.T(wires)) if bloq.is_adjoint else qml.T(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.Toffoli, wires):
+        return qml.Toffoli(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.XGate, wires):
+        return qml.X(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.YGate, wires):
+        return qml.Y(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.CYGate, wires):
+        return qml.CY(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.ZGate, wires):
+        return qml.Z(wires)
+
+    @_to_pl_op.register
+    def _(bloq: qt.bloqs.basic_gates.CZ, wires):
+        return qml.CZ(wires)
+
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Allocate)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Cast)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Free)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Join)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Partition)
+    @_to_pl_op.register(qt.bloqs.bookkeeping.Split)
+    def _(bloq, wires):
+        return None
+
+    return _to_pl_op
+
+
 def bloq_registers(bloq):
-    """Reads a Qualtran bloq's signature and returns a ``qml.registers`` object with wires
-    assigned to registers according to the bloq's signature.
+    """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
     .. note::
         This function requires the latest version of Qualtran. We recommend installing the main
@@ -46,22 +134,21 @@ def bloq_registers(bloq):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
-    The register names in the Qualtran bloq are used for the keys of the dictionary. The values
-    are :class:`~.Wires` objects with a length of the total bitsize of its respective register. The
-    wires are indexed in ascending order, starting from 0.
+    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran Bloq. The
+    values are :class:`~.Wires` objects with a length equal to the bitsize of its respective
+    register. The wires are indexed in ascending order, starting from 0.
 
-    This function is best used for when one wants to manually access the wires that a Bloq acts on.
-    For example, to find the estimation wires of a textbook Quantum Phase Estimation bloq, one can
-    use this function as shown in the example.
+    This function makes it easy to access the wires that a Bloq acts on and use them to precisely
+    control how gates connect.
 
     Args:
-        bloq (Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
+        bloq (Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
 
     Returns:
-        dict: A dictionary built with information from the bloq's signature. The dictionary keys
-        are strings that come from the names of the bloq's registers. The values are :class:`~.Wires`
+        dict: A dictionary built with information from the Bloq's signature. The dictionary keys
+        are strings that come from the names of the Bloq's registers. The values are :class:`~.Wires`
         objects that are determined by the bitsizes of those same registers.
 
     Raises:
@@ -69,11 +156,12 @@ def bloq_registers(bloq):
 
     **Example**
 
-    Given a Qualtran bloq:
+    This example shows how to find the estimation wires of a textbook Quantum Phase Estimation Bloq.
 
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+    >>> from qualtran.bloqs.basic_gates import ZPowGate
     >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
-    >>> qml.get_bloq_registers_info(textbook_qpe_small)
+    >>> qml.bloq_registers(textbook_qpe_small)
     {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
     """
 
@@ -129,7 +217,7 @@ def _preprocess_bloq(bloq):
 
 class FromBloq(Operation):
     r"""
-    An adapter for using a `Qualtran bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
     .. note::
@@ -138,19 +226,19 @@ class FromBloq(Operation):
 
         .. code-block:: console
 
-            pip install git+https://github.com/quantumlib/Qualtran.git
+            pip install qualtran
 
     Args:
-        bloq (qualtran.Bloq): an initialized Qualtran bloq to be wrapped as a PennyLane operator
-        wires (WiresLike): The wires the operator acts on. The number of wires required can be determined by using the
-            signature of the ``bloq`` via ``bloq.signature.n_qubits()``.
+        bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
+        wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
+            signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
 
     **Example**
 
-    Given a Qualtran bloq:
+    This example shows how to use ``qml.FromBloq``:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
     >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
@@ -160,26 +248,21 @@ class FromBloq(Operation):
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
 
-    A simple example showcasing how to use ``qml.FromBloq`` inside a device:
+    This example shows how to use ``qml.FromBloq`` inside a device:
 
-    .. code-block::
-
-        from qualtran.bloqs.basic_gates import CNOT
-
-        # Execute on device
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
-        def circuit():
-            qml.FromBloq(CNOT(), wires=[0, 1])
-            return qml.state()
-
+    >>> from qualtran.bloqs.basic_gates import CNOT
+    >>> dev = qml.device("default.qubit") # Execute on device
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.FromBloq(CNOT(), wires=[0, 1])
+    ...     return qml.state()
     >>> circuit()
     array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Advanced Example
 
-        An example showcasing how to use ``qml.FromBloq`` inside a device:
+        This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
 
         .. code-block::
 
@@ -197,7 +280,7 @@ class FromBloq(Operation):
                 indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
             )
 
-            # Instantiate the TextbookQPE and pass in our unitary
+            # Instantiate the TextbookQPE and pass in the unitary
             textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
             # Execute on device
@@ -207,29 +290,26 @@ class FromBloq(Operation):
                 qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
                 return qml.probs(wires=[5, 6, 7])
 
-        >>> circuit()
-        array([0.94855734, 0.01291602, 0.00431044, 0.00267219, 0.00237645,
-        0.00290337, 0.00526717, 0.02099701])
+            circuit()
 
     .. details::
         :title: Usage Details
 
-        The decomposition of a bloq wrapped in ``qml.FromBloq`` may use more wires than expected.
+        The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
         For example, when we wrap Qualtran's ``CZPowGate``, we get
 
         >>> from qualtran.bloqs.basic_gates import CZPowGate
         >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
-        [FromBloq(And, wires=Wires([0, 1, 'alloc_free2'])),
-        FromBloq(Z**0.468, wires=Wires(['alloc_free2'])),
-        FromBloq(And†, wires=Wires([0, 1, 'alloc_free2']))]
+        [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
+        FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
+        FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
 
         This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
-        which allocates and frees a wire all in the same ``bloq``. In this situation,
+        which allocates and frees a wire in the same ``bloq``. In this situation,
         PennyLane automatically allocates this wire under the hood, and that additional wire is
         named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
         signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
         limitations of PennyLane, these wires cannot be accessed manually or mapped.
-
     """
 
     def __init__(self, bloq, wires: WiresLike):
@@ -315,8 +395,7 @@ class FromBloq(Operation):
                 total_wires = [int(w) for ws in in_quregs.values() for w in list(ws.ravel())]
                 mapped_wires = [wires[idx] for idx in total_wires if idx < len(wires)]
                 ghost_wires = [f"alloc_free_{val}" for val in total_wires if val >= len(wires)]
-                op = binst.bloq.as_pl_op(mapped_wires + ghost_wires)
-
+                op = _get_to_pl_op()(binst.bloq, mapped_wires + ghost_wires)
                 if op:
                     ops.append(op)
         except (qt.DecomposeNotImplementedError, qt.DecomposeTypeError):
@@ -330,7 +409,7 @@ class FromBloq(Operation):
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     def has_matrix(self) -> bool:
-        r"""Return if the bloq has a valid matrix representation."""
+        r"""Return if the ``Bloq`` has a valid matrix representation."""
         bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
