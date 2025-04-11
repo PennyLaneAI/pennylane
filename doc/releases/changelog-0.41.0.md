@@ -455,7 +455,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
             0.     +0.j,  0.     +0.j])
     ```
 
-* Operators that have a :func:`sparse_matrix <pennylane.Operator.sparse_matrix` method can now 
+* Operators that have a :func:`sparse_matrix <pennylane.Operator.sparse_matrix>` method can now 
   choose a sparse-matrix format and the order of their wires. Available
   `scipy` [sparse-matrix formats](https://docs.scipy.org/doc/scipy/tutorial/sparse.html#:~:text=the%20scipy.sparse,disadvantages) include `'bsr'`, `'csr'`, `'csc'`, `'coo'`, `'dia'`, `'dok'`, and `'lil'`.
   [(#6995)](https://github.com/PennyLaneAI/pennylane/pull/6995)
