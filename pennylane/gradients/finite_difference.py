@@ -19,7 +19,7 @@ import functools
 from functools import partial
 from typing import Callable, Literal
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
 
 import numpy as np

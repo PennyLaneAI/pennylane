@@ -185,7 +185,7 @@ def _get_shift_rule(frequencies, shifts=None):
         coeffs = -2 * linalg_solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
-    shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
+    shifts = np.concatenate((shifts, -shifts))  # pylint:disable=invalid-unary-operand-type
     return np.stack([coeffs, shifts]).T
 
 
@@ -423,7 +423,6 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             mp = all_ops[op_idx].__class__
             all_ops[op_idx] = mp(obs=shifted_op)
 
-    # pylint: disable=protected-access
     ops = all_ops[: len(tape.operations)]
     meas = all_ops[len(tape.operations) :]
     return QuantumScript(ops=ops, measurements=meas, shots=tape.shots)

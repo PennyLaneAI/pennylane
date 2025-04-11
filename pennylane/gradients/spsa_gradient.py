@@ -36,7 +36,7 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):

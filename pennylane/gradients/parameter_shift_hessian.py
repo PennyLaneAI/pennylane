@@ -120,6 +120,7 @@ def _process_argnum(argnum, tape):
         # Finally mark all combinations using the outer product
         argnum = math.tensordot(argnum, argnum, axes=0)
 
+    # pylint: disable=no-member
     elif not (
         math.shape(argnum) == (tape.num_params,) * 2
         and math.array(argnum).dtype == bool
@@ -264,7 +265,7 @@ def _all_zero_hessian(tape):
     return [], lambda _: tuple(zeros_list)
 
 
-# pylint: disable = too-many-positional-arguments
+# pylint: disable = too-many-arguments
 def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_diagonal_shifts, f0):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
@@ -298,7 +299,6 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
     """
-    # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
 
     unshifted_coeffs = {}
@@ -412,7 +412,6 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
     return hessian_tapes, processing_fn
 
 
-# pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qhess, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
     if len(tape.measurements) > 1:
@@ -630,7 +629,8 @@ def param_shift_hessian(
     for i, g in diff_methods.items():
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
-    if math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
+    # pylint: disable=invalid-unary-operand-type
+    if math.all(~bool_argnum):
         return _all_zero_hessian(tape)
 
     # If any of these argument indices correspond to a finite difference
