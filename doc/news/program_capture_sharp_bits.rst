@@ -155,8 +155,8 @@ For example, the following code will raise an error:
 >>> jax.jacobian(f)(x)
 NotImplementedError: Primitive for_loop does not have a jvp rule and is not supported.
 
-Higher-order primitives and gradients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Higher-order primitives and diff_method="adjoint"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Higher-order primitives like ``qml.ctrl`` and ``qml.adjoint`` are not currently supported
 when using ``"adjoint"`` with ``default.qubit``. For example, the following code will raise an error:
