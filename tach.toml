@@ -185,7 +185,6 @@ path = "pennylane.transforms.core"
 depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
 unchecked = true
 
-
 [[modules]]
 path = "pennylane.operation"
 depends_on = ["pennylane.typing", "pennylane", "pennylane.math", "pennylane.wires", "pennylane.queuing", "pennylane.pytrees", "pennylane.capture"]
