@@ -307,9 +307,6 @@ def _resolve_execution_config(
             " and the provided circuit."
         )
 
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
-
     finite_shots = any(tape.shots for tape in tapes)
     interface = _resolve_interface(execution_config.interface, tapes)
     updated_values["interface"] = interface
