@@ -216,7 +216,7 @@ gradients; a well-known example of this approach is backpropagation. These metho
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
-`quantum backpropagation <https://pennylane.ai/qml/demos/tutorial_backprop>` demonstration.
+`quantum backpropagation <https://pennylane.ai/qml/demos/tutorial_backprop>`__ demonstration.
 
 * ``"backprop"``: Use standard backpropagation.
 
