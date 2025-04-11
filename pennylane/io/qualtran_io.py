@@ -437,9 +437,9 @@ def split_qubits(registers, qubits):  # type: ignore[type-var]
 
 
 def _ensure_in_reg_exists(
-    bb: qt.BloqBuilder,
-    in_reg: qt.cirq_interop._cirq_to_bloq._QReg,
-    qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet],
+    bb: "qt.BloqBuilder",
+    in_reg: "qt.cirq_interop._cirq_to_bloq._QReg",
+    qreg_to_qvar: Dict["qt.cirq_interop._cirq_to_bloq._QReg", "qt.Soquet"],
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
@@ -502,7 +502,7 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: qt.BloqBuilder, op_quregs, qreg_to_qvar  # type: ignore[type-var]
+    bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar  # type: ignore[type-var]
 ):  # type: ignore[type-var]
     qvars_in = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
@@ -515,7 +515,7 @@ def _gather_input_soqs(
 
 
 @frozen
-class ToBloq(qt.Bloq):
+class ToBloq("qt.Bloq"):
     r"""
     Adapter class to convert PennyLane operators into Qualtran Bloqs
     """
