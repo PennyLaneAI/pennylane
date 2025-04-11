@@ -195,6 +195,104 @@ There are some quirks and restrictions to be aware of, which are outlined in the
 page. But with this release, many of the core features of PennyLane—and more!—are available with program 
 capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>` to the top of your program:
 
+* QNodes can now contain mid-circuit measurements (MCMs) and classical processing on MCMs with `mcm_method = "deferred"` 
+  when program capture is enabled.
+  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
+  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
+  [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
+
+  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed with program
+  capture enabled. Additionally, program capture unlocks the ability to classically process MCM values
+  and use MCM values as gate parameters.
+
+  ```python
+  import jax 
+  import jax.numpy as jnp
+  jax.config.update("jax_enable_x64", True)
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3), mcm_method="deferred")
+  def f(x):
+      m0 = qml.measure(0)
+      m1 = qml.measure(0)
+
+      # classical processing on m0 and m1
+      a = jnp.sin(0.5 * jnp.pi * m0)
+      phi = a - (m1 + 1) ** 4
+
+      qml.s_prod(x, qml.RX(phi, 0))
+
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> f(0.1)
+  Array(0.00540302, dtype=float64)
+  ```
+
+  Note that with capture enabled, automatic qubit management is not supported on devices; the number 
+  of wires given to the device must coincide with how many MCMs are present in the circuit, since 
+  deferred measurements add one auxiliary qubit per MCM.
+
+* Quantum circuits can now be differentiated on `default.qubit` and `lightning.qubit` with 
+  `diff_method="finite-diff"`, `"adjoint"`, and `"backprop"` when program capture is enabled.
+  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
+  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
+  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
+  def f(phi):
+      qml.RX(phi, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> qml.grad(f)(jnp.array(0.1))
+  Array(-0.09983342, dtype=float64, weak_type=True)
+  ```
+
+* QNode arguments can now be assigned as static. In turn, PennyLane can now determine when plxpr 
+  needs to be reconstructed based on dynamic and static arguments, providing efficiency for repeated
+  circuit executions.
+  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
+
+  Specifying static arguments can be done at the QNode level with the `static_argnums` keyword argument.
+  Its values (integers) indicate which arguments are to be treated as static. By default, all QNode
+  arguments are dynamic. 
+  
+  Consider the following example, where the first argument is indicated to be static:
+
+  ```python
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1), static_argnums=0)
+  def f(x, y):
+      print("I constructed plxpr")
+      qml.RX(x, 0)
+      qml.RY(y, 0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  When the value of `x` changes, PennyLane must (re)construct the plxpr representation of the program
+  for the program to execute. In this example, the act of (re)constructing plxpr is indicated
+  by the `print` statement executing. However, if the value of `y` changes (a dynamic argument), PennyLane
+  does not need to reconstruct the plxpr representation of the program:
+
+  ```pycon
+  >>> f(0.1, 0.2)
+  I constructed plxpr
+  0.97517043
+  >>> f(0.1, 0.3)
+  0.9505638
+  >>> f(0.2, 0.3)
+  I constructed plxpr
+  0.93629336
+  ```
+
 * All PennyLane transforms that return one device execution are compatible with program capture, including 
   those without a plxpr-native implementation.
   [(#6916)](https://github.com/PennyLaneAI/pennylane/pull/6916)
@@ -308,104 +406,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   is our home-brewed implementation of Autograph. 
 
   Support for this can be disabled by setting `autograph=False` at the QNode level (by default, `autograph=True`).
-
-* QNodes can now contain mid-circuit measurements (MCMs) and classical processing on MCMs with `mcm_method = "deferred"` 
-  when program capture is enabled.
-  [(#6838)](https://github.com/PennyLaneAI/pennylane/pull/6838)
-  [(#6937)](https://github.com/PennyLaneAI/pennylane/pull/6937)
-  [(#6961)](https://github.com/PennyLaneAI/pennylane/pull/6961)
-
-  With `mcm_method = "deferred"`, workflows with mid-circuit measurements can be executed with program
-  capture enabled. Additionally, program capture unlocks the ability to classically process MCM values
-  and use MCM values as gate parameters.
-
-  ```python
-  import jax 
-  import jax.numpy as jnp
-  jax.config.update("jax_enable_x64", True)
-
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=3), mcm_method="deferred")
-  def f(x):
-      m0 = qml.measure(0)
-      m1 = qml.measure(0)
-
-      # classical processing on m0 and m1
-      a = jnp.sin(0.5 * jnp.pi * m0)
-      phi = a - (m1 + 1) ** 4
-
-      qml.s_prod(x, qml.RX(phi, 0))
-
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> f(0.1)
-  Array(0.00540302, dtype=float64)
-  ```
-
-  Note that with capture enabled, automatic qubit management is not supported on devices; the number 
-  of wires given to the device must coincide with how many MCMs are present in the circuit, since 
-  deferred measurements add one auxiliary qubit per MCM.
-
-* Quantum circuits can now be differentiated on `default.qubit` and `lightning.qubit` with 
-  `diff_method="finite-diff"`, `"adjoint"`, and `"backprop"` when program capture is enabled.
-  [(#6853)](https://github.com/PennyLaneAI/pennylane/pull/6853)
-  [(#6875)](https://github.com/PennyLaneAI/pennylane/pull/6875)
-  [(#7019)](https://github.com/PennyLaneAI/pennylane/pull/7019)
-
-  ```python
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
-  def f(phi):
-      qml.RX(phi, 0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> qml.grad(f)(jnp.array(0.1))
-  Array(-0.09983342, dtype=float64, weak_type=True)
-  ```
-
-* QNode arguments can now be assigned as static. In turn, PennyLane can now determine when plxpr 
-  needs to be reconstructed based on dynamic and static arguments, providing efficiency for repeated
-  circuit executions.
-  [(#6923)](https://github.com/PennyLaneAI/pennylane/pull/6923)
-
-  Specifying static arguments can be done at the QNode level with the `static_argnums` keyword argument.
-  Its values (integers) indicate which arguments are to be treated as static. By default, all QNode
-  arguments are dynamic. 
-  
-  Consider the following example, where the first argument is indicated to be static:
-
-  ```python
-  qml.capture.enable()
-
-  @qml.qnode(qml.device("default.qubit", wires=1), static_argnums=0)
-  def f(x, y):
-      print("I constructed plxpr")
-      qml.RX(x, 0)
-      qml.RY(y, 0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  When the value of `x` changes, PennyLane must (re)construct the plxpr representation of the program
-  for the program to execute. In this example, the act of (re)constructing plxpr is indicated
-  by the `print` statement executing. However, if the value of `y` changes (a dynamic argument), PennyLane
-  does not need to reconstruct the plxpr representation of the program:
-
-  ```pycon
-  >>> f(0.1, 0.2)
-  I constructed plxpr
-  0.97517043
-  >>> f(0.1, 0.3)
-  0.9505638
-  >>> f(0.2, 0.3)
-  I constructed plxpr
-  0.93629336
-  ```
 
 <h4>End-to-end Sparse Execution 🌌</h4>
 
@@ -683,6 +683,20 @@ Additional changes:
   [(#7046)](https://github.com/PennyLaneAI/pennylane/pull/7046)
   [(#7198)](https://github.com/PennyLaneAI/pennylane/pull/7198)\
 
+  The three variants of the Hadamard gradient added in this release offer tradeoffs that could be advantageous
+  in certain cases:
+
+  * `"reversed-hadamard"`: the observable being measured and the generators of the unitary operations 
+    in the circuit are reversed; the generators are now the observables, and the Pauli decomposition 
+    of the observables are now gates in the circuit.
+  * `"direct-hadamard"`: the additional auxiliary qubit needed in the standard Hadamard gradient is 
+    exchanged for additional circuit executions.
+  * `"reversed-direct-hadamard"`: a combination of the "direct" and "reversed" modes, where the role 
+    of the observable and the generators of the unitary operations in the circuit swap, and the additional 
+    auxiliary qubit is exchanged for additional circuit executions.
+
+  Using them in your code is just like any other differentiation method in PennyLane:
+  
   ```python
   import pennylane as qml
 
