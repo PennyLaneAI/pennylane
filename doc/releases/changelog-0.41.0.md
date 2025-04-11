@@ -888,7 +888,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   [(#7004)](https://github.com/PennyLaneAI/pennylane/pull/7004)
 
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-  A folllow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
+  A follow-on PR fixed accidental double-queuing when using `qml.ctrl` with `QubitUnitary`.
   [(#6840)](https://github.com/PennyLaneAI/pennylane/pull/6840)
   [(#6926)](https://github.com/PennyLaneAI/pennylane/pull/6926)
 
@@ -1004,6 +1004,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Documentation 📝</h3>
 
+* The documentation for `qml.device` has been updated to include `null.qubit` in the list of readily available devices.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
+
 * The :doc:`Compiling Circuits page <../introduction/compiling_circuits>` has been updated to include information
   on using the new experimental decompositions system.
   [(#7066)](https://github.com/PennyLaneAI/pennylane/pull/7066)
@@ -1048,6 +1051,12 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 <h3>Bug fixes 🐛</h3>
 
+* Using transforms with program capture enabled now works correctly with functions that accept pytree arguments.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
+
+* `qml.math.requires_grad` no longer returns `True` for JAX inputs other than `jax.interpreters.ad.JVPTracer` instances.
+  [(#7233)](https://github.com/PennyLaneAI/pennylane/pull/7233)
+
 * PennyLane is now compatible with `pyzx 0.9`.
   [(#7188)](https://github.com/PennyLaneAI/pennylane/pull/7188)
 
@@ -1063,7 +1072,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   differ depending if equivalent gate generators are defined using
   different PennyLane operators. This was resolved by updating
   `qml.operation.gen_is_multi_term_hamiltonian` to work with more complicated generators.
-  [(#7121)])(https://github.com/PennyLaneAI/pennylane/pull/7121)
+  [(#7121)](https://github.com/PennyLaneAI/pennylane/pull/7121)
 
 * Modulo operator calls on MCMs now correctly offload to the autoray-backed `qml.math.mod` dispatch.
   [(#7085)](https://github.com/PennyLaneAI/pennylane/pull/7085)
@@ -1111,7 +1120,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 * `BasisState` now casts its input to integers.
   [(#6844)](https://github.com/PennyLaneAI/pennylane/pull/6844)
 
-* The `workflow.contstruct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
+* The `workflow.construct_batch` and `workflow.construct_tape` functions now correctly reflect the `mcm_method`
   passed to the `QNode`, instead of assuming the method is always `deferred`.
   [(#6903)](https://github.com/PennyLaneAI/pennylane/pull/6903)
 
