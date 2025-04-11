@@ -258,7 +258,6 @@ path = "pennylane.qnn"
 depends_on = ["pennylane"]
 unchecked = true
 
-
 [[modules]]
 path = "pennylane.decomposition"
 depends_on = ["pennylane.operation", "pennylane"]
