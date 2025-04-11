@@ -17,102 +17,101 @@ from __future__ import annotations
 import copy
 from collections import defaultdict
 from functools import singledispatch
-from typing import Optional, Type, Hashable
+from typing import Hashable, Optional, Type
 
-from pennylane.operation import Operation, DecompositionUndefinedError
-from pennylane.ops.identity import Identity, GlobalPhase
-from pennylane.ops.qubit import (
-    S,
-    T,
-    PauliX,
-    PauliY,
-    PauliZ,
-    SWAP,
-    Hadamard,
-    RX,
-    RY,
-    RZ,
-    Rot,
-    PhaseShift,
-    MultiRZ,
-    PauliRot,
-    IsingXX,
-    IsingXY,
-    IsingYY,
-    IsingZZ,
-    PSWAP,
-    SingleExcitation,
-    SingleExcitationMinus,
-    SingleExcitationPlus,
-    DoubleExcitation,
-    DoubleExcitationMinus,
-    DoubleExcitationPlus,
-    FermionicSWAP, 
-    OrbitalRotation,
+from pennylane.labs.resource_estimation.ops.identity import ResourceGlobalPhase, ResourceIdentity
+from pennylane.labs.resource_estimation.ops.op_math import (
+    ResourceCCZ,
+    ResourceCH,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceMultiControlledX,
+    ResourceProd,
+    ResourceToffoli,
 )
-from pennylane.ops.op_math import (
-    CH,
-    CY,
-    CZ,
-    CCZ,
-    CNOT,
-    Toffoli,
-    CSWAP,
-    MultiControlledX,
-    CRX,
-    CRY,
-    CRZ,
-    CRot,
-    ControlledPhaseShift,
-)
-
-
-from pennylane.labs.resource_estimation.ops.identity import ResourceIdentity, ResourceGlobalPhase
 from pennylane.labs.resource_estimation.ops.qubit import (
-    ResourceS,
-    ResourceT,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceSWAP,
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
     ResourceHadamard,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceRot,
-    ResourcePhaseShift,
-    ResourceMultiRZ,
-    ResourcePauliRot,
     ResourceIsingXX,
     ResourceIsingXY,
     ResourceIsingYY,
     ResourceIsingZZ,
+    ResourceMultiRZ,
+    ResourceOrbitalRotation,
+    ResourcePauliRot,
+    ResourcePhaseShift,
     ResourcePSWAP,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
     ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
     ResourceSingleExcitationPlus,
-    ResourceDoubleExcitation,
-    ResourceDoubleExcitationMinus,
-    ResourceDoubleExcitationPlus,
-    ResourceFermionicSWAP, 
-    ResourceOrbitalRotation,
+    ResourceSWAP,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
-from pennylane.labs.resource_estimation.ops.op_math import (
-    ResourceProd,
-    ResourceCH,
-    ResourceCY,
-    ResourceCZ,
-    ResourceCCZ,
-    ResourceCNOT,
-    ResourceToffoli,
-    ResourceCSWAP,
-    ResourceMultiControlledX,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCRot,
-    ResourceControlledPhaseShift,
+from pennylane.operation import DecompositionUndefinedError, Operation
+from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.ops.op_math import (
+    CCZ,
+    CH,
+    CNOT,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    ControlledPhaseShift,
+    CRot,
+    MultiControlledX,
+    Toffoli,
 )
+from pennylane.ops.qubit import (
+    PSWAP,
+    RX,
+    RY,
+    RZ,
+    SWAP,
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    Hadamard,
+    IsingXX,
+    IsingXY,
+    IsingYY,
+    IsingZZ,
+    MultiRZ,
+    OrbitalRotation,
+    PauliRot,
+    PauliX,
+    PauliY,
+    PauliZ,
+    PhaseShift,
+    Rot,
+    S,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+    T,
+)
+
 
 @singledispatch
 def map_to_resource_op(op):
@@ -123,80 +122,95 @@ def map_to_resource_op(op):
         op (~.Operation): base operation to be mapped
 
     Raise:
-        TypeError: The op is not a valid operation 
+        TypeError: The op is not a valid operation
         ValueError: Operation doesn't have a resource equivalent and doesn't define
             a decomposition.
-        
+
     Return:
         (~.ResourceOperator): the resource operator equivalent of the base operator
     """
     if not isinstance(op, Operation):
         raise TypeError(f"The op {op} is not a valid operation.")
-    
+
     try:
         mapped_ops = tuple(map_to_resource_op(sub_op) for sub_op in op.decomposition())
         return ResourceProd(*mapped_ops)
 
-    except DecompositionUndefinedError as e: 
+    except DecompositionUndefinedError as e:
         raise ValueError(
             "Operation doesn't have a resource equivalent and doesn't define a decomposition."
-        ) from e 
+        ) from e
+
 
 @map_to_resource_op.register
 def _(op: PhaseShift):
     return ResourcePhaseShift.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: RX):
     return ResourceRX.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: RY):
     return ResourceRY.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: RZ):
     return ResourceRZ.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: Rot):
     return ResourceRot.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: CH):
     return ResourceCH.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: CY):
     return ResourceCY.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: CZ):
     return ResourceCZ.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: CSWAP):
     return ResourceCSWAP.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: CCZ):
     return ResourceCCZ.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: CRX):
     return ResourceCRX.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: CRY):
     return ResourceCRY.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: CRZ):
     return ResourceCRZ.resource_rep()
 
+
 @map_to_resource_op.register
 def _(op: CRot):
     return ResourceCRot.resource_rep()
+
 
 @map_to_resource_op.register
 def _(op: ControlledPhaseShift):

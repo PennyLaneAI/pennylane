@@ -1237,7 +1237,7 @@ class ResourceCRX(re.ResourceOperator):
     def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {"eps":eps})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
@@ -1255,7 +1255,10 @@ class ResourceCRX(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1275,7 +1278,7 @@ class ResourceCRX(re.ResourceOperator):
         """
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceRX, {"eps":eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                re.ResourceRX, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -1387,7 +1390,10 @@ class ResourceCRY(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1519,7 +1525,10 @@ class ResourceCRZ(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1654,7 +1663,7 @@ class ResourceCRot(re.ResourceOperator):
     def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {"eps":eps})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
@@ -1772,7 +1781,7 @@ class ResourceControlledPhaseShift(re.ResourceOperator):
     def resource_rep(cls, eps=None) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {"eps":eps})
+        return re.CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
@@ -1790,7 +1799,10 @@ class ResourceControlledPhaseShift(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 

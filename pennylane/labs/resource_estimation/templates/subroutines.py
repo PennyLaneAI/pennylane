@@ -96,9 +96,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         for k in range(1, num_wires):
             # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
             # TODO: Update once we have qml.SemiAdder
-            gate_types[t] += (
-                    2 * (2 * (k - 1)) + 4*(2 * k - 1)
-            )
+            gate_types[t] += 2 * (2 * (k - 1)) + 4 * (2 * k - 1)
 
         hadamard = re.ResourceHadamard.resource_rep()
 

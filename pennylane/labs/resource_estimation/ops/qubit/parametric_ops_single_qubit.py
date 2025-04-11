@@ -17,9 +17,8 @@ from typing import Dict
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
-
 import pennylane.labs.resource_estimation as re
+from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 
@@ -261,7 +260,7 @@ class ResourceRX(re.ResourceOperator):
     @classmethod
     def adjoint_resource_decomp(cls, eps=None) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
-        
+
         Resources:
             The adjoint of a single qubit rotation changes the sign of the rotation angle,
             thus the resources of the adjoint operation result in the original operation.
@@ -274,7 +273,10 @@ class ResourceRX(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -436,7 +438,10 @@ class ResourceRY(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -589,7 +594,10 @@ class ResourceRZ(re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        eps=None,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 

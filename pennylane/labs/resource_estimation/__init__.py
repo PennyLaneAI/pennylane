@@ -250,3 +250,6 @@ from .templates import (
 )
 
 from .compact import CompactState
+
+from .qubit_manager import QubitManager, grab_qubits, free_qubits, clean_qubits, dirty_qubits, borrowable_qubits
+from .resource_mapping import map_to_resource_op

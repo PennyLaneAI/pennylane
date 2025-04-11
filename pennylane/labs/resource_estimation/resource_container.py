@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import copy
 from collections import defaultdict
-from typing import Optional, Type, Hashable
+from typing import Hashable, Optional, Type
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
-    
+
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
@@ -40,7 +40,9 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         Hadamard(num_wires=1)
     """
 
-    def __init__(self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None):
+    def __init__(
+        self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None
+    ):
 
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
@@ -68,7 +70,7 @@ def _make_hashable(d) -> tuple:
         return d
     sorted_keys = sorted(d)
     return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
-    
+
 
 # @dataclass
 class Resources:

@@ -17,9 +17,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, Dict
 
-from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
-
+from pennylane.wires import Wires
 
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
@@ -85,7 +84,7 @@ class ResourceOperator(ABC):
         self.wires = Wires([]) if wires is None else Wires(wires)
         self.queue()
         super().__init__()
-    
+
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
