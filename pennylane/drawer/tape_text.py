@@ -439,6 +439,7 @@ def tape_text(
     )
 
     totals = _CurrentTotals([], *(_initialize_wire_and_bit_totals(config, show_wire_labels)))
+    len_suffix = 4  # Suffix dots at then of a partitioned circuit (' ...') have length 4
 
     for cur_layer, layer in enumerate(layers):
         config.cur_layer = cur_layer
@@ -448,10 +449,8 @@ def tape_text(
             layer_str = _add_obj(op, layer_str, config, tape_cache)
         layer_str = _left_justify(layer_str, config)
 
-        len_suffix = 4  # Suffix dots at then of a partitioned circuit (' ...') hasve length 4
         cur_max_length = max_length - len_suffix if cur_layer < len(layers) - 1 else max_length
         if len(totals.wire_totals[0]) + len(layer_str[0]) > cur_max_length - 1:
-            # if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
             totals = _add_to_finished_lines(totals, config, show_wire_labels)
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
