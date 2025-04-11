@@ -26,12 +26,12 @@ import numpy as np
 
 import pennylane as qml
 
-from attrs import frozen
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
+    from attrs import frozen
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
