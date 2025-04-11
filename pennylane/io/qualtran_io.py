@@ -27,12 +27,11 @@ from pennylane.wires import WiresLike
 try:
     import qualtran as qt
     from attrs import frozen
-    from qualtran.cirq_interop._cirq_to_bloq import _QReg
 except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+    qualtran = None
 
 if TYPE_CHECKING:
-    import qualtran as qt
+    from qualtran import BloqBuilder
 
 
 # pylint: disable=unused-argument
@@ -438,7 +437,7 @@ def split_qubits(registers, qubits):  # type: ignore[type-var]
 
 
 def _ensure_in_reg_exists(
-    bb: qt.BloqBuilder,
+    bb: BloqBuilder,
     in_reg: qt.cirq_interop._cirq_to_bloq._QReg,
     qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet],
 ) -> None:
@@ -503,7 +502,7 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: qt.BloqBuilder, op_quregs, qreg_to_qvar  # type: ignore[type-var]
+    bb: BloqBuilder, op_quregs, qreg_to_qvar  # type: ignore[type-var]
 ):  # type: ignore[type-var]
     qvars_in = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
