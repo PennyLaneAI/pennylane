@@ -101,7 +101,7 @@ decomposition rule is that which is most resource efficient (results in the smal
 
   The output of `resource_keys` indicates that custom decompositions for the operator should be registered 
   to a resource function (as opposed to a static dictionary) that accepts those exact arguments and 
-  returns a dictionary. Consider this dummy example of a ficticious decomposition rule comprising three 
+  returns a dictionary. Consider this dummy example of a fictitious decomposition rule comprising three 
   `qml.MultiRZ` gates:
 
   ```python
@@ -1034,8 +1034,8 @@ Additional changes:
   `perturbation_error`, `vibrational_fragments`, `vibronic_fragments`, and `generic_fragments`.
   [(#7036)](https://github.com/PennyLaneAI/pennylane/pull/7036)
 
-  As an example we compute the peruturbation error of a vibrational Hamiltonian.
-  First we generate random harmonic frequences and Taylor coefficients to iniitialize the vibrational Hamiltonian.
+  As an example we compute the perturbation error of a vibrational Hamiltonian.
+  First we generate random harmonic frequencies and Taylor coefficients to initialize the vibrational Hamiltonian.
 
   ```pycon
   >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
