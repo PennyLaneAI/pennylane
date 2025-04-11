@@ -515,7 +515,7 @@ def _gather_input_soqs(
 
 
 def to_bloq(op: Operation):
-    class ToBloq(qt.Bloq):
+    class ToBloq("qt.Bloq"):
         r"""
         Adapter class to convert PennyLane operators into Qualtran Bloqs
         """
