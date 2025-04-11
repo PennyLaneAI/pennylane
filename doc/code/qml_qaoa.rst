@@ -36,9 +36,6 @@ QAOA Layers
 Cycle Optimization
 ------------------
 
-The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
-cycle problem.
-
 .. automodapi:: pennylane.qaoa.cycle
     :no-heading:
     :include-all-objects:
