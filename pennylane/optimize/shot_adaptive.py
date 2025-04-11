@@ -344,7 +344,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return grads
 
-    def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=arguments-renamed
+    def compute_grad(
+        self, objective_fn, args, kwargs
+    ):  # pylint: disable = arguments-renamed, arguments-differ
         r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
