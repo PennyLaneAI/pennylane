@@ -26,12 +26,11 @@ from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
-    from attrs import frozen
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 if TYPE_CHECKING:
-    import qualtran as qt
+    from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
 # pylint: disable=unused-argument
@@ -438,8 +437,8 @@ def split_qubits(registers, qubits):  # type: ignore[type-var]
 
 def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
-    in_reg: "qt.cirq_interop._cirq_to_bloq._QReg",
-    qreg_to_qvar: Dict["qt.cirq_interop._cirq_to_bloq._QReg", "qt.Soquet"],
+    in_reg: "_QReg",
+    qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
@@ -447,9 +446,7 @@ def _ensure_in_reg_exists(
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
         qreg_to_qvar[
-            qt.cirq_interop._cirq_to_bloq._QReg(
-                qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc)
-            )
+            _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
         ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
@@ -459,12 +456,11 @@ def _ensure_in_reg_exists(
     # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
     in_reg_qubits = set(in_reg.qubits)
 
-    new_qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet] = {}
+    new_qreg_to_qvar: Dict[_QReg, qt.Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
             new_qreg_to_qvar |= {
-                qt.cirq_interop._cirq_to_bloq._QReg(q, qt.QBit()): s
-                for q, s in zip(qreg.qubits, bb.split(soq=soq))
+                _QReg(q, qt.QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
             }
         else:
             new_qreg_to_qvar[qreg] = soq
@@ -477,7 +473,9 @@ def _ensure_in_reg_exists(
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
             # Cast single bit registers to QBit to preserve signature of later join.
             if not isinstance(qreg.dtype, qt.QBit):
-                soqs_to_join[qreg.qubits[0]] = bb.add(qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq)
+                soqs_to_join[qreg.qubits[0]] = bb.add(
+                    qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq
+                )
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
@@ -488,7 +486,9 @@ def _ensure_in_reg_exists(
             )
             assert isinstance(soq.reg.dtype, qt.QBit), err_msg
             if not isinstance(in_reg.dtype, qt.QBit):
-                qreg_to_qvar[in_reg] = bb.add(qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq)
+                qreg_to_qvar[in_reg] = bb.add(
+                    qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq
+                )
             else:
                 qreg_to_qvar[qreg] = soq
         else:
@@ -514,13 +514,13 @@ def _gather_input_soqs(
     return qvars_in
 
 
-@frozen
-class ToBloq("qt.Bloq"):
+class ToBloq(qt.Bloq):
     r"""
     Adapter class to convert PennyLane operators into Qualtran Bloqs
     """
 
-    op: Operation
+    def __init__(self, op: Operation):
+        self.op = op
 
     @cached_property
     def signature(self) -> "qt.Signature":
@@ -528,6 +528,8 @@ class ToBloq("qt.Bloq"):
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
     def decompose_bloq(self, **kwargs):
+        from qualtran.cirq_interop._cirq_to_bloq import _QReg
+
         try:
             ops = self.op.decomposition()
 
@@ -536,12 +538,12 @@ class ToBloq("qt.Bloq"):
             in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
 
             in_quregs = {
-                k: np.apply_along_axis(qt.cirq_interop._cirq_to_bloq._QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
                 for k, v in in_quregs.items()
             }
 
             out_quregs = {
-                k: np.apply_along_axis(qt.cirq_interop._cirq_to_bloq._QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
+                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
                 for k, v in out_quregs.items()
             }
             bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
@@ -573,7 +575,7 @@ class ToBloq("qt.Bloq"):
                 reg_dtypes = [r.dtype for r in bloq.signature]
                 # 3.1 Find input / output registers.
                 all_op_quregs = {
-                    k: np.apply_along_axis(qt.cirq_interop._cirq_to_bloq._QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+                    k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
                     for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
                 }
 
