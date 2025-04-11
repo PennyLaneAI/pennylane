@@ -514,6 +514,23 @@ class TestQubitUnitary:
             U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
         )
 
+    def test_operations_correctly_queued(self):
+        """Tests that the operators in the decomposition are queued correctly"""
+
+        dev = qml.device("default.qubit")
+
+        matrix = qml.matrix(qml.QFT(wires=[0, 1]))
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+            return qml.state()
+
+        tape = qml.workflow.construct_tape(circuit)()
+        for op1, op2 in zip(tape.operations, ops_decompostion):
+            assert qml.equal(op1, op2)
+
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
         U = qml.IsingYY.compute_matrix(np.array([1.2, 2.3, 3.4]))
