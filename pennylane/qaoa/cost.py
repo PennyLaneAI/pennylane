@@ -601,10 +601,10 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         .. math:: H_{\rm loss} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
 
         where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix
-        acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.loss_hamiltonian`
+        acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.qaoa.loss_hamiltonian`
         for more details).
 
-        The returned mixer Hamiltonian is :func:`~.cycle_mixer` given by
+        The returned mixer Hamiltonian is :func:`~.qaoa.cycle_mixer` given by
 
         .. math:: H_M = \frac{1}{4}\sum_{(i, j)\in E}
                 \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
@@ -613,7 +613,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
 
         This mixer provides transitions between collections of cycles, i.e., any subset of edges
         in :math:`E` such that all the graph's nodes :math:`V` have zero net flow
-        (see the :func:`~.net_flow_constraint` function).
+        (see the :func:`~.qaoa.net_flow_constraint` function).
 
         .. note::
 
@@ -627,7 +627,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
 
         .. math:: H_C \ = H_{\rm loss} + 3 H_{\rm netflow} + 3 H_{\rm outflow}.
 
-        The netflow constraint Hamiltonian :func:`~.net_flow_constraint` is given by
+        The netflow constraint Hamiltonian :func:`~.qaoa.net_flow_constraint` is given by
 
         .. math:: H_{\rm netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
                 \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
@@ -636,7 +636,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         the outdegree and indegree, respectively, of node :math:`i`. It is minimized whenever a
         subset of edges in :math:`E` results in zero net flow from each node in :math:`V`.
 
-        The outflow constraint Hamiltonian :func:`~.out_flow_constraint` is given by
+        The outflow constraint Hamiltonian :func:`~.qaoa.out_flow_constraint` is given by
 
         .. math:: H_{\rm outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
                 - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
@@ -645,7 +645,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         It is minimized whenever a subset of edges in :math:`E` results in an outflow of at most one
         from each node in :math:`V`.
 
-        The returned mixer Hamiltonian is :func:`~.x_mixer` applied to all wires.
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         .. note::
 
