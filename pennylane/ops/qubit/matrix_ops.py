@@ -86,6 +86,14 @@ def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
     return qml.math.reshape(qml.math.transpose(D), orig_shape)
 
 
+def compute_udv(a, b):
+    ab_dagger = a @ b.conj().T
+    eigenvalues, u = sp.linalg.eig(ab_dagger)
+    u, _ = sp.linalg.qr(u)
+    d = np.diag(np.exp(1j * np.angle(eigenvalues) / 2))
+    v = d.conj().T @ u.conj().T @ a
+    return u, np.diag(d), v
+
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
@@ -290,9 +298,25 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit sparse QubitUnitary is undefined."
                 )
+
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
-        return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
+        ops = []
+        (U1, U2), theta, (Vd1, Vd2) = sp.linalg.cossin(U, p=2 ** (len(wires) - 1), q=2 ** (len(wires) - 1), separate=True)
+        vd11, dv, vd12 = compute_udv(Vd1, Vd2)
+        u11, du, u12 = compute_udv(U1, U2)
+
+        ops += QubitUnitary.compute_decomposition(vd12, wires=wires[1:])
+        ops.append(qml.SelectPauliRot(-2 * np.angle(dv), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"))
+        ops += QubitUnitary.compute_decomposition(vd11, wires=wires[1:])
+
+        ops.append(qml.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"))
+
+        ops += QubitUnitary.compute_decomposition(u12, wires=wires[1:])
+        ops.append(qml.SelectPauliRot(-2 * np.angle(du), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"))
+        ops += QubitUnitary.compute_decomposition(u11, wires=wires[1:])
+
+        return ops
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
