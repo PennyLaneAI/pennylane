@@ -1349,13 +1349,13 @@ class MultiControlledX(ControlledOp):
             should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
-        work_wire_type (str): whether the work wires are 'clean' or 'dirty'. 'clean' indicates that
-            the work wires are in the state :math:`|0\rangle`, while 'dirty' indicates that the
-            work wires are in an arbitrary state. Defaults to 'clean'.
+        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"`` indicates that
+            the work wires are in the state :math:`|0\rangle`, while ``"dirty"`` indicates that the
+            work wires are in an arbitrary state. Defaults to ``"clean"``.
 
     .. note::
 
-        If :class`~.MultiControlledX` is not supported on the targeted device, PennyLane will decompose
+        If :class:`~.MultiControlledX` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
         three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 of
         `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ and Sec 5 of `Khattar and Gidney
@@ -1363,15 +1363,15 @@ class MultiControlledX(ControlledOp):
         work wire.
 
         The number of work wires provided determines the decomposition method used and the resulting
-        number of Toffoli gates required. When :class`~.MultiControlledX` is controlling on :math:`n`
+        number of Toffoli gates required. When :class:`~.MultiControlledX` is controlling on :math:`n`
         wires:
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
         #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
-           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
         #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
-           will be used depending on whether the `work_wire_type` is 'clean' or 'dirty'.
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
@@ -1409,10 +1409,10 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments
+    # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type=None, id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
     ):
         return cls._primitive.bind(
             *wires,
@@ -1446,6 +1446,12 @@ class MultiControlledX(ControlledOp):
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+        self.work_wire_type = work_wire_type
+
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+            )
         self.work_wire_type = work_wire_type
 
         self._validate_control_values(control_values)
@@ -1589,6 +1595,11 @@ class MultiControlledX(ControlledOp):
         work_wires = work_wires or []
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
+
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+            )
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
