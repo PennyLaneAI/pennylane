@@ -526,7 +526,8 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
 
 The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie algebra functionality:
 
-* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.
+* Compute the dynamical Lie algebra from a set of generators with :func:`qml.lie_closure <pennylane.lie_closure>`.  
+  This function accepts and outputs matrix inputs when `matrix=True`.
 
   ```python
   import pennylane as qml
@@ -541,7 +542,8 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   ```
 
 * Compute the structure constants that make up the adjoint representation of a Lie algebra
-  using :func:`qml.structure_constants <pennylane.structure_constants>`.
+  using :func:`qml.structure_constants <pennylane.structure_constants>`.  
+  This function accepts and outputs matrix inputs when `matrix=True`.
 
   ```pycon
   >>> adjoint_rep = qml.structure_constants(dla)
@@ -594,20 +596,12 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   True
   ```
 
-Additional changes:
-
-* :func:`qml.lie_closure <pennylane.lie_closure>` now accepts and outputs matrix inputs using the `matrix` keyword.  
-  Also added `qml.pauli.trace_inner_product` that can handle batches of dense matrices.
-
-* :func:`qml.structure_constants <pennylane.structure_constants>` now accepts and outputs matrix inputs using the `matrix` keyword.
-
 * The following functions have also been added:
   * `qml.liealg.check_commutation_relation(A, B, C)` checks if all commutators between `A` and `B`
   map to a subspace of `C`, i.e. `[A, B] ⊆ C`.
-
   * `qml.liealg.adjvec_to_op` and `qml.liealg.op_to_adjvec` allow transforming operators within a Lie algebra to and from their adjoint vector representations.
-
   * `qml.liealg.change_basis_ad_rep` allows the transformation of an adjoint representation tensor according to a basis transformation on the underlying Lie algebra, without re-computing the representation.
+  * `qml.pauli.trace_inner_product` can handle batches of dense matrices.
 
 [(#6811)](https://github.com/PennyLaneAI/pennylane/pull/6811)
 [(#6861)](https://github.com/PennyLaneAI/pennylane/pull/6861)
