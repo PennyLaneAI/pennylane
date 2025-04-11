@@ -42,7 +42,7 @@ def draw(
     show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
-    r"""Create a function that draws the given qnode or quantum function.
+    r"""Create a function that draws the given QNode or quantum function.
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn

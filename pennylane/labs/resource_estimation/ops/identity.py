@@ -73,8 +73,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             This operation is self-adjoint, so the resources of the adjoint operation is also an empty dictionary.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         return {cls.resource_rep(): 1}
 
@@ -94,8 +93,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             the original (un-controlled) operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         return {cls.resource_rep(): 1}
 
@@ -111,8 +109,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             operation are the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         return {cls.resource_rep(): 1}
 
@@ -172,8 +169,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             the resources of the adjoint operation is the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         return {re.ResourceGlobalPhase.resource_rep(): 1}
 
@@ -197,8 +193,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         if num_ctrl_wires == 1:
             gate_types = {re.ResourcePhaseShift.resource_rep(): 1}
@@ -229,7 +224,6 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             The resources simplify to just one total global phase operator.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         return {re.ResourceGlobalPhase.resource_rep(): 1}
