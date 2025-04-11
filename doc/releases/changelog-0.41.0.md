@@ -410,7 +410,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   with a variety of templates, preserving sparsity throughout the entire simulation.
   
   Specifically, the following templates now support sparse data structures:
-  
+
   * :class:`qml.StatePrep <pennylane.StatePrep>`
     [(#6863)](https://github.com/PennyLaneAI/pennylane/pull/6863)
   * :class:`qml.QubitUnitary <pennylane.QubitUnitary>` 
@@ -424,7 +424,7 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
     [(#6965)](https://github.com/PennyLaneAI/pennylane/pull/6965)
   * :func:`Controlled <pennylane.ctrl>` operations
     [(#6994)](https://github.com/PennyLaneAI/pennylane/pull/6994)
-
+  
   ```python
   import scipy
   import numpy as np
@@ -435,7 +435,6 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
   sparse_x = scipy.sparse.csr_array(qml.X.compute_matrix())
 
   dev = qml.device("default.qubit")
-
 
   @qml.qnode(dev)
   def circuit():
@@ -449,9 +448,11 @@ capture enabled by adding :func:`qml.capture.enable() <pennylane.capture.enable>
       qml.ctrl(qml.QubitUnitary(sparse_x, wires=0), control=1)
       return qml.state()
     ```
+
     ```pycon
     >>> circuit()
-    array([0.+0.j, 0.+0.j, 0.+0.j, ..., 0.+0.j, 0.+0.j, 0.+0.j])
+    array([ 0.     +0.j,  0.03125+0.j,  0.     +0.j, ..., -0.03125+0.j,
+            0.     +0.j,  0.     +0.j])
     ```
 
 * Operators that have a :func:`sparse_matrix <pennylane.Operator.sparse_matrix` method can now 
