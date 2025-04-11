@@ -47,7 +47,7 @@ new features are available:
       qml.CZ(wires=wires)
       qml.RX(-phi / 2, wires=wires[1])
       qml.CZ(wires=wires) 
-      
+
   >>> print(qml.draw(decomp_rule)(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -701,8 +701,8 @@ Additional changes:
 
   More information on how these three new gradient methods work can be found in [arXiv:2408.05406](https://arxiv.org/pdf/2408.05406).
 
-* :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` can now differentiate anything 
-  with a generator, and can accept circuits with non-commuting measurements.
+* The Hadamard gradient method and its variants can now differentiate any operator with a generator 
+  defined, and can accept circuits with non-commuting measurements.
   [(#6928)](https://github.com/PennyLaneAI/pennylane/pull/6928)
 
 <h3>Improvements 🛠</h3>
