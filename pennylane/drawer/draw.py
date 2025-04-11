@@ -139,13 +139,13 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
-        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
-        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
-        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
-        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
-        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
+        >>> print(qml.draw(longer_circuit, max_length=65, level="device")(params))
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X ···
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰● ···
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X─── ···
+        0: ··· ──Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        1: ··· ─╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        2: ··· ─╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
@@ -373,7 +373,7 @@ def draw_mpl(
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
 
     Keyword Args:
-        max_length (Optional[int]): When there is more than ``max_length`` layers, additional plots
+        max_length (Optional[int]): When there are more than ``max_length`` layers, additional plots
             will be produced with at most ``max_length`` individual layers.
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
         fontsize (float or str): fontsize for text. Valid strings are

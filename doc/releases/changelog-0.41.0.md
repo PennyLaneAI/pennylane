@@ -822,6 +822,9 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 * `qml.draw_mpl` can now split deep circuits over multiple figures via a `max_length` keyword argument.
   [(#7128)](https://github.com/PennyLaneAI/pennylane/pull/7128)
 
+* `qml.draw` now re-displays wire labels at the start of each partitioned chunk when using the `max_length` keyword argument.
+  [(#7250)](https://github.com/PennyLaneAI/pennylane/pull/7250)
+
 * `qml.draw` and `qml.draw_mpl` can now reuse lines for different classical wires, saving whitespace 
   without changing the represented circuit.
   [(#7163)](https://github.com/PennyLaneAI/pennylane/pull/7163)
