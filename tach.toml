@@ -173,6 +173,10 @@ layer = "tertiary"
 path = "pennylane.drawer"
 layer = "tertiary"
 
+[[modules]]
+path = "pennylane.qaoa"
+layer = "tertiary"
+
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
@@ -213,11 +217,6 @@ unchecked = true
 [[modules]]
 path = "pennylane.transforms"
 depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
-unchecked = true
-
-[[modules]]
-path = "pennylane.qaoa"
-depends_on = ["pennylane.wires", "pennylane"]
 unchecked = true
 
 [[modules]]
