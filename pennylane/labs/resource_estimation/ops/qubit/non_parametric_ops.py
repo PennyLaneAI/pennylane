@@ -513,7 +513,7 @@ class ResourceT(qml.T, re.ResourceOperator):
                 values are the counts.
         """
 
-        return {cls.resource_rep(): 7}
+        return {cls.resource_rep(): 1, ResourceX.resource_rep(): 2}
 
     @staticmethod
     def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
