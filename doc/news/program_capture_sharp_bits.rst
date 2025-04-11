@@ -133,7 +133,7 @@ when using ``adjoint`` with ``default.qubit``.
 Control flow and gradients
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Control flow like ``for``, ``while`` and ``conditionals`` 
+Control flow like ``for``, ``while`` and ``if/else`` 
 are not currently supported when using ``"adjoint"`` with ``default.qubit``.
 For example, the following code will raise an error:
 
