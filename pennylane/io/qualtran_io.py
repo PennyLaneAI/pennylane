@@ -28,10 +28,10 @@ try:
     import qualtran as qt
     from attrs import frozen
 except (ModuleNotFoundError, ImportError) as import_error:
-    qualtran = None
+    pass
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder
+    import qualtran as qt
 
 
 # pylint: disable=unused-argument
@@ -121,7 +121,7 @@ def _get_to_pl_op():
     return _to_pl_op
 
 
-def bloq_registers(bloq):
+def bloq_registers(bloq: qt.Bloq):
     """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
@@ -437,7 +437,7 @@ def split_qubits(registers, qubits):  # type: ignore[type-var]
 
 
 def _ensure_in_reg_exists(
-    bb: BloqBuilder,
+    bb: qt.BloqBuilder,
     in_reg: qt.cirq_interop._cirq_to_bloq._QReg,
     qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet],
 ) -> None:
@@ -502,7 +502,7 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs, qreg_to_qvar  # type: ignore[type-var]
+    bb: qt.BloqBuilder, op_quregs, qreg_to_qvar  # type: ignore[type-var]
 ):  # type: ignore[type-var]
     qvars_in = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
