@@ -20,8 +20,6 @@ import pytest
 
 import pennylane as qml
 
-# pylint: disable=no-name-in-module, too-few-public-methods
-
 
 @pytest.mark.unit
 def test_fixed_alt_decomps_not_available():
