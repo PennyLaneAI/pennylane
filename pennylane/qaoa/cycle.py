@@ -554,7 +554,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
 def _inner_out_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
 ) -> Operator:
-    r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
+    r"""Calculates the inner portion of the Hamiltonian in :func:`~.out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
     .. math::
@@ -623,7 +623,7 @@ def _inner_out_flow_constraint_hamiltonian(
 def _inner_net_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
 ) -> Operator:
-    r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
+    r"""Calculates the squared inner portion of the Hamiltonian in :func:`~.net_flow_constraint`.
 
 
     For a given :math:`i`, this function returns:
