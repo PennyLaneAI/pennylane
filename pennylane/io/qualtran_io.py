@@ -443,8 +443,6 @@ def _ensure_in_reg_exists(
     qreg_to_qvar: Dict[qt.cirq_interop._cirq_to_bloq._QReg, qt.Soquet],
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
-    from qualtran.bloqs.bookkeeping import Cast
-
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
@@ -480,7 +478,7 @@ def _ensure_in_reg_exists(
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
             # Cast single bit registers to QBit to preserve signature of later join.
             if not isinstance(qreg.dtype, qt.QBit):
-                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(qreg.dtype, qt.QBit()), reg=soq)
+                soqs_to_join[qreg.qubits[0]] = bb.add(qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq)
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
@@ -491,7 +489,7 @@ def _ensure_in_reg_exists(
             )
             assert isinstance(soq.reg.dtype, qt.QBit), err_msg
             if not isinstance(in_reg.dtype, qt.QBit):
-                qreg_to_qvar[in_reg] = bb.add(Cast(qt.QBit(), in_reg.dtype), reg=soq)
+                qreg_to_qvar[in_reg] = bb.add(qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq)
             else:
                 qreg_to_qvar[qreg] = soq
         else:
@@ -616,7 +614,7 @@ class ToBloq(qt.Bloq):
 
             cbloq = bb.finalize(**final_soqs_dict)
             return cbloq
-        except:
+        except DecompositionUndefinedError:
             raise qt.DecomposeNotImplementedError
 
     def __str__(self):
