@@ -28,7 +28,7 @@ import keras
 current_backend = keras.config.backend()
 CORRECT_KERAS_VERSION = True
 
-if current_backend = "tensorflow":
+if current_backend == "tensorflow":
     try:
         import tensorflow as tf
         CORRECT_BACKEND_VERSION = Version(tf.__version__) >= Version("2.0.0")
@@ -41,7 +41,7 @@ if current_backend = "tensorflow":
         Layer = ABC
         CORRECT_BACKEND_VERSION = False
 
-elif current_backend = "torch":
+elif current_backend == "torch":
     try:
         import torch
         from torch.nn import Module
