@@ -335,7 +335,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
             # a solution is found for this operator in the graph.
             if (
-                op.has_plxpr_decomposition
+                op.has_qfunc_decomposition
                 or qml.decomposition.enabled_graph()
                 and self._decomp_graph.is_solved_for(op)
             ):
