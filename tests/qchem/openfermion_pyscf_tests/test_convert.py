@@ -18,6 +18,7 @@ PennyLane object.
 # pylint: disable=too-many-arguments,protected-access
 import os
 import sys
+sys.meta_path[:] = [f for f in sys.meta_path if "DaskFinder" not in str(f)]
 
 import pytest
 
