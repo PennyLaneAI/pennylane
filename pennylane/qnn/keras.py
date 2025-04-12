@@ -23,7 +23,7 @@ from packaging.version import Version
 from pennylane import PennyLaneDeprecationWarning
 from keras.layers import Layer
 from keras import ops
-import keras 
+import keras
 
 current_backend = keras.config.backend()
 CORRECT_KERAS_VERSION = True
@@ -31,6 +31,7 @@ CORRECT_KERAS_VERSION = True
 if current_backend == "tensorflow":
     try:
         import tensorflow as tf
+
         CORRECT_BACKEND_VERSION = Version(tf.__version__) >= Version("2.0.0")
 
     except ImportError:
@@ -60,7 +61,7 @@ class KerasLayer(Layer):
     """Converts a :class:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
-    The result can be used within the Keras
+    The result can be used within the Keras or with TensorFlow and PyTorch backends. 
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
@@ -89,12 +90,10 @@ class KerasLayer(Layer):
     ):
         # pylint: disable=too-many-arguments
         if not CORRECT_BACKEND_VERSION:
-            raise ImportError(
-                "KerasLayer requires TensorFlow version <=2 or PyTorch "
-            )
+            raise ImportError("KerasLayer requires TensorFlow version <=2 or PyTorch ")
         ## Loads backend version
         self.current_backend = keras.config.backend()
-        
+
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
@@ -105,7 +104,9 @@ class KerasLayer(Layer):
         self.qnode = qnode
         if self.current_backend == "torch":
             if self.qnode.interface not in ("auto", "torch", "pytorch"):
-                raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer with Torch Backend")
+                raise ValueError(
+                    f"Invalid interface '{self.qnode.interface}' for KerasLayer with Torch Backend"
+                )
         elif self.current_backend == "tensorflow":
             if self.qnode.interface not in (
                 "auto",
@@ -114,7 +115,9 @@ class KerasLayer(Layer):
                 "tensorflow-autograph",
                 "tf-autograph",
             ):
-                raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer with TensorFlow Backend")
+                raise ValueError(
+                    f"Invalid interface '{self.qnode.interface}' for KerasLayer with TensorFlow Backend"
+                )
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -242,7 +245,10 @@ class KerasLayer(Layer):
                 tape.watch(list(self.qnode_weights.values()))
 
                 inputs = args[0]
-                kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+                kwargs = {
+                    self.input_arg: inputs,
+                    **{k: 1.0 * w for k, w in self.qnode_weights.items()},
+                }
                 self.qnode.construct((), kwargs)
         elif self.current_backend == "torch":
             x = args[0]
