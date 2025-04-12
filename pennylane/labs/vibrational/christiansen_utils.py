@@ -53,7 +53,7 @@ def _cform_onemode_kinetic(freqs, n_states):
         ii = int(ii)
         m_const = freqs[ii] / 4
 
-        for mm, [ki, hi] in enumerate(boscombos_on_rank):
+        for mm, (ki, hi) in enumerate(boscombos_on_rank):
             ind = nn * len(boscombos_on_rank) + mm
 
             if ki == hi:
@@ -353,9 +353,11 @@ def _cform_threemode(pes, n_states):
     """
     nmodes = pes.pes_threemode.shape[0]
 
-    all_mode_combos = [
-        [aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)
-    ]
+    all_mode_combos = []
+    for aa in range(nmodes):
+        for bb in range(aa):
+            for cc in range(bb):
+                all_mode_combos.append([aa, bb, cc])
 
     all_bos_combos = list(
         itertools.product(
@@ -367,18 +369,34 @@ def _cform_threemode(pes, n_states):
             range(n_states),
         )
     )
+    
     rank = comm.Get_rank()
     size = comm.Get_size()
     boscombos_on_rank = np.array_split(all_bos_combos, size)[rank]
     chunksize = len(boscombos_on_rank)
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * chunksize)
+    
+    hermite_cache = {}
+    for k in range(n_states):
+        order = np.zeros(n_states)
+        order[k] = 1.0
+        hermite_cache[k] = np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid)
+    
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
-        # TODO: Skip unnecessary combinations
-        if ii2 >= ii1 or ii3 >= ii2:
-            continue
+        
+        pes_submatrix = pes.pes_threemode[ii1, ii2, ii3]
+        
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), int(h1), int(h2), int(h3)
+            
+            hermite_k1 = hermite_cache[k1]
+            hermite_k2 = hermite_cache[k2]
+            hermite_k3 = hermite_cache[k3]
+            hermite_h1 = hermite_cache[h1]
+            hermite_h2 = hermite_cache[h2]
+            hermite_h3 = hermite_cache[h3]
+            
             sqrt = (
                 2 ** (k1 + k2 + k3 + h1 + h2 + h3)
                 * factorial(k1)
@@ -388,25 +406,22 @@ def _cform_threemode(pes, n_states):
                 * factorial(h2)
                 * factorial(h3)
             ) ** (-0.5) / (np.pi**1.5)
-            orders = [np.zeros(n_states) for _ in range(6)]
-            orders[0][k1], orders[1][k2], orders[2][k3] = 1.0, 1.0, 1.0
-            orders[3][h1], orders[4][h2], orders[5][h3] = 1.0, 1.0, 1.0
-            hermite_polys = [
-                np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid) for order in orders
-            ]
+            
             quadrature = np.einsum(
                 "a,b,c,a,b,c,abc,a,b,c->",
                 pes.gauss_weights,
                 pes.gauss_weights,
                 pes.gauss_weights,
-                hermite_polys[0],
-                hermite_polys[1],
-                hermite_polys[2],
-                pes.pes_threemode[ii1, ii2, ii3, :, :, :],
-                hermite_polys[3],
-                hermite_polys[4],
-                hermite_polys[5],
+                hermite_k1,
+                hermite_k2,
+                hermite_k3,
+                pes_submatrix,
+                hermite_h1,
+                hermite_h2,
+                hermite_h3,
+                optimize='optimal'
             )
+            
             full_coeff = sqrt * quadrature
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_threebody[ind] = full_coeff

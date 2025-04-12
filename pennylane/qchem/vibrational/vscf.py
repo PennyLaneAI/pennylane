@@ -100,33 +100,38 @@ def _find_active_terms(h_integrals, modals, cutoff):
 
     """
     active_ham_terms = {}
-    active_num = 0
     nmodes = np.shape(h_integrals[0])[0]
-
+    active_num = 0
+    
+    active_mode_terms = {m: set() for m in range(nmodes)}
+    
     for n, ham_n in enumerate(h_integrals):
-        for idx, h_val in np.ndenumerate(ham_n):
-            if np.abs(h_val) < cutoff:
-                continue
-
+        indices = np.where(np.abs(ham_n) >= cutoff)
+        if not indices[0].size:
+            continue
+            
+        for idx_pos in range(len(indices[0])):
+            idx = tuple(indices[i][idx_pos] for i in range(len(indices)))
+            h_val = ham_n[idx]
+            
             modal_indices = idx[: n + 1]
-
+            
             if all(modal_indices[i] > modal_indices[i + 1] for i in range(n)):
                 excitation_indices = idx[n + 1 :]
-                exc_in_modals = True
-                for m_idx, m in enumerate(modal_indices):
-                    i = excitation_indices[m_idx]
-                    j = excitation_indices[m_idx + len(modal_indices)]
-                    if i >= modals[m] or j >= modals[m]:
-                        exc_in_modals = False
-                        break
-                if exc_in_modals:
+                
+                if all(excitation_indices[m_idx] < modals[modal_indices[m_idx]] and 
+                       excitation_indices[m_idx + len(modal_indices)] < modals[modal_indices[m_idx]]
+                       for m_idx in range(len(modal_indices))):
+                    
                     active_ham_terms[active_num] = [h_val, modal_indices, excitation_indices]
+                    
+                    for m in modal_indices:
+                        active_mode_terms[m].add(active_num)
+                    
                     active_num += 1
-
-    active_mode_terms = {
-        m: [t for t in range(active_num) if m in active_ham_terms[t][1]] for m in range(nmodes)
-    }
-
+    
+    active_mode_terms = {m: list(terms) for m, terms in active_mode_terms.items()}
+    
     return active_ham_terms, active_mode_terms, active_num
 
 
@@ -146,12 +151,33 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     """
     nmodes = h_mat.shape[1]
     e0s = np.zeros(nmodes)
-    for mode in range(nmodes):
-        fock_mat = _build_fock(
-            mode, active_ham_terms, active_mode_terms[mode], modals, h_mat, mode_rots[mode]
-        )
-        e0s[mode] = fock_mat[0, 0]
 
+    mode_rot_cache = {}
+    for mode in range(nmodes):
+        fock_00 = 0.0
+
+        for term in active_mode_terms[mode]:
+            ham_term = active_ham_terms[term]
+            h_val, modal_indices, excitation_indices = ham_term[0], list(ham_term[1]), list(ham_term[2])
+
+            modal_idx = modal_indices.index(mode)
+            i = excitation_indices[modal_idx]
+            j = excitation_indices[modal_idx + len(modal_indices)]
+
+            if i >= modals[mode] or j >= modals[mode]:
+                continue
+
+            h_val_scaled = h_val
+            for modal in modal_indices:
+                if modal != mode:
+                    h_val_scaled *= h_mat[term, modal]
+            
+            rot_i = mode_rots[mode][i, 0]
+            rot_j = mode_rots[mode][j, 0]
+            fock_00 += h_val_scaled * rot_i * rot_j
+            
+        e0s[mode] = fock_00
+    
     return np.sum(e0s)
 
 
@@ -279,30 +305,31 @@ def _rotate_three_body(h3, nmodes, mode_rots, modals):
     """
     imax = np.max(modals)
 
-    h3_rot = np.zeros((nmodes, nmodes, nmodes, imax, imax, imax, imax, imax, imax))
+    sliced_rots = [mode_rots[m][:, : modals[m]] for m in range(nmodes)]
+
+    mask = np.zeros((nmodes, nmodes, nmodes), dtype=bool)
     for m1 in range(nmodes):
-        for m2 in range(nmodes):
-            for m3 in range(nmodes):
-                h3_rot[
-                    m1,
-                    m2,
-                    m3,
-                    : modals[m1],
-                    : modals[m2],
-                    : modals[m3],
-                    : modals[m1],
-                    : modals[m2],
-                    : modals[m3],
-                ] = np.einsum(
-                    "ijklmn,ia,jb,kc,ld,me,nf->abcdef",
-                    h3[m1, m2, m3, :, :, :, :, :, :],
-                    mode_rots[m1][:, : modals[m1]],
-                    mode_rots[m2][:, : modals[m2]],
-                    mode_rots[m3][:, : modals[m3]],
-                    mode_rots[m1][:, : modals[m1]],
-                    mode_rots[m2][:, : modals[m2]],
-                    mode_rots[m3][:, : modals[m3]],
-                )
+        for m2 in range(m1):
+            for m3 in range(m2):
+                mask[m1, m2, m3] = True
+    
+    h3_rot = np.zeros((nmodes, nmodes, nmodes, imax, imax, imax, imax, imax, imax))
+    
+    for m1, m2, m3 in zip(*np.where(mask)):
+        rot_m1 = sliced_rots[m1]
+        rot_m2 = sliced_rots[m2]
+        rot_m3 = sliced_rots[m3]
+        
+        h3_block = h3[m1, m2, m3]
+        
+        h3_rot[m1, m2, m3, :rot_m1.shape[1], :rot_m2.shape[1], :rot_m3.shape[1], 
+                          :rot_m1.shape[1], :rot_m2.shape[1], :rot_m3.shape[1]] = np.einsum(
+            "ijklmn,ia,jb,kc,ld,me,nf->abcdef",
+            h3_block,
+            rot_m1, rot_m2, rot_m3,
+            rot_m1, rot_m2, rot_m3,
+            optimize='optimal'
+        )
 
     return h3_rot
 
