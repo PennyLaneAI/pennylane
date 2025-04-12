@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Optimized the vibrational quantum chemistry modules (VSCF and Christiansen utilities) for better performance with larger molecular systems. Functions improved include `_find_active_terms`, `_rotate_three_body`, and `_fock_energy`.
+  [(#7273)](https://github.com/PennyLaneAI/pennylane/pull/7273)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -23,4 +26,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
+Guillermo Alonso-Linaje Jacob Kitchen
