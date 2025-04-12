@@ -87,10 +87,6 @@ class KerasLayer(Layer):
         weight_specs: Optional[dict] = None,
         **kwargs,
     ):
-        warnings.warn(
-            "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
-            PennyLaneDeprecationWarning,
-        )
         # pylint: disable=too-many-arguments
         if not CORRECT_BACKEND_VERSION:
             raise ImportError(
