@@ -21,28 +21,39 @@ from typing import Optional, Text
 from packaging.version import Version
 
 from pennylane import PennyLaneDeprecationWarning
+from keras.layers import Layer
+from keras import ops
+import keras 
 
-try:
-    import tensorflow as tf
-    from tensorflow.keras.layers import Layer
+current_backend = keras.config.backend()
+CORRECT_KERAS_VERSION = True
 
-    CORRECT_TF_VERSION = Version(tf.__version__) >= Version("2.0.0")
+if current_backend = "tensorflow":
     try:
-        # this feels a bit hacky, but if users *only* have an old (i.e. PL-compatible) version of Keras installed
-        # then tf.keras doesn't have a version attribute, and we *should be* good to go.
-        # if you have a newer version of Keras installed, then you can use tf.keras.version to check if you
-        # are configured to use Keras 3 or Keras 2
-        CORRECT_KERAS_VERSION = Version(tf.keras.version()) < Version("3.0.0")
-    except AttributeError:
-        CORRECT_KERAS_VERSION = True
+        import tensorflow as tf
+        CORRECT_BACKEND_VERSION = Version(tf.__version__) >= Version("2.0.0")
 
-except ImportError:
-    # The following allows this module to be imported even if TensorFlow is not installed. Users
-    # will instead see an ImportError when instantiating the KerasLayer.
-    from abc import ABC
+    except ImportError:
+        # The following allows this module to be imported even if TensorFlow is not installed. Users
+        # will instead see an ImportError when instantiating the KerasLayer.
+        from abc import ABC
 
-    Layer = ABC
-    CORRECT_TF_VERSION = False
+        Layer = ABC
+        CORRECT_BACKEND_VERSION = False
+
+elif current_backend = "torch":
+    try:
+        import torch
+        from torch.nn import Module
+
+        CORRECT_BACKEND_VERSION = True
+    except ImportError:
+        # The following allows this module to be imported even if PyTorch is not installed. Users
+        # will instead see an ImportError when instantiating the TorchLayer.
+        from unittest.mock import Mock
+
+        Module = Mock
+        CORRECT_BACKEND_VERSION = False
 
 
 class KerasLayer(Layer):
@@ -53,16 +64,6 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
-
-    .. warning::
-        This class is deprecated because Keras 2 is no longer actively maintained.  Please consider using torch instead of TensorFlow/Keras 2.
-
-    .. note::
-
-        ``KerasLayer`` currently only supports Keras 2. If you are running the newest version
-        of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
-        on running with Keras 2, instead, see the
-        `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
 
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
@@ -76,234 +77,6 @@ class KerasLayer(Layer):
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the Layer_ base class
-
-    **Example**
-
-    First let's define the QNode that we want to convert into a Keras Layer_:
-
-    .. code-block:: python
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def qnode(inputs, weights_0, weight_1):
-            qml.RX(inputs[0], wires=0)
-            qml.RX(inputs[1], wires=1)
-            qml.Rot(*weights_0, wires=0)
-            qml.RY(weight_1, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
-    with all other arguments to be treated as internal weights. We can then convert to a Keras
-    Layer_ with:
-
-    >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
-    >>> qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-
-    The internal weights of the QNode are automatically initialized within the
-    :class:`~.KerasLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
-    It is then easy to combine with other neural network layers from the
-    `tensorflow.keras.layers <https://www.tensorflow.org/api_docs/python/tf/keras/layers>`__ module
-    and create a hybrid:
-
-    >>> clayer = tf.keras.layers.Dense(2)
-    >>> model = tf.keras.models.Sequential([qlayer, clayer])
-
-    .. details::
-        :title: Usage Details
-
-        **QNode signature**
-
-        The QNode must have a signature that satisfies the following conditions:
-
-        - Contain an ``inputs`` named argument for input data.
-        - All other arguments must accept an array or tensor and are treated as internal
-          weights of the QNode.
-        - All other arguments must have no default value.
-        - The ``inputs`` argument is permitted to have a default value provided the gradient with
-          respect to ``inputs`` is not required.
-        - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
-          or ``**kwargs`` present in the signature.
-
-        **Output shape**
-
-        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
-        shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
-        of the measurement:
-
-        .. code-block::
-
-            def print_output_shape(measurements):
-                n_qubits = 2
-                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
-
-                @qml.qnode(dev)
-                def qnode(inputs, weights):
-                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-                    qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                    if len(measurements) == 1:
-                        return qml.apply(measurements[0])
-                    return [qml.apply(m) for m in measurements]
-
-                weight_shapes = {"weights": (3, n_qubits, 3)}
-                qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=None)
-
-                batch_dim = 5
-                x = tf.zeros((batch_dim, n_qubits))
-                return qlayer(x).shape
-
-        >>> print_output_shape([qml.expval(qml.Z(0))])
-        TensorShape([5])
-        >>> print_output_shape([qml.probs(wires=[0, 1])])
-        TensorShape([5, 4])
-        >>> print_output_shape([qml.sample(wires=[0, 1])])
-        TensorShape([5, 100, 2])
-
-        If the QNode returns multiple measurements, then the measurement results will be flattened
-        and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
-
-        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
-        TensorShape([5, 5])
-        >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
-        TensorShape([5, 204])
-
-        **Initializing weights**
-
-        The optional ``weight_specs`` argument of :class:`~.KerasLayer` allows for a more
-        fine-grained specification of the QNode weights, such as the method of initialization and
-        any regularization or constraints. For example, the initialization method of the ``weights``
-        argument in the example above could be specified by:
-
-        .. code-block::
-
-            weight_specs = {"weights": {"initializer": "random_uniform"}}
-
-        The values of ``weight_specs`` are dictionaries with keys given by arguments of
-        the Keras
-        `add_weight() <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
-        method. For the ``"initializer"`` argument, one can specify a string such as
-        ``"random_uniform"`` or an instance of an `Initializer
-        <https://www.tensorflow.org/api_docs/python/tf/keras/initializers>`__ class, such as
-        `tf.keras.initializers.RandomUniform <https://www.tensorflow.org/api_docs/python/tf/random_uniform_initializer>`__.
-
-        If ``weight_specs`` is not specified, weights will be added using the Keras default
-        initialization and without any regularization or constraints.
-
-        **Model saving**
-
-        The weights of models that contain ``KerasLayers`` can be saved using the usual
-        ``tf.keras.Model.save_weights`` method:
-
-        .. code-block::
-
-            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
-            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-            model = tf.keras.Sequential([clayer, qlayer])
-            model.save_weights(SAVE_PATH)
-
-        To load the model weights, first instantiate the model like before, then call
-        ``tf.keras.Model.load_weights``:
-
-        .. code-block::
-
-            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
-            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-            model = tf.keras.Sequential([clayer, qlayer])
-            model.load_weights(SAVE_PATH)
-
-        Models containing ``KerasLayer`` objects can also be saved directly using
-        ``tf.keras.Model.save``. This method also saves the model architecture, weights,
-        and training configuration, including the optimizer state:
-
-        .. code-block::
-
-            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
-            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-            model = tf.keras.Sequential([clayer, qlayer])
-            model.save(SAVE_PATH)
-
-        In this case, loading the model requires no knowledge of the original source code:
-
-        .. code-block::
-
-            model = tf.keras.models.load_model(SAVE_PATH)
-
-        .. note::
-
-            Currently ``KerasLayer`` objects cannot be saved in the ``HDF5`` file format. In order
-            to save a model using the latter method above, the ``SavedModel`` file format (default
-            in TensorFlow 2.x) should be used.
-
-        **Additional example**
-
-        The code block below shows how a circuit composed of templates from the
-        :doc:`/introduction/templates` module can be combined with classical
-        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
-        the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
-        .datasets.make_moons.html>`__ dataset.
-
-        .. code-block:: python
-
-            import pennylane as qml
-            import tensorflow as tf
-            import sklearn.datasets
-
-            n_qubits = 2
-            dev = qml.device("default.qubit", wires=n_qubits)
-
-            @qml.qnode(dev)
-            def qnode(inputs, weights):
-                qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-                qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-            weight_shapes = {"weights": (3, n_qubits, 3)}
-
-            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-            clayer1 = tf.keras.layers.Dense(2)
-            clayer2 = tf.keras.layers.Dense(2, activation="softmax")
-            model = tf.keras.models.Sequential([clayer1, qlayer, clayer2])
-
-            data = sklearn.datasets.make_moons()
-            X = tf.constant(data[0])
-            Y = tf.one_hot(data[1], depth=2)
-
-            opt = tf.keras.optimizers.SGD(learning_rate=0.5)
-            model.compile(opt, loss='mae')
-
-        The model can be trained using:
-
-        >>> model.fit(X, Y, epochs=8, batch_size=5)
-        Train on 100 samples
-        Epoch 1/8
-        100/100 [==============================] - 9s 90ms/sample - loss: 0.3524
-        Epoch 2/8
-        100/100 [==============================] - 9s 87ms/sample - loss: 0.2441
-        Epoch 3/8
-        100/100 [==============================] - 9s 87ms/sample - loss: 0.1908
-        Epoch 4/8
-        100/100 [==============================] - 9s 87ms/sample - loss: 0.1832
-        Epoch 5/8
-        100/100 [==============================] - 9s 88ms/sample - loss: 0.1596
-        Epoch 6/8
-        100/100 [==============================] - 9s 87ms/sample - loss: 0.1637
-        Epoch 7/8
-        100/100 [==============================] - 9s 86ms/sample - loss: 0.1613
-        Epoch 8/8
-        100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
-
-        **Returning a state**
-
-        If your QNode returns the state of the quantum circuit using :func:`~pennylane.state` or
-        :func:`~pennylane.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
-        that casts to reals. For example, you could use
-        `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
-        with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
-        Keras layers require a real input and are differentiated with respect to real parameters.
-
-    .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
     def __init__(
@@ -319,14 +92,13 @@ class KerasLayer(Layer):
             PennyLaneDeprecationWarning,
         )
         # pylint: disable=too-many-arguments
-        if not CORRECT_TF_VERSION:
+        if not CORRECT_BACKEND_VERSION:
             raise ImportError(
-                "KerasLayer requires TensorFlow version 2 or above. The latest "
-                "version of TensorFlow can be installed using:\n"
-                "pip install tensorflow --upgrade\nAlternatively, visit "
-                "https://www.tensorflow.org/install for detailed instructions."
+                "KerasLayer requires TensorFlow version <=2 or PyTorch "
             )
-
+        ## Loads backend version
+        self.current_backend = keras.config.backend()
+        
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
@@ -335,14 +107,18 @@ class KerasLayer(Layer):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        if self.qnode.interface not in (
-            "auto",
-            "tf",
-            "tensorflow",
-            "tensorflow-autograph",
-            "tf-autograph",
-        ):
-            raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer")
+        if self.current_backend == "torch":
+            if self.qnode.interface not in ("auto", "torch", "pytorch"):
+                raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer with Torch Backend")
+        elif self.current_backend == "tensorflow":
+            if self.qnode.interface not in (
+                "auto",
+                "tf",
+                "tensorflow",
+                "tensorflow-autograph",
+                "tf-autograph",
+            ):
+                raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer with TensorFlow Backend")
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -414,8 +190,8 @@ class KerasLayer(Layer):
 
         # in case the input has more than one batch dimension
         if has_batch_dim:
-            batch_dims = tf.shape(inputs)[:-1]
-            inputs = tf.reshape(inputs, (-1, inputs.shape[-1]))
+            batch_dims = ops.shape(inputs)[:-1]
+            inputs = ops.reshape(inputs, (-1, inputs.shape[-1]))
 
         # calculate the forward pass as usual
         results = self._evaluate_qnode(inputs)
@@ -423,8 +199,8 @@ class KerasLayer(Layer):
         # reshape to the correct number of batch dims
         if has_batch_dim:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-            new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
-            results = tf.reshape(results, new_shape)
+            new_shape = ops.concat([batch_dims, ops.shape(results)[1:]], axis=0)
+            results = ops.reshape(results, new_shape)
 
         return results
 
@@ -446,10 +222,10 @@ class KerasLayer(Layer):
         if isinstance(res, (list, tuple)):
             if len(x.shape) > 1:
                 # multi-return and batch dim case
-                res = [tf.reshape(r, (tf.shape(x)[0], tf.reduce_prod(r.shape[1:]))) for r in res]
+                res = [ops.reshape(r, (ops.shape(x)[0], ops.prod(r.shape[1:]))) for r in res]
 
             # multi-return and no batch dim
-            return tf.experimental.numpy.hstack(res)
+            return ops.hstack(res)
 
         return res
 
@@ -465,11 +241,19 @@ class KerasLayer(Layer):
             kwargs (dict): Unused
         """
         # GradientTape required to ensure that the weights show up as trainable on the qtape
-        with tf.GradientTape() as tape:
-            tape.watch(list(self.qnode_weights.values()))
+        if self.current_backend == "tensorflow":
+            with tf.GradientTape() as tape:
+                tape.watch(list(self.qnode_weights.values()))
 
-            inputs = args[0]
-            kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+                inputs = args[0]
+                kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+                self.qnode.construct((), kwargs)
+        elif self.current_backend == "torch":
+            x = args[0]
+            kwargs = {
+                self.input_arg: x,
+                **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+            }
             self.qnode.construct((), kwargs)
 
     def __getattr__(self, item):
@@ -491,12 +275,12 @@ class KerasLayer(Layer):
         QNode.
 
         Args:
-            input_shape (tuple or tf.TensorShape): shape of input data
+            input_shape (tuple): shape of input data
 
         Returns:
-            tf.TensorShape: shape of output data
+            tf.tuple: shape of output data
         """
-        return tf.TensorShape([input_shape[0]]).concatenate(self.output_dim)
+        return tuple([input_shape[0]] + [self.output_dim])
 
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"
