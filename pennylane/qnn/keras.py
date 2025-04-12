@@ -14,13 +14,11 @@
 """This module contains the classes and functions for integrating QNodes with the Keras Layer
 API."""
 import inspect
-import warnings
 from collections.abc import Iterable
 from typing import Optional, Text
 
 from packaging.version import Version
 
-from pennylane import PennyLaneDeprecationWarning
 from keras.layers import Layer
 from keras import ops
 import keras
@@ -198,7 +196,7 @@ class KerasLayer(Layer):
         # reshape to the correct number of batch dims
         if has_batch_dim:
             # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
-            new_shape = ops.concat([batch_dims, ops.shape(results)[1:]], axis=0)
+            new_shape = ops.concatenate([batch_dims, ops.shape(results)[1:]], axis=0)
             results = ops.reshape(results, new_shape)
 
         return results
