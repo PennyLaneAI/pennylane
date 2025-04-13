@@ -920,7 +920,7 @@ class TestPowMethod:
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
     @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
-    def test_ISWAP_sqaure_root(self, n):
+    def test_ISWAP_square_root(self, n):
         """Test that SISWAP is the square root of ISWAP."""
         op = qml.ISWAP(wires=(0, 1))
 
