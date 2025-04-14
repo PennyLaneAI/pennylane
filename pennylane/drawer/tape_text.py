@@ -411,7 +411,7 @@ def tape_text(
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
-    cache.setdefault("observables", [])
+    cache.setdefault("large_ops", [])
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
