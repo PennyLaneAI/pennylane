@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added decomposition to ``qml.QubitUnitary`` for any number of qubits.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
