@@ -33,6 +33,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
+
 @lru_cache
 def map_to_bloq():
     @singledispatch
@@ -44,15 +45,19 @@ def map_to_bloq():
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
         from qualtran.bloqs.phase_estimation import RectangularWindowState
 
-        return TextbookQPE(unitary=map_to_bloq()(op.hyperparameters["unitary"]), ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])))
-    
+        return TextbookQPE(
+            unitary=map_to_bloq()(op.hyperparameters["unitary"]),
+            ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+        )
+
     @_to_qt_bloq.register
     def _(op: qml.GlobalPhase):
         from qualtran.bloqs.basic_gates import GlobalPhase
-        
-        return GlobalPhase(exponent=op.data[0]/np.pi)
+
+        return GlobalPhase(exponent=op.data[0] / np.pi)
 
     return _to_qt_bloq
+
 
 # pylint: disable=unused-argument
 @lru_cache
@@ -533,6 +538,7 @@ def _gather_input_soqs(
             flat_soqs.append(qreg_to_qvar[qureg])
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
+
 
 @frozen
 class ToBloq(qt.Bloq):
