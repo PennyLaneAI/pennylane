@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the _add_obj function for adding an object to the text drawer.
+This module contains the `_add_obj` function and its related utilities for adding objects to the text drawer.
+
+The `_add_obj` function is a generic function that dispatches to specific implementations based on the type of the object being added. These implementations handle various types of quantum operations, measurements, and other constructs, ensuring they are properly represented in the text-based quantum circuit visualization.
+
+Key Features:
+- Handles conditional operators, controlled operations, and mid-measurement processes.
+- Supports grouping symbols to visually indicate the extent of multi-wire operations.
+- Provides specialized handling for mid-circuit measurement statistics.
+
+Usage:
+The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 # pylint: disable=unused-argument
 from functools import singledispatch
