@@ -350,7 +350,7 @@ def add_3_aval(_):
 @ConstAdder.register_primitive(add_3)
 def handle_add_3(self, x):  # pylint: disable=unused-argument
     """This custom registration adds a closure variable to the input to register it as
-    a const rather than a jax.core.Literal."""
+    a const rather than a jax.extend.core.Literal."""
     return x + scalar
 
 

@@ -728,7 +728,7 @@ def _validate_abstract_values(
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
             for s1, s2 in zip(shape1, shape2, strict=True):
-                if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
+                if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)

@@ -156,7 +156,7 @@ def test_plxpr_to_plxpr():
     jaxpr = jax.make_jaxpr(circuit)(*args)
     transformed_jaxpr = unitary_to_rot_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
 
     # Qubit Unitary decomposition
     with qml.capture.pause():

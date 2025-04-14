@@ -97,9 +97,9 @@ class TestMidMeasureCapture:
         jaxpr = jax.make_jaxpr(f)(1.0)
 
         assert jaxpr.eqns[1].primitive.name == "measure"
-        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.core.Var)
+        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.extend.core.Var)
         assert jaxpr.eqns[2].primitive.name == "measure"
-        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.core.Var)
+        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.extend.core.Var)
 
         assert jaxpr.eqns[3].primitive.name == p_name
         assert jaxpr.eqns[3].invars == [mcm1, mcm2] if multi_mcm else [mcm1]

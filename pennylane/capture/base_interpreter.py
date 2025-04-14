@@ -91,8 +91,8 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
 
 def jaxpr_to_jaxpr(
-    interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
-) -> "jax.core.Jaxpr":
+    interpreter: "PlxprInterpreter", jaxpr: "jax.extend.core.Jaxpr", consts, *args
+) -> "jax.extend.core.ClosedJaxpr":
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     f = partial(interpreter.eval, jaxpr, consts)
@@ -295,11 +295,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(op)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
 
         Args:
-            eqn (jax.core.JaxprEqn): a jax equation for an operator.
+            eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
 
         See also: :meth:`~.interpret_operation`.
 
@@ -311,11 +311,11 @@ class PlxprInterpreter:
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            eqn (jax.core.JaxprEqn)
+            eqn (jax.extend.core.JaxprEqn)
 
         See also :meth:`~.interpret_measurement`.
 
@@ -337,11 +337,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+    def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
-            jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+            jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
             consts (list[TensorLike]): the constant variables for the jaxpr
             *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -709,11 +709,11 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
     """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
-        jaxpr (jax.core.Jaxpr): a jaxpr
+        jaxpr (jax.extend.core.Jaxpr): a jaxpr
         consts (list[TensorLike]): the constants for the jaxpr
         *args (TensorLike): the arguments for the jaxpr
 

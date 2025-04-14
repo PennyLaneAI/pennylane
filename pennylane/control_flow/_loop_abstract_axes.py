@@ -101,7 +101,7 @@ def get_dummy_arg(arg):
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.core.Jaxpr",
+    jaxpr: "jax.extend.core.Jaxpr",
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
 ) -> Optional[str]:

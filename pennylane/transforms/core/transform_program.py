@@ -117,9 +117,10 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
+    from importlib import metadata
+
     import jax  # pylint: disable=import-outside-toplevel
     from packaging.version import Version
-    from importlib import metadata
 
     if Version(metadata.version("jax")) == Version("0.5.0"):
         tag = jax.core.TraceTag()
@@ -637,12 +638,12 @@ class TransformProgram:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr":
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr":
         # pylint: disable=import-outside-toplevel
         import jax
 
-        cur_jaxpr = jax.core.ClosedJaxpr(jaxpr, consts)
+        cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
@@ -651,8 +652,8 @@ class TransformProgram:
 
     @overload
     def __call__(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr": ...
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr": ...
     @overload
     def __call__(
         self, tapes: QuantumScriptBatch
