@@ -17,6 +17,7 @@ module.
 [(#7058)](https://github.com/PennyLaneAI/pennylane/pull/7058)
 [(#7064)](https://github.com/PennyLaneAI/pennylane/pull/7064)
 [(#6951)](https://github.com/PennyLaneAI/pennylane/pull/6951)
+[(#7223)](https://github.com/PennyLaneAI/pennylane/pull/7223)
 
 PennyLane's new decomposition system offers a graph-based alternative to the current system, which provides 
 better resource efficiency and versatility by traversing an internal graph structure that is weighted 
@@ -284,6 +285,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
   and target qubits of controlled operations when experimental program capture is enabled.
   It follows the same API as `qml.transforms.commute_controlled`.
   [(#6946)](https://github.com/PennyLaneAI/pennylane/pull/6946)
+  [(#7247)](https://github.com/PennyLaneAI/pennylane/pull/7247)
 
 * `qml.QNode` can now cache plxpr. When executing a `QNode` for the first time, its plxpr representation will
   be cached based on the abstract evaluation of the arguments. Later executions that have arguments with the
@@ -712,6 +714,7 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * `PSWAP.matrix()` and `PSWAP.eigvals()` now support parameter broadcasting.
   [(#7179)](https://github.com/PennyLaneAI/pennylane/pull/7179)
+  [(#7228)](https://github.com/PennyLaneAI/pennylane/pull/7228)
 
 * `Device.eval_jaxpr` now accepts an `execution_config` keyword argument.
   [(#6991)](https://github.com/PennyLaneAI/pennylane/pull/6991)
@@ -1136,6 +1139,9 @@ With `qml.decompositions.enable_graph()`, the following new features are availab
 
 * Minor docstring upgrades for `qml.labs.trotter_error`.
   [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
+
+* Function `qml.labs.trotter_error.vibronic_fragments` now returns `RealspaceMatrix` objects with the correct number of electronic states.
+  [(#7251)](https://github.com/PennyLaneAI/pennylane/pull/7251)
 
 <h3>Contributors ✍️</h3>
 

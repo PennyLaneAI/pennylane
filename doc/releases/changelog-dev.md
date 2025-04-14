@@ -12,15 +12,19 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Add new `pennylane.exceptions` module for custom errors.
+* Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
+  [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Andrija Paurevic,

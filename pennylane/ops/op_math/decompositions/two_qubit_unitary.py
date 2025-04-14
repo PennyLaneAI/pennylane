@@ -106,7 +106,7 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 global_arrays_name = ["E", "Edag", "CNOT01", "CNOT10", "SWAP", "S_SX", "v_one_cnot", "q_one_cnot"]
 
 
-def _convert_to_su4(U):
+def _convert_to_su4(U, return_global_phase=False):
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
@@ -120,6 +120,8 @@ def _convert_to_su4(U):
     det = math.linalg.det(U)
 
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
+    if return_global_phase:
+        return math.cast_like(U, det) * math.exp(exp_angle), qml.math.angle(math.exp(exp_angle))
     return math.cast_like(U, det) * math.exp(exp_angle)
 
 
@@ -291,8 +293,8 @@ def _decomposition_0_cnots(U, wires):
      -╰U- = -B-
     """
     A, B = _su2su2_to_tensor_products(U)
-    A_ops = one_qubit_decomposition(A, wires[0])
-    B_ops = one_qubit_decomposition(B, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[0], return_global_phase=True)
+    B_ops = one_qubit_decomposition(B, wires[1], return_global_phase=True)
     return A_ops + B_ops
 
 
@@ -353,7 +355,7 @@ def _decomposition_1_cnot(U, wires):
     C_ops = one_qubit_decomposition(C, wires[0])
     D_ops = one_qubit_decomposition(D, wires[1])
 
-    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
+    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def _decomposition_2_cnots(U, wires):
@@ -532,7 +534,7 @@ def _decomposition_3_cnots(U, wires):
     D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def two_qubit_decomposition(U, wires):
@@ -629,7 +631,8 @@ def two_qubit_decomposition(U, wires):
         raise qml.operation.DecompositionUndefinedError(
             "two_qubit_decomposition does not accept sparse matrics."
         )
-    U = _convert_to_su4(U)
+
+    U, angle = _convert_to_su4(U, return_global_phase=True)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
@@ -649,6 +652,7 @@ def two_qubit_decomposition(U, wires):
         else:
             decomp = _decomposition_3_cnots(U, wires)
 
+    decomp.append(qml.GlobalPhase(angle))
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.queuing.QueuingManager.active_context()
 
