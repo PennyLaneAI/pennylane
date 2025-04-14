@@ -73,7 +73,6 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.devices import Tracker
 from pennylane.registers import registers
 from pennylane.io import (
     from_pyquil,
@@ -173,6 +172,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
