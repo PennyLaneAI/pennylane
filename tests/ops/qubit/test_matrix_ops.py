@@ -529,7 +529,7 @@ class TestQubitUnitary:
 
         tape = qml.workflow.construct_tape(circuit)()
         for op1, op2 in zip(tape.operations, ops_decompostion):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
