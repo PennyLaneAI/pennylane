@@ -1454,12 +1454,6 @@ class MultiControlledX(ControlledOp):
             )
         self.work_wire_type = work_wire_type
 
-        if work_wire_type not in {"clean", "dirty"}:
-            raise ValueError(
-                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
-            )
-        self.work_wire_type = work_wire_type
-
         self._validate_control_values(control_values)
 
         if len(wires) == 0:
