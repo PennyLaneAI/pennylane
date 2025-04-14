@@ -40,11 +40,6 @@ path = "pennylane.control_flow"
 layer = "core"
 
 [[modules]]
-path = "pennylane.kernels"
-depends_on = ["pennylane.math"]
-layer = "core"
-
-[[modules]]
 path = "pennylane.math"
 utility = true
 depends_on = ["pennylane._grad", "pennylane.numpy"]
@@ -136,6 +131,10 @@ layer = "auxiliary"
 
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
+
+[[modules]]
+path = "pennylane.kernels"
+layer = "tertiary"
 
 [[modules]]
 path = "pennylane.data"
