@@ -29,7 +29,7 @@ def _rotation_resources(epsilon=10e-3):
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     Args:
         epsilon (float): the acceptable error threshold for the approximation
@@ -200,7 +200,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RX`
 
@@ -233,7 +233,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
         return _rotation_resources(epsilon=config["error_rx"])
@@ -356,7 +356,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RY`
 
@@ -386,7 +386,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Args:
             config (dict): a dictionary containing the error threshold
@@ -504,7 +504,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RZ`
 
@@ -534,7 +534,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Args:
             config (dict): a dictionary containing the error threshold
