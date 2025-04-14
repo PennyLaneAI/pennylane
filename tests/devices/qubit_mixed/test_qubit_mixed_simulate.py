@@ -92,8 +92,6 @@ class TestStatePrepBase:
         state = np.zeros((1, 4))
         state[0, 0] = 1.0
 
-        device = qml.device("default.mixed", wires=[0, 1])
-
         qs = qml.tape.QuantumScript(
             ops=[qml.StatePrep(state, wires=[0, 1]), qml.X(0)],
             measurements=[qml.expval(qml.Z(0)), qml.state()],
