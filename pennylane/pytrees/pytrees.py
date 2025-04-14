@@ -296,6 +296,8 @@ def _unflatten(new_data, structure):
     return unflatten_registrations[structure.type_](children, structure.metadata)
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=no-member
 register_pytree(
     autograd.builtins.list,
     lambda obj: (list(obj), ()),

@@ -422,7 +422,8 @@ class KerasLayer(Layer):
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
-
+            # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+            # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
             results = tf.reshape(results, new_shape)
 

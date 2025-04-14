@@ -384,6 +384,8 @@ def _(op: PauliZ):
     return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=unused-argument
 @_pauli_sentence.register
 def _(op: Identity):
     return PauliSentence({PauliWord({}): 1.0})

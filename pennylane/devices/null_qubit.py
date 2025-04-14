@@ -411,6 +411,8 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=unused-argument
     def eval_jaxpr(
         self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
     ) -> list:

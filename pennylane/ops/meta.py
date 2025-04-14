@@ -124,6 +124,8 @@ class WireCut(Operation):
         wires = Wires(wires)
         super().__init__(wires=wires, id=id)
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).

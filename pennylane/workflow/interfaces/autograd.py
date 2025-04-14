@@ -139,8 +139,8 @@ def autograd_execute(
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    # pylint misidentifies autograd.builtins as a dict
-
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
@@ -156,7 +156,8 @@ def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     """
     if isinstance(result, dict):
         return result
-
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=no-member
     if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
         return tuple(_to_autograd(r) for r in result)
     return autograd.numpy.array(result)

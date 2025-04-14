@@ -526,6 +526,8 @@ class TransformProgram:
         # autograd and tf cant handle pytrees, so need to unsqueeze the squeezing
         # done in _classical_preprocessing
         tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+        # pylint: disable=not-callable
         tapes, _ = self[:index]((tape,))
         multi_tapes = len(tapes) > 1
         if not multi_tapes:

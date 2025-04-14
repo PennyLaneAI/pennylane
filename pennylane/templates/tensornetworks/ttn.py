@@ -15,6 +15,9 @@
 Contains the TTN template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=no-member, unused-argument
 import warnings
 
 import numpy as np

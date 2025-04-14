@@ -327,6 +327,8 @@ def _register_torch_vjp():
     # pylint: disable=import-outside-toplevel
     import torch
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=abstract-method, arguments-differ
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod
         def forward(ctx, dm0, dm1):

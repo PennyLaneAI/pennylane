@@ -365,6 +365,8 @@ class SparseHamiltonian(Observable):
         return H.toarray()
 
     # pylint: disable=arguments-differ
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).

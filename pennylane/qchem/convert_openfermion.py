@@ -157,9 +157,11 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
-# pylint: disable=protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=unused-argument
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
+    # pylint: disable=protected-access
     openfermion = _import_of()
 
     if wires:

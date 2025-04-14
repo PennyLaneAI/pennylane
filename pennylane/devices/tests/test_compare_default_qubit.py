@@ -252,6 +252,8 @@ class TestComparison:
 
         layers = 3
         rng = pnp.random.default_rng(1967)
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+        # pylint: disable=no-member
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():

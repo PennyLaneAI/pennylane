@@ -15,6 +15,9 @@
 This module contains the _add_obj function for adding an object to the text drawer.
 """
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=unused-argument
+
 from functools import singledispatch
 
 import pennylane as qml

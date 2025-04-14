@@ -422,6 +422,8 @@ class Sum(CompositeOp):
 
         return new_summands
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=arguments-differ
     @handle_recursion_error
     def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:

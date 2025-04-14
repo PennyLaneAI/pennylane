@@ -131,6 +131,8 @@ class ControlledSequence(SymbolicOp, Operation):
         )
         return new_op
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
         r"""Representation of the operator as a product of other operators.

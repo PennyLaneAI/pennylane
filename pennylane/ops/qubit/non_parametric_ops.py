@@ -792,6 +792,8 @@ class PauliZ(Observable, Operation):
         """
         return qml.pauli.pauli_eigs(1)
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_diagonalizing_gates(
         wires: WiresLike,

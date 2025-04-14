@@ -557,8 +557,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 # If the single-term measurement already exists, it can be reused by all original
                 # measurements. In this case, add the existing single-term measurement to the list
                 # corresponding to this original measurement.
-
-                elif (sm := qml.expval(o)) in single_term_obs_mps:
+                elif sm := qml.expval(o) in single_term_obs_mps:
                     single_term_obs_mps[sm][0].append(mp_idx)
                     single_term_obs_mps[sm][1].append(c)
                 # Otherwise, add this new measurement to the list of single-term measurements.

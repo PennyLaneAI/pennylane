@@ -14,6 +14,10 @@
 """
 This submodule offers custom primitives for the PennyLane capture module.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=abstract-method
+
 from enum import Enum
 from typing import Union
 

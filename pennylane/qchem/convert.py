@@ -14,6 +14,10 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=too-many-function-args
+
 import warnings
 from itertools import product
 
