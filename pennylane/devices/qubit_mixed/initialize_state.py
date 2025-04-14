@@ -48,15 +48,15 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
+    explicit_batched = prep_operation.batch_size is not None  # it could be 1
     if isinstance(prep_operation, qml.QubitDensityMatrix):
         density_matrix = prep_operation.data
-
     else:  # Use pure state prep
         pure_state = prep_operation.state_vector(wire_order=list(wires))
         batch_size = math.get_batch_size(
             pure_state, expected_shape=[], expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
-        explicit_batched = prep_operation.batch_size is not None  # it could be 1
+
         if batch_size == 1:
             density_matrix = np.outer(pure_state, np.conj(pure_state))
             if explicit_batched:
