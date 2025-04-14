@@ -15,6 +15,7 @@
 Contains FTQC/MBQC-specific operations
 """
 
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import allclose, is_abstract, requires_grad
 from pennylane.operation import Operation
 from pennylane.ops import RX, RZ
@@ -74,7 +75,7 @@ class RotXZX(Operation):
 
     @property
     def resource_params(self) -> dict:
-        pass
+        return {}
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):  # pylint: disable=arguments-differ
@@ -113,3 +114,13 @@ class RotXZX(Operation):
 
     def single_qubit_rot_angles(self):
         return self.data
+
+
+@register_resources({RX: 2, RZ: 1})
+def _xzx_decompose(phi, theta, omega, wires, **__):
+    RX(phi, wires=wires)
+    RZ(theta, wires=wires)
+    RX(omega, wires=wires)
+
+
+add_decomps(RotXZX, _xzx_decompose)
