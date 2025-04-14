@@ -26,7 +26,11 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.ops.qubit.matrix_ops import (
+    _walsh_hadamard_transform,
+    fractional_matrix_power,
+    _compute_udv,
+)
 from pennylane.wires import Wires
 
 
@@ -529,6 +533,50 @@ class TestQubitUnitary:
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.QubitUnitary.compute_decomposition(U, wires=[0, 1, 2])
+
+    @pytest.mark.parametrize(
+        "U, wires",
+        [
+            (qml.matrix(qml.CRX(2, wires=[1, 0])), [0, 1]),
+            (qml.matrix(qml.QFT(wires=[0, 1, 2, 3, 4])), [0, 1, 2, 3, 4]),
+            (qml.matrix(qml.RX(1, 0) @ qml.CRY(2, [1, 2])), [0, 1, 2]),
+            (qml.matrix(qml.GroverOperator([0, 1, 2, 3, 4, 5])), [0, 1, 2, 3, 4, 5]),
+        ],
+    )
+    def test_correctness_decomposition(self, U, wires):
+        """Tests that the decomposition is correct"""
+
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(U, wires=wires)
+
+        assert qml.math.allclose(
+            U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
+        )
+
+        assert "QubitUnitary" not in [op.name for op in ops_decompostion]
+
+    def test_compute_udv(self):
+        """Test the helper function `_compute_udv` used in the QubitUnitary decomposition."""
+
+        a = qml.matrix(qml.RY(1, 0))
+        b = qml.matrix(qml.RX(2, 0))
+
+        u, d, v = _compute_udv(a, b)
+        d = np.diag(d)
+
+        initial = np.block(
+            [[a, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), b]]
+        )
+        u_block = np.block(
+            [[u, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), u]]
+        )
+        v_block = np.block(
+            [[v, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), v]]
+        )
+        d_block = np.block(
+            [[d, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), np.conj(d)]]
+        )
+
+        assert np.allclose(initial, u_block @ d_block @ v_block)
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""

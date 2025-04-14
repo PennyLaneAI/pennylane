@@ -86,13 +86,21 @@ def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
     return qml.math.reshape(qml.math.transpose(D), orig_shape)
 
 
-def compute_udv(a, b):
+def _compute_udv(a, b):
+    """Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
+    of equation (36) [https://arxiv.org/pdf/quant-ph/0504100]."""
+
+    # Calculates u and d diagonalizing ab^dagger (Eq.39)
     ab_dagger = a @ b.conj().T
-    eigenvalues, u = sp.linalg.eig(ab_dagger)
+    d_square, u = sp.linalg.eig(ab_dagger)
     u, _ = sp.linalg.qr(u)
-    d = np.diag(np.exp(1j * np.angle(eigenvalues) / 2))
+    d = qml.math.diag(qml.math.exp(1j * qml.math.angle(d_square) / 2))  # complex square root
+
+    # Calculates v using Eq.40
     v = d.conj().T @ u.conj().T @ a
+
     return u, np.diag(d), v
+
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
@@ -302,18 +310,36 @@ class QubitUnitary(Operation):
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
         ops = []
-        (U1, U2), theta, (Vd1, Vd2) = sp.linalg.cossin(U, p=2 ** (len(wires) - 1), q=2 ** (len(wires) - 1), separate=True)
-        vd11, dv, vd12 = compute_udv(Vd1, Vd2)
-        u11, du, u12 = compute_udv(U1, U2)
 
-        ops += QubitUnitary.compute_decomposition(vd12, wires=wires[1:])
-        ops.append(qml.SelectPauliRot(-2 * np.angle(dv), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"))
-        ops += QubitUnitary.compute_decomposition(vd11, wires=wires[1:])
+        # Combining the two equalities in Fig 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+        # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexers (qml.SelectPauliRot)
 
-        ops.append(qml.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"))
+        (u1, u2), theta, (v1_dagg, v2_dagg) = sp.linalg.cossin(
+            U, p=2 ** (len(wires) - 1), q=2 ** (len(wires) - 1), separate=True
+        )
+        v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+        u11, diag_u, u12 = _compute_udv(u1, u2)
+
+        ops += QubitUnitary.compute_decomposition(v12_dagg, wires=wires[1:])
+        ops.append(
+            qml.SelectPauliRot(
+                -2 * np.angle(diag_v), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"
+            )
+        )
+        ops += QubitUnitary.compute_decomposition(v11_dagg, wires=wires[1:])
+
+        ops.append(
+            qml.SelectPauliRot(
+                2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
+            )
+        )
 
         ops += QubitUnitary.compute_decomposition(u12, wires=wires[1:])
-        ops.append(qml.SelectPauliRot(-2 * np.angle(du), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"))
+        ops.append(
+            qml.SelectPauliRot(
+                -2 * np.angle(diag_u), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"
+            )
+        )
         ops += QubitUnitary.compute_decomposition(u11, wires=wires[1:])
 
         return ops
