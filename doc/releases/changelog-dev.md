@@ -12,7 +12,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Clean up `__init__.py` import files to be explicit in what they import.
+* Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
 <h3>Documentation 📝</h3>
