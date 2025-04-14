@@ -527,7 +527,6 @@ class TestQubitUnitary:
         with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
             qml.QubitUnitary(U, wires=[0, 1]).decomposition()
 
-
     @pytest.mark.parametrize(
         "U, wires",
         [
