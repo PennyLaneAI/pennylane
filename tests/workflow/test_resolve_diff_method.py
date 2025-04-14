@@ -15,6 +15,7 @@
 """Unit tests for the `qml.workflow.resolution._resolve_diff_method` helper function"""
 
 import pytest
+from custom_devices import CustomDeviceFactory
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
@@ -27,11 +28,8 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDeviceWithDiffMethod(qml.devices.Device):
+class CustomDeviceWithDiffMethod(CustomDeviceFactory()):
     """A device that defines its own derivative."""
-
-    def execute(self, circuits, execution_config=None):
-        return 0
 
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
@@ -39,30 +37,23 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
 
 
 # pylint: disable=unused-argument, too-few-public-methods
-class CustomDevice(qml.devices.Device):
+class CustomDevice(CustomDeviceFactory()):
     """A null device that just returns 0."""
 
-    def execute(self, circuits, execution_config=None):
-        return 0
+    pass
 
 
 # pylint: disable=unused-argument
-class DerivativeDevice(qml.devices.Device):
+class DerivativeDevice(CustomDeviceFactory()):
     """A device that says it supports device derivatives."""
-
-    def execute(self, circuits, execution_config=None):
-        return 0
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config.gradient_method == "device"
 
 
 # pylint: disable=unused-argument
-class BackpropDevice(qml.devices.Device):
+class BackpropDevice(CustomDeviceFactory()):
     """A device that says it supports backpropagation."""
-
-    def execute(self, circuits, execution_config=None):
-        return 0
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config.gradient_method == "backprop"
