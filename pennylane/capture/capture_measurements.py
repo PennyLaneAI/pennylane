@@ -103,8 +103,6 @@ def _get_abstract_measurement():
         def __hash__(self):
             return hash("AbstractMeasurement")
 
-    jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
-
     return AbstractMeasurement
 
 

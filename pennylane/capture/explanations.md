@@ -379,8 +379,6 @@ class AbstractPrimitiveClass(jax.core.AbstractValue):
 
     def __hash__(self):
         return hash("AbstractPrimitiveClass")
-
-jax.core.raise_to_shaped_mappings[AbstractPrimitiveClass] = lambda aval, _: aval
 ```
 
 Now we can redefine our class to use this abstract class

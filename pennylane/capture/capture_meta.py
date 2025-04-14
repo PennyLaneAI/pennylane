@@ -47,8 +47,6 @@ class CaptureMeta(type):
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 
-        jax.core.raise_to_shaped_mappings[AbstractMyObj] = lambda aval, _: aval
-
         class MyObj(metaclass=qml.capture.CaptureMeta):
 
             primitive = jax.extend.core.Primitive("MyObj")
