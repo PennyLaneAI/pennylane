@@ -117,44 +117,23 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
-    from importlib import metadata
-
     import jax  # pylint: disable=import-outside-toplevel
-    from packaging.version import Version
 
-    if Version(metadata.version("jax")) == Version("0.5.0"):
-        tag = jax.core.TraceTag()
-        with jax.core.take_current_trace() as parent_trace:
-            trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
-            args_jvp = [
-                (
-                    jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-                    if i in argnums
-                    else arg
-                )
-                for i, arg in enumerate(args)
-            ]
-            with jax.core.set_current_trace(trace):
-                tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
-                tapes, _ = program((tape,))
+    tag = jax.core.TraceTag()
+    with jax.core.take_current_trace() as parent_trace:
+        trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
+        args_jvp = [
+            (
+                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                if i in argnums
+                else arg
+            )
+            for i, arg in enumerate(args)
+        ]
+        with jax.core.set_current_trace(trace):
+            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tapes, _ = program((tape,))
 
-        return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
-
-    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-        trace = jax.interpreters.ad.JVPTrace(main, 0)
-
-    args_jvp = [
-        (
-            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-            if i in argnums
-            else arg
-        )
-        for i, arg in enumerate(args)
-    ]
-
-    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
-    tapes, _ = program((tape,))
-    del trace
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 

@@ -333,7 +333,7 @@ class ConstAdder(PlxprInterpreter):
     that consts propagate through higher order primitives correctly."""
 
 
-add_3 = jax.core.Primitive("add_3")
+add_3 = jax.extend.core.Primitive("add_3")
 scalar = jnp.array(3)
 
 

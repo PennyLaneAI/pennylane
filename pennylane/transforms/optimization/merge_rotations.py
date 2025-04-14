@@ -34,7 +34,7 @@ def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
-        from jax.core import Jaxpr
+        from jax.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim

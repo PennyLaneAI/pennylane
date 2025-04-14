@@ -19,7 +19,7 @@ from typing import Callable, Sequence, Union
 has_jax = True
 try:
     import jax
-    from jax._src.interpreters import partial_eval as pe
+    from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -207,7 +207,7 @@ def register_custom_staging_rule(
             out_tracers, returned_vars = (), ()
 
         invars = [jaxpr_trace.getvar(x) for x in tracers]
-        eqn = pe.new_jaxpr_eqn(
+        eqn = jax.core.new_jaxpr_eqn(
             invars,
             returned_vars,
             primitive,
