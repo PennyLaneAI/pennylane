@@ -87,6 +87,21 @@ class TestStatePrepBase:
         dm = circuit()
         assert np.allclose(dm0, dm)
 
+    def test_state_prep_special(self):
+        """Test a special case, when the state is of shape (1, n)"""
+        state = np.zeros((1, 4))
+        state[0, 0] = 1.0
+
+        device = qml.device("default.mixed", wires=[0, 1])
+
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=[0, 1]), qml.X(0)],
+            measurements=[qml.expval(qml.Z(0)), qml.state()],
+        )
+        res, dm = simulate(qs)
+        assert np.allclose(res, -1.0)
+        assert dm.shape == (1, 4, 4)
+
 
 @pytest.mark.parametrize("wires", [0, 1, 2])
 class TestBasicCircuit:

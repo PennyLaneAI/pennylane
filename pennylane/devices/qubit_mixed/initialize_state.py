@@ -56,14 +56,18 @@ def create_initial_state(
         batch_size = math.get_batch_size(
             pure_state, expected_shape=[], expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
+        explicit_batched = prep_operation.batch_size is not None  # it could be 1
         if batch_size == 1:
             density_matrix = np.outer(pure_state, np.conj(pure_state))
+            if explicit_batched:
+                # Create a dummy dim
+                density_matrix = math.stack([density_matrix])
         else:
             density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
-    return _post_process(density_matrix, num_axes, like)
+    return _post_process(density_matrix, num_axes, like, explicit_batched)
 
 
-def _post_process(density_matrix, num_axes, like):
+def _post_process(density_matrix, num_axes, like, explicit_batched=False):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -75,6 +79,6 @@ def _post_process(density_matrix, num_axes, like):
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
-    if density_matrix.shape[0] == 1:  # non batch
+    if density_matrix.shape[0] == 1 and not explicit_batched:  # non batch
         density_matrix = np.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)
