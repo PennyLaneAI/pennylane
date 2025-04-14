@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* The transform `convert_to_mbqc_gateset` is added to the `ftqc` to convert arbitrary 
+  circuits to a limited gate-set that can be translated to the MBQC formalism.
+  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
+  gate set that can be translated to the MBQC formalism.
+  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
 <h3>Improvements 🛠</h3>
 
 <h3>Breaking changes 💔</h3>
@@ -24,3 +32,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
+Lillian Frederiksen
