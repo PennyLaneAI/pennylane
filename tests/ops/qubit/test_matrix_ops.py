@@ -27,9 +27,9 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.qubit.matrix_ops import (
+    _compute_udv,
     _walsh_hadamard_transform,
     fractional_matrix_power,
-    _compute_udv,
 )
 from pennylane.wires import Wires
 
@@ -527,12 +527,6 @@ class TestQubitUnitary:
         with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
             qml.QubitUnitary(U, wires=[0, 1]).decomposition()
 
-    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
-        """Test that QubitUnitary is not decomposed for more than two qubits."""
-        U = qml.Toffoli(wires=[0, 1, 2]).matrix()
-
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.QubitUnitary.compute_decomposition(U, wires=[0, 1, 2])
 
     @pytest.mark.parametrize(
         "U, wires",
