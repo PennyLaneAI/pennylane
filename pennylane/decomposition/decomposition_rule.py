@@ -48,7 +48,7 @@ def register_resources(
         resources (dict or Callable): a dictionary mapping unique operators within the given
             ``qfunc`` to their number of occurrences therein. If a function is provided instead
             of a static dictionary, a dictionary must be returned from the function. For more
-            information, consult the Quantum Functions as Decomposition Rules section below.
+            information, consult the "Quantum Functions as Decomposition Rules" section below.
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
 
@@ -65,17 +65,18 @@ def register_resources(
 
     .. code-block:: python
 
+        from functools import partial
         import pennylane as qml
 
         qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def my_cnot(wires):
+        def my_cnot(wires, **_):
             qml.H(wires=wires[1])
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: my_cnot})
+        @partial(qml.transforms.decompose, gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -110,7 +111,7 @@ def register_resources(
         on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
 
         >>> qml.CNOT.resource_keys
-        {}
+        set()
         >>> qml.MultiRZ.resource_keys
         {'num_wires'}
 
@@ -136,7 +137,7 @@ def register_resources(
 
         Additionally, if a custom decomposition for an operator contains gates that, in turn,
         have properties that affect their own decompositions, this information must also be
-        included in the resource function. For example, if the decomposition rule produces a
+        included in the resource function. For example, if a decomposition rule produces a
         ``MultiRZ`` gate, it is not sufficient to declare the existence of a ``MultiRZ`` in the
         resource function; the number of wires it acts on must also be specified.
 
@@ -144,13 +145,13 @@ def register_resources(
 
         .. code-block:: python
 
-            def my_decomp(thata, wires):
+            def my_decomp(theta, wires):
                 qml.MultiRZ(theta, wires=wires[:-1])
                 qml.MultiRZ(theta, wires=wires)
                 qml.MultiRZ(theta, wires=wires[1:])
 
-        It contains two ``MultiRZ`` gates acting on ``num_wires - 1`` wires (the first and last
-        ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``num_wires`` wires. This
+        It contains two ``MultiRZ`` gates acting on ``len(wires) - 1`` wires (the first and last
+        ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``len(wires)`` wires. This
         distinction must be reflected in the resource function:
 
         .. code-block:: python
@@ -163,11 +164,11 @@ def register_resources(
 
             my_decomp = qml.register_resources(my_resources, my_decomp)
 
-        where ``qml.resource_rep`` is a utility function that wraps an operator type and any
+        where :func:`~pennylane.resource_rep` is a utility function that wraps an operator type and any
         additional information relevant to its resource estimate into a compressed data structure.
         To check what (if any) additional information is required to declare an operator type
-        in a resource function, refer to the ``resource_keys`` attribute of the operator class.
-        Operators with non-empty ``resource_keys`` must be declared using ``qml.resource_rep``,
+        in a resource function, refer to the ``resource_keys`` attribute of the :class:`~pennylane.operation.Operator`
+        class. Operators with non-empty ``resource_keys`` must be declared using ``qml.resource_rep``,
         with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
