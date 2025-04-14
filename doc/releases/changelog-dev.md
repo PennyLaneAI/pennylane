@@ -23,8 +23,12 @@
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
 
+* Using finite differences with program capture without x64 mode enabled now raises a warning.
+  [(#7282)](https://github.com/PennyLaneAI/pennylane/pull/7282)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
+Christina Lee
