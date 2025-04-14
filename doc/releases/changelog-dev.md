@@ -12,6 +12,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Introduce module dependency management using `tach`.
+  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
+Guillermo Alonso-Linaje,
+Andrija Paurevic
