@@ -64,7 +64,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.Prod,
                 qops.SProd,
                 qops.Sum,
-                # pennylane/ops/qubit/matrix_qops.py
+                # pennylane/ops/qubit/matrix_ops.py
                 qops.QubitUnitary,
                 qops.DiagonalQubitUnitary,
                 # pennylane/ops/qubit/non_parametric_qml.py
@@ -109,7 +109,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.U1,
                 qops.U2,
                 qops.U3,
-                # pennylane/ops/qubit/qchem_qops.py
+                # pennylane/ops/qubit/qchem_ops.py
                 qops.SingleExcitation,
                 qops.SingleExcitationMinus,
                 qops.SingleExcitationPlus,
@@ -126,7 +126,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
                 qops.QutritUnitary,
-                # pennylane/ops/qutrit/non_parametric_qops.py
+                # pennylane/ops/qutrit/non_parametric_ops.py
                 qops.TShift,
                 qops.TClock,
                 qops.TAdd,
@@ -173,7 +173,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.FockStateProjector,
                 # pennylane/ops/identity.py
                 qops.Identity,
-                # pennylane/ops/op_math/controlled_qops.py
+                # pennylane/ops/op_math/controlled_ops.py
                 qops.ControlledQubitUnitary,
                 qops.ControlledPhaseShift,
                 qops.CRX,
@@ -250,7 +250,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         with QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
-                op_cls = self._qops_dict()[op_class_name]
+                op_cls = self._supported_ops_dict()[op_class_name]
                 if op_cls is qops.LinearCombination:
                     ops.append(
                         qops.LinearCombination(
@@ -281,7 +281,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _qops_dict(cls) -> dict[str, Type[Operator]]:
+    def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
         ops_dict = {op.__name__: op for op in cls.supported_ops()}
         ops_dict["Hamiltonian"] = qops.LinearCombination
