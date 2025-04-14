@@ -168,7 +168,46 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
 
 
-# This gate E is called the "magic basis". It can be used to convert between
-# SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
-E_dag = E.conj().T
+def su2su2_to_tensor_products(U):
+    r"""Given a matrix :math:`U = A \otimes B` in SU(2) x SU(2), extract A and B
+
+    This process has been described in detail in the Appendix of Coffey & Deiotte
+    https://link.springer.com/article/10.1007/s11128-009-0156-3
+
+    """
+
+    # First, write A = [[a1, a2], [-a2*, a1*]], which we can do for any SU(2) element.
+    # Then, A \otimes B = [[a1 B, a2 B], [-a2*B, a1*B]] = [[C1, C2], [C3, C4]]
+    # where the Ci are 2x2 matrices.
+    C1 = U[0:2, 0:2]
+    C2 = U[0:2, 2:4]
+    C3 = U[2:4, 0:2]
+    C4 = U[2:4, 2:4]
+
+    # From the definition of A \otimes B, C1 C4^\dag = a1^2 I, so we can extract a1
+    C14 = math.dot(C1, math.conj(math.T(C4)))
+    a1 = math.sqrt(math.cast_like(C14[0, 0], 1j))
+
+    # Similarly, -C2 C3^\dag = a2^2 I, so we can extract a2
+    C23 = math.dot(C2, math.conj(math.T(C3)))
+    a2 = math.sqrt(-math.cast_like(C23[0, 0], 1j))
+
+    # This gets us a1, a2 up to a sign. To resolve the sign, ensure that
+    # C1 C2^dag = a1 a2* I
+    C12 = math.dot(C1, math.conj(math.T(C2)))
+    a2 = math.cond(math.allclose(a1 * math.conj(a2), C12[0, 0]), lambda: a2, lambda: -1 * a2, ())
+
+    # Construct A
+    A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
+
+    # Next, extract B. Can do from any of the C, just need to be careful in
+    # case one of the elements of A is 0.
+    # We use B1 unless division by 0 would cause all elements to be inf.
+    B = math.cond(
+        math.allclose(a1, 0.0, atol=1e-6),
+        lambda: C2 / math.cast_like(a2, 1j),
+        lambda: C1 / math.cast_like(a1, 1j),
+        (),
+    )
+
+    return math.convert_like(A, U), math.convert_like(B, U)
