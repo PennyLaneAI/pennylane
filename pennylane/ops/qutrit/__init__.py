@@ -20,7 +20,7 @@ The operations are in one file:
   either unitary or hermitian depending.
 """
 
-from ..identity import Identity
+from ..identity import Identity, I
 from .channel import (
     QutritDepolarizingChannel,
     QutritAmplitudeDamping,
