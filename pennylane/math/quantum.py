@@ -25,7 +25,7 @@ from numpy import float64, sqrt  # pylint:disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 from pennylane import math
-from pennylane.math.matrix_manipulation import _permute_dense_matrix
+from .matrix_manipulation import _permute_dense_matrix
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
