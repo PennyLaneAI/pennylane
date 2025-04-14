@@ -341,7 +341,6 @@ class QubitUnitary(Operation):
             )
         )
         ops += QubitUnitary.compute_decomposition(u11, wires=wires[1:])
-
         return ops
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
