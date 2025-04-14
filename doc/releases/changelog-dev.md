@@ -16,6 +16,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug when special input shapes were used for ``StatePrep`` in ``default.mixed``.
+  [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
+
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
+Guillermo Alonso-Linaje,
+Yushao Chen,
