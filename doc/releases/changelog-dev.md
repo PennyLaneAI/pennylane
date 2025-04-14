@@ -12,6 +12,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `Tracker` class has been moved into the `devices` module.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
