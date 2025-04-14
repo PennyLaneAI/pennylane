@@ -24,6 +24,7 @@ Added support for Keras 3 with Tensorflow (>=2.0) and Pytorch backends. Acheived
 
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
+  [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
 
 <h3>Contributors ✍️</h3>
 

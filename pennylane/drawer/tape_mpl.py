@@ -332,7 +332,7 @@ def tape_mpl(
     max_length: Optional[int] = None,
     **kwargs,
 ):
-    """Produces a matplotlib graphic from a tape.
+    """Produces matplotlib graphic objects (``fig`` and ``ax``) from a tape.
 
     Args:
         tape (QuantumTape): the operations and measurements to draw
