@@ -51,7 +51,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def qops(cls) -> frozenset[Type[Operator]]:
+    def supported_ops(cls) -> frozenset[Type[Operator]]:
         """Set of supported operators."""
         return frozenset(
             (
@@ -209,7 +209,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             op_key = f"op_{i}"
             if isinstance(op, (qops.Prod, qops.SProd, qops.Sum)):
                 op = op.simplify()
-            if type(op) not in self.qops():
+            if type(op) not in self.supported_ops():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
@@ -283,7 +283,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     @lru_cache(1)
     def _qops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        ops_dict = {op.__name__: op for op in cls.qops()}
+        ops_dict = {op.__name__: op for op in cls.supported_ops()}
         ops_dict["Hamiltonian"] = qops.LinearCombination
         ops_dict["Tensor"] = qops.Prod
         return ops_dict
