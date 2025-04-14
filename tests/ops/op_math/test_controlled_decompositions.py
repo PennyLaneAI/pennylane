@@ -1036,6 +1036,30 @@ class TestControlledUnitaryRecursive:
 
 
 class TestMCXDecomposition:
+
+    def test_wrong_work_wire_type(self):
+        """Test that an error is raised if the work wire type is not 'clean' or 'dirty'."""
+
+        # pylint: disable=protected-access
+        control_wires = [0, 1]
+        target_wire = 2
+
+        # one worker:
+        work_wires = 3
+        with pytest.raises(ValueError, match="work_wire_type must be either 'clean' or 'dirty'"):
+            qml.MultiControlledX(
+                wires=control_wires + [target_wire],
+                work_wires=work_wires,
+                work_wire_type="blah",
+            )
+
+        with pytest.raises(ValueError, match="work_wire_type must be either 'clean' or 'dirty'"):
+            qml.MultiControlledX.compute_decomposition(
+                wires=control_wires + [target_wire],
+                work_wires=work_wires,
+                work_wire_type="blah",
+            )
+
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
     def test_decomposition_with_many_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
