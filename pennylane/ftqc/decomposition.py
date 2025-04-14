@@ -15,41 +15,35 @@
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
 
-import pennylane as qml
+from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.math import isclose
+from pennylane.ops import CNOT, RZ, GlobalPhase, H, I, Rot, S, X, Y, Z
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import _get_xzx_angles
+from pennylane.transforms import decompose, transform
 
 from .operations import RotXZX
 
-mbqc_gate_set = {
-    qml.CNOT,
-    qml.H,
-    qml.S,
-    qml.RZ,
-    RotXZX,
-    qml.X,
-    qml.Y,
-    qml.Z,
-    qml.I,
-    qml.GlobalPhase,
-}
+mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, I, GlobalPhase}
 
 
-@qml.register_resources({RotXZX: 1, qml.GlobalPhase: 1})
+@register_resources({RotXZX: 1, GlobalPhase: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
-    mat = qml.Rot.compute_matrix(phi, theta, omega)
+    mat = Rot.compute_matrix(phi, theta, omega)
     phi, theta, lam, gamma = _get_xzx_angles(mat)
 
     RotXZX(lam, theta, phi, wires)
     if not isclose(gamma, 0):
-        qml.GlobalPhase(-gamma)
+        GlobalPhase(-gamma)
 
 
-@qml.transform
+@transform
 def convert_to_mbqc_gateset(tape):
     """Converts a circuit expressed in arbitrary gates to the limited gate set that we can
     convert to the textbook MBQC formalism"""
-    tapes, fn = qml.transforms.decompose(
-        tape, gate_set=mbqc_gate_set, alt_decomps={qml.Rot: [_rot_to_xzx]}
-    )
+    if not enabled_graph():
+        raise RuntimeError(
+            "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
+            " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
+        )
+    tapes, fn = decompose(tape, gate_set=mbqc_gate_set, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn
