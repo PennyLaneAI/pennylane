@@ -67,7 +67,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
 
 
 def get_dummy_arg(arg):
-    """If any axes are abstract, replace with an empty numpy array.
+    """If any axes are abstract, replace them with an empty numpy array.
 
     Even if abstracted_axes specifies two dimensions as having different dynamic shapes,
     if the dimension is the same tracer, jax will still treat them as the same shape.
@@ -246,7 +246,7 @@ def loop_determine_abstracted_axes(
         [[AbstractShapeLocation(arg_idx=1, shape_idx=0)], [AbstractShapeLocation(arg_idx=2, shape_idx=1)]]
 
     Now the abstracted axes treat the two abstracted axes as different, even though they are the same tracer in the input
-    arguments. The abstract shapes has two elements. By looking at the locations, we can see that we can find
+    arguments. The abstract shapes have two elements. By looking at the locations, we can see that we can find
     the first abstract shape in argument ``1`` at shape position ``0``, and we can find the second abstract shape in
     argument ``2`` at shape position ``1``.
 
