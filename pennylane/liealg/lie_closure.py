@@ -63,6 +63,7 @@ def lie_closure(
 
     **Example**
 
+    >>> from pennylane import X, Y, Z
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
 
@@ -84,7 +85,7 @@ def lie_closure(
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
-    >>> print(dla)
+    >>> dla
     [X(1) @ X(0),
      Z(0),
      Z(1),
@@ -108,7 +109,7 @@ def lie_closure(
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
         >>> dla = qml.lie_closure(ops, pauli=True)
-        >>> print(dla)
+        >>> dla
         [1.0 * X(0) @ X(1),
          1.0 * Z(0),
          1.0 * Z(1),
@@ -130,6 +131,13 @@ def lie_closure(
         You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
 
         >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
+        >>> dla_ops
+        [1.0 * (X(0) @ X(1)),
+         1.0 * (Z(0) @ I(1)),
+         1.0 * (I(0) @ Z(1)),
+         1.0 * (Y(0) @ X(1)),
+         1.0 * (X(0) @ Y(1)),
+         1.0 * (Y(0) @ Y(1))]
 
     """
     if matrix:
