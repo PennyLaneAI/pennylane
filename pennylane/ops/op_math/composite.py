@@ -317,43 +317,16 @@ class CompositeOp(Operator):
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        r"""How the composite operator is represented in diagrams and drawings.
-
-        Args:
-            decimals (int): If ``None``, no parameters are included. Else,
-                how to round the parameters. Defaults to ``None``.
-            base_label (Iterable[str]): Overwrite the non-parameter component of the label.
-                Must be same length as ``operands`` attribute. Defaults to ``None``.
-            cache (dict): Dictionary that carries information between label calls
-                in the same drawing. Defaults to ``None``.
-
-        Returns:
-            str: label to use in drawings
-
-        **Example (using the Sum composite operator)**
-
-        >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
-        >>> op.label()
-        '(S+X)+Rot'
-        >>> op.label(decimals=2, base_label=[["my_s", "my_x"], "inc_rot"])
-        '(my_s+my_x)+inc_rot\n(1.00,\n2.00,\n3.00)'
-
-        """
-
-        def _label(op, decimals, base_label, cache):
-            sub_label = op.label(decimals, base_label, cache)
-            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
-
-        if base_label is not None:
-            if isinstance(base_label, str) or len(base_label) != len(self):
-                raise ValueError(
-                    "Composite operator labels require ``base_label`` keyword to be same length as operands."
-                )
-            return self._op_symbol.join(
-                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
+        if cache is None or not isinstance(cache.get("large_ops", None), list):
+            decimals = None if (len(self.parameters) > 3) else decimals
+            return Operator.label(
+                self, decimals=decimals, base_label=base_label or "𝓗", cache=cache
             )
-
-        return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
+        for i, obs in enumerate(cache["large_ops"]):
+            if obs == self:
+                return f"H:{i}"
+        cache["large_ops"].append(self)
+        return f"H:{len(cache["large_ops"])-1}"
 
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
