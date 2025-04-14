@@ -32,6 +32,12 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
+from .mcm_config_utils import (
+    SupportedMCMMethodUserInput,
+    SupportedPostSelectModeUserInput,
+    get_canonical_mcm_method,
+    get_canonical_postselect_mode,
+)
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
@@ -105,10 +111,6 @@ def _to_qfunc_output_type(
         results = (results,)
 
     return qml.pytrees.unflatten(results, qfunc_output_structure)
-
-
-def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
-    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -538,8 +540,8 @@ class QNode:
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: Union[None, bool] = False,
-        postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-        mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
+        postselect_mode: SupportedPostSelectModeUserInput = None,
+        mcm_method: SupportedMCMMethodUserInput = None,
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
@@ -615,7 +617,8 @@ class QNode:
         self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
-        _validate_mcm_config(postselect_mode, mcm_method)
+        postselect_mode = get_canonical_postselect_mode(postselect_mode)
+        mcm_method = get_canonical_mcm_method(mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,

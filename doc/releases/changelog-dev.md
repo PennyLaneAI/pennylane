@@ -12,6 +12,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `Enum` objects to improve MCM configuration validation and handling.
+  [(#7161)](https://github.com/PennyLaneAI/pennylane/pull/7161)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
