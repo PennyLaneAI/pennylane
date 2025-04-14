@@ -3,7 +3,7 @@ import numpy as np
 print('System: FeMoco')
 N = 2*76
 Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
-order = 4
+order = 6
 Y2kp1dN2 = 1
 time = 1e3
 
@@ -125,7 +125,7 @@ def QPE_cost(N, order, Y2kp1dN2 = 1, epsilon = 1e-3):
     Y2kp1 = Y2kp1dN2 * N**2
     rotations = Trotter_cost(N, order)
     for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/(order+1)) * 1/epsilon * np.pi/2
+        rotations[key] = value * (Y2kp1/epsilon)**(1/order) * 1/epsilon * np.pi/2
     return rotations
 
 
