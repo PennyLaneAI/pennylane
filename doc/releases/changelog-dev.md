@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Alias for Identity (`I`) is now accessible from `qml.ops`.
+  [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
