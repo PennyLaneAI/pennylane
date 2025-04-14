@@ -8,6 +8,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.tape.TapeError` has been removed.
+  [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
