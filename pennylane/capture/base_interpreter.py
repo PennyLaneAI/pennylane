@@ -432,7 +432,7 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
     return jax.lax.broadcast_in_dim(
-        x, new_shape, broadcast_dimensions=broadcast_dimensions, sharding=sharding
+        x, new_shape, broadcast_dimensions=broadcast_dimensions, out_sharding=sharding
     )
 
 
@@ -453,7 +453,7 @@ def _(self, *dyn_shape, dimension, dtype, shape, sharding):
     """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
-    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, sharding=sharding)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
