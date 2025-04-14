@@ -1366,7 +1366,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def has_plxpr_decomposition(cls) -> bool:
+    def has_qfunc_decomposition(cls) -> bool:
         """Whether or not the Operator returns a defined plxpr decomposition."""
         return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
 
