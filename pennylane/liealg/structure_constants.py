@@ -76,18 +76,23 @@ def structure_constants(
 
     Let us first generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> import pennylane as qml
+    >>> from pennylane import liealg, math
     >>> from pennylane import X, Y, Z, I
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
     >>> gens += [Z(i) for i in range(n)]
-    >>> dla = qml.lie_closure(gens)
-    >>> print(dla)
-    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), -1.0 * (Y(0) @ Y(1))]
+    >>> dla = liealg.lie_closure(gens)
+    >>> dla
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     Y(0) @ Y(1)]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
-    >>> adjoint_rep = qml.structure_constants(dla)
+    >>> adjoint_rep = liealg.structure_constants(dla)
     >>> adjoint_rep.shape
     (6, 6, 6)
 
@@ -117,30 +122,30 @@ def structure_constants(
     To compute the structure constants of a non-orthogonal set of operators, use the option
     ``is_orthogonal=False``:
 
-    >>> dla = [qml.X(0), qml.Y(0), qml.X(0) - qml.Z(0)]
-    >>> adjoint_rep = qml.structure_constants(dla, is_orthogonal=False)
+    >>> dla = [X(0), Y(0), X(0) - Z(0)]
+    >>> adjoint_rep = liealg.structure_constants(dla, is_orthogonal=False)
     >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
     array([-2.,  0.,  2.])
 
     We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
     This alters how the structure constants are computed internally, but it does not change the result.
 
-    >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
-    >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
+    >>> adjoint_rep2 = liealg.structure_constants(dla, is_orthogonal=False, matrix=True)
+    >>> math.allclose(adjoint_rep, adjoint_rep2)
     True
 
     We can also input the DLA in form of matrices. For that we use :func:`~lie_closure` with the ``matrix=True``.
 
     >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
+    >>> g = liealg.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj = liealg.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 

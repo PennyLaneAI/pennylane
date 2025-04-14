@@ -129,7 +129,7 @@ def bloq_registers(bloq):
 
             pip install qualtran
 
-    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran Bloq. The
+    The keys of the returned dictionary are the register names in the Qualtran Bloq. The
     values are :class:`~.Wires` objects with a length equal to the bitsize of its respective
     register. The wires are indexed in ascending order, starting from 0.
 
@@ -140,9 +140,8 @@ def bloq_registers(bloq):
         bloq (Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
 
     Returns:
-        dict: A dictionary built with information from the Bloq's signature. The dictionary keys
-        are strings that come from the names of the Bloq's registers. The values are :class:`~.Wires`
-        objects that are determined by the bitsizes of those same registers.
+        dict: A dictionary mapping the names of the Bloq's registers to :class:`~.Wires`
+            objects with the same lengths as the bitsizes of their respective registers.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
