@@ -111,8 +111,8 @@ def _get_wires(val):
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
         wires = set().union(*((getattr(w, "wires", None) or Wires(w)).tolist() for w in iters))
-    except (TypeError, WireError):
-        raise ValueError(f"Wires cannot be computed for {val}") from None
+    except (TypeError, WireError) as e:
+        raise ValueError(f"Wires cannot be computed for {val}") from e
     return wires
 
 
@@ -252,11 +252,11 @@ class OpIn(BooleanFn):
                 )
                 for x, c in zip(xs, cs)
             )
-        except:  # pragma: no cover
+        except Exception as e:  # pragma: no cover
             raise ValueError(
                 "OpIn does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
-            ) from None
+            ) from e
 
 
 class OpEq(BooleanFn):
@@ -311,11 +311,11 @@ class OpEq(BooleanFn):
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
-        except:  # pragma: no cover
+        except Exception as e:  # pragma: no cover
             raise ValueError(
                 "OpEq does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
-            ) from None
+            ) from e
 
 
 def _get_ops(val):
