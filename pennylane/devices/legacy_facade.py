@@ -137,19 +137,19 @@ class LegacyDeviceFacade(Device):
     Args:
         device (qml.device.LegacyDevice): a device that follows the legacy device interface.
 
-    >>> from pennylane.devices import DefaultMixed, LegacyDeviceFacade
-    >>> legacy_dev = DefaultMixed(wires=2)
+    >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
+    >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
-    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=None,
+    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=<Interface.NUMPY: 'numpy'>,
     derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
     >>> new_dev.shots
     Shots(total_shots=None, shot_vector=())
     >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
-    array([0., 0., 0., 0., 0.])
+    array([0, 0, 0, 0, 0])
 
     """
 

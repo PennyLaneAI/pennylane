@@ -16,7 +16,7 @@ import math
 import warnings
 from functools import lru_cache
 
-from scipy.spatial import KDTree
+import scipy as sp
 
 import pennylane as qml
 from pennylane.queuing import QueuingManager
@@ -73,13 +73,13 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         tol (float): tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike, int): A tuple including `True`/`False` for whether an operation similar to the
+        tuple(bool, TensorLike, int): A tuple including ``True``/``False`` for whether an operation similar to the
         given operations was found, the quaternion representation of the searched operations, and its index in
-        the `op_vecs` or `kd_tree`.
+        the ``op_vecs`` or ``kd_tree``.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
-    tree = kd_tree or KDTree(qml.math.array(ops_vecs))
+    tree = kd_tree or sp.spatial.KDTree(qml.math.array(ops_vecs))
     dist, indx = tree.query(gate_points, workers=-1)
 
     return (dist[0] < tol, gate_points[0], indx[0])
@@ -95,14 +95,14 @@ def _prune_approximate_set(
         approx_set_mat (list[TensorLike]): list of SU(2) matrices
         approx_set_gph (list[float]): list of global phases
         approx_set_qat (list[TensorLike]): list of quaternion representations
-        approx_set_sum (list[int]): list of numbers of the T and Adjoint(T) gates in the sequences
+        approx_set_sum (list[int]): list of numbers of the ``T`` and ``Adjoint(T)`` gates in the sequences
 
     Returns:
-        Tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
+        tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
         A tuple containing the pruned approximate set.
     """
     if approx_set_qat:
-        tree, tsum = KDTree(approx_set_qat), qml.math.array(approx_set_sum)
+        tree, tsum = sp.spatial.KDTree(approx_set_qat), qml.math.array(approx_set_sum)
         dists, indxs = tree.query(approx_set_qat, workers=-1, k=10)
 
         prune_ixs = []
@@ -125,11 +125,11 @@ def _approximate_set(basis_gates, max_length=10):
 
     Args:
         basis_gates (tuple[str]): Basis set to be used for Solovay-Kitaev decomposition build using the following
-        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where `*` refers to the gate adjoint.
-        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
+        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers to the gate adjoint.
+        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is ``10``
 
     Returns:
-        Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
+        tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
@@ -180,7 +180,7 @@ def _approximate_set(basis_gates, max_length=10):
     # comparing its quaternion representation with the gate sequences already added to the trie.
     for depth in range(max_length - 1):
         # Build a KDTree for the quaternions stored up to the current depth for querying.
-        kdtree = KDTree(qml.math.array(approx_set_qat))
+        kdtree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
         # Add the local containers for extending the trie to the next depth while traversing current one.
         ltrie_id, ltrie_mt, ltrie_gp, ltrie_sm, ltrie_qt = [], [], [], [], []
@@ -342,7 +342,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         )
 
         # Build the k-d tree with the current approximation set for querying in the base case
-        kd_tree = KDTree(qml.math.array(approx_set_qat))
+        kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
         # Obtain the SU(2) and quaternion for the operation
         op_matrix = op.matrix()

@@ -17,33 +17,22 @@ Defines a function for converting plxpr to a tape.
 from copy import copy
 
 import pennylane as qml
-from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
+    grad_prim,
+    jacobian_prim,
     measure_prim,
+    qnode_prim,
 )
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, get_mcm_predicates
 
 from .qscript import QuantumScript
 
 
-def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
-    """Helper function to update predicates with mid-circuit measurements"""
-    # copy from ops.op_math.condition.py
-    new_conds = [conditions[0]]
-    false_cond = ~conditions[0]
-
-    for c in conditions[1:]:
-        new_conds.append(false_cond & c)
-        false_cond = false_cond & ~c
-
-    new_conds.append(false_cond)
-    return new_conds
-
-
-class CollectOpsandMeas(PlxprInterpreter):
+class CollectOpsandMeas(FlattenedInterpreter):
     """Collect the dropped operations and measurements in a plxpr. Used by ``convert_to_tape``.
 
     .. code-block:: python
@@ -107,12 +96,6 @@ class CollectOpsandMeas(PlxprInterpreter):
         return measurement
 
 
-# pylint: disable=protected-access
-CollectOpsandMeas._primitive_registrations.update(
-    FlattenedHigherOrderPrimitives
-)  # pylint: disable=protected-access
-
-
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, lazy, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
@@ -163,7 +146,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
                 "Cannot use qml.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
-        conditions = _get_mcm_predicates(mcm_conditions)
+        conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = all_args[const_slice]
@@ -192,6 +175,33 @@ def _(self, wires, reset, postselect):
     m0 = qml.measure(wires, reset=reset, postselect=postselect)
     self.state["ops"].extend(m0.measurements)
     return m0
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(grad_prim)
+def _(self, *invals, jaxpr, n_consts, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
+
+
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(jacobian_prim)
+def _(self, *invals, jaxpr, n_consts, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(qnode_prim)
+def _(
+    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
+):  # pylint: disable=too-many-arguments,unused-argument
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    child = CollectOpsandMeas()
+    out = child.eval(qfunc_jaxpr, consts, *args)
+    assert child.state
+    self.state["ops"].extend(child.state["ops"])
+    self.state["measurements"].extend(child.state["measurements"])
+    return out
 
 
 def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

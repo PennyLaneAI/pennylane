@@ -423,9 +423,10 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         """
         if self.mv is not None:
             if getattr(self.mv, "name", None) == "MeasurementValue":
-                # Indexing a MeasurementValue gives the output of the processing function
-                # for the binary number corresponding to the index.
-                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
+                # "Eigvals" should be the processed values for all branches of a MeasurementValue
+                _, processed_values = tuple(zip(*self.mv.items()))
+                interface = qml.math.get_deep_interface(processed_values)
+                return qml.math.asarray(processed_values, like=interface)
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:

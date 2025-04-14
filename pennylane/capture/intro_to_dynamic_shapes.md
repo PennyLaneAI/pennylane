@@ -196,7 +196,7 @@ jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
 When capturing higher order primitives, we call `jax.make_jaxpr(f)` with arguments whose shapes are tracers.  
 
-When calling `jax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads in an error:
+When calling `jax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads to an error:
 
 
 ```python
@@ -420,9 +420,9 @@ What if the shape isn't accessible? What if we wanted to resize one of the input
 That now gets a bit trickier.  The solution has several issues:
 
 1) A bit more difficult to read and follow
-2) Relies on unstable componets of jax internals
+2) Relies on unstable components of jax internals
 
-But why let those concerns stop us now! Let's do it.
+But why let those concerns stop us now? Let's do it.
 
 What we need to do in this case in hi-jack how `DynamicJaxTracer` creates an equation for the relevant primitive. It will no longer use the default logic relying on the `abstract_eval`, but our own pipeline.
 

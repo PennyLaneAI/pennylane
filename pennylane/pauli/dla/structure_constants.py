@@ -12,34 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from itertools import combinations, combinations_with_replacement
+import warnings
 from typing import Union
 
-import numpy as np
-
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
-def _all_commutators(ops):
-    commutators = {}
-    for (j, op1), (k, op2) in combinations(enumerate(ops), r=2):
-        res = op1.commutator(op2)
-        if res != PauliSentence({}):
-            commutators[(j, k)] = res
-
-    return commutators
-
-
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]],
+    g: list[Union[Operator, PauliWord, PauliSentence, TensorLike]],
     pauli: bool = False,
+    matrix: bool = False,
     is_orthogonal: bool = True,
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
+
+    .. warning:: :func:`~structure_constants` has moved to the :mod:`pennylane.liealg` module and can be called from there via ``qml.liealg.structure_constants`` or from the top level via ``qml.structure_constants``.
 
     Given a DLA :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
@@ -60,13 +52,14 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
+        matrix (bool): Whether or not matrix representations are used in the structure constants computation. This can help speed up the computation when using sums of Paulis with many terms. Default is ``False``.
         is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
             Default is ``True``.
 
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
 
     **Example**
 
@@ -116,6 +109,28 @@ def structure_constants(
     >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
     array([-2.,  0.,  2.])
 
+    We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
+    This only affects how the structure constants are computed internally, it does not change the result.
+
+    >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
+    >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
+    True
+
+    We can also input the DLA as a list of matrices. For that we use :func:`~lie_closure` with ``matrix=True``.
+
+    >>> n = 4
+    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
+    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> g.shape
+    (12, 16, 16)
+
+    The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
+    Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
+
+    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj.shape
+    (12, 12, 12)
+
     .. details::
         :title: Mathematical details
 
@@ -162,32 +177,10 @@ def structure_constants(
         be skipped.
 
     """
-    if any((op.pauli_rep is None) for op in g):
-        raise ValueError(
-            f"Cannot compute adjoint representation of non-pauli operators. Received {g}."
-        )
+    warnings.warn(
+        "Calling structure_constants via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
+        "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
-    if not pauli:
-        g = [op.pauli_rep for op in g]
-
-    commutators = _all_commutators(g)
-
-    rep = np.zeros((len(g), len(g), len(g)), dtype=float)
-    for i, op in enumerate(g):
-        # if is_orthogonal is activated we will use the norm_squared of the op, otherwise we won't
-        norm_squared = (op @ op).trace() if is_orthogonal else 1
-        for (j, k), res in commutators.items():
-            # if is_orthogonal is activated, use v = ∑ (v · e_j / ||e_j||^2) * e_j
-            value = (1j * (op @ res).trace()).real / norm_squared
-            rep[i, j, k] = value
-            rep[i, k, j] = -value
-
-    if not is_orthogonal:
-        gram = np.zeros((len(g), len(g)), dtype=float)
-        for (i, op1), (j, op2) in combinations_with_replacement(enumerate(g), r=2):
-            gram[i, j] = gram[j, i] = (op1 @ op2).trace()
-
-        # Contract the structure constants on the upper index with the Gram matrix, see derivation
-        rep = np.tensordot(np.linalg.pinv(gram), rep, axes=[[-1], [0]])
-
-    return rep
+    return qml.structure_constants(g, pauli=pauli, matrix=matrix, is_orthogonal=is_orthogonal)

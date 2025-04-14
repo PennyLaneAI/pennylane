@@ -18,7 +18,7 @@ Contains the drawing function.
 """
 import warnings
 from functools import wraps
-from typing import Literal, Union
+from typing import Callable, Literal, Optional, Sequence, Union
 
 import pennylane as qml
 
@@ -36,12 +36,13 @@ def draw(
     wire_order=None,
     show_all_wires=False,
     decimals=2,
+    *,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
-    r"""Create a function that draws the given qnode or quantum function.
+    r"""Create a function that draws the given QNode or quantum function.
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
@@ -138,13 +139,13 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
-        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
-        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
-        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
-        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
-        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
+        >>> print(qml.draw(longer_circuit, max_length=65, level="device")(params))
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X ···
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰● ···
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X─── ···
+        0: ··· ──Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        1: ··· ─╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        2: ··· ─╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
@@ -292,8 +293,9 @@ def draw(
 
 def _draw_qnode(
     qnode,
-    wire_order=None,
-    show_all_wires=False,
+    wire_order: Optional[Sequence] = None,
+    show_all_wires: bool = False,
+    *,
     decimals=2,
     max_length=100,
     show_matrices=True,
@@ -343,12 +345,13 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode,
-    wire_order=None,
-    show_all_wires=False,
-    decimals=None,
-    style=None,
+    qnode: Union[qml.QNode, Callable],
+    wire_order: Optional[Sequence] = None,
+    show_all_wires: bool = False,
+    decimals: Optional[int] = None,
+    style: Optional[str] = None,
     *,
+    max_length: Optional[int] = None,
     fig=None,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
     **kwargs,
@@ -370,6 +373,8 @@ def draw_mpl(
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
 
     Keyword Args:
+        max_length (Optional[int]): When there are more than ``max_length`` layers, additional plots
+            will be produced with at most ``max_length`` individual layers.
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
@@ -388,7 +393,8 @@ def draw_mpl(
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
         the function will draw the QNode as a tuple of (``matplotlib.figure.Figure``,
-        ``matplotlib.axes._axes.Axes``)
+        ``matplotlib.axes._axes.Axes``). If ``max_length`` is less than the number of layers,
+        a list of tuples containing the figures and axes will be returned instead.
 
     .. warning::
 
@@ -474,6 +480,30 @@ def draw_mpl(
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
+
+        **Max Length:**
+
+        For deep circuits, the ``max_length`` kwarg can break the circuit into multiple independent figures.
+
+        .. code-block:: python
+
+            def circuit():
+                for _ in range(10):
+                    qml.X(0)
+                return qml.expval(qml.Z(0))
+
+            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(circuit, max_length=5)()
+
+        .. figure:: ../../_static/draw_mpl/max_length1.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
+        .. figure:: ../../_static/draw_mpl/max_length2.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
 
         **Integration with matplotlib:**
 
@@ -658,6 +688,7 @@ def draw_mpl(
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            max_length=max_length,
             level=level,
             style=style,
             fig=fig,
@@ -686,6 +717,7 @@ def draw_mpl(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            max_length=max_length,
             style=style,
             fig=fig,
             level=level,
@@ -700,9 +732,9 @@ def _draw_mpl_qnode(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
+    *,
     level="gradient",
     style="black_white",
-    *,
     fig=None,
     **kwargs,
 ):

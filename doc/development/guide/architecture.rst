@@ -114,12 +114,6 @@ which are themselves operators.
 >>> m.obs
 PauliZ(wires=['a'])
 
-Furthermore, it specifies a "return type" which defines the kind of measurement performed,
-such as expectation, variance, probability, state, or sample.
-
->>> m.return_type
-ObservableReturnTypes.Expectation
-
 For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
 QuantumTape

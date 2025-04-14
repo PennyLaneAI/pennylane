@@ -14,6 +14,8 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+from collections import defaultdict
+
 # pylint: disable=protected-access
 import numpy as np
 import pytest
@@ -31,6 +33,46 @@ def test_basis_state_input_cast_to_int():
     state = np.array([1.0, 0.0], dtype=np.float64)
     op = qml.BasisState(state, wires=(0, 1))
     assert op.data[0].dtype == np.int64
+
+
+@pytest.mark.jax
+def test_assert_valid():
+    """Tests that BasisState operators are valid"""
+
+    op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+    def abstract_check(state):
+        op = qml.BasisState(state, wires=[0, 1])
+        op_matrices, decomp_matrices = [], []
+        for rule in qml.list_decomps(qml.BasisState):
+            resources = rule.compute_resources(**op.resource_params)
+            gate_counts = resources.gate_counts
+
+            with qml.queuing.AnnotatedQueue() as q:
+                rule(*op.data, wires=op.wires, **op.hyperparameters)
+            tape = qml.tape.QuantumScript.from_queue(q)
+            actual_gate_counts = defaultdict(int)
+            for _op in tape.operations:
+                resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+                actual_gate_counts[resource_rep] += 1
+            assert gate_counts == actual_gate_counts
+
+            # Tests that the decomposition produces the same matrix
+            op_matrix = qml.matrix(op)
+            decomp_matrix = qml.matrix(tape, wire_order=op.wires)
+            op_matrices.append(op_matrix)
+            decomp_matrices.append(decomp_matrix)
+
+        return op_matrices, decomp_matrices
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    op_matrices, decomp_matrices = jax.jit(abstract_check)(np.array([0, 1]))
+    assert qml.math.allclose(
+        op_matrices, decomp_matrices
+    ), "decomposition must produce the same matrix as the operator."
 
 
 @pytest.mark.parametrize(
@@ -413,6 +455,14 @@ class TestStateVector:
 class TestSparseStateVector:
     """Test the sparse_state_vector() method of various state-prep operations."""
 
+    def test_sparse_state_convert_to_csr(self):
+        """Test that the sparse_state_vector() method returns a csr_matrix."""
+        sp_vec = sp.sparse.coo_matrix([0, 0, 1, 0])
+        qsv_op = qml.StatePrep(sp_vec, wires=[0, 1])
+        assert qsv_op.batch_size is None
+        ket = qsv_op.state_vector()
+        assert sp.sparse.issparse(ket), "Output is not sparse type"
+
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
@@ -430,6 +480,7 @@ class TestSparseStateVector:
         """Tests that StatePrep sparse_state_vector returns kets as expected."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+        assert qsv_op.batch_size is None
         ket = qsv_op.state_vector(wire_order=wire_order)
         # Convert one position from binary to integer
         one_position = int("".join([str(i) for i in one_position]), 2)
@@ -438,19 +489,30 @@ class TestSparseStateVector:
         ket[0, one_position] = 0
         assert ket.count_nonzero() == 0
 
+    def test_sparse_vector(self):
+        """Test that state prep operations can be created with a 1D sparse array."""
+
+        state = sp.sparse.csr_array([1, 0, 0, 0])
+        op = qml.StatePrep(state, wires=(0, 1))
+        assert op.batch_size is None
+        expected = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+        assert qml.math.allclose(op.state_vector([0, 1, 2]).todense(), expected)
+
     def test_preprocess_nonzero_padding_unsupported(self):
         """Test that sparse_state_vector does not support padding with nonzero values."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         with pytest.raises(ValueError, match="Non-zero Padding is not supported"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=1, normalize=False, validate_norm=False
             )
 
     def test_preprocess_one_dimensional_tensor(self):
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([[0, 0], [1, 0]])
-        with pytest.raises(ValueError, match="State must be a one-dimensional tensor"):
-            qml.StatePrep._preprocess_csr(
+        with pytest.raises(
+            NotImplementedError, match="does not yet support parameter broadcasting"
+        ):
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -458,7 +520,7 @@ class TestSparseStateVector:
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0, 1])
         with pytest.raises(ValueError, match="State must be of length"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -475,7 +537,7 @@ class TestSparseStateVector:
         """Test that the state tensor is normalized to one if normalize is False."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0])
         with pytest.raises(ValueError, match="The state must be a vector of norm 1.0; got norm"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=True
             )
 

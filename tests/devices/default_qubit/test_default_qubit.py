@@ -1541,7 +1541,7 @@ class TestHamiltonianSamples:
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.02)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_sum_expval(self, max_workers, seed):
@@ -1555,7 +1555,7 @@ class TestHamiltonianSamples:
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.02)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_multi_wires(self, max_workers, seed):

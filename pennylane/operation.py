@@ -228,7 +228,7 @@ from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -349,7 +349,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
         return self
 
 
-def classproperty(func):
+def classproperty(func) -> ClassPropertyDescriptor:
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
@@ -694,19 +694,39 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        array_types = (jax.numpy.ndarray, np.ndarray)
+        iterable_wires_types = (
+            list,
+            tuple,
+            qml.wires.Wires,
+            range,
+            set,
+            *array_types,
+        )
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
         # Stick `n_wires` as a keyword argument so we have enough information to repack them during
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            if isinstance(wires, array_types) and wires.shape == ():
+                wires = (wires,)
+            elif isinstance(wires, iterable_wires_types):
+                wires = tuple(wires)
+            else:
+                wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+        # If not in kwargs, check if the last positional argument represents wire(s).
+        elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
+            kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
-            kwargs["n_wires"] = len(args[-1])
-            args = args[:-1] + tuple(args[-1])
+            wires = tuple(args[-1])
+            kwargs["n_wires"] = len(wires)
+            args = args[:-1] + wires
         else:
             kwargs["n_wires"] = 1
         return cls._primitive.bind(*args, **kwargs)
@@ -823,8 +843,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @staticmethod
     def compute_sparse_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> csr_matrix:  # pylint:disable=unused-argument
+        *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
+    ) -> spmatrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -834,6 +854,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
                 attribute
 
@@ -854,7 +875,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -867,16 +888,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
 
         Returns:
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
+            *self.parameters, format="csr", **self.hyperparameters
         )
 
-        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
 
     @staticmethod
     def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
@@ -1029,8 +1053,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         params = self.parameters
-
-        if len(qml.math.shape(params[0])) != 0:
+        shape0 = qml.math.shape(params[0])
+        if len(shape0) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
             # this holds true for all current operations and templates unless parameter broadcasting
             # is used
@@ -1043,23 +1067,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 return op_label if self._id is None else f'{op_label}("{self._id}")'
 
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
-                    params[0], mat
-                ):
-                    return (
-                        f"{op_label}(M{i})"
-                        if self._id is None
-                        else f'{op_label}(M{i},"{self._id}")'
-                    )
+                if shape0 == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
+                    str_wo_id = f"{op_label}(M{i})"
+                    break
+            else:
+                mat_num = len(cache["matrices"])
+                cache["matrices"].append(params[0])
+                str_wo_id = f"{op_label}(M{mat_num})"
 
-            # matrix not in cache
-            mat_num = len(cache["matrices"])
-            cache["matrices"].append(params[0])
-            return (
-                f"{op_label}(M{mat_num})"
-                if self._id is None
-                else f'{op_label}(M{mat_num},"{self._id}")'
-            )
+            return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
 
         if decimals is None:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
@@ -1349,6 +1365,90 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DecompositionUndefinedError
 
+    @classproperty
+    def has_qfunc_decomposition(cls) -> bool:
+        """Whether or not the Operator returns a defined plxpr decomposition."""
+        return cls.compute_qfunc_decomposition != Operator.compute_qfunc_decomposition
+
+    @staticmethod
+    def compute_qfunc_decomposition(*args, **hyperparameters) -> None:
+        r"""Experimental method to compute the dynamic decomposition of the operator with program capture enabled.
+
+        When the program capture feature is enabled with ``qml.capture.enable()``, the decomposition of the operator
+        is computed with this method if it is defined. Otherwise, the :meth:`~.Operator.compute_decomposition` method is used.
+
+        The exception to this rule is when the operator is returned from the :meth:`~.Operator.compute_decomposition` method
+        of another operator, in which case the decomposition is performed with :meth:`~.Operator.compute_decomposition`
+        (even if this method is defined), and not with this method.
+
+        When ``compute_qfunc_decomposition`` is defined for an operator, the control flow operations within the method
+        (specifying the decomposition of the operator) are recorded in the JAX representation.
+
+        .. note::
+          This method is experimental and subject to change.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Args:
+            *args (list): positional arguments passed to the operator, including trainable parameters and wires
+            **hyperparameters (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        """
+
+        raise DecompositionUndefinedError
+
+    @classproperty
+    def resource_keys(self) -> Union[set, frozenset]:  # pylint: disable=no-self-use
+        """The set of parameters that affects the resource requirement of the operator.
+
+        All decomposition rules for this operator class are expected to have a resource function
+        that accepts keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
+        function will also expect keyword arguments that match these keys when called with this
+        operator type.
+
+        The default implementation is an empty set, which is suitable for most operators.
+
+        .. seealso::
+            :meth:`~.Operator.resource_params`
+
+        """
+        return set()
+
+    @property
+    def resource_params(self) -> dict:
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition.
+
+        The keys of this dictionary should match the ``resource_keys`` attribute of the operator
+        class. Two instances of the same operator type should have identical ``resource_params`` iff
+        their decompositions exhibit the same counts for each gate type, even if the individual
+        gate parameters differ.
+
+        **Examples**
+
+        The ``MultiRZ`` has non-empty ``resource_keys``:
+
+        >>> qml.MultiRZ.resource_keys
+        {"num_wires"}
+
+        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
+
+        >>> op = qml.MultiRZ(0.5, wires=[0, 1])
+        >>> op.resource_params
+        {"num_wires": 2}
+
+        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
+
+        >>> op2 = qml.MultiRZ(0.7, wires=[1, 2])
+        >>> op2.resource_params
+        {"num_wires": 2}
+
+        """
+        # For most operators, this should just be an empty dictionary, but a default
+        # implementation is intentionally not provided so that each operator class is
+        # forced to explicitly define its resource params.
+        raise NotImplementedError(f"{self.__class__.__name__}.resource_params undefined!")
+
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
     def has_diagonalizing_gates(cls) -> bool:
@@ -1418,7 +1518,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.generator != Operator.generator
 
-    def generator(self):  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1435,8 +1535,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
@@ -2382,13 +2480,14 @@ def defines_diagonalizing_gates(obj):
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
     with more than one term."""
-
-    try:
-        o = obj.generator()
-    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+    if not isinstance(obj, Operator) or not obj.has_generator:
         return False
-
-    return isinstance(o, qml.ops.LinearCombination) and len(o.coeffs) > 1
+    try:
+        generator = obj.generator()
+        _, ops = generator.terms()  # len(coeffs) can be weird sometimes
+        return len(ops) > 1
+    except TermsUndefinedError:
+        return False
 
 
 def __getattr__(name):

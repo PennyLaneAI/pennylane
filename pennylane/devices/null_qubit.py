@@ -20,14 +20,13 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 import inspect
 import logging
 from dataclasses import replace
-from functools import singledispatch
+from functools import lru_cache, singledispatch
 from numbers import Number
 from typing import Optional, Union
 
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -64,7 +63,14 @@ def _zero_measurement(
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
         shape = (batch_size,) + shape
+    if "jax" not in interface:
+        return _cached_zero_return(shape, interface, mp.numeric_type)
     return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+
+
+@lru_cache(maxsize=128)
+def _cached_zero_return(shape, interface, dtype):
+    return math.zeros(shape, like=interface, dtype=dtype)
 
 
 @zero_measurement.register
@@ -404,3 +410,20 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
+
+    # pylint: disable= unused-argument
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+    ) -> list:
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            AbstractMeasurement,
+        )
+
+        def zeros_like(var):
+            if isinstance(var.aval, AbstractMeasurement):
+                shots = self.shots.total_shots
+                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
+                return math.zeros(s, dtype=dtype, like="jax")
+            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
+
+        return [zeros_like(var) for var in jaxpr.outvars]

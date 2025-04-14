@@ -17,6 +17,7 @@ unitary operations into elementary gates.
 import warnings
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -102,7 +103,10 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 )
 
 
-def _convert_to_su4(U):
+global_arrays_name = ["E", "Edag", "CNOT01", "CNOT10", "SWAP", "S_SX", "v_one_cnot", "q_one_cnot"]
+
+
+def _convert_to_su4(U, return_global_phase=False):
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
@@ -116,6 +120,8 @@ def _convert_to_su4(U):
     det = math.linalg.det(U)
 
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
+    if return_global_phase:
+        return math.cast_like(U, det) * math.exp(exp_angle), qml.math.angle(math.exp(exp_angle))
     return math.cast_like(U, det) * math.exp(exp_angle)
 
 
@@ -198,15 +204,15 @@ def _su2su2_to_tensor_products(U):
     # case one of the elements of A is 0.
     # We use B1 unless division by 0 would cause all elements to be inf.
     use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
-    if not math.is_abstract(A):
-        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
-    elif qml.math.get_interface(A) == "jax":
+    if math.is_abstract(A) and qml.math.get_interface(A) == "jax":
         B = qml.math.cond(
             use_B2,
             lambda x: C2 / math.cast_like(A[0, 1], 1j),
             lambda x: C1 / math.cast_like(A[0, 0], 1j),
             [0],  # arbitrary value for x
         )
+    else:
+        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
@@ -287,8 +293,8 @@ def _decomposition_0_cnots(U, wires):
      -╰U- = -B-
     """
     A, B = _su2su2_to_tensor_products(U)
-    A_ops = one_qubit_decomposition(A, wires[0])
-    B_ops = one_qubit_decomposition(B, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[0], return_global_phase=True)
+    B_ops = one_qubit_decomposition(B, wires[1], return_global_phase=True)
     return A_ops + B_ops
 
 
@@ -349,7 +355,7 @@ def _decomposition_1_cnot(U, wires):
     C_ops = one_qubit_decomposition(C, wires[0])
     D_ops = one_qubit_decomposition(D, wires[1])
 
-    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
+    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def _decomposition_2_cnots(U, wires):
@@ -528,7 +534,7 @@ def _decomposition_3_cnots(U, wires):
     D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops + [qml.GlobalPhase(np.pi / 4)]
 
 
 def two_qubit_decomposition(U, wires):
@@ -621,17 +627,23 @@ def two_qubit_decomposition(U, wires):
     _check_differentiability_warning(U)
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to rescale the matrix by its determinant.
-    U = _convert_to_su4(U)
+    if sp.sparse.issparse(U):
+        raise qml.operation.DecompositionUndefinedError(
+            "two_qubit_decomposition does not accept sparse matrics."
+        )
+
+    U, angle = _convert_to_su4(U, return_global_phase=True)
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
-    if not qml.math.is_abstract(U):
+    if qml.math.is_abstract(U):
+        # Currently we can only support 3 CNOT decomposition
+        num_cnots = 3
+    else:
         num_cnots = _compute_num_cnots(U)
 
     with qml.QueuingManager.stop_recording():
-        if qml.math.is_abstract(U):
-            decomp = _decomposition_3_cnots(U, wires)
-        elif num_cnots == 0:
+        if num_cnots == 0:
             decomp = _decomposition_0_cnots(U, wires)
         elif num_cnots == 1:
             decomp = _decomposition_1_cnot(U, wires)
@@ -640,6 +652,7 @@ def two_qubit_decomposition(U, wires):
         else:
             decomp = _decomposition_3_cnots(U, wires)
 
+    decomp.append(qml.GlobalPhase(angle))
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.queuing.QueuingManager.active_context()
 

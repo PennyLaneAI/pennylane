@@ -14,8 +14,10 @@
 """Contains transforms and helpers functions for decomposing arbitrary unitary
 operations into elementary gates.
 """
+from functools import singledispatch
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -40,13 +42,21 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     with np.errstate(divide="ignore", invalid="ignore"):
-        determinants = math.linalg.det(U)
+        # we already know is 2x2, so no scaling problems from converting to dense
+        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
+        determinants = math.linalg.det(U_temp)
     phase = math.angle(determinants) / 2
-    U = math.cast_like(U, determinants) * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
+    U = (
+        U * math.exp(-1j * phase)
+        if sp.sparse.issparse(U)
+        else math.cast_like(U, determinants)
+        * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
+    )
 
     return (U, phase) if return_global_phase else U
 
 
+@singledispatch
 def _zyz_get_rotation_angles(U):
     r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
     for a unitary :math:`U` that is :math:`SU(2)`
@@ -77,6 +87,49 @@ def _zyz_get_rotation_angles(U):
         math.imag(U[:, 1, 0]),
         math.real(U[:, 1, 0]) + epsilon,
     )
+
+    phis = -angles_U10 - angles_U00
+    omegas = angles_U10 - angles_U00
+
+    phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
+
+    # Normalize the angles
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    omegas = omegas % (4 * np.pi)
+
+    return phis, thetas, omegas
+
+
+@_zyz_get_rotation_angles.register(sp.sparse.csr_matrix)
+def _zyz_get_rotation_angles_sparse(U):
+    r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
+    for a unitary :math:`U` that is :math:`SU(2)`, sparse case
+
+    Args:
+        U (array[complex]): A matrix that is :math:`SU(2)`
+
+    Returns:
+        tuple[array[float]]: A tuple containing the rotation angles
+            :math:`\phi`, :math:`\theta`, :math:`\omega`
+
+    """
+
+    assert sp.sparse.issparse(U), "Do not use this method if U is not sparse"
+
+    u00 = U[0, 0]
+    u01 = U[0, 1]
+    u10 = U[1, 0]
+
+    # For batched U or single U with non-zero off-diagonal, compute the
+    # normal decomposition instead
+    off_diagonal_elements = math.clip(math.abs(u01), 0, 1)
+    thetas = 2 * math.arcsin(off_diagonal_elements)
+
+    # Compute phi and omega from the angles of the top row; use atan2 to keep
+    # the angle within -np.pi and np.pi
+    angles_U00 = math.arctan2(math.imag(u00), math.real(u00))
+    angles_U10 = math.arctan2(math.imag(u10), math.real(u10))
 
     phis = -angles_U10 - angles_U00
     omegas = angles_U10 - angles_U00
@@ -134,7 +187,8 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     """
 
     # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+    if not sp.sparse.issparse(U):
+        U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
     # Convert to SU(2) format and extract global phase
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
@@ -167,7 +221,7 @@ def _get_single_qubit_rot_angles_via_matrix(
     of the matrix of the target operation using ZYZ rotations.
     """
     # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 and not sp.sparse.issparse(U) else U
 
     # Convert to SU(2) format and extract global phase
     U_su2, global_phase = _convert_to_su2(U, return_global_phase=True)
@@ -222,7 +276,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
+        global_phase = math.squeeze(global_phase[0])
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations
