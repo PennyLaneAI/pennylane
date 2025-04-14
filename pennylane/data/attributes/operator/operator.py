@@ -21,7 +21,7 @@ from typing import Generic, Type, TypeVar
 
 import numpy as np
 
-from pennylane import ops as supported_ops
+from pennylane import ops as qops
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator
@@ -51,137 +51,137 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def supported_ops(cls) -> frozenset[Type[Operator]]:
+    def qops(cls) -> frozenset[Type[Operator]]:
         """Set of supported operators."""
         return frozenset(
             (
                 # pennylane/ops/qubit/arithmetic_qml.py
-                supported_ops.QubitCarry,
-                supported_ops.QubitSum,
+                qops.QubitCarry,
+                qops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
-                supported_ops.LinearCombination,
+                qops.LinearCombination,
                 # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
-                supported_ops.Prod,
-                supported_ops.SProd,
-                supported_ops.Sum,
-                # pennylane/ops/qubit/matrix_supported_ops.py
-                supported_ops.QubitUnitary,
-                supported_ops.DiagonalQubitUnitary,
+                qops.Prod,
+                qops.SProd,
+                qops.Sum,
+                # pennylane/ops/qubit/matrix_qops.py
+                qops.QubitUnitary,
+                qops.DiagonalQubitUnitary,
                 # pennylane/ops/qubit/non_parametric_qml.py
-                supported_ops.Hadamard,
-                supported_ops.PauliX,
-                supported_ops.PauliY,
-                supported_ops.PauliZ,
-                supported_ops.X,
-                supported_ops.Y,
-                supported_ops.Z,
-                supported_ops.T,
-                supported_ops.S,
-                supported_ops.SX,
-                supported_ops.CNOT,
-                supported_ops.CH,
-                supported_ops.SWAP,
-                supported_ops.ECR,
-                supported_ops.SISWAP,
-                supported_ops.CSWAP,
-                supported_ops.CCZ,
-                supported_ops.Toffoli,
-                supported_ops.WireCut,
+                qops.Hadamard,
+                qops.PauliX,
+                qops.PauliY,
+                qops.PauliZ,
+                qops.X,
+                qops.Y,
+                qops.Z,
+                qops.T,
+                qops.S,
+                qops.SX,
+                qops.CNOT,
+                qops.CH,
+                qops.SWAP,
+                qops.ECR,
+                qops.SISWAP,
+                qops.CSWAP,
+                qops.CCZ,
+                qops.Toffoli,
+                qops.WireCut,
                 # pennylane/ops/qubit/observables.py
-                supported_ops.Hermitian,
-                supported_ops.Projector,
+                qops.Hermitian,
+                qops.Projector,
                 # pennylane/ops/qubit/parametric_ops_multi_qubit.py
-                supported_ops.MultiRZ,
-                supported_ops.IsingXX,
-                supported_ops.IsingYY,
-                supported_ops.IsingZZ,
-                supported_ops.IsingXY,
-                supported_ops.PSWAP,
-                supported_ops.CPhaseShift00,
-                supported_ops.CPhaseShift01,
-                supported_ops.CPhaseShift10,
+                qops.MultiRZ,
+                qops.IsingXX,
+                qops.IsingYY,
+                qops.IsingZZ,
+                qops.IsingXY,
+                qops.PSWAP,
+                qops.CPhaseShift00,
+                qops.CPhaseShift01,
+                qops.CPhaseShift10,
                 # pennylane/ops/qubit/parametric_ops_single_qubit.py
-                supported_ops.RX,
-                supported_ops.RY,
-                supported_ops.RZ,
-                supported_ops.PhaseShift,
-                supported_ops.Rot,
-                supported_ops.U1,
-                supported_ops.U2,
-                supported_ops.U3,
-                # pennylane/ops/qubit/qchem_supported_ops.py
-                supported_ops.SingleExcitation,
-                supported_ops.SingleExcitationMinus,
-                supported_ops.SingleExcitationPlus,
-                supported_ops.DoubleExcitation,
-                supported_ops.DoubleExcitationMinus,
-                supported_ops.DoubleExcitationPlus,
-                supported_ops.OrbitalRotation,
-                supported_ops.FermionicSWAP,
+                qops.RX,
+                qops.RY,
+                qops.RZ,
+                qops.PhaseShift,
+                qops.Rot,
+                qops.U1,
+                qops.U2,
+                qops.U3,
+                # pennylane/ops/qubit/qchem_qops.py
+                qops.SingleExcitation,
+                qops.SingleExcitationMinus,
+                qops.SingleExcitationPlus,
+                qops.DoubleExcitation,
+                qops.DoubleExcitationMinus,
+                qops.DoubleExcitationPlus,
+                qops.OrbitalRotation,
+                qops.FermionicSWAP,
                 # pennylane/ops/special_unitary.py
-                supported_ops.SpecialUnitary,
+                qops.SpecialUnitary,
                 # pennylane/ops/state_preparation.py
-                supported_ops.BasisState,
-                supported_ops.StatePrep,
-                supported_ops.QubitDensityMatrix,
+                qops.BasisState,
+                qops.StatePrep,
+                qops.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
-                supported_ops.QutritUnitary,
-                # pennylane/ops/qutrit/non_parametric_supported_ops.py
-                supported_ops.TShift,
-                supported_ops.TClock,
-                supported_ops.TAdd,
-                supported_ops.TSWAP,
+                qops.QutritUnitary,
+                # pennylane/ops/qutrit/non_parametric_qops.py
+                qops.TShift,
+                qops.TClock,
+                qops.TAdd,
+                qops.TSWAP,
                 # pennylane/ops/qutrit/observables.py
-                supported_ops.THermitian,
+                qops.THermitian,
                 # pennylane/ops/channel.py
-                supported_ops.AmplitudeDamping,
-                supported_ops.GeneralizedAmplitudeDamping,
-                supported_ops.PhaseDamping,
-                supported_ops.DepolarizingChannel,
-                supported_ops.BitFlip,
-                supported_ops.ResetError,
-                supported_ops.PauliError,
-                supported_ops.PhaseFlip,
-                supported_ops.ThermalRelaxationError,
+                qops.AmplitudeDamping,
+                qops.GeneralizedAmplitudeDamping,
+                qops.PhaseDamping,
+                qops.DepolarizingChannel,
+                qops.BitFlip,
+                qops.ResetError,
+                qops.PauliError,
+                qops.PhaseFlip,
+                qops.ThermalRelaxationError,
                 # pennylane/ops/cv.py
-                supported_ops.Rotation,
-                supported_ops.Squeezing,
-                supported_ops.Displacement,
-                supported_ops.Beamsplitter,
-                supported_ops.TwoModeSqueezing,
-                supported_ops.QuadraticPhase,
-                supported_ops.ControlledAddition,
-                supported_ops.ControlledPhase,
-                supported_ops.Kerr,
-                supported_ops.CrossKerr,
-                supported_ops.InterferometerUnitary,
-                supported_ops.CoherentState,
-                supported_ops.SqueezedState,
-                supported_ops.DisplacedSqueezedState,
-                supported_ops.ThermalState,
-                supported_ops.GaussianState,
-                supported_ops.FockState,
-                supported_ops.FockStateVector,
-                supported_ops.FockDensityMatrix,
-                supported_ops.CatState,
-                supported_ops.NumberOperator,
-                supported_ops.TensorN,
-                supported_ops.QuadX,
-                supported_ops.QuadP,
-                supported_ops.QuadOperator,
-                supported_ops.PolyXP,
-                supported_ops.FockStateProjector,
+                qops.Rotation,
+                qops.Squeezing,
+                qops.Displacement,
+                qops.Beamsplitter,
+                qops.TwoModeSqueezing,
+                qops.QuadraticPhase,
+                qops.ControlledAddition,
+                qops.ControlledPhase,
+                qops.Kerr,
+                qops.CrossKerr,
+                qops.InterferometerUnitary,
+                qops.CoherentState,
+                qops.SqueezedState,
+                qops.DisplacedSqueezedState,
+                qops.ThermalState,
+                qops.GaussianState,
+                qops.FockState,
+                qops.FockStateVector,
+                qops.FockDensityMatrix,
+                qops.CatState,
+                qops.NumberOperator,
+                qops.TensorN,
+                qops.QuadX,
+                qops.QuadP,
+                qops.QuadOperator,
+                qops.PolyXP,
+                qops.FockStateProjector,
                 # pennylane/ops/identity.py
-                supported_ops.Identity,
-                # pennylane/ops/op_math/controlled_supported_ops.py
-                supported_ops.ControlledQubitUnitary,
-                supported_ops.ControlledPhaseShift,
-                supported_ops.CRX,
-                supported_ops.CRY,
-                supported_ops.CRZ,
-                supported_ops.CRot,
-                supported_ops.CZ,
-                supported_ops.CY,
+                qops.Identity,
+                # pennylane/ops/op_math/controlled_qops.py
+                qops.ControlledQubitUnitary,
+                qops.ControlledPhaseShift,
+                qops.CRX,
+                qops.CRY,
+                qops.CRZ,
+                qops.CRot,
+                qops.CZ,
+                qops.CY,
             )
         )
 
@@ -207,22 +207,22 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if isinstance(op, (supported_ops.Prod, supported_ops.SProd, supported_ops.Sum)):
+            if isinstance(op, (qops.Prod, qops.SProd, qops.Sum)):
                 op = op.simplify()
-            if type(op) not in self.supported_ops():
+            if type(op) not in self.qops():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
-            if isinstance(op, supported_ops.LinearCombination):
+            if isinstance(op, qops.LinearCombination):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
-            elif isinstance(op, (supported_ops.Prod, supported_ops.Sum)):
+            elif isinstance(op, (qops.Prod, qops.Sum)):
                 self._ops_to_hdf5(bind, op_key, op.operands)
                 op_wire_labels.append("null")
-            elif isinstance(op, supported_ops.SProd):
+            elif isinstance(op, qops.SProd):
                 coeffs, ops = op.terms()
                 sprod_grp = self._ops_to_hdf5(bind, op_key, ops)
                 sprod_grp["sprod_scalar"] = coeffs
@@ -250,19 +250,19 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         with QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
-                op_cls = self._supported_ops_dict()[op_class_name]
-                if op_cls is supported_ops.LinearCombination:
+                op_cls = self._qops_dict()[op_class_name]
+                if op_cls is qops.LinearCombination:
                     ops.append(
-                        supported_ops.LinearCombination(
+                        qops.LinearCombination(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
-                elif op_cls in (supported_ops.Prod, supported_ops.Sum):
+                elif op_cls in (qops.Prod, qops.Sum):
                     ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls is supported_ops.SProd:
+                elif op_cls is qops.SProd:
                     ops.append(
-                        supported_ops.s_prod(
+                        qops.s_prod(
                             scalar=bind[op_key]["sprod_scalar"][0],
                             operator=self._hdf5_to_ops(bind[op_key])[0],
                         )
@@ -281,9 +281,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
+    def _qops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        ops_dict = {op.__name__: op for op in cls.supported_ops()}
-        ops_dict["Hamiltonian"] = supported_ops.LinearCombination
-        ops_dict["Tensor"] = supported_ops.Prod
+        ops_dict = {op.__name__: op for op in cls.qops()}
+        ops_dict["Hamiltonian"] = qops.LinearCombination
+        ops_dict["Tensor"] = qops.Prod
         return ops_dict
