@@ -17,30 +17,26 @@ The default.mixed device is PennyLane's standard qubit simulator for mixed-state
 It implements some built-in qubit :doc:`operations </introduction/operations>`,
 providing a simple mixed-state simulation ofqubit-based quantum circuits.
 """
-# isort: skip_file
-# pylint: disable=wrong-import-order
 import logging
-
-import numpy as np
-
-import pennylane as qml
-from pennylane.math import get_canonical_interface_name
-from pennylane.logging import debug_logger, debug_logger_init
-
-# We deliberately separate the imports to avoid confusion with the legacy device
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Optional, Union
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.math import get_canonical_interface_name
 from pennylane.ops.channel import __qubit_channels__ as channels
-from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     no_sampling,
@@ -49,7 +45,6 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
-from .modifiers import simulator_tracking, single_tape_support
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
