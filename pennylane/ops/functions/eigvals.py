@@ -15,8 +15,6 @@
 This module contains the qml.eigvals function.
 """
 import warnings
-
-# pylint: disable=protected-access
 from functools import partial, reduce
 
 import scipy

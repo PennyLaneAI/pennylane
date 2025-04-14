@@ -26,7 +26,6 @@ from pennylane.wires import Wires
 
 
 def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
-    # pylint: disable=too-many-branches
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 

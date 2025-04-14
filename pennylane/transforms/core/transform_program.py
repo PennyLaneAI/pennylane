@@ -508,7 +508,6 @@ class TransformProgram:
             i -= 1
         return found
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _get_classical_jacobian(self, index: int):
         if self.cotransform_cache is None or not self[index].classical_cotransform:
             return None
@@ -527,7 +526,7 @@ class TransformProgram:
         # autograd and tf cant handle pytrees, so need to unsqueeze the squeezing
         # done in _classical_preprocessing
         tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
-        tapes, _ = self[:index]((tape,))  # pylint: disable=not-callable
+        tapes, _ = self[:index]((tape,))
         multi_tapes = len(tapes) > 1
         if not multi_tapes:
             classical_jacobian = [classical_jacobian]

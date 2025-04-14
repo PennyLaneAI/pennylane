@@ -14,8 +14,6 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 import warnings
-
-# pylint: disable=too-few-public-methods
 from functools import partial
 
 import pennylane as qml
@@ -172,7 +170,6 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
 
     """
 
-    # pylint:disable=protected-access
     par_info = tape.par_info[param_index]
 
     if use_graph:

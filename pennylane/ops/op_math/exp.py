@@ -172,7 +172,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], num_steps=metadata[0])
 
-    # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, id=None):
         if not isinstance(base, Operator):
             raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
@@ -294,8 +293,8 @@ class Exp(ScalarSymbolicOp, Operation):
         # Store operator classes with generators
         has_generator_types = []
         has_generator_types_anywires = []
-        for op_name in qml.ops.qubit.__all__:  # pylint:disable=no-member
-            op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+        for op_name in qml.ops.qubit.__all__:
+            op_class = getattr(qml.ops.qubit, op_name)
             if op_class.has_generator:
                 if op_class.num_wires == AnyWires:
                     has_generator_types_anywires.append(op_class)
@@ -414,7 +413,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def _matrix(scalar, mat):
         return math.expm(scalar * mat)
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         if wire_order is not None:
             raise NotImplementedError("Wire order is not implemented for sparse_matrix")
@@ -463,7 +461,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     def simplify(self):
         new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+        if isinstance(new_base, qml.ops.op_math.SProd):
             return Exp(new_base.base, self.coeff * new_base.scalar, self.num_steps)
         return Exp(new_base, self.coeff, self.num_steps)
 

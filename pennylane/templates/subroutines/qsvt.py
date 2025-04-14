@@ -14,7 +14,7 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
-# pylint: disable=too-many-arguments
+
 import copy
 from typing import Literal
 
@@ -28,7 +28,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-branches, unused-argument
+# pylint: disable=unused-argument
 def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,

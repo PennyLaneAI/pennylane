@@ -553,9 +553,7 @@ class FermionicDoubleExcitation(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weight, wires, wires1, wires2
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -15,7 +15,6 @@
 A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 
-# pylint: disable=unnecessary-lambda-assignment,protected-access
 
 from __future__ import annotations
 

@@ -222,7 +222,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         with _SnapshotDebugger(qnode.device) as dbg:
-            # pylint: disable=protected-access
+
             results = qnode(*args, **kwargs)
 
             # Reset interface

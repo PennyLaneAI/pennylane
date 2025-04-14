@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments,too-many-boolean-expressions
+# pylint: disable=too-many-boolean-expressions
 
 from functools import partial, wraps
 from typing import Optional
@@ -557,7 +557,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 # If the single-term measurement already exists, it can be reused by all original
                 # measurements. In this case, add the existing single-term measurement to the list
                 # corresponding to this original measurement.
-                # pylint: disable=superfluous-parens
+
                 elif (sm := qml.expval(o)) in single_term_obs_mps:
                     single_term_obs_mps[sm][0].append(mp_idx)
                     single_term_obs_mps[sm][1].append(c)

@@ -32,9 +32,7 @@ from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 # pylint: disable=arguments-differ
 
 
-class ResourceTrotterProduct(
-    TrotterProduct, ResourceOperator
-):  # pylint: disable=too-many-ancestors
+class ResourceTrotterProduct(TrotterProduct, ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 

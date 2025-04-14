@@ -50,7 +50,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+    if not np.log2(n_wires / n_block_wires).is_integer():
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -198,9 +198,7 @@ class TTN(Operation):
         super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, block, ind_gates
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -243,7 +241,7 @@ class TTN(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+        if not np.log2(n_wires / n_block_wires).is_integer():
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

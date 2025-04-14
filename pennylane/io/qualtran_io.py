@@ -29,7 +29,6 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
-# pylint: disable=unused-argument
 @lru_cache
 def _get_to_pl_op():
     @singledispatch
@@ -406,9 +405,7 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(
-        *params, **hyperparams
-    ):  # pylint: disable=no-method-argument, no-self-argument
+    def compute_matrix(*params, **hyperparams):  # pylint: disable=no-self-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
 

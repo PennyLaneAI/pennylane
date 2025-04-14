@@ -16,9 +16,6 @@ import numbers
 from collections.abc import Iterable
 
 import pennylane as qml
-
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
 
 from .gradient_descent import GradientDescentOptimizer

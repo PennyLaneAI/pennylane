@@ -324,7 +324,7 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    # pylint: disable=import-outside-toplevel,abstract-method,arguments-differ
+    # pylint: disable=import-outside-toplevel
     import torch
 
     class _TorchFidelity(torch.autograd.Function):

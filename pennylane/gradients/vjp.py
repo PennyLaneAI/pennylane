@@ -17,7 +17,7 @@ of tapes.
 """
 import autograd
 
-# pylint: disable=no-member, too-many-branches
+# pylint: disable=too-many-branches
 import numpy as np
 
 import pennylane as qml
@@ -378,7 +378,6 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     return gradient_tapes, processing_fn
 
 
-# pylint: disable=too-many-arguments
 def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.

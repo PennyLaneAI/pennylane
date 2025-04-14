@@ -19,7 +19,7 @@ from itertools import product
 
 import numpy as np
 
-# pylint: disable= import-outside-toplevel,no-member,too-many-function-args
+# pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -194,7 +194,6 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-# pylint:disable=too-many-branches
 def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.

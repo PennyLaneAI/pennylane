@@ -317,7 +317,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             # corresponding element of the JVP will be zero,
             # and we can avoid a quantum computation.
 
-            def func(_):  # pylint: disable=unused-argument
+            def func(_):
                 # TODO: Update shape for CV variables and for qutrit simulations
                 res = tuple(_single_measurement_zero(m, tangent) for m in tape.measurements)
                 if not multi_m:
@@ -417,7 +417,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
-    # pylint: disable=too-many-arguments
+
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []

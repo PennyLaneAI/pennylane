@@ -23,7 +23,7 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 
-class DatasetList(  # pylint: disable=too-many-ancestors
+class DatasetList(
     Generic[T],
     DatasetAttribute[HDF5Group, Sequence[T], Iterable[T]],
     MutableSequence[T],

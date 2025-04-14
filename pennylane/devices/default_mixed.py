@@ -18,7 +18,7 @@ It implements some built-in qubit :doc:`operations </introduction/operations>`,
 providing a simple mixed-state simulation ofqubit-based quantum circuits.
 """
 # isort: skip_file
-# pylint: disable=wrong-import-order, ungrouped-imports
+# pylint: disable=wrong-import-order
 import logging
 
 import numpy as np
@@ -208,9 +208,8 @@ class DefaultMixed(Device):
         """The name of the device."""
         return "default.mixed"
 
-    # pylint: disable=too-many-positional-arguments
     @debug_logger_init
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         wires=None,
         shots=None,

@@ -17,7 +17,7 @@ not depend on any parameters.
 """
 from collections.abc import Hashable
 
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
+# pylint: disable=arguments-differ
 from copy import copy
 from typing import Optional
 
@@ -125,7 +125,7 @@ class WireCut(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
+    def compute_decomposition(wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.

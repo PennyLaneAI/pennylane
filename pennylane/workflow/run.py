@@ -298,7 +298,7 @@ def run(
             differentiable=config.derivative_order > 1,
         )
 
-        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
+        results = ml_execute(
             tapes,
             device,
             execute_fn,

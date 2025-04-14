@@ -318,7 +318,7 @@ class KerasLayer(Layer):
             "The 'KerasLayer' class is deprecated and will be removed in v0.42. ",
             PennyLaneDeprecationWarning,
         )
-        # pylint: disable=too-many-arguments
+
         if not CORRECT_TF_VERSION:
             raise ImportError(
                 "KerasLayer requires TensorFlow version 2 or above. The latest "
@@ -422,7 +422,7 @@ class KerasLayer(Layer):
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
-            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+
             new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
             results = tf.reshape(results, new_shape)
 

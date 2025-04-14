@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
+# pylint: disable=arguments-differ
 import cmath
 from copy import copy
 from functools import lru_cache
@@ -793,7 +793,7 @@ class PauliZ(Observable, Operation):
         return qml.pauli.pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(
         wires: WiresLike,
     ) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).

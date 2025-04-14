@@ -145,7 +145,6 @@ class AmplitudeAmplification(Operation):
 
         super().__init__(*U.data, *O.data, wires=wires)
 
-    # pylint:disable=arguments-differ
     @staticmethod
     def compute_decomposition(*_, **kwargs):
         U = kwargs["U"]

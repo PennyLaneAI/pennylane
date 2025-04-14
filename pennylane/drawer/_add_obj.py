@@ -14,7 +14,7 @@
 """
 This module contains the _add_obj function for adding an object to the text drawer.
 """
-# pylint: disable=unused-argument
+
 from functools import singledispatch
 
 import pennylane as qml
@@ -61,7 +61,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     return layer_str
 
 
-def _add_grouping_symbols(op, layer_str, config):  # pylint: disable=unused-argument
+def _add_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object."""
 
     if len(op.wires) > 1:
@@ -205,7 +205,7 @@ def _add_cwire_measurement(m, layer_str, config):
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
     mv_label = "MCM"
-    meas_label = measurement_label_map[type(m)](mv_label)  # pylint: disable=protected-access
+    meas_label = measurement_label_map[type(m)](mv_label)
 
     n_wires = len(config.wire_map)
     for mcm in mcms:

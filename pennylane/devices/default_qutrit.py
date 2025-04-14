@@ -23,7 +23,7 @@ import logging
 
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
+import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
 
@@ -201,7 +201,7 @@ class DefaultQutrit(QutritDevice):
         return dict(wire_map)
 
     @debug_logger
-    def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=arguments-differ
+    def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
@@ -209,7 +209,7 @@ class DefaultQutrit(QutritDevice):
         # Operations are enumerated so that the order of operations can eventually be used
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
-        for i, operation in enumerate(operations):  # pylint: disable=unused-variable
+        for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, qml.QutritBasisState):
                 raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
@@ -273,10 +273,7 @@ class DefaultQutrit(QutritDevice):
         if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.name](state, axes)
-        elif (
-            isinstance(operation, qml.ops.Adjoint)  # pylint: disable=no-member
-            and operation.base.name in self._apply_ops
-        ):
+        elif isinstance(operation, qml.ops.Adjoint) and operation.base.name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base.name](state, axes, inverse=True)
 

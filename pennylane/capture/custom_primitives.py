@@ -30,7 +30,7 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
-# pylint: disable=too-few-public-methods,abstract-method
+# pylint: disable=too-few-public-methods
 class QmlPrimitive(jax.core.Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
@@ -49,7 +49,6 @@ class QmlPrimitive(jax.core.Primitive):
         self._prim_type = PrimitiveType(value)
 
 
-# pylint: disable=too-few-public-methods,abstract-method
 class NonInterpPrimitive(QmlPrimitive):
     """A subclass to JAX's Primitive that works like a Python function
     when evaluating JVPTracers and BatchTracers."""

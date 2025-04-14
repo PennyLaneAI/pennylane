@@ -59,7 +59,7 @@ modifies the output of ``forward`` and the input to ``backward`` to unpack and r
 result object.
 
 """
-# pylint: disable=too-many-arguments,protected-access,abstract-method,unused-argument
+# pylint: disable=protected-access
 import inspect
 import logging
 
@@ -139,7 +139,7 @@ class ExecuteTapes(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
+    def forward(ctx, kwargs, *parameters):
         """Implements the forward pass batch tape evaluation."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
