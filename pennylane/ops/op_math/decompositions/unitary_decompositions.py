@@ -497,7 +497,7 @@ def _two_qubit_resource(num_wires):
 
 
 @register_resources(_two_qubit_resource)
-def two_qubit_decomposition(U, wires, **__):
+def two_qubit_decomp(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
