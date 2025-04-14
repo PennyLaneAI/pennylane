@@ -15,9 +15,8 @@
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
 
-import numpy as np
-
 import pennylane as qml
+from pennylane.math import isclose
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import _get_xzx_angles
 
 from .operations import RotXZX
@@ -41,8 +40,9 @@ def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = qml.Rot.compute_matrix(phi, theta, omega)
     phi, theta, lam, gamma = _get_xzx_angles(mat)
 
-    RotXZX(lam % (2 * np.pi), theta % (2 * np.pi), phi % (2 * np.pi), wires)
-    qml.GlobalPhase(-gamma)
+    RotXZX(lam, theta, phi, wires)
+    if not isclose(gamma, 0):
+        qml.GlobalPhase(-gamma)
 
 
 @qml.transform
