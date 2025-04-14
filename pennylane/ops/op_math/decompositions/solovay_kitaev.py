@@ -73,9 +73,9 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         tol (float): tolerance for the match to be considered ``True``.
 
     Returns:
-        Tuple(bool, TensorLike, int): A tuple including `True`/`False` for whether an operation similar to the
+        tuple(bool, TensorLike, int): A tuple including ``True``/``False`` for whether an operation similar to the
         given operations was found, the quaternion representation of the searched operations, and its index in
-        the `op_vecs` or `kd_tree`.
+        the ``op_vecs`` or ``kd_tree``.
     """
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
@@ -95,10 +95,10 @@ def _prune_approximate_set(
         approx_set_mat (list[TensorLike]): list of SU(2) matrices
         approx_set_gph (list[float]): list of global phases
         approx_set_qat (list[TensorLike]): list of quaternion representations
-        approx_set_sum (list[int]): list of numbers of the T and Adjoint(T) gates in the sequences
+        approx_set_sum (list[int]): list of numbers of the ``T`` and ``Adjoint(T)`` gates in the sequences
 
     Returns:
-        Tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
+        tuple[list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]]:
         A tuple containing the pruned approximate set.
     """
     if approx_set_qat:
@@ -125,11 +125,11 @@ def _approximate_set(basis_gates, max_length=10):
 
     Args:
         basis_gates (tuple[str]): Basis set to be used for Solovay-Kitaev decomposition build using the following
-        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where `*` refers to the gate adjoint.
-        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
+        terms, ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers to the gate adjoint.
+        max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is ``10``
 
     Returns:
-        Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
+        tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """

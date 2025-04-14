@@ -232,7 +232,13 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Apply device preprocessing transforms
-    qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
+    graph_enabled = qml.decomposition.enabled_graph()
+    try:
+        qml.decomposition.disable_graph()
+        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
+    finally:
+        if graph_enabled:
+            qml.decomposition.enable_graph()
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
@@ -458,7 +464,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure autograph=True or use native control "
+            "variable (a function input). Please ensure that autograph=True or use native control "
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 

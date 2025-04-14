@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
+The ``default.mixed`` device is PennyLane's standard qubit simulator for mixed-state computations.
 
 It implements some built-in qubit :doc:`operations </introduction/operations>`,
-providing a simple mixed-state simulation ofqubit-based quantum circuits.
+providing a simple mixed-state simulation of qubit-based quantum circuits.
+
 """
 import logging
 import warnings
