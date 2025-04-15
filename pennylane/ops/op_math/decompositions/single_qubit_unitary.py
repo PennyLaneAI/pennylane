@@ -22,6 +22,9 @@ import scipy as sp
 import pennylane as qml
 from pennylane import math
 
+# Small number to add to denominators to avoid division by zero
+EPS = 1e-64
+
 
 def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
@@ -309,7 +312,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     """
 
     # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
+    EPS = np.finfo(float).eps
 
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
@@ -374,10 +377,6 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-
-    # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
-
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
     U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
@@ -444,10 +443,6 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-
-    # Small number to add to denominators to avoid division by zero
-    EPS = 1e-64
-
     # Get global phase \alpha and U in SU(2) form (determinant is 1)
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
