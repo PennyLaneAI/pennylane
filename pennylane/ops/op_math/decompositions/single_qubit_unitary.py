@@ -314,9 +314,6 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
     """
 
-    # Small number to add to denominators to avoid division by zero
-    EPS = np.finfo(float).eps
-
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
     U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
