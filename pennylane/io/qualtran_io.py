@@ -673,5 +673,4 @@ def _create_to_bloq():
 
 
 if qualtran:
-    print("Hello")
     ToBloq = _create_to_bloq()
