@@ -47,7 +47,6 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover
 
 if TYPE_CHECKING:
     from pennylane.operation import Operator
-    from pennylane.ops.op_math.condition import Conditional
     from pennylane.tape import QuantumScript
 
 
@@ -170,7 +169,7 @@ def _(op: MidMeasureMP, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: Conditional, drawer, layer, config) -> None:
+def _(op: ops.Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
