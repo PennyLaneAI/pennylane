@@ -17,7 +17,9 @@ Contains the classical Jacobian transform.
 # pylint: disable=import-outside-toplevel
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane._grad import jacobian
+from pennylane.workflow import construct_tape
 
 
 def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
@@ -141,22 +143,22 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         """Returns the trainable gate parameters for a given QNode input."""
         kwargs.pop("shots", None)
         kwargs.pop("argnums", None)
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        tape = construct_tape(qnode)(*args, **kwargs)
 
         if expand_fn is not None:
             tape = expand_fn(tape)
-        return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
+        return math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     wrapper_argnum = argnum if argnum is not None else None
 
-    def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+    def qnode_wrapper(*args, **kwargs):
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
         if qnode.interface == "autograd":
-            jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
+            jac = jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
         elif qnode.interface == "torch":
             import torch
@@ -167,7 +169,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 torch_argnum = (
                     wrapper_argnum
                     if wrapper_argnum is not None
-                    else qml.math.get_trainable_indices(args)
+                    else math.get_trainable_indices(args)
                 )
                 if np.isscalar(torch_argnum):
                     jac = jac[torch_argnum]

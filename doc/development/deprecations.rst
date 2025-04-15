@@ -48,11 +48,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The `qml.gradients.hamiltonian_grad` function has been deprecated.
-  This gradient recipe is not required with the new operator arithmetic system.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
 
 * The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
@@ -104,6 +99,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The `qml.gradients.hamiltonian_grad` function has been removed.
+  This gradient recipe is not required with the new operator arithmetic system.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 

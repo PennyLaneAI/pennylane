@@ -124,6 +124,10 @@ layer = "core"
 path = "pennylane.shadows"
 layer = "auxiliary"
 
+[[modules]]
+path = "pennylane.gradients"
+layer = "auxiliary"
+
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
 
@@ -171,10 +175,6 @@ path = "pennylane.transforms.core"
 depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
 unchecked = true
 
-[[modules]]
-path = "pennylane.gradients"
-depends_on = ["pennylane.circuit_graph", "pennylane.typing", "pennylane.measurements", "pennylane.transforms", "pennylane.pulse", "pennylane.ops", "pennylane", "pennylane.queuing", "pennylane.devices", "pennylane.tape"]
-unchecked = true
 
 [[modules]]
 path = "pennylane.operation"
