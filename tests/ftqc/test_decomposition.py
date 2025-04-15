@@ -24,13 +24,14 @@ import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_operation
 from pennylane.ftqc import (
     GraphStatePrep,
+    RotXZX,
     cond_measure,
+    convert_to_mbqc_gateset,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
 )
-from pennylane.ftqc.decomposition import _rot_to_xzx, convert_to_mbqc_gateset, mbqc_gate_set
-from pennylane.ftqc.operations import RotXZX
+from pennylane.ftqc.decomposition import _rot_to_xzx, mbqc_gate_set
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import _get_xzx_angles
 
 
