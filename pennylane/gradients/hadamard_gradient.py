@@ -152,7 +152,7 @@ def hadamard_grad(
 
     >>> import jax
     >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard"})
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
@@ -337,7 +337,7 @@ def hadamard_grad(
 
         **Reversed direct mode**
 
-        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"revered"`` modes,
+        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"reversed"`` modes,
         where the role of the observable and the generators of the unitary operations in the circuit
         swap, and the additional auxiliary qubit is exchanged for additional circuit executions:
 
