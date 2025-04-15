@@ -19,11 +19,9 @@ from itertools import product
 
 import numpy as np
 
+import pennylane.ops as qops
 from pennylane import math
 from pennylane.measurements import shadow_expval
-from pennylane.ops import X, Y, Z
-from pennylane.ops.functions import matrix
-from pennylane.ops.identity import I
 from pennylane.queuing import AnnotatedQueue, apply
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
@@ -69,7 +67,7 @@ def _shadow_state_diffable(tape, wires):
     for w in wires_list:
         observables = []
         # Create all combinations of possible Pauli products P_i P_j P_k.... for w wires
-        for obs in product(*[[I, X, Y, Z] for _ in range(len(w))]):
+        for obs in product(*[[qops.I, qops.X, qops.Y, qops.Z] for _ in range(len(w))]):
             # Perform tensor product (((P_i @ P_j) @ P_k ) @ ....)
             observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
         all_observables.extend(observables)
@@ -90,7 +88,7 @@ def _shadow_state_diffable(tape, wires):
 
             obs_matrices = math.stack(
                 [
-                    math.cast_like(math.convert_like(matrix(obs), results), results)
+                    math.cast_like(math.convert_like(qops.functions.matrix(obs), results), results)
                     for obs in all_observables[start : start + 4 ** len(w)]
                 ]
             )
