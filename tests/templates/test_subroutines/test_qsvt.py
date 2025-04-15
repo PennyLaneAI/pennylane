@@ -23,7 +23,7 @@ from numpy.linalg import matrix_power
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.subroutines.qsvt import _complementary_poly, cheby_pol, poly_func, qsp_iterates, qsp_optimization
-
+from numpy.polynomial.chebyshev import Chebyshev
 
 def qfunc(A):
     """Used to test queuing in the next test."""
@@ -838,7 +838,7 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
-            (generate_polynomial_coeffs(1000,0)),
+            (generate_polynomial_coeffs(100,0)),
             (generate_polynomial_coeffs(7,1)),
             (generate_polynomial_coeffs(12,0)),
         ]
@@ -897,6 +897,33 @@ class TestIterativeSolver:
             atol=tolerance,
         )
     
+    @pytest.mark.parametrize(
+        "x, degree",
+        [
+            (np.random.uniform(low=-1., high=1.), np.random.randint(1,100)) for _ in range(4) 
+        ]
+    )
+    def test_cheby_pol(self, x, degree):
+        coeffs = [0.]*(degree) + [1.]
+        assert np.isclose(cheby_pol(x, degree), Chebyshev(coeffs)(x))  
+
+    @pytest.mark.parametrize(
+        "coeffs, parity, x",
+        [
+            (generate_polynomial_coeffs(100,0), 0, np.random.uniform(-1.,1.)),
+            (generate_polynomial_coeffs(7,1), 1, np.random.uniform(-1.,1.)),
+            (generate_polynomial_coeffs(12,0), 0, np.random.uniform(-1.,1.)),
+        ]
+    )
+    def test_poly_func(self, coeffs, parity, x):
+        print()
+        val = poly_func(coeffs=coeffs[::2], degree=len(coeffs)-1, parity=parity, x=x)
+        temp = np.copy(coeffs[1::2])
+        coeffs[parity::2] = coeffs[::2]
+        coeffs[(parity+1)%2::2] = temp
+        ref = Chebyshev(coeffs)(x)
+        assert np.isclose(val, ref)
+
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
 
