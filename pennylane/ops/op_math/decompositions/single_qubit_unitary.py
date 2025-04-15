@@ -82,11 +82,11 @@ def _zyz_get_rotation_angles(U):
     # the angle within -np.pi and np.pi
     angles_U00 = math.arctan2(
         math.imag(U[:, 0, 0]),
-        math.real(U[:, 0, 0]),
+        math.real(U[:, 0, 0]) + EPS,
     )
     angles_U10 = math.arctan2(
         math.imag(U[:, 1, 0]),
-        math.real(U[:, 1, 0]),
+        math.real(U[:, 1, 0]) + EPS,
     )
 
     phis = -angles_U10 - angles_U00
