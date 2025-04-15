@@ -664,9 +664,6 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "P",
         [
-            # ([0.1, 0, 0.3, 0, -0.1]),
-            # ([0, 0.2, 0, 0.3]),
-            # ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
             (generate_polynomial_coeffs(4,0)),
             (generate_polynomial_coeffs(3,1)),
             (generate_polynomial_coeffs(6,0)),
@@ -695,9 +692,6 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "angles",
         [
-            # ([0.1, 2, 0.3, 3, -0.1]),
-            # ([0, 0.2, 1, 0.3, 4, 2.4]),
-            # ([-0.4, 2, 0.4, 0, -0.1, 0, 0.1]),
             (generate_polynomial_coeffs(4, None)),
             (generate_polynomial_coeffs(5, None)),
             (generate_polynomial_coeffs(6, None))
