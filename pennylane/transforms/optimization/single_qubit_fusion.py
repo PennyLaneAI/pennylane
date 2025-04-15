@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for fusing sequences of single-qubit gates."""
-# pylint: disable=too-many-branches
+
 
 from functools import lru_cache, partial
 from typing import Optional
@@ -28,7 +28,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @lru_cache
-def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr

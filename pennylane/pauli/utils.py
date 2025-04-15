@@ -106,7 +106,7 @@ def _is_pauli_word(observable):  # pylint:disable=unused-argument
 @_is_pauli_word.register(Identity)
 def _is_pw_pauli(
     observable: Union[PauliX, PauliY, PauliZ, Identity],
-):  # pylint:disable=unused-argument
+):
     return True
 
 
@@ -127,7 +127,6 @@ def _is_pw_sprod(observable: SProd):
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
-    # pylint: disable=isinstance-second-argument-not-valid-type
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
     This is a convenience function that checks if two given :class:`~.Prod`
@@ -163,7 +162,6 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
-    # pylint: disable=isinstance-second-argument-not-valid-type
     """Converts a Pauli word to the binary vector (symplectic) representation.
 
     This functions follows convention that the first half of binary vector components specify
@@ -1047,7 +1045,7 @@ def diagonalize_pauli_word(pauli_word):
 @qml.QueuingManager.stop_recording()
 def diagonalize_qwc_pauli_words(
     qwc_grouping,
-):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type
+):
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:

@@ -20,7 +20,7 @@ import scipy
 
 import pennylane as qml
 
-# pylint: disable=dangerous-default-value, too-many-statements
+# pylint: disable=dangerous-default-value
 
 
 def _mat_transform(u, qmat):

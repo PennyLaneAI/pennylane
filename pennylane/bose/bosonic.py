@@ -17,8 +17,6 @@ from copy import copy
 import pennylane as qml
 from pennylane.typing import TensorLike
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, invalid-name
-
 
 class BoseWord(dict):
     r"""Dictionary used to represent a Bose word, a product of bosonic creation and

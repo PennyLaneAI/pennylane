@@ -52,7 +52,7 @@ except AttributeError:  # pragma: no cover
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
 
 
-class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
+class PauliGroupingStrategy:
     """
     Class for partitioning a list of Pauli words according to some binary symmetric relation.
 
@@ -444,7 +444,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for partition in obs_groups:  # pylint:disable=too-many-nested-blocks
+    for partition in obs_groups:
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
@@ -565,7 +565,7 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
     # we cannot delete elements from the coefficients tensor, so we
     # use a proxy list memorising the indices for this logic
     coeff_indices = list(range(qml.math.shape(coefficients)[0]))
-    for i, partition in enumerate(partitioned_paulis):  # pylint:disable=too-many-nested-blocks
+    for i, partition in enumerate(partitioned_paulis):
         indices = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,

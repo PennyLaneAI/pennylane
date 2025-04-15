@@ -18,7 +18,7 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-# pylint: disable=no-member
+
 from collections import namedtuple
 from functools import singledispatch
 from typing import Optional, Sequence

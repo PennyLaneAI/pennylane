@@ -123,7 +123,7 @@ def determine_abstracted_axes(args):
     """
     if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
-    if not jax.config.jax_dynamic_shapes:  # pylint: disable=no-member
+    if not jax.config.jax_dynamic_shapes:
         return None, ()
 
     args, structure = jax.tree_util.tree_flatten(args)

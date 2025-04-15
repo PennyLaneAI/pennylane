@@ -25,7 +25,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 
 
-# pylint: disable=too-many-branches
 def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_i}\bra{x_j}``
     to qubit operators as given in :math:`Eq. (6-9)` in `arXiv.1909.12847 <https://arxiv.org/abs/1909.12847>_`.

@@ -25,7 +25,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .fermionic import FermiSentence, FermiWord
 
 
-# pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
     fermi_operator: Union[FermiWord, FermiSentence],
     ps: bool = False,

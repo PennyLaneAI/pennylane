@@ -297,8 +297,9 @@ def run(
             config,
             differentiable=config.derivative_order > 1,
         )
-
-        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+        # pylint: disable=unexpected-keyword-arg, too-many-function-args
+        results = ml_execute(
             tapes,
             device,
             execute_fn,

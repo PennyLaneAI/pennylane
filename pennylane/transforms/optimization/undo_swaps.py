@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Transform that eliminates the swap operators by reordering the wires."""
-# pylint: disable=too-many-branches
+
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform

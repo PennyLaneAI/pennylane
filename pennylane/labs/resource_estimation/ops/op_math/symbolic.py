@@ -26,7 +26,7 @@ from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.prod import Prod
 from pennylane.pauli import PauliSentence
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,too-many-arguments,too-many-positional-arguments
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):

@@ -154,7 +154,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 @bind_new_parameters.register(qml.CNOT)
 @bind_new_parameters.register(qml.Toffoli)
 @bind_new_parameters.register(qml.MultiControlledX)
-def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disable=unused-argument
+def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
     return copy.copy(op)
 
 

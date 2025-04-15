@@ -18,7 +18,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-differ,too-many-branches,no-member,bad-option-value,arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
 import inspect
@@ -363,7 +363,7 @@ class QubitDevice(Device):
             r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
-            # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
+            # if qml.math.get_interface(*r) == "jax":
             #     r = r[0]
 
             if single_measurement:
@@ -1323,7 +1323,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
+        batch_size = self._get_batch_size(prob, (dim,), dim)
 
         if wires is None:
             # no need to marginalize
@@ -1602,9 +1602,7 @@ class QubitDevice(Device):
             else samples.reshape((bin_size, -1))
         )
 
-    def adjoint_jacobian(
-        self, tape: QuantumScript, starting_state=None, use_device_state=False
-    ):  # pylint: disable=too-many-statements
+    def adjoint_jacobian(self, tape: QuantumScript, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -1703,7 +1701,7 @@ class QubitDevice(Device):
 
         trainable_params = []
         for k in tape.trainable_params:
-            # pylint: disable=protected-access
+
             mp_or_op = tape[tape.par_info[k]["op_idx"]]
             if isinstance(mp_or_op, MeasurementProcess):
                 warnings.warn(

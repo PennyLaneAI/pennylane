@@ -12,7 +12,7 @@
 """
 Contains the sign (and xi) decomposition tape transform, implementation of ideas from arXiv:2207.09479
 """
-# pylint: disable=protected-access
+
 import json
 from os import path
 
@@ -198,7 +198,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
 
 @transform
-def sign_expand(  # pylint: disable=too-many-arguments
+def sign_expand(
     tape: QuantumScript, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
@@ -330,13 +330,13 @@ def sign_expand(  # pylint: disable=too-many-arguments
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
         if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
-            # pylint: disable=function-redefined
+
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
                 return qml.math.sum(products)
 
         else:
-            # pylint: disable=function-redefined
+
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
                 return qml.math.sum(products) * len(products)

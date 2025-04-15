@@ -980,7 +980,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
-    # pylint: disable=import-outside-toplevel, unused-argument
+    # pylint: disable=import-outside-toplevel
     @debug_logger
     def eval_jaxpr(
         self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None

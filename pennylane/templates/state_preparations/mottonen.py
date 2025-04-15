@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 
-# pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
+# pylint: disable=len-as-condition
 def gray_code(rank):
     """Generates the Gray code of given rank.
 

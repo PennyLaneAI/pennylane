@@ -277,7 +277,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     @staticmethod
     def compute_decomposition(
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
+    ):  # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
         n_wires = len(u_tape.wires + v_tape.wires)

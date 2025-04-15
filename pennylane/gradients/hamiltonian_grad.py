@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a gradient recipe for the coefficients of Hamiltonians."""
-# pylint: disable=protected-access,unnecessary-lambda
+
 import warnings
 
 import pennylane as qml

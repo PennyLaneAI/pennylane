@@ -20,8 +20,6 @@ from itertools import chain
 import numpy as np
 
 import pennylane as qml
-
-# pylint: disable=too-many-statements,unused-argument
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -40,7 +38,7 @@ def _group_operations(tape):
     # Extract tape operations list
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
-    # pylint: disable=protected-access
+
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices

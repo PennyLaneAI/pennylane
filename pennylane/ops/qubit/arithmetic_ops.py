@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint: disable=arguments-differ
 from copy import copy
 from typing import Optional
 
@@ -416,7 +416,6 @@ class IntegerComparator(Operation):
         )
         return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         value: int,
@@ -467,7 +466,7 @@ class IntegerComparator(Operation):
     @staticmethod
     def compute_matrix(
         control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

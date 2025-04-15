@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -219,7 +219,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
-# pylint:disable=access-member-before-definition,global-statement
+# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
@@ -325,7 +325,6 @@ subsystem. It is equivalent to an integer with value -1."""
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -779,9 +778,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.hash
 
     @staticmethod
-    def compute_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> TensorLike:  # pylint:disable=unused-argument
+    def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -844,7 +841,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_sparse_matrix(
         *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
-    ) -> spmatrix:  # pylint:disable=unused-argument
+    ) -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1101,7 +1098,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         wires: Optional[WiresLike] = None,
         id: Optional[str] = None,
     ):
-        # pylint: disable=too-many-branches
 
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
@@ -1466,7 +1462,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_diagonalizing_gates(
         *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
-    ) -> list["Operator"]:  # pylint: disable=unused-argument
+    ) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1509,7 +1505,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_generator(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined generator.
@@ -1578,7 +1574,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return "_ops"
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_adjoint(cls) -> bool:
         r"""Bool: Whether or not the Operator can compute its own adjoint.
@@ -1620,7 +1616,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
-    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+    def simplify(self) -> "Operator":
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
@@ -1942,13 +1938,9 @@ class Channel(Operation, abc.ABC):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(
-        *params, **hyperparams
-    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
+    def compute_kraus_matrices(*params, **hyperparams) -> list[np.ndarray]:
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -2205,8 +2197,6 @@ class CVOperation(CV, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @classproperty
     def supports_parameter_shift(self):
         """Returns True iff the CV Operation supports the parameter-shift differentiation method.
@@ -2247,7 +2237,7 @@ class CVOperation(CV, Operation):
         for c, _a, s in param_shift:
             # evaluate the transform at the shifted parameter values
             p[idx] = _a * original_p_idx + s
-            U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+            U = self._heisenberg_rep(p)
 
             if pd is None:
                 pd = c * U
@@ -2290,7 +2280,7 @@ class CVOperation(CV, Operation):
                 p[0] = np.linalg.inv(p[0])
             except np.linalg.LinAlgError:
                 p[0] = -p[0]  # negate first parameter
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
 
         # not defined?
         if U is None:
@@ -2328,7 +2318,6 @@ class CVObservable(CV, Observable):
            can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
     def heisenberg_obs(self, wire_order):
@@ -2349,7 +2338,7 @@ class CVObservable(CV, Observable):
             array[float]: :math:`q`
         """
         p = self.parameters
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
         return self.heisenberg_expand(U, wire_order)
 
 
@@ -2358,7 +2347,6 @@ class StatePrepBase(Operation):
 
     grad_method = None
 
-    # pylint:disable=too-few-public-methods
     @abc.abstractmethod
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """
@@ -2450,7 +2438,7 @@ def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
     # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
-    return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
+    return obj in qml.ops.qubit.attributes.has_unitary_generator
 
 
 @qml.BooleanFn

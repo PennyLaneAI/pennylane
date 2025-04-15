@@ -268,7 +268,6 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     return Adjoint(op)
 
 
-# pylint: disable=too-many-public-methods
 class Adjoint(SymbolicOp):
     """
     The Adjoint of an operator.
@@ -332,6 +331,7 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
     # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
@@ -391,7 +391,6 @@ class Adjoint(SymbolicOp):
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
@@ -434,7 +433,6 @@ class Adjoint(SymbolicOp):
         return Adjoint(base=base)
 
 
-# pylint: disable=no-member
 class AdjointOperation(Adjoint, Operation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
@@ -456,7 +454,6 @@ class AdjointOperation(Adjoint, Operation):
     def name(self):
         return self._name
 
-    # pylint: disable=missing-function-docstring
     @property
     def basis(self):
         return self.base.basis
@@ -498,6 +495,7 @@ class AdjointObs(Adjoint, Observable):
         return object.__new__(cls)
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
 # pylint: disable=too-many-ancestors
 class AdjointOpObs(AdjointOperation, Observable):
     """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""

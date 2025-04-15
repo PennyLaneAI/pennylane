@@ -16,8 +16,6 @@ Contains the batch dimension transform.
 """
 
 import itertools
-
-# pylint: disable=import-outside-toplevel
 from collections import Counter
 from collections.abc import Sequence
 
@@ -237,7 +235,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     )
 
 
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
     aux_tapes: qml.tape.QuantumScript,
