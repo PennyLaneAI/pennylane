@@ -11,9 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This module provides a collection of methods that help in the construction of
-QAOA workflows.
+"""
+.. currentmodule:: pennylane.qaoa
+
+Mixer Hamiltonians
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    mixers
+
+Cost Hamiltonians
+~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    cost
+
+QAOA Layers
+~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    layers
+
+Cycle Optimization
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    cycle
+
 """
 
 from .mixers import x_mixer, xy_mixer, bit_flip_mixer
