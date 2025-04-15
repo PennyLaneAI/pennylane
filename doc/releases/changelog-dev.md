@@ -6,12 +6,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* Alias for Identity (`I`) is now accessible from `qml.ops`.
+  [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
 
+* Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
+  [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+  
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
@@ -36,3 +42,4 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
 Christina Lee
+Andrija Paurevic
