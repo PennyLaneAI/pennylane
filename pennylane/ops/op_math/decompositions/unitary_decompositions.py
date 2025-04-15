@@ -179,7 +179,7 @@ def two_qubit_decomposition(U, wires):
         )
 
     with qml.queuing.AnnotatedQueue() as q:
-        two_qubit_decomposition(U, wires=wires)
+        two_qubit_decomp_rule(U, wires=wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = qml.queuing.QueuingManager.active_context()
@@ -190,7 +190,7 @@ def two_qubit_decomposition(U, wires):
     return q.queue
 
 
-class OneQubitUnitaryDecomposition(DecompositionRule):
+class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-few-public-methods
     """Wrapper around naive one-qubit decomposition rules that adds a global phase.
 
     Args:
