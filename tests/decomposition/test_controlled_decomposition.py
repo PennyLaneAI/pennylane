@@ -129,7 +129,7 @@ class TestControlledX:
 
         assert q.queue == [qml.CNOT(wires=[1, 0])]
         assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.CNOT: 1}
+            {qml.CNOT: 1, qml.X: 0}
         )
 
         op = qml.ops.Controlled(qml.X(0), control_wires=[1], control_values=[0])
@@ -150,7 +150,7 @@ class TestControlledX:
 
         assert q.queue == [qml.Toffoli(wires=[1, 2, 0])]
         assert controlled_x_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.Toffoli: 1}
+            {qml.Toffoli: 1, qml.X: 0}
         )
 
         op = qml.ops.Controlled(qml.X(0), control_wires=[1, 2], control_values=[0, 1])
@@ -221,7 +221,7 @@ class TestControlledX:
         (
             qml.ops.Controlled(qml.Z(1), control_wires=[0], control_values=[1]),
             [qml.CZ(wires=[0, 1])],
-            to_resources({qml.CZ: 1}),
+            to_resources({qml.CZ: 1, qml.X: 0}),
             qml.ops.CZ,
         ),
         # Controlled on two qubits
@@ -399,6 +399,7 @@ class TestControlledBaseDecomposition:
                 ): 1,
                 qml.resource_rep(qml.CZ): 1,
                 qml.resource_rep(qml.CCZ): 1,
+                qml.resource_rep(qml.X): 0,
             }
         )
 

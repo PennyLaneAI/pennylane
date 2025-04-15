@@ -25,10 +25,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
-from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
-    _compute_num_cnots,
-    _su2su2_to_tensor_products,
-)
+from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_num_cnots
 from pennylane.wires import Wires
 
 
@@ -960,7 +957,7 @@ class TestTwoQubitUnitaryDecomposition:
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
 
         true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
-        A, B = _su2su2_to_tensor_products(true_matrix)
+        A, B = qml.math.decomposition.su2su2_to_tensor_products(true_matrix)
         assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])

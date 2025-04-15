@@ -14,6 +14,8 @@
 
 """This module defines decomposition functions for unitary matrices."""
 
+import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -81,6 +83,103 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         supported_rotations[rotations](U, wires=qml.wires.Wires(wire))
         if return_global_phase:
             qml.GlobalPhase(-global_phase)
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    current_queue = qml.queuing.QueuingManager.active_context()
+    if current_queue is not None:
+        for op in q.queue:  # pragma: no cover
+            qml.apply(op, context=current_queue)
+
+    return q.queue
+
+
+def two_qubit_decomposition(U, wires):
+    r"""Decompose a two-qubit unitary :math:`U` in terms of elementary operations.
+
+    It is known that an arbitrary two-qubit operation can be implemented using a
+    maximum of 3 CNOTs. This transform first determines the required number of
+    CNOTs, then decomposes the operator into a circuit with a fixed form.  These
+    decompositions are based a number of works by Shende, Markov, and Bullock
+    `(1) <https://arxiv.org/abs/quant-ph/0308033>`__, `(2)
+    <https://arxiv.org/abs/quant-ph/0308045v3>`__, `(3)
+    <https://web.eecs.umich.edu/~imarkov/pubs/conf/spie04-2qubits.pdf>`__,
+    though we note that many alternative decompositions are possible.
+
+    For the 3-CNOT case, we recover the following circuit, which is Figure 2 in
+    reference (1) above:
+
+    .. figure:: ../../_static/two_qubit_decomposition_3_cnots.svg
+        :align: center
+        :width: 70%
+        :target: javascript:void(0);
+
+    where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
+    computed based on features of the input unitary :math:`U`.
+
+    For the 2-CNOT case, the decomposition is
+
+    .. figure:: ../../_static/two_qubit_decomposition_2_cnots.svg
+        :align: center
+        :width: 50%
+        :target: javascript:void(0);
+
+    For 1 CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
+    side.  The special case of no CNOTs simply returns a tensor product of two
+    :math:`SU(2)` operations.
+
+    This decomposition can be applied automatically to all two-qubit
+    :class:`~.QubitUnitary` operations using the
+    :func:`~pennylane.transforms.unitary_to_rot` transform.
+
+    .. warning::
+
+        This decomposition will not be differentiable in the ``unitary_to_rot``
+        transform if the matrix being decomposed depends on parameters with
+        respect to which we would like to take the gradient.  See the
+        documentation of :func:`~pennylane.transforms.unitary_to_rot` for
+        explicit examples of the differentiable and non-differentiable cases.
+
+    Args:
+        U (tensor): A :math:`4 \times 4` unitary matrix.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
+
+    **Example**
+
+    Suppose we create a random element of :math:`U(4)`, and would like to decompose it
+    into elementary gates in our circuit.
+
+    >>> from scipy.stats import unitary_group
+    >>> U = unitary_group.rvs(4)
+    >>> U
+    array([[-0.29113625+0.56393527j,  0.39546712-0.14193837j,
+             0.04637428+0.01311566j, -0.62006741+0.18403743j],
+           [-0.45479211+0.25978444j, -0.52737418-0.5549423j ,
+            -0.23429057+0.10728103j,  0.16061807-0.21769762j],
+           [-0.4501231 +0.04065613j, -0.25558662+0.38209554j,
+            -0.04143479-0.56598134j,  0.12983673+0.49548507j],
+           [ 0.23899902+0.24800931j,  0.03374589-0.15784319j,
+             0.24898226-0.73975147j,  0.0269508 -0.49534518j]])
+
+    We can compute its decompositon like so:
+
+    >>> qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+
+    """
+
+    if qml.math.requires_grad(U):
+        warnings.warn(
+            "The two-qubit decomposition may not be differentiable when the input "
+            "unitary depends on trainable parameters.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    with qml.queuing.AnnotatedQueue() as q:
+        two_qubit_decomposition(U, wires=wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = qml.queuing.QueuingManager.active_context()
