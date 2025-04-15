@@ -32,6 +32,10 @@
 * Using finite differences with program capture without x64 mode enabled now raises a warning.
   [(#7282)](https://github.com/PennyLaneAI/pennylane/pull/7282)
 
+* When the `mcm_method` is specified to the `"device"`, the `defer_measurements` transform will 
+  no longer be applied. Instead, the device will be responsible for all MCM handling.
+  [(#7243)](https://github.com/PennyLaneAI/pennylane/pull/7243)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
