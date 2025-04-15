@@ -754,7 +754,7 @@ def poly_func(
     evaluate a polynomial function of degree ``degree`` and given parity expressed in the Chebychev basis at value x
     
     Args:
-        coeffs (numpy.ndarray): coefficient of the polynomial function in the Chebychev basis
+        coeffs (tensor_like): coefficient of the polynomial function in the Chebychev basis
         degree (int): degree of polynomial
         parity (int): 0 or 1 for odd/even polynomials respectively
         x (float): point at which to evaluate the polynomial function
@@ -773,7 +773,7 @@ def z_rotation(phi, interface):
         phi (float): angle parameter
     
     Returns:
-        numpy.ndarray: Z rotation matrix
+        tensor_like: Z rotation matrix
     """
     return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]], like=interface)
 
@@ -785,7 +785,7 @@ def W_of_x(x, interface):
         x (float):
     
     Returns:
-        numpy.ndarray: 2x2 matrix of W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+        tensor_like: 2x2 matrix of W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
 
     return qml.math.array(
@@ -804,7 +804,7 @@ def qsp_iterate(phi, x, interface):
         x (float):
    
     Returns:
-        numpy.ndarray: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+        tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
     return qml.math.dot(W_of_x(x=x, interface=interface), z_rotation(phi=phi, interface=interface))
 
@@ -813,10 +813,10 @@ def qsp_iterates(phis, x, interface):
     Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
  
     Args:
-        phis (numpy.ndarray): array of QSP angles implementing a given polynomial
+        phis (tensor_like): array of QSP angles implementing a given polynomial
         x (float):point at which to evaluate the polynomial
     Returns:
-        numpy.ndarray: 2x2 block-encoding of polynomial implemented by the angles phi
+        tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
     try:
         from jax import vmap
@@ -843,7 +843,7 @@ def grid_pts(degree, interface):
         degree (int): degree of polynomial function
     
     Returns:
-        numpy.ndarray: optimization grid points
+        tensor_like: optimization grid points
     """
     d = (degree + 1)// 2 + (degree+1) % 2
     return qml.math.array([qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)], like=interface)
@@ -854,12 +854,12 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
     
     Args:
         degree (int): degree of polynomial function
-        coeffs_target_func (numpy.ndarray): coefficients of the polynomial function in ascending index order
+        coeffs_target_func (tensor_like): coefficients of the polynomial function in ascending index order
         optimizer: optimization function to be used
         opt_method (str): specific optimization algorithm. Defaults is "Newton-CG"
     
     Returns:
-        tuple[numpy.ndarray, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
+        tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
     """
     parity = degree % 2
 
