@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+This module provides a collection of methods that help in the construction of
+QAOA workflows.
+
 .. currentmodule:: pennylane.qaoa
 
 Mixer Hamiltonians
@@ -20,7 +23,9 @@ Mixer Hamiltonians
 .. autosummary::
     :toctree: api
 
-    mixers
+    mixers.x_mixer
+    mixers.xy_mixer
+    mixers.bit_flip_mixer
 
 Cost Hamiltonians
 ~~~~~~~~~~~~~~~~~
@@ -28,7 +33,13 @@ Cost Hamiltonians
 .. autosummary::
     :toctree: api
 
-    cost
+    cost.bit_driver
+    cost.edge_driver
+    cost.maxcut
+    cost.max_independent_set
+    cost.min_vertex_cover
+    cost.max_clique
+    cost.max_weight_cycle
 
 QAOA Layers
 ~~~~~~~~~~~
@@ -36,7 +47,8 @@ QAOA Layers
 .. autosummary::
     :toctree: api
 
-    layers
+    layers.cost_layer
+    layers.mixer_layer
 
 Cycle Optimization
 ~~~~~~~~~~~~~~~~~~
@@ -44,7 +56,12 @@ Cycle Optimization
 .. autosummary::
     :toctree: api
 
-    cycle
+    cycle.edges_to_wires
+    cycle.wires_to_edges
+    cycle.cycle_mixer
+    cycle.loss_hamiltonian
+    cycle.out_flow_constraint
+    cycle.net_flow_constraint
 
 """
 

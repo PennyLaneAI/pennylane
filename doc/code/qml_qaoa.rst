@@ -1,5 +1,5 @@
-qml.workflow
-==============
+qml.qaoa
+========
 
 .. currentmodule:: pennylane.qaoa
 
