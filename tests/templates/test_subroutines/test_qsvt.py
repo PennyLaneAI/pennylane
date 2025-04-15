@@ -22,7 +22,7 @@ from numpy.linalg import matrix_power
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qsvt import _complementary_poly, cheby_pol, poly_func, qsp_iterates, qsp_optimization
+from pennylane.templates.subroutines.qsvt import _complementary_poly, cheby_pol, poly_func, qsp_iterate, qsp_iterates, qsp_optimization, z_rotation
 from numpy.polynomial.chebyshev import Chebyshev
 
 def qfunc(A):
@@ -923,6 +923,16 @@ class TestIterativeSolver:
         coeffs[(parity+1)%2::2] = temp
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
+
+    @pytest.mark.parametrize(
+        "angle",
+        [
+            np.random.rand(1) for _ in range(4)
+        ]
+    )
+    def test_z_rotation(self, angle):
+
+        assert np.allclose(z_rotation(angle[0], None), (qml.RZ.compute_matrix(-2 * angle)))
 
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
