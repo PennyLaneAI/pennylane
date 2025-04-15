@@ -142,12 +142,12 @@ layer = "auxiliary"
 path = "pennylane.optimize"
 layer = "auxiliary"
 
-[[modules]]
-path = "pennylane.fourier"
-layer = "auxiliary"
-
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
+
+[[modules]]
+path = "pennylane.fourier"
+layer = "tertiary"
 
 [[modules]]
 path = "pennylane.data"
