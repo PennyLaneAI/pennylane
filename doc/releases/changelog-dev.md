@@ -17,6 +17,9 @@
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+  
+* The `Tracker` class has been moved into the `devices` module.
+  [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
 <h3>Documentation 📝</h3>
 
@@ -26,8 +29,13 @@
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
 
+* Using finite differences with program capture without x64 mode enabled now raises a warning.
+  [(#7282)](https://github.com/PennyLaneAI/pennylane/pull/7282)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
+Christina Lee
+Andrija Paurevic
