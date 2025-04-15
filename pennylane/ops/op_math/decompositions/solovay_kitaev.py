@@ -590,3 +590,16 @@ def sk_decomposition_jax(op, epsilon, max_depth=5, basis_set=("T", "T*", "H"), b
     new_operations = new_tape.operations
 
     return new_operations + [global_phase], mapop
+
+
+# pylint: disable=pointless-string-statement
+"""
+An example implementation is kept in the [branch](https://github.com/PennyLaneAI/pennylane/tree/solovay-kitaev-jit). A few notes based on it -
+
+1. It's not end-to-end compatible with JIT - i.e., the output would require some extra post-processing based on the changes done to make it JIT compatible. 
+    - Essentially, instead of outputting decomposition as operators, it does so as the sequence of integers along with a map between those integers and operators. 
+    - Doing the mapping within the JIT workflow doesn't seem possible to me at the moment.
+    - One way was to use `jax.lax.switch` but it didn't work either because of `PyTree` structure of `Adjoint` is considered different from normal gate operation.
+2. JIT compilation time is huge ~ almost 4 minutes. 
+3. KD-tree can be retained for JIT by performing queries via `jax.pure_callback`, a potential side-effect of this might be the extended compilation time (noted above)
+"""
