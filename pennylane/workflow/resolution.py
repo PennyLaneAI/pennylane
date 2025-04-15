@@ -15,12 +15,7 @@
 from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
-from importlib.metadata import version
-from importlib.util import find_spec
 from typing import Literal, Optional, Union, get_args
-from warnings import warn
-
-from packaging.version import Version
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -67,21 +62,6 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _validate_jax_version():
-    """Checks if the installed version of JAX is supported. If an unsupported version of
-    JAX is installed, a ``RuntimeWarning`` is raised."""
-    if not find_spec("jax"):
-        return
-
-    jax_version = version("jax")
-    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
-        warn(
-            "PennyLane is currently not compatible with versions of JAX > 0.4.28. "
-            f"You have version {jax_version} installed.",
-            RuntimeWarning,
-        )
-
-
 def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
@@ -104,9 +84,6 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
-
-    if interface in (Interface.JAX, Interface.JAX_JIT):
-        _validate_jax_version()
 
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
