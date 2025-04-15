@@ -23,6 +23,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-logic:
+    if: github.event.pull_request.base.ref == 'master'
+    run:  |
+      echo "True"
+      
   tests:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
