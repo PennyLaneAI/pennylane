@@ -187,8 +187,9 @@ def mid_circuit_measurements(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Provide the transform to handle mid-circuit measurements.
 
-    If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
-    and use the ``qml.defer_measurements`` transform otherwise.
+    In the case where no method is specified, if the tape or device
+    uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
+    applied, otherwise ``qml.defer_measurements`` is used instead.
     """
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
