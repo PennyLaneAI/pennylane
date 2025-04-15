@@ -506,7 +506,8 @@ class TestMidCircuitMeasurements:
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+            qml.QuantumFunctionError,
+            match="dynamic_one_shot is only supported with finite shots.",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 

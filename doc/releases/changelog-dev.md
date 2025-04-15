@@ -11,9 +11,15 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.tape.TapeError` has been removed.
+  [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
+
+* Add new `pennylane.exceptions` module for custom errors and warnings.
+  [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
@@ -40,6 +46,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
+Guillermo Alonso-Linaje,
+Andrija Paurevic,
 Christina Lee
-Andrija Paurevic
