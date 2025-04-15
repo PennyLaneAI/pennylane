@@ -163,7 +163,7 @@ def _compute_num_cnots(U):
     id4 = math.eye(4)
 
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
-    return math.cond(
+    return qml.cond(
         # Case: 0 CNOTs (tensor product), the trace is +/- 4
         math.allclose(math.abs(trace), 4, atol=1e-7),
         lambda: 0,
@@ -497,7 +497,7 @@ def _two_qubit_resource(num_wires):
 
 
 @register_resources(_two_qubit_resource)
-def two_qubit_decomp(U, wires, **__):
+def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
