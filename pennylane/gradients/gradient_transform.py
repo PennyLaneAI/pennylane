@@ -15,13 +15,14 @@
 including a decorator for specifying gradient expansions."""
 import warnings
 
-# pylint: disable=too-few-public-methods
-from functools import partial
-
-import numpy as np
-
 import pennylane as qml
+from pennylane import math
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
+from pennylane.pytrees import flatten, unflatten
+from pennylane.tape import QuantumScript
+
+# pylint: disable=too-few-public-methods
+
 
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
@@ -380,56 +381,58 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
-tdot = partial(qml.math.tensordot, axes=[[0], [0]])
-stack = qml.math.stack
+def _single_meas_contraction(qjac, cjac, single_trainable_param):
+    if single_trainable_param:
+        # return spec squeezed out singleton dimension, so we need to add it back in
+        qjac = qml.math.expand_dims(qjac, axis=0)
+    qjac = qml.math.stack(qjac)
+
+    # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
+    cjac_leaves, struct = flatten(cjac)
+
+    contracted = []
+    for cjac_for_arg in cjac_leaves:
+        tdot = qml.math.tensordot(cjac_for_arg, qjac, axes=[[0], [0]])
+        # not sure how to rationalize this transpose, but it is required
+        contracted.append(tdot if tdot.shape == () else qml.math.transpose(tdot))
+
+    return unflatten(contracted, struct)
 
 
-# pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, tape, partitioned_shots_loop=False):
+def _single_shots_contraction(qjac, cjac, tape):
+    if (
+        isinstance(cjac, (list, tuple))
+        and len(cjac) == 1
+        and math.get_interface(cjac[0]) == "torch"
+    ):
+        # need to squeeze any torch input of length 1
+        cjac = cjac[0]
+
+    single_trainable_param = len(tape.trainable_params) == 1
+    if len(tape.measurements) == 1:
+        return _single_meas_contraction(qjac, cjac, single_trainable_param)
+
+    return tuple(_single_meas_contraction(qj, cjac, single_trainable_param) for qj in qjac)
+
+
+def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
+
+    Args:
+        qjac: The jacobian of the purely quantum component.
+        cjac: The jacobian of of the purely classical component
+        tape (QuantumScript): the corresponding tape. Used to determine the number of measurements, number of
+            trainable parameters, and existence of partitioned shots.
+
+    Returns:
+        The complete jacobian
+
     """
-    if isinstance(qjac, (tuple, list)) and len(qjac) == 1:
-        qjac = qjac[0]
+    if tape.shots.has_partitioned_shots:
+        return tuple(_single_shots_contraction(qjac_s, cjac, tape) for qjac_s in qjac)
 
-    if isinstance(cjac, (tuple, list)) and len(cjac) == 1:
-        cjac = cjac[0]
-    if not partitioned_shots_loop and tape.shots.has_partitioned_shots:
-        print("has partitioned shots")
-        return tuple(
-            _contract_qjac_with_cjac((qjac_s,), cjac, tape, partitioned_shots_loop=True)
-            for qjac_s in qjac[0]
-        )
-
-    if len(tape.measurements) == 1:
-        qjac = (qjac,)
-    print(qjac)
-    print(cjac)
-    num_measurements = len(tape.measurements)
-
-    cjac_is_tuple = isinstance(cjac, (tuple, list))
-
-    multi_meas = num_measurements > 1
-
-    # This block only figures out whether there is a single tape parameter or not
-    if cjac_is_tuple:
-        single_tape_param = False
-    else:
-        single_tape_param = not isinstance(qjac[0], (tuple, list))
-
-    if single_tape_param:
-        # Without dimension (e.g. expval) or with dimension (e.g. probs)
-        def _reshape(x):
-            return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
-
-        # Single parameter, multiple measurements or shot vector, but not both
-        return tuple(tdot(_reshape(q), cjac) for q in qjac)
-
-    # Multiple parameters, multiple measurements
-    if not cjac_is_tuple:
-        cjac = stack(cjac)
-        return tuple(tdot(stack(q), cjac) for q in qjac)
-    return tuple(tuple(tdot(stack(q), c) for c in cjac if c is not None) for q in qjac)
+    return _single_shots_contraction(qjac, cjac, tape)
