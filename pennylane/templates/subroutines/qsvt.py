@@ -751,7 +751,7 @@ def poly_func(
     coeffs, degree, parity, x
     ):
     r"""
-    evaluate a polynomial function of degree degree and given parity expressed in the Chebychev basis at value x
+    evaluate a polynomial function of degree ``degree`` and given parity expressed in the Chebychev basis at value x
     
     Args:
         coeffs (numpy.ndarray): coefficient of the polynomial function in the Chebychev basis
