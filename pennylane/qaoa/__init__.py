@@ -20,6 +20,8 @@ QAOA workflows.
 Mixer Hamiltonians
 ~~~~~~~~~~~~~~~~~~
 
+Methods for constructing QAOA mixer Hamiltonians.
+
 .. autosummary::
     :toctree: api
 
@@ -29,6 +31,9 @@ Mixer Hamiltonians
 
 Cost Hamiltonians
 ~~~~~~~~~~~~~~~~~
+
+Methods for generating QAOA cost Hamiltonians corresponding to
+different optimization problems.
 
 .. autosummary::
     :toctree: api
@@ -44,6 +49,8 @@ Cost Hamiltonians
 QAOA Layers
 ~~~~~~~~~~~
 
+Methods that define cost and mixer layers for use in QAOA workflows.
+
 .. autosummary::
     :toctree: api
 
@@ -52,6 +59,8 @@ QAOA Layers
 
 Cycle Optimization
 ~~~~~~~~~~~~~~~~~~
+
+Functionality for finding the maximum weighted cycle of directed graphs.
 
 .. autosummary::
     :toctree: api
