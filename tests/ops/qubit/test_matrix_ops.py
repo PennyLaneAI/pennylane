@@ -408,7 +408,13 @@ class TestQubitUnitary:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+        "U,num_wires",
+        [
+            (H, 1),
+            (np.kron(H, H), 2),
+            (np.kron(np.kron(np.kron(H, H), H), H), 4),
+            (np.tensordot([1j, -1, 1], H, axes=0), 1),
+        ],
     )
     def test_qubit_unitary_jax_jit(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
