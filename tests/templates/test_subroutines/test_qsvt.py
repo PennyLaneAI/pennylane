@@ -871,7 +871,6 @@ class TestIterativeSolver:
             qsp_iterates(phis, x_point, interface=interface)
             - poly_func(target_polynomial_coeffs, degree, parity, x_point)
         )
-        print(f"delta {delta}")
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
         # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
         tolerance = (
