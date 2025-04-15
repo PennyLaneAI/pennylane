@@ -41,6 +41,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 
+from .tracker import Tracker
+
 
 def _local_tape_expand(tape, depth, stop_at):
     """Expand all objects in a tape to a specific depth excluding measurements.
@@ -155,7 +157,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = qml.Tracker()
+        self.tracker = Tracker()
         self.custom_expand_fn = None
 
     def __repr__(self):
