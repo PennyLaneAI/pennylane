@@ -347,7 +347,7 @@ def _compute_num_cnots(U):
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
     return qml.cond(
         # Case: 0 CNOTs (tensor product), the trace is +/- 4
-        math.allclose(math.abs(trace), 4, atol=1e-7),
+        math.allclose(trace, 4, atol=1e-7) & math.allclose(trace, -4, atol=1e-7),
         lambda: 0,
         # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
         lambda: 3,
