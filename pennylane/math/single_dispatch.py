@@ -869,13 +869,13 @@ ar.register_function("torch", "cond", _cond)
 
 
 def _to_numpy_jax(x):
-    from jax.core import Tracer
-    from jax.errors import TracerArrayConversionError
+    from jax.core import concrete_or_error
+    from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 
     try:
-        x = x.to_concrete_value() if isinstance(x, Tracer) else getattr(x, "val", x)
+        x = concrete_or_error(None, x)
         return np.array(x)
-    except TracerArrayConversionError as e:
+    except (ConcretizationTypeError, TracerArrayConversionError) as e:
         raise ValueError(
             "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
         ) from e
