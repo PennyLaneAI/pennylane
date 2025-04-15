@@ -27,7 +27,17 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
+from pennylane.math import (
+    cast,
+    conj,
+    eye,
+    norm,
+    sqrt,
+    sqrt_matrix,
+    sqrt_matrix_sparse,
+    transpose,
+    zeros,
+)
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -82,7 +92,10 @@ class QubitUnitary(Operation):
 
     .. warning::
 
-        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including ..method::`adjoint`, ..method::`pow`, ..method::`compute_sparse_matrix` and ..method::`compute_decomposition`. Differentiability is not supported for sparse matrices.
+        The sparse matrix representation of QubitUnitary is still under development. Currently,
+        we only support a limited set of interfaces that preserve the sparsity of the matrix,
+        including :func:`~.adjoint`, :func:`~.pow`, and :meth:`~.QubitUnitary.compute_sparse_matrix`.
+        Differentiability is not supported for sparse matrices.
 
     **Details:**
 
@@ -122,6 +135,8 @@ class QubitUnitary(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"num_wires"}
+
     grad_method = None
     """Gradient computation method."""
 
@@ -145,7 +160,8 @@ class QubitUnitary(Operation):
             )
 
         # If the matrix is sparse, we need to convert it to a csr_matrix
-        if sp.sparse.issparse(U):
+        self._issparse = sp.sparse.issparse(U)
+        if self._issparse:
             U = U.tocsr()
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
@@ -171,6 +187,10 @@ class QubitUnitary(Operation):
             atol=1e-6,
         )
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
     @staticmethod
     def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -193,10 +213,14 @@ class QubitUnitary(Operation):
         [[0.98877108+0.j, 0.-0.14943813j],
         [0.-0.14943813j, 0.98877108+0.j]]
         """
+        if sp.sparse.issparse(U):
+            raise qml.operation.MatrixUndefinedError(
+                "U is sparse matrix. Use sparse_matrix method instead."
+            )
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -212,8 +236,11 @@ class QubitUnitary(Operation):
         <2x2 sparse matrix of type '<class 'numpy.complex128'>'
             with 2 stored elements in Compressed Sparse Row format>
         """
-        U = qml.math.asarray(U, like="numpy")
-        return sp.sparse.csr_matrix(U)
+        if sp.sparse.issparse(U):
+            return U.asformat(format)
+        raise qml.operation.SparseMatrixUndefinedError(
+            "U is a dense matrix. Use matrix method instead"
+        )
 
     @staticmethod
     def compute_decomposition(U: TensorLike, wires: WiresLike):
@@ -251,7 +278,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
+            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -259,29 +286,45 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
-
+            if sp.sparse.issparse(U):
+                raise DecompositionUndefinedError(
+                    "The decomposition of a two-qubit sparse QubitUnitary is undefined."
+                )
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    def has_sparse_matrix(self) -> bool:
+        return self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self) -> bool:
+        return not self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
     def has_decomposition(self) -> bool:
-        return len(self.wires) < 3
+        return len(self.wires) < 3 if self.has_matrix else len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
-        U = self.matrix()
-        if isinstance(U, csr_matrix):
-            adjoint_sp_mat = U.conjugate().transpose()
-            # Note: it is necessary to explicitly cast back to csr, or it will be come csc
-            return QubitUnitary(csr_matrix(adjoint_sp_mat), wires=self.wires)
-        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        if self.has_matrix:
+            U = self.matrix()
+            return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        U = self.sparse_matrix()
+        adjoint_sp_mat = U.conjugate().transpose()
+        # Note: it is necessary to explicitly cast back to csr, or it will become csc.
+        return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
     def pow(self, z: Union[int, float]):
-        mat = self.matrix()
-        if isinstance(mat, csr_matrix):
+        if self.has_sparse_matrix:
+            mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
             return [QubitUnitary(pow_mat, wires=self.wires)]
+
+        mat = self.matrix()
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
         elif self.batch_size is not None or qml.math.shape(z) != ():
@@ -644,6 +687,8 @@ class BlockEncode(Operation):
         n, m, k = hyperparams["subspace"]
         shape_a = qml.math.shape(A)
 
+        sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+
         def _stack(lst, h=False, like=None):
             if like == "tensorflow":
                 axis = 1 if h else 0
@@ -659,12 +704,12 @@ class BlockEncode(Operation):
         else:
             d1, d2 = shape_a
             col1 = _stack(
-                [A, sqrt_matrix(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+                [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
                 like=interface,
             )
             col2 = _stack(
                 [
-                    sqrt_matrix(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                    sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
                     -transpose(conj(A)),
                 ],
                 like=interface,

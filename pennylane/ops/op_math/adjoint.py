@@ -190,8 +190,6 @@ def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
-    import jax
-
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     adjoint_prim = NonInterpPrimitive("adjoint_transform")
@@ -200,12 +198,13 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         args = args[n_consts:]
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
-        for op in reversed(ops):
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr, consts, *args)
+        for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
 
@@ -324,6 +323,8 @@ class Adjoint(SymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params"}
+
     def _flatten(self):
         return (self.base,), tuple()
 
@@ -356,9 +357,18 @@ class Adjoint(SymbolicOp):
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
+        if self.base.pauli_rep:
+            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         return f"Adjoint({self.base})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property
     def ndim_params(self):

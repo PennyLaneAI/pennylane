@@ -25,13 +25,36 @@ Modules
     :toctree: api
 
 """
-from warnings import warn
 from pennylane import ExperimentalWarning
-
-warn(
-    ExperimentalWarning(
-        "This module is currently experimental and will not maintain API stability between releases."
-    )
+from .parametric_midmeasure import (
+    ParametricMidMeasureMP,
+    XMidMeasureMP,
+    YMidMeasureMP,
+    measure_arbitrary_basis,
+    measure_x,
+    measure_y,
+    measure_z,
+    diagonalize_mcms,
 )
+from .conditional_measure import cond_measure
+from .lattice import Lattice, generate_lattice
+from .graph_state_preparation import GraphStatePrep
+from .qubit_graph import QubitGraph
+from .utils import QubitMgr
 
-__all__ = []
+__all__ = [
+    "GraphStatePrep",
+    "Lattice",
+    "QubitGraph",
+    "QubitMgr",
+    "ParametricMidMeasureMP",
+    "XMidMeasureMP",
+    "YMidMeasureMP",
+    "cond_measure",
+    "measure_arbitrary_basis",
+    "measure_x",
+    "measure_y",
+    "measure_z",
+    "diagonalize_mcms",
+    "generate_lattice",
+]

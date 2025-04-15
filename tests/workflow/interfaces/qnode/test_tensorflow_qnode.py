@@ -1054,6 +1054,7 @@ class TestTapeExpansion:
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
+            has_generator = False
 
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]

@@ -620,6 +620,25 @@ class TestMatrix:
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_format(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix accepts the format parameter."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        sum_op = qml.sum(op1(wires=0), op2(wires=1))
+        true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
+        assert isinstance(sum_op.sparse_matrix(), csr_matrix)
+        sum_op_csc = sum_op.sparse_matrix(format="csc")
+        sum_op_lil = sum_op.sparse_matrix(format="lil")
+        sum_op_coo = sum_op.sparse_matrix(format="coo")
+        assert isinstance(sum_op_csc, csc_matrix)
+        assert isinstance(sum_op_lil, lil_matrix)
+        assert isinstance(sum_op_coo, coo_matrix)
+        assert np.allclose(true_mat, sum_op_csc.todense())
+        assert np.allclose(true_mat, sum_op_lil.todense())
+        assert np.allclose(true_mat, sum_op_coo.todense())
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Prod op is defined
         with wire order and correct."""

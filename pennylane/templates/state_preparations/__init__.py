@@ -21,4 +21,5 @@ from .basis_qutrit import QutritBasisStatePreparation
 from .cosine_window import CosineWindow
 from .mottonen import MottonenStatePreparation
 from .superposition import Superposition
-from .state_prep_mps import MPSPrep
+from .qrom_state_prep import QROMStatePreparation
+from .state_prep_mps import MPSPrep, right_canonicalize_mps

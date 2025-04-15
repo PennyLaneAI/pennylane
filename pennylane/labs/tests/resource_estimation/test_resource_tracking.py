@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -230,7 +230,9 @@ class TestGetResources:
             },
         )
 
-        expected_clean_counts = defaultdict(int, {"CNOT": 1, "Hadamard": 3, "QFT": 5})
+        expected_clean_counts = defaultdict(
+            int, {"CNOT": 1, "Hadamard": 3, "QFT(5)": 1, "QFT(3)": 4}
+        )
 
         assert _clean_gate_counts(gate_counts) == expected_clean_counts
 
