@@ -16,17 +16,8 @@ Contains FTQC/MBQC-specific operations
 """
 
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.math import allclose, is_abstract, requires_grad
 from pennylane.operation import Operation
 from pennylane.ops import RX, RZ
-
-
-def _can_replace(x, y):
-    """
-    Convenience function that returns true if x is close to y and if
-    x does not require grad
-    """
-    return not is_abstract(x) and not requires_grad(x) and allclose(x, y)
 
 
 class RotXZX(Operation):
