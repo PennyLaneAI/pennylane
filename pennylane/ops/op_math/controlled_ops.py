@@ -1446,7 +1446,6 @@ class MultiControlledX(ControlledOp):
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-        self.work_wire_type = work_wire_type
 
         if work_wire_type not in {"clean", "dirty"}:
             raise ValueError(
