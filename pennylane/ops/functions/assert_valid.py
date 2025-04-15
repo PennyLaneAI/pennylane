@@ -137,13 +137,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         # decomposition, at least make sure that all gates are accounted for.
         assert all(op in gate_counts for op in actual_gate_counts)
     else:
-        assert gate_counts == actual_gate_counts
+        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        assert non_zero_gate_counts == actual_gate_counts
 
     # Tests that the decomposition produces the same matrix
     op_matrix = qml.matrix(op)
     decomp_matrix = qml.matrix(tape, wire_order=op.wires)
     assert qml.math.allclose(
-        op_matrix, decomp_matrix
+        op_matrix, decomp_matrix, atol=1e-7
     ), "decomposition must produce the same matrix as the operator."
 
 

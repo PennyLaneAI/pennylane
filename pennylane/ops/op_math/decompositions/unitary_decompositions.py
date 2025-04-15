@@ -29,6 +29,68 @@ from pennylane.math.decomposition import (
 )
 
 
+def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
+    r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations.
+
+    Any one qubit unitary operation can be implemented up to a global phase by composing
+    RX, RY, and RZ gates. Currently supported values for ``rotations`` are "rot", "ZYZ",
+    "XYX", "XZX", and "ZXZ".
+
+    Args:
+        U (tensor): A :math:`2 \times 2` unitary matrix.
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
+        return_global_phase (bool): Whether to return the global phase as a ``qml.GlobalPhase(-alpha)``
+            as the last element of the returned list of operations.
+
+    Returns:
+        list[Operation]: A list of gates which when applied in the order of appearance in the list
+            is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
+            the global phase is returned as the last element of the list.
+
+    **Example**
+
+    >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
+    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    [RZ(3.1415926535897927, wires=[0]),
+     RY(1.5707963267948963, wires=[0]),
+     RZ(0.0, wires=[0]),
+     GlobalPhase(-1.5707963267948966, wires=[])]
+    >>> qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    [RX(1.5707963267948966, wires=[0]),
+     RZ(1.5707963267948968, wires=[0]),
+     RX(1.5707963267948966, wires=[0]),
+     GlobalPhase(-1.5707963267948966, wires=[])]
+    """
+
+    supported_rotations = {
+        "rot": _su2_rot_decomp,
+        "ZYZ": _su2_zyz_decomp,
+        "XYX": _su2_xyx_decomp,
+        "XZX": _su2_xzx_decomp,
+        "ZXZ": _su2_zxz_decomp,
+    }
+
+    if rotations not in supported_rotations:
+        raise ValueError(
+            f"Value {rotations} passed to rotations is either invalid or currently unsupported."
+        )
+
+    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    with qml.queuing.AnnotatedQueue() as q:
+        supported_rotations[rotations](U, wires=qml.wires.Wires(wire))
+        if return_global_phase:
+            qml.GlobalPhase(-global_phase)
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    current_queue = qml.queuing.QueuingManager.active_context()
+    if current_queue is not None:
+        for op in q.queue:  # pragma: no cover
+            qml.apply(op, context=current_queue)
+
+    return q.queue
+
+
 class OneQubitUnitaryDecomposition(DecompositionRule):
     """Wrapper around naive one-qubit decomposition rules that adds a global phase.
 
@@ -67,15 +129,19 @@ class OneQubitUnitaryDecomposition(DecompositionRule):
 
 
 def _su2_rot_resource():
-    return {qml.Rot: 1}
+    return {
+        qml.Rot: 1,
+        qml.RZ: 0,  # RZ is produced in a special case, which has to be accounted for.
+    }
 
 
 def _su2_rot_decomp(U, wires, **__):
     phi, theta, omega = zyz_rotation_angles(U)
-    qml.Rot(phi, theta, omega, wires=wires[0])
-
-
-rot_decomposition = OneQubitUnitaryDecomposition(_su2_rot_decomp, _su2_rot_resource)
+    qml.cond(
+        math.allclose(U[..., 0, 1], 0.0),
+        lambda: qml.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
+        lambda: qml.Rot(phi, theta, omega, wires=wires[0]),
+    )()
 
 
 def _su2_zyz_resource():
@@ -87,9 +153,6 @@ def _su2_zyz_decomp(U, wires, **__):
     qml.RZ(phi, wires=wires[0])
     qml.RY(theta, wires=wires[0])
     qml.RZ(omega, wires=wires[0])
-
-
-zyz_decomposition = OneQubitUnitaryDecomposition(_su2_zyz_decomp, _su2_zyz_resource)
 
 
 def _su2_xyx_resource():
@@ -104,9 +167,6 @@ def _su2_xyx_decomp(U, wires, **__):
     qml.RX(omega, wires=wires[0])
 
 
-xyx_decomposition = OneQubitUnitaryDecomposition(_su2_xyx_decomp, _su2_xyx_resource)
-
-
 def _su2_xzx_resource():
     return {qml.RX: 2, qml.RZ: 1}
 
@@ -116,9 +176,6 @@ def _su2_xzx_decomp(U, wires, **__):
     qml.RX(phi, wires=wires[0])
     qml.RZ(theta, wires=wires[0])
     qml.RX(omega, wires=wires[0])
-
-
-xzx_decomposition = OneQubitUnitaryDecomposition(_su2_xzx_decomp, _su2_xzx_resource)
 
 
 def _su2_zxz_resource():
@@ -132,13 +189,39 @@ def _su2_zxz_decomp(U, wires, **__):
     qml.RZ(omega, wires=wires[0])
 
 
-zxz_decomposition = OneQubitUnitaryDecomposition(_su2_zxz_decomp, _su2_zxz_resource)
+rot_decomp_rule = OneQubitUnitaryDecomposition(_su2_rot_decomp, _su2_rot_resource)
+zyz_decomp_rule = OneQubitUnitaryDecomposition(_su2_zyz_decomp, _su2_zyz_resource)
+xyx_decomp_rule = OneQubitUnitaryDecomposition(_su2_xyx_decomp, _su2_xyx_resource)
+xzx_decomp_rule = OneQubitUnitaryDecomposition(_su2_xzx_decomp, _su2_xzx_resource)
+zxz_decomp_rule = OneQubitUnitaryDecomposition(_su2_zxz_decomp, _su2_zxz_resource)
+
+###################################################################################
+# Developer notes:
+#
+# I was not able to get two-qubit decompositions to be fully differentiable for
+# unitary matrices that were constructed within a QNode, based on the QNode's input
+# arguments. I would argue this is a fairly limited use case, but it would still
+# be nice to have this eventually. Each interface fails for different reasons.
+#
+# - In Autograd, we obtain the AttributeError
+#       'ArrayBox' object has no attribute 'conjugate'
+#   for the 0-CNOT case when the zyz_decomposition function is called. In the
+#   other cases, it cannot autodifferentiate through the linalg.eigvals function.
+# - In Torch, it is not currently possible to autodiff through linalg.det for
+#   complex values.
+# - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
+#   for others it fails without output making it hard to pinpoint the cause.
+# - In JAX, we receive the TypeError:
+#       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
+#
+###################################################################################
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
 E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 E_dag = E.conj().T
 
+# Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
@@ -171,7 +254,10 @@ def _compute_num_cnots(U):
         lambda: 3,
         elifs=[
             # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
-            (math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0), lambda: 1),
+            (
+                math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0, atol=1e-7),
+                lambda: 1,
+            ),
             # Case: 2 CNOTs, the trace has only a real part (or is 0)
             (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
         ],

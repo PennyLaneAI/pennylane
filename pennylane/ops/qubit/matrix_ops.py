@@ -41,12 +41,12 @@ from pennylane.math import (
 )
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
-    rot_decomposition,
+    rot_decomp_rule,
     two_qubit_decomp_rule,
-    xyx_decomposition,
-    xzx_decomposition,
-    zxz_decomposition,
-    zyz_decomposition,
+    xyx_decomp_rule,
+    xzx_decomp_rule,
+    zxz_decomp_rule,
+    zyz_decomp_rule,
 )
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -356,11 +356,11 @@ class QubitUnitary(Operation):
 
 add_decomps(
     QubitUnitary,
-    zyz_decomposition,
-    zxz_decomposition,
-    xzx_decomposition,
-    xyx_decomposition,
-    rot_decomposition,
+    zyz_decomp_rule,
+    zxz_decomp_rule,
+    xzx_decomp_rule,
+    xyx_decomp_rule,
+    rot_decomp_rule,
     two_qubit_decomp_rule,
 )
 

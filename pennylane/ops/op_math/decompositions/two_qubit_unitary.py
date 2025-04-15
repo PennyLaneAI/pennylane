@@ -22,7 +22,7 @@ import scipy as sp
 import pennylane as qml
 from pennylane import math
 
-from .single_qubit_unitary import one_qubit_decomposition
+from .unitary_decompositions import one_qubit_decomposition
 
 ###################################################################################
 # Developer notes:

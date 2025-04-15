@@ -19,8 +19,6 @@ import numpy as np
 from pennylane import math
 from pennylane.typing import TensorLike
 
-EPS = 1e-64
-
 
 def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
     r"""Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
@@ -42,6 +40,7 @@ def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arcsin(abs_b)
 
+    EPS = math.finfo(U.dtype).eps
     half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
     half_omega_minus_phi = math.angle(U[..., 1, 0] + EPS)
 
@@ -73,6 +72,7 @@ def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
+    EPS = math.finfo(U.dtype).eps
     half_lam_plus_phi = math.arctan2(-math.imag(U[..., 0, 1]), math.real(U[..., 0, 0]) + EPS)
     half_lam_minus_phi = math.arctan2(math.imag(U[..., 0, 0]), -math.real(U[..., 0, 1]) + EPS)
     lam = half_lam_plus_phi + half_lam_minus_phi
@@ -107,6 +107,7 @@ def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    EPS = math.finfo(U.dtype).eps
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U = RX(\phi) RZ(\theta) RX(\lambda)
@@ -149,6 +150,7 @@ def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    EPS = math.finfo(U.dtype).eps
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
