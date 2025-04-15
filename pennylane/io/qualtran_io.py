@@ -544,18 +544,7 @@ def _gather_input_soqs(
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
 
-
-class ToBloq:
-    r"""
-    Adapter class to convert PennyLane operators into Qualtran Bloqs
-    """
-
-    def __init__(self):
-        if not qualtran:
-            raise ImportError
-
-
-def _create_to_bloq():
+if qualtran:
     @frozen
     class ToBloq(qt.Bloq):
         r"""
@@ -668,9 +657,24 @@ def _create_to_bloq():
 
         def __str__(self):
             return "PL" + self.op.name
+else:
+    class ToBloq:
+        """
+        Placeholder for ToBloq. Functionality requires 'qualtran' installation.
 
-    return ToBloq
+        This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
+        was not found. Install the required libraries to enable functionality.
+        """
+        _dependency_missing = True
+        _error_message = ("Optional dependency 'qualtran' is required "
+                          "for ToBloq functionality but is not installed.")
 
+        # Prevent instantiation if the dependency is missing
+        def __init__(self, *args, **kwargs):
+            raise ImportError(self._error_message)
 
-if qualtran:
-    ToBloq = _create_to_bloq()
+        def __getattr__(self, name):
+            raise ImportError(self._error_message)
+        
+        def __call__(self, *args, **kwargs):
+             raise ImportError(self._error_message)
