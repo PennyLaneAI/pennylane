@@ -19,10 +19,8 @@ from string import ascii_letters
 
 import numpy as np
 
+import pennylane.ops as qops
 from pennylane import math
-from pennylane.ops import X, Y, Z
-from pennylane.ops.functions import matrix
-from pennylane.ops.identity import I
 
 
 class ClassicalShadow:
@@ -115,9 +113,9 @@ class ClassicalShadow:
             )
 
         self.observables = [
-            matrix(X(0)),
-            matrix(Y(0)),
-            matrix(Z(0)),
+            qops.functions.matrix(qops.X(0)),
+            qops.functions.matrix(qops.Y(0)),
+            qops.functions.matrix(qops.Z(0)),
         ]
 
     @property
@@ -265,7 +263,7 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (X, Y, Z, I)):
+        if isinstance(observable, (qops.X, qops.Y, qops.Z, qops.I)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 
@@ -338,6 +336,7 @@ class ClassicalShadow:
 
         return math.squeeze(results)
 
+    # pylint: disable=too-many-positional-arguments
     def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 
