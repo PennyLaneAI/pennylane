@@ -184,7 +184,13 @@ def get_transform_program(
 
     """
     if gradient_fn == "unset":
-        gradient_fn = QNode.get_gradient_fn(qnode.device, qnode.interface, qnode.diff_method)[0]
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)()
+        # pylint: disable = protected-access
+        config = qml.workflow.resolution._resolve_diff_method(
+            config,
+            qnode.device,
+        )
+        gradient_fn = config.gradient_method
 
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
@@ -222,6 +228,7 @@ def get_transform_program(
     return resolved_program
 
 
+# !TODO: remove KerasLayer in 0.42
 def construct_batch(
     qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
@@ -334,6 +341,7 @@ def construct_batch(
 
         context_fn = nullcontext
 
+        # !TODO: remove KerasLayer in 0.42
         if type(qnode).__name__ == "KerasLayer":
             # note that calling qml.qnn.KerasLayer pulls in a tf import
             # pylint: disable=import-outside-toplevel
@@ -362,9 +370,12 @@ def construct_batch(
             params = initial_tape.get_parameters(trainable_only=False)
             initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        gradient_fn = QNode.get_gradient_fn(
-            qnode.device, qnode.interface, qnode.diff_method, tape=initial_tape
-        )[0]
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
+        # pylint: disable = protected-access
+        config = qml.workflow.resolution._resolve_execution_config(
+            config, qnode.device, tapes=(initial_tape,)
+        )
+        gradient_fn = config.gradient_method
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
         return program((initial_tape,))

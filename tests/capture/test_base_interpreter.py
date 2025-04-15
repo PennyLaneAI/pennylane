@@ -143,7 +143,6 @@ def test_default_operator_handling():
 @pytest.mark.parametrize(
     "op_class, args, kwargs",
     [
-        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
         (qml.CH, ([0, 1],), {}),
         (qml.CY, ([0, 1],), {}),
         (qml.CZ, ([0, 1],), {}),
@@ -208,6 +207,31 @@ def test_measurement_handling():
     m1, m2 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
     qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
     qml.assert_equal(m2, qml.probs(wires=0))
+
+
+def test_call_with_pytree_arguments():
+    """Test that pytree arguments are correctly flattened when calling a
+    decorated function"""
+
+    @PlxprInterpreter()
+    def f(angles):
+        qml.Rot(*angles["1"], 0)
+        qml.Rot(*angles["2"], 0)
+        return qml.state()
+
+    args = ({"1": (1.0, 2.0, 3.0), "2": (4.0, 5.0, 6.0)},)
+    jaxpr = jax.make_jaxpr(f)(*args)
+
+    assert len(jaxpr.jaxpr.invars) == 6
+    expected_primitives = [
+        qml.Rot._primitive,
+        qml.Rot._primitive,
+        qml.measurements.StateMP._wires_primitive,
+    ]
+    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+
+    assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
+    assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]
 
 
 def test_overriding_measurements():
@@ -304,6 +328,32 @@ def test_returning_operators():
     qml.assert_equal(f(), qml.I(0))
 
 
+class ConstAdder(PlxprInterpreter):
+    """This interpreter, along with the add_3 primitive below, will be used to test
+    that consts propagate through higher order primitives correctly."""
+
+
+add_3 = jax.core.Primitive("add_3")
+scalar = jnp.array(3)
+
+
+@add_3.def_impl
+def add_3_impl(x):
+    return x + 3
+
+
+@add_3.def_abstract_eval
+def add_3_aval(_):
+    return jax.core.ShapedArray((), int)
+
+
+@ConstAdder.register_primitive(add_3)
+def handle_add_3(self, x):  # pylint: disable=unused-argument
+    """This custom registration adds a closure variable to the input to register it as
+    a const rather than a jax.core.Literal."""
+    return x + scalar
+
+
 class TestHigherOrderPrimitiveRegistrations:
 
     @pytest.mark.parametrize("lazy", (True, False))
@@ -334,6 +384,26 @@ class TestHigherOrderPrimitiveRegistrations:
         else:
             qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-1.5), 0))
 
+    @pytest.mark.parametrize("lazy", (True, False))
+    def test_adjoint_consts(self, lazy):
+        """Test that consts propagate correctly when interpreting the adjoint primitive."""
+
+        def f(x):
+            def g(y):
+                # One new const
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+
+            qml.adjoint(g, lazy=lazy)(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
+
     def test_ctrl_transform(self):
         """Test the higher order ctrl transform."""
 
@@ -356,6 +426,25 @@ class TestHigherOrderPrimitiveRegistrations:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0, 1)
 
         qml.assert_equal(q.queue[0], qml.ctrl(qml.RY(jax.numpy.array(6.0), 0), 1))
+
+    def test_ctrl_consts(self):
+        """Test that consts propagate correctly when interpreting the ctrl primitive."""
+
+        def f(x, control):
+            def g(y):
+                # One new const
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+
+            qml.ctrl(g, control)(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5, 1)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, 1)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
     def test_cond(self):
         """Test the cond higher order primitive."""
@@ -424,6 +513,34 @@ class TestHigherOrderPrimitiveRegistrations:
 
         assert len(q_false.queue) == 0
 
+    def test_cond_consts(self):
+        """Test that consts propagate correctly when interpreting the cond primitive."""
+
+        def f(x, control):
+
+            @qml.cond(control)
+            def cond_fn(y):
+                # One new const
+                exponent = add_3.bind(0)
+                _ = qml.RY(y, 0) ** exponent
+
+            @cond_fn.otherwise
+            def _(y):
+                # Zero consts
+                _ = qml.RX(y, 0)
+
+            cond_fn(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5, 1)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr_branches"][0].constvars) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr_branches"][1].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, 1)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr_branches"][0].constvars) == 1
+        assert len(jaxpr2.eqns[0].params["jaxpr_branches"][1].constvars) == 0
+
     def test_for_loop(self):
         """Test the higher order for loop registration."""
 
@@ -450,6 +567,26 @@ class TestHigherOrderPrimitiveRegistrations:
         qml.assert_equal(q.queue[1], qml.X(1))
         qml.assert_equal(q.queue[2], qml.X(2))
         assert len(q) == 3
+
+    def test_for_loop_consts(self):
+        """Test the higher order for loop registration propagates consts correctly."""
+
+        def f(n):
+
+            @qml.for_loop(n)
+            def g(i):
+                exponent = add_3.bind(0)
+                _ = qml.adjoint(qml.X(i)) ** exponent
+
+            g()
+
+        jaxpr = jax.make_jaxpr(f)(4)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr_body_fn"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(4)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr_body_fn"].constvars) == 1
 
     def test_while_loop(self):
         """Test the higher order for loop registration."""
@@ -478,6 +615,29 @@ class TestHigherOrderPrimitiveRegistrations:
         qml.assert_equal(q.queue[1], qml.Z(1))
         qml.assert_equal(q.queue[2], qml.Z(2))
         assert len(q) == 3
+
+    def test_while_loop_consts(self):
+        """Test the higher order while loop registration propagates consts correctly."""
+
+        def f(n):
+
+            @qml.while_loop(lambda i: i < add_3.bind(n))
+            def g(i):
+                exponent = add_3.bind(0)
+                _ = qml.adjoint(qml.Z(i)) ** exponent
+                return i + 1
+
+            g(0)
+
+        jaxpr = jax.make_jaxpr(f)(4)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr_cond_fn"].constvars) == 1
+        assert len(jaxpr.eqns[0].params["jaxpr_body_fn"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(4)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr_cond_fn"].constvars) == 2
+        assert len(jaxpr2.eqns[0].params["jaxpr_body_fn"].constvars) == 1
 
     def test_qnode(self):
         """Test transforming qnodes."""
@@ -508,8 +668,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
 
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "backprop"
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
+        assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
+        assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
         assert jaxpr.eqns[0].params["device"] == dev
 
         res1 = f()
@@ -518,6 +678,26 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qml.math.allclose(res1, expected)
         res2 = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
         assert qml.math.allclose(res2, expected)
+
+    def test_qnode_consts(self):
+        """Test the higher order qnode registration propagates consts correctly."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", grad_on_execution=False)
+        def f():
+            exponent = add_3.bind(0)
+            _ = qml.X(0) ** exponent
+            _ = qml.I(0)
+            return qml.probs(wires=0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["qfunc_jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))()
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
 
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):
@@ -543,6 +723,28 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
         assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+
+    @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
+    def test_grad_and_jac_consts(self, grad_f):
+        """Test interpreters can handle grad and jacobian HOP's and propagate consts correctly."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return grad_f(circuit)(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
@@ -593,3 +795,17 @@ class TestDynamicShapes:
         assert len(output) == 2  # shape and array
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
+
+    def test_hstack(self):
+        """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
+        which currently does not work with dynamic shapes."""
+
+        def f(i):
+            x = jnp.zeros(i, int)
+            y = jnp.ones(i, int)
+            return jnp.hstack((x, y))
+
+        jaxpr = jax.make_jaxpr(f)(2)
+        [shape, res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert qml.math.allclose(shape, 8)
+        assert qml.math.allclose(res, jnp.hstack((jnp.zeros(4), jnp.ones(4))))

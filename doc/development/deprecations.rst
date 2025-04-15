@@ -9,6 +9,26 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The property ```MeasurementProcess.return_type``` has been deprecated.
   If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
 
@@ -51,6 +71,11 @@ Pending deprecations
 
   - Deprecated in v0.36
   - Will be removed in v0.42
+
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
+
+ - Deprecated in v0.40
+ - Will be removed in v0.41
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

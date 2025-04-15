@@ -26,7 +26,7 @@ on:
         description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
         required: false
         type: string
-        default: 0.5.5
+        default: 0.6.5
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -105,7 +105,7 @@ jobs:
           repository: PennyLaneAI/pennylane
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
@@ -132,7 +132,7 @@ jobs:
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
       - name: Upgrade PIP and install wheel
-        run: uv pip install --upgrade pip wheel
+        run: uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
@@ -158,7 +158,7 @@ jobs:
         shell: bash
         run: |
           uv build --wheel  
-          uv pip install dist/PennyLane*.whl
+          uv pip install dist/pennylane*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
@@ -222,3 +222,6 @@ jobs:
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci

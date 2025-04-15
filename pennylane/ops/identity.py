@@ -16,6 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+from typing import Sequence
 
 from scipy import sparse
 
@@ -141,8 +142,8 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2**n_wires), format="csr")
+    def compute_sparse_matrix(n_wires=1, format="csr"):  # pylint: disable=arguments-differ
+        return sparse.eye(int(2**n_wires), format=format)
 
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
@@ -309,6 +310,8 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
+    resource_keys = set()
+
     @classmethod
     def _primitive_bind_call(
         cls, phi, wires: WiresLike = (), **kwargs
@@ -317,6 +320,10 @@ class GlobalPhase(Operation):
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -381,10 +388,10 @@ class GlobalPhase(Operation):
         return qml.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(phi, n_wires=1, format="csr"):  # pylint: disable=arguments-differ
         if qml.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
-        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format="csr")
+        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -451,9 +458,13 @@ class GlobalPhase(Operation):
     def eigvals(self):
         return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
 
-    def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+    def matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def sparse_matrix(self, wire_order: Sequence = None, format="csr"):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires, format=format)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)

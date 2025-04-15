@@ -15,7 +15,7 @@
 # pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_.
+        on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -55,7 +55,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on :doc:`Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -221,8 +221,8 @@ class ClassicalShadow:
 
         transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
 
-        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
-        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+        old_indices = [f"a{ascii_letters[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ascii_letters[1:2 * n + 1:2]}{ascii_letters[2:2 * n + 1:2]}"
 
         return np.reshape(
             np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),

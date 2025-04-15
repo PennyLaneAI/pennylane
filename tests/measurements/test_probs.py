@@ -359,9 +359,7 @@ class TestProbs:
         # expected probability, using [00, 01, 10, 11]
         # ordering, is [0.5, 0.5, 0, 0]
 
-        # TODO: [sc-82874]
-        # revert once we are able to jit end to end without extreme compilation overheads
-        assert "pure_callback" in str(jax.make_jaxpr(circuit)(params))
+        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
 
         res = jax.jit(circuit)(params)
         expected = np.array([0.5, 0.5, 0, 0])

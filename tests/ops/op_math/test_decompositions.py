@@ -20,6 +20,7 @@ from functools import reduce
 
 import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
+from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -125,6 +126,14 @@ test_cases_zyz = [
         [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3], [0, 0]],
     ),
 ]
+
+
+def test_no_sparse_matrices():
+    """Test that a DecompositionUndefinedError is raised if the input is sparse."""
+
+    U = sparse.eye(4)
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        two_qubit_decomposition(U, wires=(0, 1))
 
 
 class TestQubitUnitaryZYZDecomposition:
@@ -975,7 +984,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 18
+        assert len(obtained_decomposition) == 20
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -998,7 +1007,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 16
+        assert len(obtained_decomposition) == 17
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1019,7 +1028,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 13
+        assert len(obtained_decomposition) == 15
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1040,7 +1049,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 6
+        assert len(obtained_decomposition) == 9
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:

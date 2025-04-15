@@ -1,0 +1,18 @@
+name: External Contributor Check
+on:
+  pull_request_target:
+    types: 
+      - opened   
+  
+jobs:
+  check-external:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR and label
+        with:
+          github_organization: "${{ github.repository_owner }}"
+          github_team: "external-collaborators"
+          github_token: ${{secrets.PENNYLANE_EXTERNAL_LABEL_MEMBER_CHECK}}
+          github_username: "${{ github.actor }}"
+        uses: XanaduAI/cloud-actions/label-external-pull-request@main
+        

@@ -678,7 +678,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
-        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
+        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), dev)
 
         @qml.qnode(dev)
         def circuit():

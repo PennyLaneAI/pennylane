@@ -126,7 +126,7 @@ def transpile(
     """
     if device:
         device_wires = device.wires
-        is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+        is_default_mixed = device.name == "default.mixed"
     else:
         device_wires = None
         is_default_mixed = False

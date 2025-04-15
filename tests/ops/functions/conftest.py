@@ -40,7 +40,7 @@ _INSTANCES_TO_TEST = [
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
     (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
     (
-        qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
+        qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
         {"skip_differentiation": True},
     ),
     (
@@ -157,6 +157,7 @@ _ABSTRACT_OR_META_TYPES = {
     PowOperation,
     PowObs,
     qml.StatePrep,
+    qml.FromBloq,
 }
 """Types that should not have actual instances created."""
 

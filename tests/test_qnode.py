@@ -43,7 +43,7 @@ def test_additional_kwargs_is_deprecated():
 
     with pytest.warns(
         qml.PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] is deprecated",
+        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
     ):
         QNode(dummyfunc, dev, atol=1)
 
@@ -1643,28 +1643,10 @@ class TestTransformProgramIntegration:
         assert circuit() == 100
 
 
-class TestNewDeviceIntegration:
-    """Basic tests for integration of the new device interface and the QNode."""
+class TestGetGradientFn:
+    """Test the get_gradient_fn static method."""
 
     dev = CustomDevice()
-
-    def test_initialization(self):
-        """Test that a qnode can be initialized with the new device without error."""
-
-        def f():
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(f, self.dev)
-        assert qn.device is self.dev
-
-    def test_repr(self):
-        """Test that the repr works with the new device."""
-
-        def f():
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(f, self.dev)
-        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
 
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
@@ -1741,6 +1723,81 @@ class TestNewDeviceIntegration:
         assert gradient_fn == "device"
         assert not kwargs
         assert new_dev is dev
+
+    def test_diff_method_is_none(self):
+        """Test get_gradient_fn behaves correctly."""
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+            self.dev, interface=None, diff_method=None
+        )
+        assert gradient_fn is None
+        assert not kwargs
+        assert new_dev is self.dev
+
+    def test_transform_dispatcher_as_diff_method(self):
+        """Test when diff_method is of type TransformDispatcher"""
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+            self.dev, interface=None, diff_method=qml.gradients.param_shift
+        )
+        assert gradient_fn is qml.gradients.param_shift
+        assert not kwargs
+        assert new_dev is self.dev
+
+    def test_invalid_diff_method(self):
+        """Test that an invalid diff method raises an error."""
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Differentiation method invalid-method not recognized"
+        ):
+            QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
+    def test_valid_diff_method_str(self, diff_method):
+        """Test that gradient_fn are retrieved correctly."""
+        gradient_transform_map = {
+            "parameter-shift": qml.gradients.param_shift,
+            "finite-diff": qml.gradients.finite_diff,
+            "spsa": qml.gradients.spsa_grad,
+            "hadamard": qml.gradients.hadamard_grad,
+        }
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+            self.dev, interface=None, diff_method=diff_method
+        )
+        assert gradient_fn is gradient_transform_map[diff_method]
+        assert not kwargs
+        assert new_dev is self.dev
+
+    def test_param_shift_method_with_cv_ops(self):
+        """Test that 'parameter-shift-cv' is used when CV operations are present."""
+        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+            self.dev, interface=None, diff_method="parameter-shift", tape=tape
+        )
+        assert gradient_fn is qml.gradients.param_shift_cv
+        assert kwargs == {"dev": self.dev}
+        assert new_dev is self.dev
+
+
+class TestNewDeviceIntegration:
+    """Basic tests for integration of the new device interface and the QNode."""
+
+    dev = CustomDevice()
+
+    def test_initialization(self):
+        """Test that a qnode can be initialized with the new device without error."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(f, self.dev)
+        assert qn.device is self.dev
+
+    def test_repr(self):
+        """Test that the repr works with the new device."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(f, self.dev)
+        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
 
     def test_device_with_custom_diff_method_name(self):
         """Test a device that has its own custom diff method."""

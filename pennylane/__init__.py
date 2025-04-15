@@ -21,14 +21,25 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.compiler
+from pennylane.compiler import qjit
 import pennylane.capture
+import pennylane.control_flow
+from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
@@ -62,9 +73,18 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -147,17 +167,18 @@ from pennylane.drawer import draw, draw_mpl
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
-
 import pennylane.data
 
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
+
+import pennylane.liealg
+from pennylane.liealg import lie_closure, structure_constants, center
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -173,6 +194,10 @@ class QuantumFunctionError(Exception):
 
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
+
+
+class ExperimentalWarning(UserWarning):
+    """Warning raised to indicate experimental/non-stable feature or support."""
 
 
 def __getattr__(name):

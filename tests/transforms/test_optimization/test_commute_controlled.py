@@ -46,7 +46,7 @@ class TestCommuteControlled:
 
         def qfunc():
             qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
+            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), wires=[0, 2])
             qml.PauliX(wires=2)
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)

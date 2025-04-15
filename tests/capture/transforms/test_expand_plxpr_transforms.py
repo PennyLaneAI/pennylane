@@ -63,28 +63,6 @@ class TestExpandTransformsInterpreter:
             in ExpandTransformsInterpreter._primitive_registrations
         )
 
-    def test_expand_transforms_interpreter_non_plxpr_transform(self):
-        """Test that transforms that do not have a valid ``plxpr_transform`` attribute
-        raise an error."""
-
-        custom_handler = ExpandTransformsInterpreter._primitive_registrations[
-            dummy_tape_only_transform._primitive
-        ]
-        assert dummy_tape_only_transform.plxpr_transform is None
-
-        dummy_interpreter = ExpandTransformsInterpreter()
-        dummy_invals = []
-        dummy_params = {
-            "inner_jaxpr": None,
-            "args_slice": None,
-            "consts_slice": None,
-            "targs_slice": None,
-            "tkwargs": {},
-        }
-
-        with pytest.raises(NotImplementedError):
-            custom_handler(dummy_interpreter, *dummy_invals, **dummy_params)
-
     def test_expand_transforms_interpreter_plxpr_transform(self):
         """Test that transforms that have a valid ``plxpr_transform`` are handled
         correctly."""
@@ -317,19 +295,3 @@ class TestExpandPlxprTransforms:
         )
         assert jaxpr.jaxpr.outvars == jaxpr.eqns[-1].outvars
         assert transformed_jaxpr.jaxpr.outvars == transformed_jaxpr.eqns[-1].outvars
-
-    def test_error_raised_for_unsupported_transform(self):
-        """Test that an error is raised if we try to expand a transform that is not supported."""
-
-        @dummy_tape_only_transform
-        def f(x, y):
-            qml.RX(x, 0)
-            qml.CNOT([0, 1])
-            qml.RY(y, 1)
-            return qml.expval(qml.Z(1))
-
-        args = (1.2, 3.4)
-        transformed_f = expand_plxpr_transforms(f)
-
-        with pytest.raises(NotImplementedError):
-            transformed_f(*args)

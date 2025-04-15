@@ -1,6 +1,7 @@
+interfaces = []
 exclude = [
-    ".*__pycache__",
-    ".*egg-info",
+    "**/*__pycache__",
+    "**/*egg-info",
     "docs",
     "tests",
 ]
@@ -8,9 +9,20 @@ source_roots = [
     ".",
     "pennylane",
 ]
+root_module = "allow"
+
+[[modules]]
+path = "<root>"
+depends_on = []
+
+[[modules]]
+path = "pennylane.ftqc"
+depends_on = [
+    "<root>",
+]
 
 [[modules]]
 path = "pennylane.labs"
 depends_on = [
-    { path = "<root>" },
+    "<root>",
 ]

@@ -19,11 +19,14 @@ from functools import reduce
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
+from gate_data import I, X, Y, Z
+from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
+    apply_operation_csr_matrix,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
@@ -38,7 +41,20 @@ ml_frameworks_list = [
 ]
 
 
-methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
+def apply_operation_sparse_wrapped(op, state, is_state_batched: bool = False):
+    """Apply an operation to a state using the sparse matrix method"""
+    # Convert op to a CSR matrix
+    op = qml.QubitUnitary(csr_matrix(op.matrix()), wires=op.wires)
+    # Convert state into numpy
+    state = qml.math.asarray(state, like="numpy")
+    return apply_operation_csr_matrix(op, state, is_state_batched)
+
+
+methods = [
+    apply_operation_einsum,
+    apply_operation_tensordot,
+    apply_operation,
+]
 
 # pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
 
@@ -66,6 +82,134 @@ def test_custom_operator_with_matrix():
 
     new_state = apply_operation(CustomOp(0), state)
     assert qml.math.allclose(new_state, mat @ state)
+
+
+class TestSparseOperation:
+    """Test the sparse matrix application method"""
+
+    ops_to_sparsify = [
+        qml.PauliX(0),
+        qml.CNOT((0, 1)),
+        qml.Toffoli((0, 1, 2)),
+        qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[1, 1, 1, 1]),
+        qml.GroverOperator(wires=[0, 1, 2]),
+        qml.IsingXX(np.pi / 2, wires=[0, 1]),
+        qml.DoubleExcitation(np.pi / 4, wires=[0, 1, 2, 3]),
+    ]
+
+    def test_sparse_operation_dense_state(self):
+        """Test that apply_operation works with a sparse matrix operation"""
+
+        # Create a random unitary matrix
+        U = unitary_group.rvs(2**3)
+        U = qml.math.asarray(U, like="numpy")
+
+        # Create a random state vector
+        state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
+        state = qml.math.asarray(state, like="numpy").reshape([2] * 3)
+
+        # Apply the operation
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+        new_state = apply_operation_csr_matrix(U_sp, state)
+        expected_state = state.reshape((1, 8)) @ U.reshape((8, 8)).T
+        expected_state = expected_state.reshape([2] * 3)
+
+        assert qml.math.allclose(new_state, expected_state)
+
+    def test_sparse_operation_sparse_state(self):
+        """Test that apply_operation does not support with a sparse state operation"""
+
+        # Create a random unitary matrix
+        U = unitary_group.rvs(2**3)
+        U = qml.math.asarray(U, like="numpy")
+
+        # Create a random state vector
+        state = np.random.rand(2**3) + 1j * np.random.rand(2**3)
+        state = csr_matrix(state)
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(3))
+
+        # Apply the operation
+        with pytest.raises(
+            TypeError,
+            match="State should not be sparse",
+        ):
+            apply_operation_csr_matrix(U_sp, state)
+
+    @pytest.mark.parametrize("N", range(4, 10, 2))
+    def test_sparse_operation_large_N(self, N):
+        """Test that apply_operation_csr_matrix works with multiple wires
+        with operators composed of random I X Y Z tensored together"""
+        # Make a sparse unitary matrix by tensor producting several smaller unitaries
+
+        U_list = [I, X, Y, Z]
+        U_list = [csr_matrix(op) for op in U_list]
+        # Pick random indices, then choose unitaries
+        indices = np.random.choice(len(U_list), size=N)
+        Us = [U_list[idx] for idx in indices]
+
+        U = Us[0]
+        for i in range(1, N):
+            U = kron(U, Us[i], format="csr")
+
+        state_shape = (2,) * N
+        state_size = 2**N
+        state = np.random.rand(state_size) + 1j * np.random.rand(state_size)
+        state = state / np.linalg.norm(state)
+        state = state.reshape(state_shape)
+
+        U_sp = qml.QubitUnitary(csr_matrix(U), wires=range(N))
+        new_state = apply_operation_csr_matrix(U_sp, state)
+
+        # Don't waste time constructing dense U to test, instead we just check that the U^Dagger @ state is correct
+        final_state = apply_operation_csr_matrix(U_sp, new_state)
+        assert qml.math.allclose(final_state, state)
+
+    @pytest.mark.parametrize("N", range(4, 10, 2))
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.QubitUnitary(
+                csr_matrix(X),
+                wires=[0],
+            ),
+            qml.QubitUnitary(
+                csr_matrix(Y),
+                wires=[0],
+            ),
+            qml.QubitUnitary(
+                csr_matrix(Z),
+                wires=[0],
+            ),
+        ],
+    )
+    def test_sparse_operation_dispatch(self, op, N):
+        """Test that the operators dispatch correctly for sparse or dense states."""
+
+        expected_shape = (2,) * N
+        # Create a dense state, shape (2,2,2)
+        state = np.random.rand(*(2,) * N) + 1j * np.random.rand(*(2,) * N)
+
+        new_state = apply_operation(op, state)
+
+        # Confirm the return type and shape
+        assert isinstance(new_state, np.ndarray)
+        assert new_state.shape == expected_shape
+
+    @pytest.mark.parametrize("op", ops_to_sparsify)
+    def test_sparse_operation_wrapper(self, op):
+        """Test that apply_operation_sparse_wrapped correctly handles larger quantum operations
+        by converting them to sparse matrices"""
+
+        # Get a compatible state
+        wires = op.wires
+        system_size = len(wires) + 1
+        state = np.random.rand(2**system_size) + 1j * np.random.rand(2**system_size)
+        state = state / np.linalg.norm(state)
+        state = state.reshape([2] * system_size)
+
+        new_state = apply_operation_sparse_wrapped(op, state)
+        expected_state = apply_operation(op, state)
+        assert qml.math.allclose(new_state, expected_state)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -252,7 +396,6 @@ class TestTwoQubitStateSpecialCases:
 
     def test_globalphase(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
-
         initial_state = np.array(
             [
                 [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],

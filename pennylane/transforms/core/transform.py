@@ -222,10 +222,11 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
 
         To define a transform that can be applied directly to plxpr without the need to create ``QuantumScript``\ s, users
         must provide the ``plxpr_transform`` argument. If this argument is not provided, executing transformed functions
-        will raise a ``NotImplementedError``. The ``plxpr_transform`` argument should be a function that applies the
-        respective transform to ``jax.core.Jaxpr`` and returns a transformed ``jax.core.ClosedJaxpr``. ``plxpr_transform``
-        can assume that no transform primitives are present in the input plxpr, and its implementation does not need to
-        account for these primitives. The exact expected signature of ``plxpr_transform`` is shown in the example below:
+        is not guaranteed to work. More details about this are provided below. The ``plxpr_transform`` argument should be a
+        function that applies the respective transform to ``jax.core.Jaxpr`` and returns a transformed ``jax.core.ClosedJaxpr``.
+        ``plxpr_transform`` can assume that no transform primitives are present in the input plxpr, and its implementation
+        does not need to account for these primitives. The exact expected signature of ``plxpr_transform`` is shown in the
+        example below:
 
         .. code-block:: python
 
@@ -272,13 +273,31 @@ def transform(  # pylint: disable=too-many-arguments,too-many-positional-argumen
         representation of the function being transformed stored in the ``inner_jaxpr``
         parameter of the transform's primitive.
 
+        **Fallback implementation of plxpr transforms:**
+
+        If a transform that does not define a ``plxpr_transform`` is applied to a function,
+        a fallback implementation of the transform is used. This fallback implementation converts
+        the function into a :func:`~pennylane.tape.QuantumScript`, which is then transformed
+        as a traditional tape. However, because of the constraints of program capture, many transforms will not
+        be compatible with this fallback implementation:
+
+        * Transforms that return multiple tapes are not compatible.
+        * Transforms that require non-trivial post-processing of results are not compatible.
+        * Dynamically shaped arrays are not compatible.
+        * Functions that are being transformed that contain control flow dependent on dynamic
+          parameters are not compatible. This includes:
+
+          * :func:`pennylane.cond` with dynamic parameters as predicates.
+          * :func:`pennylane.for_loop` with dynamic parameters for ``start``, ``stop``, or ``step``.
+          * :func:`pennylane.while_loop` does not work.
+
         .. warning::
 
             Currently, executing a function to which a transform has been applied will raise a
             ``NotImplementedError``. See below for details on how to use functions that are
             transformed.
 
-        To apply the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
+        To perform the transform, the :func:`pennylane.capture.expand_plxpr_transforms` function
         should be used. This function accepts a function to which transforms have been applied
         as an input, and returns a new function that has been transformed:
 

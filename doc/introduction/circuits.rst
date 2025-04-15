@@ -46,7 +46,7 @@ For example:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.Z(wires=1))
 
 .. note::
 
@@ -211,6 +211,8 @@ Together, a quantum function and a device are used to create a *quantum node* or
 A QNode can be explicitly created as follows:
 
 .. code-block:: python
+
+    import numpy as np
 
     circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 

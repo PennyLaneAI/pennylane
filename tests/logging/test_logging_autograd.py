@@ -106,7 +106,7 @@ class TestLogging:
                 assert msg in actual.getMessage()
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 24), ("backprop", 15), ("adjoint", 19)]
+        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 13), ("adjoint", 17)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parametrized gradients"
@@ -136,12 +136,6 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.workflow.qnode",
-                [
-                    "Calling <get_gradient_fn(device=<default.qubit device (wires=2)",
-                ],
-            ),
-            (
                 "pennylane.workflow.execution",
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
@@ -150,7 +144,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+        for expected, actual in zip(log_records_expected, caplog.records[:1]):
             assert expected[0] in actual.name
             for exp_msg in expected[1]:
                 assert exp_msg in actual.getMessage()

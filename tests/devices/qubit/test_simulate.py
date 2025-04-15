@@ -72,6 +72,48 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
+class TestSparsePipeline:
+    """System tests for the sparse pipelines."""
+
+    ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
+
+    @pytest.mark.parametrize(
+        "state",
+        [
+            ground_state,
+            cat_state,
+        ],
+    )
+    def test_sparse_op(self, state):
+        """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
+        mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
+        op = qml.QubitUnitary(mat, wires=[0])
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=range(8), pad_with=0), op],
+            measurements=[qml.expval(qml.Z(0))],
+        )
+
+        result = simulate(qs)
+
+        assert qml.math.allclose(result, -1)
+
+    def test_sparse_state_prep(self):
+        """Test a spares state prep can be acted upon by later operations."""
+        state = sp.sparse.csr_matrix([0, 0, 0, 1])
+        qml.StatePrep(state, wires=(0, 1))
+
+        tape = qml.tape.QuantumScript(
+            [qml.StatePrep(state, wires=(0, 1)), qml.X(0), qml.RX(0.0, 0)],
+            [qml.probs(wires=(0, 1))],
+        )
+
+        res = simulate(tape)
+        expected = np.array([0, 1, 0, 0])
+        assert qml.math.allclose(res, expected)
+
+
+# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
@@ -1294,7 +1336,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize(
         "meas_obj", [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
     )
-    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj, seed):
+    def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
             * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list

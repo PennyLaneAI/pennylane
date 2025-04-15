@@ -30,7 +30,7 @@ typically encountered in PennyLane. It requires separate installation, see
 `jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
 For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
-`differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101>`_.
+:doc:`differentiable pulse programming <demos/tutorial_pulse_programming101>`.
 
 Overview
 --------
