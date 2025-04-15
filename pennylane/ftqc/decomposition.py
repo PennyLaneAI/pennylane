@@ -25,7 +25,7 @@ from .operations import RotXZX
 mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
 
 
-@register_resources({RotXZX: 1, GlobalPhase: 1})
+@register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
     phi, theta, lam, _ = _get_xzx_angles(mat)
