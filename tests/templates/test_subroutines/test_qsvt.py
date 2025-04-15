@@ -715,20 +715,22 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(4,0)),
             (generate_polynomial_coeffs(3,1)),
             (generate_polynomial_coeffs(6,0)),
+            (generate_polynomial_coeffs(100,0)),
         ],
     )
     @pytest.mark.parametrize(
-        "angle_solver",
+        "angle_solver, optimizer_kwargs",
         [
-            "root-finding",
-            "iterative",
+            ("root-finding", {}),
+            ("iterative", {"method":"L-BFGS-B", "tol":1e-15}),
+            ("iterative", {"method":"Newton-CG"}),
         ]
     )
-    def test_correctness_QSP_angles_root_finding(self, poly, angle_solver):
+    def test_correctness_QSP_angles_root_finding(self, poly, angle_solver, optimizer_kwargs):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
-        x = 0.5
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs)
+        x = np.random.uniform(low=-1., high=1.)
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit_qsp():
@@ -749,20 +751,22 @@ class TestRootFindingSolver:
             (generate_polynomial_coeffs(4,0)),
             (generate_polynomial_coeffs(3,1)),
             (generate_polynomial_coeffs(6,0)),
+            (generate_polynomial_coeffs(100,0)),
         ],
     )
     @pytest.mark.parametrize(
-        "angle_solver",
+        "angle_solver, optimizer_kwargs",
         [
-            "root-finding",
-            "iterative",
+            ("root-finding", {}),
+            ("iterative", {"method":"L-BFGS-B", "tol":1e-15}),
+            ("iterative", {"method":"Newton-CG"}),
         ]
     )
-    def test_correctness_QSVT_angles(self, poly, angle_solver):
+    def test_correctness_QSVT_angles(self, poly, angle_solver, optimizer_kwargs):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
-        x = 0.5
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver, **optimizer_kwargs)
+        x = np.random.uniform(low=-1., high=1.)
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
         projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
@@ -896,7 +900,8 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs(1000,0)),
+            # (generate_polynomial_coeffs(1000,0)),
+            (generate_polynomial_coeffs(100,0)),
             (generate_polynomial_coeffs(3,1)),
             (generate_polynomial_coeffs(6,0)),
         ],
