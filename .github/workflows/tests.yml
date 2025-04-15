@@ -38,7 +38,7 @@ jobs:
       run_lightened_ci: >-
         ${{
           github.event_name == 'pull_request'
-          || github.event.pull_request.base.ref == 'master'
+          && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite') || github.event.pull_request.base.ref == 'master'
           || false
          }}
 
