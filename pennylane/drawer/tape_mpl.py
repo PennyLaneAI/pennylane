@@ -19,15 +19,14 @@ Developer note: when making changes to this file, you can run
 images.  If you change the docstring examples, please update this file.
 """
 # pylint: disable=no-member
+from __future__ import annotations
+
 from collections import namedtuple
 from functools import singledispatch
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
-from pennylane.operation import Operator
-from pennylane.ops.op_math.condition import Conditional
-from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
@@ -45,6 +44,11 @@ try:
     import matplotlib as mpl
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
+    from pennylane.ops.op_math.condition import Conditional
+    from pennylane.tape import QuantumScript
 
 
 _Config = namedtuple(
