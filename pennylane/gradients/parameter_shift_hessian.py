@@ -412,6 +412,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
 # pylint: disable=too-many-return-statements,too-many-branches
 def contract_qjac_with_cjac(qhess, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
+    qhess = (qhess,)
     if len(tape.measurements) > 1:
         qhess = qhess[0]
     has_single_arg = False

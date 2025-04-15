@@ -455,7 +455,8 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        for _r, _e in zip(res, expected):
+            assert qml.math.allclose(_r, _e, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
