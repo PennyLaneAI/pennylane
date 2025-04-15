@@ -80,11 +80,6 @@ depends_on = []
 layer = "core"
 
 [[modules]]
-path = "pennylane.tracker"
-depends_on = []
-layer = "core"
-
-[[modules]]
 path = "pennylane._version"
 depends_on = []
 layer = "core"
