@@ -545,143 +545,296 @@ def _gather_input_soqs(
     return qvars_in
 
 
-if qualtran:
+def optional_inherit(cls):
+    if qualtran:
 
-    @frozen
-    class ToBloq(qt.Bloq):
-        r"""
-        Adapter class to convert PennyLane operators into Qualtran Bloqs
-        """
+        @frozen
+        class ToBloq(qt.Bloq):
+            r"""
+            Adapter class to convert PennyLane operators into Qualtran Bloqs
+            """
 
-        op: Operation
+            op: Operation
 
-        @cached_property
-        def signature(self) -> "qt.Signature":
-            num_wires = len(self.op.wires)
-            return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+            @cached_property
+            def signature(self) -> "qt.Signature":
+                num_wires = len(self.op.wires)
+                return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-        def decompose_bloq(self, **kwargs):
-            from qualtran.cirq_interop._cirq_to_bloq import _QReg
+            def decompose_bloq(self, **kwargs):
+                from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
-            try:
-                ops = self.op.decomposition()
+                try:
+                    ops = self.op.decomposition()
 
-                signature = self.signature
-                all_wires = list(self.op.wires)
-                in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
-
-                in_quregs = {
-                    k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
-                    for k, v in in_quregs.items()
-                }
-
-                out_quregs = {
-                    k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
-                    for k, v in out_quregs.items()
-                }
-                bb, initial_soqs = qt.BloqBuilder.from_signature(
-                    signature, add_registers_allowed=False
-                )
-
-                # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
-                qreg_to_qvar = {}
-                for reg in signature.lefts():
-                    if reg.name not in in_quregs:
-                        raise ValueError(
-                            f"Register {reg.name} from signature must be present in in_quregs."
-                        )
-                    soqs = initial_soqs[reg.name]
-                    if isinstance(soqs, qt.Soquet):
-                        soqs = np.array(soqs)
-                    if in_quregs[reg.name].shape != soqs.shape:
-                        raise ValueError(
-                            f"Shape {in_quregs[reg.name].shape} of qubit register "
-                            f"{reg.name} should be {soqs.shape}."
-                        )
-                    qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
-
-                # 2. Add each operation to the composite Bloq.
-                for op in ops:
-                    bloq = map_to_bloq()(op)
-                    if bloq.signature == qt.Signature([]):
-                        bb.add(bloq)
-                        continue
-
-                    reg_dtypes = [r.dtype for r in bloq.signature]
-                    # 3.1 Find input / output registers.
-                    all_op_quregs = {
-                        k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
-                        for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
+                    signature = self.signature
+                    all_wires = list(self.op.wires)
+                    in_quregs = out_quregs = {
+                        "qubits": np.array(all_wires).reshape(len(all_wires), 1)
                     }
 
-                    in_op_quregs = {
-                        reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
+                    in_quregs = {
+                        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+                        for k, v in in_quregs.items()
                     }
 
-                    # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
-                    # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
-                    qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+                    out_quregs = {
+                        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
+                        for k, v in out_quregs.items()
+                    }
+                    bb, initial_soqs = qt.BloqBuilder.from_signature(
+                        signature, add_registers_allowed=False
+                    )
 
-                    # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
-                    qvars_out = bb.add_d(bloq, **qvars_in)
-
-                    # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
-                    for reg in bloq.signature:
-                        # all_op_quregs should exist for both LEFT & RIGHT registers.
-                        assert reg.name in all_op_quregs
-                        quregs = all_op_quregs[reg.name]
-                        if reg.side == qt.Side.LEFT:
-                            # This register got de-allocated, update the `qreg_to_qvar` mapping.
-                            for q in quregs.flatten():
-                                _ = qreg_to_qvar.pop(q)
-                        else:
-                            assert quregs.shape == np.array(qvars_out[reg.name]).shape
-                            qreg_to_qvar |= zip(
-                                quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+                    # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
+                    qreg_to_qvar = {}
+                    for reg in signature.lefts():
+                        if reg.name not in in_quregs:
+                            raise ValueError(
+                                f"Register {reg.name} from signature must be present in in_quregs."
                             )
+                        soqs = initial_soqs[reg.name]
+                        if isinstance(soqs, qt.Soquet):
+                            soqs = np.array(soqs)
+                        if in_quregs[reg.name].shape != soqs.shape:
+                            raise ValueError(
+                                f"Shape {in_quregs[reg.name].shape} of qubit register "
+                                f"{reg.name} should be {soqs.shape}."
+                            )
+                        qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
 
-                # 4. Combine Soquets to match the right signature.
-                final_soqs_dict = _gather_input_soqs(
-                    bb, {reg.name: out_quregs[reg.name] for reg in signature.rights()}, qreg_to_qvar
-                )
-                final_soqs_set = set(
-                    soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
-                )
-                # 5. Free all dangling Soquets which are not part of the final soquets set.
-                for qvar in qreg_to_qvar.values():
-                    if qvar not in final_soqs_set:
-                        bb.free(qvar)
+                    # 2. Add each operation to the composite Bloq.
+                    for op in ops:
+                        bloq = map_to_bloq()(op)
+                        if bloq.signature == qt.Signature([]):
+                            bb.add(bloq)
+                            continue
 
-                cbloq = bb.finalize(**final_soqs_dict)
-                return cbloq
-            except DecompositionUndefinedError:
-                raise qt.DecomposeNotImplementedError
+                        reg_dtypes = [r.dtype for r in bloq.signature]
+                        # 3.1 Find input / output registers.
+                        all_op_quregs = {
+                            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+                            for i, (k, v) in enumerate(
+                                split_qubits(bloq.signature, op.wires).items()
+                            )
+                        }
 
-        def __str__(self):
-            return "PL" + self.op.name
+                        in_op_quregs = {
+                            reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
+                        }
 
-else:
+                        # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+                        # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
+                        qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
 
-    class ToBloq:
-        """
-        Placeholder for ToBloq. Functionality requires 'qualtran' installation.
+                        # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+                        qvars_out = bb.add_d(bloq, **qvars_in)
 
-        This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
-        was not found. Install the required libraries to enable functionality.
-        """
+                        # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+                        for reg in bloq.signature:
+                            # all_op_quregs should exist for both LEFT & RIGHT registers.
+                            assert reg.name in all_op_quregs
+                            quregs = all_op_quregs[reg.name]
+                            if reg.side == qt.Side.LEFT:
+                                # This register got de-allocated, update the `qreg_to_qvar` mapping.
+                                for q in quregs.flatten():
+                                    _ = qreg_to_qvar.pop(q)
+                            else:
+                                assert quregs.shape == np.array(qvars_out[reg.name]).shape
+                                qreg_to_qvar |= zip(
+                                    quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+                                )
 
-        _dependency_missing = True
-        _error_message = (
-            "Optional dependency 'qualtran' is required "
-            "for ToBloq functionality but is not installed."
-        )
+                    # 4. Combine Soquets to match the right signature.
+                    final_soqs_dict = _gather_input_soqs(
+                        bb,
+                        {reg.name: out_quregs[reg.name] for reg in signature.rights()},
+                        qreg_to_qvar,
+                    )
+                    final_soqs_set = set(
+                        soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
+                    )
+                    # 5. Free all dangling Soquets which are not part of the final soquets set.
+                    for qvar in qreg_to_qvar.values():
+                        if qvar not in final_soqs_set:
+                            bb.free(qvar)
 
-        # Prevent instantiation if the dependency is missing
-        def __init__(self, *args, **kwargs):
-            raise ImportError(self._error_message)
+                    cbloq = bb.finalize(**final_soqs_dict)
+                    return cbloq
+                except DecompositionUndefinedError:
+                    raise qt.DecomposeNotImplementedError
 
-        def __getattr__(self, name):
-            raise ImportError(self._error_message)
+            def __str__(self):
+                return "PL" + self.op.name
 
-        def __call__(self, *args, **kwargs):
-            raise ImportError(self._error_message)
+        return ToBloq
+    else:
+        return cls
+
+
+# if qualtran:
+
+#     @frozen
+#     class ToBloq(qt.Bloq):
+#         r"""
+#         Adapter class to convert PennyLane operators into Qualtran Bloqs
+#         """
+
+#         op: Operation
+
+#         @cached_property
+#         def signature(self) -> "qt.Signature":
+#             num_wires = len(self.op.wires)
+#             return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+
+#         def decompose_bloq(self, **kwargs):
+#             from qualtran.cirq_interop._cirq_to_bloq import _QReg
+
+#             try:
+#                 ops = self.op.decomposition()
+
+#                 signature = self.signature
+#                 all_wires = list(self.op.wires)
+#                 in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
+
+#                 in_quregs = {
+#                     k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+#                     for k, v in in_quregs.items()
+#                 }
+
+#                 out_quregs = {
+#                     k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
+#                     for k, v in out_quregs.items()
+#                 }
+#                 bb, initial_soqs = qt.BloqBuilder.from_signature(
+#                     signature, add_registers_allowed=False
+#                 )
+
+#                 # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
+#                 qreg_to_qvar = {}
+#                 for reg in signature.lefts():
+#                     if reg.name not in in_quregs:
+#                         raise ValueError(
+#                             f"Register {reg.name} from signature must be present in in_quregs."
+#                         )
+#                     soqs = initial_soqs[reg.name]
+#                     if isinstance(soqs, qt.Soquet):
+#                         soqs = np.array(soqs)
+#                     if in_quregs[reg.name].shape != soqs.shape:
+#                         raise ValueError(
+#                             f"Shape {in_quregs[reg.name].shape} of qubit register "
+#                             f"{reg.name} should be {soqs.shape}."
+#                         )
+#                     qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
+
+#                 # 2. Add each operation to the composite Bloq.
+#                 for op in ops:
+#                     bloq = map_to_bloq()(op)
+#                     if bloq.signature == qt.Signature([]):
+#                         bb.add(bloq)
+#                         continue
+
+#                     reg_dtypes = [r.dtype for r in bloq.signature]
+#                     # 3.1 Find input / output registers.
+#                     all_op_quregs = {
+#                         k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+#                         for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
+#                     }
+
+#                     in_op_quregs = {
+#                         reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
+#                     }
+
+#                     # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+#                     # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
+#                     qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+
+#                     # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+#                     qvars_out = bb.add_d(bloq, **qvars_in)
+
+#                     # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+#                     for reg in bloq.signature:
+#                         # all_op_quregs should exist for both LEFT & RIGHT registers.
+#                         assert reg.name in all_op_quregs
+#                         quregs = all_op_quregs[reg.name]
+#                         if reg.side == qt.Side.LEFT:
+#                             # This register got de-allocated, update the `qreg_to_qvar` mapping.
+#                             for q in quregs.flatten():
+#                                 _ = qreg_to_qvar.pop(q)
+#                         else:
+#                             assert quregs.shape == np.array(qvars_out[reg.name]).shape
+#                             qreg_to_qvar |= zip(
+#                                 quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+#                             )
+
+#                 # 4. Combine Soquets to match the right signature.
+#                 final_soqs_dict = _gather_input_soqs(
+#                     bb, {reg.name: out_quregs[reg.name] for reg in signature.rights()}, qreg_to_qvar
+#                 )
+#                 final_soqs_set = set(
+#                     soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
+#                 )
+#                 # 5. Free all dangling Soquets which are not part of the final soquets set.
+#                 for qvar in qreg_to_qvar.values():
+#                     if qvar not in final_soqs_set:
+#                         bb.free(qvar)
+
+#                 cbloq = bb.finalize(**final_soqs_dict)
+#                 return cbloq
+#             except DecompositionUndefinedError:
+#                 raise qt.DecomposeNotImplementedError
+
+#         def __str__(self):
+#             return "PL" + self.op.name
+
+# else:
+
+#     class ToBloq:
+#         """
+#         Placeholder for ToBloq. Functionality requires 'qualtran' installation.
+
+#         This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
+#         was not found. Install the required libraries to enable functionality.
+#         """
+
+#         _dependency_missing = True
+#         _error_message = (
+#             "Optional dependency 'qualtran' is required "
+#             "for ToBloq functionality but is not installed."
+#         )
+
+#         # Prevent instantiation if the dependency is missing
+#         def __init__(self, *args, **kwargs):
+#             raise ImportError(self._error_message)
+
+#         def __getattr__(self, name):
+#             raise ImportError(self._error_message)
+
+#         def __call__(self, *args, **kwargs):
+#             raise ImportError(self._error_message)
+
+
+@optional_inherit
+class ToBloq:
+    """
+    Placeholder for ToBloq. Functionality requires 'qualtran' installation.
+
+    This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
+    was not found. Install the required libraries to enable functionality.
+    """
+
+    _dependency_missing = True
+    _error_message = (
+        "Optional dependency 'qualtran' is required "
+        "for ToBloq functionality but is not installed."
+    )
+
+    # Prevent instantiation if the dependency is missing
+    def __init__(self, *args, **kwargs):
+        raise ImportError(self._error_message)
+
+    def __getattr__(self, name):
+        raise ImportError(self._error_message)
+
+    def __call__(self, *args, **kwargs):
+        raise ImportError(self._error_message)
