@@ -4,7 +4,10 @@ qml.qaoa
 Overview
 --------
 
-.. automodapi:: pennylane.qaoa
+This module provides a collection of methods that help in the construction of
+QAOA workflows.
+
+.. currentmodule:: pennylane.qaoa
 
 Mixer Hamiltonians
 ------------------
@@ -30,9 +33,15 @@ QAOA Layers
 Cycle Optimization
 ------------------
 
-.. automodapi:: pennylane.qaoa.cycle
-    :no-heading:
-    :no-inherited-members:
+The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
+cycle problem.
+
+.. currentmodule:: pennylane.qaoa
+
+.. autosummary::
+    :toctree: api
+
+    cycle
 
 
 Solving the MaxCut problem using QAOA
