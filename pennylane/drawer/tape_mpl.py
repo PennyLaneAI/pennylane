@@ -39,16 +39,18 @@ from .utils import (
     unwrap_controls,
 )
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# pylint: disable=ungrouped-imports
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
+    from pennylane.tape import QuantumScript
+
+
 has_mpl = True
 try:
     import matplotlib as mpl
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
-
-if TYPE_CHECKING:
-    from pennylane.operation import Operator
-    from pennylane.tape import QuantumScript
-
 
 _Config = namedtuple(
     "_Config", ("decimals", "active_wire_notches", "bit_map", "cwire_layers", "cwire_wires")
