@@ -67,7 +67,7 @@ def _shadow_state_diffable(tape, wires):
     for w in wires_list:
         observables = []
         # Create all combinations of possible Pauli products P_i P_j P_k.... for w wires
-        for obs in product(*[[qops.I, qops.X, qops.Y, qops.Z] for _ in range(len(w))]):
+        for obs in product(*[[qops.Identity, qops.X, qops.Y, qops.Z] for _ in range(len(w))]):
             # Perform tensor product (((P_i @ P_j) @ P_k ) @ ....)
             observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
         all_observables.extend(observables)
