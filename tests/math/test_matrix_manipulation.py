@@ -19,10 +19,12 @@ import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.math import expand_matrix, expand_vector
+from pennylane.math import expand_matrix, expand_vector, sqrt_matrix, sqrt_matrix_sparse
+from pennylane.math.quantum import _denman_beavers_iterations
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
@@ -1068,3 +1070,209 @@ class TestExpandVector:
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)
+
+
+class TestSqrtMatrix:
+    """Tests for the sqrt_matrix function."""
+
+    # NOTE: make sure the matrix is positive definite
+    dm_list = [
+        np.array([[1, 0], [0, 1]]),
+        np.array([[1, 0], [0, 2]]),
+        np.array([[4, 2], [2, 3]]),
+    ]
+    shape_list = range(2, 10)
+    # NOTE: sqrt_matrix is frequently used by BlockEncode
+    #       here below are some test matrices that are used
+    #       in the BlockEncode tests
+    matrices = [
+        # 2x2 matrices
+        np.array([[0.1, 0.2], [0.3, 0.4]]),
+        # Non-square matrices
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2]]),
+        # 3x3 matrix
+        np.array([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]]),
+        # Identity-like matrices
+        np.array([[1, 0], [0, 1]]),
+        np.identity(3),
+        # Matrix with complex entries
+        0.2 * np.array([[0.3, 0.9539392j], [0.9539392j, -0.3]]),
+    ]
+    # negative matrices: matrices that have negative eigenvalues
+    matrices_negative = [
+        # 2x2 matrix with negative eigenvalue
+        np.array([[1, 2], [2, -3]]),
+        # 3x3 matrix with mixed positive/negative eigenvalues
+        np.array([[2, -1, 0], [-1, -2, 1], [0, 1, 3]]),
+        # 4x4 matrix with negative eigenvalues
+        np.array([[1, 2, 0, 1], [2, -2, 1, 0], [0, 1, -3, 2], [1, 0, 2, -1]]),
+    ]
+    # Known problematic matrices with informative error message.
+    # NOTE: keep the entries here common. No fine-tuned corner cases.
+    illmats_info_pairs = [
+        (
+            np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+            ValueError,
+            "Factor is exactly singular",
+        )
+    ]
+
+    @pytest.mark.parametrize("dm", dm_list)
+    def test_sqrt_matrix_sparse_dm(self, dm, tol):
+        """Test the sqrt_matrix function."""
+
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("shape", shape_list)
+    def test_sqrt_matrix_sparse_random(self, shape, tol):
+        """Test the sqrt_matrix function."""
+
+        # From unitary group
+        dm = unitary_group.rvs(shape)
+        dm = dm @ dm.T.conj()
+        A = qml.math.asarray(dm)
+        A_sparse = csr_matrix(A)
+
+        assert np.allclose(sqrt_matrix(A), sqrt_matrix_sparse(A_sparse).toarray(), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("matrix", matrices)
+    def test_sqrt_matrix_inputs(self, matrix, tol):
+        """Test sqrt_matrix function with various input matrices."""
+
+        # type M^† M
+        A = matrix.T.conj() @ matrix
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+        # type M M^†
+        A = matrix @ matrix.T.conj()
+        A = np.eye(A.shape[0]) - A
+        A_sparse = csr_matrix(A)
+
+        result_sparse = sqrt_matrix_sparse(A_sparse)
+        result = result_sparse.toarray()
+        result_2 = result @ result
+
+        assert np.allclose(result_2, A, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("m", matrices_negative)
+    def test_sqrt_matrix_sparse_input_negative(self, m):
+        """Test that sqrt_matrix_sparse raises ValueError for matrices with negative eigenvalues."""
+        m = csr_matrix(m)
+        with pytest.raises(ValueError):
+            sqrt_matrix_sparse(m)
+
+    @pytest.mark.parametrize("m, e, info", illmats_info_pairs)
+    def test_sqrt_matrix_sparse_input_ill_conditioned(self, m, e, info):
+        """Test that appropriate errors are raised for ill-conditioned matrices"""
+        m = csr_matrix(m)
+        with pytest.raises(e, match=info):
+            sqrt_matrix_sparse(m)
+
+    def test_sqrt_matrix_sparse_input_valid(self):
+        """Test that if dense input errors raised"""
+        A = np.array([[1, 0], [0, 1]])
+        with pytest.raises(TypeError, match="only supports scipy.sparse matrices"):
+            sqrt_matrix_sparse(A)
+
+
+CONVERGENCE_ERROR = "Convergence threshold not reached"
+
+
+def _reverse_det_hermitian(mat):
+    """Helper function to reverse determinant sign of Hermitian matrix"""
+    eigvals, eigvecs = np.linalg.eigh(mat)
+    eigvals[0] *= -1
+    return eigvecs @ np.diag(eigvals) @ eigvecs.T.conj()
+
+
+def _enforce_positivity(mat):
+    """Helper function to ensure matrix is positive definite"""
+    det_mat = np.linalg.det(mat)
+    return mat if det_mat > 0 else _reverse_det_hermitian(mat)
+
+
+class TestDenmanBeaversIterations:
+    """Tests for the Denman-Beavers iteration method for matrix square root"""
+
+    def test_singular_matrix(self):
+        """Test that singular matrix raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([0.0] + [1.0] * (n - 1)))
+
+        with pytest.raises(ValueError, match="Factor is exactly singular"):
+            _denman_beavers_iterations(mat)
+
+    def test_overflow_matrix(self):
+        """Test that matrix with very large values raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.eye(n) * 1e150)
+
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    def test_invalid_value_matrix(self):
+        """Test that matrix leading to invalid values raises appropriate error"""
+        n = 4
+        mat = csr_matrix(np.diag([-1e-10] + [1.0] * (n - 1)))
+
+        with pytest.raises(ValueError, match="nan or inf"):
+            _denman_beavers_iterations(mat)
+
+    def test_non_convergent_matrix(self):
+        """Test that non-convergent matrix raises appropriate error"""
+        mat = csr_matrix([[1, 1e-6], [1e-6, 1e-12 + 1e-25]])
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    def test_unstable_matrix(self):
+        """Test that numerically unstable matrix raises convergence warning"""
+        n = 4
+        mat = csr_matrix(np.diag([1e-200, 1e200] + [1.0] * (n - 2)))
+
+        with pytest.raises(ValueError, match=CONVERGENCE_ERROR):
+            _denman_beavers_iterations(mat)
+
+    @pytest.mark.parametrize("size", [2, 3, 4, 5])
+    def test_valid_positive_definite(self, size, seed):
+        """Test that valid real, positive definite matrices work correctly"""
+        # Create a positive definite matrix
+        rng = np.random.default_rng(seed)
+        A = rng.random((size, size))
+        mat = np.eye(size) - 0.1 * (A @ A.T)
+        mat = _enforce_positivity(mat)
+        mat = csr_matrix(mat)
+
+        result = _denman_beavers_iterations(mat)
+        # Check that result is a valid square root
+        result_dense = result.toarray()
+        original_dense = mat.toarray()
+        qml.math.allclose(result_dense @ result_dense, original_dense, atol=1e-7, rtol=1e-7)
+
+    def test_hermitian_matrix(self):
+        """Test that Hermitian matrices work correctly on Hermitians of positive det.
+        Emulate random users' random input; the iteration should pass the simple branch determined by determinant, or it needs extra examine.
+        """
+        n = 4
+        A = np.random.random((n, n)) + 1j * np.random.random((n, n))
+        mat = np.eye(n) - 0.2 * (A @ A.T.conj())
+
+        det_mat = np.real(np.linalg.det(mat))
+        good_mat = mat if det_mat > 0 else _reverse_det_hermitian(mat)
+
+        result = _denman_beavers_iterations(csr_matrix(good_mat))
+        result_dense = result.toarray()
+        qml.math.allclose(result_dense @ result_dense, good_mat, atol=1e-7, rtol=1e-7)
+
+        bad_mat = mat if det_mat < 0 else _reverse_det_hermitian(mat)
+        with pytest.raises(ValueError, match="Invalid values encountered"):
+            _denman_beavers_iterations(csr_matrix(bad_mat))

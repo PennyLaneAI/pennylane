@@ -251,7 +251,7 @@ def _assert_method_no_recursion_error(instance, method_name):
         getattr(instance, method_name)()
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 
@@ -261,7 +261,7 @@ def _assert_property_no_recursion_error(instance, property_name):
         getattr(instance, property_name)
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 

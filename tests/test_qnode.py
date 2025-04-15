@@ -43,7 +43,7 @@ def test_additional_kwargs_is_deprecated():
 
     with pytest.warns(
         qml.PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] is deprecated",
+        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
     ):
         QNode(dummyfunc, dev, atol=1)
 

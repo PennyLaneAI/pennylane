@@ -15,12 +15,18 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
+from typing import Optional, overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.typing import TensorLike
 
 
+@overload
+def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
+@overload
+def evolve(op: Operator, coeff: TensorLike = 1, num_steps: Optional[int] = None) -> Evolution: ...
 @singledispatch
 def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.
@@ -39,8 +45,11 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         e^{-i x \bm{O}}
 
     Args:
-        op (.Operator): operator to evolve
+        op (.Operator): operator to evolve. This must be passed as a *positional* argument. Passing it as a *keyword* argument will result in an error.
         coeff (float): coefficient multiplying the exponentiated operator
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. Defaults to `None`. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
 
     Returns:
         .Evolution: evolution operator
@@ -61,7 +70,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         </html>
 
     Args:
-        op (.ParametrizedHamiltonian): Hamiltonian to evolve
+        op (.ParametrizedHamiltonian): Hamiltonian to evolve. This must be passed as a *positional* argument.
 
     Returns:
         .ParametrizedEvolution: time evolution :math:`U(t_0, t_1)` of the Hamiltonian

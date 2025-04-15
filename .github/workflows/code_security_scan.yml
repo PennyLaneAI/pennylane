@@ -1,0 +1,28 @@
+name: Code Security Scan
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: code-security-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs: 
+  code_security_scan:
+    if: github.event.pull_request.draft == false
+    uses: XanaduAI/cloud-actions/.github/workflows/static_code_vulnerability_analysis.yml@main
+    with:
+      github-repository: ${{ github.repository }}
+      repository-ref: ${{ github.ref }}
+      runner_name: ubuntu-latest
+      bandit-config-file: pyproject.toml
+      scan_directory: pennylane
+      
+      # We error out CI if any high-severity issues are found
+      # All other errors are still printed to logs
+      semgrep-error-on-impact: HIGH
+      semgrep-error-on-severity: ERROR
+      bandit-error-on-severity: HIGH
+

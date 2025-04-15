@@ -21,10 +21,11 @@ from warnings import warn
 
 import numpy as np
 import scipy as sp
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qml
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
@@ -73,6 +74,12 @@ class BasisState(StatePrepBase):
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
+
+    resource_keys = {"state", "wires"}
+
+    @property
+    def resource_params(self) -> dict:
+        return {"state": self.parameters[0], "wires": self.wires}
 
     def __init__(self, state, wires: WiresLike, id=None):
 
@@ -176,6 +183,28 @@ class BasisState(StatePrepBase):
             ket[tuple(indices)] = 1
 
         return math.convert_like(ket, prep_vals)
+
+
+def _basis_state_decomp_resources(state, wires):
+    if not qml.math.is_abstract(state):
+        return {qml.X: len([wire for wire, basis in zip(wires, state, strict=True) if basis == 1])}
+    return {qml.PhaseShift: 2 * len(wires), qml.RX: len(wires)}
+
+
+@register_resources(_basis_state_decomp_resources)
+def _basis_state_decomp(state, wires, **__):
+    if not qml.math.is_abstract(state):
+        for wire, basis in zip(wires, state, strict=True):
+            if basis == 1:
+                qml.X(wire)
+    else:
+        for wire, basis in zip(wires, state):
+            qml.PhaseShift(basis * np.pi / 2, wire)
+            qml.RX(basis * np.pi, wire)
+            qml.PhaseShift(basis * np.pi / 2, wire)
+
+
+add_decomps(BasisState, _basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
@@ -328,10 +357,14 @@ class StatePrep(StatePrepBase):
         self.is_sparse = False
         if sp.sparse.issparse(state):
             state = state.tocsr()
-            state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+            state = self._preprocess_csr(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
             self.is_sparse = True
         else:
-            state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+            state = self._preprocess(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
 
         self._hyperparameters = {
             "pad_with": pad_with,
@@ -340,6 +373,12 @@ class StatePrep(StatePrepBase):
         }
 
         super().__init__(state, wires=wires, id=id)
+
+    def _check_batching(self):
+        if self.is_sparse:
+            self._batch_size = None
+        else:
+            super()._check_batching()
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -380,11 +419,10 @@ class StatePrep(StatePrepBase):
     def state_vector(self, wire_order: Optional[WiresLike] = None):
 
         if self.is_sparse:
-            return (
-                _sparse_statevec_permute_and_embed(self.parameters[0], self.wires, wire_order)
-                if wire_order
-                else self.parameters[0]
+            op_vector = _sparse_statevec_permute_and_embed(
+                self.parameters[0], self.wires, wire_order
             )
+            return csr_array(op_vector)
 
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
@@ -497,8 +535,10 @@ class StatePrep(StatePrepBase):
         shape = state.shape
 
         # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
-        if shape[0] != 1:
-            raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
+        if len(shape) == 2 and shape[0] != 1:
+            raise NotImplementedError(
+                "StatePrep does not yet support parameter broadcasting with sparse state vectors."
+            )
 
         n_states = shape[-1]
         dim = 2 ** len(Wires(wires))

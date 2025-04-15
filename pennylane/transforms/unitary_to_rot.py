@@ -71,11 +71,10 @@ def _get_plxpr_unitary_to_rot():
 
             return super().interpret_operation(op)
 
-    # pylint: disable=redefined-outer-name
-    def unitary_to_rot_plxpr_to_plxpr(
-        jaxpr, consts, _, __, *args
-    ):  # pylint: disable=unused-argument
-        interpreter = UnitaryToRotInterpreter()
+    def unitary_to_rot_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``unitary_to_rot`` transform on plxpr."""
+
+        interpreter = UnitaryToRotInterpreter(*targs, **tkwargs)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)

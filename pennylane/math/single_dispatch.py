@@ -22,7 +22,6 @@ import numpy as np
 import scipy as sp
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
-from scipy.sparse.linalg import splu
 
 from .interface_utils import get_deep_interface
 from .utils import is_abstract
@@ -57,14 +56,17 @@ def _builtins_shape(x):
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
 ar.register_function("builtins", "shape", _builtins_shape)
-
+ar.register_function("builtins", "coerce", lambda x: x)
+ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
-
+ar.register_function("scipy", "coerce", lambda x: x)
+ar.register_function("scipy", "array", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "dot", np.dot)
 ar.register_function("scipy", "conj", np.conj)
 ar.register_function("scipy", "transpose", np.transpose)
 ar.register_function("scipy", "ndim", np.ndim)
@@ -76,60 +78,72 @@ ar.register_function("scipy", "ndim", np.ndim)
 # that whenever the backend is 'scipy', the input is a SciPy sparse matrix.
 
 
-def _det_sparse(x):
-    """Compute determinant of sparse matrices without densification"""
+def sparse_matrix_power(A, n):
+    """Dispatch to the appropriate sparse matrix power function."""
+    try:  # pragma: no cover
+        # pylint: disable=import-outside-toplevel
+        from scipy.sparse.linalg import matrix_power
 
-    assert sp.sparse.issparse(x), TypeError(f"Expected SciPy sparse, got {type(x)}")
+        # added in scipy 1.12.0
 
-    x = sp.sparse.csr_matrix(x)
-    if x.shape == (2, 2):
-        # Direct array access
-        indptr, indices, data = x.indptr, x.indices, x.data
-        values = {(i, j): 0.0 for i in range(2) for j in range(2)}
-        for i in range(2):
-            for j_idx in range(indptr[i], indptr[i + 1]):
-                j = indices[j_idx]
-                values[(i, j)] = data[j_idx]
-        return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
-    return _generic_sparse_det(x)
+        return matrix_power(A, n)
+    except ImportError:  # pragma: no cover
+        return _sparse_matrix_power_bruteforce(A, n)
 
 
-def _generic_sparse_det(A):
-    """Compute the determinant of a sparse matrix using LU decomposition."""
+def _sparse_matrix_power_bruteforce(A, n):
+    """
+    Compute the power of a sparse matrix using brute-force matrix multiplication.
+    Supports only non-negative integer exponents.
 
-    assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
+    Parameters:
+    A : scipy.sparse matrix
+        The sparse matrix to be exponentiated.
+    n : int
+        The exponent (must be non-negative).
 
-    A_csc = A.tocsc()
-    lu = splu(A_csc)
-    U_diag = lu.U.diagonal()
-    det_A = np.prod(U_diag)
-    parity = _permutation_parity(lu.perm_r)
-    return det_A * parity
+    Returns:
+    scipy.sparse matrix
+        The matrix A raised to the power n.
+    """
+
+    if n < 0:
+        raise ValueError("This function only supports non-negative integer exponents.")
+
+    if n == 0:
+        return sp.sparse.eye(A.shape[0], dtype=A.dtype, format=A.format)  # Identity matrix
+
+    try:
+        matmul_range = range(n - 1)
+    except Exception as e:
+        raise ValueError("exponent must be an integer") from e
+
+    result = A.copy()
+    for _ in matmul_range:
+        result = result @ A  # Native matmul operation
+
+    return result
 
 
-def _permutation_parity(perm):
-    """Compute the parity of a permutation."""
-
-    parity = 1
-    visited = [False] * len(perm)
-    for i in range(len(perm)):
-        if not visited[i]:
-            cycle_length = 0
-            j = i
-            while not visited[j]:
-                visited[j] = True
-                j = perm[j]
-                cycle_length += 1
-
-            if cycle_length:
-
-                parity *= (-1) ** (cycle_length - 1)
-    return parity
-
-
-ar.register_function("scipy", "linalg.det", _det_sparse)
+ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
+ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
+ar.register_function("scipy", "linalg.matrix_power", sparse_matrix_power)
+ar.register_function("scipy", "linalg.norm", sp.sparse.linalg.norm)
+ar.register_function("scipy", "linalg.spsolve", sp.sparse.linalg.spsolve)
 ar.register_function("scipy", "linalg.eigs", sp.sparse.linalg.eigs)
+ar.register_function("scipy", "linalg.eigsh", sp.sparse.linalg.eigsh)
+ar.register_function("scipy", "linalg.svds", sp.sparse.linalg.svds)
+
+
 ar.register_function("scipy", "trace", lambda x: x.trace())
+ar.register_function("scipy", "reshape", lambda x, new_shape: x.reshape(new_shape))
+ar.register_function("scipy", "real", lambda x: x.real)
+ar.register_function("scipy", "imag", lambda x: x.imag)
+ar.register_function("scipy", "size", lambda x: np.prod(x.shape))
+ar.register_function("scipy", "eye", sp.sparse.eye)
+ar.register_function("scipy", "zeros", sp.sparse.csr_matrix)
+ar.register_function("scipy", "hstack", sp.sparse.hstack)
+ar.register_function("scipy", "vstack", sp.sparse.vstack)
 
 # -------------------------------- NumPy --------------------------------- #
 

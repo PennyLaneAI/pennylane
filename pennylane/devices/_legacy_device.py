@@ -41,6 +41,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 
+from .tracker import Tracker
+
 
 def _local_tape_expand(tape, depth, stop_at):
     """Expand all objects in a tape to a specific depth excluding measurements.
@@ -102,9 +104,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qml.devices.DefaultMixed)", the overridden
+    checking "isinstance(dev, qml.devices.DefaultQutrit)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qml.devices.DefaultMixed)"
+    "isinstance(dev.target_device, qml.devices.DefaultQutrit)"
     """
 
     def __instancecheck__(cls, instance):
@@ -155,7 +157,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = qml.Tracker()
+        self.tracker = Tracker()
         self.custom_expand_fn = None
 
     def __repr__(self):

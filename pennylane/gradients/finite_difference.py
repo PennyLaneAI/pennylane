@@ -38,7 +38,7 @@ from .gradient_transform import (
     _all_zero_grad,
     _no_trainable_grad,
     assert_no_trainable_tape_batching,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
 )
 
@@ -479,11 +479,11 @@ def finite_diff(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
     diff_methods = (
-        find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params_indices)
         if validate_params
-        else {idx: "F" for idx in trainable_params}
+        else {idx: "F" for idx in trainable_params_indices}
     )
 
     if all(g == "0" for g in diff_methods.values()):

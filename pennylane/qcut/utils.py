@@ -649,6 +649,7 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
+    start_fragment, end_fragment = 0, 0
     for node1, node2, _ in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):

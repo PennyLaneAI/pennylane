@@ -18,6 +18,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import (
     CCZ,
     CH,
@@ -202,6 +203,23 @@ class TestControlledInit:
 
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
+
+    def test_resource_params(self):
+        """Tests that a controlled op has the correct resource params."""
+
+        op = Controlled(
+            qml.MultiRZ(0.5, wires=[0, 1, 2]),
+            control_wires=[3, 4],
+            control_values=[True, False],
+            work_wires=[5],
+        )
+        assert op.resource_params == {
+            "base_class": qml.MultiRZ,
+            "base_params": {"num_wires": 3},
+            "num_control_wires": 2,
+            "num_zero_control_values": 1,
+            "num_work_wires": 1,
+        }
 
     def test_data(self):
         """Test that the base data can be get and set through Controlled class."""
@@ -742,6 +760,7 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(sparse_mat.toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]))
     def test_sparse_matrix_only_matrix_defined(self, control_values):
@@ -754,15 +773,18 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+        assert op.has_sparse_matrix
 
-    def test_sparse_matrix_wire_order_error(self):
-        """Check a NonImplementedError is raised if the user requests specific wire order."""
+    def test_sparse_matrix_wire_order(self):
+        """Check if the user requests specific wire order, sparse_matrix() returns the same as matrix()."""
         control_wires = (0, 1, 2)
         base = qml.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires)
 
-        with pytest.raises(NotImplementedError):
-            op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_sparse = op.sparse_matrix(wire_order=[3, 2, 1, 0])
+        op_dense = op.matrix(wire_order=[3, 2, 1, 0])
+
+        assert qml.math.allclose(op_sparse.toarray(), op_dense)
 
     def test_no_matrix_defined_sparse_matrix_error(self):
         """Check that if the base gate defines neither a sparse matrix nor a dense matrix, a
@@ -770,6 +792,7 @@ class TestMatrix:
 
         base = TempOperator(1)
         op = Controlled(base, 2)
+        assert not op.has_sparse_matrix
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
@@ -1682,6 +1705,18 @@ custom_ctrl_ops = [
 
 class TestCtrl:
     """Tests for the ctrl transform."""
+
+    def test_sparse_qubit_unitary(self):
+        """Test that the controlled sparse QubitUnitary works correctly"""
+        data = sp.sparse.eye(2)
+        op = qml.QubitUnitary(data, wires=2)
+        c_op = qml.ctrl(op, 3)
+
+        data_dense = data.toarray()
+        op_dense = qml.QubitUnitary(data_dense, wires=2)
+        c_op_dense = qml.ctrl(op_dense, 3)
+
+        assert qml.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
 
     def test_no_redundant_queue(self):
         """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""

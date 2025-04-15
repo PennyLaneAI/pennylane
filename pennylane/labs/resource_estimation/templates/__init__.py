@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains resource operators for PennyLane templates."""
-from .subroutines import ResourceQFT
+
+from .subroutines import (
+    ResourceQFT,
+    ResourceQuantumPhaseEstimation,
+    ResourceQPE,
+    ResourceBasisRotation,
+    ResourcePrepSelPrep,
+    ResourceQubitization,
+    ResourceQROM,
+    ResourceReflection,
+    ResourceSelect,
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
+    ResourceAmplitudeAmplification,
+)
+
+from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
+
+from .stateprep import (
+    ResourceSuperposition,
+    ResourceStatePrep,
+    ResourceBasisState,
+    ResourceMottonenStatePreparation,
+)

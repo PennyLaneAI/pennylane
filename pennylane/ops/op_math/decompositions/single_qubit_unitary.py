@@ -42,7 +42,9 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     with np.errstate(divide="ignore", invalid="ignore"):
-        determinants = math.linalg.det(U)
+        # we already know is 2x2, so no scaling problems from converting to dense
+        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
+        determinants = math.linalg.det(U_temp)
     phase = math.angle(determinants) / 2
     U = (
         U * math.exp(-1j * phase)
@@ -183,7 +185,8 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     """
 
     # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+    if not sp.sparse.issparse(U):
+        U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
     # Convert to SU(2) format and extract global phase
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
@@ -271,7 +274,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
+        global_phase = math.squeeze(global_phase[0])
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations
