@@ -544,7 +544,9 @@ def _gather_input_soqs(
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
 
+
 if qualtran:
+
     @frozen
     class ToBloq(qt.Bloq):
         r"""
@@ -657,7 +659,9 @@ if qualtran:
 
         def __str__(self):
             return "PL" + self.op.name
+
 else:
+
     class ToBloq:
         """
         Placeholder for ToBloq. Functionality requires 'qualtran' installation.
@@ -665,9 +669,12 @@ else:
         This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
         was not found. Install the required libraries to enable functionality.
         """
+
         _dependency_missing = True
-        _error_message = ("Optional dependency 'qualtran' is required "
-                          "for ToBloq functionality but is not installed.")
+        _error_message = (
+            "Optional dependency 'qualtran' is required "
+            "for ToBloq functionality but is not installed."
+        )
 
         # Prevent instantiation if the dependency is missing
         def __init__(self, *args, **kwargs):
@@ -675,6 +682,6 @@ else:
 
         def __getattr__(self, name):
             raise ImportError(self._error_message)
-        
+
         def __call__(self, *args, **kwargs):
-             raise ImportError(self._error_message)
+            raise ImportError(self._error_message)
