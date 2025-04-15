@@ -533,14 +533,17 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml)
+
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
-    @pytest.mark.parametrize("ml", [10, 15, 20])
+    # We choose values of max_length that allow us to include continuation dots
+    # when the circuit is partitioned
+    @pytest.mark.parametrize("ml", [25, 50, 75])
     def test_setting_max_length(self, ml):
         """Test several custom max_length parameters change the wrapping length."""
 
         with qml.queuing.AnnotatedQueue() as q_tape_ml:
-            for _ in range(10):
+            for _ in range(50):
                 qml.PauliX(0)
                 qml.PauliY(1)
 
@@ -549,6 +552,7 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml, max_length=ml)
+
         assert max(len(s) for s in out.split("\n")) <= ml
 
 
