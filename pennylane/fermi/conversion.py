@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to convert a fermionic operator to the qubit basis."""
+from __future__ import annotations
 
 from functools import singledispatch
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .fermionic import FermiSentence, FermiWord
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
 
 
 # pylint: disable=unexpected-keyword-arg
