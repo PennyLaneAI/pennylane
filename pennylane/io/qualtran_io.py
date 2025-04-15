@@ -40,15 +40,15 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
 def map_to_bloq():
     @singledispatch
-    def _to_qt_bloq(op):
+    def _to_qt_bloq(op, map: Dict = None):
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation):
+    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation, map: Dict = None):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -58,7 +58,7 @@ def map_to_bloq():
         )
 
     @_to_qt_bloq.register
-    def _(op: qml.GlobalPhase):
+    def _(op: qml.GlobalPhase, map: Dict = None):
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
@@ -666,6 +666,18 @@ def optional_inherit(cls):
                     return cbloq
                 except DecompositionUndefinedError:
                     raise qt.DecomposeNotImplementedError
+
+            def build_call_graph(self, ssa):
+                if isinstance(self.op, qml.QuantumPhaseEstimation):
+                    return {
+                        ToBloq(self.op.hyperparameters["unitary"]): 1,
+                        ToBloq(self.op.hyperparameters["unitary"]).controlled(): (
+                            2 ** len(self.op.estimation_wires)
+                        )
+                        - 1,
+                        ToBloq(qml.adjoint(qml.templates.QFT(wires=self.op.estimation_wires))): 1,
+                    }
+                return self.decompose_bloq().build_call_graph(ssa)
 
             def __str__(self):
                 return "PL" + self.op.name
