@@ -733,6 +733,11 @@ def _compute_qsp_angle(poly_coeffs):
 """
 Implementation of the QSP (Quantum Signal Processing) algorithm proposed in https://arxiv.org/pdf/2002.11649 
 """
+try:
+    from jax import config
+    config.update("jax_enable_x64", True)
+except ModuleNotFoundError:
+    pass
 
 def cheby_pol(x, degree):
     r"""
@@ -848,7 +853,7 @@ def grid_pts(degree, interface):
     d = (degree + 1)// 2 + (degree+1) % 2
     return qml.math.array([qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)], like=interface)
 
-def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimize, opt_method="Newton-CG", interface=None):
+def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimize, interface=None, **optimizer_kwargs):
     r"""
     Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid
     
@@ -898,17 +903,16 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
     except ModuleNotFoundError:
         pass
 
-    opt_kwargs = {}
+    
 
-    opt_kwargs["jac"] = jacobian(obj_function)
-    if opt_method == "Newton-CG":
-        opt_kwargs["hess"] = hessian(obj_function)
+    optimizer_kwargs["jac"] = jacobian(obj_function)
+    if optimizer_kwargs["method"] == "Newton-CG":
+        optimizer_kwargs["hess"] = hessian(obj_function)
     
     results = optimizer(
         fun=obj_function,
         x0=initial_guess,
-        method=opt_method,
-        **opt_kwargs
+        **optimizer_kwargs
     )
     phis = results.x
     cost_func = results.fun
@@ -916,7 +920,7 @@ def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimi
     print(f"cost function {cost_func}")
     return phis, cost_func
 
-def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method="Newton-CG"):
+def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, **optimizer_kwargs):
     polynomial_coeffs_in_cheby_basis = chebyshev.poly2cheb(polynomial_coeffs_in_cano_basis)
     degree = len(polynomial_coeffs_in_cheby_basis) - 1
     
@@ -930,7 +934,7 @@ def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method=
     else:
         raise ValueError()
 
-    angles, *_ = qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func, opt_method=opt_method)
+    angles, *_ = qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func, **optimizer_kwargs)
     
     return angles 
 
@@ -1087,7 +1091,7 @@ def transform_angles(angles, routine1, routine2):
     )
 
 
-def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding", **opt_kwargs):
+def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding", **optimizer_kwargs):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
@@ -1180,12 +1184,15 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         assert np.allclose(
             np.array(poly, dtype=np.complex128).imag, 0
         ), "Array must not have an imaginary part"
+    
+    if angle_solver == "iterative" and optimizer_kwargs == {}:
+        optimizer_kwargs = {"method":"L-BFGS-B", "tol":1e-15}
 
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         elif angle_solver == "iterative":
-            return transform_angles(_compute_qsp_angles_iteratively(poly, **opt_kwargs), "QSP", "QSVT")
+            return transform_angles(_compute_qsp_angles_iteratively(poly, **optimizer_kwargs), "QSP", "QSVT")
 
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
@@ -1193,7 +1200,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         elif angle_solver == "iterative":
-            return _compute_qsp_angles_iteratively(poly, **opt_kwargs)
+            return _compute_qsp_angles_iteratively(poly, **optimizer_kwargs)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "GQSP":
