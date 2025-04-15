@@ -229,43 +229,14 @@ class NullQubit(Device):
     def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
-        # TODO: Question for PR reviewers, would we prefer this to be documented and public, or hidden internally?
-        self.track_resources = track_resources
+        self._track_resources = track_resources
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
 
-        if self.track_resources:
-            import json
-            from collections import defaultdict
-
-            RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
-
-            num_wires = len(circuit.wires)
-            gate_types = defaultdict(int)
-
-            for op in circuit.operations:
-                while hasattr(op, "base"):
-                    op = op.base
-
-                if op.name == "Barrier":
-                    continue
-
-                gate_types[op.name] += 1
-            # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
-            #  In the future it may be better to return this information in a more structured way.
-            print(RESOURCE_PRINT_DELIMETER)
-            print(
-                json.dumps(
-                    {
-                        "num_wires": num_wires,
-                        "num_gates": sum(gate_types.values()),
-                        "gate_types": gate_types,
-                    }
-                )
-            )
-            print(RESOURCE_PRINT_DELIMETER)
+        if self._track_resources:
+            self._simulate_resource_use(circuit)
 
         for s in circuit.shots or [None]:
             r = tuple(
@@ -276,6 +247,38 @@ class NullQubit(Device):
         if circuit.shots.has_partitioned_shots:
             return tuple(results)
         return results[0]
+    
+
+    def _simulate_resource_use(self, circuit):
+        import json
+        from collections import defaultdict
+
+        RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+
+        num_wires = len(circuit.wires)
+        gate_types = defaultdict(int)
+
+        for op in circuit.operations:
+            while hasattr(op, "base"):
+                op = op.base
+
+            if op.name == "Barrier":
+                continue
+
+            gate_types[op.name] += 1
+        # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+        #  In the future it may be better to return this information in a more structured way.
+        print(RESOURCE_PRINT_DELIMETER)
+        print(
+            json.dumps(
+                {
+                    "num_wires": num_wires,
+                    "num_gates": sum(gate_types.values()),
+                    "gate_types": gate_types,
+                }
+            )
+        )
+        print(RESOURCE_PRINT_DELIMETER)
 
     def _derivatives(self, circuit, interface):
         shots = circuit.shots
@@ -340,7 +343,7 @@ class NullQubit(Device):
 
         updated_values = {}
         if execution_config.gradient_method in ["best", "adjoint"]:
-            updated_values["gradient_method"] = "device"
+            updated_values["gradient_method"] = "device"  # This would be the line to change
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = execution_config.gradient_method in {
                 "best",
