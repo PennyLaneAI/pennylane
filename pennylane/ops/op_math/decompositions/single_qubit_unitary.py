@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import math
 
 # Small number to add to denominators to avoid division by zero
-EPS = 1e-64
+EPS = np.finfo(float).eps
 
 
 def _convert_to_su2(U, return_global_phase=False):
