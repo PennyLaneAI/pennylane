@@ -729,6 +729,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             args = args[:-1] + wires
         else:
             kwargs["n_wires"] = 1
+
+        if any(isinstance(a, jax.stages.ArgInfo) for a in args):
+            return cls._primitive.abstract_eval(*args, **kwargs)
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self) -> "Operator":
