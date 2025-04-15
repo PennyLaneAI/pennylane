@@ -738,17 +738,15 @@ Implementation of the QSP (Quantum Signal Processing) algorithm proposed in http
 
 def cheby_pol(x, degree):
     r"""
-    return the value of the chebychev polynomila cos(degree*arcos(x)) at point x
+    return the value of the chebychev polynomial cos(degree*arcos(x)) at point x
     
     Args:
-        x (float):
-        degree (int)
+        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
+        degree (int): degree of the Chebychev polynomial
     
     Returns:
         float: vlaue of cos(degree*arcos(x))
     """
-    # if np.abs(x) > 1:
-    #     raise ValueError()
     return qml.math.cos(degree * qml.math.arccos(x))
 
 def poly_func(
