@@ -18,6 +18,7 @@ from inspect import signature
 import numpy as np
 import scipy as sp
 
+# TODO: Remove dependency of optimize on fourier, sc-89244.
 from pennylane import fourier  # tach-ignore
 from pennylane import math
 from pennylane.workflow import QNode
