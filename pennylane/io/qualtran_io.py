@@ -26,6 +26,7 @@ from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
+
     qualtran = True
 except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
@@ -543,15 +544,18 @@ def _gather_input_soqs(
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
 
-class ToBloq():
+
+class ToBloq:
     r"""
     Adapter class to convert PennyLane operators into Qualtran Bloqs
     """
+
     def __init__(self):
         if not qualtran:
             raise ImportError
 
-def _create_to_bloq():        
+
+def _create_to_bloq():
     @frozen
     class ToBloq(qt.Bloq):
         r"""
@@ -584,7 +588,9 @@ def _create_to_bloq():
                     k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
                     for k, v in out_quregs.items()
                 }
-                bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
+                bb, initial_soqs = qt.BloqBuilder.from_signature(
+                    signature, add_registers_allowed=False
+                )
 
                 # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
                 qreg_to_qvar = {}
@@ -617,7 +623,9 @@ def _create_to_bloq():
                         for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
                     }
 
-                    in_op_quregs = {reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()}
+                    in_op_quregs = {
+                        reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
+                    }
 
                     # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
                     # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
@@ -645,7 +653,9 @@ def _create_to_bloq():
                 final_soqs_dict = _gather_input_soqs(
                     bb, {reg.name: out_quregs[reg.name] for reg in signature.rights()}, qreg_to_qvar
                 )
-                final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
+                final_soqs_set = set(
+                    soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
+                )
                 # 5. Free all dangling Soquets which are not part of the final soquets set.
                 for qvar in qreg_to_qvar.values():
                     if qvar not in final_soqs_set:
@@ -658,8 +668,9 @@ def _create_to_bloq():
 
         def __str__(self):
             return "PL" + self.op.name
-        
+
     return ToBloq
+
 
 if qualtran:
     print("Hello")
