@@ -24,10 +24,18 @@ concurrency:
 
 jobs:
   check-logic:
-    if: github.event.pull_request.base.ref == 'master'
-    run:  |
-      echo "True"
-      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if this is a pull request targeting the master branch
+        shell: bash
+        run: |
+          echo "True"
+          if [[ "${{ github.event.pull_request.base.ref }}" == "master" ]]; then
+            echo "This is a pull request targeting the master branch."
+          else
+            echo "This is not a pull request targeting the master branch."
+          fi
+          
   tests:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
