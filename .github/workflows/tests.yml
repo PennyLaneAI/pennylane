@@ -29,7 +29,6 @@ jobs:
       - name: Check if this is a pull request targeting the master branch
         shell: bash
         run: |
-          echo "${{ github.event.pull_request.base.ref }}" == "master"
           if [[ "${{ github.event.pull_request.base.ref }}" == "master" ]]; then
             echo "This is a pull request targeting the master branch."
           else
