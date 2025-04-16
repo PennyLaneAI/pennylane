@@ -57,13 +57,7 @@ def create_initial_state(
             pure_state, expected_shape=[], expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
 
-        if batch_size == 1:
-            density_matrix = np.outer(pure_state, np.conj(pure_state))
-            if explicit_batched:
-                # Create a dummy dim
-                density_matrix = math.stack([density_matrix])
-        else:
-            density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
+        density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
     return _post_process(density_matrix, num_axes, like, explicit_batched)
 
 
