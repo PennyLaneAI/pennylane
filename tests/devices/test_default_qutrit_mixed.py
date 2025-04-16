@@ -1592,7 +1592,7 @@ class TestReadoutError:
     )
     def test_measurement_error_validation(self, relaxations, misclassifications, num_wires):
         """Ensure error is raised for wrong number of arguments inputted in readout errors."""
-        with pytest.raises(DeviceError, match="results in error:"):
+        with pytest.raises(DeviceError, match="results in error"):
             qml.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
@@ -1602,11 +1602,11 @@ class TestReadoutError:
 
     def test_prob_type(self, num_wires):
         """Tests that an error is raised for wrong data type in readout errors"""
-        with pytest.raises(DeviceError, match="results in error:"):
+        with pytest.raises(DeviceError, match="results in error"):
             qml.device(
                 "default.qutrit.mixed", wires=num_wires, readout_relaxation_probs=[0.1, 0.2, "0.3"]
             )
-        with pytest.raises(DeviceError, match="results in error:"):
+        with pytest.raises(DeviceError, match="results in error"):
             qml.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
