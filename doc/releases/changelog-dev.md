@@ -19,6 +19,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
+  [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
+
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)

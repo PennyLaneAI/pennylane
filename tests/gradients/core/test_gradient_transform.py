@@ -655,6 +655,36 @@ class TestGradientTransformIntegration:
         assert circuit(x).shape == tuple()
         assert circuit(x, shots=1000).shape == tuple()
 
+    @pytest.mark.parametrize(
+        "interface",
+        (
+            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ),
+    )
+    def test_use_with_batch_transform(self, interface):
+        """Test that a gradient transform can be chained with a batch transform."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def c(x):
+            qml.RX(x**2, 0)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(0))
+
+        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+
+        grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+
+        expected_z = -2 * x * qml.math.sin(x**2)
+        expected_y = -2 * x * qml.math.cos(x**2)
+        assert qml.math.allclose(expected_z, grad_z)
+        assert qml.math.allclose(grad_y, expected_y)
+        assert qml.math.allclose(grad_x, 0)
+
 
 class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable

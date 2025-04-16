@@ -416,14 +416,6 @@ def _single_meas_contraction(qjac, cjac, single_trainable_param):
 
 
 def _single_shots_contraction(qjac, cjac, tape):
-    if (
-        isinstance(cjac, (list, tuple))
-        and len(cjac) == 1
-        and math.get_interface(cjac[0]) == "torch"
-    ):
-        # need to squeeze any torch input of length 1
-        cjac = cjac[0]
-
     single_trainable_param = len(tape.trainable_params) == 1
     if len(tape.measurements) == 1:
         return _single_meas_contraction(qjac, cjac, single_trainable_param)
@@ -447,7 +439,45 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     Returns:
         The complete jacobian
 
+    This function can be used as the ``classical_cotransform`` component of a :func:`~pennylane.transform` for
+    a first-order derivative.
+
+    The ``qjac`` corresponds to the output of the standard postprocessing of a gradient transform. The ``cjac``
+    it the derivatives of the tape parameters with respect to the qnode arguments.
+
+    >>> @qml.qnode(dev = qml.device('default.qubit'))
+    ... def c(x):
+    ...     qml.RX(x[0]**2, 0)
+    ...     qml.RY(x[1], 0)
+    ...     return qml.expval(qml.Z(0)), qml.expval(qml.Y(0))
+    >>> x = qml.numpy.array([2.0, 3.0])
+    >>> tape = qml.workflow.construct_tape(c)(x)
+    >>> cjac = qml.gradients.classical_jacobian(c)(x)
+    >>> cjac
+    array([[4., 0.],
+        [0., 1.]])
+    >>> qjac = qml.gradients.param_shift(c, hybrid=False)(x)
+    >>> qjac
+    ((tensor(-0.74922879, requires_grad=True),
+    tensor(0.09224219, requires_grad=True)),
+    (tensor(0.65364362, requires_grad=True),
+    tensor(2.70003469e-17, requires_grad=True)))
+    >>> qml.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
+    (tensor([-2.99691517,  0.09224219], requires_grad=True),
+    tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
+    >>> qml.gradients.param_shift(c)(x)
+    (tensor([-2.99691517,  0.09224219], requires_grad=True),
+    tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
+
     """
+    if (
+        isinstance(cjac, (list, tuple))
+        and len(cjac) == 1
+        and math.get_interface(cjac[0]) == "torch"
+    ):
+        # need to squeeze any torch input of length 1
+        cjac = cjac[0]
+
     if tape.shots.has_partitioned_shots:
         return tuple(_single_shots_contraction(qjac_s, cjac, tape) for qjac_s in qjac)
 
