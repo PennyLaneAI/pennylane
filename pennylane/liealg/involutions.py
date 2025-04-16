@@ -526,7 +526,6 @@ def _CII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: Optional[int
     op = op * 1j
 
     z = Kpq(p, q, wire=wire)
-
     return np.allclose(op, z @ op @ z)
 
 
