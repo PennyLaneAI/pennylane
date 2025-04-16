@@ -92,23 +92,24 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def size(self):
         return self._size
 
-    def submit(self, fn: Callable, /, *args, **kwargs):
+    def submit(self, fn: Callable, *args, **kwargs):
         if self._persist:
             return self._submit_fn(self._backend)(fn, *args, **kwargs)
         exec_be = self._exec_backend()(self._size)
-        if self._cfg.blocking:
-            return self._submit_fn(exec_be)(*self._submit_sig(fn, *args, **kwargs))
-        return self._submit_fn(exec_be)(*self._submit_sig(fn, *args, **kwargs)).result()
+        # from IPython import embed; embed()
+        output = None
 
-    def _submit_sig(self, fn: Callable, *args, **kwargs):
-        """
-        Helper function to shape function arguments backends that require explicit unpacking of the `args` input.
-        """
         if self._cfg.submit_unpack:
-            a_list = [a for a in args]
-            return (fn, a_list, kwargs)
-        out = (fn, args, kwargs)
-        return out
+            output = self._submit_fn(exec_be)(fn, *args, **kwargs)
+        else:
+            # try:
+            output = self._submit_fn(exec_be)(fn, args, **kwargs)
+            # except:
+            #    from IPython import embed; embed()
+
+        if self._cfg.blocking:
+            return output
+        return output.result()
 
     def map(self, fn: Callable, *args: Sequence[Sequence]):
         if self._persist:
@@ -174,7 +175,7 @@ class ProcPoolExec(PyNativeExecABC):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            submit_unpack=False,
+            submit_unpack=True,
             map_unpack=False,
             blocking=False,
         )
@@ -195,7 +196,7 @@ class ThreadPoolExec(PyNativeExecABC):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            submit_unpack=False,
+            submit_unpack=True,
             map_unpack=False,
             blocking=False,
         )
