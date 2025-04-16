@@ -844,19 +844,20 @@ class TestIterativeSolver:
         ]
     )
     @pytest.mark.parametrize(
-        "opt_method",
+        "optimizer_kwargs",
         [
-            'L-BFGS-B',
+            {"method":"L-BFGS-B", "tol":1e-15},
+            {"method":"Newton-CG"}
         ]
     )
-    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis, opt_method):
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis, optimizer_kwargs):
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
         parity = degree % 2
         if parity:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs, opt_method=opt_method)
+        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs, **optimizer_kwargs)
         x_point = np.random.uniform(size=1, high=1, low=-1)
         x_point = x_point.item()
         
