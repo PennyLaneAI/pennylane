@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.workflow.executors import ExecBackends, create_executor
-from pennylane.workflow.executors.native import MPPoolExec, ProcPoolExec, ThreadPoolExec
+from pennylane.concurrency.executors import ExecBackends, create_executor
+from pennylane.concurrency.executors.native import MPPoolExec, ProcPoolExec, ThreadPoolExec
 
 
 def custom_func1(arg0):

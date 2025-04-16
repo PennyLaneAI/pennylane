@@ -17,9 +17,9 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+from pennylane.concurrency.executors import get_executor
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow.executors import get_executor
 
 
 @dataclass
