@@ -131,7 +131,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
     """
-    if tape.batch_size is None:
+    if tape.batch_size is None or tape.batch_size == 1:
         return (tape,), null_postprocessing
 
     has_postselect = any(
