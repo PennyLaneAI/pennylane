@@ -334,7 +334,7 @@ def _(node: oq3_ast.AliasStatement, env: Environment):
     env[node.target.name] = visit(node.value, env)
 
 
-def from_openqasm3(source: str, **inputs):
+def _openqasm3(source: str, **inputs):
     r"""Interpret a string of openqasm3 using pennylane.
 
     Args:
@@ -371,3 +371,156 @@ def from_openqasm3(source: str, **inputs):
     env = Environment(inputs)
     visit(node, env)
     return [env[output_expr] for output_expr in env.output_identifiers]
+
+
+def from_qasm(quantum_circuit: str, *inputs, version="2.0", measurements=None):
+    r"""
+    Loads quantum circuits from a QASM string using the converter in the
+    PennyLane-Qiskit plugin.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a valid quantum circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that overrides the terminal measurements
+            that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
+            in the input circuit are returned. See *Removing terminal measurements* for details.
+
+    Returns:
+        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
+
+    **Example:**
+
+    .. code-block:: python
+
+        qasm_code = 'OPENQASM 2.0;' \
+                    'include "qelib1.inc";' \
+                    'qreg q[2];' \
+                    'creg c[2];' \
+                    'h q[0];' \
+                    'measure q[0] -> c[0];' \
+                    'rz(0.24) q[0];' \
+                    'cx q[0], q[1];' \
+                    'measure q -> c;'
+
+        loaded_circuit = qml.from_qasm(qasm_code)
+
+    >>> print(qml.draw(loaded_circuit)())
+    0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├─┤
+    1: ───────────────────╰X──┤↗├─┤
+
+    Calling the quantum function returns a tuple containing the mid-circuit measurements and the terminal measurements.
+
+    >>> loaded_circuit()
+    (MeasurementValue(wires=[0]),
+    MeasurementValue(wires=[0]),
+    MeasurementValue(wires=[1]))
+
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit")
+        measurements = [qml.var(qml.Y(0))]
+        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
+
+    >>> print(qml.draw(circuit)())
+    0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
+    1: ───────────────────╰X─┤
+
+    .. details::
+        :title: Removing terminal measurements
+
+        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
+
+        .. code-block:: python
+
+            loaded_circuit = qml.from_qasm(qasm_code, measurements=[])
+
+        >>> print(qml.draw(loaded_circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤
+
+        Calling the quantum function returns the same empty list that we originally passed in.
+
+        >>> loaded_circuit()
+        []
+
+        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``. This can be exemplified by using the ``loaded_circuit`` without the terminal measurements within a ``QNode``.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                loaded_circuit()
+                return qml.expval(qml.Z(1))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤  <Z>
+
+
+    .. details::
+        :title: Using conditional operations
+
+        We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
+
+        .. code-block:: python
+
+            loaded_circuit = qml.from_qasm(qasm_code)
+
+            @qml.qnode(dev)
+            def circuit():
+                mid_measure, *_ = loaded_circuit()
+                qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+                return [qml.expval(qml.Z(0))]
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
+        1: ──────║────────────╰X──┤↗├──║────────┤
+                 ╚═════════════════════╝
+
+    .. details::
+        :title: Importing from a QASM file
+
+        We can also load the contents of a QASM file.
+
+        .. code-block:: python
+
+            # save the qasm code in a file
+            import locale
+            from pathlib import Path
+
+            filename = "circuit.qasm"
+            with Path(filename).open("w", encoding=locale.getpreferredencoding(False)) as f:
+                f.write(qasm_code)
+
+            with open("circuit.qasm", "r") as f:
+                loaded_circuit = qml.from_qasm(f.read())
+
+        The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=1)
+                loaded_circuit(wires=(0, 1))
+                return qml.expval(qml.Z(0))
+
+        >>> print(qml.draw(circuit)(1.23))
+        0: ──H─────────┤↗├──RZ(0.24)─╭●──┤↗├─┤  <Z>
+        1: ──RX(1.23)────────────────╰X──┤↗├─┤
+    """
+    if version == "3.0":
+        return _openqasm3(quantum_circuit, *inputs)
+
+    try:
+        plugin_converter = plugin_converters["qasm"].load()
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(  # pragma: no cover
+            "Failed to load the qasm plugin. Please ensure that the pennylane-qiskit package is installed."
+        ) from e
+
+    return plugin_converter(quantum_circuit, measurements=measurements)
