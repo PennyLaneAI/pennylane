@@ -925,13 +925,11 @@ class TestIterativeSolver:
 
     @pytest.mark.parametrize(
         "angle",
-        [
-            np.random.rand(1) for _ in range(4)
-        ]
+        list(np.random.rand(4))
     )
     def test_z_rotation(self, angle):
 
-        assert np.allclose(z_rotation(angle[0], None), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize(
         "phi",
@@ -941,6 +939,25 @@ class TestIterativeSolver:
         mtx = qsp_iterate(0., phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
+
+    @pytest.mark.parametrize(
+        "x",
+        list(np.random.uniform(low=-1., high=1., size=4)),
+    )
+    @pytest.mark.parametrize(
+        "degree",
+        range(2,6)
+    )
+    def test_qsp_iterates(self, x, degree):
+        try:
+            from jax import numpy as np
+            interface = 'jax'
+        except ModuleNotFoundError:
+            interface = 'numpy'
+        phis = np.array([np.pi/4] + [0.] * (degree - 1) + [-np.pi/4])
+        qsp_be = qsp_iterates(phis, x, "jax")
+        ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0,0]
+        assert np.isclose(qsp_be, ref)
 
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
