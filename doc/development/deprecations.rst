@@ -104,7 +104,7 @@ Completed deprecation cycles
   This gradient recipe is not required with the new operator arithmetic system.
 
   - Deprecated in v0.41
-  - Will be removed in v0.42
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
