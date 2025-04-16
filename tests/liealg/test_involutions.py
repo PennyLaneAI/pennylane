@@ -231,10 +231,10 @@ class TestInvolutions:
     def test_AIII_non_qubit(self):
         """Test non-qubit case of AIII involution"""
         op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
-        assert not qml.liealg.AIII(op, p=4 // 2, q=12 // 2)
+        assert not qml.liealg.AIII(op, p=4, q=12)
 
         op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
-        assert qml.liealg.AIII(op, p=4 // 2, q=12 // 2)
+        assert qml.liealg.AIII(op, p=4, q=12)
 
     @pytest.mark.parametrize("op, expected", BDI_cases)
     def test_BDI(self, op, expected):

@@ -42,7 +42,7 @@
   no longer be applied. Instead, the device will be responsible for all MCM handling.
   [(#7243)](https://github.com/PennyLaneAI/pennylane/pull/7243)
 
-* Fixed coverage of `qml.liealg.CII`.
+* Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
 <h3>Contributors ✍️</h3>
