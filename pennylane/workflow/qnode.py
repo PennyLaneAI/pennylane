@@ -26,7 +26,7 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
@@ -580,7 +580,7 @@ class QNode:
                 warnings.warn(
                     f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
                     Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
-                    qml.PennyLaneDeprecationWarning,
+                    PennyLaneDeprecationWarning,
                 )
             gradient_kwargs |= kwargs
         _validate_gradient_kwargs(gradient_kwargs)

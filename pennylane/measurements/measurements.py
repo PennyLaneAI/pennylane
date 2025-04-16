@@ -24,7 +24,7 @@ from enum import Enum
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
@@ -276,7 +276,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         warnings.warn(
             "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
             "Instead, please use isinstance for type checking directly.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         return self._shortname
 

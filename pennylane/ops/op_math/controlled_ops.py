@@ -25,6 +25,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.typing import TensorLike
@@ -41,7 +42,7 @@ def _deprecate_control_wires(control_wires):
         warnings.warn(
             "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
             "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
 
 
@@ -151,7 +152,7 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
                 "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
             )
             base = base.matrix()
 
@@ -185,7 +186,7 @@ class ControlledQubitUnitary(ControlledOp):
             warnings.warn(
                 "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
                 "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
             )
             base = base.matrix()
 

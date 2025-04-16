@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
@@ -94,14 +94,14 @@ ops_hermitian_status = (  # computed manually
 def test_legacy_ops():
     """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
     H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
         _ = H.ops
 
 
 def test_legacy_coeffs():
     """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
     H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
         _ = H.coeffs
 
 
@@ -109,7 +109,7 @@ def test_obs_attribute():
     """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
     op = qml.prod(X(0), X(1), X(2))
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
         match="Accessing the terms of a tensor product operator via op.obs is deprecated",
     ):
         obs = op.obs

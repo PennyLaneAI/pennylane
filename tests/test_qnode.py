@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
@@ -43,7 +43,7 @@ def test_additional_kwargs_is_deprecated():
     dev = qml.device("default.qubit", wires=1)
 
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
         match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
     ):
         QNode(dummyfunc, dev, atol=1)

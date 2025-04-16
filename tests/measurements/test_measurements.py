@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -95,7 +95,7 @@ def test_none_return_type():
     `None`"""
 
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
         match="MeasurementProcess property return_type is deprecated",
     ):
 
@@ -691,7 +691,7 @@ class TestMeasurementProcess:
     def test_deprecation_return_type(self):
         """Test that the return_type property is deprecated."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="MeasurementProcess property return_type is deprecated",
         ):
             _ = MeasurementProcess().return_type

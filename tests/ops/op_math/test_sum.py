@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
@@ -115,14 +116,14 @@ def compare_and_expand_mat(mat1, mat2):
 def test_legacy_ops():
     """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
     H = qml.sum(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.ops is deprecated and"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Sum.ops is deprecated and"):
         _ = H.ops
 
 
 def test_legacy_coeffs():
     """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
     H = qml.sum(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.coeffs is deprecated and"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Sum.coeffs is deprecated and"):
         _ = H.coeffs
 
 
