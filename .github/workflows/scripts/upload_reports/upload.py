@@ -30,13 +30,8 @@ def read_reports(workspace_path: Path | None) -> dict:
         reports_dir = Path(".github/test-reports")
     print(f"Reports directory: {reports_dir}")
 
-    # Look for XML files in test-report-* subdirectories
-    reports = []
-    for test_report_dir in reports_dir.glob("test-report-*"):
-        if test_report_dir.is_dir():
-            xml_files = list(test_report_dir.rglob("*.xml"))
-            reports.extend([str(p) for p in xml_files])
-
+    # Look for XML files directly in the test-reports directory
+    reports = list(reports_dir.glob("*.xml"))
     print(f"Found {len(reports)} report files")
 
     report_contents = {}

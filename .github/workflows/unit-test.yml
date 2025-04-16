@@ -95,6 +95,7 @@ on:
 
 env:
   UV_SYSTEM_PYTHON: 1
+  TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
   test:
@@ -182,7 +183,7 @@ jobs:
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
       - name: Create test reports directory
-        run: mkdir -p .github/test-reports
+        run: mkdir -p ${{ env.TEST_REPORTS_DIR }}
 
       - name: Set PyTest Args
         id: pytest_args
@@ -191,7 +192,7 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}" --store-durations --clean-durations', inputs.pytest_durations_file_path) || '' }}
-          PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}"', inputs.pytest_xml_file_path) || '' }}
+          PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}/{1}"', env.TEST_REPORTS_DIR, inputs.pytest_xml_file_path) || '' }}
         run: |
           echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_XML_ARGS" >> $GITHUB_OUTPUT
 
