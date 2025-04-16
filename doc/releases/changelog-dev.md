@@ -18,6 +18,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Introduce module dependency management using `tach`.
+  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
+
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
