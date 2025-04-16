@@ -102,11 +102,7 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
         if self._cfg.submit_unpack:
             output = self._submit_fn(exec_be)(fn, *args, **kwargs)
         else:
-            # try:
             output = self._submit_fn(exec_be)(fn, args, **kwargs)
-            # except:
-            #    from IPython import embed; embed()
-
         if self._cfg.blocking:
             return output
         return output.result()

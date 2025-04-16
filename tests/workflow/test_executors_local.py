@@ -59,6 +59,7 @@ class TestLocalExecutor:
         [
             (custom_func1, np.pi / 3, custom_func1(np.pi / 3)),
             (custom_func2, np.pi / 7, custom_func2(np.pi / 7)),
+            (sum, range(16), sum(range(16))),
         ],
     )
     def test_submit_single_param(self, fn, data, result, backend):
@@ -78,7 +79,6 @@ class TestLocalExecutor:
         [
             (custom_func3, (np.pi / 5, 1.2), custom_func3(np.pi / 5, 1.2)),
             (custom_func4, (np.pi / 3, 2.4, 5.6), custom_func4(np.pi / 3, 2.4, 5.6)),
-            (sum, range(16), sum(range(16))),
         ],
     )
     def test_submit_multi_param(self, fn, data, result, backend):
