@@ -31,7 +31,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug when special input shapes were used for ``StatePrep`` in ``default.mixed``.
+* Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
   [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
 
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
