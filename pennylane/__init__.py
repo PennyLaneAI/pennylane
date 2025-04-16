@@ -15,8 +15,9 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-
+import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -184,23 +185,19 @@ from pennylane.liealg import lie_closure, structure_constants, center
 default_config = Configuration("config.toml")
 
 
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-class ExperimentalWarning(UserWarning):
-    """Warning raised to indicate experimental/non-stable feature or support."""
-
-
 def __getattr__(name):
+    if name in {
+        "DeviceError",
+        "PennyLaneDeprecationWarning",
+        "QuantumFunctionError",
+        "ExperimentalWarning",
+    }:
+        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
+        # warnings.warn(
+        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
+        #     pennylane.exceptions.PennyLaneDeprecationWarning,
+        # )
+        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
