@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -254,7 +255,7 @@ class TestRelativeEntropy:
         """Test that an error is raised when the dimensions do not match"""
         msg = "The two states must have the same number of wires"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             qml.math.relative_entropy(state0, state1)
 
 

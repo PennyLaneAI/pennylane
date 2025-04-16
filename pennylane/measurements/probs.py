@@ -20,6 +20,7 @@ from typing import Optional
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -108,7 +109,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
         if not qml.math.is_abstract(op[0]) and not all(
             isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
         ):
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
@@ -117,16 +118,16 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
         return ProbabilityMP(obs=op)
 
     if isinstance(op, qml.ops.LinearCombination):
-        raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+        raise QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
     if wires is not None:
         if op is not None:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )

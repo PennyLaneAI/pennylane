@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -144,7 +145,7 @@ class TestFidelityMath:
         state0 = [0, 1, 0, 0]
         state1 = [1, 0]
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The two states must have the same number of wires",
         ):
             qml.math.fidelity_statevector(state0, state1, check_state=True)
@@ -154,7 +155,7 @@ class TestFidelityMath:
         state0 = np.diag([0, 1, 0, 0])
         state1 = [[1, 0], [0, 0]]
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The two states must have the same number of wires",
         ):
             qml.math.fidelity(state0, state1, check_state=True)

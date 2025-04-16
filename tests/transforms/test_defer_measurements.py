@@ -25,6 +25,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
 
@@ -111,7 +112,7 @@ def test_postselection_error_with_wrong_device():
         return qml.probs(wires=[0])
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=re.escape(
             "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
         ),

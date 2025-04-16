@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -262,13 +263,13 @@ class TestTraceDistanceMath:
         state0, state1 = states
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The two states must have the same number of wires",
         ):
             qml.math.trace_distance(state0, state1, check_state=True)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The two states must have the same number of wires",
         ):
             qml.math.trace_distance(state1, state0, check_state=True)
