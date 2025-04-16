@@ -94,11 +94,10 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
     def submit(self, fn: Callable, *args, **kwargs):
         if self._persist:
-            return self._submit_fn(self._backend)(fn, *args, **kwargs)
-        exec_be = self._exec_backend()(self._size)
-        # from IPython import embed; embed()
+            exec_be = self._backend
+        else:
+            exec_be = self._exec_backend()(self._size)
         output = None
-
         if self._cfg.submit_unpack:
             output = self._submit_fn(exec_be)(fn, *args, **kwargs)
         else:
@@ -109,9 +108,9 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
     def map(self, fn: Callable, *args: Sequence[Sequence]):
         if self._persist:
-            return list(self._map_fn(self._backend)(fn, data))
+            return list(self._map_fn(self._backend)(fn, *args))
         exec_be = self._exec_backend()(self._size)
-        return list(self._map_fn(exec_be)(fn, data))
+        return list(self._map_fn(exec_be)(fn, *args))
 
     def starmap(self, fn: Callable, data: Sequence[tuple]):
         if not hasattr(self._exec_backend(), "starmap"):
