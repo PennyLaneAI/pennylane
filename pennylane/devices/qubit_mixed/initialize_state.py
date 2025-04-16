@@ -48,7 +48,7 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
-    explicit_batched = prep_operation.batch_size is not None  # it could be 1
+    none_batch = False  # Dev Note: batch 1 and
     if isinstance(prep_operation, qml.QubitDensityMatrix):
         density_matrix = prep_operation.data
     else:  # Use pure state prep
@@ -57,13 +57,14 @@ def create_initial_state(
             pure_state, expected_shape=(2,) * num_wires, expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
         if batch_size is None:
+            none_batch = True
             density_matrix = np.outer(pure_state, np.conj(pure_state))
         else:
             density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
-    return _post_process(density_matrix, num_axes, like)
+    return _post_process(density_matrix, num_axes, like, none_batch)
 
 
-def _post_process(density_matrix, num_axes, like, explicit_batched=False):
+def _post_process(density_matrix, num_axes, like, none_batch=False):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -75,6 +76,6 @@ def _post_process(density_matrix, num_axes, like, explicit_batched=False):
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
-    if density_matrix.shape[0] == 1 and not explicit_batched:  # non batch
+    if none_batch:
         density_matrix = np.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)
