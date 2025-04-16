@@ -253,22 +253,22 @@ class NullQubit(Device):
         import json
         from collections import defaultdict
 
-        RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+        RESOURCES_FNAME = "__pennylane_resources_data.json"
 
         num_wires = len(circuit.wires)
         gate_types = defaultdict(int)
 
         for op in circuit.operations:
-            name = ''
+            name = ""
             while hasattr(op, "base"):
                 if type(op) in (Controlled, ControlledOp):
                     # Don't check this with `isinstance` to avoid unrolling ops like CNOT
-                    name += 'C_'
+                    name += "C_"
                 elif isinstance(op, Adjoint):
-                    name += 'adj_'
+                    name += "adj_"
                 else:
-                    break # Certain gates have "base" but shouldn't be broken down (like CNOT)
-                #TODO: How should these be handled?
+                    break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
+                # TODO: How should these be handled?
                 # if isinstance(op, (Pow, Exp)):
                 #     op = op.base
                 op = op.base
@@ -281,17 +281,15 @@ class NullQubit(Device):
             gate_types[name] += 1
         # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
         #  In the future it may be better to return this information in a more structured way.
-        print(RESOURCE_PRINT_DELIMETER)
-        print(
-            json.dumps(
+        with open(RESOURCES_FNAME, "w") as f:
+            json.dump(
                 {
                     "num_wires": num_wires,
                     "num_gates": sum(gate_types.values()),
                     "gate_types": gate_types,
-                }
+                },
+                f,
             )
-        )
-        print(RESOURCE_PRINT_DELIMETER)
 
     def _derivatives(self, circuit, interface):
         shots = circuit.shots

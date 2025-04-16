@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
+import json
+import os
 from collections import defaultdict as dd
 
 import numpy as np
@@ -61,10 +63,10 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_resource_tracking_attribute(capsys):
+def test_resource_tracking_attribute():
     """Test NullQubit track_resources attribute"""
-    assert NullQubit().track_resources == False
-    assert NullQubit(track_resources=True).track_resources == True
+    assert NullQubit()._track_resources == False
+    assert NullQubit(track_resources=True)._track_resources == True
 
     dev = NullQubit(track_resources=True)
 
@@ -78,27 +80,29 @@ def test_resource_tracking_attribute(capsys):
         op = qml.T(0)
         op = qml.adjoint(op)
         op = qml.ctrl(op, control=1, control_values=[1])
-        op = qml.exp(op, 2)
-        op = qml.pow(op, 3)
+
+        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
+        qml.adjoint(qml.S(0))
 
         return qml.state()
 
     qnode = qml.QNode(small_circ, dev)
     qnode()
 
-    # Since output is written directly to stdout, need to capture it and analyze
-    captured = capsys.readouterr()
-    captured = captured.out.splitlines()
+    RESOURCES_FNAME = "__pennylane_resources_data.json"
+    assert os.path.exists(RESOURCES_FNAME)
 
-    RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
-    assert len(captured) == 3
-    assert captured[0] == RESOURCE_PRINT_DELIMETER
-    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+    with open(RESOURCES_FNAME, "r") as f:
+        stats = f.read()
 
-    import json
+    os.remove(RESOURCES_FNAME)
 
-    assert captured[1] == json.dumps(
-        {"num_wires": 2, "num_gates": 3, "gate_types": {"PauliX": 1, "Hadamard": 1, "T": 1}}
+    assert stats == json.dumps(
+        {
+            "num_wires": 3,
+            "num_gates": 5,
+            "gate_types": {"PauliX": 1, "Hadamard": 1, "C_adj_T": 1, "C_IsingXX": 1, "adj_S": 1},
+        }
     )
 
 
