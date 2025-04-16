@@ -22,7 +22,9 @@ import weakref
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor as exec_pp
 from concurrent.futures import ThreadPoolExecutor as exec_tp
+from dataclasses import dataclass
 from multiprocessing import Pool as exec_mp
+from typing import Optional
 
 from .base import IntExecABC
 
@@ -31,6 +33,17 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     """
     Python standard library backed ABC for executor API.
     """
+
+    @dataclass
+    class LocalConfig:
+        "Python native executor configuration data-class"
+
+        submit_fn: Optional[str] = None
+        map_fn: Optional[str] = None
+        starmap_fn: Optional[str] = None
+        submit_unpack: Optional[bool] = None
+        map_unpack: Optional[bool] = None
+        blocking: Optional[bool] = None
 
     def __init__(self, max_workers: int = None, persist: bool = False, **kwargs):
         """
@@ -48,6 +61,8 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
         self._persist = persist
         if self._persist:
             self._backend = self._exec_backend()(self._size)
+
+        self._cfg = self.LocalConfig()
 
     def __call__(self, fn: Callable, *args):
         exec_cls = self._exec_backend()
@@ -77,15 +92,29 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def size(self):
         return self._size
 
-    def submit(self, fn: Callable, *args, **kwargs):
+    def submit(self, fn: Callable, /, *args, **kwargs):
         if self._persist:
-            return self._backend.submit(fn, *args, **kwargs)
-        return self._exec_backend()(self._size).submit(fn, *args, **kwargs)
+            return self._submit_fn(self._backend)(fn, *args, **kwargs)
+        exec_be = self._exec_backend()(self._size)
+        if self._cfg.blocking:
+            return self._submit_fn(exec_be)(*self._submit_sig(fn, *args, **kwargs))
+        return self._submit_fn(exec_be)(*self._submit_sig(fn, *args, **kwargs)).result()
 
-    def map(self, fn: Callable, data: Sequence):
+    def _submit_sig(self, fn: Callable, *args, **kwargs):
+        """
+        Helper function to shape function arguments backends that require explicit unpacking of the `args` input.
+        """
+        if self._cfg.submit_unpack:
+            a_list = [a for a in args]
+            return (fn, a_list, kwargs)
+        out = (fn, args, kwargs)
+        return out
+
+    def map(self, fn: Callable, *args: Sequence[Sequence]):
         if self._persist:
-            return list(self._backend.map(fn, data))
-        return list(self._exec_backend()(self._size).map(fn, data))
+            return list(self._map_fn(self._backend)(fn, data))
+        exec_be = self._exec_backend()(self._size)
+        return list(self._map_fn(exec_be)(fn, data))
 
     def starmap(self, fn: Callable, data: Sequence[tuple]):
         if not hasattr(self._exec_backend(), "starmap"):
@@ -96,7 +125,17 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def _exec_backend(cls): ...
+    def _exec_backend(cls):
+        raise NotImplementedError("{cls} does not currently support execution")
+
+    def _submit_fn(self, backend):
+        return getattr(backend, self._cfg.submit_fn)
+
+    def _map_fn(self, backend):
+        return getattr(backend, self._cfg.map_fn)
+
+    def _starmap_fn(self, backend):
+        return getattr(backend, self._cfg.starmap_fn)
 
 
 class MPPoolExec(PyNativeExecABC):
@@ -108,8 +147,16 @@ class MPPoolExec(PyNativeExecABC):
     def _exec_backend(cls):
         return exec_mp
 
-    def submit(fn, *args):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cfg = self.LocalConfig(
+            submit_fn="apply",
+            map_fn="map",
+            starmap_fn="starmap",
+            submit_unpack=False,
+            map_unpack=False,
+            blocking=True,
+        )
 
 
 class ProcPoolExec(PyNativeExecABC):
@@ -121,8 +168,16 @@ class ProcPoolExec(PyNativeExecABC):
     def _exec_backend(cls):
         return exec_pp
 
-    def submit(fn, *args):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cfg = self.LocalConfig(
+            submit_fn="submit",
+            map_fn="map",
+            starmap_fn="starmap",
+            submit_unpack=False,
+            map_unpack=False,
+            blocking=False,
+        )
 
 
 class ThreadPoolExec(PyNativeExecABC):
@@ -134,5 +189,13 @@ class ThreadPoolExec(PyNativeExecABC):
     def _exec_backend(cls):
         return exec_tp
 
-    def submit(fn, *args):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cfg = self.LocalConfig(
+            submit_fn="submit",
+            map_fn="map",
+            starmap_fn="starmap",
+            submit_unpack=False,
+            map_unpack=False,
+            blocking=False,
+        )
