@@ -35,18 +35,6 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     Python standard library backed ABC for executor API.
     """
 
-    @dataclass
-    class LocalConfig:
-        "Python native executor configuration data-class"
-
-        submit_fn: Optional[str] = None
-        map_fn: Optional[str] = None
-        starmap_fn: Optional[str] = None
-        close_fn: Optional[str] = None
-        submit_unpack: Optional[bool] = None
-        map_unpack: Optional[bool] = None
-        blocking: Optional[bool] = None
-
     def __init__(self, max_workers: int = None, persist: bool = False, **kwargs):
         """
         max_workers:    the maximum number of concurrent units (threads, processes) to use
@@ -96,11 +84,6 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def size(self):
         return self._size
 
-    def _get_backend(self):
-        if self._persist:
-            return self._backend
-        return self._exec_backend()(self._size)
-
     def submit(self, fn: Callable, *args, **kwargs):
         exec_be = self._get_backend()
         output = None
@@ -132,24 +115,6 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     @abc.abstractmethod
     def _exec_backend(cls):
         raise NotImplementedError("{cls} does not currently support execution")
-
-    def _submit_fn(self, backend):
-        "Helper utility to return the config-defined submit function for the given backend."
-        return getattr(backend, self._cfg.submit_fn)
-
-    def _map_fn(self, backend):
-        "Helper utility to return the config-defined map function for the given backend."
-        return getattr(backend, self._cfg.map_fn)
-
-    def _starmap_fn(self, backend):
-        "Helper utility to return the config-defined starmap function for the given backend."
-
-        return getattr(backend, self._cfg.starmap_fn)
-
-    def _close_fn(self, backend):
-        "Helper utility to return the config-defined close function for the given backend."
-
-        return getattr(backend, self._cfg.close_fn)
 
 
 class MPPoolExec(PyNativeExecABC):

@@ -16,6 +16,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 """
 
 from collections.abc import Callable, Sequence
+from typing import Any
 
 from .base import ExtExecABC
 
@@ -36,6 +37,16 @@ class MPIPoolExec(ExtExecABC):
         self._exec_backend = executor
         self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
 
+        self._cfg = self.LocalConfig(
+            submit_fn="submit",
+            map_fn="map",
+            starmap_fn="starmap",
+            close_fn="shutdown",
+            submit_unpack=True,
+            map_unpack=True,
+            blocking=False,
+        )
+
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
         chunksize = max(len(data) // self._size, 1)
@@ -46,6 +57,38 @@ class MPIPoolExec(ExtExecABC):
     @property
     def size(self):
         return self._size
+
+    def submit(self, fn: Callable, *args, **kwargs):
+        exec_args = {"use_pkl5": True}
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.submit(fn, *args, **kwargs)
+        return output_f.result()
+
+    def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
+        exec_args = {"use_pkl5": True}
+        chunksize = max(len(args) // self._size, 1)
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
+        return list(output_f)
+
+    def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
+        exec_args = {"use_pkl5": True}
+        chunksize = max(len(args) // self._size, 1)
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
+        return list(output_f)
+
+    def shutdown(self):
+        "Shutdown the executor backend, if valid."
+        if self._persist:
+            self._close_fn(self._backend)()
+            self._backend = None
+
+    def __del__(self):
+        self.shutdown()
 
 
 class MPICommExec(ExtExecABC):
@@ -74,6 +117,29 @@ class MPICommExec(ExtExecABC):
             else:
                 raise RuntimeError(f"Failed to start executor {self._exec_backend}")
         return output_f
+
+    def submit(self, fn: Callable, *args, **kwargs):
+        exec_args = {"use_pkl5": True}
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.submit(fn, *args, **kwargs)
+        return output_f.result()
+
+    def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
+        exec_args = {"use_pkl5": True}
+        chunksize = max(len(args) // self._size, 1)
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
+        return list(output_f)
+
+    def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
+        exec_args = {"use_pkl5": True}
+        chunksize = max(len(args) // self._size, 1)
+
+        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+            output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
+        return list(output_f)
 
     @property
     def size(self):
