@@ -76,6 +76,12 @@ class TestRotXZX:
 
         phi, theta, omega = np.pi / 4, 1.23, -0.5
 
+        op = RotXZX(phi, theta, omega, wires=0)
+        adj_op = qml.adjoint(op, lazy=False)
+
+        assert isinstance(adj_op, RotXZX)
+        assert adj_op.data == (-omega, -theta, -phi)
+
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
             qml.StatePrep(state, wires=0)

@@ -31,8 +31,8 @@ from pennylane.ftqc import (
     measure_arbitrary_basis,
     measure_x,
 )
-from pennylane.ftqc.decomposition import _rot_to_xzx, mbqc_gate_set
-from pennylane.ops.op_math.decompositions.single_qubit_unitary import _get_xzx_angles
+from pennylane.ftqc.decomposition import _rot_to_xzx
+from pennylane.ops.op_math.decompositions.single_qubit_unitary import xzx_rotation_angles
 
 
 class TestGateSetDecomposition:
@@ -43,7 +43,7 @@ class TestGateSetDecomposition:
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
         mat = qml.Rot.compute_matrix(phi, theta, omega)
-        a1, a2, a3, _ = _get_xzx_angles(mat)
+        a1, a2, a3, _ = xzx_rotation_angles(mat)
 
         with qml.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
@@ -51,7 +51,7 @@ class TestGateSetDecomposition:
         ops = qml.tape.QuantumScript.from_queue(q).operations
         assert len(ops) == 1
         assert isinstance(ops[0], RotXZX)
-        assert np.allclose(ops[0].data, (a3, a2, a1))
+        assert np.allclose(ops[0].data, (a1, a2, a3))
 
     def test_decomposition_to_xzx_is_valid(self):
         """Test that the analytic result of applying the XZX rotation is as expected
@@ -86,8 +86,9 @@ class TestGateSetDecomposition:
 
         (new_tape,), _ = convert_to_mbqc_gateset(tape)
 
-        for op in new_tape.operations:
-            assert op.__class__ in mbqc_gate_set
+        expected_ops = [RotXZX, RotXZX, qml.H, qml.CNOT, qml.H]
+        for op, expected_type in zip(new_tape.operations, expected_ops):
+            assert isinstance(op, expected_type)
 
     def test_error_if_old_decomp_method(self):
         """Test that a clear error is raised if trying to use the convert_to_mbqc_gateset
@@ -107,14 +108,22 @@ class TestGateSetDecomposition:
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
-            qml.RY(1.23, 0)
-            qml.RX(0.456, 1)
-            qml.Rot(np.pi / 3, -0.5, np.pi / 5, 2)
-            qml.CZ([0, 1])
-            qml.CY([1, 2])
+            qml.RY(1.23, 0)  # RotXZX
+            qml.RX(0.456, 1)  # RotXZX
+            qml.Rot(np.pi / 3, -0.5, np.pi / 5, 2)  # RotXZX
+            qml.CZ([0, 1])  # H(1), CNOT, H(1)
+            qml.CY([1, 2])  # RotXZX(2), CNOT, RotXZX(2), CNOT, S(1)
             return qml.state()
 
         decomposed_circuit = convert_to_mbqc_gateset(circuit)
+
+        tape = qml.workflow.construct_tape(decomposed_circuit)()
+        expected_ops = (
+            [RotXZX] * 3 + [qml.H, qml.CNOT, qml.H] + [RotXZX, qml.CNOT, RotXZX, qml.CNOT, qml.S]
+        )
+
+        for op, expected_type in zip(tape.operations, expected_ops):
+            assert isinstance(op, expected_type)
 
         assert np.allclose(circuit(), decomposed_circuit())
 
