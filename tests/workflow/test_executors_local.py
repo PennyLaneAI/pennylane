@@ -145,11 +145,7 @@ class TestLocalExecutor:
         """
 
         executor = create_executor(backend[0])
-        if result is None:
-            with pytest.raises(Exception) as e:
-                executor.starmap(fn, data)
-        else:
-            assert np.allclose(result, list(executor.starmap(fn, data)))
+        assert np.allclose(result, list(executor.starmap(fn, data)))
 
     @pytest.mark.parametrize(
         "workers",

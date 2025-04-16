@@ -29,13 +29,14 @@ class RemoteExecABC(abc.ABC):
         self._size = max_workers
         self._persist = persist
 
-    @abc.abstractmethod
-    def __call__(self, fn: Callable, data: Sequence):
+    def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
         """
-        fn:     the callable function to run on the executor backend
-        data:   is a sequence where each work-item is a packaged chunk for execution
+        dispatch:   the named method to pass the function parameters
+        fn:         the callable function to run on the executor backend
+        args:       the arguments to pass to `fn`
+        kwargs:     the keyword arguments to pass to `fn`
         """
-        return self.map(fn, data)
+        return getattr(self, dispatch)(fn, *args, **kwargs)
 
     @property
     def size(self):

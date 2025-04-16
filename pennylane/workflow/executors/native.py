@@ -66,14 +66,15 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
         self._cfg = self.LocalConfig()
 
-    def __call__(self, fn: Callable, *args):
-        exec_cls = self._exec_backend()
-        chunksize = max(len(data) // self._size, 1)
-        if not self._persist:
-            with exec_cls(self._size) as executor:
-                output_f = executor.map(fn, data, chunksize=chunksize)
-            return output_f
-        return self._backend.map(fn, data, chunksize=chunksize)
+    # def __call__(self, fn: Callable, *args, **kwargs):
+    #    "To be removed"
+    #    exec_cls = self._exec_backend()
+    #    chunksize = max(len(data) // self._size, 1)
+    #    if not self._persist:
+    #        with exec_cls(self._size) as executor:
+    #            output_f = executor.map(fn, data, chunksize=chunksize)
+    #        return output_f
+    #    return self._backend.map(fn, data, chunksize=chunksize)
 
     def __enter__(self):
         return self
