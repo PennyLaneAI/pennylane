@@ -916,7 +916,6 @@ class TestIterativeSolver:
         ]
     )
     def test_poly_func(self, coeffs, parity, x):
-        print()
         val = poly_func(coeffs=coeffs[::2], degree=len(coeffs)-1, parity=parity, x=x)
         temp = np.copy(coeffs[1::2])
         coeffs[parity::2] = coeffs[::2]
@@ -932,7 +931,16 @@ class TestIterativeSolver:
     )
     def test_z_rotation(self, angle):
 
-        assert np.allclose(z_rotation(angle[0], None), (qml.RZ.compute_matrix(-2 * angle)))
+        assert np.allclose(z_rotation(angle[0], None), qml.RZ.compute_matrix(-2 * angle))
+
+    @pytest.mark.parametrize(
+        "phi",
+        list(np.random.uniform(low=-1., high=1., size=4))
+    )
+    def test_qsp_iterate(self, phi):
+        mtx = qsp_iterate(0., phi, None)
+        ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
+        assert np.allclose(mtx, ref)
 
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
