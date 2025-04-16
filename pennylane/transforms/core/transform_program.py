@@ -284,8 +284,10 @@ class TransformProgram:
 
     @overload
     def __getitem__(self, idx: int) -> "TransformContainer": ...
+
     @overload
     def __getitem__(self, idx: slice) -> "TransformProgram": ...
+
     def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
@@ -633,10 +635,12 @@ class TransformProgram:
     def __call__(
         self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
     ) -> "jax.core.ClosedJaxpr": ...
+
     @overload
     def __call__(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
