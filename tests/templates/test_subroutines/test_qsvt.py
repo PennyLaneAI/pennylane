@@ -22,7 +22,7 @@ from numpy.linalg import matrix_power
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qsvt import _complementary_poly, cheby_pol, poly_func, qsp_iterate, qsp_iterates, qsp_optimization, z_rotation
+from pennylane.templates.subroutines.qsvt import W_of_x, _complementary_poly, cheby_pol, poly_func, qsp_iterate, qsp_iterates, qsp_optimization, z_rotation
 from numpy.polynomial.chebyshev import Chebyshev
 
 def qfunc(A):
@@ -959,6 +959,15 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0,0]
         assert np.isclose(qsp_be, ref)
 
+    @pytest.mark.parametrize(
+        "x",
+        list(np.random.uniform(low=-1., high=1., size=4))
+    )
+    def test_W_of_x(self, x):
+        mtx = W_of_x(x, None)
+        ref = qml.RX.compute_matrix(-2 * np.arccos(x))
+        assert np.allclose(mtx, ref)
+
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
 
@@ -968,7 +977,7 @@ class TestIterativeSolver:
 
         assert len(poly) == len(poly_copy)
         assert np.allclose(poly, poly_copy)
-
+    
     def test_interface_numpy(self):
         """Test `poly_to_angles` works with numpy"""
 
