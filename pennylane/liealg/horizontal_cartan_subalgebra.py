@@ -76,7 +76,7 @@ def horizontal_cartan_subalgebra(
     Compute a Cartan subalgebra (CSA) :math:`\mathfrak{a} \subseteq \mathfrak{m}`.
 
     A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
-    Note that this is sometimes called a horizontal CSA, and is different from the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/horizontal_cartan_subalgebra>`__.
+    Note that this is sometimes called a horizontal CSA, and is different from the `other definitions of a CSA <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
 
     The final decomposition yields
 
@@ -87,15 +87,15 @@ def horizontal_cartan_subalgebra(
     .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
-        k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+        k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
+        m (List[Union[PauliSentence, TensorLike]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
         adj (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`.
             When ``None`` is provided, :func:`~structure_constants` is used internally by default to compute the adjoint representation.
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
         tol (float): Numerical tolerance for linear independence check.
         verbose (bool): Whether or not to output progress during computation.
         return_adjvec (bool): Determine the output format. If ``False``, returns operators in their original
-            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func`~op_to_adjvec` and `~adjvec_to_op`).
+            input format (matrices or :class:`~.PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors (see :func:`~op_to_adjvec` and :func:`~adjvec_to_op`).
         is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
             and between ``g``, ``k`` and ``m``.
 
@@ -131,7 +131,8 @@ def horizontal_cartan_subalgebra(
 
     .. code-block:: python
 
-        np_newg, np_k, np_mtilde, np_a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m, return_adjvec=True)
+        from pennylane.liealg import horizontal_cartan_subalgebra
+        np_newg, np_k, np_mtilde, np_a, new_adj = horizontal_cartan_subalgebra(k, m, return_adjvec=True)
 
     We can reconstruct an operator by computing :math:`\hat{O}_v = \sum_i v_i g_i` for an adjoint vector :math:`v` and :math:`g_i \in \mathfrak{g}`.
 
@@ -403,8 +404,8 @@ def op_to_adjvec(
     .. seealso:: :func:`~adjvec_to_op`
 
     Args:
-        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose
-        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis
+        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose.
+        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis.
         is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
             product. Defaults to ``True``, which allows to skip some computations.
 
@@ -494,6 +495,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
 
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
+    >>> import numpy as np
     >>> from pennylane.liealg import change_basis_ad_rep
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> adj = qml.structure_constants(basis)
@@ -508,7 +510,8 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     transform the old adjoint representation with the change of basis matrix.
 
     >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
-    np.allclose(new_adj, new_adj_re)
+    >>> np.allclose(new_adj, new_adj_re)
+    True
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
     new_adj = qml.math.einsum("mnp,im->inp", adj, qml.math.linalg.pinv(basis_change.T))

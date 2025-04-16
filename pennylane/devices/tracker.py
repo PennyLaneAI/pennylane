@@ -15,8 +15,6 @@ r"""
 This module contains a class for updating and recording information about device executions.
 """
 
-# pylint: disable=attribute-defined-outside-init
-
 from numbers import Number
 
 
@@ -164,7 +162,7 @@ class Tracker:
 
     def __init__(self, dev=None, callback=None, persistent=False):
         self.persistent = persistent
-
+        self.latest = {}
         self.callback = callback
 
         self.reset()

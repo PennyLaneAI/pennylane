@@ -62,13 +62,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     Each decomposition node is a :class:`pennylane.decomposition.DecompositionRule`, and each
     operator node is a :class:`~pennylane.decomposition.resources.CompressedResourceOp` which
     contains an operator type and any additional parameters that affects the resource requirements
-    of the operator. Essentially, two instances of the same operator type is represented by the
+    of the operator. Essentially, two instances of the same operator type are represented by the
     same node in the graph if they're expected to have the same decompositions.
 
     There are also two types of directed edges: edges that connect operators to the decomposition
     rules that contain them, and edges that connect decomposition rules to the operators that they
     decompose. The edge weights represent the difference in the gate count between the two states.
-    Edges that connects decomposition rules to operators have a weight of 0 because an operator can
+    Edges that connect decomposition rules to operators have a weight of 0 because an operator can
     be replaced with its decomposition at no additional cost.
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
@@ -94,7 +94,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     allows us to use Dijkstra's algorithm to find the most efficient decomposition.
 
     Args:
-        operations (list[Operator]): The list of operations to find decompositions for.
+        operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
         target_gate_set (set[str]): The names of the gates in the target gate set.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
@@ -113,15 +113,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     graph.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
-    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
-    num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
 
     """
 
     def __init__(
         self,
-        operations,
+        operations: list[Operator | CompressedResourceOp],
         target_gate_set: set[str],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
@@ -148,8 +153,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def _construct_graph(self):
         """Constructs the decomposition graph."""
         for op in self._original_ops:
-            op_node = resource_rep(type(op), **op.resource_params)
-            idx = self._recursively_add_op_node(op_node)
+            if isinstance(op, Operator):
+                op = resource_rep(type(op), **op.resource_params)
+            idx = self._recursively_add_op_node(op)
             self._original_ops_indices.add(idx)
 
     def _recursively_add_op_node(self, op_node: CompressedResourceOp) -> int:
@@ -357,9 +363,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     graph.decomposition(op)(0.5, wires=[0, 1])
         >>> q.queue
-        [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+        [RZ(1.5707963267948966, wires=[1]),
+         RY(0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(-0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(-1.5707963267948966, wires=[1])]
         >>> graph.resource_estimate(op)
-        num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}
+        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
 
         """
         if not self.is_solved_for(op):
@@ -396,7 +407,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+        [RZ(1.5707963267948966, wires=[1]),
+         RY(0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RY(-0.25, wires=[1]),
+         CNOT(wires=[0, 1]),
+         RZ(-1.5707963267948966, wires=[1])]
 
         """
         if not self.is_solved_for(op):
