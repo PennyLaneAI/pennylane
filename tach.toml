@@ -20,9 +20,10 @@ forbid_circular_dependencies = false
 [[modules]]
 path = "pennylane"
 layer = "ui"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## CLOSED modules
-# No module can import from the following set of modules.
+# No module can define dependencies to the following set of modules in this tach.toml file.
 
 [[modules]]
 path = "pennylane.ftqc"
@@ -38,84 +39,100 @@ visibility = []
 [[modules]]
 path = "pennylane.control_flow"
 layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.math"
-utility = true
 depends_on = ["pennylane._grad", "pennylane.numpy"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.pytrees"
 depends_on = ["pennylane.queuing"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.numpy"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.wires"
 depends_on = ["pennylane.math", "pennylane.pytrees"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.logging"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.registers"
 depends_on = ["pennylane.wires"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.io"
 layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.about"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane._version"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.queuing"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.configuration"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.compiler"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.boolean_fn"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.typing"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane._grad"
 layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.circuit_graph"
 layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## AUXILIARY modules
 # These modules can only import from CORE modules.
@@ -123,155 +140,141 @@ layer = "core"
 [[modules]]
 path = "pennylane.shadows"
 layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
 
 [[modules]]
 path = "pennylane.kernels"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
 
 [[modules]]
 path = "pennylane.data"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
 
 [[modules]]
 path = "pennylane.liealg"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.fermi"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.bose"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.spin"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.drawer"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.fourier"
 layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
 
-# An unchecked module should be thought of as a ‘known’ module which does not have any restriction on its dependencies.
-# Please remove unchecked modules from this list as you fix them.
+# These are left temporarily to depend on ANYTHING but pennylane.ftqc and pennylane.labs
 
 [[modules]]
 path = "pennylane.transforms.core"
-depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.gradients"
-depends_on = ["pennylane.circuit_graph", "pennylane.typing", "pennylane.measurements", "pennylane.transforms", "pennylane.pulse", "pennylane.ops", "pennylane", "pennylane.queuing", "pennylane.devices", "pennylane.tape"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.operation"
-depends_on = ["pennylane.typing", "pennylane", "pennylane.math", "pennylane.wires", "pennylane.queuing", "pennylane.pytrees", "pennylane.capture"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.ops"
-depends_on = ["pennylane.tape", "pennylane.typing", "pennylane.transforms", "pennylane.math", "pennylane.wires", "pennylane.measurements", "pennylane", "pennylane.templates", "pennylane.compiler", "pennylane.capture", "pennylane.numpy", "pennylane.pauli", "pennylane.pulse", "pennylane.decomposition", "pennylane.operation", "pennylane.queuing"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.tape"
-depends_on = ["pennylane.measurements", "pennylane.queuing", "pennylane.capture", "pennylane", "pennylane.typing", "pennylane.pytrees", "pennylane.operation", "pennylane.wires"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qcut"
-depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.wires", "pennylane.measurements", "pennylane.numpy", "pennylane.typing", "pennylane.transforms", "pennylane", "pennylane.tape", "pennylane.pauli"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qchem"
-depends_on = ["pennylane", "pennylane.wires", "pennylane.fermi", "pennylane.ops", "pennylane.pauli", "pennylane.bose", "pennylane.numpy"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.transforms"
-depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.decomposition", "pennylane.templates", "pennylane.wires", "pennylane.tape", "pennylane.pauli", "pennylane.math", "pennylane.typing", "pennylane.ops", "pennylane.operation", "pennylane.capture", "pennylane.queuing", "pennylane"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qaoa"
-depends_on = ["pennylane.wires", "pennylane"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.capture"
-depends_on = ["pennylane.measurements", "pennylane.control_flow", "pennylane.workflow", "pennylane", "pennylane.ops"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.measurements"
-depends_on = ["pennylane.wires", "pennylane.typing", "pennylane.pytrees", "pennylane.operation", "pennylane.capture", "pennylane", "pennylane.math"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.pauli"
-depends_on = ["pennylane", "pennylane.wires", "pennylane.math", "pennylane.ops", "pennylane.typing", "pennylane.operation"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.debugging"
-depends_on = ["pennylane.tape", "pennylane", "pennylane.transforms", "pennylane.typing"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.resource"
-depends_on = ["pennylane.measurements", "pennylane", "pennylane.operation", "pennylane.qchem"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.pulse"
-depends_on = ["pennylane.wires", "pennylane.typing", "pennylane.operation", "pennylane", "pennylane.ops"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qnn"
-depends_on = ["pennylane"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.optimize"
-depends_on = ["pennylane.numpy", "pennylane.typing", "pennylane._grad", "pennylane.tape", "pennylane", "pennylane.measurements"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.noise"
-depends_on = ["pennylane.templates", "pennylane.ops", "pennylane.boolean_fn", "pennylane", "pennylane.measurements", "pennylane.operation", "pennylane.wires"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.decomposition"
-depends_on = ["pennylane.operation", "pennylane"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.templates"
-depends_on = ["pennylane.gradients", "pennylane.resource", "pennylane.decomposition", "pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane", "pennylane.qchem", "pennylane.math", "pennylane.wires"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.devices"
-depends_on = ["pennylane.operation", "pennylane.templates", "pennylane.ops", "pennylane.queuing", "pennylane.measurements", "pennylane.math", "pennylane.pulse", "pennylane.numpy", "pennylane.pauli", "pennylane.capture", "pennylane.wires", "pennylane", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane.resource", "pennylane.typing", "pennylane._version", "pennylane.logging"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.workflow"
-depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.logging", "pennylane.tape", "pennylane.transforms", "pennylane.transforms.core", "pennylane", "pennylane.debugging", "pennylane.typing", "pennylane.math"]
-unchecked = true
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
