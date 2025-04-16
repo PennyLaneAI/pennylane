@@ -26,7 +26,7 @@
    .. autosummary::
       :nosignatures:
    {% for item in attributes %}
-      ~{{ fullname }}.{{ item }}
+      ~{{ name }}.{{ item }}
    {%- endfor %}
 
    {% endif %}
@@ -62,7 +62,7 @@
 
    .. autosummary::
    {% for item in methods %}
-      ~{{ fullname }}.{{ item }}
+      ~{{ name }}.{{ item }}
    {%- endfor %}
 
    {% endif %}
