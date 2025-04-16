@@ -87,7 +87,8 @@ class TestStatePrepBase:
         dm = circuit()
         assert np.allclose(dm0, dm)
 
-    @pytest.mark.parametrize("interface", ["numpy", "torch"])
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_state_prep_single_batch_size(self, interface):
         """Test a special case, when the state is of shape (1, n)"""
         state = np.zeros((1, 4))
