@@ -54,11 +54,13 @@ def create_initial_state(
     else:  # Use pure state prep
         pure_state = prep_operation.state_vector(wire_order=list(wires))
         batch_size = math.get_batch_size(
-            pure_state, expected_shape=[], expected_size=2**num_wires
+            pure_state, expected_shape=(2,) * num_wires, expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
-
-        density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
-    return _post_process(density_matrix, num_axes, like, explicit_batched)
+        if batch_size is None:
+            density_matrix = np.outer(pure_state, np.conj(pure_state))
+        else:
+            density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
+    return _post_process(density_matrix, num_axes, like)
 
 
 def _post_process(density_matrix, num_axes, like, explicit_batched=False):
