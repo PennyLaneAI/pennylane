@@ -726,7 +726,7 @@ class TestRootFindingSolver:
             ("iterative", {"method":"Newton-CG"}),
         ]
     )
-    def test_correctness_QSP_angles_root_finding(self, poly, angle_solver, optimizer_kwargs):
+    def test_correctness_QSP_angles_finding(self, poly, angle_solver, optimizer_kwargs):
         """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs)
