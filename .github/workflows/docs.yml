@@ -57,11 +57,11 @@ jobs:
             && pip3 install aiohttp fsspec h5py
         build-command: "sphinx-build -T -v -b html . _build -W "
 
-    # - name: Freeze dependencies
-    #   shell: bash
-    #   run: |
-    #     pip freeze | grep -v 'file:///' > doc.txt
-    #     cat doc.txt
+    - name: Freeze dependencies
+      shell: bash
+      run: |
+        pip freeze | grep -v 'file:///' > doc.txt
+        cat doc.txt
 
     - name: Upload frozen requirements
       uses: actions/upload-artifact@v4
