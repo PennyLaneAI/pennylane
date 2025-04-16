@@ -14,9 +14,11 @@
 """
 This module contains the qml.map_wires function.
 """
+from __future__ import annotations
+
 from collections.abc import Callable
 from functools import lru_cache, partial
-from typing import Union, overload
+from typing import TYPE_CHECKING, Union, overload
 from warnings import warn
 
 import pennylane as qml
@@ -26,7 +28,9 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from pennylane.workflow import QNode
 
 
 @lru_cache
@@ -138,6 +142,8 @@ def map_wires(
 def map_wires(
     input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> QNode: ...
+
+
 @overload
 def map_wires(
     input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
