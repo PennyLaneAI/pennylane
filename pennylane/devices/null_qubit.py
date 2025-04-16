@@ -38,6 +38,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     StateMP,
 )
+from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -247,7 +248,6 @@ class NullQubit(Device):
         if circuit.shots.has_partitioned_shots:
             return tuple(results)
         return results[0]
-    
 
     def _simulate_resource_use(self, circuit):
         import json
@@ -259,13 +259,26 @@ class NullQubit(Device):
         gate_types = defaultdict(int)
 
         for op in circuit.operations:
+            name = ''
             while hasattr(op, "base"):
+                if type(op) in (Controlled, ControlledOp):
+                    # Don't check this with `isinstance` to avoid unrolling ops like CNOT
+                    name += 'C_'
+                elif isinstance(op, Adjoint):
+                    name += 'adj_'
+                else:
+                    break # Certain gates have "base" but shouldn't be broken down (like CNOT)
+                #TODO: How should these be handled?
+                # if isinstance(op, (Pow, Exp)):
+                #     op = op.base
                 op = op.base
 
             if op.name == "Barrier":
                 continue
 
-            gate_types[op.name] += 1
+            name += op.name
+
+            gate_types[name] += 1
         # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
         #  In the future it may be better to return this information in a more structured way.
         print(RESOURCE_PRINT_DELIMETER)
