@@ -864,7 +864,8 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Pattern is not valid, it does not implement identity."
+            qml.QuantumFunctionError,
+            match="Pattern is not valid, it does not implement identity.",
         ):
             optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
