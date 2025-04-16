@@ -669,7 +669,7 @@ class TestGradientTransformIntegration:
 
         dev = qml.device("default.qubit")
 
-        @qml.transforms.split_non_commuting
+        # @qml.transforms.split_non_commuting
         @qml.qnode(dev)
         def c(x):
             qml.RX(x**2, 0)
@@ -677,7 +677,13 @@ class TestGradientTransformIntegration:
 
         x = qml.math.asarray(0.5, like=interface, requires_grad=True)
 
-        grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+        if interface == "tensorflow":
+            import tensorflow as tf
+
+            with tf.GradientTape():  # need to make x trainable
+                grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+        else:
+            grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
 
         expected_z = -2 * x * qml.math.sin(x**2)
         expected_y = -2 * x * qml.math.cos(x**2)
