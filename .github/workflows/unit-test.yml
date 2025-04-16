@@ -225,7 +225,7 @@ jobs:
           include-hidden-files: true
 
       - name: Upload Test Report Failures as artifact
-        if: failure() && inputs.pytest_xml_file_path != ''
+        if: (failure() || cancelled()) && inputs.pytest_xml_file_path != ''
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ inputs.job_name }}
