@@ -243,6 +243,14 @@ class TestInvolutions:
         """Test singledispatch for CII involution"""
         self.run_test_case(op, expected, partial(CII, p=4, q=4))
 
+    def test_CII_non_qubit(self):
+        """Test non-qubit case of CII involution"""
+        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "X", 2: "X", 3: "X"}): 1.0})
+        assert not qml.liealg.CII(op, p=4 // 2, q=12 // 2)
+
+        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
+        assert qml.liealg.CII(op, p=4 // 2, q=12 // 2)
+
     @pytest.mark.parametrize("op, expected", DIII_cases)
     def test_DIII(self, op, expected):
         """Test singledispatch for DIII involution"""

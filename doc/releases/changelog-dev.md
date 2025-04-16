@@ -42,10 +42,14 @@
   no longer be applied. Instead, the device will be responsible for all MCM handling.
   [(#7243)](https://github.com/PennyLaneAI/pennylane/pull/7243)
 
+* Fixed coverage of `qml.liealg.CII`.
+  [()]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
 Andrija Paurevic,
+Korbinian Kottmann,
 Christina Lee
