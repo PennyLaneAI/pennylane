@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor as exec_pp
 from concurrent.futures import ThreadPoolExecutor as exec_tp
 from dataclasses import dataclass
 from multiprocessing import Pool as exec_mp
-from typing import Optional
+from typing import Any, Optional
 
 from .base import IntExecABC
 
@@ -41,6 +41,7 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
         submit_fn: Optional[str] = None
         map_fn: Optional[str] = None
         starmap_fn: Optional[str] = None
+        close_fn: Optional[str] = None
         submit_unpack: Optional[bool] = None
         map_unpack: Optional[bool] = None
         blocking: Optional[bool] = None
@@ -81,8 +82,9 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
             self.shutdown()
 
     def shutdown(self):
+        "Shutdown the executor backend, if valid."
         if self._persist:
-            self._backend.close()
+            self._close_fn(self._backend)()
             self._backend = None
 
     def __del__(self):
@@ -92,11 +94,13 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def size(self):
         return self._size
 
-    def submit(self, fn: Callable, *args, **kwargs):
+    def _get_backend(self):
         if self._persist:
-            exec_be = self._backend
-        else:
-            exec_be = self._exec_backend()(self._size)
+            return self._backend
+        return self._exec_backend()(self._size)
+
+    def submit(self, fn: Callable, *args, **kwargs):
+        exec_be = self._get_backend()
         output = None
         if self._cfg.submit_unpack:
             output = self._submit_fn(exec_be)(fn, *args, **kwargs)
@@ -106,10 +110,8 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
             return output
         return output.result()
 
-    def map(self, fn: Callable, *args: Sequence[Sequence]):
-        if self._persist:
-            return list(self._map_fn(self._backend)(fn, *args))
-        exec_be = self._exec_backend()(self._size)
+    def map(self, fn: Callable, *args: Sequence[Any]):
+        exec_be = self._get_backend()
         return list(self._map_fn(exec_be)(fn, *args))
 
     def starmap(self, fn: Callable, data: Sequence[tuple]):
@@ -133,6 +135,9 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
     def _starmap_fn(self, backend):
         return getattr(backend, self._cfg.starmap_fn)
 
+    def _close_fn(self, backend):
+        return getattr(backend, self._cfg.close_fn)
+
 
 class MPPoolExec(PyNativeExecABC):
     """
@@ -149,6 +154,7 @@ class MPPoolExec(PyNativeExecABC):
             submit_fn="apply",
             map_fn="map",
             starmap_fn="starmap",
+            close_fn="close",
             submit_unpack=False,
             map_unpack=False,
             blocking=True,
@@ -170,6 +176,7 @@ class ProcPoolExec(PyNativeExecABC):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
+            close_fn="shutdown",
             submit_unpack=True,
             map_unpack=False,
             blocking=False,
@@ -191,6 +198,7 @@ class ThreadPoolExec(PyNativeExecABC):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
+            close_fn="shutdown",
             submit_unpack=True,
             map_unpack=False,
             blocking=False,
