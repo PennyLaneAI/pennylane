@@ -43,7 +43,7 @@
   [(#7243)](https://github.com/PennyLaneAI/pennylane/pull/7243)
 
 * Fixed coverage of `qml.liealg.CII`.
-  [()]()
+  [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
 <h3>Contributors ✍️</h3>
 
