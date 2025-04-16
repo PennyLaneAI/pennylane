@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -3509,7 +3510,7 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit", wires=2)
 
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="The 'hamiltonian_grad' function is deprecated",
         ):
             with pytest.warns(UserWarning, match="Please use qml.gradients.split_to_single_terms"):
@@ -4588,7 +4589,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.param_shift(circuit, argnum=argnums)(x, y)

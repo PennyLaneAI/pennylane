@@ -25,6 +25,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
@@ -540,7 +541,7 @@ class Sum(CompositeOp):
         .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         coeffs, _ = self.terms()
         return coeffs
@@ -555,7 +556,7 @@ class Sum(CompositeOp):
         .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
         warnings.warn(
             "Sum.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         _, ops = self.terms()
         return ops

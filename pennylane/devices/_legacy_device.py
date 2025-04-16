@@ -25,6 +25,7 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -143,7 +144,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 "The analytic argument has been replaced by shots=None. "
                 "Please use shots=None instead of analytic=True."
             )
-            raise qml.DeviceError(msg)
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -271,7 +272,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
             if shots < 1:
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"The specified number of shots needs to be at least 1. Got {shots}."
                 )
 
@@ -285,7 +286,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             self._raw_shot_sequence = shots
 
         else:
-            raise qml.DeviceError(
+            raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
@@ -480,10 +481,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                     results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif isinstance(mp, StateMP):
-                    raise qml.QuantumFunctionError("Returning the state is not supported")
+                    raise QuantumFunctionError("Returning the state is not supported")
 
                 else:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
 
@@ -985,7 +986,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
@@ -995,7 +996,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )
 
@@ -1009,15 +1010,13 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
-                    raise qml.DeviceError(
-                        f"Observable Prod not supported on device {self.short_name}"
-                    )
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
 
                 simplified_op = o.simplify()
                 if isinstance(simplified_op, qml.ops.Prod):
                     for i in o.simplify().operands:
                         if not self.supports_observable(i.name):
-                            raise qml.DeviceError(
+                            raise DeviceError(
                                 f"Observable {i.name} not supported on device {self.short_name}"
                             )
 
@@ -1025,7 +1024,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 observable_name = o.name
 
                 if not self.supports_observable(observable_name):
-                    raise qml.DeviceError(
+                    raise DeviceError(
                         f"Observable {observable_name} not supported on device {self.short_name}"
                     )
 

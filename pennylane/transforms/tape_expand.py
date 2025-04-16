@@ -18,6 +18,7 @@ import contextlib
 import warnings
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     gen_is_multi_term_hamiltonian,
     has_gen,
@@ -486,7 +487,7 @@ def set_decomposition(custom_decomps, dev):
             warnings.filterwarnings(
                 action="ignore",
                 message=r"max_expansion argument is deprecated",
-                category=qml.PennyLaneDeprecationWarning,
+                category=PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess
             new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)

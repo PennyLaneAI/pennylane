@@ -24,6 +24,7 @@ from pennylane.devices.default_qutrit_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
+from pennylane.exceptions import DeviceError
 
 
 class NoMatOp(qml.operation.Operation):
@@ -58,7 +59,7 @@ class TestPreprocessing:
         dev = DefaultQutritMixed()
 
         config = ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -268,7 +269,7 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(

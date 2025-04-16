@@ -19,6 +19,7 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
+from pennylane.exceptions import DeviceError
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -81,7 +82,7 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 return
 
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
-                raise qml.DeviceError(
+                raise DeviceError(
                     "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
 
@@ -351,7 +352,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
         # Check the qubits have not been used.
         if len(visited_wires.intersection(wires_set)) > 0:
-            raise qml.DeviceError(
+            raise DeviceError(
                 f"Operation {current_gate.name} cannot be used after other Operation applied in the same qubit "
             )
         input_wires.append(current_gate.wires)

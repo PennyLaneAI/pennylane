@@ -34,7 +34,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Optional, Union
-
+from pennylane.exceptions import DeviceError
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.transforms.core import TransformProgram
@@ -313,7 +313,7 @@ class DefaultMixed(Device):
 
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:

@@ -19,6 +19,7 @@ import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 
 SPARSEHAMILTONIAN_TEST_MATRIX = np.array(
     [
@@ -218,7 +219,7 @@ class TestSparse:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
             qml.grad(circuit, argnum=0)([0.5])

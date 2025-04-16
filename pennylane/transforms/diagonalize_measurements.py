@@ -17,6 +17,7 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -178,7 +179,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
                 tape, to_eigvals=to_eigvals
             )
-        except qml.QuantumFunctionError:
+        except QuantumFunctionError:
             # the pauli_rep based method sometimes fails unnecessarily -
             # if it fails, fall back on the less efficient method (which may also fail)
             diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(

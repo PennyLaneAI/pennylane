@@ -19,6 +19,7 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 
 def test_integration():
@@ -53,7 +54,7 @@ def test_no_backprop_auto_interface():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
+    with pytest.raises(QuantumFunctionError, match="does not support backprop"):
         qml.QNode(circuit, dev, diff_method="backprop")
 
 
@@ -66,7 +67,7 @@ def test_finite_shots_adjoint():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(qml.QuantumFunctionError, match="does not support adjoint"):
+    with pytest.raises(QuantumFunctionError, match="does not support adjoint"):
         qml.QNode(circuit, dev, diff_method="adjoint")()
 
 

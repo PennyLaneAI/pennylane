@@ -29,6 +29,7 @@ from flaky import flaky
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -368,7 +369,7 @@ class TestSupportedGates:
                 tape = qml.tape.QuantumScript([ops[operation]])
                 try:
                     prog((tape,))
-                except qml.DeviceError:
+                except DeviceError:
                     pytest.skip("operation not supported on the device")
 
         @qml.qnode(dev)

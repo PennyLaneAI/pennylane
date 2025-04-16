@@ -25,6 +25,7 @@ from scipy.stats import ttest_ind
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -150,7 +151,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
@@ -162,7 +163,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
@@ -623,12 +624,12 @@ class TestSnapshotUnsupportedQNode:
 
         with (
             pytest.raises(
-                qml.DeviceError,
+                DeviceError,
                 match=r"not accepted for analytic simulation on adjoint \+ lightning.qubit",
             )
             if diff_method == "adjoint"
             else pytest.raises(
-                qml.QuantumFunctionError,
+                QuantumFunctionError,
                 match=f"does not support {diff_method} with requested circuit",
             )
         ):
