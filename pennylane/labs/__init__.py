@@ -26,7 +26,6 @@ Modules
     :toctree: api
 
     dla
-    resource_estimation
     trotter_error
 
 """
