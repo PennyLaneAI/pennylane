@@ -410,12 +410,7 @@ def _single_meas_contraction(qjac, cjac, single_trainable_param):
     for cjac_for_arg in cjac_leaves:
         tdot = qml.math.tensordot(cjac_for_arg, qjac, axes=[[0], [0]])
         # not sure how to rationalize this tranposition, but its needed
-        if tdot.shape:
-            dims = list(range(tdot.ndim))
-            new_dims = [dims[-1]] + dims[:-1]
-            contracted.append(qml.math.transpose(tdot, axes=new_dims))
-        else:
-            contracted.append(tdot)
+        contracted.append(tdot if len(tdot.shape) == 0 else qml.math.moveaxis(tdot, -1, 0))
 
     return unflatten(contracted, struct)
 
