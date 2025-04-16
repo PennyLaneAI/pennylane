@@ -98,7 +98,12 @@ class TestLocalExecutor:
         [
             (custom_func1, range(7), [custom_func1(i) for i in range(7)]),
             (custom_func2, range(3), list(map(lambda x: x**2, range(3)))),
-            (sum, range(16), None),
+            (custom_func3, (range(3), range(3)), list(map(custom_func3, range(3), range(3)))),
+            (
+                custom_func4,
+                (range(3), range(3), range(3)),
+                list(map(custom_func4, range(3), range(3), range(3))),
+            ),
         ],
     )
     def test_map(self, fn, data, result, backend):
@@ -107,11 +112,7 @@ class TestLocalExecutor:
         """
 
         executor = create_executor(backend[0])
-        if result is None:
-            with pytest.raises(Exception) as e:
-                executor.map(fn, data)
-        else:
-            assert np.allclose(result, list(executor.map(fn, data)))
+        assert np.allclose(result, list(executor.map(fn, *data)))
 
     @pytest.mark.parametrize(
         "fn,data,result",

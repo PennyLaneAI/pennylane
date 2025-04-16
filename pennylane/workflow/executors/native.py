@@ -16,6 +16,7 @@ Contains concurrent executor abstractions for task-based workloads based on
 support provided by the Python standard library.
 """
 import abc
+import inspect
 import os
 import sys
 import weakref
@@ -112,14 +113,19 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
 
     def map(self, fn: Callable, *args: Sequence[Any]):
         exec_be = self._get_backend()
-        return list(self._map_fn(exec_be)(fn, *args))
+        output = None
+        if self._cfg.map_unpack and len(inspect.signature(fn).parameters) > 1:
+            output = self._map_fn(exec_be)(fn, *args)
+        else:
+            output = self._map_fn(exec_be)(fn, args)
+
+        return list(output)
 
     def starmap(self, fn: Callable, data: Sequence[tuple]):
-        if not hasattr(self._exec_backend(), "starmap"):
+        exec_be = self._get_backend()
+        if not hasattr(exec_be, "starmap"):
             return super().starmap(fn, data)
-        if self._persist:
-            return list(self._backend.starmap(fn, data))
-        return list(self._exec_backend()(self._size).starmap(fn, data))
+        return list(exec_be.starmap(fn, data))
 
     @classmethod
     @abc.abstractmethod
@@ -127,15 +133,21 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
         raise NotImplementedError("{cls} does not currently support execution")
 
     def _submit_fn(self, backend):
+        "Helper utility to return the config-defined submit function for the given backend."
         return getattr(backend, self._cfg.submit_fn)
 
     def _map_fn(self, backend):
+        "Helper utility to return the config-defined map function for the given backend."
         return getattr(backend, self._cfg.map_fn)
 
     def _starmap_fn(self, backend):
+        "Helper utility to return the config-defined starmap function for the given backend."
+
         return getattr(backend, self._cfg.starmap_fn)
 
     def _close_fn(self, backend):
+        "Helper utility to return the config-defined close function for the given backend."
+
         return getattr(backend, self._cfg.close_fn)
 
 
@@ -160,6 +172,17 @@ class MPPoolExec(PyNativeExecABC):
             blocking=True,
         )
 
+    def map(self, fn: Callable, *args: Sequence[Any]):
+        if len(inspect.signature(fn).parameters) > 1:
+            try:
+                # attempt to recover by offloading to starmap
+                return self.starmap(fn, zip(*args))
+            except:
+                raise ValueError(
+                    "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. Consider a different backend, or use `starmap` instead."
+                )
+        return super().map(fn, *args)
+
 
 class ProcPoolExec(PyNativeExecABC):
     """
@@ -178,7 +201,7 @@ class ProcPoolExec(PyNativeExecABC):
             starmap_fn="starmap",
             close_fn="shutdown",
             submit_unpack=True,
-            map_unpack=False,
+            map_unpack=True,
             blocking=False,
         )
 
@@ -200,6 +223,6 @@ class ThreadPoolExec(PyNativeExecABC):
             starmap_fn="starmap",
             close_fn="shutdown",
             submit_unpack=True,
-            map_unpack=False,
+            map_unpack=True,
             blocking=False,
         )
