@@ -31,8 +31,8 @@ class SelectPauliRot(Operation):
 
        \sum_i | i \rangle \langle i | \otimes R(\alpha_i)
 
-    Here, :math:`| i \rangle` refers to the computational basis states of the control register,
-    and :math:`R(\alpha_i)` denotes a unitary rotation applied to the target qubit,
+    Here, :math:`| i \rangle` refers to the computational basis state of the control register,
+    and :math:`R(\cdot)` denotes a unitary Pauli rotation applied to the target qubit,
     parametrized by :math:`\alpha_i`.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
@@ -59,7 +59,7 @@ class SelectPauliRot(Operation):
 
     def __init__(
         self, angles, control_wires, target_wire, rot_axis="Z", id=None
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         self.hyperparameters["control_wires"] = qml.wires.Wires(control_wires)
         self.hyperparameters["target_wire"] = qml.wires.Wires(target_wire)
