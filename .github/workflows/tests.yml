@@ -22,19 +22,7 @@ concurrency:
   group: unit-tests-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  check-logic:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check if this is a pull request targeting the master branch
-        shell: bash
-        run: |
-          if [[ "${{ github.event.pull_request.base.ref }}" == "master" ]]; then
-            echo "This is a pull request targeting the master branch."
-          else
-            echo "This is not a pull request targeting the master branch."
-          fi
-          
+jobs:         
   tests:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
