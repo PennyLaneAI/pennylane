@@ -107,11 +107,21 @@ class MPICommExec(ExtExecABC):
         self._comm = MPI.COMM_WORLD
         self._size = MPI.COMM_WORLD.Get_size()
 
+        self._cfg = self.LocalConfig(
+            submit_fn="submit",
+            map_fn="map",
+            starmap_fn="starmap",
+            close_fn="shutdown",
+            submit_unpack=True,
+            map_unpack=True,
+            blocking=False,
+        )
+
     def __call__(self, fn: Callable, data: Sequence):
-        kwargs = {"use_pkl5": True}
+        exec_args = {"use_pkl5": True}
         chunksize = max(len(data) // self._size, 1)
 
-        with self._exec_backend(self._comm, root=0) as executor:
+        with self._exec_backend(self._comm, root=0, **exec_args) as executor:
             if executor is not None:
                 output_f = executor.map(fn, data, chunksize=chunksize)
             else:
@@ -144,3 +154,12 @@ class MPICommExec(ExtExecABC):
     @property
     def size(self):
         return self._size
+
+    def shutdown(self):
+        "Shutdown the executor backend, if valid."
+        if self._persist:
+            self._close_fn(self._backend)()
+            self._backend = None
+
+    def __del__(self):
+        self.shutdown()

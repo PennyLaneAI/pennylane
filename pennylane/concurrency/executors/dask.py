@@ -15,9 +15,11 @@
 Contains concurrent executor abstractions for task-based workloads based on support provided by Dask's distributed backend.
 """
 
+import os
 from collections.abc import Callable, Sequence
 
 try:
+    from dask.bag import from_sequence
     from dask.distributed import Client, LocalCluster
     from dask.distributed.deploy import Cluster
 
@@ -37,8 +39,11 @@ if DASK_FOUND:
             super().__init__(max_workers=max_workers, **kwargs)
 
             if client_provider is None:
-                cluster = LocalCluster(n_workers=max_workers, processes=True)
-                self._exec_backend = Client(cluster)
+                proc_threads = int(os.getenv("OMP_NUM_THREADS", "1"))
+                self._cluster = LocalCluster(
+                    n_workers=max_workers, processes=True, threads_per_worker=proc_threads
+                )
+                self._exec_backend = Client(self._cluster)
 
             # Note: urllib does not validate
             # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
@@ -54,6 +59,27 @@ if DASK_FOUND:
         def __call__(self, fn: Callable, data: Sequence):
             output_f = self._exec_backend.map(fn, data)
             return [o.result() for o in output_f]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.shutdown()
+
+        def map(self, fn: Callable, *args: Sequence):
+            output_f = self._exec_backend.map(fn, *args)
+            return [o.result() for o in output_f]
+
+        def starmap(self, fn: Callable, args: Sequence):
+            seq_to_bag = from_sequence(args)
+            return 1
+
+        def shutdown(self):
+            self._exec_backend.shutdown()
+            self._cluster.close()
+
+        def submit(self, fn, *args, **kwargs):
+            return self._exec_backend.submit(fn, *args, **kwargs).result()
 
         @property
         def size(self):

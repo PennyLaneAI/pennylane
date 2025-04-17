@@ -57,6 +57,7 @@ def execute(
     mcm_config="unset",
     config="unset",
     inner_transform="unset",
+    executor_backend=None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -227,6 +228,7 @@ def execute(
         mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
+        executor_backend=executor_backend,
     )
     config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
 

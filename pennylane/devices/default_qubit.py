@@ -15,7 +15,6 @@
 The default.qubit device is PennyLane's standard qubit-based device.
 """
 
-import concurrent.futures
 import logging
 import warnings
 from dataclasses import replace
@@ -744,7 +743,7 @@ class DefaultQubit(Device):
             for _rng, _key in zip(seeds, prng_keys)
         ]
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
             results = tuple(exec_map)
 
@@ -764,7 +763,8 @@ class DefaultQubit(Device):
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
             res = tuple(exec_map)
 
@@ -786,7 +786,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_jac_wrapper,
@@ -828,7 +828,7 @@ class DefaultQubit(Device):
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
         # reset _rng to mimic serial behaviour
@@ -853,7 +853,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_jvp_wrapper,
@@ -944,7 +944,7 @@ class DefaultQubit(Device):
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
         # reset _rng to mimic serial behaviour
@@ -969,7 +969,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_vjp_wrapper,

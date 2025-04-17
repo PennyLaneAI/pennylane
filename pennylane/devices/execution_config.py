@@ -17,7 +17,8 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.concurrency.executors import get_executor
+from pennylane.concurrency.executors import ExecBackends, get_executor
+from pennylane.concurrency.executors.base import RemoteExecABC
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
@@ -104,11 +105,9 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
-    executor_backend = get_executor()
+    executor_backend: RemoteExecABC = get_executor(backend=ExecBackends.MP_Pool)
     """
     Defines the class for the executor backend. 
-
-    Default values instantiate a multiprocessing Pool.
     """
 
     def __post_init__(self):
