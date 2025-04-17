@@ -229,7 +229,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ inputs.job_name }}
-          path: ${{ inputs.pytest_xml_file_path }}
+          path: ${{ env.TEST_REPORTS_DIR }}/${{ inputs.pytest_xml_file_path }}
           include-hidden-files: true
 
       - name: Adjust coverage file for Codecov
