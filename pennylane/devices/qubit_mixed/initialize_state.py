@@ -48,7 +48,8 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
-    none_batch = False  # Dev Note: batch 1 and
+    # Dev Note: batch 1 and batch None are different cases. We need to carefully treat them or there will be issue e.g. https://github.com/PennyLaneAI/pennylane/issues/7220
+    none_batch = False
     if isinstance(prep_operation, qml.QubitDensityMatrix):
         density_matrix = prep_operation.data
     else:  # Use pure state prep
