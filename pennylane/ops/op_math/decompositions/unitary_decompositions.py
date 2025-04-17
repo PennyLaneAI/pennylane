@@ -364,7 +364,7 @@ def _compute_num_cnots(U):
     gamma = math.dot(U, math.T(U))
     trace = math.trace(gamma)
     g2 = math.dot(gamma, gamma)
-    id4 = math.eye(4)
+    id4 = math.eye(4, like=g2)
 
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
     return ops.cond(

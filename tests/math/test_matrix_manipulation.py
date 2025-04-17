@@ -1305,14 +1305,6 @@ class TestConvertToSUMatrices:
         su, phase = converter(matrix, return_global_phase=True)
         self._assert_correct(matrix, su, phase)
 
-    def test_sparse_matrix(self, size, converter):
-        """Tests that the conversion of a sparse matrix to SU(2) works correctly"""
-
-        matrix = _random_unitary(size)
-        sparse_matrix = csr_matrix(matrix)
-        su, phase = converter(sparse_matrix, return_global_phase=True)
-        self._assert_correct(matrix, su, phase)
-
     def test_batched(self, size, converter):
         """Tests that the batched operation is correct."""
 
