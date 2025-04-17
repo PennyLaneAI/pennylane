@@ -28,7 +28,7 @@ For example:
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
 >>> def g(x):
 ...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
-...     return jax.pure_callback(f, expected_output_shape, x)
+...     return jax.pure_callback(f, expected_output_shape, x, vmap_method="sequential")
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
 
@@ -230,7 +230,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return _to_jax(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vectorized="broadcast_all"),)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="broadcast_all"),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
