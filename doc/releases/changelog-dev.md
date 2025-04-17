@@ -20,7 +20,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
-  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+  [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
 
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
