@@ -153,8 +153,10 @@ def _simulate_resource_use(circuit):
             #     op = op.base
             op = op.base
 
+        # Barrier is not a gate and takes no resources, so we skip it
         if op.name == "Barrier":
-            continue
+            # (this confuses codecov, despite being tested)
+            continue  # pragma: no cover
 
         name += op.name
 
