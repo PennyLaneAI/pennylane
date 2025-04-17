@@ -60,12 +60,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
-  :meth:`~.Operator.terms` instead.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.42
-
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
@@ -104,6 +98,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been removed. Instead, please use
+  :meth:`~.Operator.terms`.
+
+  - Deprecated in v0.35
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
