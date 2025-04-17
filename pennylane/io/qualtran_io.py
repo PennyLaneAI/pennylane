@@ -85,19 +85,19 @@ def map_to_bloq():
     def _(op: qml.RX):
         from qualtran.bloqs.basic_gates import Rx
 
-        return Rx(op.data[0])
+        return Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qml.RY):
         from qualtran.bloqs.basic_gates import Ry
 
-        return Ry(op.data[0])
+        return Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qml.RZ):
         from qualtran.bloqs.basic_gates import Rz
 
-        return Rz(op.data[0])
+        return Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qml.S):
