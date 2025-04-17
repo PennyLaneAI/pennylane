@@ -210,7 +210,7 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
         gate_counts = self._compute_resources(*args, **kwargs)
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
-        gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items()}
+        gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
         return Resources(gate_counts)
 
 

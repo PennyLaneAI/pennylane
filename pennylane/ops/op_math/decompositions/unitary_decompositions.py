@@ -230,7 +230,7 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
 def _su2_rot_resource():
     return {
         qml.Rot: 1,
-        qml.RZ: 0,  # RZ is produced in a special case, which has to be accounted for.
+        qml.RZ: 1,  # RZ is produced in a special case, which has to be accounted for.
     }
 
 
@@ -674,9 +674,9 @@ def _two_qubit_resource(num_wires):
         qml.CNOT: 3,
         qml.RZ: 1,
         qml.RY: 2,
-        # The three CNOT case does not involve an RX, but an RX must be accounted
-        # for in case the two CNOT case is chosen at runtime.
-        qml.RX: 0,
+        # The three-CNOT case does not involve an RX, but an RX must be accounted
+        # for in case the two-CNOT case is chosen at runtime.
+        qml.RX: 1,
         qml.GlobalPhase: 1,
     }
 
