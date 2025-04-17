@@ -22,7 +22,7 @@ concurrency:
   group: unit-tests-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:         
+jobs:
   tests:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
@@ -32,13 +32,14 @@ jobs:
       branch: ${{ github.ref }}
       use_large_runner: ${{ github.event_name == 'merge_group' }}
 
-      # Run a 'lightened' version of the CI on Pull Requests by default
+      # Run a 'lightened' version of the CI on Pull Requests and Merge Queues by default
       # Unless the label `ci:run-full-test-suite` is attached to the PR.
       # Always runs the full suite for push events.
       run_lightened_ci: >-
         ${{
-          github.event_name == 'pull_request'
-          && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite') || github.event.pull_request.base.ref == 'master'
+          (github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite') )
+          || github.event_name == 'merge_group'
           || false
          }}
 
