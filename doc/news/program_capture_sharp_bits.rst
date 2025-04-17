@@ -414,7 +414,7 @@ is also required.
 
     dev = qml.device('lightning.qubit', wires=1)
 
-    @qml.qjit(experimental_capture=True)
+    @qml.qjit
     @qml.qnode(dev)
     def circuit():
         qml.RX(0.1, wires=0)
