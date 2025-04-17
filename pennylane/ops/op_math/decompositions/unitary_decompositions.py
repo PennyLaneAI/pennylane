@@ -179,7 +179,19 @@ def two_qubit_decomposition(U, wires):
         )
 
     with qml.queuing.AnnotatedQueue() as q:
-        two_qubit_decomp_rule(U, wires=wires)
+        U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
+        num_cnots = 3 if qml.math.is_abstract(U) else _compute_num_cnots(U)
+        additional_phase = qml.cond(
+            num_cnots == 0,
+            _decompose_0_cnots,
+            _decompose_3_cnots,
+            elifs=[
+                (num_cnots == 1, _decompose_1_cnot),
+                (num_cnots == 2, _decompose_2_cnots),
+            ],
+        )(U, wires=wires)
+        total_phase = initial_phase + additional_phase
+        qml.GlobalPhase(-total_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = qml.queuing.QueuingManager.active_context()

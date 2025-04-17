@@ -422,9 +422,6 @@ def convert_to_su2(U, return_global_phase=False):
 
     """
 
-    if issparse(U):
-        U = U.todense()  # U is assumed to be 2x2 here, so dense representation is fine.
-
     # Compute the determinant
     U = qml.math.cast(U, "complex128")
     batch_size = get_batch_size(U, (2, 2), 4)
@@ -457,9 +454,6 @@ def convert_to_su4(U, return_global_phase=False):
             equivalent and the second, the global phase.
 
     """
-    if issparse(U):
-        U = U.todense()
-
     # Compute the determinant
     U = qml.math.cast(U, "complex128")
     batch_size = get_batch_size(U, (4, 4), 16)
