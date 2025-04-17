@@ -397,32 +397,6 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
-def _single_meas_contraction(qjac, cjac, single_trainable_param):
-    if single_trainable_param:
-        # return spec squeezed out singleton dimension, so we need to add it back in
-        qjac = qml.math.expand_dims(qjac, axis=0)
-    qjac = qml.math.stack(qjac)
-
-    # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
-    cjac_leaves, struct = flatten(cjac)
-
-    contracted = []
-    for cjac_for_arg in cjac_leaves:
-        tdot = qml.math.tensordot(cjac_for_arg, qjac, axes=[[0], [0]])
-        # not sure how to rationalize this tranposition, but its needed
-        contracted.append(tdot if len(tdot.shape) == 0 else qml.math.moveaxis(tdot, -1, 0))
-
-    return unflatten(contracted, struct)
-
-
-def _single_shots_contraction(qjac, cjac, tape):
-    single_trainable_param = len(tape.trainable_params) == 1
-    if len(tape.measurements) == 1:
-        return _single_meas_contraction(qjac, cjac, single_trainable_param)
-
-    return tuple(_single_meas_contraction(qj, cjac, single_trainable_param) for qj in qjac)
-
-
 def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
@@ -486,3 +460,29 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
         return tuple(_single_shots_contraction(qjac_s, cjac, tape) for qjac_s in qjac)
 
     return _single_shots_contraction(qjac, cjac, tape)
+
+
+def _single_shots_contraction(qjac, cjac, tape):
+    single_trainable_param = len(tape.trainable_params) == 1
+    if len(tape.measurements) == 1:
+        return _single_meas_contraction(qjac, cjac, single_trainable_param)
+
+    return tuple(_single_meas_contraction(qj, cjac, single_trainable_param) for qj in qjac)
+
+
+def _single_meas_contraction(qjac, cjac, single_trainable_param):
+    if single_trainable_param:
+        # return spec squeezed out singleton dimension, so we need to add it back in
+        qjac = qml.math.expand_dims(qjac, axis=0)
+    qjac = qml.math.stack(qjac)
+
+    # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
+    cjac_leaves, struct = flatten(cjac)
+
+    contracted = []
+    for cjac_for_arg in cjac_leaves:
+        tdot = qml.math.tensordot(cjac_for_arg, qjac, axes=[[0], [0]])
+        # not sure how to rationalize this tranposition, but its needed
+        contracted.append(tdot if len(tdot.shape) == 0 else qml.math.moveaxis(tdot, -1, 0))
+
+    return unflatten(contracted, struct)
