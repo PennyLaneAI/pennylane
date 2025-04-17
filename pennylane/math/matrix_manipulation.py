@@ -17,22 +17,22 @@ import itertools
 import numbers
 from collections.abc import Callable, Generator, Iterable
 from functools import reduce
+from typing import Sequence, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
 
-import pennylane as qml
-from pennylane.wires import Wires
+from pennylane import math
 
 
-def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
+def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_format="csr"):
     # pylint: disable=too-many-branches
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
     Args:
         mat (tensor_like): matrix to expand
-        wires (Iterable): wires determining the subspace that ``mat`` acts on; a matrix of
+        wires (Sequence): wires determining the subspace that ``mat`` acts on; a matrix of
             dimension :math:`D^n` acts on a subspace of :math:`n` wires, where :math:`D` is the qudit dimension (2).
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
@@ -102,31 +102,32 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
            [0., 0., 1., 0.]])
 
     """
-    wires = Wires(wires)
+    if isinstance(wires, int):
+        wires = [wires]
 
     if wires:
-        float_dim = qml.math.shape(mat)[-1] ** (1 / (len(wires)))
-        qudit_dim = int(qml.math.round(float_dim))
+        float_dim = math.shape(mat)[-1] ** (1 / (len(wires)))
+        qudit_dim = int(math.round(float_dim))
     else:
         qudit_dim = 2  # if no wires, just assume qubit
 
     if (wire_order is None) or (wire_order == wires):
         return mat
 
-    if not wires and qml.math.shape(mat) == (1, 1):
+    if not wires and math.shape(mat) == (1, 1):
         return complex(mat[0, 0])
 
     wires = list(wires)
     wire_order = list(wire_order)
 
-    interface = qml.math.get_interface(mat)
-    shape = qml.math.shape(mat)
+    interface = math.get_interface(mat)
+    shape = math.shape(mat)
     batch_dim = shape[0] if len(shape) == 3 else None
 
     def eye_interface(dim):
         if interface == "scipy":
             return eye(qudit_dim**dim, format="coo")
-        return qml.math.cast_like(qml.math.eye(qudit_dim**dim, like=interface), mat)
+        return math.cast_like(math.eye(qudit_dim**dim, like=interface), mat)
 
     def kron_interface(mat1, mat2):
         if interface == "scipy":
@@ -137,7 +138,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
             # these lines are to avoid a crash when the matrices are not contiguous in memory
             mat1 = mat1.contiguous()
             mat2 = mat2.contiguous()
-        return qml.math.kron(mat1, mat2, like=interface)
+        return math.kron(mat1, mat2, like=interface)
 
     # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
     # e.g. wire_order = [0, 1, 2, 3, 4]; wires = [3, 0, 2]
@@ -153,7 +154,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
             batch_matrices = [
                 kron_interface(batch, eye_interface(len(wire_difference))) for batch in mat
             ]
-            mat = qml.math.stack(batch_matrices, like=interface)
+            mat = math.stack(batch_matrices, like=interface)
         else:
             mat = kron_interface(mat, eye_interface(len(wire_difference)))
 
@@ -183,7 +184,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
         # here we compute the kron product of each different tuple and stack them back together
         expanded_batch_matrices = [reduce(kron_interface, mats) for mats in mats_list]
         mat = (
-            qml.math.stack(expanded_batch_matrices, like=interface)
+            math.stack(expanded_batch_matrices, like=interface)
             if len(expanded_batch_matrices) > 1
             else expanded_batch_matrices[0]
         )
@@ -240,12 +241,12 @@ def _permute_dense_matrix(matrix, wires, wire_order, batch_dim, qudit_dim: int =
     shape = (
         [batch_dim] + [qudit_dim] * (num_wires * 2) if batch_dim else [qudit_dim] * (num_wires * 2)
     )
-    matrix = qml.math.reshape(matrix, shape)
+    matrix = math.reshape(matrix, shape)
     # transpose matrix
-    matrix = qml.math.transpose(matrix, axes=perm)
+    matrix = math.transpose(matrix, axes=perm)
     # reshape back
     shape = [batch_dim] + [qudit_dim**num_wires] * 2 if batch_dim else [qudit_dim**num_wires] * 2
-    return qml.math.reshape(matrix, shape)
+    return math.reshape(matrix, shape)
 
 
 def _sparse_swap_mat(qubit_i, qubit_j, n):
@@ -295,8 +296,8 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Generator[tuple[np.ndarray, Wires], None, None], reduce_func: Callable
-) -> tuple[np.ndarray, Wires]:
+    mats_and_wires_gen: Generator[tuple[np.ndarray, Sequence], None, None], reduce_func: Callable
+) -> tuple[np.ndarray, Sequence]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
     generator, from left to right, so as to reduce the sequence to a tuple containing a single
     matrix and the wires it acts on.
@@ -307,10 +308,12 @@ def reduce_matrices(
         reduce_func (callable): function used to reduce the sequence of operators
 
     Returns:
-        Tuple[tensor, Wires]: a tuple containing the reduced matrix and the wires it acts on
+        Tuple[tensor, Sequence]: a tuple containing the reduced matrix and the wires it acts on
     """
 
-    def expand_and_reduce(op1_tuple: tuple[np.ndarray, Wires], op2_tuple: tuple[np.ndarray, Wires]):
+    def expand_and_reduce(
+        op1_tuple: tuple[np.ndarray, Sequence], op2_tuple: tuple[np.ndarray, Sequence]
+    ):
         mat1, wires1 = op1_tuple
         mat2, wires2 = op2_tuple
         expanded_wires = wires1 + wires2
@@ -337,14 +340,14 @@ def get_batch_size(tensor, expected_shape, expected_size):
         Optional[int]: The batch size of the tensor if there is one, otherwise None
     """
     try:
-        size = qml.math.size(tensor)
-        ndim = qml.math.ndim(tensor)
+        size = math.size(tensor)
+        ndim = math.ndim(tensor)
         if ndim > len(expected_shape) or size > expected_size:
             return size // expected_size
 
     except Exception as err:  # pragma: no cover, pylint:disable=broad-except
         # This except clause covers the usage of tf.function
-        if not qml.math.is_abstract(tensor):
+        if not math.is_abstract(tensor):
             raise err
 
     return None
@@ -363,8 +366,8 @@ def expand_vector(vector, original_wires, expanded_wires):
         array: :math:`2^m` vector where m = len(expanded_wires).
     """
     if len(original_wires) == 0:
-        val = qml.math.squeeze(vector)
-        return val * qml.math.ones(2 ** len(expanded_wires))
+        val = math.squeeze(vector)
+        return val * math.ones(2 ** len(expanded_wires))
     if isinstance(expanded_wires, numbers.Integral):
         expanded_wires = list(range(expanded_wires))
 
@@ -372,22 +375,22 @@ def expand_vector(vector, original_wires, expanded_wires):
     M = len(expanded_wires)
     D = M - N
 
-    len_vector = qml.math.shape(vector)[0]
+    len_vector = math.shape(vector)[0]
     qudit_order = int(2 ** (np.log2(len_vector) / N))
 
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (qudit_order**N,):
+    if math.shape(vector) != (qudit_order**N,):
         raise ValueError(f"Vector parameter must be of length {qudit_order}**len(original_wires)")
 
     dims = [qudit_order] * N
-    tensor = qml.math.reshape(vector, dims)
+    tensor = math.reshape(vector, dims)
 
     if D > 0:
         extra_dims = [qudit_order] * D
-        ones = qml.math.ones(qudit_order**D).reshape(extra_dims)
-        expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
+        ones = math.ones(qudit_order**D).reshape(extra_dims)
+        expanded_tensor = math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
@@ -396,8 +399,6 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = qml.math.moveaxis(
-        expanded_tensor, tuple(original_indices), tuple(wire_indices)
-    )
+    expanded_tensor = math.moveaxis(expanded_tensor, tuple(original_indices), tuple(wire_indices))
 
-    return qml.math.reshape(expanded_tensor, (qudit_order**M,))
+    return math.reshape(expanded_tensor, (qudit_order**M,))
