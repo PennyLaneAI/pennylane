@@ -64,7 +64,7 @@ def second_quantized_trotter(epsilons, p_fail, N, eta, Omega):
     epsilon_SS = epsilon_S/single_qubit_rotations
     
     exp_UV_cost = 8*N*(8*N-1)*c_pauli_rotation_synthesis(epsilon_SS) + 8*N*pauli_rotation_synthesis(epsilon_SS)
-    exp_T_cost = 8*N*self.tools.pauli_rotation_synthesis(epsilon_SS)
+    exp_T_cost = 8*N*pauli_rotation_synthesis(epsilon_SS)
     F2 = 2
     FFFT_cost = N/2*np.ceil(np.log2(N))*F2 + N/2*(np.ceil(np.log2(N))-1)*pauli_rotation_synthesis(epsilon_SS) 
     
@@ -80,22 +80,40 @@ def first_quantized_trotter(epsilons, p_fail, N, eta, Omega, nuclei):
     epsilon_S = epsilons[2]
     
     t = np.pi/(2*epsilon_QPE)*(1/2+1/(2*p_fail))
-    norm_V = eta**2/(2*Omega**(1/3))*I2(N**(1/3))
-    norm_U = eta**2/(Omega**(1/3))*I1(N**(1/3))
+    sum_1_nu = 4*np.pi*(np.sqrt(3)*N**(1/3)/2 - 1) + 3 - 3/N**(1/3) + 3*I(N**(1/3))
+    norm_V = eta**2/(2*Omega**(1/3))*sum_1_nu
+    norm_U = eta**2/(Omega**(1/3))*sum_1_nu
     norm_T = (2*np.pi**2/Omega**(2/3))*IT(N**(1/3))
 
-    r = np.sqrt(2*t**3/epsilon_HS *(max_T**2*(max_U + max_V) + max_T*(max_U + max_V)**2))
+    r = np.sqrt(2*t**3/epsilon_HS *(norm_T**2*(norm_U + norm_V) + norm_T*(norm_U + norm_V)**2))
 
     n = np.log2(N**(1/3))
     
-    #todo: change this, I made it up
-    cost_sum = lambda n: n
-    cost_product = lambda n: n**2
-    cost_sqrt = lambda n: n**2
+    #todo: from TFermion
+    def sum_cost(n):
+        return 4*n
 
-    T_cost = 2*QFT(N, eta, epsilon_SS) + 3*eta*cost_sum(n) + 3*eta*cost_product(n)
+    def multiplication_cost(n):
+        return 21*n**2
 
-    V_cost = eta*(eta-1)/2 * (3 * cost_product(n) + 2* cost_sum(n) + cost_sqrt(n) + cost_sum(n))
-    U_cost = eta * nuclei * (3 * cost_product(n) + 2* cost_sum(n) + cost_sqrt(n) + cost_sum(n))
+    def divide_cost(n):
+        return 14*n**2+7*n
 
-    return r*(2*exp_UV_cost + exp_T_cost + 2*FFFT_cost)
+    def cost_sqrt(n, order = 10):
+        return order * (sum_cost(n) + multiplication_cost(n) + divide_cost(n))
+
+    T_cost = 2*QFT(N, eta, epsilon_S) + 3*eta*sum_cost(n) + 3*eta*multiplication_cost(n)
+
+    V_cost = eta*(eta-1)/2 * (3 * multiplication_cost(n) + 2* sum_cost(n) + cost_sqrt(n) + sum_cost(n))
+    U_cost = eta * nuclei * (3 * multiplication_cost(n) + 2* sum_cost(n) + cost_sqrt(n) + sum_cost(n))
+
+    return r*(T_cost + V_cost + U_cost)
+
+epsilons = (1e-3, 1e-3, 1e-3)
+p_fail = 1e-3
+N = 1e3
+eta = 1e2
+Omega = eta
+nuclei = 5
+cost = first_quantized_trotter(epsilons, p_fail, N, eta, Omega, nuclei)
+print(f"Cost of first quantized Trotter: {cost}")
