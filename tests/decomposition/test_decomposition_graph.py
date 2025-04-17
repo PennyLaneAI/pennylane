@@ -274,12 +274,12 @@ class TestControlledDecompositions:
         op1 = qml.ctrl(qml.GlobalPhase(0.5), control=[1])
         op2 = qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2])
         graph = DecompositionGraph(
-            [op1, op2], target_gate_set={"ControlledPhaseShift", "PhaseShift", "PauliX"}
+            [op1, op2], target_gate_set={"ControlledPhaseShift", "PhaseShift"}
         )
-        # 5 op nodes and 2 decomposition nodes.
-        assert len(graph._graph.nodes()) == 7
-        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
-        assert len(graph._graph.edges()) == 5
+        # 4 op nodes and 2 decomposition nodes.
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
 
         # Verify the decompositions
         graph.solve()
@@ -299,12 +299,12 @@ class TestControlledDecompositions:
         op2 = qml.ops.Controlled(qml.H(0), control_wires=[1])
         graph = DecompositionGraph(
             operations=[op1, op2],
-            target_gate_set={"CNOT", "CH", "PauliX"},
+            target_gate_set={"CNOT", "CH"},
         )
-        # 5 op nodes and 2 decomposition nodes.
-        assert len(graph._graph.nodes()) == 7
-        # 2 edges from decompositions to ops and 4 edges from ops to decompositions
-        assert len(graph._graph.edges()) == 6
+        # 4 op nodes and 2 decomposition nodes.
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 4
 
         # Verify the decompositions
         graph.solve()
@@ -374,8 +374,8 @@ class TestControlledDecompositions:
         )
         # 18 op nodes and 16 decomposition nodes.
         assert len(graph._graph.nodes()) == 34
-        # 16 edges from decompositions to ops and 41 edges from ops to decompositions
-        assert len(graph._graph.edges()) == 57
+        # 16 edges from decompositions to ops and 36 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 52
 
         graph.solve()
 
@@ -456,13 +456,13 @@ class TestSymbolicDecompositions:
         op2 = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=[1]))
 
         graph = DecompositionGraph(
-            operations=[op, op2], target_gate_set={"ControlledPhaseShift", "CRX", "PauliX"}
+            operations=[op, op2], target_gate_set={"ControlledPhaseShift", "CRX"}
         )
-        # 6 operator nodes: Adjoint(C(RX)), Adjoint(C(U1)), CRX, C(U1), ControlledPhaseShift, X
+        # 5 operator nodes: Adjoint(C(RX)), Adjoint(C(U1)), CRX, C(U1), ControlledPhaseShift
         # 3 decomposition nodes leading into Adjoint(C(RX)), Adjoint(C(U1)), and C(U1)
-        assert len(graph._graph.nodes()) == 9
-        # 3 edges from decompositions to ops and 4 edges from ops to decompositions
-        assert len(graph._graph.edges()) == 7
+        assert len(graph._graph.nodes()) == 8
+        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
+        assert len(graph._graph.edges()) == 6
 
         graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
@@ -476,7 +476,7 @@ class TestSymbolicDecompositions:
             graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert q.queue == [qml.ControlledPhaseShift(-0.5, wires=[1, 0])]
-        assert graph.resource_estimate(op2) == to_resources({qml.ControlledPhaseShift: 1, qml.X: 0})
+        assert graph.resource_estimate(op2) == to_resources({qml.ControlledPhaseShift: 1})
 
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
