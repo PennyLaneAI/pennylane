@@ -576,7 +576,7 @@ def _decompose_2_cnots(U, wires):
     # see https://github.com/PennyLaneAI/pennylane/issues/5308
     precision = math.finfo(delta.dtype).eps
     RZd = ops.RZ.compute_matrix(math.cast_like(delta + 5 * precision, 1j))
-    RXp = ops.RX.compute_matrix(phi)
+    RXp = ops.RX.compute_matrix(math.cast_like(phi + 5 * precision, 1j))
     inner_u = math.kron(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
