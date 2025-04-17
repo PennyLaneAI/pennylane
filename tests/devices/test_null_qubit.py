@@ -65,8 +65,9 @@ def test_debugger_attribute():
 
 def test_resource_tracking_attribute():
     """Test NullQubit track_resources attribute"""
-    assert NullQubit()._track_resources == False
-    assert NullQubit(track_resources=True)._track_resources == True
+    # pylint: disable=protected-access
+    assert NullQubit()._track_resources is False
+    assert NullQubit(track_resources=True)._track_resources is True
 
     dev = NullQubit(track_resources=True)
 

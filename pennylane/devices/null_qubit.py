@@ -18,7 +18,9 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 # pylint:disable=unused-argument
 
 import inspect
+import json
 import logging
+from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
@@ -130,6 +132,46 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
+def _simulate_resource_use(circuit):
+    RESOURCES_FNAME = "__pennylane_resources_data.json"
+
+    num_wires = len(circuit.wires)
+    gate_types = defaultdict(int)
+
+    for op in circuit.operations:
+        name = ""
+        while hasattr(op, "base"):
+            if type(op) in (Controlled, ControlledOp):
+                # Don't check this with `isinstance` to avoid unrolling ops like CNOT
+                name += "C_"
+            elif isinstance(op, Adjoint):
+                name += "adj_"
+            else:
+                break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
+            # TODO: How should these be handled?
+            # if isinstance(op, (Pow, Exp)):
+            #     op = op.base
+            op = op.base
+
+        if op.name == "Barrier":
+            continue
+
+        name += op.name
+
+        gate_types[name] += 1
+    # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+    #  In the future it may be better to return this information in a more structured way.
+    with open(RESOURCES_FNAME, "w") as f:
+        json.dump(
+            {
+                "num_wires": num_wires,
+                "num_gates": sum(gate_types.values()),
+                "gate_types": gate_types,
+            },
+            f,
+        )
+
+
 @simulator_tracking
 @single_tape_support
 class NullQubit(Device):
@@ -236,7 +278,7 @@ class NullQubit(Device):
         results = []
 
         if self._track_resources:
-            self._simulate_resource_use(circuit)
+            _simulate_resource_use(circuit)
 
         for s in circuit.shots or [None]:
             r = tuple(
@@ -247,48 +289,6 @@ class NullQubit(Device):
         if circuit.shots.has_partitioned_shots:
             return tuple(results)
         return results[0]
-
-    def _simulate_resource_use(self, circuit):
-        import json
-        from collections import defaultdict
-
-        RESOURCES_FNAME = "__pennylane_resources_data.json"
-
-        num_wires = len(circuit.wires)
-        gate_types = defaultdict(int)
-
-        for op in circuit.operations:
-            name = ""
-            while hasattr(op, "base"):
-                if type(op) in (Controlled, ControlledOp):
-                    # Don't check this with `isinstance` to avoid unrolling ops like CNOT
-                    name += "C_"
-                elif isinstance(op, Adjoint):
-                    name += "adj_"
-                else:
-                    break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
-                # TODO: How should these be handled?
-                # if isinstance(op, (Pow, Exp)):
-                #     op = op.base
-                op = op.base
-
-            if op.name == "Barrier":
-                continue
-
-            name += op.name
-
-            gate_types[name] += 1
-        # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
-        #  In the future it may be better to return this information in a more structured way.
-        with open(RESOURCES_FNAME, "w") as f:
-            json.dump(
-                {
-                    "num_wires": num_wires,
-                    "num_gates": sum(gate_types.values()),
-                    "gate_types": gate_types,
-                },
-                f,
-            )
 
     def _derivatives(self, circuit, interface):
         shots = circuit.shots
