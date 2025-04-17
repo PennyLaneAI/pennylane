@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
@@ -32,7 +33,6 @@ from pennylane.pytrees.pytrees import (
     typename_to_type,
     unflatten_registrations,
 )
-from pennylane.pytrees.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.wires import Wires
 
 
