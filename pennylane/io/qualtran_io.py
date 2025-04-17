@@ -62,18 +62,108 @@ def map_to_bloq():
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
-    
+
     @_to_qt_bloq.register
     def _(op: qml.CNOT):
         from qualtran.bloqs.basic_gates import CNOT
 
         return CNOT()
-    
-    @_to_qt_bloq.register
-    def _(op: qml.CNOT):
-        from qualtran.bloqs.basic_gates import CNOT
 
-        return CNOT()
+    @_to_qt_bloq.register
+    def _(op: qml.Hadamard):
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        return Hadamard()
+
+    @_to_qt_bloq.register
+    def _(op: qml.Identity):
+        from qualtran.bloqs.basic_gates import Identity
+
+        return Identity()
+
+    @_to_qt_bloq.register
+    def _(op: qml.RX):
+        from qualtran.bloqs.basic_gates import Rx
+
+        return Rx(op.data[0])
+
+    @_to_qt_bloq.register
+    def _(op: qml.RY):
+        from qualtran.bloqs.basic_gates import Ry
+
+        return Ry(op.data[0])
+
+    @_to_qt_bloq.register
+    def _(op: qml.RZ):
+        from qualtran.bloqs.basic_gates import Rz
+
+        return Rz(op.data[0])
+
+    @_to_qt_bloq.register
+    def _(op: qml.S):
+        from qualtran.bloqs.basic_gates import SGate
+
+        return SGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.SWAP):
+        from qualtran.bloqs.basic_gates import TwoBitSwap
+
+        return TwoBitSwap()
+
+    @_to_qt_bloq.register
+    def _(op: qml.CSWAP):
+        from qualtran.bloqs.basic_gates import TwoBitCSwap
+
+        return TwoBitCSwap()
+
+    @_to_qt_bloq.register
+    def _(op: qml.T):
+        from qualtran.bloqs.basic_gates import TGate
+
+        return TGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.Toffoli):
+        from qualtran.bloqs.basic_gates import Toffoli
+
+        return Toffoli()
+
+    @_to_qt_bloq.register
+    def _(op: qml.Toffoli):
+        from qualtran.bloqs.basic_gates import Toffoli
+
+        return Toffoli()
+
+    @_to_qt_bloq.register
+    def _(op: qml.X):
+        from qualtran.bloqs.basic_gates import XGate
+
+        return XGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.Y):
+        from qualtran.bloqs.basic_gates import YGate
+
+        return YGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.CY):
+        from qualtran.bloqs.basic_gates import CYGate
+
+        return CYGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.Z):
+        from qualtran.bloqs.basic_gates import ZGate
+
+        return ZGate()
+
+    @_to_qt_bloq.register
+    def _(op: qml.CZ):
+        from qualtran.bloqs.basic_gates import CZ
+
+        return CZ()
 
     return _to_qt_bloq
 
