@@ -170,11 +170,13 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
 
     # first order way of determining native parameter broadcasting support
     # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
-    device_supports_vectorization = (
-        qml.transforms.broadcast_expand not in device.preprocess_transforms()
+    vmap_method = (
+        "broadcast_all"
+        if qml.transforms.broadcast_expand not in device.preprocess_transforms()
+        else "sequential"
     )
     out = jax.pure_callback(
-        pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
+        pure_callback_wrapper, shape_dtype_structs, params, vmap_method=vmap_method
     )
     return out
 
@@ -206,7 +208,9 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
     res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
     jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes.vals)
-    results, jacobians = jax.pure_callback(wrapper, (res_struct, jac_struct), primals[0])
+    results, jacobians = jax.pure_callback(
+        wrapper, (res_struct, jac_struct), primals[0], vmap_method="sequential"
+    )
 
     jvps = _compute_jvps(jacobians, tangents_trainable, tapes.vals)
 
@@ -226,7 +230,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return _to_jax(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vectorized=True),)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vectorized="broadcast_all"),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
