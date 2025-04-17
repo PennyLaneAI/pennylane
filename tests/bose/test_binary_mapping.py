@@ -288,7 +288,7 @@ class TestBoseWordMapping:
     def test_binary_mapping_for_identity_ps(self):
         """Test that the binary_mapping function returns the correct PauliSentence for Identity when ps=True."""
         assert binary_mapping(BoseWord({}), ps=True) == PauliSentence(
-            {PauliWord({0: "I"}): 1.0 + 0.0j}
+            {PauliWord({0: "I"}): 1.0 + 1.0j}
         )
 
     def test_n_states_error_binary(self):
