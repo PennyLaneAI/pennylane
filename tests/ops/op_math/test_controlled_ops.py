@@ -23,7 +23,6 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
