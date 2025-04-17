@@ -479,10 +479,8 @@ def _single_meas_contraction(qjac, cjac, single_trainable_param):
     # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
     cjac_leaves, struct = flatten(cjac)
 
-    contracted = []
-    for cjac_for_arg in cjac_leaves:
-        tdot = qml.math.tensordot(cjac_for_arg, qjac, axes=[[0], [0]])
-        # not sure how to rationalize this tranposition, but its needed
-        contracted.append(tdot if len(tdot.shape) == 0 else qml.math.moveaxis(tdot, -1, 0))
+    contracted = [
+        qml.math.tensordot(qjac, cjac_for_arg, axes=[[0], [0]]) for cjac_for_arg in cjac_leaves
+    ]
 
     return unflatten(contracted, struct)
