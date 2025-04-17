@@ -18,7 +18,6 @@ computing the sum of operations.
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
 import itertools
-import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
