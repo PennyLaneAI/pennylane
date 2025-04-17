@@ -421,6 +421,8 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     The ``qjac`` corresponds to the output of the standard postprocessing of a gradient transform. The ``cjac``
     is the derivative of the tape parameters with respect to the qnode arguments.
 
+    Each ``qjac`` "leaf" should (after stacking) should correspond to ``(trainable_param_idx, *measurement_process shape)``
+    and each ``cjac`` "leaf" should be ``(trainable_param_idx, *qnode_argument_shape)``.
 
     >>> @qml.qnode(qml.device('default.qubit'))
     ... def c(x):
