@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.abspath("."), "pennylane"))
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "4.2"
- 
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
@@ -77,7 +77,7 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
-autosummary_ignore_module_all = False
+# autosummary_ignore_module_all = False
 
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
 bibtex_bibfiles = ["bibfile.bib"]
