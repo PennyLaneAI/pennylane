@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
+  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
@@ -62,6 +65,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
 Lillian Frederiksen
+Pietropaolo Frisoni,
 Andrija Paurevic,
 Korbinian Kottmann,
 Christina Lee
