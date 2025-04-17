@@ -22,14 +22,23 @@ from typing import Union
 import networkx as nx
 import rustworkx as rx
 
-import pennylane as qml
-from pennylane import qaoa
+from pennylane.ops import Identity, LinearCombination, Z
+from pennylane.wires import Wires
+
+from .cycle import (
+    cycle_mixer,
+    loss_hamiltonian,
+    net_flow_constraint,
+    out_flow_constraint,
+    wires_to_edges,
+)
+from .mixers import bit_flip_mixer, x_mixer
 
 ########################
 # Hamiltonian components
 
 
-def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
+def bit_driver(wires: Union[Iterable, Wires], b: int):
     r"""Returns the bit-driver cost Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -63,8 +72,8 @@ def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     else:
         raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
-    ops = [qml.Z(w) for w in wires]
-    return qml.Hamiltonian(coeffs, ops)
+    ops = [Z(w) for w in wires]
+    return LinearCombination(coeffs, ops)
 
 
 def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
@@ -183,7 +192,7 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
 
     if len(reward) == 0 or len(reward) == 4:
         coeffs = [1 for _ in graph_nodes]
-        ops = [qml.Identity(v) for v in graph_nodes]
+        ops = [Identity(v) for v in graph_nodes]
 
     else:
         reward = list(set(reward) - {"01"})
@@ -200,29 +209,29 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
                     [
-                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
-                        qml.Z(get_nvalue(e[0])),
-                        qml.Z(get_nvalue(e[1])),
+                        Z(get_nvalue(e[0])) @ Z(get_nvalue(e[1])),
+                        Z(get_nvalue(e[0])),
+                        Z(get_nvalue(e[1])),
                     ]
                 )
 
         if reward == "10":
             for e in graph_edges:
                 coeffs.append(-0.5 * sign)
-                ops.append(qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])))
+                ops.append(Z(get_nvalue(e[0])) @ Z(get_nvalue(e[1])))
 
         if reward == "11":
             for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
                     [
-                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
-                        qml.Z(get_nvalue(e[0])),
-                        qml.Z(get_nvalue(e[1])),
+                        Z(get_nvalue(e[0])) @ Z(get_nvalue(e[1])),
+                        Z(get_nvalue(e[0])),
+                        Z(get_nvalue(e[1])),
                     ]
                 )
 
-    return qml.Hamiltonian(coeffs, ops)
+    return LinearCombination(coeffs, ops)
 
 
 #######################
@@ -292,14 +301,14 @@ def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     # thus, we use the following lambda function to get node-values.
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
-    identity_h = qml.Hamiltonian(
+    identity_h = LinearCombination(
         [-0.5 for e in graph_edges],
-        [qml.Identity(get_nvalue(e[0])) @ qml.Identity(get_nvalue(e[1])) for e in graph_edges],
+        [Identity(get_nvalue(e[0])) @ Identity(get_nvalue(e[1])) for e in graph_edges],
     )
     H = edge_driver(graph, ["10", "01"]) + identity_h
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
-    return (H, qaoa.x_mixer(graph_nodes))
+    return (H, x_mixer(graph_nodes))
 
 
 def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
@@ -370,10 +379,10 @@ def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.bit_flip_mixer(graph, 0))
+        return (cost_h, bit_flip_mixer(graph, 0))
 
     cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
-    mixer_h = qaoa.x_mixer(graph_nodes)
+    mixer_h = x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -451,10 +460,10 @@ def min_vertex_cover(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = Tru
     if constrained:
         cost_h = bit_driver(graph_nodes, 0)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.bit_flip_mixer(graph, 1))
+        return (cost_h, bit_flip_mixer(graph, 1))
 
     cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph_nodes, 0)
-    mixer_h = qaoa.x_mixer(graph_nodes)
+    mixer_h = x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -537,10 +546,10 @@ def max_clique(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.bit_flip_mixer(graph_complement, 0))
+        return (cost_h, bit_flip_mixer(graph_complement, 0))
 
     cost_h = 3 * edge_driver(graph_complement, ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
-    mixer_h = qaoa.x_mixer(graph_nodes)
+    mixer_h = x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -592,10 +601,10 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         .. math:: H_{\rm loss} = \sum_{(i, j) \in E} Z_{ij}\log c_{ij}
 
         where :math:`E` are the edges of the graph and :math:`Z_{ij}` is a qubit Pauli-Z matrix
-        acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.loss_hamiltonian`
+        acting upon the wire specified by the edge :math:`(i, j)` (see :func:`~.qaoa.loss_hamiltonian`
         for more details).
 
-        The returned mixer Hamiltonian is :func:`~.cycle_mixer` given by
+        The returned mixer Hamiltonian is :func:`~.qaoa.cycle_mixer` given by
 
         .. math:: H_M = \frac{1}{4}\sum_{(i, j)\in E}
                 \left(\sum_{k \in V, k\neq i, k\neq j, (i, k) \in E, (k, j) \in E}
@@ -604,7 +613,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
 
         This mixer provides transitions between collections of cycles, i.e., any subset of edges
         in :math:`E` such that all the graph's nodes :math:`V` have zero net flow
-        (see the :func:`~.net_flow_constraint` function).
+        (see the :func:`~.qaoa.net_flow_constraint` function).
 
         .. note::
 
@@ -618,7 +627,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
 
         .. math:: H_C \ = H_{\rm loss} + 3 H_{\rm netflow} + 3 H_{\rm outflow}.
 
-        The netflow constraint Hamiltonian :func:`~.net_flow_constraint` is given by
+        The netflow constraint Hamiltonian :func:`~.qaoa.net_flow_constraint` is given by
 
         .. math:: H_{\rm netflow} = \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
                 \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
@@ -627,7 +636,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         the outdegree and indegree, respectively, of node :math:`i`. It is minimized whenever a
         subset of edges in :math:`E` results in zero net flow from each node in :math:`V`.
 
-        The outflow constraint Hamiltonian :func:`~.out_flow_constraint` is given by
+        The outflow constraint Hamiltonian :func:`~.qaoa.out_flow_constraint` is given by
 
         .. math:: H_{\rm outflow} = \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
                 - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
@@ -636,7 +645,7 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         It is minimized whenever a subset of edges in :math:`E` results in an outflow of at most one
         from each node in :math:`V`.
 
-        The returned mixer Hamiltonian is :func:`~.x_mixer` applied to all wires.
+        The returned mixer Hamiltonian is :func:`~qaoa.x_mixer` applied to all wires.
 
         .. note::
 
@@ -689,16 +698,14 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
             f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
-    mapping = qaoa.cycle.wires_to_edges(graph)
+    mapping = wires_to_edges(graph)
 
     if constrained:
-        cost_h = qaoa.cycle.loss_hamiltonian(graph)
+        cost_h = loss_hamiltonian(graph)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.cycle.cycle_mixer(graph), mapping)
+        return (cost_h, cycle_mixer(graph), mapping)
 
-    cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3 * (
-        qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph)
-    )
-    mixer_h = qaoa.x_mixer(mapping.keys())
+    cost_h = loss_hamiltonian(graph) + 3 * (net_flow_constraint(graph) + out_flow_constraint(graph))
+    mixer_h = x_mixer(mapping.keys())
 
     return (cost_h, mixer_h, mapping)

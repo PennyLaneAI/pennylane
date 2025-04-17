@@ -173,6 +173,14 @@ layer = "tertiary"
 path = "pennylane.fourier"
 layer = "tertiary"
 
+[[modules]]
+path = "pennylane.qaoa"
+layer = "tertiary"
+
+[[modules]]
+path = "pennylane.noise"
+layer = "tertiary"
+
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
@@ -216,11 +224,6 @@ depends_on = ["pennylane.transforms.core", "pennylane.measurements", "pennylane.
 unchecked = true
 
 [[modules]]
-path = "pennylane.qaoa"
-depends_on = ["pennylane.wires", "pennylane"]
-unchecked = true
-
-[[modules]]
 path = "pennylane.capture"
 depends_on = ["pennylane.measurements", "pennylane.control_flow", "pennylane.workflow", "pennylane", "pennylane.ops"]
 unchecked = true
@@ -253,11 +256,6 @@ unchecked = true
 [[modules]]
 path = "pennylane.qnn"
 depends_on = ["pennylane"]
-unchecked = true
-
-[[modules]]
-path = "pennylane.noise"
-depends_on = ["pennylane.templates", "pennylane.ops", "pennylane.boolean_fn", "pennylane", "pennylane.measurements", "pennylane.operation", "pennylane.wires"]
 unchecked = true
 
 [[modules]]
