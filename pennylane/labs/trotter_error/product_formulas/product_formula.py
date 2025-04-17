@@ -17,14 +17,17 @@ from __future__ import annotations
 
 from typing import Hashable, Sequence, Union
 
-from pennylane.labs.trotter_error.product_formulas.bch_tree import BCHNode, BCHTree, bch_approx
+from pennylane.labs.trotter_error.product_formulas.bch_tree import BCHTree, bch_approx
 
 
 class ProductFormula:
     """Class for representing product formulas"""
 
     def __init__(
-        self, coeffs: Sequence[float], fragments: Sequence[Union[Hashable, ProductFormula]]
+        self,
+        coeffs: Sequence[float],
+        fragments: Sequence[Union[Hashable, ProductFormula]],
+        exponent: int = 1,
     ):
 
         if len(coeffs) != len(fragments):
@@ -45,6 +48,7 @@ class ProductFormula:
 
         self.coeffs = coeffs
         self.fragments = fragments
+        self.exponent = exponent
 
     def bch_ast(self, max_order: int) -> BCHTree:
         """Return an AST representation of the BCH expansion"""
@@ -52,7 +56,7 @@ class ProductFormula:
 
         for coeff, fragment in zip(self.coeffs, self.fragments):
             if isinstance(fragment, ProductFormula):
-                bch_fragments.append(coeff * fragment.bch_ast(max_order))
+                bch_fragments.append(BCHTree.heff_node(fragment.bch_ast(max_order), coeff))
             else:
                 bch_fragments.append(coeff * BCHTree.fragment_node(fragment))
 
@@ -65,10 +69,17 @@ class ProductFormula:
 
         return "*".join(reps)
 
+    def _apply_coeff(self, x: float) -> ProductFormula:
+        return ProductFormula(
+            coeffs=[x * coeff for coeff in self.coeffs],
+            fragments=self.fragments,
+            exponent=self.exponent,
+        )
+
 
 def _bch_ast(fragments: Sequence[BCHTree], max_order: int) -> BCHTree:
     if len(fragments) == 2:
-        return bch_approx(fragments[0], fragments[1])
+        return bch_approx(fragments[0], fragments[1], max_order)
 
     head, *tail = fragments
-    return bch_approx(head, _bch_ast(tail, max_order)).simplify(max_order)
+    return bch_approx(head, _bch_ast(tail, max_order), max_order).simplify(max_order)

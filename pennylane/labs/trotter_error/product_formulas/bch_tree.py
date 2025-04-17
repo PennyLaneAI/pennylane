@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from enum import Enum
-from typing import Dict, Hashable, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Hashable, Sequence, Set, Tuple
 
 from numpy import isclose
 
@@ -30,6 +30,7 @@ class BCHNode(Enum):
 
     ADD = "ADD"
     COMMUTATOR = "COMMUTATOR"
+    HEFF = "EFFECTIVE HAMILTONIAN"
     FRAGMENT = "FRAGMENT"
     SCALAR = "SCALAR"
     ZERO = "ZERO"
@@ -43,9 +44,10 @@ class BCHTree:
         node_type: BCHNode,
         l_child: BCHTree = None,
         r_child: BCHTree = None,
-        fragment: int = None,
+        fragment: Hashable = None,
         scalar: complex = None,
         fragment_set: Set[Hashable] = None,
+        heff: BCHTree = None,
     ):
 
         self.node_type = node_type
@@ -72,10 +74,20 @@ class BCHTree:
             self.scalar = scalar
 
         elif node_type == BCHNode.FRAGMENT:
-            if not isinstance(fragment, int):
-                raise TypeError(f"`fragment` must be of type int, got type {type(fragment)}.")
+            if not isinstance(fragment, Hashable):
+                raise TypeError(f"`fragment` must be Hashable, got type {type(fragment)}.")
 
             self.fragment = fragment
+
+        elif node_type == BCHNode.HEFF:
+            if not isinstance(heff, BCHTree):
+                raise TypeError(f"`heff` must be type BCHTree, got type {type(heff)}.")
+
+            if not isinstance(scalar, (float, int, complex)):
+                raise TypeError(f"`scalar` must be of type float, got type {type(scalar)}.")
+
+            self.heff = heff
+            self.scalar = scalar
 
         else:
             if node_type != BCHNode.ZERO:
@@ -116,8 +128,14 @@ class BCHTree:
         )
 
     @classmethod
+    def heff_node(cls, heff: BCHTree, scalar: complex) -> BCHTree:
+        """Instantiate a HEFF ndoe"""
+        return cls(BCHNode.HEFF, heff=heff, scalar=scalar, fragment_set=heff.fragment_set)
+
+    @classmethod
     def fragment_node(cls, fragment: Hashable) -> BCHTree:
         """Instantiate a FRAGMENT node"""
+
         return cls(BCHNode.FRAGMENT, fragment=fragment, fragment_set={fragment})
 
     @classmethod
@@ -154,9 +172,6 @@ class BCHTree:
 
     def __sub__(self, other: BCHTree) -> BCHTree:
         return self + (-1) * other
-
-    def __matmul__(self, other: BCHTree) -> BCHTree:
-        return BCHTree.matmul_node(self, other)
 
     def __mul__(self, scalar: float) -> BCHTree:
 
@@ -205,6 +220,9 @@ class BCHTree:
         if self.node_type in (BCHNode.ADD, BCHNode.COMMUTATOR):
             return self.l_child == other.l_child and self.r_child == other.r_child
 
+        if self.node_type == BCHNode.HEFF:
+            return self.heff == other.heff and self.scalar == other.scalar
+
         if self.node_type == BCHNode.FRAGMENT:
             return self.fragment == other.fragment
 
@@ -222,6 +240,9 @@ class BCHTree:
 
         if self.node_type == BCHNode.COMMUTATOR:
             return hash((self.node_type, self.l_child, self.r_child))
+
+        if self.node_type == BCHNode.HEFF:
+            return hash((self.node_type, self.heff, self.scalar))
 
         if self.node_type == BCHNode.FRAGMENT:
             return hash((self.node_type, self.fragment))
@@ -242,7 +263,7 @@ class BCHTree:
     def evaluate(self, fragments: Dict[Hashable, Fragment]):
         """Evaluate the AST"""
 
-        if self.fragment_set != set(fragments.keys()):
+        if not self.fragment_set.issubset(set(fragments.keys())):
             raise ValueError("Fragment labels do not match leaf fragments of AST.")
 
         if self.node_type == BCHNode.ADD:
@@ -265,32 +286,43 @@ class BCHTree:
         raise ValueError(f"Found invalid node type: {self.node_type}.")
 
 
-def bch_approx(x: BCHTree, y: BCHTree) -> BCHTree:
+def bch_approx(x: BCHTree, y: BCHTree, max_order: int) -> BCHTree:
     """Return first term of the BCH expansion"""
 
-    return (
-        x
-        + y
-        + (1 / 2) * BCHTree.commutator_node(x, y)
-        + (1 / 12) * BCHTree.nested_commutator([x, x, y])
-        + (1 / 12) * BCHTree.nested_commutator([y, y, x])
-        + (1 / 24) * BCHTree.nested_commutator([y, x, x, y])
-        - (1 / 720) * BCHTree.nested_commutator([y, y, y, y, x])
-        - (1 / 720) * BCHTree.nested_commutator([x, x, x, x, y])
-        + (1 / 360) * BCHTree.nested_commutator([x, y, y, y, x])
-        + (1 / 360) * BCHTree.nested_commutator([y, x, x, x, y])
-        + (1 / 120) * BCHTree.nested_commutator([y, x, y, x, y])
-        + (1 / 120) * BCHTree.nested_commutator([x, y, x, y, x])
-        # + (1 / 240) * BCHTree.nested_commutator([x, y, x, y, x, y])
-        # + (1 / 720) * BCHTree.nested_commutator([x, y, x, x, x, y])
-        # - (1 / 720) * BCHTree.nested_commutator([x, x, y, y, x, y])
-        # + (1 / 1440) * BCHTree.nested_commutator([x, y, y, y, x, y])
-        # - (1 / 1440) * BCHTree.nested_commutator([x, x, y, x, x, y])
-    )
+    ret = BCHTree.zero_node()
+
+    if max_order > 0:
+        ret += x + y
+
+    if max_order > 1:
+        ret += (1 / 2) * BCHTree.commutator_node(x, y).simplify(max_order)
+
+    if max_order > 2:
+        ret += (1 / 12) * BCHTree.nested_commutator([x, x, y]).simplify(max_order)
+        ret += (1 / 12) * BCHTree.nested_commutator([y, y, x]).simplify(max_order)
+
+    if max_order > 3:
+        ret += (1 / 24) * BCHTree.nested_commutator([y, x, x, y]).simplify(max_order)
+
+    if max_order > 4:
+        ret -= (1 / 720) * BCHTree.nested_commutator([y, y, y, y, x]).simplify(max_order)
+        ret -= (1 / 720) * BCHTree.nested_commutator([x, x, x, x, y]).simplify(max_order)
+        ret += (1 / 360) * BCHTree.nested_commutator([x, y, y, y, x]).simplify(max_order)
+        ret += (1 / 360) * BCHTree.nested_commutator([y, x, x, x, y]).simplify(max_order)
+        ret += (1 / 120) * BCHTree.nested_commutator([y, x, y, x, y]).simplify(max_order)
+        ret += (1 / 120) * BCHTree.nested_commutator([x, y, x, y, x]).simplify(max_order)
+
+    if max_order > 5:
+        ret += (1 / 240) * BCHTree.nested_commutator([x, y, x, y, x, y])
+        ret += (1 / 720) * BCHTree.nested_commutator([x, y, x, x, x, y])
+        ret -= (1 / 720) * BCHTree.nested_commutator([x, x, y, y, x, y])
+        ret += (1 / 1440) * BCHTree.nested_commutator([x, y, y, y, x, y])
+        ret -= (1 / 1440) * BCHTree.nested_commutator([x, x, y, x, x, y])
+
+    return ret
 
 
 def _simplify(x: BCHTree, max_order: int) -> BCHTree:
-
     changed = False
 
     if x.node_type in (BCHNode.ADD, BCHNode.COMMUTATOR):
@@ -309,6 +341,9 @@ def _simplify(x: BCHTree, max_order: int) -> BCHTree:
     x, y = _commutator_linearity(x)
     changed = changed or y
 
+    x, y = _flatten_commutator(x)
+    changed = changed or y
+
     x, y = _order_commutator_terms(x)
     changed = changed or y
 
@@ -319,7 +354,6 @@ def _simplify(x: BCHTree, max_order: int) -> BCHTree:
 
 
 def _group_terms(x: BCHTree) -> BCHTree:
-
     fragments = []
     commutators = []
 
@@ -517,3 +551,21 @@ def _drop_high_order(x: BCHTree, max_order: int) -> Tuple[BCHTree, bool]:
         return BCHTree.zero_node(), True
 
     return x, False
+
+def _flatten_commutator(x: BCHTree) -> Tuple[BCHTree, bool]:
+    if x.node_type != BCHNode.COMMUTATOR:
+        return x, False
+
+    if x.l_child.node_type != BCHNode.COMMUTATOR or x.r_child.node_type != BCHNode.COMMUTATOR:
+        return x, False
+
+    a = x.l_child.l_child
+    c = x.l_child.r_child
+
+    b = x.r_child.l_child
+    d = x.r_child.r_child
+
+    if {a.node_type, b.node_type, c.node_type, d.node_type} != {BCHNode.FRAGMENT}:
+        return x, False
+
+    return -(BCHTree.nested_commutator([d, a, b, c]) + BCHTree.nested_commutator([a, b, c, d]) + BCHTree.nested_commutator([b, c, d, a]) + BCHTree.nested_commutator([c, d, a, b])), True
