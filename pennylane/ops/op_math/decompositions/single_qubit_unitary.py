@@ -379,7 +379,18 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
+    lams, thetas, phis, gammas = xzx_rotation_angles(U)
 
+    operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
+    if return_global_phase:
+        operations.append(qml.GlobalPhase(-gammas))
+
+    return operations
+
+
+def xzx_rotation_angles(U):
+    """Helper function to separate getting the angles for the xzx decomposition.
+    These angles are also used in the ftqc module"""
     # Small number to add to denominators to avoid division by zero
     EPS = 1e-64
 
@@ -411,11 +422,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
     thetas = thetas % (4 * np.pi)
     lams = lams % (4 * np.pi)
 
-    operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
-    if return_global_phase:
-        operations.append(qml.GlobalPhase(-gammas))
-
-    return operations
+    return lams, thetas, phis, gammas
 
 
 def _zxz_decomposition(U, wire, return_global_phase=False):
