@@ -44,11 +44,11 @@ if TYPE_CHECKING:
 @lru_cache
 def map_to_bloq():
     @singledispatch
-    def _to_qt_bloq(op, map: Dict = None):
+    def _to_qt_bloq(op):
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation, map: Dict = None):
+    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -58,10 +58,22 @@ def map_to_bloq():
         )
 
     @_to_qt_bloq.register
-    def _(op: qml.GlobalPhase, map: Dict = None):
+    def _(op: qml.GlobalPhase):
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
+    
+    @_to_qt_bloq.register
+    def _(op: qml.CNOT):
+        from qualtran.bloqs.basic_gates import CNOT
+
+        return CNOT()
+    
+    @_to_qt_bloq.register
+    def _(op: qml.CNOT):
+        from qualtran.bloqs.basic_gates import CNOT
+
+        return CNOT()
 
     return _to_qt_bloq
 
