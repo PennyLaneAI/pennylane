@@ -22,7 +22,6 @@ from typing import Callable, Iterable, Sequence, Union
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
 
-import pennylane as qml
 from pennylane import math
 from pennylane.wires import Wires
 
@@ -402,7 +401,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     original_indices = np.array(range(N))
     expanded_tensor = math.moveaxis(expanded_tensor, tuple(original_indices), tuple(wire_indices))
 
-    return qml.math.reshape(expanded_tensor, (qudit_order**M,))
+    return math.reshape(expanded_tensor, (qudit_order**M,))
 
 
 def convert_to_su2(U, return_global_phase=False):
@@ -422,7 +421,7 @@ def convert_to_su2(U, return_global_phase=False):
 
     """
     # Compute the determinant
-    U = qml.math.cast(U, "complex128")
+    U = math.cast(U, "complex128")
     batch_size = get_batch_size(U, (2, 2), 4)
     with np.errstate(divide="ignore", invalid="ignore"):
         determinant = math.linalg.det(U)
@@ -454,7 +453,7 @@ def convert_to_su4(U, return_global_phase=False):
 
     """
     # Compute the determinant
-    U = qml.math.cast(U, "complex128")
+    U = math.cast(U, "complex128")
     batch_size = get_batch_size(U, (4, 4), 16)
     with np.errstate(divide="ignore", invalid="ignore"):
         determinant = math.linalg.det(U)
