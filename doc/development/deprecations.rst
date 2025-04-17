@@ -35,12 +35,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
-  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
   and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
   keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
@@ -104,6 +98,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``mcm_config`` keyword argument to ``qml.execute`` has been removed.
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 

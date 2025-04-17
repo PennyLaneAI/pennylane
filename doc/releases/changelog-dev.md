@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `mcm_method` keyword argument in `qml.execute` has been removed.
+  [(#7301)](https://github.com/PennyLaneAI/pennylane/pull/7301)
+
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
@@ -60,8 +63,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
-Lillian Frederiksen
+Guillermo Alonso-Linaje,
+Lillian Frederiksen,
+Pietropaolo Frisoni,
 Andrija Paurevic,
 Korbinian Kottmann,
 Christina Lee

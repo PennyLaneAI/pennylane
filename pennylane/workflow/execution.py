@@ -54,7 +54,6 @@ def execute(
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
-    mcm_config="unset",
     config="unset",
     inner_transform="unset",
 ) -> ResultBatch:
@@ -96,8 +95,6 @@ def execute(
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
-            and ``mcm_method`` and will be removed in v0.42.
         config="unset": **DEPRECATED**. This keyword argument has been deprecated and
             will be removed in v0.42.
         inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
@@ -180,14 +177,6 @@ def execute(
             "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
             qml.PennyLaneDeprecationWarning,
         )
-
-    if mcm_config != "unset":
-        warn(
-            "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        mcm_method = mcm_config.mcm_method
-        postselect_mode = mcm_config.postselect_mode
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
