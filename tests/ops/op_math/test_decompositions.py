@@ -970,7 +970,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 20
+        assert len(obtained_decomposition) == 11
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -993,7 +993,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 17
+        assert len(obtained_decomposition) == 9
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1014,7 +1014,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 15
+        assert len(obtained_decomposition) == 6
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -1035,7 +1035,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 9
+        assert len(obtained_decomposition) == 3
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:

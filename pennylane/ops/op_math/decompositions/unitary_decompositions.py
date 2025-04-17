@@ -17,9 +17,9 @@
 import warnings
 
 import numpy as np
+import scipy.sparse as sp
 
-import pennylane as qml
-from pennylane import math, register_resources
+from pennylane import math, ops, queuing, register_resources, wires
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
@@ -29,6 +29,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
+from pennylane.operation import DecompositionUndefinedError
 
 
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
@@ -78,17 +79,22 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
             f"Value {rotations} passed to rotations is either invalid or currently unsupported."
         )
 
+    # It's fine to convert to dense here because the matrix is 2x2, and the decomposition
+    # only consists of single-qubit rotation gates with a scalar rotation angle.
+    if sp.issparse(U):
+        U = U.todense()
+
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-    with qml.queuing.AnnotatedQueue() as q:
-        supported_rotations[rotations](U, wires=qml.wires.Wires(wire))
+    with queuing.AnnotatedQueue() as q:
+        supported_rotations[rotations](U, wires=wires.Wires(wire))
         if return_global_phase:
-            qml.GlobalPhase(-global_phase)
+            ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = qml.queuing.QueuingManager.active_context()
+    current_queue = queuing.QueuingManager.active_context()
     if current_queue is not None:
         for op in q.queue:  # pragma: no cover
-            qml.apply(op, context=current_queue)
+            queuing.apply(op, context=current_queue)
 
     return q.queue
 
@@ -170,7 +176,7 @@ def two_qubit_decomposition(U, wires):
 
     """
 
-    if qml.math.requires_grad(U):
+    if math.requires_grad(U):
         warnings.warn(
             "The two-qubit decomposition may not be differentiable when the input "
             "unitary depends on trainable parameters.",
@@ -178,10 +184,13 @@ def two_qubit_decomposition(U, wires):
             stacklevel=2,
         )
 
-    with qml.queuing.AnnotatedQueue() as q:
+    if sp.issparse(U):
+        raise DecompositionUndefinedError("two_qubit_decomposition does not accept sparse matrics.")
+
+    with queuing.AnnotatedQueue() as q:
         U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
-        num_cnots = 3 if qml.math.is_abstract(U) else _compute_num_cnots(U)
-        additional_phase = qml.cond(
+        num_cnots = 3 if math.is_abstract(U) else _compute_num_cnots(U)
+        additional_phase = ops.cond(
             num_cnots == 0,
             _decompose_0_cnots,
             _decompose_3_cnots,
@@ -191,13 +200,13 @@ def two_qubit_decomposition(U, wires):
             ],
         )(U, wires=wires)
         total_phase = initial_phase + additional_phase
-        qml.GlobalPhase(-total_phase)
+        ops.GlobalPhase(-total_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = qml.queuing.QueuingManager.active_context()
+    current_queue = queuing.QueuingManager.active_context()
     if current_queue is not None:
         for op in q.queue:  # pragma: no cover
-            qml.apply(op, context=current_queue)
+            queuing.apply(op, context=current_queue)
 
     return q.queue
 
@@ -224,7 +233,7 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
         def _impl(U, wires, **__):
             U, global_phase = math.convert_to_su2(U, return_global_phase=True)
             self._naive_rule(U, wires=wires)
-            qml.GlobalPhase(-global_phase)
+            ops.GlobalPhase(-global_phase)
 
         return _impl
 
@@ -234,70 +243,70 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
         def _resource_fn(num_wires):
             if num_wires != 1:
                 raise DecompositionNotApplicable
-            return self._naive_resources() | {qml.GlobalPhase: 1}
+            return self._naive_resources() | {ops.GlobalPhase: 1}
 
         return _resource_fn
 
 
 def _su2_rot_resource():
     return {
-        qml.Rot: 1,
-        qml.RZ: 1,  # RZ is produced in a special case, which has to be accounted for.
+        ops.Rot: 1,
+        ops.RZ: 1,  # RZ is produced in a special case, which has to be accounted for.
     }
 
 
 def _su2_rot_decomp(U, wires, **__):
     phi, theta, omega = zyz_rotation_angles(U)
-    qml.cond(
+    ops.cond(
         math.allclose(U[..., 0, 1], 0.0),
-        lambda: qml.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
-        lambda: qml.Rot(phi, theta, omega, wires=wires[0]),
+        lambda: ops.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
+        lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
     )()
 
 
 def _su2_zyz_resource():
-    return {qml.RZ: 2, qml.RY: 1}
+    return {ops.RZ: 2, ops.RY: 1}
 
 
 def _su2_zyz_decomp(U, wires, **__):
     phi, theta, omega = zyz_rotation_angles(U)
-    qml.RZ(phi, wires=wires[0])
-    qml.RY(theta, wires=wires[0])
-    qml.RZ(omega, wires=wires[0])
+    ops.RZ(phi, wires=wires[0])
+    ops.RY(theta, wires=wires[0])
+    ops.RZ(omega, wires=wires[0])
 
 
 def _su2_xyx_resource():
-    return {qml.RX: 2, qml.RY: 1}
+    return {ops.RX: 2, ops.RY: 1}
 
 
 def _su2_xyx_decomp(U, wires, **__):
     """Decomposes a QubitUnitary into a sequence of XYX rotations."""
     phi, theta, omega = xyx_rotation_angles(U)
-    qml.RX(phi, wires=wires[0])
-    qml.RY(theta, wires=wires[0])
-    qml.RX(omega, wires=wires[0])
+    ops.RX(phi, wires=wires[0])
+    ops.RY(theta, wires=wires[0])
+    ops.RX(omega, wires=wires[0])
 
 
 def _su2_xzx_resource():
-    return {qml.RX: 2, qml.RZ: 1}
+    return {ops.RX: 2, ops.RZ: 1}
 
 
 def _su2_xzx_decomp(U, wires, **__):
     phi, theta, omega = xzx_rotation_angles(U)
-    qml.RX(phi, wires=wires[0])
-    qml.RZ(theta, wires=wires[0])
-    qml.RX(omega, wires=wires[0])
+    ops.RX(phi, wires=wires[0])
+    ops.RZ(theta, wires=wires[0])
+    ops.RX(omega, wires=wires[0])
 
 
 def _su2_zxz_resource():
-    return {qml.RZ: 2, qml.RX: 1}
+    return {ops.RZ: 2, ops.RX: 1}
 
 
 def _su2_zxz_decomp(U, wires, **__):
     phi, theta, omega = zxz_rotation_angles(U)
-    qml.RZ(phi, wires=wires[0])
-    qml.RX(theta, wires=wires[0])
-    qml.RZ(omega, wires=wires[0])
+    ops.RZ(phi, wires=wires[0])
+    ops.RX(theta, wires=wires[0])
+    ops.RZ(omega, wires=wires[0])
 
 
 rot_decomp_rule = OneQubitUnitaryDecomposition(_su2_rot_decomp, _su2_rot_resource)
@@ -351,15 +360,15 @@ def _compute_num_cnots(U):
     """
 
     U = math.dot(E_dag, math.dot(U, E))
-    gamma = math.dot(U, U.T)
+    gamma = math.dot(U, math.T(U))
     trace = math.trace(gamma)
     g2 = math.dot(gamma, gamma)
     id4 = math.eye(4)
 
     # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
-    return qml.cond(
+    return ops.cond(
         # Case: 0 CNOTs (tensor product), the trace is +/- 4
-        math.allclose(trace, 4, atol=1e-7) & math.allclose(trace, -4, atol=1e-7),
+        math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7),
         lambda: 0,
         # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
         lambda: 3,
@@ -453,8 +462,8 @@ def _decompose_0_cnots(U, wires):
     A, B = math.decomposition.su2su2_to_tensor_products(U)
     A, phaseA = math.convert_to_su2(A, return_global_phase=True)
     B, phaseB = math.convert_to_su2(B, return_global_phase=True)
-    qml.QubitUnitary(A, wires=wires[0])
-    qml.QubitUnitary(B, wires=wires[1])
+    ops.QubitUnitary(A, wires=wires[0])
+    ops.QubitUnitary(B, wires=wires[1])
     return phaseA + phaseB
 
 
@@ -486,7 +495,7 @@ def _decompose_1_cnot(U, wires):
 
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
     # eigenvalues in ascending order.
-    _, p = math.linalg.eigh(qml.math.real(uuT))
+    _, p = math.linalg.eigh(math.real(uuT))
 
     # Fix the determinant if necessary so that p is in SO(4)
     p = math.dot(p, math.diag([1, 1, 1, math.sign(math.linalg.det(p))]))
@@ -515,7 +524,7 @@ def _decompose_1_cnot(U, wires):
         ]
     )
 
-    G = math.dot(p, Q.T)
+    G = math.dot(p, math.T(Q))
     H = math.dot(math.conj(math.T(V)), math.dot(math.T(G), u))
 
     # We now use the magic basis to convert G, H to SU(2) x SU(2)
@@ -528,11 +537,11 @@ def _decompose_1_cnot(U, wires):
 
     # Recover the operators in the decomposition; note that because of the
     # initial SWAP, we exchange the order of A and B
-    qml.QubitUnitary(C, wires=wires[0])
-    qml.QubitUnitary(D, wires=wires[1])
-    qml.CNOT(wires=wires)
-    qml.QubitUnitary(A, wires=wires[1])
-    qml.QubitUnitary(B, wires=wires[0])
+    ops.QubitUnitary(C, wires=wires[0])
+    ops.QubitUnitary(D, wires=wires[1])
+    ops.CNOT(wires=wires)
+    ops.QubitUnitary(A, wires=wires[1])
+    ops.QubitUnitary(B, wires=wires[0])
 
     return -np.pi / 4
 
@@ -564,9 +573,9 @@ def _decompose_2_cnots(U, wires):
 
     # need to perturb x by 5 precision to avoid a discontinuity at a special case.
     # see https://github.com/PennyLaneAI/pennylane/issues/5308
-    precision = qml.math.finfo(delta.dtype).eps
-    RZd = qml.RZ.compute_matrix(math.cast_like(delta + 5 * precision, 1j))
-    RXp = qml.RX.compute_matrix(phi)
+    precision = math.finfo(delta.dtype).eps
+    RZd = ops.RZ.compute_matrix(math.cast_like(delta + 5 * precision, 1j))
+    RXp = ops.RX.compute_matrix(phi)
     inner_u = math.kron(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
@@ -576,14 +585,14 @@ def _decompose_2_cnots(U, wires):
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, V)
 
-    qml.QubitUnitary(C, wires[0])
-    qml.QubitUnitary(D, wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.RZ(delta, wires=wires[0])
-    qml.RX(phi, wires=wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.QubitUnitary(A, wires[0])
-    qml.QubitUnitary(B, wires[1])
+    ops.QubitUnitary(C, wires[0])
+    ops.QubitUnitary(D, wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.RZ(delta, wires=wires[0])
+    ops.RX(phi, wires=wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.QubitUnitary(A, wires[0])
+    ops.QubitUnitary(B, wires[1])
 
     return 0.0
 
@@ -630,9 +639,9 @@ def _decompose_3_cnots(U, wires):
     # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
     # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
 
-    RZd = qml.RZ.compute_matrix(math.cast_like(delta, 1j))
-    RYb = qml.RY.compute_matrix(beta)
-    RYa = qml.RY.compute_matrix(alpha)
+    RZd = ops.RZ.compute_matrix(math.cast_like(delta, 1j))
+    RYb = ops.RY.compute_matrix(beta)
+    RYa = ops.RY.compute_matrix(alpha)
 
     V_mats = [
         CNOT10,
@@ -662,16 +671,16 @@ def _decompose_3_cnots(U, wires):
     # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
     # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
 
-    qml.QubitUnitary(C, wires[0])
-    qml.QubitUnitary(D, wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.RZ(delta, wires=wires[0])
-    qml.RY(beta, wires=wires[1])
-    qml.CNOT(wires=wires)
-    qml.RY(alpha, wires=wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.QubitUnitary(A, wires[1])
-    qml.QubitUnitary(B, wires[0])
+    ops.QubitUnitary(C, wires[0])
+    ops.QubitUnitary(D, wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.RZ(delta, wires=wires[0])
+    ops.RY(beta, wires=wires[1])
+    ops.CNOT(wires=wires)
+    ops.RY(alpha, wires=wires[1])
+    ops.CNOT(wires=[wires[1], wires[0]])
+    ops.QubitUnitary(A, wires[1])
+    ops.QubitUnitary(B, wires[0])
 
     return -np.pi / 4
 
@@ -682,14 +691,14 @@ def _two_qubit_resource(num_wires):
         raise DecompositionNotApplicable
     # Assume the 3-CNOT case.
     return {
-        resource_rep(qml.QubitUnitary, num_wires=1): 4,
-        qml.CNOT: 3,
-        qml.RZ: 1,
-        qml.RY: 2,
+        resource_rep(ops.QubitUnitary, num_wires=1): 4,
+        ops.CNOT: 3,
+        ops.RZ: 1,
+        ops.RY: 2,
         # The three-CNOT case does not involve an RX, but an RX must be accounted
         # for in case the two-CNOT case is chosen at runtime.
-        qml.RX: 1,
-        qml.GlobalPhase: 1,
+        ops.RX: 1,
+        ops.GlobalPhase: 1,
     }
 
 
@@ -699,7 +708,7 @@ def two_qubit_decomp_rule(U, wires, **__):
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
     num_cnots = _compute_num_cnots(U)
-    additional_phase = qml.cond(
+    additional_phase = ops.cond(
         num_cnots == 0,
         _decompose_0_cnots,
         _decompose_3_cnots,
@@ -709,4 +718,4 @@ def two_qubit_decomp_rule(U, wires, **__):
         ],
     )(U, wires=wires)
     total_phase = initial_phase + additional_phase
-    qml.GlobalPhase(-total_phase)
+    ops.GlobalPhase(-total_phase)

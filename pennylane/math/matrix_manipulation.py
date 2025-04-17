@@ -421,7 +421,6 @@ def convert_to_su2(U, return_global_phase=False):
             equivalent and the second, the global phase.
 
     """
-
     # Compute the determinant
     U = qml.math.cast(U, "complex128")
     batch_size = get_batch_size(U, (2, 2), 4)
