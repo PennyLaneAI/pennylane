@@ -20,7 +20,7 @@ from functools import reduce
 from typing import Callable, Iterable, Sequence, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix, eye, issparse, kron
+from scipy.sparse import csr_matrix, eye, kron
 
 import pennylane as qml
 from pennylane import math

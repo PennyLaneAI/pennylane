@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import scipy.sparse as sp
 
-from pennylane import math, ops, queuing, register_resources, wires
+from pennylane import math, ops, queuing, register_resources
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
@@ -30,6 +30,7 @@ from pennylane.math.decomposition import (
     zyz_rotation_angles,
 )
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.wires import Wires
 
 
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
@@ -86,7 +87,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
     with queuing.AnnotatedQueue() as q:
-        supported_rotations[rotations](U, wires=wires.Wires(wire))
+        supported_rotations[rotations](U, wires=Wires(wire))
         if return_global_phase:
             ops.GlobalPhase(-global_phase)
 

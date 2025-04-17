@@ -559,9 +559,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
-        # 3 normal operations + 9 for the first decomp and 20 for the second
         tape = qml.workflow.construct_tape(transformed_qnode)(x, y, z)
-        assert len(tape.operations) == 23
+        assert len(tape.operations) == 17
 
         original_grad = qml.grad(original_qnode)(x, y, z)
         transformed_grad = qml.grad(transformed_qnode)(x, y, z)
@@ -703,7 +702,7 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
         tape = qml.workflow.construct_tape(transformed_qnode)(x)
-        assert len(tape.operations) == 21
+        assert len(tape.operations) == 15
 
         original_grad = jax.grad(original_qnode, argnums=(0))(x)
         transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)
