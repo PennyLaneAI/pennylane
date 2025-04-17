@@ -143,18 +143,14 @@ class TestFidelityMath:
         """Test that the two states must act on the same number of wires"""
         state0 = [0, 1, 0, 0]
         state1 = [1, 0]
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.fidelity_statevector(state0, state1, check_state=True)
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
         state0 = np.diag([0, 1, 0, 0])
         state1 = [[1, 0], [0, 0]]
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The two states must have the same number of wires"
-        ):
+        with pytest.raises(ValueError, match="The two states must have the same number of wires"):
             qml.math.fidelity(state0, state1, check_state=True)
 
     @pytest.mark.parametrize("check_state", check_state)

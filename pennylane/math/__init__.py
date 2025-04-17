@@ -113,6 +113,17 @@ from .interface_utils import (
 from .grad import grad, jacobian
 
 sum = ar.numpy.sum
+conj = ar.numpy.conj
+transpose = ar.numpy.transpose
+sqrt = ar.numpy.sqrt
+zeros = ar.numpy.zeros
+moveaxis = ar.numpy.moveaxis
+mean = ar.numpy.mean
+round = ar.numpy.round
+shape = ar.numpy.shape
+flatten = ar.numpy.flatten
+reshape = ar.numpy.reshape
+multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
