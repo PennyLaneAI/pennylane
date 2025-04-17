@@ -23,7 +23,6 @@ import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
 
 from pennylane import math
-from pennylane.wires import Wires
 
 
 def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_format="csr"):
@@ -297,8 +296,8 @@ def _permutation_sparse_matrix(expanded_wires: Sequence, wire_order: Sequence) -
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Iterable[tuple[np.ndarray, Wires]], reduce_func: Callable
-) -> tuple[np.ndarray, Wires]:
+    mats_and_wires_gen: Iterable[tuple[np.ndarray, Sequence]], reduce_func: Callable
+) -> tuple[np.ndarray, Sequence]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
     generator, from left to right, reducing the sequence to a tuple containing a single
     matrix and the wires it acts on.
