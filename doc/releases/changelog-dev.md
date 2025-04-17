@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.gradients.hamiltonian_grad` function has been removed.
+  [(#7302)](https://github.com/PennyLaneAI/pennylane/pull/7302)
+
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
@@ -61,7 +64,8 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
-Lillian Frederiksen
+Lillian Frederiksen,
+Pietropaolo Frisoni,
 Andrija Paurevic,
 Korbinian Kottmann,
 Christina Lee
