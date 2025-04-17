@@ -138,7 +138,7 @@ class TestSupportsDerivatives:
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
-        assert dev.supports_vjp(config) is False
+        assert dev.supports_vjp(config) is True
 
         qs = qml.tape.QuantumScript([], [measurement])
         assert dev.supports_derivatives(config, qs) is True

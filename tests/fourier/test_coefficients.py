@@ -95,7 +95,7 @@ class TestFourierCoefficientSingleVariable:
         # Testing with a single-entry sequence of degrees
         coeffs = coefficients(partial_func, 1, (degree,))
 
-        assert 1 == 2
+        assert np.allclose(coeffs, expected_coeffs)
 
 
 dev_1 = qml.device("default.qubit", wires=1)

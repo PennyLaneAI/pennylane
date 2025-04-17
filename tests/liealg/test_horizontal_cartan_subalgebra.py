@@ -61,7 +61,7 @@ class TestCartanSubalgebra:
 
         new_adj_re = qml.structure_constants(newg)
 
-        assert 1 == 2
+        assert np.allclose(new_adj_re, new_adj)
 
     @pytest.mark.parametrize("start_idx", [0, 2])
     def test_horizontal_cartan_subalgebra_matrix_input(self, start_idx):
