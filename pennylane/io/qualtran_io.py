@@ -43,21 +43,27 @@ if TYPE_CHECKING:
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
 def _get_op_call_graph():
-
+    
     @singledispatch
     def _op_call_graph(op):
-        return ToBloq(op)
+        return None
 
     @_op_call_graph.register
     def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation):
         return {
             ToBloq(op.hyperparameters["unitary"]): 1,
-            ToBloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires)) - 1,
+            ToBloq(op.hyperparameters["unitary"]).controlled(): (
+                2 ** len(op.estimation_wires)
+            )
+            - 1,
             ToBloq(qml.adjoint(qml.templates.QFT(wires=op.estimation_wires))): 1,
         }
+    
+    @_op_call_graph.register
+    def _(op: qml.templates.subroutines.qubitization.Qubitization):
+        return None
 
     return _get_op_call_graph
-
 
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
