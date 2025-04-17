@@ -611,7 +611,7 @@ class TestTwoQubitUnitaryDifferentiability:
         tape = qml.workflow.construct_tape(transformed_qnode)(
             transformed_x, transformed_y, transformed_z
         )
-        assert len(tape.operations) == 32
+        assert len(tape.operations) == 17
 
         original_result.backward()
         transformed_result.backward()
@@ -657,7 +657,7 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_result, transformed_result)
 
         tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x)
-        assert len(tape.operations) == 30
+        assert len(tape.operations) == 15
 
         with tf.GradientTape() as tape:
             loss = original_qnode(x)
