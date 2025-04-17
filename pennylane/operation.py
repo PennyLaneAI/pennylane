@@ -730,8 +730,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         else:
             kwargs["n_wires"] = 1
 
-        if any(isinstance(a, jax.stages.ArgInfo) for a in args):
-            return cls._primitive.abstract_eval(*args, **kwargs)
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self) -> "Operator":
