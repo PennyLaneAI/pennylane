@@ -85,10 +85,11 @@ def first_quantized_trotter(epsilons, p_fail, N, eta, Omega, nuclei):
     norm_U = eta**2/(Omega**(1/3))*sum_1_nu
     norm_T = (2*np.pi**2/Omega**(2/3))*IT(N**(1/3))
 
-    r = np.sqrt(2*t**3/epsilon_HS *(norm_T**2*(norm_U + norm_V) + norm_T*(norm_U + norm_V)**2))
+    #r = np.sqrt(2*t**3/epsilon_HS *(norm_T**2*(norm_U + norm_V) + norm_T*(norm_U + norm_V)**2))
+    r = np.sqrt(2*t**3/epsilon_HS * ((N*eta)**(1/3) + (N/eta)**2/3))
 
     n = np.log2(N**(1/3))
-    
+
     #todo: from TFermion
     def sum_cost(n):
         return 4*n
@@ -111,7 +112,7 @@ def first_quantized_trotter(epsilons, p_fail, N, eta, Omega, nuclei):
 
 epsilons = (1e-3, 1e-3, 1e-3)
 p_fail = 1e-3
-N = 1e3
+N = 1e6
 eta = 1e2
 Omega = eta
 nuclei = 5
