@@ -431,25 +431,29 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     QNode arguments into account.
 
     Args:
-        qjac: The jacobian of the purely quantum component.
-        cjac: The jacobian of of the purely classical component
-        tape (QuantumScript): the corresponding tape. Used to determine the number of measurements, number of
-            trainable parameters, and existence of partitioned shots.
+        qjac: The Jacobian of the purely quantum component.
+        cjac: The Jacobian of the purely classical component.
+        tape (QuantumScript): the corresponding tape. Used to determine the number of measurements, the number of
+            trainable parameters, and the existence of partitioned shots.
+
 
     Returns:
-        The complete jacobian
+        The complete Jacobian.
+
 
     This function can be used as the ``classical_cotransform`` component of a :func:`~pennylane.transform` for
     a first-order derivative.
 
     The ``qjac`` corresponds to the output of the standard postprocessing of a gradient transform. The ``cjac``
-    it the derivatives of the tape parameters with respect to the qnode arguments.
+    is the derivative of the tape parameters with respect to the qnode arguments.
 
-    >>> @qml.qnode(dev = qml.device('default.qubit'))
+
+    >>> @qml.qnode(qml.device('default.qubit'))
     ... def c(x):
     ...     qml.RX(x[0]**2, 0)
     ...     qml.RY(x[1], 0)
     ...     return qml.expval(qml.Z(0)), qml.expval(qml.Y(0))
+
     >>> x = qml.numpy.array([2.0, 3.0])
     >>> tape = qml.workflow.construct_tape(c)(x)
     >>> cjac = qml.gradients.classical_jacobian(c)(x)

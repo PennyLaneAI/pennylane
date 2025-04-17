@@ -95,7 +95,7 @@ _jac_map = {
 def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
-    While differentiating this again for each tape in the batch may be less than efficient for large batches,
+    While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
     tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
