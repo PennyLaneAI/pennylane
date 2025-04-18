@@ -210,8 +210,7 @@ unchecked = true
 
 [[modules]]
 path = "pennylane.qcut"
-depends_on = ["pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.wires", "pennylane.measurements", "pennylane.numpy", "pennylane.typing", "pennylane.transforms", "pennylane", "pennylane.tape", "pennylane.pauli"]
-unchecked = true
+layer = "tertiary"
 
 [[modules]]
 path = "pennylane.qchem"
