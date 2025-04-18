@@ -972,11 +972,7 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 11
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         # We check with a slightly great tolerance threshold here simply because the
@@ -995,11 +991,7 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 9
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1016,11 +1008,7 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 6
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1037,11 +1025,7 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 3
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1063,11 +1047,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1087,11 +1067,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1109,11 +1085,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1133,11 +1105,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1155,11 +1123,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1179,11 +1143,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)

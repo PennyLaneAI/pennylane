@@ -564,10 +564,14 @@ def _decompose_2_cnots(U, wires):
     # https://arxiv.org/abs/quant-ph/0308045
 
     x = math.angle(evs[0])
-    y = math.angle(evs[1])
 
     # If it was the conjugate, grab a different eigenvalue.
-    y = math.cond(math.allclose(x, -y), lambda: math.angle(evs[2]), lambda: y, ())
+    y = math.cond(
+        math.allclose(evs[0], math.conj(evs[1])),
+        lambda: math.angle(evs[2]),
+        lambda: math.angle(evs[1]),
+        (),
+    )
 
     delta = (x + y) / 2
     phi = (x - y) / 2
