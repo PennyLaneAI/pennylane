@@ -1,3 +1,5 @@
+"""Example script to print ExecutionConfig output for visual inspection."""
+
 import pennylane as qml
 from pennylane.workflow import construct_execution_config
 

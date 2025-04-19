@@ -43,7 +43,8 @@ class MCMConfig:
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+            raise ValueError(
+                f"Invalid postselection mode '{self.postselect_mode}'.")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -135,6 +136,15 @@ class ExecutionConfig:
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
+
+    def __str__(self):
+        """Pretty print the execution config in constructor-style format."""
+        field_strs = []
+        for k, v in self.__dict__.items():
+            field_strs.append(f"    {k}={repr(v)},")
+        return "ExecutionConfig(\n" + "\n".join(field_strs) + "\n)"
+
+    __repr__ = __str__
 
 
 DefaultExecutionConfig = ExecutionConfig()
