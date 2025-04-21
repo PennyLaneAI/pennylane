@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices.preprocess import validate_device_wires
 from pennylane.transforms.measurements_from_computational_basis import (
     measurements_from_computational_basis,
 )
@@ -28,12 +29,11 @@ from pennylane.transforms.measurements_from_computational_basis import (
 class TestTransform:
     """Tests for transforms modifying measurements"""
 
-    @pytest.mark.parametrize("from_counts", (True,))
+    @pytest.mark.parametrize("from_counts", (True, False))
     def test_measurements_from_computational_basis(self, from_counts):
-        """Test the measurment_from_counts transform with a single measurement as part of
-        the Catalyst pipeline."""
+        """Test the measurements_from_computational_basis transform with a single measurement"""
 
-        dev = qml.device("lightning.qubit", wires=4, shots=3000)
+        dev = qml.device("lightning.qubit", wires=4, shots=1000)
 
         @qml.qnode(dev)
         def circuit(theta: float):
@@ -51,6 +51,7 @@ class TestTransform:
         assert np.allclose(expected, res, atol=0.05)
 
     # pylint: disable=unnecessary-lambda
+    @pytest.mark.parametrize("from_counts", (True, False))
     @pytest.mark.parametrize(
         "input_measurement, expected_res",
         [
@@ -76,19 +77,20 @@ class TestTransform:
         ],
     )
     @pytest.mark.parametrize("shots", [3000, (3000, 4000), (3000, 3500, 4000)])
-    def test_measurement_from_samples_single_measurement_analytic(
+    def test_measurements_from_computational_basis_analytic(
         self,
+        from_counts,
         input_measurement,
         expected_res,
         shots,
     ):
-        """Test the measurement_from_samples transform with a single measurements as part of the
-        Catalyst pipeline, for measurements whose outcome can be directly compared to an expected
-        analytic result."""
+        """Test the test_measurements_from_computational_basis transform with a single measurement,
+        for measurements whose outcome can be directly compared to an expected analytic result."""
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
 
-        @partial(measurements_from_computational_basis, from_counts=True)
+        @partial(measurements_from_computational_basis, from_counts=from_counts)
+        @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
         def circuit(theta: float):
             qml.RX(theta, 0)

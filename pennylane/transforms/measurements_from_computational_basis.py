@@ -79,9 +79,9 @@ def postprocessing_samples(results, tape, measured_wires):
     results_processed = []
     for m in tape.measurements:
         if len(tape.shots.shot_vector) > 1:
-            res = tuple(m.process_samples(s, measured_wires) for s in samples)
+            res = tuple(m.process_samples(_unsqueezed(s), measured_wires) for s in samples)
         else:
-            res = m.process_samples(samples, measured_wires)
+            res = m.process_samples(_unsqueezed(samples), measured_wires)
         results_processed.append(res)
 
     if len(tape.measurements) == 1:
@@ -89,6 +89,22 @@ def postprocessing_samples(results, tape, measured_wires):
     else:
         results_processed = tuple(results_processed)
     return results_processed
+
+
+def _unsqueezed(samples):
+    """If the samples have been squeezed to remove the 'extra' dimension in the case where
+    shots=1 or wires=1, unsqueeze to restore the raw samples format expected by mp.process_samples
+    """
+
+    # Before we start post-processing the transforms, we squeeze out the extra dimension in samples
+    # where wire=1 or shots=1 (this is not done in Catalyst). This makes it incompatible with
+    # the process_samples method on the measurement processes.
+    # this would be fixed by waiting to squeeze until the very end before returning
+    # so that we don't have to handle special cases regarding shapes in our processing pipeline
+
+    if len(samples.shape) == 1:
+        samples = qml.math.array([[s] for s in samples], like=samples)
+    return samples
 
 
 def postprocessing_counts(results, tape, measured_wires):
