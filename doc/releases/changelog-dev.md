@@ -19,6 +19,7 @@
 
 * `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
   any number of wires.
+  [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
 
 <h3>Breaking changes 💔</h3>
 
