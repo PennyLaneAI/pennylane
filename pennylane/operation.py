@@ -1906,7 +1906,7 @@ class Operation(Operator):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(gen, k=2**self.num_wires)
+                eigvals = qml.eigvals(gen, k=2 ** len(self.wires))
 
             eigvals = tuple(np.round(eigvals, 8))
             return [qml.gradients.eigvals_to_frequencies(eigvals)]
