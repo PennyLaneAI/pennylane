@@ -19,7 +19,7 @@ from enum import Enum
 
 from .dask import DaskExec
 from .mpi import MPICommExec, MPIPoolExec
-from .native import MPPoolExec, ProcPoolExec, ThreadPoolExec
+from .native import MPPoolExec, ProcPoolExec, SerialExec, ThreadPoolExec
 
 
 class ExecBackends(Enum):
@@ -30,6 +30,7 @@ class ExecBackends(Enum):
     MP_Pool = MPPoolExec
     CF_ProcPool = ProcPoolExec
     CF_ThreadPool = ThreadPoolExec
+    Serial = SerialExec
     Dask = DaskExec
     MPI_PoolEx = MPIPoolExec
     MPI_CommEx = MPICommExec

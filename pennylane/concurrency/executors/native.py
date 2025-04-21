@@ -114,16 +114,13 @@ class SerialExec(PyNativeExec):
     """
 
     class StdLibWrapper:
-        "Internal utility class for use with the executor API"
+        "Internal utility class for use with the executor API. All execution is local within the calling Python process."
 
         def __init__(self, *args, **kwargs):
             pass
 
         def submit(self, fn: Callable, *args, **kwargs):
-            results = []
-            for t_args in zip(*args):
-                results.append(fn(*t_args, **kwargs))
-            return results
+            return fn(*args, **kwargs)
 
         def map(self, fn: Callable, *args: Sequence[Any]):
             return list(map(fn, *args))
@@ -131,8 +128,20 @@ class SerialExec(PyNativeExec):
         def starmap(self, fn: Callable, data: Sequence[tuple]):
             return list(starmap(fn, data))
 
+        def close(self):
+            pass
+
     def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
+        self._cfg = self.LocalConfig(
+            submit_fn="submit",
+            map_fn="map",
+            starmap_fn="starmap",
+            close_fn="close",
+            submit_unpack=True,
+            map_unpack=True,
+            blocking=True,
+        )
 
     def _exec_backend(cls):
         return SerialExec.StdLibWrapper

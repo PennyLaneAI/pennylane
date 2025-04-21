@@ -20,7 +20,12 @@ import pytest
 
 import pennylane as qml
 from pennylane.concurrency.executors import ExecBackends, create_executor
-from pennylane.concurrency.executors.native import MPPoolExec, ProcPoolExec, ThreadPoolExec
+from pennylane.concurrency.executors.native import (
+    MPPoolExec,
+    ProcPoolExec,
+    SerialExec,
+    ThreadPoolExec,
+)
 
 
 def custom_func1(arg0):
@@ -45,6 +50,7 @@ def custom_func4(arg0, arg1, arg2):
         (ExecBackends.MP_Pool, MPPoolExec),
         (ExecBackends.CF_ProcPool, ProcPoolExec),
         (ExecBackends.CF_ThreadPool, ThreadPoolExec),
+        (ExecBackends.Serial, SerialExec),
     ],
 )
 class TestLocalExecutor:
