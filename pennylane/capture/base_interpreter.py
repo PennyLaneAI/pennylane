@@ -678,7 +678,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         consts = invals[const_slice]
         if math.is_abstract(pred):
             raise NotImplementedError(
-                f"{self}  does not yet support jitting cond with abstract conditions."
+                f"{self} does not yet support jitting cond with abstract conditions."
             )
         if pred and jaxpr is not None:
             return copy(self).eval(jaxpr, consts, *args)
