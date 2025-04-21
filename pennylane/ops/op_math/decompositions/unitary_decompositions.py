@@ -19,8 +19,8 @@ import warnings
 import numpy as np
 import scipy.sparse as sp
 
-from pennylane import math, ops, queuing, register_resources
-from pennylane.decomposition.decomposition_rule import DecompositionRule
+from pennylane import capture, compiler, math, ops, queuing
+from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
 from pennylane.math.decomposition import (
@@ -189,19 +189,27 @@ def two_qubit_decomposition(U, wires):
         raise DecompositionUndefinedError("two_qubit_decomposition does not accept sparse matrics.")
 
     with queuing.AnnotatedQueue() as q:
-        U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
-        num_cnots = 3 if math.is_abstract(U) else _compute_num_cnots(U)
-        additional_phase = ops.cond(
-            num_cnots == 0,
-            _decompose_0_cnots,
-            _decompose_3_cnots,
-            elifs=[
-                (num_cnots == 1, _decompose_1_cnot),
-                (num_cnots == 2, _decompose_2_cnots),
-            ],
-        )(U, wires=wires)
-        total_phase = initial_phase + additional_phase
-        ops.GlobalPhase(-total_phase)
+
+        U, global_phase = math.convert_to_su4(U, return_global_phase=True)
+
+        if math.is_abstract(U) and not (capture.enabled() or compiler.active()):
+            # Always use the 3-CNOT case when in jax.jit, because it is not compatible
+            # with conditional logic. However, we want to still take advantage of the
+            # more efficient decompositions in a qjit or program capture context.
+            global_phase += _decompose_3_cnots(U, wires=wires)
+        else:
+            num_cnots = _compute_num_cnots(U)
+            global_phase += ops.cond(
+                num_cnots == 0,
+                _decompose_0_cnots,
+                _decompose_3_cnots,
+                elifs=[
+                    (num_cnots == 1, _decompose_1_cnot),
+                    (num_cnots == 2, _decompose_2_cnots),
+                ],
+            )(U, wires=wires)
+
+        ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
