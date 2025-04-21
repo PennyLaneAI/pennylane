@@ -226,7 +226,6 @@ import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
-from warnings import warn
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -301,39 +300,29 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
 # =============================================================================
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", PennyLaneDeprecationWarning)
+class _WiresEnum(IntEnum):
+    """Integer enumeration class
+    to represent the number of wires
+    an operation acts on.
 
-    class _WiresEnum(IntEnum):
-        """Integer enumeration class
-        to represent the number of wires
-        an operation acts on.
+    .. warning:: This class is
+    """
 
-        .. warning:: This class is
-        """
+    AnyWires = -1
+    """A enumeration that represents that an operator can act on any number of wires.
 
-        AnyWires = -1
-        """A enumeration that represents that an operator can act on any number of wires.
+    .. warning::
 
-        .. warning::
+        **Deprecated**: Operator.num_wires = None should be used instead.
+    """
 
-            **Deprecated**: Operator.num_wires = None should be used instead.
-        """
+    AllWires = -2
+    """A enumeration that represents that an operator acts on all wires in the system.
 
-        AllWires = -2
-        """A enumeration that represents that an operator acts on all wires in the system.
+    .. warning::
 
-        .. warning::
-
-            **Deprecated**: Operator.num_wires = None should be used instead.
-        """
-
-        def __getattribute__(self, item):
-            warn(
-                "AnyWires and AllWires are now deprecated. Please just use None to indicate that there is no specific number of wires.",
-                PennyLaneDeprecationWarning,
-            )
-            return IntEnum.__getattribute__(self, item)
+        **Deprecated**: Operator.num_wires = None should be used instead.
+    """
 
 
 # =============================================================================
@@ -2507,16 +2496,26 @@ def gen_is_multi_term_hamiltonian(obj):
 def __getattr__(name):
     """To facilitate StatePrep rename"""
     if name == "AnyWires":
+        warnings.warn(
+            "AnyWires is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PennyLaneDeprecationWarning,
+        )
         return _WiresEnum.AllWires
     if name == "AllWires":
+        warnings.warn(
+            "AllWires is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PennyLaneDeprecationWarning,
+        )
         return _WiresEnum.AllWires
-    if name == "StatePrep":
-        return StatePrepBase
     if name == "WiresEnum":
         warnings.warn(
             "WiresEnum is deprecated and will be removed in v0.43. "
             " If your operation accepts any number of wires, set num_wires=None instead.",
-            PendingDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         return _WiresEnum
+    if name == "StatePrep":
+        return StatePrepBase
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
