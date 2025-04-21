@@ -1599,6 +1599,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise AdjointUndefinedError
 
+
     @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""

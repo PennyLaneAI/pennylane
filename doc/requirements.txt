@@ -16,8 +16,8 @@ sphinx~=5.2.0
 sphinx-automodapi==0.18
 sphinx-copybutton
 sphinxcontrib-bibtex==2.6.3
-sphinxcontrib-applehelp==1.0.8
-sphinxcontrib-devhelp==1.0.6
+sphinxcontrib-applehelp==2.0.0
+sphinxcontrib-devhelp==2.0.0
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-htmlhelp==2.1.0
 sphinxcontrib-serializinghtml==2.0.0
