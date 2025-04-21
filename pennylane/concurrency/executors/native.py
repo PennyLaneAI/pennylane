@@ -111,6 +111,8 @@ class PyNativeExec(IntExec, abc.ABC):
 class SerialExec(PyNativeExec):
     """
     Serial Python standard library executor.
+
+    This executor wraps Python standard library calls without support for multiprocess execution.
     """
 
     class StdLibWrapper:
@@ -152,7 +154,9 @@ class SerialExec(PyNativeExec):
 
 class MPPoolExec(PyNativeExec):
     """
-    multiprocessing.Pool class functor.
+    multiprocessing.Pool class executor.
+
+    This executor wraps Python standard library ``multiprocessing.Pool`` API, and provides support for execution using multiple processes.
     """
 
     @classmethod
@@ -186,7 +190,10 @@ class MPPoolExec(PyNativeExec):
 
 class ProcPoolExec(PyNativeExec):
     """
-    concurrent.futures.ProcessPoolExecutor class functor.
+    concurrent.futures.ProcessPoolExecutor class executor.
+
+    This executor wraps Python standard library ``concurrent.futures.ProcessPoolExecutor`` API, and provides support for execution using multiple processes.
+    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
     """
 
     @classmethod
@@ -208,7 +215,11 @@ class ProcPoolExec(PyNativeExec):
 
 class ThreadPoolExec(PyNativeExec):
     """
-    concurrent.futures.ThreadPoolExecutor class functor.
+    concurrent.futures.ThreadPoolExecutor class executor.
+
+    This executor wraps Python standard library ``concurrent.futures.ThreadPoolExecutor`` API, and provides support for execution using multiple threads.
+    Due to the presence of the GIL in most currently supported releases of CPython, the threading executor may not provide execution speed-ups for tasks.
+    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
     """
 
     @classmethod
