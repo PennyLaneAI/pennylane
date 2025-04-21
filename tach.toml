@@ -138,6 +138,10 @@ layer = "auxiliary"
 path = "pennylane.gradients"
 layer = "auxiliary"
 
+[[modules]]
+path = "pennylane.optimize"
+layer = "auxiliary"
+
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
 
@@ -180,7 +184,6 @@ layer = "tertiary"
 path = "pennylane.transforms.core"
 depends_on = ["pennylane", "pennylane.typing", "pennylane.tape", "pennylane.capture"]
 unchecked = true
-
 
 [[modules]]
 path = "pennylane.operation"
@@ -250,11 +253,6 @@ unchecked = true
 [[modules]]
 path = "pennylane.qnn"
 depends_on = ["pennylane"]
-unchecked = true
-
-[[modules]]
-path = "pennylane.optimize"
-depends_on = ["pennylane.numpy", "pennylane.typing", "pennylane._grad", "pennylane.tape", "pennylane", "pennylane.measurements"]
 unchecked = true
 
 [[modules]]
