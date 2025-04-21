@@ -15,6 +15,8 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
+import pprint
+
 import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
@@ -100,3 +102,12 @@ def test_invalid_gradient_method():
         ValueError, match=r"Differentiation method 123 must be a str, TransformDispatcher, or None"
     ):
         ExecutionConfig(gradient_method=123)
+
+
+def test_str_representation():
+    """Tests that str(config) matches the pprint-style format."""
+    config = ExecutionConfig(
+        gradient_method="backprop", interface="autograd", device_options={"shots": None}
+    )
+    expected = pprint.pformat(config)
+    assert str(config) == expected
