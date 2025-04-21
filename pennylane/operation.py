@@ -324,6 +324,9 @@ class WiresEnum(IntEnum):
     """
 
 
+AnyWires = WiresEnum.AnyWires
+AllWires = WiresEnum.AllWires
+
 # =============================================================================
 # Class property
 # =============================================================================
