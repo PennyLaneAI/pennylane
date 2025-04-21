@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.abspath("."), "pennylane"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "7.2"
+needs_sphinx = "8.1"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -86,7 +86,7 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: 
 copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
-    "demo": ("https://pennylane.ai/qml/", None),
+    "demos": ("https://pennylane.ai/qml/", None),
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
