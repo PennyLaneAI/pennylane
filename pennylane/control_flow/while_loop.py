@@ -225,6 +225,8 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
+    from jax.interpreters import ad
+    from qml.capture import CaptureError
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     while_loop_prim = NonInterpPrimitive("while_loop")
@@ -256,6 +258,11 @@ def _get_while_loop_qfunc_prim():
     @while_loop_prim.def_abstract_eval
     def _(*args, args_slice, **__):
         return args[args_slice]
+
+    def _while_loop_jvp(*_, **__):
+        raise CaptureError("Differenting 'qml.while_loop' is not supported.")
+
+    ad.primitive_jvps[while_loop_prim] = _while_loop_jvp
 
     return while_loop_prim
 
