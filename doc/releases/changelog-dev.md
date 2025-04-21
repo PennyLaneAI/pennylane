@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added `qml.SelectPauliRot` template that applies a sequence of uniformly controlled rotations to a target qubit.
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+
 <h3>Improvements 🛠</h3>
 
 <h3>Breaking changes 💔</h3>

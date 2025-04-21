@@ -613,9 +613,6 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
 [(#7054)](https://github.com/PennyLaneAI/pennylane/pull/7054)
 [(#7129)](https://github.com/PennyLaneAI/pennylane/pull/7129)
 
-* Added `qml.SelectPauliRot` template that applies a sequence of uniformly controlled rotations to a target qubit.
-  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
-
 <h4>Qualtran Integration 🔗</h4>
 
 * It's now possible to use [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs in PennyLane
