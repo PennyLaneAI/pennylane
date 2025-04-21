@@ -314,7 +314,7 @@ with warnings.catch_warnings():
 
         AnyWires = -1
         """A enumeration that represents that an operator can act on any number of wires.
-        
+
         .. warning::
 
             **Deprecated**: Operator.num_wires = None should be used instead.
@@ -322,7 +322,7 @@ with warnings.catch_warnings():
 
         AllWires = -2
         """A enumeration that represents that an operator acts on all wires in the system.
-        
+
         .. warning::
 
             **Deprecated**: Operator.num_wires = None should be used instead.
@@ -1150,7 +1150,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires is not None or isinstance(self.num_wires, _WiresEnum):
+        if self.num_wires is None or isinstance(self.num_wires, _WiresEnum):
             if (
                 not isinstance(
                     self,
