@@ -215,6 +215,10 @@ class Identity(CVObservable, Operation):
     def pow(self, z):
         return [I(wires=self.wires)]
 
+    def queue(self, context=qml.QueuingManager):
+        context.append(self)
+        return self
+
 
 I = Identity
 r"""The Identity operator

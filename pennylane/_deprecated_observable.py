@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module 
+This module contains the deprecated Observable class to allow for deprecation warnings on access to the class.
 """
 import warnings
 from typing import Union
