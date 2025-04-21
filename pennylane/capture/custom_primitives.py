@@ -62,6 +62,6 @@ class NonInterpPrimitive(QmlPrimitive):
 
         If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
         Otherwise, the bind call of JAX's standard Primitive is used."""
-        if isinstance(trace, (JVPTrace, BatchTrace)):
-            return self.impl(*args, **params)
+        # if isinstance(trace, (JVPTrace, BatchTrace)):
+        #     return self.impl(*args, **params)
         return super().bind_with_trace(trace, args, params)
