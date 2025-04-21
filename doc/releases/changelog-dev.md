@@ -42,6 +42,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Adds an informative error if `qml.cond` is used with an abstract condition with
+  jitting on `default.qubit` if capture is enabled.
+
 * Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
   [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
 
