@@ -87,6 +87,9 @@ def device(name, *args, **kwargs):
     * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
       of quantum circuits based on tensor networks.
 
+    * :mod:`'null.qubit' <pennylane.devices.null_qubit>`: a simulator that performs no
+      operations associated with numerical computations.
+
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run

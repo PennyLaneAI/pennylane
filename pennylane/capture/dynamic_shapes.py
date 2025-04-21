@@ -72,7 +72,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
 
 
 def determine_abstracted_axes(args):
-    """Computed the abstracted axes and extracting the abstract shapes from the arguments.
+    """Compute the abstracted axes and extract the abstract shapes from the arguments.
 
     Args:
         args (tuple): the arguments for a higher order primitive
@@ -116,7 +116,7 @@ def determine_abstracted_axes(args):
 
     We allow Jax to identify that the shape of ``b`` matches our first argument, ``a``. This is
     demonstrated by the fact that we do not have any additional ``abstract_shapes``, as it is already
-    present in the call signature.  The abstracted axis is also `"0_arg"` instead of ``0``.
+    present in the call signature. The abstracted axis is also ``"0_arg"`` instead of ``0``.
     The ``"_arg"`` at the end indicates that the corresponding abstract axis
     was already in the argument loop.
 

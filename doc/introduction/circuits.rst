@@ -212,6 +212,8 @@ A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
+    import numpy as np
+
     circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python

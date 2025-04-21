@@ -160,6 +160,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 for op in self.op_deque:
                     super().interpret_operation(op)
                 self.op_deque.clear()
+                self.current_index = 0
                 return
 
             # If the direction is right, push the gates in each sub-list

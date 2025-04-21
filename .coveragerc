@@ -10,6 +10,9 @@ omit =
 exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
+    
+    # Ignore type checking 
+    if TYPE_CHECKING:
 
     # Don't complain about debug-only or logging code:
     if self\.debug

@@ -24,9 +24,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import (
-    _contract_qjac_with_cjac,
     _validate_gradient_methods,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
 from pennylane.measurements import (
     ExpectationMP,
@@ -520,7 +520,7 @@ def _expand_transform_param_shift_cv(
 @partial(
     transform,
     expand_transform=_expand_transform_param_shift_cv,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def param_shift_cv(

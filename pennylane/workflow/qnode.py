@@ -716,7 +716,7 @@ class QNode:
                 return qml.expval(qml.PauliZ(1))
 
         If we wish to try out a new configuration without having to repeat the
-        boiler plate above, we can use the ``QNode.update`` method. For example,
+        boilerplate above, we can use the ``QNode.update`` method. For example,
         we can update the differentiation method and execution arguments,
 
         >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)

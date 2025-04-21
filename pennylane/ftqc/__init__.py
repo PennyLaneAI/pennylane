@@ -25,7 +25,8 @@ Modules
     :toctree: api
 
 """
-from pennylane import ExperimentalWarning
+from .operations import RotXZX
+from .decomposition import convert_to_mbqc_gateset
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -44,6 +45,7 @@ from .utils import QubitMgr
 
 __all__ = [
     "GraphStatePrep",
+    "RotXZX",
     "Lattice",
     "QubitGraph",
     "QubitMgr",
@@ -56,5 +58,6 @@ __all__ = [
     "measure_y",
     "measure_z",
     "diagonalize_mcms",
+    "convert_to_mbqc_gateset",
     "generate_lattice",
 ]

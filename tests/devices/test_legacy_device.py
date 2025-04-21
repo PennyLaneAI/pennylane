@@ -623,7 +623,8 @@ class TestOperations:
         dev = mock_device()
 
         with pytest.raises(
-            qml.DeviceError, match="The specified number of shots needs to be at least 1"
+            qml.DeviceError,
+            match="The specified number of shots needs to be at least 1",
         ):
             dev.shots = shots
 
@@ -843,7 +844,8 @@ class TestObservables:
         observables = [qml.counts(op=qml.PauliZ(0))]
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            qml.QuantumFunctionError,
+            match="Unsupported return type specified for observable",
         ):
             dev.execute(queue, observables)
 

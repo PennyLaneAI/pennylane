@@ -59,6 +59,7 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
+    Tracker
 
 Preprocessing Transforms
 ------------------------
@@ -151,6 +152,7 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
+from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig

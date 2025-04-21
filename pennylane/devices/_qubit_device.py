@@ -1003,7 +1003,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1030,7 +1033,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "

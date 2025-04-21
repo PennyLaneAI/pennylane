@@ -302,8 +302,8 @@ class TestQuantumMonteCarlo:
         # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
 
-        # 2-qubit decomposition has 18 operations, and after is a 3-qubit gate so start at 19
-        queue_after_qpe = tape.expand().operations[19:]
+        # 2-qubit decomposition has 20 operations, and after is a 3-qubit gate so start at 21
+        queue_after_qpe = tape.expand().operations[21:]
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)

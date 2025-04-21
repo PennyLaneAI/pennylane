@@ -136,6 +136,24 @@ class TestCompressedResourceOp:
         )
         assert isinstance(hash(op), int)
 
+    def test_hash_unhashable_keys(self):
+        """Tests that a CompressedResourceOp is hashable when the params contain unhashable keys."""
+
+        op = CompressedResourceOp(
+            qml.ops.Exp,
+            {
+                "base_class": qml.ops.LinearCombination,
+                "base_params": {},
+                "base_pauli_rep": qml.Hamiltonian(
+                    [1.11, 0.12, -3.4, 5],
+                    [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))],
+                ).pauli_rep,
+                "coeff": 1.2j,
+                "num_steps": 3,
+            },
+        )
+        assert isinstance(hash(op), int)
+
     def test_same_params_same_hash(self):
         """Tests that two ops with the same params have the same hash."""
 

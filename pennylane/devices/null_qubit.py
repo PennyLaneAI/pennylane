@@ -27,7 +27,6 @@ from typing import Optional, Union
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,

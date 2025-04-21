@@ -13,8 +13,7 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
-
-# pylint: disable=no-name-in-module, too-few-public-methods
+from functools import partial
 
 import numpy as np
 import pytest
@@ -298,3 +297,19 @@ class TestDecomposeGraphEnabled:
             qml.RY(-0.2, wires=[0]),
             qml.RX(-0.1, wires=[0]),
         ]
+
+
+@pytest.mark.jax
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_graph_decomposition", "enable_disable_plxpr")
+def test_decompose_qnode():
+    """Tests that the decompose transform works with a QNode."""
+
+    @partial(qml.transforms.decompose, gate_set={"CZ", "Hadamard"})
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    res = circuit()
+    assert qml.math.allclose(res, 1.0)

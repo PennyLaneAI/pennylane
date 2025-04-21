@@ -90,14 +90,14 @@ class CompressedResourceOp:
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using :func:`~pennylane.register_resources`.
 
-    The ``CompressedResourceOp` is a lightweight data structure that contains an operator type
+    The ``CompressedResourceOp`` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
     decomposition of an operator is independent of its parameters, e.g., ``Rot`` can be decomposed
     into two ``RZ`` gates and an ``RY`` regardless of the angles, then every occurrence of this
     operator in the circuit is represented by the same ``CompressedResourceOp`` which only
     specifies the operator type, i.e., ``Rot``.
 
-    On the other hand, for some operators such as ``MultiRZ``, for which the numbers of ``CNOT``
+    On the other hand, for some operators such as ``MultiRZ``, for which the number of ``CNOT``
     gates in its decomposition depends on the number of wires, the resource representation of
     a ``MultiRZ`` must include this information. To create a ``CompressedResourceOp`` object for
     an operator, use the :func:`~pennylane.resource_rep` function.
@@ -137,7 +137,9 @@ class CompressedResourceOp:
 
 def _make_hashable(d):
     if isinstance(d, dict):
-        return tuple(sorted(((k, _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]))
+        return tuple(
+            sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
+        )
     if hasattr(d, "tolist"):
         return d.tolist()
     return d
@@ -187,7 +189,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
             This should be consistent with ``op_type.resource_keys``.
 
     Returns:
-        CompressedResourceOp: a lightweight representation of the operator.
+        pennylane.decomposition.resources.CompressedResourceOp: a lightweight representation of the operator.
 
     **Example**
 
@@ -202,7 +204,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
 
     >>> rep = resource_rep(qml.MultiRZ, num_wires=3)
     >>> rep
-    MultiRZ, {'num_wires': 3}
+    MultiRZ(num_wires=3)
     >>> type(rep)
     <class 'pennylane.decomposition.resources.CompressedResourceOp'>
 
@@ -228,13 +230,11 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         of ``qml.ops.Controlled``:
 
         >>> qml.ops.Controlled.resource_keys
-        {
-            'base_class',
-            'base_params',
-            'num_control_wires',
-            'num_zero_control_values',
-            'num_work_wires'
-        }
+        {'base_class',
+         'base_params',
+         'num_control_wires',
+         'num_work_wires',
+         'num_zero_control_values'}
 
         Then the resource representation can be created as follows:
 
@@ -246,7 +246,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
         ... )
-        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
 
         Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
@@ -257,7 +257,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
         ... )
-        Controlled, {'base_class': <class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, 'base_params': {'num_wires': 3}, 'num_control_wires': 2, 'num_zero_control_values': 1, 'num_work_wires': 1}
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
 
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep` and :func:`~pennylane.decomposition.adjoint_resource_rep`
 

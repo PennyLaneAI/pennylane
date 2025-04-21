@@ -85,7 +85,8 @@ def test_config_deprecation():
     tape = qml.tape.QuantumScript([qml.RX(qml.numpy.array(1.0), 0)], [qml.expval(qml.Z(0))])
     dev = qml.device("default.qubit")
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The config argument has been deprecated"
+        qml.PennyLaneDeprecationWarning,
+        match="The config argument has been deprecated",
     ):
         qml.execute((tape,), dev, config=qml.devices.DefaultExecutionConfig)
 
@@ -96,7 +97,8 @@ def test_inner_transform_program_deprecation():
     tape = qml.tape.QuantumScript([qml.RX(qml.numpy.array(1.0), 0)], [qml.expval(qml.Z(0))])
     dev = qml.device("default.qubit")
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The inner_transform argument has been deprecated"
+        qml.PennyLaneDeprecationWarning,
+        match="The inner_transform argument has been deprecated",
     ):
         qml.execute((tape,), dev, inner_transform=qml.transforms.core.TransformProgram())
 

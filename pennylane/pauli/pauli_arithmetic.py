@@ -539,6 +539,7 @@ class PauliSentence(dict):
 
     **Examples**
 
+    >>> from pennylane import PauliSentence, PauliWord
     >>> ps = PauliSentence({
     ...     PauliWord({0:'X', 1:'Y'}): 1.23,
     ...     PauliWord({2:'Z', 0:'Y'}): -0.45j

@@ -278,8 +278,6 @@ class PauliX(Observable, Operation):
 
     batch_size = None
 
-    resource_keys = set()
-
     _queue_category = "_ops"
 
     @property

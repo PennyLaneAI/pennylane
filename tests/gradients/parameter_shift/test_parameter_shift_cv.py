@@ -389,7 +389,7 @@ class TestParameterShiftLogic:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift_cv(circuit, dev)(params)
-        assert np.allclose(result, np.zeros((2, 3)), atol=0, rtol=0)
+        assert np.allclose(result, np.zeros(3), atol=0, rtol=0)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with

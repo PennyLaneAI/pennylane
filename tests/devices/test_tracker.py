@@ -14,7 +14,7 @@
 """
 Unit tests for the Tracker and constructor
 """
-
+# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
@@ -32,9 +32,9 @@ class TestTrackerCoreBehavior:
         assert tracker.persistent is False
         assert tracker.callback is None
 
-        assert tracker.history == dict()
-        assert tracker.totals == dict()
-        assert tracker.latest == dict()
+        assert tracker.history == {}
+        assert tracker.totals == {}
+        assert tracker.latest == {}
 
         assert tracker.active is False
 
@@ -62,7 +62,7 @@ class TestTrackerCoreBehavior:
             short_name = "temp"
 
             def capabilities(self):
-                return dict()
+                return {}
 
         temp = TempDevice()
 
@@ -92,9 +92,9 @@ class TestTrackerCoreBehavior:
 
         tracker.reset()
 
-        assert tracker.totals == dict()
-        assert tracker.history == dict()
-        assert tracker.latest == dict()
+        assert tracker.totals == {}
+        assert tracker.history == {}
+        assert tracker.latest == {}
 
     def test_enter_and_exit(self):
         """Assert entering and exit work as expected"""
@@ -104,14 +104,14 @@ class TestTrackerCoreBehavior:
         tracker.history = {"a": [1]}
         tracker.latest = {"a": 1}
 
-        returned = tracker.__enter__()
+        returned = tracker.__enter__()  # pylint: disable=unnecessary-dunder-call
 
         assert id(tracker) == id(returned)
         assert tracker.active is True
 
-        assert tracker.totals == dict()
-        assert tracker.history == dict()
-        assert tracker.latest == dict()
+        assert tracker.totals == {}
+        assert tracker.history == {}
+        assert tracker.latest == {}
 
         tracker.__exit__(None, None, None)
 

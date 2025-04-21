@@ -22,8 +22,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ArrayVSpace, ComplexArrayVSpace
 from autograd.tracer import Box
 
-from pennylane.operation import Operator
-
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
 
@@ -153,9 +151,6 @@ class tensor(_np.ndarray):
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
         res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
-
-        if isinstance(res, Operator):
-            return res
 
         if ufunc.nout == 1:
             res = (res,)

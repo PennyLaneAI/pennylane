@@ -168,7 +168,7 @@ class LegacyDeviceFacade(Device):
 
     @property
     def tracker(self):
-        """A :class:`~.Tracker` that can store information about device executions, shots, batches,
+        """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
         intermediate results, or any additional device dependent information.
         """
         return self._device.tracker
@@ -354,7 +354,11 @@ class LegacyDeviceFacade(Device):
         _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
         try:
             program((tape,))
-        except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+        except (
+            qml.operation.DecompositionUndefinedError,
+            qml.DeviceError,
+            AttributeError,
+        ):
             return False
         return True
 

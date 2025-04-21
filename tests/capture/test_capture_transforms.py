@@ -130,6 +130,36 @@ class TestCaptureTransforms:
         for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
+    def test_transform_qfunc_pytree_args(self):
+        """Test that transforming an object that accepts pytree arguments is correct."""
+
+        def func(x):
+            y = x[0] * 5 + x[1]
+            return y**0.5
+
+        args = ([1.5, 2.5],)
+        targs = [0, 1]
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
+
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
+
+        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+
+        params = transform_eqn.params
+        assert params["args_slice"] == slice(0, 2)
+        assert params["consts_slice"] == slice(2, 2)
+        assert params["targs_slice"] == slice(2, None)
+        assert params["tkwargs"] == tkwargs
+
+        inner_jaxpr = params["inner_jaxpr"]
+        expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
+        for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
+            assert eqn1.primitive == eqn2.primitive
+
+        # Verifying that transformed function can execute
+        _ = transformed_func(*args)
+
     def test_transform_qnode_capture(self):
         """Test that a transformed QNode is captured correctly."""
         dev = qml.device("default.qubit", wires=2)

@@ -73,17 +73,15 @@ def _position_fragment(
     i: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> RealspaceMatrix:
     """Return the ``i``th position fragment"""
-    pow2 = _next_pow_2(states)
     blocks = {
         (j, i ^ j): _realspace_sum(j, i ^ j, states, modes, freqs, taylor_coeffs)
-        for j in range(pow2)
+        for j in range(_next_pow_2(states))
     }
-    return RealspaceMatrix(pow2, modes, blocks)
+    return RealspaceMatrix(states, modes, blocks)
 
 
 def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> RealspaceMatrix:
     """Return the fragment consisting only of momentum operators."""
-    pow2 = _next_pow_2(states)
     term = RealspaceOperator(
         modes,
         ("P", "P"),
@@ -92,7 +90,7 @@ def _momentum_fragment(states: int, modes: int, freqs: np.ndarray) -> RealspaceM
     word = RealspaceSum(modes, (term,))
     blocks = {(i, i): word for i in range(states)}
 
-    return RealspaceMatrix(pow2, modes, blocks)
+    return RealspaceMatrix(states, modes, blocks)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments

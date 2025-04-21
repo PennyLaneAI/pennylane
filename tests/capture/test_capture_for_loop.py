@@ -261,7 +261,7 @@ class TestDynamicShapes:
 
     # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
-        """Test that for_loops can create dynamicly shaped arrays."""
+        """Test that for_loops can create dynamically shaped arrays."""
 
         def f(i, x):
             y = jax.numpy.arange(i)

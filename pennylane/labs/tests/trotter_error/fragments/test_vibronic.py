@@ -30,6 +30,20 @@ def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
     return sum(frags, RealspaceMatrix.zero(states, modes))
 
 
+def test_vibronic_fragments():
+    """Test that vibronic_fragments returns RealspaceMatrix objects with the correct number of states and modes."""
+    n_states = 5
+    n_modes = 5
+    freqs = np.array([1, 2, 3, 4, 5])
+
+    frags = vibronic_fragments(n_states, n_modes, freqs, [])
+
+    for frag in frags:
+        assert isinstance(frag, RealspaceMatrix)
+        assert frag.states == n_states
+        assert frag.modes == n_modes
+
+
 class Test1Mode:
     """Test a simple one mode, one state vibronic Hamiltonian"""
 

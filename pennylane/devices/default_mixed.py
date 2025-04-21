@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
+The ``default.mixed`` device is PennyLane's standard qubit simulator for mixed-state computations.
 
 It implements some built-in qubit :doc:`operations </introduction/operations>`,
-providing a simple mixed-state simulation ofqubit-based quantum circuits.
+providing a simple mixed-state simulation of qubit-based quantum circuits.
+
 """
 # isort: skip_file
 # pylint: disable=wrong-import-order, ungrouped-imports
@@ -24,6 +25,7 @@ import logging
 import numpy as np
 
 import pennylane as qml
+
 from pennylane.math import get_canonical_interface_name
 from pennylane.logging import debug_logger, debug_logger_init
 

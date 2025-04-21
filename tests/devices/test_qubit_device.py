@@ -322,7 +322,8 @@ class TestObservables:
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                qml.QuantumFunctionError,
+                match="Unsupported return type specified for observable",
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
                 dev.execute(tape)

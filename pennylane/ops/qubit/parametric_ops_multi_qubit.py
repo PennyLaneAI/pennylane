@@ -1702,7 +1702,7 @@ class PSWAP(Operation):
 
         e = qml.math.exp(1j * phi)
         one = qml.math.ones_like(phi)
-        return qml.math.stack([one, one, -e, e])
+        return qml.math.transpose(qml.math.stack([one, one, -e, e]))
 
     def adjoint(self) -> "PSWAP":
         (phi,) = self.parameters

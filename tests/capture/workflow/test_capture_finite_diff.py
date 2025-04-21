@@ -39,6 +39,13 @@ def test_warning_float32():
     ):
         jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
 
+    jax.config.update("jax_enable_x64", False)
+    try:
+        with pytest.warns(UserWarning, match="Detected 32 bits precision with finite differences."):
+            jax.grad(circuit)(0.5)
+    finally:
+        jax.config.update("jax_enable_x64", True)
+
 
 class TestGradients:
 

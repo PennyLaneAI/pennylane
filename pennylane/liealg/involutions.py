@@ -19,9 +19,9 @@ from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import Y, Z, matrix
+import pennylane.ops.functions as op_func
 from pennylane.operation import Operator
+from pennylane.ops import Y, Z, op_math
 from pennylane.pauli import PauliSentence
 
 # Canonical involutions
@@ -300,7 +300,7 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _AIII_matrix(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _AIII_matrix(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_AIII.register(Operator)
@@ -545,7 +545,7 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int]
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _CII(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _CII(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_CII.register(Operator)
@@ -614,8 +614,8 @@ def _even_odd_involution_ps(op: PauliSentence):
 def _even_odd_involution_matrix(op: np.ndarray):
     """see Table CI in https://arxiv.org/abs/2406.04418"""
     n = int(np.round(np.log2(op.shape[-1])))
-    YYY = qml.prod(*[Y(i) for i in range(n)])
-    YYY = qml.matrix(YYY, range(n))
+    YYY = op_math.prod(*[Y(i) for i in range(n)])
+    YYY = op_func.matrix(YYY, range(n))
 
     transformed = YYY @ op.conj() @ YYY
     if np.allclose(transformed, op):

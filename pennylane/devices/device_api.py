@@ -22,7 +22,6 @@ from numbers import Number
 from typing import Optional, Union, overload
 
 import pennylane as qml
-from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -42,6 +41,7 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
+from .tracker import Tracker
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -167,7 +167,7 @@ class Device(abc.ABC):
         return type(self).__name__
 
     tracker: Tracker = Tracker()
-    """A :class:`~.Tracker` that can store information about device executions, shots, batches,
+    """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
     intermediate results, or any additional device dependent information.
 
     A plugin developer can store information in the tracker by:

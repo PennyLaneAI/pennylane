@@ -28,10 +28,6 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from .qscript import QuantumScript
 
 
-class TapeError(ValueError):
-    """An error raised with a quantum tape."""
-
-
 def _err_msg_for_some_meas_not_qwc(measurements):
     """Error message for the case when some operators measured on the same wire are not qubit-wise commuting."""
     return (

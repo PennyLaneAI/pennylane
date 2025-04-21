@@ -106,6 +106,17 @@ from .interface_utils import (
 from .grad import grad, jacobian
 
 sum = ar.numpy.sum
+conj = ar.numpy.conj
+transpose = ar.numpy.transpose
+sqrt = ar.numpy.sqrt
+zeros = ar.numpy.zeros
+moveaxis = ar.numpy.moveaxis
+mean = ar.numpy.mean
+round = ar.numpy.round
+shape = ar.numpy.shape
+flatten = ar.numpy.flatten
+reshape = ar.numpy.reshape
+multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
@@ -162,12 +173,15 @@ __all__ = [
     "expand_matrix",
     "expand_vector",
     "expectation_value",
+    "expm",
     "eye",
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
+    "gammainc",
     "get_dtype_name",
     "get_interface",
+    "get_batch_size",
     "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
@@ -177,21 +191,27 @@ __all__ = [
     "is_independent",
     "iscomplex",
     "jacobian",
+    "kron",
     "Interface",
+    "matmul",
     "marginal_prob",
     "max_entropy",
     "min_entropy",
     "multi_dispatch",
     "mutual_info",
+    "norm",
     "ones_like",
     "partial_trace",
     "purity",
     "reduce_dm",
+    "reduce_matrices",
     "reduce_statevector",
     "relative_entropy",
     "requires_grad",
-    "sqrt_matrix",
+    "scatter",
     "scatter_element_add",
+    "set_index",
+    "sqrt_matrix",
     "stack",
     "svd",
     "tensordot",

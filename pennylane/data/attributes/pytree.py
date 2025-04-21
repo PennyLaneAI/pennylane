@@ -18,11 +18,11 @@ from typing import TypeVar
 
 import numpy as np
 
-from pennylane.data.attributes import DatasetArray, DatasetList
+from pennylane.data.attributes import DatasetArray, DatasetList, serialization
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
-from pennylane.pytrees import flatten, serialization, unflatten
+from pennylane.pytrees import flatten, unflatten
 
 T = TypeVar("T")
 

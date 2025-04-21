@@ -329,15 +329,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
             flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+            flat_args = jax.tree_util.tree_leaves(args)
 
-            n_args = len(args)
+            n_args = len(flat_args)
             n_consts = len(jaxpr.consts)
             args_slice = slice(0, n_args)
             consts_slice = slice(n_args, n_args + n_consts)
             targs_slice = slice(n_args + n_consts, None)
 
             results = self._primitive.bind(
-                *args,
+                *flat_args,
                 *jaxpr.consts,
                 *targs,
                 inner_jaxpr=jaxpr.jaxpr,
