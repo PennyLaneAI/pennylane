@@ -51,7 +51,8 @@ def test_dtype_errors():
     with pytest.raises(qml.DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qutrit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        qml.DeviceError, match="Complex datatype must be a complex floating point type."
+        qml.DeviceError,
+        match="Complex datatype must be a complex floating point type.",
     ):
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
