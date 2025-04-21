@@ -24,6 +24,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
+  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
+  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+
 <h3>Internal changes ⚙️</h3>
 
 * Introduce module dependency management using `tach`.

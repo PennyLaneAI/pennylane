@@ -38,7 +38,7 @@ from pennylane.math import (
     transpose,
     zeros,
 )
-from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -125,9 +125,6 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -360,9 +357,6 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -607,9 +601,6 @@ class BlockEncode(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""

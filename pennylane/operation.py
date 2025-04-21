@@ -226,12 +226,14 @@ import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
+from warnings import warn
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -299,22 +301,39 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
 # =============================================================================
 
 
-class WiresEnum(IntEnum):
-    """Integer enumeration class
-    to represent the number of wires
-    an operation acts on"""
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", PennyLaneDeprecationWarning)
 
-    AnyWires = -1
-    AllWires = -2
+    class _WiresEnum(IntEnum):
+        """Integer enumeration class
+        to represent the number of wires
+        an operation acts on.
 
+        .. warning:: This class is
+        """
 
-AllWires = WiresEnum.AllWires
-"""IntEnum: An enumeration which represents all wires in the
-subsystem. It is equivalent to an integer with value 0."""
+        AnyWires = -1
+        """A enumeration that represents that an operator can act on any number of wires.
+        
+        .. warning::
 
-AnyWires = WiresEnum.AnyWires
-"""IntEnum: An enumeration which represents any wires in the
-subsystem. It is equivalent to an integer with value -1."""
+            **Deprecated**: Operator.num_wires = None should be used instead.
+        """
+
+        AllWires = -2
+        """A enumeration that represents that an operator acts on all wires in the system.
+        
+        .. warning::
+
+            **Deprecated**: Operator.num_wires = None should be used instead.
+        """
+
+        def __getattribute__(self, item):
+            warn(
+                "AnyWires and AllWires are now deprecated. Please just use None to indicate that there is no specific number of wires.",
+                PennyLaneDeprecationWarning,
+            )
+            return IntEnum.__getattribute__(self, item)
 
 
 # =============================================================================
@@ -433,11 +452,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
 
         class FlipAndRotate(qml.operation.Operation):
-
-            # Define how many wires the operator acts on in total.
-            # In our case this may be one or two, which is why we
-            # use the AnyWires Enumeration to indicate a variable number.
-            num_wires = qml.operation.AnyWires
 
             # This attribute tells PennyLane what differentiation method to use. Here
             # we request parameter-shift (or "analytic") differentiation.
@@ -972,7 +986,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Union[int, WiresEnum] = AnyWires
+    num_wires: Optional[Union[int, _WiresEnum]] = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1136,7 +1150,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires in {AllWires, AnyWires}:
+        if self.num_wires is not None or isinstance(self.num_wires, _WiresEnum):
             if (
                 not isinstance(
                     self,
@@ -2492,6 +2506,17 @@ def gen_is_multi_term_hamiltonian(obj):
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
+    if name == "AnyWires":
+        return _WiresEnum.AllWires
+    if name == "AllWires":
+        return _WiresEnum.AllWires
     if name == "StatePrep":
         return StatePrepBase
+    if name == "WiresEnum":
+        warnings.warn(
+            "WiresEnum is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PendingDeprecationWarning,
+        )
+        return _WiresEnum
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
