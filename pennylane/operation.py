@@ -2221,7 +2221,7 @@ class CVOperation(CV, Operation):
         return self.heisenberg_expand(U, wire_order)
 
 
-class CVObservable(CV):
+class CVObservable(CV, Operator):
     r"""Base class representing continuous-variable observables.
 
     CV observables provide a special Heisenberg representation.
@@ -2250,7 +2250,7 @@ class CVObservable(CV):
 
     is_hermitian = True
 
-    def queue(self):
+    def queue(self, context=QueuingManager):
         """Avoids queuing the observable."""
         return self
 
