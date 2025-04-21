@@ -16,7 +16,6 @@ from collections.abc import Sequence
 
 # pylint: disable=too-many-branches
 from functools import partial
-from warnings import warn
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
