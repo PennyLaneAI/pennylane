@@ -304,7 +304,6 @@ class WiresEnum(IntEnum):
     to represent the number of wires
     an operation acts on.
 
-    .. warning:: This class is
     """
 
     AnyWires = -1
