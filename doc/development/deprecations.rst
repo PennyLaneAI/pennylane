@@ -14,11 +14,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
@@ -104,6 +99,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
+  A sequence of transforms should now always be specified.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
