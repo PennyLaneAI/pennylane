@@ -25,7 +25,7 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.concurrency.executors.base import RemoteExecABC
+from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -544,7 +544,7 @@ class QNode:
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
-        executor_backend: Optional[RemoteExecABC] = None,
+        executor_backend: Optional[RemoteExec] = None,
         **kwargs,
     ):
         self._init_args = locals()

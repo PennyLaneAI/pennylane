@@ -24,18 +24,19 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor as exec_pp
 from concurrent.futures import ThreadPoolExecutor as exec_tp
 from dataclasses import dataclass
+from itertools import starmap
 from multiprocessing import Pool as exec_mp
 from typing import Any, Optional
 
-from .base import IntExecABC
+from .base import IntExec
 
 
-class PyNativeExecABC(IntExecABC, abc.ABC):
+class PyNativeExec(IntExec, abc.ABC):
     """
     Python standard library backed ABC for executor API.
     """
 
-    def __init__(self, max_workers: int = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
         """
         max_workers:    the maximum number of concurrent units (threads, processes) to use
         persist:        allow the executor backend to persist between executions. True avoids
@@ -53,16 +54,6 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
             self._backend = self._exec_backend()(self._size)
 
         self._cfg = self.LocalConfig()
-
-    # def __call__(self, fn: Callable, *args, **kwargs):
-    #    "To be removed"
-    #    exec_cls = self._exec_backend()
-    #    chunksize = max(len(data) // self._size, 1)
-    #    if not self._persist:
-    #        with exec_cls(self._size) as executor:
-    #            output_f = executor.map(fn, data, chunksize=chunksize)
-    #        return output_f
-    #    return self._backend.map(fn, data, chunksize=chunksize)
 
     def __enter__(self):
         return self
@@ -117,7 +108,37 @@ class PyNativeExecABC(IntExecABC, abc.ABC):
         raise NotImplementedError("{cls} does not currently support execution")
 
 
-class MPPoolExec(PyNativeExecABC):
+class SerialExec(PyNativeExec):
+    """
+    Serial Python standard library executor.
+    """
+
+    class StdLibWrapper:
+        "Internal utility class for use with the executor API"
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, fn: Callable, *args, **kwargs):
+            results = []
+            for t_args in zip(*args):
+                results.append(fn(*t_args, **kwargs))
+            return results
+
+        def map(self, fn: Callable, *args: Sequence[Any]):
+            return list(map(fn, *args))
+
+        def starmap(self, fn: Callable, data: Sequence[tuple]):
+            return list(starmap(fn, data))
+
+    def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
+        super().__init__(max_workers=max_workers, persist=persist, **kwargs)
+
+    def _exec_backend(cls):
+        return SerialExec.StdLibWrapper
+
+
+class MPPoolExec(PyNativeExec):
     """
     multiprocessing.Pool class functor.
     """
@@ -150,7 +171,7 @@ class MPPoolExec(PyNativeExecABC):
         return super().map(fn, *args)
 
 
-class ProcPoolExec(PyNativeExecABC):
+class ProcPoolExec(PyNativeExec):
     """
     concurrent.futures.ProcessPoolExecutor class functor.
     """
@@ -172,7 +193,7 @@ class ProcPoolExec(PyNativeExecABC):
         )
 
 
-class ThreadPoolExec(PyNativeExecABC):
+class ThreadPoolExec(PyNativeExec):
     """
     concurrent.futures.ThreadPoolExecutor class functor.
     """

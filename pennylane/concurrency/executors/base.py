@@ -22,7 +22,7 @@ from itertools import starmap
 from typing import Optional
 
 
-class RemoteExecABC(abc.ABC):
+class RemoteExec(abc.ABC):
     """
     Abstract base class for defining a task-based parallel executor backend for running python functions
     """
@@ -121,7 +121,7 @@ class RemoteExecABC(abc.ABC):
         return self._exec_backend()(self._size)
 
 
-class IntExecABC(RemoteExecABC, abc.ABC):
+class IntExec(RemoteExec, abc.ABC):
     """
     Executor class for native Python library concurrency support
     """
@@ -129,7 +129,7 @@ class IntExecABC(RemoteExecABC, abc.ABC):
     pass
 
 
-class ExtExecABC(RemoteExecABC, abc.ABC):
+class ExtExec(RemoteExec, abc.ABC):
     """
     Executor class for external package provided concurrency support
     """

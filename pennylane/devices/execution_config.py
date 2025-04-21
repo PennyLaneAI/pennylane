@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Union
 
 from pennylane.concurrency.executors import ExecBackends, get_executor
-from pennylane.concurrency.executors.base import RemoteExecABC
+from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
@@ -105,7 +105,7 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
-    executor_backend: RemoteExecABC = get_executor(backend=ExecBackends.MP_Pool)
+    executor_backend: RemoteExec = get_executor(backend=ExecBackends.MP_Pool)
     """
     Defines the class for the executor backend. 
     """

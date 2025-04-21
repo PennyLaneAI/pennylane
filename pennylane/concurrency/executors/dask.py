@@ -26,11 +26,11 @@ try:
     DASK_FOUND = True
 except:
     DASK_FOUND = False
-from .base import ExtExecABC
+from .base import ExtExec
 
 if DASK_FOUND:
 
-    class DaskExec(ExtExecABC):
+    class DaskExec(ExtExec):
         """
         Dask distributed abstraction class functor.
         """
@@ -87,7 +87,7 @@ if DASK_FOUND:
 
 else:
 
-    class DaskExec(ExtExecABC):
+    class DaskExec(ExtExec):
         """
         Mock Dask distributed abstraction class functor.
         """

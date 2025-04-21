@@ -18,10 +18,10 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from .base import ExtExecABC
+from .base import ExtExec
 
 
-class MPIPoolExec(ExtExecABC):
+class MPIPoolExec(ExtExec):
     """
     MPIPoolExecutor abstraction class functor.
     """
@@ -91,7 +91,7 @@ class MPIPoolExec(ExtExecABC):
         self.shutdown()
 
 
-class MPICommExec(ExtExecABC):
+class MPICommExec(ExtExec):
     """
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning
     required by MPIPoolExec is unsupported by the MPI implementation.
