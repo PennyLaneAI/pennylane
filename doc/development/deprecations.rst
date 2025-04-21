@@ -98,12 +98,12 @@ Completed deprecation cycles
   :meth:`~.Operator.terms`.
 
   - Deprecated in v0.35
+  - Removed in v0.42
 
 * Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
   A sequence of transforms should now always be specified.
 
   - Deprecated in v0.41
-
   - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
