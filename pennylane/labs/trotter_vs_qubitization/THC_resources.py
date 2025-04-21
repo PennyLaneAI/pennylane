@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import jv
+from tqdm import tqdm
 
 
 def Toffoli_cost(N, M, aleph, beth, br = 7):
@@ -76,6 +77,14 @@ def qubitization_order(t, epsilon, one_norm):
 
 
 # Parameters from https://arxiv.org/abs/2501.06165 for QPE
+
+# System: LiMnO
+M = 40
+N = 2*18
+aleph = 13
+beth = 13
+one_norm = 40
+
 # System: P450 
 #M = 160
 #N = 2*58
@@ -84,11 +93,11 @@ def qubitization_order(t, epsilon, one_norm):
 #one_norm = 130.9
 
 # System: FeMoco
-M = 290
-N = 2*76
-aleph = 15
-beth = 16
-one_norm = 198.9
+#M = 290
+#N = 2*76
+#aleph = 15
+#beth = 16
+#one_norm = 198.9
 
 
 epsilon = 1e-3
@@ -105,4 +114,63 @@ qubit_cost = qubit_cost(N, M, aleph, beth, br)
 print(f'Qubit cost: {qubit_cost:.2e}')
 simulation_cost = Toffoli_cost(N, M, aleph, beth, br) * qubitization_order(time, epsilon, one_norm) * 4
 print(f'Simulation cost: {simulation_cost:.2e}')
+
+def plot_thc_cost_vs_precision():
+    """
+    Creates a plot showing how T-gate count scales with precision (epsilon)
+    for QPE and Simulation using THC qubitization.
+    """
+    import matplotlib.pyplot as plt
+    
+    # Range of precision values to evaluate
+    epsilons = np.logspace(-3, -0, 10)  # Precision from 10^-6 to 10^-1
+    
+    # Dictionary to store results
+    results = {
+        'QPE': [],
+        'Simulation': []
+    }
+    
+    # Calculate costs for each precision
+    for eps in tqdm(epsilons, desc="Calculating costs", unit="epsilon"):
+        # QPE cost
+        time = 1/eps
+        qpe = Toffoli_cost(N, M, aleph, beth, br) * np.pi*one_norm/(2*eps) * 4
+        results['QPE'].append(qpe)
+        
+        # Simulation cost (fixed time)
+        sim = Toffoli_cost(N, M, aleph, beth, br) * qubitization_order(time, eps, one_norm) * 4
+        results['Simulation'].append(sim)
+    
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Plot T-gate counts
+    ax.plot(epsilons, results['QPE'], marker='o', linestyle='-', label='QPE')
+    ax.plot(epsilons, results['Simulation'], marker='s', linestyle='-', label='Simulation')
+    
+    ax.set_xlabel('Precision ($\\epsilon$)')
+    ax.set_ylabel('T-gate count')
+    ax.set_title('THC Qubitization: T-gate Count vs Precision')
+    ax.grid(True, which="both", ls="-", alpha=0.2)
+    ax.legend()
+    ax.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
+    
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    
+    plt.tight_layout()
+    
+    # Save the figure
+    save_path = '/Users/pablo.casares/Developer/pennylane/pennylane/labs/trotter_vs_qubitization/thc_cost_vs_precision.png'
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Plot saved to {save_path}")
+    
+    return fig
+
+# Execute the plotting function if this script is run directly
+if __name__ == "__main__":
+    print("\nGenerating THC cost vs precision plot...")
+    #plot_thc_cost_vs_precision()
+    print("Done!")
 

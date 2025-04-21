@@ -1,9 +1,9 @@
 import numpy as np
 
-print('System: FeMoco')
-N = 2*76
+print('System: LiMnO cluster')
+N = 2*18 # N is spin orbitals
 Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
-order = 6
+order = 4
 Y2kp1dN2 = 1
 time = 1e3
 
@@ -187,3 +187,91 @@ print(f'Number of T gates in algorithm = {scientific_notation(alg_t)}')
 rotations = {k: v for k, v in simulation_time(N, order, time).items()}
 alg_av = active_volume(rotations)
 print(f'Active volume of the algorithm = {scientific_notation(alg_av)}')
+
+def plot_cost_vs_precision():
+    """
+    Creates a plot showing how T-gate count and active volume scale with precision (epsilon)
+    for different algorithms.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import ScalarFormatter
+    
+    # Range of precision values to evaluate
+    epsilons = np.logspace(-6, -1, 20)  # Precision from 10^-6 to 10^-1
+    
+    # Dictionary to store results
+    results = {
+        'QPE': {'T_gates': [], 'active_volume': []},
+        'Spectroscopy': {'T_gates': [], 'active_volume': []},
+        'Simulation': {'T_gates': [], 'active_volume': []}
+    }
+    
+    # Calculate costs for each precision
+    for eps in epsilons:
+        # QPE costs
+        qpe_rotations = QPE_cost(N, order, Y2kp1dN2, epsilon=eps)
+        qpe_t = Tgates_per_rot * np.sum([qpe_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        qpe_av = active_volume(qpe_rotations)
+        results['QPE']['T_gates'].append(qpe_t)
+        results['QPE']['active_volume'].append(qpe_av)
+        
+        # Spectroscopy costs
+        spec_rotations = spectroscopy_longest(N, order, eps, 1/eps, Y2kp1dN2)
+        spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        spec_av = active_volume(spec_rotations)
+        results['Spectroscopy']['T_gates'].append(spec_t)
+        results['Spectroscopy']['active_volume'].append(spec_av)
+        
+        # Simulation costs
+        sim_rotations = simulation_time(N, order, 1/eps, Y2kp1dN2, eps)
+        sim_t = Tgates_per_rot * np.sum([sim_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        sim_av = active_volume(sim_rotations)
+        results['Simulation']['T_gates'].append(sim_t)
+        results['Simulation']['active_volume'].append(sim_av)
+    
+    # Create plots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # T-gates plot
+    for alg in results:
+        ax1.plot(epsilons, results[alg]['T_gates'], marker='o', linestyle='-', label=alg)
+    
+    ax1.set_xlabel('Precision ($\\epsilon$)')
+    ax1.set_ylabel('T-gate count')
+    ax1.set_title('T-gate Count vs Precision')
+    ax1.grid(True, which="both", ls="-", alpha=0.2)
+    ax1.legend()
+    ax1.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
+    
+    
+    # Active volume plot
+    for alg in results:
+        ax2.plot(epsilons, results[alg]['active_volume'], marker='o', linestyle='-', label=alg)
+    
+    ax2.set_xlabel('Precision ($\\epsilon$)')
+    ax2.set_ylabel('Active Volume')
+    ax2.set_title('Active Volume vs Precision')
+    ax2.grid(True, which="both", ls="-", alpha=0.2)
+    ax2.legend()
+    ax2.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
+
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+
+    ax2.set_xscale('log')
+    ax2.set_yscale('log')
+    
+    plt.tight_layout()
+    
+    # Save the figure
+    save_path = '/Users/pablo.casares/Developer/pennylane/pennylane/labs/trotter_vs_qubitization/cost_vs_precision.png'
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Plot saved to {save_path}")
+    
+    return fig
+
+# Execute the plotting function if this script is run directly
+if __name__ == "__main__":
+    print("\nGenerating cost vs precision plot...")
+    plot_cost_vs_precision()
+    print("Done!")
