@@ -26,7 +26,7 @@ tensorflow_macos==2.9.0; sys_platform == "darwin" and platform_machine == "arm64
 tensornetwork==0.3
 tomlkit
 torch==2.5.1
-jinja2==3.0.3
+jinja2~=3.1
 rustworkx>=0.14.0
 networkx==3.1
 requests~=2.32.2
