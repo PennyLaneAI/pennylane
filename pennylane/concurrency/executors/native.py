@@ -65,7 +65,7 @@ class PyNativeExec(IntExec, abc.ABC):
     def shutdown(self):
         "Shutdown the executor backend, if valid."
         if self._persist:
-            self._close_fn(self._backend)()
+            self._shutdown_fn(self._backend)()
             self._backend = None
 
     def __del__(self):
@@ -114,7 +114,10 @@ class SerialExec(PyNativeExec):
     """
 
     class StdLibWrapper:
-        "Internal utility class for use with the executor API. All execution is local within the calling Python process."
+        """
+        Internal utility class for use with the executor API.
+        All execution is local within the calling Python process.
+        """
 
         def __init__(self, *args, **kwargs):
             pass
@@ -137,7 +140,7 @@ class SerialExec(PyNativeExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="close",
+            shutdown_fn="close",
             submit_unpack=True,
             map_unpack=True,
             blocking=True,
@@ -162,7 +165,7 @@ class MPPoolExec(PyNativeExec):
             submit_fn="apply",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="close",
+            shutdown_fn="close",
             submit_unpack=False,
             map_unpack=False,
             blocking=True,
@@ -171,11 +174,12 @@ class MPPoolExec(PyNativeExec):
     def map(self, fn: Callable, *args: Sequence[Any]):
         if len(inspect.signature(fn).parameters) > 1:
             try:
-                # attempt to recover by offloading to starmap
+                # attempt offloading to starmap
                 return self.starmap(fn, zip(*args))
             except:
                 raise ValueError(
-                    "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. Consider a different backend, or use `starmap` instead."
+                    "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. "
+                    "Consider a different backend, or use `starmap` instead."
                 )
         return super().map(fn, *args)
 
@@ -195,7 +199,7 @@ class ProcPoolExec(PyNativeExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="shutdown",
+            shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
             blocking=False,
@@ -217,7 +221,7 @@ class ThreadPoolExec(PyNativeExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="shutdown",
+            shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
             blocking=False,

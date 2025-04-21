@@ -34,7 +34,7 @@ class RemoteExec(abc.ABC):
         submit_fn: Optional[str] = None
         map_fn: Optional[str] = None
         starmap_fn: Optional[str] = None
-        close_fn: Optional[str] = None
+        shutdown_fn: Optional[str] = None
         submit_unpack: Optional[bool] = None
         map_unpack: Optional[bool] = None
         blocking: Optional[bool] = None
@@ -94,7 +94,6 @@ class RemoteExec(abc.ABC):
         """
         Disconnect from executor backend and release acquired resources.
         """
-        ...
 
     def _submit_fn(self, backend):
         "Helper utility to return the config-defined submit function for the given backend."
@@ -109,10 +108,10 @@ class RemoteExec(abc.ABC):
 
         return getattr(backend, self._cfg.starmap_fn)
 
-    def _close_fn(self, backend):
-        "Helper utility to return the config-defined close function for the given backend."
+    def _shutdown_fn(self, backend):
+        "Helper utility to return the config-defined shutdown function for the given backend."
 
-        return getattr(backend, self._cfg.close_fn)
+        return getattr(backend, self._cfg.shutdown_fn)
 
     def _get_backend(self):
         "Convenience method to return the existing backend if persistence is enabled, or to create a new temporary backend with the defined size if not."

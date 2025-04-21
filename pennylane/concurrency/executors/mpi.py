@@ -41,7 +41,7 @@ class MPIPoolExec(ExtExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="shutdown",
+            shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
             blocking=False,
@@ -84,7 +84,7 @@ class MPIPoolExec(ExtExec):
     def shutdown(self):
         "Shutdown the executor backend, if valid."
         if self._persist:
-            self._close_fn(self._backend)()
+            self._shutdown_fn(self._backend)()
             self._backend = None
 
     def __del__(self):
@@ -111,7 +111,7 @@ class MPICommExec(ExtExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            close_fn="shutdown",
+            shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
             blocking=False,
@@ -158,7 +158,7 @@ class MPICommExec(ExtExec):
     def shutdown(self):
         "Shutdown the executor backend, if valid."
         if self._persist:
-            self._close_fn(self._backend)()
+            self._shutdown_fn(self._backend)()
             self._backend = None
 
     def __del__(self):
