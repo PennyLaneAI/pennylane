@@ -77,7 +77,6 @@ Guillermo Alonso-Linaje,
 Yushao Chen,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
-Andrija Paurevic,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic
