@@ -45,6 +45,9 @@
 * Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
   [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
 
+* Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
+  [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
+
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
