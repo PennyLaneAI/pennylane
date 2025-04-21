@@ -29,8 +29,6 @@ class TestInitializeState:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        num_wires = qml.operation.AllWires
-
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
