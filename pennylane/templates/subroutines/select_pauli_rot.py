@@ -37,6 +37,31 @@ class SelectPauliRot(Operation):
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
 
+    **Example**
+
+    .. code-block::
+
+        angles = np.array([1.0, 2.0, 3.0, 4.0])
+
+        wires = qml.registers({"control": 2, "target": 1})
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.SelectPauliRot(
+                angles,
+                control_wires=wires["control"],
+                target_wire=wires["target"],
+                rot_axis="Y",
+            )
+            return qml.state()
+
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+         0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+
     .. seealso:: :class:`~.Select`.
 
     Args:
