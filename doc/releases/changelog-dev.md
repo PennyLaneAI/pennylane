@@ -42,6 +42,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Adds an informative error if `qml.cond` is used with an abstract condition with
+  jitting on `default.qubit` if capture is enabled.
+  [(#7314)](https://github.com/PennyLaneAI/pennylane/pull/7314)
+
 * Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
   [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
 
