@@ -105,7 +105,7 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
-    executor_backend: RemoteExec = get_executor(backend=ExecBackends.MP_Pool)
+    executor_backend: Optional[RemoteExec] = None
     """
     Defines the class for the executor backend. 
     """
@@ -142,6 +142,9 @@ class ExecutionConfig:
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
+
+        if self.executor_backend is None:
+            self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
 
 
 DefaultExecutionConfig = ExecutionConfig()
