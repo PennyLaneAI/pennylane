@@ -25,14 +25,12 @@ class MPIPoolExec(ExtExec):
     """
     MPIPoolExecutor abstraction class executor.
 
-    This executor wraps the mpi4py ``mpi4py.futures.MPIPoolExecutor`` API, and provides support for execution using multiple processes launched using MPI as
+    This executor wraps the mpi4py ``mpi4py.futures.MPIPoolExecutor`` API, and provides support for execution using multiple processes launched using MPI.
+    For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
 
     .. code-block:: console
 
         $ mpirun -n 4 -m mpi4py.futures my_script.py
-
-
-
 
     All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
     """

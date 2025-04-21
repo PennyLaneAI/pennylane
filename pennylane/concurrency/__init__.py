@@ -21,10 +21,9 @@ This module contains concurrent execution functionality for PennyLane workloads.
 Modules
 ~~~~~~~
 
-Task-based executors
---------------------
-
 .. currentmodule:: pennylane.concurrency
-.. automodule:: pennylane.concurrency.executors
+.. autosummary::
+    :toctree: api
 
+    ~executors
 """

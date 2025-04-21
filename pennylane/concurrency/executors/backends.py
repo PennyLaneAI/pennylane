@@ -13,6 +13,13 @@
 # limitations under the License.
 r"""
 Contains concurrent executor abstractions for task-based workloads.
+
+.. currentmodule:: pennylane.concurrency.executors.backends
+.. automodapi:: pennylane.concurrency.executors.backends
+    :no-heading:
+    :include-all-objects:
+    :inheritance-diagram:
+
 """
 
 from enum import Enum
@@ -25,6 +32,11 @@ from .native import MPPoolExec, ProcPoolExec, SerialExec, ThreadPoolExec
 class ExecBackends(Enum):
     """
     Supported executor backends.
+
+    The enumerated options provide a mapping to the implementation-defined classes for task-based executor backends.
+
+    .. note::
+        Not all backends are guaranteed to be instantiable without additional package installations.
     """
 
     MP_Pool = MPPoolExec
@@ -36,7 +48,7 @@ class ExecBackends(Enum):
     MPI_CommEx = MPICommExec
 
 
-ExecBackendsMap = {
+_ExecBackendsMap = {
     "mp_pool": MPPoolExec,
     "cf_procpool": ProcPoolExec,
     "cf_threadpool": ThreadPoolExec,
@@ -54,7 +66,7 @@ def get_supported_backends():
     .. note::
         Not all backends are guaranteed to be instantiable without additional package installations.
     """
-    return ExecBackendsMap
+    return _ExecBackendsMap
 
 
 def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
@@ -63,7 +75,7 @@ def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
     """
     if isinstance(backend, ExecBackends):
         return backend.value
-    return ExecBackendsMap[backend]
+    return _ExecBackendsMap[backend]
 
 
 def create_executor(backend: ExecBackends | str = ExecBackends.MP_Pool, **kwargs):
@@ -73,4 +85,4 @@ def create_executor(backend: ExecBackends | str = ExecBackends.MP_Pool, **kwargs
     if isinstance(backend, ExecBackends):
 
         return backend.value(**kwargs)
-    return ExecBackendsMap[backend](**kwargs)
+    return _ExecBackendsMap[backend](**kwargs)

@@ -53,10 +53,20 @@ class RemoteExec(abc.ABC):
     """
     Abstract base class for defining a task-based parallel executor backend.
 
-    This ABC is intended to provide the highest-layer abstraction in the inheritance tree, provided the base API definitions of
+    This ABC is intended to provide the highest-layer abstraction in the inheritance tree.
+
+    Args:
+        max_workers (int): The size of the worker pool. This value will directly control (given backend support),
+            the number of concurrent executions that the backend can avail of. Generally, this value should match
+            the number of physical cores on the executing system, or with the executing remote environment. Defaults
+            to ``None``.
+        persist (bool): Indicates to the executor backend that the state should persist between calls. If supported,
+            this allows a pre-configured device to be reused for several computations but removing the need to
+            automatically shutdown. The pool may require manual shutdown upon completion of the work, even if the
+            executor goes out-of-scope.
     """
 
-    def __init__(self, max_workers: int = None, persist: bool = False, *args, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, *args, **kwargs):
         self._size = max_workers
         self._persist = persist
 
@@ -71,10 +81,18 @@ class RemoteExec(abc.ABC):
 
     @property
     def size(self):
+        """
+        The size of the worker pool for the given executor.
+
+        A larger worker pool indicates the number of potential executions that can happen concurrently.
+        """
         return self._size
 
     @property
     def persist(self):
+        """
+        Indicates whether the executor will maintain its configured state between calls.
+        """
         return self._persist
 
     def __enter__(self):
