@@ -14,7 +14,7 @@
 r"""
 .. currentmodule:: pennylane
 
-This module contains features for supporting concurrent task-based execution to support PennyLane workloads.
+This module contains concurrent task-based execution features for PennyLane workloads.
 
 .. currentmodule:: pennylane.concurrency
 
