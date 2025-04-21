@@ -11,5 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+.. currentmodule:: pennylane
 
-from .executors import *
+This module contains features for supporting concurrent task-based execution to support PennyLane workloads.
+
+.. currentmodule:: pennylane.concurrency
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+"""
+
+from .executors import create_executor, get_executor, get_supported_backends
+
+__all__ = ["create_executor", "get_executor", "get_supported_backends"]
