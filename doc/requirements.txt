@@ -11,7 +11,7 @@ numpy
 pygments-github-lexers
 packaging
 scipy
-docutils==0.16
+docutils==0.20
 sphinx~=6.2.0
 sphinx-automodapi==0.18
 sphinx-copybutton
