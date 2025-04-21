@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
+  [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
+
 * Specifying `pipeline=None` with `qml.compile` has been removed.
   [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
 
