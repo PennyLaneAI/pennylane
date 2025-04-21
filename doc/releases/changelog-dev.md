@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Specifying `pipeline=None` with `qml.compile` has been removed.
+  [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
+
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
