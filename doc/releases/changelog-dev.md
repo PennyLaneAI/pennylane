@@ -31,6 +31,7 @@
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
   an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
   and does not need to be overwritten unless the operator developer wants to add wire number validation.
+  [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
 
 <h3>Internal changes ⚙️</h3>
 
