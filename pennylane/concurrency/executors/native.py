@@ -28,7 +28,7 @@ from itertools import starmap
 from multiprocessing import Pool as exec_mp
 from typing import Any, Optional
 
-from .base import IntExec
+from .base import ExecBackendConfig, IntExec
 
 
 class PyNativeExec(IntExec, abc.ABC):
@@ -53,7 +53,7 @@ class PyNativeExec(IntExec, abc.ABC):
         if self._persist:
             self._backend = self._exec_backend()(self._size)
 
-        self._cfg = self.LocalConfig()
+        self._cfg = ExecBackendConfig()
 
     def __enter__(self):
         return self
@@ -138,7 +138,7 @@ class SerialExec(PyNativeExec):
 
     def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
@@ -165,7 +165,7 @@ class MPPoolExec(PyNativeExec):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="apply",
             map_fn="map",
             starmap_fn="starmap",

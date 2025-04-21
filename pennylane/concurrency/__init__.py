@@ -14,18 +14,17 @@
 r"""
 .. currentmodule:: pennylane
 
-This module contains concurrent task-based execution features for PennyLane workloads.
+This module contains concurrent execution functionality for PennyLane workloads.
 
 .. currentmodule:: pennylane.concurrency
 
 Modules
 ~~~~~~~
 
-.. autosummary::
-    :toctree: api
+Task-based executors
+--------------------
+
+.. currentmodule:: pennylane.concurrency
+.. automodule:: pennylane.concurrency.executors
 
 """
-
-from .executors import create_executor, get_executor, get_supported_backends
-
-__all__ = ["create_executor", "get_executor", "get_supported_backends"]

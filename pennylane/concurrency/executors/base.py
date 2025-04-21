@@ -22,22 +22,39 @@ from itertools import starmap
 from typing import Optional
 
 
+@dataclass
+class ExecBackendConfig:
+    """
+    Executor backend configuration data-class.
+
+    To allow for differences in each executor backend implementation, this class dynamically defines overloads to the main API functions. For explicitly-defined executors, this class is optional, and is provided for convenience with hierarchical inheritance class structures, where subtle differences are best resolved dynamically, rather than with API modifications. All initial values default to ``None``.
+
+    Args:
+        submit_fn (str): The backend function that best matches the `submit` API call.
+        map_fn (str): The backend function that best matches the `map` API call.
+        starmap_fn (str): The backend function that best matches the `starmap` API call.
+        shutdown_fn (str): The backend function that best matches the `shutdown` API call.
+        submit_unpack (bool): Whether the arguments to ``submit`` are to be unpacked (*args) or directly passed (args) to ``submit_fn``.
+        map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (*args) or directly passed (args) to ``map_unpack``.
+        blocking (bool): Whether the return values from ``submit``, ``map`` and `starmap`` are blocking (synchronous) or non-blocking (asynchronous).
+
+    """
+
+    submit_fn: Optional[str] = None
+    map_fn: Optional[str] = None
+    starmap_fn: Optional[str] = None
+    shutdown_fn: Optional[str] = None
+    submit_unpack: Optional[bool] = None
+    map_unpack: Optional[bool] = None
+    blocking: Optional[bool] = None
+
+
 class RemoteExec(abc.ABC):
     """
-    Abstract base class for defining a task-based parallel executor backend for running python functions
+    Abstract base class for defining a task-based parallel executor backend.
+
+    This ABC is intended to provide the highest-layer abstraction in the inheritance tree, provided the base API definitions of
     """
-
-    @dataclass
-    class LocalConfig:
-        "Python native executor configuration data-class"
-
-        submit_fn: Optional[str] = None
-        map_fn: Optional[str] = None
-        starmap_fn: Optional[str] = None
-        shutdown_fn: Optional[str] = None
-        submit_unpack: Optional[bool] = None
-        map_unpack: Optional[bool] = None
-        blocking: Optional[bool] = None
 
     def __init__(self, max_workers: int = None, persist: bool = False, *args, **kwargs):
         self._size = max_workers
