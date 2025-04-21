@@ -24,6 +24,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
+  pennylane now depends on the more general `Operator` interface instead. The
+  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+  that the operator instance is Hermitian.
+
 <h3>Internal changes ⚙️</h3>
 
 * Introduce module dependency management using `tach`.

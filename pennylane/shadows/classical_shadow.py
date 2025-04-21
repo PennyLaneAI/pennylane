@@ -286,7 +286,7 @@ class ClassicalShadow:
         save quantum circuit executions.
 
         Args:
-            H (qml.Observable): Observable to compute the expectation value
+            H (qml.operation.Operator): Observable to compute the expectation value
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:

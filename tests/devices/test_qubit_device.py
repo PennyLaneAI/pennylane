@@ -653,7 +653,7 @@ class TestExpval:
         dev = mock_qubit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -732,7 +732,7 @@ class TestVar:
         dev = mock_qubit_device_with_original_statistics()
 
         # pylint: disable=too-few-public-methods
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -804,7 +804,7 @@ class TestSample:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
 
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -874,7 +874,7 @@ class TestSampleWithBroadcasting:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
 
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1

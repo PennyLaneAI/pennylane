@@ -25,7 +25,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane._deprecated_observable import Observable
+from pennylane.operation import AnyWires, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -58,6 +59,7 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
 
+    is_hermitian = True
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -259,6 +261,10 @@ class Hermitian(Observable):
         # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
+
 
 class SparseHamiltonian(Observable):
     r"""
@@ -297,6 +303,7 @@ class SparseHamiltonian(Observable):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
+    is_hermitian = True
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -399,6 +406,10 @@ class SparseHamiltonian(Observable):
         """
         return H
 
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
+
 
 class Projector(Observable):
     r"""Projector(state, wires, id=None)
@@ -445,6 +456,7 @@ class Projector(Observable):
 
     """
 
+    is_hermitian = True
     name = "Projector"
     num_wires = AnyWires
     num_params = 1
@@ -493,6 +505,10 @@ class Projector(Observable):
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
 
 
 class BasisStateProjector(Projector, Operation):

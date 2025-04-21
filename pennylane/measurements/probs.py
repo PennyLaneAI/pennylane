@@ -46,7 +46,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 

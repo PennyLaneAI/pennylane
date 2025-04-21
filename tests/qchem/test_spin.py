@@ -175,7 +175,7 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     s2 = qchem.spin.spin2(electrons, orbitals)
     sops = list(map(simplify, ops_ref))
     s2_ref = qml.Hamiltonian(coeffs_ref, sops)
-    assert s2_ref.compare(s2)
+    assert s2_ref == (s2)
     assert isinstance(s2, qml.ops.Sum)
 
     wire_order = s2_ref.wires
@@ -230,7 +230,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     """
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-    assert sz_ref.compare(sz)
+    assert sz_ref == (sz)
     assert isinstance(sz, qml.ops.Sum)
 
     wire_order = sz_ref.wires
