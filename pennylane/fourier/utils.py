@@ -18,7 +18,7 @@ from itertools import combinations
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.ops.functions import generator, matrix
 
 
 def format_nvec(nvec):
@@ -46,10 +46,9 @@ def get_spectrum(op, decimals):
     Returns:
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
-    matrix = qml.matrix(qml.generator(op, format="observable"))
 
     # todo: use qml.math.linalg once it is tested properly
-    evals = np.linalg.eigvalsh(matrix)
+    evals = np.linalg.eigvalsh(matrix(generator(op, format="observable")))
 
     # compute all unique positive differences of eigenvalues, then add 0
     # note that evals are sorted already
