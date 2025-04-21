@@ -113,14 +113,14 @@ class TestGetOneParameterGenerators:
     @pytest.mark.jax
     @pytest.mark.parametrize("n", [1, 2, 3])
     @pytest.mark.parametrize("use_jit", [True, False])
-    def test_jax(self, n, use_jit):
+    def test_jax(self, n, use_jit, seed):
         """Test that generators are computed correctly in JAX."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
-        rng = np.random.default_rng(14521)
+        rng = np.random.default_rng(seed)
         d = 4**n - 1
         theta = jnp.array(rng.random(d))
         fn = (
@@ -406,7 +406,6 @@ class TestSpecialUnitary:
 
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("n", [1, 2, 3])
-    @pytest.mark.parametrize("seed", [214, 2491, 8623])
     def test_compute_matrix_random(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
@@ -426,7 +425,6 @@ class TestSpecialUnitary:
             assert np.allclose(matrix @ qml.math.conj(qml.math.T(matrix)), I)
 
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("seed", [214, 8623])
     def test_compute_matrix_random_many_wires(self, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters and more than 5 wires."""
@@ -448,7 +446,6 @@ class TestSpecialUnitary:
 
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("n", [1, 2])
-    @pytest.mark.parametrize("seed", [214, 2491, 8623])
     def test_compute_matrix_random_broadcasted(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for broadcasted random input parameters."""

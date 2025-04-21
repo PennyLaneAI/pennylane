@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the classical and quantum fisher information matrix in the pennylane.qinfo
+Tests for the classical and quantum fisher information matrix in the module pennylane.gradients
 """
 import numpy as np
 
@@ -151,17 +151,18 @@ class TestIntegration:
             qml.device("lightning.qubit", wires=3),
         ),
     )
-    def test_quantum_fisher_info(self, dev):
-        """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
+    def test_quantum_fisher_info(self, dev, seed):
+        """Integration test of quantum fisher information matrix CFIM. This is just calling
+        ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
-        rng = pnp.random.default_rng(200)
+        rng = pnp.random.default_rng(seed)
         dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
 
         def qfunc(params):
-            qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
+            qml.RX(params[0] / 3, wires=0)
             qml.CNOT(wires=(0, 1))
             return qml.probs(wires=[0, 1])
 

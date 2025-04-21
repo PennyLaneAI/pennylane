@@ -163,7 +163,7 @@ def compute_jvp_single(tangent, jac):
     """
     if jac is None:
         return None
-    single_param = not isinstance(jac, tuple)
+    single_param = not isinstance(jac, (list, tuple))
     if (single_param and jac.shape == (0,)) or (not single_param and len(jac) == 0):
         # No trainable parameters
         return qml.math.zeros((1, 0))

@@ -79,7 +79,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 0.5)
     X(0)**0.5
     >>> qml.pow(qml.X(0), 0.5, lazy=False)
-    SX(wires=[0])
+    SX(0)
     >>> qml.pow(qml.X(0), 0.1, lazy=False)
     X(0)**0.1
     >>> qml.pow(qml.X(0), 2, lazy=False)
@@ -118,7 +118,7 @@ class Pow(ScalarSymbolicOp):
 
     >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
-    [SX(wires=[0])]
+    [SX(0)]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
                 [0.5-0.5j, 0.5+0.5j]])
@@ -130,6 +130,8 @@ class Pow(ScalarSymbolicOp):
        [0.        +0.j        , 0.56597465+0.82442265j]])
 
     """
+
+    resource_keys = {"base_class", "base_params", "z"}
 
     def _flatten(self):
         return (self.base, self.z), tuple()
@@ -198,6 +200,14 @@ class Pow(ScalarSymbolicOp):
         )
 
     @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
+
+    @property
     def z(self):
         """The exponent."""
         return self.hyperparameters["z"]
@@ -246,12 +256,17 @@ class Pow(ScalarSymbolicOp):
 
         return fractional_matrix_power(mat, scalar)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix and isinstance(self.z, int)
+
     # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(*params, base=None, z=0):
+    def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -380,13 +395,13 @@ class Pow(ScalarSymbolicOp):
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
-        base = self.base.simplify()
+        base = self.base if qml.capture.enabled() else self.base.simplify()
         try:
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op.simplify()
+            return op if qml.capture.enabled() else op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 

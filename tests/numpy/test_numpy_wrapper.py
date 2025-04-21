@@ -16,6 +16,7 @@ Tests for the ``autograd.numpy`` wrapping functionality. This functionality
 modifies Autograd NumPy arrays so that they have an additional property,
 ``requires_grad``, that marks them as trainable/non-trainable.
 """
+
 import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -544,9 +545,9 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        circuit(phi=phi)
+        tape = qml.workflow.construct_tape(circuit)(phi)
 
-        ops = circuit.tape.operations
+        ops = tape.operations
         assert len(ops) == 4
         for op, p in zip(ops, phi[0]):
             # Test each rotation applied
@@ -567,10 +568,10 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        circuit(phi=phi)
+        tape = qml.workflow.construct_tape(circuit)(phi)
 
         # Test the rotation applied
-        ops = circuit.tape.operations
+        ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "Rot"
         assert np.array_equal(ops[0].parameters, phi[0])

@@ -96,12 +96,12 @@ def test_apply_controlled_z(n_wires):
     unitary and comparing against the one provided in _make_Z."""
     n_all_wires = n_wires + 1
 
-    wires = Wires(range(n_wires))
+    target_wires = Wires(range(n_wires))
     control_wire = n_wires
     work_wires = None
 
     circ = lambda: _apply_controlled_z(
-        wires=wires, control_wire=control_wire, work_wires=work_wires
+        wires=target_wires, control_wire=control_wire, work_wires=work_wires
     )
     u = get_unitary(circ, n_all_wires)
 
@@ -109,7 +109,7 @@ def test_apply_controlled_z(n_wires):
     # because two Zs are used.
     z_ideal = -_make_Z(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=control_wire + target_wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -121,7 +121,7 @@ def test_apply_controlled_v(n_wires):
     unitary and comparing against the one provided in _make_V."""
     n_all_wires = n_wires + 1
 
-    wires = Wires(range(n_wires))
+    target_wires = Wires(range(n_wires))
     control_wire = Wires(n_wires)
 
     circ = lambda: _apply_controlled_v(target_wire=Wires([n_wires - 1]), control_wire=control_wire)
@@ -131,7 +131,7 @@ def test_apply_controlled_v(n_wires):
     # because two Vs are used.
     v_ideal = -_make_V(2**n_wires)
 
-    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=wires, control_wires=control_wire)
+    circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=control_wire + target_wires)
     u_ideal = get_unitary(circ, n_all_wires)
 
     assert np.allclose(u, u_ideal)
@@ -166,7 +166,7 @@ class TestApplyControlledQ:
 
         u = get_unitary(circ, n_all_wires)
 
-        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=wires, control_wires=control_wire)
+        circ = lambda: qml.ControlledQubitUnitary(q_mat, wires=Wires(control_wire) + Wires(wires))
         u_ideal = get_unitary(circ, n_all_wires)
 
         assert np.allclose(u_ideal, u)

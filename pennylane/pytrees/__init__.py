@@ -15,7 +15,14 @@
 An internal module for working with pytrees.
 """
 
-from .pytrees import PyTreeStructure, flatten, is_pytree, leaf, register_pytree, unflatten
+from .pytrees import (
+    PyTreeStructure,
+    flatten,
+    is_pytree,
+    leaf,
+    register_pytree,
+    unflatten,
+)
 
 __all__ = [
     "PyTreeStructure",

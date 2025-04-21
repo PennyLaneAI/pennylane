@@ -427,7 +427,6 @@ class TestBroadcasting:
         assert np.allclose(res, expected)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestSumOfTermsDifferentiability:
     x = 0.52
 
@@ -499,7 +498,7 @@ class TestSumOfTermsDifferentiability:
 
         x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
+        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)

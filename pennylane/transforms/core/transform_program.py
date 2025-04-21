@@ -14,19 +14,132 @@
 """
 This module contains the ``TransformProgram`` class.
 """
+from collections import namedtuple
 from collections.abc import Sequence
 from functools import partial
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 import pennylane as qml
+from pennylane import math
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
+CotransformCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
+
+
+def _get_interface(qnode, args, kwargs) -> str:
+    if qnode.interface == "auto":
+        interface = math.get_interface(*args, *list(kwargs.values()))
+        try:
+            interface = math.get_canonical_interface_name(interface).value
+        except ValueError:
+            interface = "numpy"
+    else:
+        interface = qnode.interface
+    return interface
+
+
+def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
+    raise qml.QuantumFunctionError("No trainable parameters.")
+
+
+def _autograd_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+    if not math.get_trainable_indices(args) and argnums is None:
+        raise qml.QuantumFunctionError("No trainable parameters.")
+    return qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+
+
+# pylint: disable=import-outside-toplevel, unused-argument
+def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+    if not math.get_trainable_indices(args):
+        raise qml.QuantumFunctionError("No trainable parameters.")
+    import tensorflow as tf
+
+    with tf.GradientTape() as tape:
+        gate_params = classical_function(*args, **kwargs)
+    return tape.jacobian(gate_params, args)
+
+
+# pylint: disable=import-outside-toplevel, unused-argument
+def _torch_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+    if not math.get_trainable_indices(args):
+        raise qml.QuantumFunctionError("No trainable parameters.")
+    from torch.autograd.functional import jacobian
+
+    return jacobian(partial(classical_function, **kwargs), args)
+
+
+# pylint: disable=import-outside-toplevel
+def _jax_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+    import jax
+
+    if argnums is None:
+        argnums = 0
+    return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
+
+
+_jac_map = {
+    None: _numpy_jac,
+    "numpy": _numpy_jac,
+    "autograd": _autograd_jac,
+    "tf": _tf_jac,
+    "torch": _torch_jac,
+    "jax": _jax_jac,
+    "jax-jit": _jax_jac,
+}
+
+
+# pylint: disable=unused-argument
+def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
+    """Returns the trainable gate parameters for a given QNode input.
+
+    While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
+    it cleanly works with all interfaces.
+    """
+    tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
+    tapes, _ = program((tape,))
+    return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
+
+
+def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
+    """This function gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
+    of Jax in order to mark trainable parameters.
+
+    Args:
+        qnode(qml.QNode): the quantum node.
+        argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
+    Return:
+        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+        trace = jax.interpreters.ad.JVPTrace(main, 0)
+
+    args_jvp = [
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
+        for i, arg in enumerate(args)
+    ]
+
+    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+    tapes, _ = program((tape,))
+    del trace
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
+
 
 def _batch_postprocessing(
-    results: ResultBatch, individual_fns: list[PostprocessingFn], slices: list[slice]
+    results: ResultBatch,
+    individual_fns: list[PostprocessingFn],
+    slices: Union[list[slice], list[int]],
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 
@@ -35,7 +148,7 @@ def _batch_postprocessing(
 
     Keyword Args:
         individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
-           corresponding to only a single :class:`~.QuantumTape`.
+            corresponding to only a single :class:`~.QuantumTape`.
         slices (List[slice]): the indices for the results that correspond to each individual post processing function.
 
     >>> results = (1.0, 2.0, 3.0, 4.0)
@@ -103,6 +216,12 @@ class TransformProgram:
 
     The order of execution is the order in the list containing the containers.
 
+    Args:
+        initial_program (Optional[Sequence[TransformContainer]]): A sequence of transforms with
+            which to initialize the program.
+        cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
+            ``args``, and ``kwargs`` required to compute classical cotransforms.
+
     The main case where one would have to interact directly with a transform program is when developing a
     :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
     returns a transform program. You should directly refer to the device API documentation for more details.
@@ -119,6 +238,8 @@ class TransformProgram:
 
     Programs have several implemented dunder methods for easy manipulation.
 
+    >>> from pennylane.transforms.core.transform_program import TransformProgram
+    >>> from copy import copy
     >>> program = TransformProgram()
     >>> program.add_transform(qml.compile)
     >>> program.add_transform(qml.transforms.cancel_inverses)
@@ -134,7 +255,7 @@ class TransformProgram:
     True
     >>> True if TransformProgram() else False
     False
-    >>> program2 = copy.copy(program)
+    >>> program2 = copy(program)
     >>> program2 == program
     True
     >>> qml.compile in program
@@ -146,30 +267,39 @@ class TransformProgram:
 
     """
 
-    def __init__(self, initial_program: Optional[Sequence] = None):
+    def __init__(
+        self,
+        initial_program: Optional[Sequence[TransformContainer]] = None,
+        cotransform_cache: Optional[CotransformCache] = None,
+    ):
         self._transform_program = list(initial_program) if initial_program else []
-        self._classical_jacobians = None
-        self._argnums = None
+        self.cotransform_cache = cotransform_cache
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
         return self._transform_program.__iter__()
 
-    def __len__(self):
+    def __len__(self) -> int:
         """int: Return the number transforms in the program."""
         return len(self._transform_program)
 
-    def __getitem__(self, idx) -> Union["TransformProgram", "TransformContainer"]:
+    @overload
+    def __getitem__(self, idx: int) -> "TransformContainer": ...
+
+    @overload
+    def __getitem__(self, idx: slice) -> "TransformProgram": ...
+
+    def __getitem__(self, idx):
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
         if isinstance(idx, slice):
             return TransformProgram(self._transform_program[idx])
         return self._transform_program[idx]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._transform_program)
 
-    def __add__(self, other):
+    def __add__(self, other: "TransformProgram") -> "TransformProgram":
         if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
 
@@ -177,7 +307,14 @@ class TransformProgram:
         if self.has_final_transform:
             transforms.append(transforms.pop(len(self) - 1))
 
-        return TransformProgram(transforms)
+        cotransform_cache = None
+        if self.cotransform_cache:
+            if other.cotransform_cache:
+                raise ValueError("Cannot add two transform programs with cotransform caches.")
+            cotransform_cache = self.cotransform_cache
+        elif other.cotransform_cache:
+            cotransform_cache = other.cotransform_cache
+        return TransformProgram(transforms, cotransform_cache=cotransform_cache)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -190,7 +327,7 @@ class TransformProgram:
 
         return self._transform_program == other._transform_program
 
-    def __contains__(self, obj):
+    def __contains__(self, obj) -> bool:
         if isinstance(obj, TransformContainer):
             return obj in self._transform_program
         if isinstance(obj, TransformDispatcher):
@@ -248,11 +385,12 @@ class TransformProgram:
         self.push_back(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
@@ -275,11 +413,12 @@ class TransformProgram:
         self.insert_front(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
@@ -341,14 +480,9 @@ class TransformProgram:
 
     def set_classical_component(self, qnode, args, kwargs):
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
-        if not self.has_classical_cotransform():
-            return
-        hybrid = self[-1].kwargs.pop("hybrid", True)  # pylint: disable=no-member
-
-        if hybrid:
-            argnums = self[-1].kwargs.pop("argnums", None)  # pylint: disable=no-member
-            self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
-            self._set_all_argnums(qnode, args, kwargs, argnums)
+        # pylint: disable=no-member
+        if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
+            self.cotransform_cache = CotransformCache(qnode, args, kwargs)
 
     def prune_dynamic_transform(self, type_to_keep=1):
         """Ensures that only one or none ``dynamic_one_shot`` is applied.
@@ -377,119 +511,50 @@ class TransformProgram:
             i -= 1
         return found
 
-    def _set_all_classical_jacobians(
-        self, qnode, args, kwargs, argnums
-    ):  # pylint: disable=too-many-statements
-        """It can be called inside the QNode to get all the classical Jacobians for a gradient transform."""
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def _get_classical_jacobian(self, index: int, tape_idx: int):
+        if self.cotransform_cache is None or not self[index].classical_cotransform:
+            return None
+        argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
+        qnode, args, kwargs = self.cotransform_cache
 
-        def classical_preprocessing(program, *args, **kwargs):
-            """Returns the trainable gate parameters for a given QNode input."""
-            kwargs.pop("shots", None)
-            kwargs.pop("argnums", None)
-            qnode.construct(args, kwargs)
-            tape = qnode.qtape
-            tapes, _ = program((tape,))
-            res = tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
-            if len(tapes) == 1:
-                return res[0]
-            return res
+        interface = _get_interface(qnode, args, kwargs)
 
-        def jacobian(classical_function, program, argnums, *args, **kwargs):
-            indices = qml.math.get_trainable_indices(args)
+        f = partial(_classical_preprocessing, qnode, self[:index], tape_idx)
+        classical_jacobian = _jac_map[interface](f, argnums, *args, **kwargs)
+        return classical_jacobian
 
-            if qnode.interface in ["jax", "jax-jit"]:
-                import jax  # pylint: disable=import-outside-toplevel
-
-                if isinstance(args[0], jax.numpy.ndarray):
-                    argnums = 0 if argnums is None else argnums
-
-            if not indices and argnums is None:
-                raise qml.QuantumFunctionError("No trainable parameters.")
-
-            classical_function = partial(classical_function, program)
-            jac = None
-            if qnode.interface == "autograd":
-                jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
-
-            if qnode.interface == "tf":
-                import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-                def _jacobian(*args, **kwargs):
-                    with tf.GradientTape() as tape:
-                        gate_params = classical_function(*args, **kwargs)
-
-                    jac = tape.jacobian(gate_params, args)
-                    return jac
-
-                jac = _jacobian(*args, **kwargs)
-
-            if qnode.interface == "torch":
-                import torch  # pylint: disable=import-outside-toplevel
-
-                def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-                    jac = torch.autograd.functional.jacobian(classical_function, args)
-                    return jac
-
-                jac = _jacobian(*args, **kwargs)
-
-            if qnode.interface in ["jax", "jax-jit"]:
-                import jax  # pylint: disable=import-outside-toplevel
-
-                argnums = 0 if argnums is None else argnums
-
-                def _jacobian(*args, **kwargs):
-                    return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
-
-                jac = _jacobian(*args, **kwargs)
-
-            return jac
-
-        classical_jacobians = []
-        for index, transform in enumerate(self):
-            if transform.classical_cotransform:
-                argnum = transform._kwargs.get("argnum", None)  # pylint: disable=protected-access
-                if qnode.interface == "jax" and argnum:
-                    raise qml.QuantumFunctionError(
-                        "argnum does not work with the Jax interface. You should use argnums instead."
-                    )
-                sub_program = TransformProgram(self[0:index])
-                classical_jacobian = jacobian(
-                    classical_preprocessing, sub_program, argnums, *args, **kwargs
-                )
-                qnode.construct(args, kwargs)
-                tapes, _ = sub_program((qnode.tape,))
-                multi_tapes = len(tapes) > 1
-                if not multi_tapes:
-                    classical_jacobian = [classical_jacobian]
-                classical_jacobians.append(classical_jacobian)
-            else:
-                classical_jacobians.append(None)
-        self._classical_jacobians = classical_jacobians
-        # Reset the initial tape
-        qnode.construct(args, kwargs)
-
-    def _set_all_argnums(self, qnode, args, kwargs, argnums):
+    def _get_argnums(self, index):
         """It can be used inside the QNode to set all argnums (tape level) using argnums from the argnums at the QNode
         level.
         """
+        if self.cotransform_cache is None:
+            return None
 
-        argnums_list = []
-        for index, transform in enumerate(self):
-            argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
-            # pylint: disable=protected-access
-            if (transform._use_argnum or transform.classical_cotransform) and argnums:
-                params = qml.math.jax_argnums_to_tape_trainable(
-                    qnode, argnums, TransformProgram(self[0:index]), args, kwargs
-                )
-                argnums_list.append([qml.math.get_trainable_indices(param) for param in params])
-            else:
-                argnums_list.append(None)
+        qnode, args, kwargs = self.cotransform_cache
+        interface = _get_interface(qnode, args, kwargs)
+        if interface not in ["jax", "jax-jit"]:
+            return None
 
-        self._argnums = argnums_list
+        if "argnum" in self[index].kwargs:
+            raise qml.QuantumFunctionError(
+                "argnum does not work with the Jax interface. You should use argnums instead."
+            )
 
-        qnode.construct(args, kwargs)
+        transform = self[index]
+        argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
 
-    def __call__(
+        if argnums is None and math.get_interface(args[0]) != "jax":
+            raise qml.QuantumFunctionError("No trainable parameters.")
+
+        argnums = [0] if argnums is None else argnums
+        # pylint: disable=protected-access
+        if (transform._use_argnum or transform.classical_cotransform) and argnums:
+            params = _jax_argnums_to_tape_trainable(qnode, argnums, self[:index], args, kwargs)
+            return [math.get_trainable_indices(param) for param in params]
+        return None
+
+    def __call_tapes(
         self, tapes: QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
@@ -497,21 +562,20 @@ class TransformProgram:
 
         processing_fns_stack = []
 
-        for i, transform_container in enumerate(self):
-            transform, targs, tkwargs, cotransform, _, _ = transform_container
-
-            execution_tapes = []
-            fns = []
-            slices = []
-
-            classical_fns = []
-            slices_classical = []
+        for transform_idx, transform_container in enumerate(self):
+            transform, targs, tkwargs, cotransform, _, _, _ = transform_container
+            tkwargs = {
+                key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
+            }
+            execution_tapes, fns, slices, classical_fns = [], [], [], []
 
             start = 0
-            start_classical = 0
-            for j, tape in enumerate(tapes):
-                if self._argnums is not None and self._argnums[i] is not None:
-                    tape.trainable_params = self._argnums[i][j]
+            argnums = self._get_argnums(transform_idx)
+
+            classical_jacobians = []
+            for tape_idx, tape in enumerate(tapes):
+                if argnums is not None:
+                    tape.trainable_params = argnums[tape_idx]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
@@ -520,14 +584,14 @@ class TransformProgram:
                 slices.append(slice(start, end))
                 start = end
 
-                if cotransform and self._classical_jacobians:
+                classical_jacobians.append(self._get_classical_jacobian(transform_idx, tape_idx))
+                if cotransform and classical_jacobians[-1] is not None:
                     classical_fns.append(
-                        partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape)
+                        partial(cotransform, cjac=classical_jacobians[-1], tape=tape)
                     )
-                    slices_classical.append(slice(start_classical, start_classical + 1))
-                    start_classical += 1
 
-            if cotransform and self._classical_jacobians:
+            if cotransform and classical_fns:
+                slices_classical = list(range(len(tapes)))
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )
@@ -549,5 +613,32 @@ class TransformProgram:
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         # Reset classical jacobians
-        self._classical_jacobians = []
         return tuple(tapes), postprocessing_fn
+
+    def __call_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.core.ClosedJaxpr":
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        cur_jaxpr = jax.core.ClosedJaxpr(jaxpr, consts)
+        for container in self:
+            _, targs, tkwargs, _, plxpr_transform, _, _ = container
+            cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
+
+        return cur_jaxpr
+
+    @overload
+    def __call__(
+        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.core.ClosedJaxpr": ...
+
+    @overload
+    def __call__(
+        self, tapes: QuantumScriptBatch
+    ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+
+    def __call__(self, *args, **kwargs):
+        if type(args[0]).__name__ == "Jaxpr":
+            return self.__call_jaxpr(*args, **kwargs)
+        return self.__call_tapes(*args, **kwargs)

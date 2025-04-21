@@ -301,13 +301,13 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res, expected)
 
-    def test_broadcasted_op_sample(self, subspace):
+    def test_broadcasted_op_sample(self, subspace, seed):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         qs = self.get_quantum_script(x, subspace, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123)
+        res = simulate(qs, rng=seed)
 
         expected = self.get_expectation_values(x, subspace)
         assert isinstance(res, tuple)
@@ -315,7 +315,7 @@ class TestBroadcasting:
         assert np.allclose(res, expected, atol=0.05)
 
         state, is_state_batched = get_final_state(qs)
-        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        res = measure_final_state(qs, state, is_state_batched, rng=seed)
 
         assert np.allclose(state, self.get_expected_state(x, subspace))
         assert is_state_batched

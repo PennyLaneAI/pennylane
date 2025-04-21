@@ -14,6 +14,8 @@
 """
 Integration tests for the capture of pennylane operations into jaxpr.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
@@ -23,14 +25,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def test_abstract_operator():
@@ -53,7 +48,6 @@ def test_abstract_operator():
     # arithmetic dunders integration tested
 
 
-@pytest.mark.usefixtures("new_opmath_only")
 def test_operators_constructed_when_plxpr_enabled():
     """Test that normal operators can still be constructed when plxpr is enabled."""
 
@@ -139,7 +133,21 @@ def test_hybrid_capture_parametrization():
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
+@pytest.mark.parametrize(
+    "w",
+    (
+        0,
+        (0,),
+        [0],
+        range(1),
+        qml.wires.Wires(0),
+        {0},
+        jax.numpy.array(0),
+        jax.numpy.array([0]),
+        np.array(0),
+        np.array([0]),
+    ),
+)
 def test_different_wires(w, as_kwarg):
     """Test that wires can be passed positionally and as a keyword in a variety of different types."""
 
@@ -151,13 +159,19 @@ def test_different_wires(w, as_kwarg):
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
-    assert len(jaxpr.eqns) == 1
+    if isinstance(w, jax.numpy.ndarray) and w.shape != ():
+        offset = 1
+    else:
+        offset = 0
 
-    eqn = jaxpr.eqns[0]
+    assert len(jaxpr.eqns) == 1 + offset
+
+    eqn = jaxpr.eqns[offset + 0]
     assert eqn.primitive == qml.X._primitive
     assert len(eqn.invars) == 1
-    assert isinstance(eqn.invars[0], jax.core.Literal)
-    assert eqn.invars[0].val == 0
+    if not isinstance(w, jax.numpy.ndarray):
+        assert isinstance(eqn.invars[0], jax.core.Literal)
+        assert eqn.invars[0].val == 0
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -169,6 +183,30 @@ def test_different_wires(w, as_kwarg):
 
     assert len(q) == 1
     qml.assert_equal(q.queue[0], qml.X(0))
+
+
+@pytest.mark.parametrize("as_kwarg", (True, False))
+@pytest.mark.parametrize("interface", ("numpy", "jax"))
+def test_ndarray_multiple_wires(as_kwarg, interface):
+    """Test that wires can be provided as an ndarray."""
+
+    def qfunc():
+        if as_kwarg:
+            qml.GroverOperator(wires=qml.math.arange(4, like=interface))
+        else:
+            qml.GroverOperator(qml.math.arange(4, like=interface))
+
+    jaxpr = jax.make_jaxpr(qfunc)()
+
+    assert jaxpr.eqns[-1].primitive == qml.GroverOperator._primitive
+    assert jaxpr.eqns[-1].params == {"n_wires": 4}
+    assert len(jaxpr.eqns[-1].invars) == 4
+
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    assert len(q) == 1
+    qml.assert_equal(q.queue[0], qml.GroverOperator(wires=(0, 1, 2, 3)))
 
 
 def test_parametrized_op():
@@ -276,6 +314,7 @@ class TestSpecialOps:
 
 
 class TestTemplates:
+
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
@@ -396,7 +435,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"grouping_type": None, "id": None, "method": "rlf"}
+        assert eqn.params == {"grouping_type": None, "id": None, "method": "lf"}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
@@ -422,7 +461,6 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""
 

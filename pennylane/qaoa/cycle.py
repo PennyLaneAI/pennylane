@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from typing import Union
 
 import networkx as nx
-import numpy as np
+import numpy as np  # pylint: disable=wrong-import-order
 import rustworkx as rx
 
 import pennylane as qml
@@ -302,7 +302,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
 
     where :math:`E` are the edges of the graph, :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)` and :math:`c_{ij}` is the corresponding edge weight.
-    Our objective is to maximimize :math:`P`, subject to selecting the :math:`x_{ij}` so that
+    Our objective is to maximize :math:`P`, subject to selecting the :math:`x_{ij}` so that
     our subset of edges composes a cycle.
 
     The product of edge weights is maximized by equivalently considering

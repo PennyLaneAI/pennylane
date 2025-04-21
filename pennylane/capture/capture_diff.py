@@ -25,31 +25,6 @@ except ImportError:
 
 
 @lru_cache
-def create_non_jvp_primitive():
-    """Create a primitive type ``NonJVPPrimitive``, which binds to JAX's JVPTrace
-    like a standard Python function and otherwise behaves like jax.core.Primitive.
-    """
-
-    if not has_jax:  # pragma: no cover
-        return None
-
-    # pylint: disable=too-few-public-methods
-    class NonJVPPrimitive(jax.core.Primitive):
-        """A subclass to JAX's Primitive that works like a Python function
-        when evaluating JVPTracers."""
-
-        def bind_with_trace(self, trace, args, params):
-            """Bind the ``NonJVPPrimitive`` with a trace. If the trace is a ``JVPTrace``,
-            binding falls back to a standard Python function call. Otherwise, the
-            bind call of JAX's standard Primitive is used."""
-            if isinstance(trace, jax.interpreters.ad.JVPTrace):
-                return self.impl(*args, **params)
-            return super().bind_with_trace(trace, args, params)
-
-    return NonJVPPrimitive
-
-
-@lru_cache
 def _get_grad_prim():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qml.grad``.
@@ -57,15 +32,17 @@ def _get_grad_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    grad_prim = create_non_jvp_primitive()("grad")
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    grad_prim = NonInterpPrimitive("grad")
     grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    grad_prim.prim_type = "higher_order"
 
     # pylint: disable=too-many-arguments
     @grad_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -89,8 +66,14 @@ def _get_jacobian_prim():
     """Create a primitive for Jacobian computations.
     This primitive is used when capturing ``qml.jacobian``.
     """
-    jacobian_prim = create_non_jvp_primitive()("jacobian")
+    if not has_jax:  # pragma: no cover
+        return None
+
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    jacobian_prim = NonInterpPrimitive("jacobian")
     jacobian_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    jacobian_prim.prim_type = "higher_order"
 
     # pylint: disable=too-many-arguments
     @jacobian_prim.def_impl
@@ -103,7 +86,7 @@ def _get_jacobian_prim():
         def func(*inner_args):
             return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
-        return jax.jacobian(func, argnums=argnum)(*args)
+        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnum)(*args))
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval

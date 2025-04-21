@@ -73,7 +73,6 @@ _OBSERVABLES_MAP = {
     "Hermitian",
     "Identity",
     "Projector",
-    "Hamiltonian",
     "LinearCombination",
     "Sum",
     "SProd",
@@ -147,10 +146,9 @@ def _pl_op_to_stim(op):
     return stim_op, " ".join(stim_tg)
 
 
-def _pl_obs_to_linear_comb(meas_op):
+def _pl_obs_to_linear_comb(meas_obs):
     """Convert a PennyLane observable to a linear combination of Pauli strings"""
 
-    meas_obs = qml.operation.convert_to_opmath(meas_op)
     meas_rep = meas_obs.pauli_rep
 
     # Use manual decomposition for enabling Hermitian and partial Projector support
@@ -160,11 +158,11 @@ def _pl_obs_to_linear_comb(meas_op):
     # A Pauli decomposition for the observable must exist
     if meas_rep is None:
         raise NotImplementedError(
-            f"default.clifford doesn't support expectation value calculation with {type(meas_op).__name__} at the moment."
+            f"default.clifford doesn't support expectation value calculation with {type(meas_obs).__name__} at the moment."
         )
 
     coeffs, paulis = np.array(list(meas_rep.values())), []
-    meas_op_wires = list(meas_op.wires)
+    meas_op_wires = list(meas_obs.wires)
     for pw in meas_rep:
         p_wire, p_word = pw.keys(), pw.values()
         if not p_word:
@@ -468,7 +466,7 @@ class DefaultClifford(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
@@ -581,7 +579,7 @@ class DefaultClifford(Device):
         tableau_simulator.do_circuit(stim_circuit)
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
-        # Perform measurments based on whether shots are provided
+        # Perform measurements based on whether shots are provided
         if circuit.shots:
             meas_results = self.measure_statistical(circuit, stim_circuit, seed=seed)
         else:
@@ -792,8 +790,7 @@ class DefaultClifford(Device):
 
     def _measure_variance(self, meas, tableau_simulator, **_):
         """Measure the variance with respect to the state of simulator device."""
-        meas_obs = qml.operation.convert_to_opmath(meas.obs)
-        meas_obs1 = meas_obs.simplify()
+        meas_obs1 = meas.obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
 
         # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2
@@ -1029,9 +1026,7 @@ class DefaultClifford(Device):
     def _sample_variance(self, meas, stim_circuit, shots, seed):
         """Measure the variance with respect to samples from simulator device."""
         # Get the observable for the expectation value measurement
-        meas_op = meas.obs
-        meas_obs = qml.operation.convert_to_opmath(meas_op)
-        meas_obs1 = meas_obs.simplify()
+        meas_obs1 = meas.obs.simplify()
         meas_obs2 = (meas_obs1**2).simplify()
 
         # use the naive formula for variance, i.e., Var(Q) = ⟨𝑄^2⟩−⟨𝑄⟩^2

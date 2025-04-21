@@ -12,32 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from itertools import combinations
+import warnings
 from typing import Union
 
-import numpy as np
-
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
-def _all_commutators(ops):
-    commutators = {}
-    for (j, op1), (k, op2) in combinations(enumerate(ops), r=2):
-        res = op1.commutator(op2)
-        if res != PauliSentence({}):
-            commutators[(j, k)] = res
-
-    return commutators
-
-
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+    g: list[Union[Operator, PauliWord, PauliSentence, TensorLike]],
+    pauli: bool = False,
+    matrix: bool = False,
+    is_orthogonal: bool = True,
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
+
+    .. warning:: :func:`~structure_constants` has moved to the :mod:`pennylane.liealg` module and can be called from there via ``qml.liealg.structure_constants`` or from the top level via ``qml.structure_constants``.
 
     Given a DLA :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
@@ -49,10 +43,8 @@ def structure_constants(
 
     .. math:: f^\gamma_{\alpha, \beta} = \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( iG_\gamma iG_\gamma \right)}.
 
-    Note that this is just the projection of the commutator on the DLA element :math:`iG_\gamma` via the trace inner product.
-    The inputs are assumed to be orthogonal. However, we neither assume nor enforce normalization of the DLA elements
-    :math:`G_\alpha`, hence the normalization
-    factor :math:`\text{tr}\left( iG_\gamma iG_\gamma \right)` in the projection.
+    The inputs are assumed to be orthogonal unless ``is_orthogonal`` is set to ``False``.
+    However, we neither assume nor enforce normalization of the DLA elements :math:`G_\alpha`.
 
     Args:
         g (List[Union[Operator, PauliWord, PauliSentence]]): The (dynamical) Lie algebra for which we want to compute
@@ -60,11 +52,14 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
+        matrix (bool): Whether or not matrix representations are used in the structure constants computation. This can help speed up the computation when using sums of Paulis with many terms. Default is ``False``.
+        is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
+            Default is ``True``.
 
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
 
     **Example**
 
@@ -106,23 +101,86 @@ def structure_constants(
 
     Note that we neither enforce nor assume normalization by default.
 
+    To compute the structure constants of a non-orthogonal set of operators, use the option
+    ``is_orthogonal=False``:
+
+    >>> dla = [qml.X(0), qml.Y(0), qml.X(0) - qml.Z(0)]
+    >>> adjoint_rep = qml.structure_constants(dla, is_orthogonal=False)
+    >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
+    array([-2.,  0.,  2.])
+
+    We can also use matrix representations for the computation, which is sometimes faster, in particular for sums of many Pauli words.
+    This only affects how the structure constants are computed internally, it does not change the result.
+
+    >>> adjoint_rep2 = qml.structure_constants(dla, is_orthogonal=False, matrix=True)
+    >>> qml.math.allclose(adjoint_rep, adjoint_rep2)
+    True
+
+    We can also input the DLA as a list of matrices. For that we use :func:`~lie_closure` with ``matrix=True``.
+
+    >>> n = 4
+    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
+    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> g.shape
+    (12, 16, 16)
+
+    The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
+    Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
+
+    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj.shape
+    (12, 12, 12)
+
+    .. details::
+        :title: Mathematical details
+
+        Consider a (dynamical) Lie algebra :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`.
+        The defining property of the structure constants is that they express the decomposition
+        of commutators in terms of the DLA elements, as described at the top. This can be written
+        as
+
+        .. math::
+            [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{d-1} f^\gamma_{\alpha, \beta} iG_\gamma.
+
+        Now we may multiply this equation with the adjoint of a DLA element and apply the trace:
+
+        .. math::
+
+            \text{tr}\left(-i G_\eta \cdot \left[i G_\alpha, i G_\beta \right] \right)
+            &= \text{tr}\left(-i G_\eta
+            \sum_{\gamma = 0}^{d-1} f^\gamma_{\alpha, \beta} iG_\gamma\right)\\
+            &= \sum_{\gamma = 0}^{d-1} \underset{g_{\eta \gamma}}{\underbrace{
+            \text{tr}\left(-i G_\eta iG_\gamma\right)}}
+            f^\gamma_{\alpha, \beta} \\
+            \Rightarrow\ f^\gamma_{\alpha, \beta} &= (g^{-1})_{\gamma \eta}
+            \text{tr}\left(-i G_\eta \cdot \left[i G_\alpha, i G_\beta \right] \right).
+
+        Here we introduced the Gram matrix
+        :math:`g_{\alpha\beta} = \text{tr}(-iG_\alpha i G_\beta)` of the DLA elements.
+        Note that this is just the projection of the commutator on the DLA element
+        :math:`iG_\gamma` via the trace inner product.
+
+        Now, if the DLA elements are orthogonal, as assumed by ``structure_constants`` by default,
+        the Gram matrix will be diagonal and simply consist of some rescaling factors, so that the
+        above computation becomes the equation from the very top:
+
+        .. math::
+            f^\gamma_{\alpha, \beta} =
+            \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}
+            {\text{tr}\left( iG_\gamma iG_\gamma \right)}.
+
+        This is cheaper than computing the full Gram matrix, inverting it, and multiplying it to
+        the trace inner products.
+
+        For the case of an orthonormal set of operators, we even have
+        :math:`g_{\alpha\beta}=\delta_{\alpha\beta}`, so that the division in this calculation can
+        be skipped.
+
     """
-    if any((op.pauli_rep is None) for op in g):
-        raise ValueError(
-            f"Cannot compute adjoint representation of non-pauli operators. Received {g}."
-        )
+    warnings.warn(
+        "Calling structure_constants via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
+        "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
-    if not pauli:
-        g = [op.pauli_rep for op in g]
-
-    commutators = _all_commutators(g)
-
-    rep = np.zeros((len(g), len(g), len(g)), dtype=float)
-    for i, op in enumerate(g):
-        for (j, k), res in commutators.items():
-            value = (1j * (op @ res).trace()).real
-            value = value / (op @ op).trace()  # v = ∑ (v · e_j / ||e_j||^2) * e_j
-            rep[i, j, k] = value
-            rep[i, k, j] = -value
-
-    return rep
+    return qml.structure_constants(g, pauli=pauli, matrix=matrix, is_orthogonal=is_orthogonal)

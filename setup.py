@@ -21,19 +21,20 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<2.0",
+    "numpy",
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
     "autograd",
-    "toml",
+    "tomlkit",
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.38",
+    "pennylane-lightning>=0.41",
     "requests",
     "typing_extensions",
     "packaging",
+    "diastatic-malt",
 ]
 
 info = {
@@ -49,11 +50,9 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
-            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
-            "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
+            "reference.qubit = pennylane.devices.reference_qubit:ReferenceQubit",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",

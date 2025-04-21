@@ -58,8 +58,8 @@ def circuit_fixture(ops, obs):
     return CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
 
-@pytest.fixture(name="parameterized_circuit_gaussian")
-def parameterized_circuit_gaussian_fixture(wires):
+@pytest.fixture(name="parametrized_circuit_gaussian")
+def parametrized_circuit_gaussian_fixture(wires):
     def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=wires[0])
         qml.Rotation(b, wires=wires[1])
@@ -248,13 +248,15 @@ class TestCircuitGraph:
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_layers(self, parameterized_circuit_gaussian, wires):
+    def test_layers(self, parametrized_circuit_gaussian, wires):
         """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
-        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
-        circuit = qnode.qtape.graph
+        qnode = qml.QNode(parametrized_circuit_gaussian, dev)
+        tape = qml.workflow.construct_tape(qnode)(
+            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+        )
+        circuit = tape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
 
@@ -267,13 +269,15 @@ class TestCircuitGraph:
         assert layers[2].param_inds == [6, 7]
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_iterate_layers(self, parameterized_circuit_gaussian, wires):
+    def test_iterate_layers(self, parametrized_circuit_gaussian, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
-        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
-        circuit = qnode.qtape.graph
+        qnode = qml.QNode(parametrized_circuit_gaussian, dev)
+        tape = qml.workflow.construct_tape(qnode)(
+            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+        )
+        circuit = tape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
@@ -306,8 +310,8 @@ class TestCircuitGraph:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circ, dev)
-        qnode()
-        circuit = qnode.qtape.graph
+        tape = qml.workflow.construct_tape(qnode)()
+        circuit = tape.graph
         assert circuit.max_simultaneous_measurements == expected
 
     def test_print_contents(self):
@@ -322,7 +326,7 @@ class TestCircuitGraph:
             circuit_w_wires.print_contents()
         out = f.getvalue().strip()
 
-        expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
+        expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
 
     tape_depth = (

@@ -26,20 +26,22 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    Expectation,
+    ExpectationMP,
     MeasurementProcess,
     MidMeasureMP,
-    Probability,
-    Sample,
+    ProbabilityMP,
+    SampleMP,
     ShadowExpvalMP,
-    State,
-    Variance,
+    StateMP,
+    VarianceMP,
 )
-from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.operation import Observable, Operation, Operator, StatePrepBase
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
+
+from .tracker import Tracker
 
 
 def _local_tape_expand(tape, depth, stop_at):
@@ -93,7 +95,6 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -103,9 +104,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qml.devices.DefaultMixed)", the overridden
+    checking "isinstance(dev, qml.devices.DefaultQutrit)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qml.devices.DefaultMixed)"
+    "isinstance(dev.target_device, qml.devices.DefaultQutrit)"
     """
 
     def __instancecheck__(cls, instance):
@@ -156,7 +157,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = qml.Tracker()
+        self.tracker = Tracker()
         self.custom_expand_fn = None
 
     def __repr__(self):
@@ -296,7 +297,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = qml.device("default.qubit.legacy", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qml.device("default.mixed", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -433,7 +434,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 internally, otherwise convert it into array[float]. Default: False.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -465,27 +466,23 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             for mp in observables:
                 obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
-                if isinstance(obs, Tensor):
-                    wires = [ob.wires for ob in obs.obs]
-                else:
-                    wires = obs.wires
 
-                if mp.return_type is Expectation:
-                    results.append(self.expval(obs.name, wires, obs.parameters))
+                if isinstance(mp, ExpectationMP):
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
-                elif mp.return_type is Variance:
-                    results.append(self.var(obs.name, wires, obs.parameters))
+                elif isinstance(mp, VarianceMP):
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
 
-                elif mp.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
+                elif isinstance(mp, SampleMP):
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
 
-                elif mp.return_type is Probability:
-                    results.append(list(self.probability(wires=wires).values()))
+                elif isinstance(mp, ProbabilityMP):
+                    results.append(list(self.probability(wires=obs.wires).values()))
 
-                elif mp.return_type is State:
+                elif isinstance(mp, StateMP):
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                elif mp.return_type is not None:
+                else:
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
@@ -505,9 +502,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(mp.return_type is Sample for mp in observables):
+            if all(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results)
-            if any(mp.return_type is Sample for mp in observables):
+            if any(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -623,8 +620,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.legacy", wires=2)
-
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
                 ...
@@ -682,7 +677,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         )
         obs_on_same_wire = len(circuit.obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit.obs_sharing_wires
+            isinstance(o, LinearCombination) for o in circuit.obs_sharing_wires
         )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -755,11 +750,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         is_analytic_or_shadow = not finite_shots or has_shadow
         all_obs_usable = self._all_multi_term_obs_supported(circuit)
         exists_multi_term_obs = any(
-            isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
+            isinstance(m.obs, (Sum, Prod, SProd)) for m in circuit.measurements
         )
         has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
         single_hamiltonian = len(circuit.measurements) == 1 and isinstance(
-            circuit.measurements[0].obs, (Hamiltonian, Sum)
+            circuit.measurements[0].obs, Sum
         )
         single_hamiltonian_with_grouping_known = (
             single_hamiltonian and circuit.measurements[0].obs.grouping_indices is not None
@@ -781,10 +776,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         elif single_hamiltonian_with_grouping_known:
 
             # Use qwc grouping if the circuit contains a single measurement of a
-            # Hamiltonian/Sum with grouping indices already calculated.
+            # Sum with grouping indices already calculated.
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
 
-        elif any(isinstance(m.obs, (Hamiltonian, LinearCombination)) for m in circuit.measurements):
+        elif any(isinstance(m.obs, LinearCombination) for m in circuit.measurements):
 
             # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
             # that is potentially very large.
@@ -819,11 +814,13 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 # Some measurements are not observable based.
                 continue
 
-            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not (
+                self.supports_observable("Hamiltonian")
+                or self.supports_observable("LinearCombination")
+            ):
                 return False
 
             if mp.obs.name in (
-                "Hamiltonian",
                 "Sum",
                 "Prod",
                 "SProd",
@@ -1008,23 +1005,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 if o is None:
                     continue
 
-            if isinstance(o, Tensor):
-                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
-                supports_tensor = self.capabilities().get(
-                    "supports_tensor_observables", False
-                ) or self.capabilities().get("tensor_observables", False)
-                if not supports_tensor:
-                    raise qml.DeviceError(
-                        f"Tensor observables not supported on device {self.short_name}"
-                    )
-
-                for i in o.obs:
-                    if not self.supports_observable(i.name):
-                        raise qml.DeviceError(
-                            f"Observable {i.name} not supported on device {self.short_name}"
-                        )
-
-            elif isinstance(o, qml.ops.Prod):
+            if isinstance(o, qml.ops.Prod):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:

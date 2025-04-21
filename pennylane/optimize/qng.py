@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer"""
+import numbers
+from collections.abc import Iterable
+
 import pennylane as qml
 
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
-from pennylane.utils import _flatten, unflatten
 
 from .gradient_descent import GradientDescentOptimizer
 
@@ -71,7 +73,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
     (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-    of parameterized layer :math:`\ell`).
+    of parametrized layer :math:`\ell`).
 
     Combining the quantum natural gradient optimizer with the analytic parameter-shift
     rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
@@ -115,6 +117,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function:
 
+    >>> from pennylane import numpy as np
     >>> eta = 0.01
     >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
@@ -126,7 +129,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
-    >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit, circuit.device)
+    >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit)
     >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
@@ -276,11 +279,88 @@ class QNGOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.solve(mt[trained_index], grad_flat)
-                args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
+                update = pnp.linalg.pinv(mt[trained_index]) @ grad_flat
+                args_new[index] = arg - self.stepsize * _unflatten_np(update, grad[trained_index])
 
                 trained_index += 1
 
         return tuple(args_new)
+
+
+def _flatten_np(x):
+    """Iterate recursively through an arbitrarily nested structure in depth-first order.
+
+    See also :func:`_unflatten`.
+
+    Args:
+        x (array, Iterable, Any): each element of an array or an Iterable may itself be any of these types
+
+    Yields:
+        Any: elements of x in depth-first order
+    """
+    if isinstance(x, pnp.ndarray):
+        yield from _flatten_np(
+            x.flat
+        )  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, qml.wires.Wires):
+        # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
+        # Since Wires are always flat, just yield.
+        yield from x
+    elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+        for item in x:
+            yield from _flatten_np(item)
+    else:
+        yield x
+
+
+def _unflatten_np_dispatch(flat, model):
+    """Restores an arbitrary nested structure to a flattened iterable.
+
+    See also :func:`_flatten`.
+
+    Args:
+        flat (array): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+
+    Returns:
+        Union[array, list, Any], array: first elements of flat arranged into the nested
+        structure of model, unused elements of flat
+    """
+    if isinstance(model, (numbers.Number, str)):
+        return flat[0], flat[1:]
+
+    if isinstance(model, pnp.ndarray):
+        idx = model.size
+        res = pnp.array(flat)[:idx].reshape(model.shape)
+        return res, flat[idx:]
+
+    if isinstance(model, Iterable):
+        res = []
+        for x in model:
+            val, flat = _unflatten_np_dispatch(flat, x)
+            res.append(val)
+        return res, flat
+
+    raise TypeError(f"Unsupported type in the model: {type(model)}")
+
+
+def _unflatten_np(flat, model):
+    """Wrapper for :func:`_unflatten`.
+
+    Args:
+        flat (array): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        ValueError: if ``flat`` has more elements than ``model``
+    """
+    # pylint:disable=len-as-condition
+    res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
+    if len(tail) != 0:
+        raise ValueError("Flattened iterable has more elements than the model.")
+    return res

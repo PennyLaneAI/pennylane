@@ -40,7 +40,7 @@ def test_mul_out_k_mod():
     assert op[1].name == "ControlledSequence"
     assert op[2].name == "Adjoint(QFT)"
     print(op[1].base)
-    assert qml.equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
+    qml.assert_equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
 
 
 class TestMultiplier:

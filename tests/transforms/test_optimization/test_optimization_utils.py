@@ -238,8 +238,17 @@ class TestRotGateFusion:
         special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
         random_angles = np.random.random((1000, 2, 3))
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
-        all_angles = jax.numpy.concatenate([special_angles, random_angles], dtype=complex)
-        jac_fn = lambda fn: jax.vmap(jax.jacobian(fn, holomorphic=True))
+        all_angles = jax.numpy.concatenate([special_angles, random_angles])
+
+        # We need to define the Jacobian function manually because fuse_rot_angles is not guaranteed to be holomorphic,
+        # and jax.jacobian requires real-valued outputs for non-holomorphic functions.
+        def jac_fn(fn):
+            real_fn = lambda arg: qml.math.real(fn(arg))
+            imag_fn = lambda arg: qml.math.imag(fn(arg))
+            real_jac_fn = jax.vmap(jax.jacobian(real_fn))
+            imag_jac_fn = jax.vmap(jax.jacobian(imag_fn))
+            return lambda arg: real_jac_fn(arg) + 1j * imag_jac_fn(arg)
+
         jit_fn = jax.jit if use_jit else None
         self.run_jacobian_test(all_angles, jac_fn, is_batched=True, jit_fn=jit_fn)
 

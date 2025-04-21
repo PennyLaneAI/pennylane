@@ -39,6 +39,7 @@ class TestCurrentlyUnsupportedCases:
             _ = measure(qml.sample(wires=0), state)
 
 
+@pytest.mark.unit
 class TestMeasurementDispatch:
     """Test that get_measurement_function dispatchs to the correct place."""
 
@@ -95,6 +96,25 @@ class TestMeasurementDispatch:
         )
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    def test_no_sparse_matrix(self):
+        """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
+
+        class DummyOp(qml.operation.Observable):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S1), state) is sum_of_terms_method
+
+        S2 = qml.X(0) + DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S2), state) is sum_of_terms_method
+
+        S3 = 0.5 * qml.X(0) + 0.5 * DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S3), state) is sum_of_terms_method
+
+        S4 = qml.Y(0) + qml.X(0) @ DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S4), state) is sum_of_terms_method
 
 
 class TestMeasurements:
@@ -186,7 +206,6 @@ class TestMeasurements:
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
 
@@ -302,7 +321,7 @@ class TestNaNMeasurements:
     def test_nan_float_result(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure(mp, state, is_state_batched=False)
 
         assert qml.math.ndim(res) == 0
@@ -339,7 +358,7 @@ class TestNaNMeasurements:
     def test_nan_float_result_jax(self, mp, use_jit):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
+        state = qml.math.full((2, 2), np.nan, like="jax")
         if use_jit:
             import jax
 
@@ -360,7 +379,7 @@ class TestNaNMeasurements:
     def test_nan_probs(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure(mp, state, is_state_batched=False)
 
         assert qml.math.shape(res) == (2 ** len(mp.wires),)
@@ -375,7 +394,7 @@ class TestNaNMeasurements:
     def test_nan_probs_jax(self, mp, use_jit):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
+        state = qml.math.full((2, 2), np.nan, like="jax")
         if use_jit:
             import jax
 
@@ -397,8 +416,8 @@ class TestSumOfTermsDifferentiability:
             H = qml.Hamiltonian(
                 coeffs,
                 [
-                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
-                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliZ(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliY(i) for i in range(n_wires))),
                 ],
             )
         else:

@@ -18,6 +18,7 @@ from functools import singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -71,7 +72,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -114,7 +121,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
+
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 
@@ -218,9 +232,25 @@ def apply_operation(
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
+def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
+    """The csr_matrix specialized version apply operation."""
+    # State is numpy array, should have been stored in tensor version
+    # remember the initial shape and recover in the end
+    if sp.sparse.issparse(state):
+        raise TypeError("State should not be sparse in default qubit pipeline")
+    original_shape = math.shape(state)
+    num_wires = len(original_shape) - int(is_state_batched)
+    full_state = math.reshape(state, [-1, 2**num_wires])  # expected: [batch_size, 2**num_wires]
+    state_opT = full_state @ op.sparse_matrix(wire_order=range(num_wires)).T
+    state_reshaped = math.reshape(state_opT, original_shape)
+    return state_reshaped
+
+
 def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches."""
+    if op.has_sparse_matrix and not op.has_matrix:
+        return apply_operation_csr_matrix(op, state, is_state_batched=is_state_batched)
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
@@ -599,7 +629,7 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
-    """Take a snapshot of the state"""
+    """Take a snapshot of the state."""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
 

@@ -79,7 +79,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     """
     operations = filter(lambda op: op.name != "Barrier", tape.operations)
-    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

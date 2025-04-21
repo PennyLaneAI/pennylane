@@ -89,7 +89,7 @@ class CircuitGraph:
         par_info (Optional[list[dict]]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
         trainable_params (Optional[set[int]]): A set containing the indices of parameters that support
-            differentiability. The indices provided match the order of appearence in the
+            differentiability. The indices provided match the order of appearance in the
             quantum circuit.
     """
 
@@ -166,7 +166,7 @@ class CircuitGraph:
         for mp in self.observables_in_order:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
-            serialization_string += str(mp.return_type)
+            serialization_string += mp.__class__.__name__  # pylint: disable=protected-access
             serialization_string += delimiter
             serialization_string += name
             for param in data:
@@ -516,14 +516,14 @@ class CircuitGraph:
         >>> def circuit_measure_max_once():
         ...     return qml.expval(qml.X(0))
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
-        >>> qnode()
-        >>> qnode.qtape.graph.max_simultaneous_measurements
+        >>> tape = qml.workflow.construct_tape(qnode)()
+        >>> tape.graph.max_simultaneous_measurements
         1
         >>> def circuit_measure_max_twice():
         ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
-        >>> qnode()
-        >>> qnode.qtape.graph.max_simultaneous_measurements
+        >>> tape = qml.workflow.construct_tape(qnode)()
+        >>> tape.graph.max_simultaneous_measurements
         2
 
         Returns:

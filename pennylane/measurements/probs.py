@@ -116,7 +116,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+    if isinstance(op, qml.ops.LinearCombination):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Probability
+    _shortname = Probability  #! Note: deprecated. Change the value to "probs" in v0.42
 
     @classmethod
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
@@ -264,7 +264,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
-        p_state = np.sqrt(prob)
+        prob = qml.math.convert_like(prob, density_matrix)
+        p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
     @staticmethod

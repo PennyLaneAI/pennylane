@@ -18,14 +18,17 @@ This submodule contains controlled operators based on the ControlledOp class.
 import warnings
 from collections.abc import Iterable
 from functools import lru_cache
+from typing import List, Literal, Union
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, Wires
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -33,17 +36,31 @@ from .controlled_decompositions import decompose_mcx
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
+def _deprecate_control_wires(control_wires):
+    if control_wires != "unset":
+        warnings.warn(
+            "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+            "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
+
 # pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
-    r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
-    Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
+    r"""ControlledQubitUnitary(U, wires)
+    Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
+
+    .. warning::
+
+        The ``control_wires`` argument is deprecated and will be removed in
+        v0.42. Please use the ``wires`` argument instead.
 
     In addition to default ``Operation`` instance attributes, the following are
     available for ``ControlledQubitUnitary``:
 
-    * ``control_wires``: wires that act as control for the operation
+    * ``control_wires``: (deprecated) wires that act as control for the operation
+    * ``wires``: wires of the final controlled unitary, consisting of control wires following by target wires
     * ``control_values``: the state on which to apply the controlled operation (see below)
-    * ``target_wires``: the wires the unitary matrix will be applied to
     * ``work_wires``: wires made use of during the decomposition of the operation into native operations
 
     **Details:**
@@ -58,9 +75,10 @@ class ControlledQubitUnitary(ControlledOp):
             operation. If passing a matrix, this will be used to construct a QubitUnitary
             operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
             this will be used as the base directly.
-        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
-            (optional if U is provided as a QubitUnitary)
+        wires (Union[Wires, Sequence[int], or int]): the wires the full
+        controlled unitary acts on, composed of the controlled wires followed
+        by the target wires
+        control_wires (Union[Wires, Sequence[int], or int]): (deprecated) the control wire(s)
         control_values (List[int, bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the
@@ -74,16 +92,9 @@ class ControlledQubitUnitary(ControlledOp):
     both wires ``0`` and ``1``:
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2])
     Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
-
-    Alternatively, the same operator can be constructed with a QubitUnitary:
-
-    >>> base = qml.QubitUnitary(U, wires=2)
-    >>> qml.ControlledQubitUnitary(base, control_wires=[0, 1])
-    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
-       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
+        [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -95,11 +106,11 @@ class ControlledQubitUnitary(ControlledOp):
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``1``, we can write:
 
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[0, 1, 1])
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
 
     or
 
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[False, True, True])
+    >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
     """
 
     num_wires = AnyWires
@@ -111,32 +122,108 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"base", "num_control_wires", "num_zero_control_values", "num_work_wires"}
+
     grad_method = None
     """Gradient computation method."""
 
+    def _flatten(self):
+        return (self.base.data[0],), (self.wires, tuple(self.control_values), self.work_wires)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(
-            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        return cls(data[0], wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
+
+    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        base,
+        control_wires: WiresLike = "unset",
+        wires: WiresLike = None,
+        control_values=None,
+        unitary_check=False,
+        work_wires: WiresLike = (),
+    ):
+        _deprecate_control_wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
+        if hasattr(base, "wires"):
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            base = base.matrix()
+
+        if control_wires == "unset":
+
+            return cls._primitive.bind(
+                base, wires=wires, control_values=control_values, work_wires=work_wires
+            )
+        # Below is the legacy interface, where control_wires provided
+        wires = Wires(() if wires is None else wires)
+
+        all_wires = control_wires + wires
+        return cls._primitive.bind(
+            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
         )
 
-    # pylint: disable= too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base,
-        control_wires,
-        wires=None,
+        control_wires: WiresLike = "unset",
+        wires: WiresLike = None,
         control_values=None,
         unitary_check=False,
-        work_wires=None,
+        work_wires: WiresLike = (),
     ):
-        if getattr(base, "wires", False) and wires is not None:
-            warnings.warn(
-                "base operator already has wires; values specified through wires kwarg will be ignored."
-            )
+        _deprecate_control_wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        if isinstance(base, Iterable):
-            base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
+        if hasattr(base, "wires"):
+            warnings.warn(
+                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
+                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
+                qml.PennyLaneDeprecationWarning,
+            )
+            base = base.matrix()
+
+        if control_wires == "unset":
+            if not wires:
+                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
+            control_wires = wires[:-1]  # default
+
+            if isinstance(base, Iterable):
+                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                target_wires = wires[-num_base_wires:]
+                control_wires = wires[:-num_base_wires]
+                # We use type.__call__ instead of calling the class directly so that we don't bind the
+                # operator primitive when new program capture is enabled
+                base = type.__call__(
+                    qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
+                )
+            else:
+                raise ValueError("Base must be a matrix.")
+        else:
+            # Below is the legacy interface, where control_wires provided
+            wires = Wires(() if wires is None else wires)
+            control_wires = Wires(control_wires)
+            if isinstance(base, Iterable):
+                if len(wires) == 0:
+                    if len(control_wires) > 1:
+                        num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                        wires = control_wires[-num_base_wires:]
+                        control_wires = control_wires[:-num_base_wires]
+                    else:
+                        raise TypeError(
+                            "Must specify a set of wires. None is not a valid `wires` label."
+                        )
+                # We use type.__call__ instead of calling the class directly so that we don't bind the
+                # operator primitive when new program capture is enabled
+                base = type.__call__(
+                    qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check
+                )
 
         super().__init__(
             base,
@@ -146,28 +233,28 @@ class ControlledQubitUnitary(ControlledOp):
         )
         self._name = "ControlledQubitUnitary"
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base": self.base,
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
+
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
         values = None if self.control_values is None else [True] + self.control_values
+        base = self.base
+        if isinstance(self.base, qml.QubitUnitary):
+            base = self.base.matrix()
+
         return ControlledQubitUnitary(
-            self.base,
-            control_wires=ctrl_wires,
+            base,
+            wires=ctrl_wires + self.wires,
             control_values=values,
             work_wires=self.work_wires,
         )
-
-    @property
-    def has_decomposition(self):
-        if not super().has_decomposition:
-            return False
-        with qml.QueuingManager.stop_recording():
-            # we know this is using try-except as logical control, but are favouring
-            # certainty in it being correct over explicitness in an edge case.
-            try:
-                self.decomposition()
-            except qml.operation.DecompositionUndefinedError:
-                return False
-        return True
 
 
 class CH(ControlledOp):
@@ -201,6 +288,8 @@ class CH(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CH"
 
     def _flatten(self):
@@ -217,10 +306,21 @@ class CH(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Hadamard, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
+
+    def adjoint(self):
+        return CH(self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -282,6 +382,20 @@ class CH(ControlledOp):
         ]
 
 
+def _ch_to_ry_cz_ry_resources():
+    return {qml.RY: 2, qml.CZ: 1}
+
+
+@register_resources(_ch_to_ry_cz_ry_resources)
+def _ch_to_ry_cz_ry(wires: WiresLike, **__):
+    qml.RY(-np.pi / 4, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RY(+np.pi / 4, wires=wires[1])
+
+
+add_decomps(CH, _ch_to_ry_cz_ry)
+
+
 class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
@@ -315,6 +429,8 @@ class CY(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CY"
 
     def _flatten(self):
@@ -329,10 +445,20 @@ class CY(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Y(wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Y, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CY(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -384,10 +510,23 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
+
+
+def _cy_to_cry_s_resources():
+    return {qml.CRY: 1, qml.S: 1}
+
+
+@register_resources(_cy_to_cry_s_resources)
+def _cy(wires: WiresLike, **__):
+    qml.CRY(np.pi, wires=wires)
+    qml.S(wires=wires[0])
+
+
+add_decomps(CY, _cy)
 
 
 class CZ(ControlledOp):
@@ -421,6 +560,8 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CZ"
 
     def _flatten(self):
@@ -435,10 +576,20 @@ class CZ(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Z(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CZ(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -469,6 +620,29 @@ class CZ(ControlledOp):
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
+
+
+def _cz_to_cps_resources():
+    return {qml.ControlledPhaseShift: 1}
+
+
+@register_resources(_cz_to_cps_resources)
+def _cz_to_cps(wires: WiresLike, **__):
+    qml.ControlledPhaseShift(np.pi, wires=wires)
+
+
+def _cz_to_cnot_resources():
+    return {qml.H: 2, qml.CNOT: 1}
+
+
+@register_resources(_cz_to_cnot_resources)
+def _cz_to_cnot(wires: WiresLike, **__):
+    qml.H(wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.H(wires=wires[1])
+
+
+add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
 
 
 class CSWAP(ControlledOp):
@@ -506,6 +680,8 @@ class CSWAP(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CSWAP"
 
     def _flatten(self):
@@ -522,10 +698,21 @@ class CSWAP(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.SWAP, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CSWAP(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -594,6 +781,20 @@ class CSWAP(ControlledOp):
         return decomp_ops
 
 
+def _cswap_to_toffoli_resources():
+    return {qml.Toffoli: 3}
+
+
+@register_resources(_cswap_to_toffoli_resources)
+def _cswap(wires: WiresLike, **__):
+    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
+    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+
+
+add_decomps(CSWAP, _cswap)
+
+
 class CCZ(ControlledOp):
     r"""CCZ(wires)
     CCZ (controlled-controlled-Z) gate.
@@ -641,15 +842,28 @@ class CCZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CCZ"
 
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CCZ(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -691,7 +905,9 @@ class CCZ(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -709,20 +925,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2])]
+         H(2)]
 
         """
         return [
@@ -742,6 +958,37 @@ class CCZ(ControlledOp):
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.Hadamard(wires=wires[2]),
         ]
+
+
+def _ccz_resources():
+    return {
+        qml.CNOT: 6,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
+        qml.T: 4,
+        qml.Hadamard: 2,
+    }
+
+
+@register_resources(_ccz_resources)
+def _ccz(wires: WiresLike, **__):
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.T(wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+    qml.T(wires=wires[0])
+    qml.adjoint(qml.T(wires=wires[1]))
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+
+
+add_decomps(CCZ, _ccz)
 
 
 class CNOT(ControlledOp):
@@ -775,6 +1022,8 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CNOT"
 
     def _flatten(self):
@@ -789,7 +1038,13 @@ class CNOT(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
+
+    def adjoint(self):
+        return CNOT(self.wires)
 
     @property
     def has_decomposition(self):
@@ -816,6 +1071,10 @@ class CNOT(ControlledOp):
             qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -846,6 +1105,20 @@ class CNOT(ControlledOp):
 
     def _controlled(self, wire):
         return qml.Toffoli(wires=wire + self.wires)
+
+
+def _cnot_cz_h_resources():
+    return {qml.H: 2, qml.CZ: 1}
+
+
+@register_resources(_cnot_cz_h_resources)
+def _cnot_to_cz_h(wires: WiresLike, **__):
+    qml.H(wires[1])
+    qml.CZ(wires=wires)
+    qml.H(wires[1])
+
+
+add_decomps(CNOT, _cnot_to_cz_h)
 
 
 class Toffoli(ControlledOp):
@@ -884,6 +1157,8 @@ class Toffoli(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "Toffoli"
 
     def _flatten(self):
@@ -900,10 +1175,20 @@ class Toffoli(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliX(wires=target_wires), control_wires, id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return Toffoli(self.wires)
 
     @staticmethod
     @lru_cache()
@@ -945,7 +1230,9 @@ class Toffoli(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike,
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -962,20 +1249,20 @@ class Toffoli(ControlledOp):
         **Example:**
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
-        [Hadamard(wires=[2]),
+        [H(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1])]
 
         """
@@ -1015,9 +1302,39 @@ def _check_and_convert_control_values(control_values, control_wires):
     return control_values
 
 
+def _toffoli_resources():
+    return {
+        qml.Hadamard: 2,
+        qml.CNOT: 6,
+        qml.T: 4,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 3,
+    }
+
+
+@register_resources(_toffoli_resources)
+def _toffoli(wires: WiresLike, **__):
+    qml.Hadamard(wires=wires[2])
+    CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.T(wires=wires[1])
+    CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[2])
+    qml.T(wires=wires[0])
+    qml.adjoint(qml.T(wires=wires[1]))
+    CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(Toffoli, _toffoli)
+
+
 class MultiControlledX(ControlledOp):
-    r"""MultiControlledX(control_wires, wires, control_values)
-    Apply a Pauli X gate controlled on an arbitrary computational basis state.
+    r"""Apply a :class:`~.PauliX` gate controlled on an arbitrary computational basis state.
 
     **Details:**
 
@@ -1026,32 +1343,35 @@ class MultiControlledX(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
-            Now users should use "wires" to indicate both the control wires and the target wire.
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
-            the operation into a series of Toffoli gates
-
+            the operation into a series of :class:`~.Toffoli` gates
+        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"`` indicates that
+            the work wires are in the state :math:`|0\rangle`, while ``"dirty"`` indicates that the
+            work wires are in an arbitrary state. Defaults to ``"clean"``.
 
     .. note::
 
-        If ``MultiControlledX`` is not supported on the targeted device, PennyLane will decompose
+        If :class:`~.MultiControlledX` is not supported on the targeted device, PennyLane will decompose
         the operation into :class:`~.Toffoli` and/or :class:`~.CNOT` gates. When controlling on
-        three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 and 7.3 of
-        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ will be used. These methods
-        require at least one work wire.
+        three or more wires, the Toffoli-based decompositions described in Lemmas 7.2 of
+        `Barenco et al. <https://arxiv.org/abs/quant-ph/9503016>`__ and Sec 5 of `Khattar and Gidney
+        <https://arxiv.org/abs/2407.17966>`__  will be used. These methods require at least one
+        work wire.
 
         The number of work wires provided determines the decomposition method used and the resulting
-        number of Toffoli gates required. When ``MultiControlledX`` is controlling on :math:`n`
+        number of Toffoli gates required. When :class:`~.MultiControlledX` is controlling on :math:`n`
         wires:
 
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
-        #. If fewer than :math:`n - 2` work wires are provided, a combination of Lemmas 7.3 and 7.2
-           will be applied using only the first work wire.
+        #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
+        #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
+           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
@@ -1073,65 +1393,91 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"num_control_wires", "num_zero_control_values", "num_work_wires"}
+
     name = "MultiControlledX"
 
     def _flatten(self):
-        return (), (self.wires, tuple(self.control_values), self.work_wires)
+        return (), (self.wires, tuple(self.control_values), self.work_wires, self.work_wire_type)
 
     @classmethod
     def _unflatten(cls, _, metadata):
-        return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, id=None):
-        return cls._primitive.bind(
-            *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
+        return cls(
+            wires=metadata[0],
+            control_values=metadata[1],
+            work_wires=metadata[2],
+            work_wire_type=metadata[3],
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
+    ):
+        return cls._primitive.bind(
+            *wires,
+            n_wires=len(wires),
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+    @staticmethod
+    def _validate_control_values(control_values):
+        if control_values is not None:
+            if not (
+                isinstance(control_values, (bool, int))
+                or (
+                    (
+                        isinstance(control_values, (list, tuple))
+                        and all(isinstance(val, (bool, int)) for val in control_values)
+                    )
+                )
+            ):
+                raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
+
     # pylint: disable=too-many-arguments
-    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
+    def __init__(
+        self,
+        wires: WiresLike = (),
+        control_values: Union[bool, List[bool], int, List[int]] = None,
+        work_wires: WiresLike = (),
+        work_wire_type: Literal["clean", "dirty"] = "clean",
+    ):
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        # First raise deprecation warnings regardless of the validity of other arguments
-        if isinstance(control_values, str):
-            warnings.warn(
-                "Specifying control values using a bitstring is deprecated, and will not be "
-                "supported in future releases, Use a list of booleans or integers instead.",
-                qml.PennyLaneDeprecationWarning,
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
             )
-        if control_wires is not None:
-            warnings.warn(
-                "The control_wires keyword for MultiControlledX is deprecated, and will "
-                "be removed soon. Use wires = (*control_wires, target_wire) instead.",
-                UserWarning,
-            )
+        self.work_wire_type = work_wire_type
 
-        if wires is None:
+        self._validate_control_values(control_values)
+
+        if len(wires) == 0:
             raise ValueError("Must specify the wires where the operation acts on")
 
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        if control_wires is not None:
-            if len(wires) != 1:
-                raise ValueError("MultiControlledX accepts a single target wire.")
-            control_wires = Wires(control_wires)
-        else:
-            if len(wires) < 2:
-                raise ValueError(
-                    f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
-                    f"Need at least 2."
-                )
-            control_wires = wires[:-1]
-            wires = wires[-1:]
+        if len(wires) < 2:
+            raise ValueError(
+                f"MultiControlledX: wrong number of wires. {len(wires)} wire(s) given. "
+                f"Need at least 2."
+            )
+        control_wires = wires[:-1]
+        wires = wires[-1:]
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires)
         super().__init__(
-            qml.X(wires),
+            base,
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
         )
+        self._hyperparameters["work_wire_type"] = work_wire_type
 
     def __repr__(self):
         return (
@@ -1142,9 +1488,22 @@ class MultiControlledX(ControlledOp):
     def wires(self):
         return self.control_wires + self.target_wires
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_control_wires": len(self.control_wires),
+            "num_zero_control_values": len([val for val in self.control_values if not val]),
+            "num_work_wires": len(self.work_wires),
+        }
+
+    def adjoint(self):
+        return MultiControlledX(
+            wires=self.wires, control_values=self.control_values, work_wires=self.work_wires
+        )
+
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_matrix(control_wires, control_values=None, **kwargs):
+    def compute_matrix(control_wires: WiresLike, control_values=None, **kwargs):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1187,7 +1546,13 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
-    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
+    def compute_decomposition(
+        wires: WiresLike = None,
+        work_wires: WiresLike = None,
+        control_values=None,
+        work_wire_type: Literal["clean", "dirty"] = "clean",
+        **kwargs,
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1200,6 +1565,7 @@ class MultiControlledX(ControlledOp):
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            work_wire_type (str): whether to use clean or dirty work wires
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1214,6 +1580,7 @@ class MultiControlledX(ControlledOp):
         Toffoli(wires=[0, 1, 'aux'])]
 
         """
+        wires = Wires(() if wires is None else wires)
 
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
@@ -1228,14 +1595,21 @@ class MultiControlledX(ControlledOp):
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        decomp = decompose_mcx(control_wires, target_wire, work_wires)
+        if work_wire_type not in {"clean", "dirty"}:
+            raise ValueError(
+                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+            )
+
+        decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
         flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         return flips1 + decomp + flips2
 
     def decomposition(self):
-        return self.compute_decomposition(self.wires, self.work_wires, self.control_values)
+        return self.compute_decomposition(
+            self.wires, self.work_wires, self.control_values, self.work_wire_type
+        )
 
 
 class CRX(ControlledOp):
@@ -1286,11 +1660,16 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+    def __init__(self, phi, wires: WiresLike, id=None):
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RX, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1303,8 +1682,15 @@ class CRX(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CRX(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1354,7 +1740,9 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1363,7 +1751,7 @@ class CRX(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -1389,6 +1777,46 @@ class CRX(ControlledOp):
             qml.CNOT(wires=wires),
             qml.RZ(-pi_half, wires=wires[1]),
         ]
+
+
+def _crx_to_rz_ry_resources():
+    return {qml.RZ: 2, qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_crx_to_rz_ry_resources)
+def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires[1])
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-np.pi / 2, wires=wires[1])
+
+
+def _crx_to_rx_cz_resources():
+    return {qml.RX: 2, qml.CZ: 2}
+
+
+@register_resources(_crx_to_rx_cz_resources)
+def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    qml.RX(phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
+    qml.RX(-phi / 2, wires=wires[1])
+    qml.CZ(wires=wires)
+
+
+def _crx_to_h_crz_resources():
+    return {qml.Hadamard: 2, qml.CRZ: 1}
+
+
+@register_resources(_crx_to_h_crz_resources)
+def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
+    qml.Hadamard(wires=wires[1])
+    qml.CRZ(phi, wires=wires)
+    qml.Hadamard(wires=wires[1])
+
+
+add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
 
 
 class CRY(ControlledOp):
@@ -1439,11 +1867,16 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RY, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -1458,6 +1891,13 @@ class CRY(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CRY(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1507,7 +1947,9 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1516,7 +1958,7 @@ class CRY(ControlledOp):
         .. seealso:: :meth:`~.CRY.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1537,6 +1979,21 @@ class CRY(ControlledOp):
             qml.RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
+
+
+def _cry_resources():
+    return {qml.RY: 2, qml.CNOT: 2}
+
+
+@register_resources(_cry_resources)
+def _cry(phi: TensorLike, wires: WiresLike, **__):
+    qml.RY(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(CRY, _cry)
 
 
 class CRZ(ControlledOp):
@@ -1592,11 +2049,16 @@ class CRZ(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RZ, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -1611,6 +2073,13 @@ class CRZ(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return CRZ(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1696,7 +2165,9 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(phi, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1705,7 +2176,7 @@ class CRZ(ControlledOp):
         .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1726,6 +2197,21 @@ class CRZ(ControlledOp):
             qml.PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
+
+
+def _crz_resources():
+    return {qml.RZ: 2, qml.CNOT: 2}
+
+
+@register_resources(_crz_resources)
+def _crz(phi: TensorLike, wires: WiresLike, **__):
+    qml.RZ(phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(CRZ, _crz)
 
 
 class CRot(ControlledOp):
@@ -1777,13 +2263,18 @@ class CRot(ControlledOp):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
-        super().__init__(
-            qml.Rot(phi, theta, omega, wires=wires[1:]), control_wires=wires[:1], id=id
-        )
+    def __init__(
+        self, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Rot, phi, theta, omega, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -1798,8 +2289,18 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
+    def _primitive_bind_call(
+        cls, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-positional-arguments
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -1869,7 +2370,9 @@ class CRot(ControlledOp):
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi, theta, omega, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
+    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1878,9 +2381,9 @@ class CRot(ControlledOp):
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
-            theta (float): rotation angle :math:`\theta`
-            omega (float): rotation angle :math:`\omega`
+            phi (TensorLike): rotation angle :math:`\phi`
+            theta (TensorLike): rotation angle :math:`\theta`
+            omega (TensorLike): rotation angle :math:`\omega`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -1907,6 +2410,24 @@ class CRot(ControlledOp):
             qml.RY(theta / 2, wires=wires[1]),
             qml.RZ(omega, wires=wires[1]),
         ]
+
+
+def _crot_resources():
+    return {qml.RZ: 3, qml.CNOT: 2, qml.RY: 2}
+
+
+@register_resources(_crot_resources)
+def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike, **__):
+    qml.RZ((phi - omega) / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(-(phi + omega) / 2, wires=wires[1])
+    qml.RY(-theta / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RY(theta / 2, wires=wires[1])
+    qml.RZ(omega, wires=wires[1])
+
+
+add_decomps(CRot, _crot)
 
 
 class ControlledPhaseShift(ControlledOp):
@@ -1945,11 +2466,16 @@ class ControlledPhaseShift(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.PhaseShift, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
@@ -1964,6 +2490,13 @@ class ControlledPhaseShift(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def adjoint(self):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -2081,5 +2614,21 @@ class ControlledPhaseShift(ControlledOp):
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
 
+
+def _cphase_rz_resource():
+    return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
+
+
+@register_resources(_cphase_rz_resource)
+def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
+    qml.RZ(phi / 2, wires=wires[0])
+    qml.CNOT(wires=wires)
+    qml.RZ(-phi / 2, wires=wires[1])
+    qml.CNOT(wires=wires)
+    qml.RZ(phi / 2, wires=wires[1])
+    qml.GlobalPhase(-phi / 4)
+
+
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
 
 CPhase = ControlledPhaseShift

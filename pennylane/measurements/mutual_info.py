@@ -74,7 +74,7 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
+    .. seealso:: :func:`~pennylane.vn_entropy`, :func:`pennylane.math.mutual_info`
     """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
@@ -101,6 +101,11 @@ class MutualInfoMP(StateMeasurement):
         log_base (float): base for the logarithm
 
     """
+
+    def __str__(self):
+        return "mutualinfo"
+
+    _shortname = MutualInfo  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
 
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
@@ -140,10 +145,6 @@ class MutualInfoMP(StateMeasurement):
         return hash(fingerprint)
 
     @property
-    def return_type(self):
-        return MutualInfo
-
-    @property
     def numeric_type(self):
         return float
 
@@ -164,6 +165,15 @@ class MutualInfoMP(StateMeasurement):
             indices0=list(self._wires[0]),
             indices1=list(self._wires[1]),
             c_dtype=state.dtype,
+            base=self.log_base,
+        )
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        return qml.math.mutual_info(
+            density_matrix,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=density_matrix.dtype,
             base=self.log_base,
         )
 

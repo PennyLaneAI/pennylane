@@ -20,8 +20,6 @@ from typing import Optional, Type
 
 import pennylane as qml
 
-from .capture_diff import create_non_jvp_primitive
-
 has_jax = True
 try:
     import jax
@@ -103,7 +101,10 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = create_non_jvp_primitive()(operator_type.__name__)
+    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+
+    primitive = NonInterpPrimitive(operator_type.__name__)
+    primitive.prim_type = "operator"
 
     @primitive.def_impl
     def _(*args, **kwargs):
@@ -114,7 +115,8 @@ def create_operator_primitive(
         split = None if n_wires == 0 else -n_wires
         # need to convert array values into integers
         # for plxpr, all wires must be integers
-        wires = tuple(int(w) for w in args[split:])
+        # could be abstract when using tracing evaluation in interpreter
+        wires = tuple(w if qml.math.is_abstract(w) else int(w) for w in args[split:])
         args = args[:split]
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 

@@ -164,7 +164,7 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _ = dev.preprocess()[0]([tape])
+            tapes, _ = dev.preprocess_transforms()([tape])
             assert len(tapes) == 1
 
             res = dev.execute(tapes)[0].flatten()
@@ -216,7 +216,7 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _ = dev.preprocess()[0]([tape])
+            tapes, _ = dev.preprocess_transforms()([tape])
             assert len(tapes) == 1
             res = dev.execute(tapes)[0].flatten()
 
@@ -264,7 +264,7 @@ class TestDecomposition:
                 [qml.probs(estimation_wires)],
             )
 
-            tapes, _ = dev.preprocess()[0]([tape])
+            tapes, _ = dev.preprocess_transforms()([tape])
             res = dev.execute(tapes)[0].flatten()
             assert len(tapes) == 1
 
@@ -309,7 +309,7 @@ class TestDecomposition:
                 [qml.probs(estimation_wires)],
             )
 
-            tapes, _ = dev.preprocess()[0]([tape])
+            tapes, _ = dev.preprocess_transforms()([tape])
             assert len(tapes) == 1
             res = dev.execute(tapes)[0].flatten()
 
@@ -396,6 +396,33 @@ class TestDecomposition:
             return qml.state()
 
         assert qml.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
+
+    @pytest.mark.jax
+    def test_jit(self):
+        """Tests the template correctly compiles with JAX JIT."""
+        import jax
+
+        phase = 5
+        target_wires = [0]
+        unitary = qml.RX(phase, wires=0).matrix()
+        n_estimation_wires = 5
+        estimation_wires = range(1, n_estimation_wires + 1)
+
+        dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=target_wires)
+
+            qml.QuantumPhaseEstimation(
+                unitary, target_wires=target_wires, estimation_wires=estimation_wires
+            )
+
+            return qml.probs(estimation_wires)
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())
 
 
 class TestInputs:

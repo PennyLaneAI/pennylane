@@ -572,12 +572,12 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         x = torch.ones(n_qubits)
 
-        layer.construct((x,), {})
+        tape = qml.workflow.construct_tape(layer)(x)
 
-        assert layer.tape is not None
+        assert tape is not None
         assert (
-            len(layer.tape.get_parameters(trainable_only=False))
-            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+            len(tape.get_parameters(trainable_only=False))
+            == len(tape.get_parameters(trainable_only=True)) + 1
         )
 
 
@@ -632,7 +632,11 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     qlayer = TorchLayer(circuit, weight_shapes)
-    assert qlayer.qnode.interface == circuit.interface == interface
+    assert (
+        qlayer.qnode.interface
+        == circuit.interface
+        == qml.math.get_canonical_interface_name(interface).value
+    )
 
 
 @pytest.mark.torch
@@ -956,7 +960,6 @@ def test_specs():
     assert info["resources"] == expected_resources
 
     assert info["num_observables"] == 2
-    assert info["num_diagonalizing_gates"] == 0
     assert info["num_device_wires"] == 3
     assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2

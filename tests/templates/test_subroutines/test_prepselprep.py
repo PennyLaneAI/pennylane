@@ -24,36 +24,41 @@ import pennylane as qml
 
 
 @pytest.mark.parametrize(
-    ("lcu", "control"),
+    ("lcu", "control", "skip_diff"),
     [
-        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0]),
-        (qml.Z(2) + qml.X(1) @ qml.X(2), [0]),
-        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
+        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0], False),
+        (qml.Z(2) + qml.X(1) @ qml.X(2), [0], False),
+        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1], True),
         (
             qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
             [0, 1, 2, 3],
+            True,
         ),
     ],
 )
-def test_standard_checks(lcu, control):
+def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""
 
     op = qml.PrepSelPrep(lcu, control)
-    qml.ops.functions.assert_valid(op)
+    # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
+    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 def test_repr():
     """Test the repr method."""
+
     lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
     control = [0]
 
     op = qml.PrepSelPrep(lcu, control)
-    assert (
-        repr(op) == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
-    )
+    with np.printoptions(legacy="1.21"):
+        assert (
+            repr(op)
+            == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
+        )
 
 
 def _get_new_terms(lcu):
@@ -94,6 +99,17 @@ def prepselprep_circuit(lcu, control):
     """PrepSelPrep circuit used for testing"""
     qml.PrepSelPrep(lcu, control)
     return qml.state()
+
+
+a_set_of_lcus = [
+    qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
+    qml.Z(2) + qml.X(1) @ qml.X(2),
+    qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
+    qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
+]
 
 
 class TestPrepSelPrep:
@@ -259,20 +275,9 @@ class TestPrepSelPrep:
         op = qml.PrepSelPrep(lcu, control=0)
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
-    @pytest.mark.parametrize(
-        ("lcu"),
-        [
-            qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
-            qml.Z(2) + qml.X(1) @ qml.X(2),
-            qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
-            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
-        ],
-    )
+    @pytest.mark.parametrize("lcu", a_set_of_lcus)
     def test_flatten_unflatten(self, lcu):
         """Test that the class can be correctly flattened and unflattened"""
 
@@ -299,6 +304,41 @@ class TestPrepSelPrep:
         assert op.wires == new_op.wires
         assert op.target_wires == new_op.target_wires
         assert op is not new_op
+
+    @pytest.mark.parametrize("lcu", a_set_of_lcus)
+    def test_label(self, lcu):
+        """Test the custom label method of PrepSelPrep."""
+        op = qml.PrepSelPrep(lcu, control=0)
+        op_with_id = qml.PrepSelPrep(lcu, control=0, id="myID")
+
+        # Default
+        assert op.label() == "PrepSelPrep"
+        assert op_with_id.label() == 'PrepSelPrep("myID")'
+
+        # decimals do not affect label
+        assert op.label(decimals=3) == "PrepSelPrep"
+        assert op_with_id.label(decimals=3) == 'PrepSelPrep("myID")'
+
+        # use different base label
+        assert op.label(base_label="U(A)") == "U(A)"
+        assert op_with_id.label(base_label="U(A)") == 'U(A)("myID")'
+
+        # use cache without matrices
+        assert op.label(cache={}) == "PrepSelPrep"
+        assert op_with_id.label(cache={}) == 'PrepSelPrep("myID")'
+
+        # use cache with empty matrices
+        assert op.label(cache={"matrices": []}) == "PrepSelPrep(M0)"
+        assert op_with_id.label(cache={"matrices": []}) == 'PrepSelPrep(M0,"myID")'
+
+        # use cache with non-empty matrices
+        assert op.label(cache={"matrices": [0.1]}) == "PrepSelPrep(M1)"
+        assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
+
+        # use cache with same matrix existing
+        c = qml.math.array(op.coeffs)
+        assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
+        assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
 
 
 def test_control_in_ops():

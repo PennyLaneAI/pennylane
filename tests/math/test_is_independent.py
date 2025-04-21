@@ -324,7 +324,7 @@ class TestIsIndependentTensorflow:
             (tf.Variable(0.2),),
             (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
             (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
-            (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
+            (tf.Variable(0.3), tf.constant([1.0, 4, 2]), tf.Variable(np.array([0.3, 9.1]))),
         ],
     )
     @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
@@ -336,7 +336,8 @@ class TestIsIndependentTensorflow:
         tf.random.set_seed(seed)
         for _rnd_args in rnd_args:
             expected = tuple(
-                tf.random.uniform(tf.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                tf.random.uniform(tf.shape(arg), dtype=arg.dtype) * (bounds[1] - bounds[0])
+                + bounds[0]
                 for arg in args
             )
             expected = tuple(

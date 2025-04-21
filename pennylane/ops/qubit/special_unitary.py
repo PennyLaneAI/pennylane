@@ -23,6 +23,7 @@ from typing import Literal, Optional
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 from pennylane.typing import TensorLike
@@ -480,8 +481,8 @@ class SpecialUnitary(Operation):
                [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
         interface = qml.math.get_interface(theta)
-        if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+        theta = qml.math.cast_like(theta, 1j)
+
         if num_wires > 5:
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices
@@ -709,6 +710,14 @@ class TmpPauliRot(PauliRot):
     # Deactivate the matrix property of qml.PauliRot in order to force decomposition
     has_matrix = False
 
+    resource_keys = {
+        "pauli_word",
+    }
+
+    @property
+    def resource_params(self) -> dict:
+        return {"pauli_word": self.hyperparameters["pauli_word"]}
+
     @staticmethod
     def compute_decomposition(
         theta: TensorLike,
@@ -743,3 +752,15 @@ class TmpPauliRot(PauliRot):
 
     def __repr__(self) -> str:
         return f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
+
+
+def _tmp_paulirot_decomp_resources(pauli_word: str):
+    return {qml.resource_rep(PauliRot, pauli_word=pauli_word): 1}
+
+
+@register_resources(_tmp_paulirot_decomp_resources)
+def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+    PauliRot(theta, pauli_word=pauli_word, wires=wires)
+
+
+add_decomps(TmpPauliRot, _tmp_paulirot_decomp)

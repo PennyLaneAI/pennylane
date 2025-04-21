@@ -426,12 +426,12 @@ def attribute(
     ...     doc="The hamiltonian of the system"))
     >>> dataset.eigen = qml.data.attribute(
     ...     {"eigvals": eigvals, "eigvecs": eigvecs},
-    ...     doc="Eigenvalues and eigenvectors of the hamiltonain")
+    ...     doc="Eigenvalues and eigenvectors of the hamiltonian")
 
     This metadata can then be accessed using the :meth:`~.Dataset.attr_info` mapping:
 
     >>> dataset.attr_info["eigen"]["doc"]
-    'Eigenvalues and eigenvectors of the hamiltonain'
+    'Eigenvalues and eigenvectors of the hamiltonian'
     """
     return match_obj_type(val)(val, AttributeInfo(doc=doc, py_type=type(val), **kwargs))
 
@@ -447,7 +447,7 @@ def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
 
 
 def match_obj_type(
-    type_or_obj: Union[ValueType, Type[ValueType]]
+    type_or_obj: Union[ValueType, Type[ValueType]],
 ) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``

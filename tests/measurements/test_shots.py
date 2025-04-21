@@ -19,7 +19,7 @@ import copy
 
 import pytest
 
-from pennylane.measurements import ShotCopies, Shots
+from pennylane.measurements import ShotCopies, Shots, add_shots
 
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
 
@@ -304,3 +304,29 @@ class TestShotsBins:
         """Tests that the method returns the correct bins when shots is a sequence with copies."""
         shots = Shots(sequence)
         assert list(shots.bins()) == [(0, 1), (1, 2), (2, 5), (5, 9)]
+
+
+shot_tests = [
+    (Shots(shots=None), Shots(shots=None), Shots(shots=None)),
+    (Shots(shots=10), Shots(shots=None), Shots(shots=10)),
+    (Shots(shots=None), Shots(shots=10), Shots(shots=10)),
+    (Shots(shots=10), Shots(shots=10), Shots(shots=((10, 2),))),
+    (Shots(shots=(10, 9)), Shots(shots=(8, 7)), Shots(shots=(10, 9, 8, 7))),
+    (Shots(shots=(10, 9)), Shots(shots=None), Shots(shots=(10, 9))),
+    (Shots(shots=None), Shots(shots=(10, 9)), Shots(shots=(10, 9))),
+    (Shots(shots=(10, 9)), Shots(shots=8), Shots(shots=(10, 9, 8))),
+    (Shots(shots=8), Shots(shots=(10, 9)), Shots(shots=(8, 10, 9))),
+    (Shots(shots=(10, (9, 2), 8)), Shots(shots=(5, 1)), Shots(shots=(10, (9, 2), 8, 5, 1))),
+]
+
+
+@pytest.mark.parametrize("s1, s2, expected", shot_tests)
+def test_add_shots(s1, s2, expected):
+    """Test the add_shots function"""
+    assert add_shots(s1, s2) == expected
+
+
+@pytest.mark.parametrize("s1, s2, expected", shot_tests)
+def test_add_shots_dunder(s1, s2, expected):
+    """Test the __add__ dunder method for Shots"""
+    assert s1 + s2 == expected

@@ -279,6 +279,7 @@ or to check whether two gates causally influence each other.
 
     import pennylane as qml
     from pennylane import CircuitGraph
+    from pennylane.workflow import construct_tape
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
@@ -292,7 +293,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = circuit.qtape
+    tape = construct_tape(circuit)() 
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
@@ -331,7 +332,7 @@ Using the above example, we get:
 <class 'networkx.classes.multidigraph.MultiDiGraph'>
 >>> for k, v in g2.adjacency():
 ...    print(k, v)
-Hadamard(wires=[0]) {expval(Z(0)): {0: {'wire': 0}}}
+H(0) {expval(Z(0)): {0: {'wire': 0}}}
 CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
 CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
 CNOT(wires=[3, 1]) {}

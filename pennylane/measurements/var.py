@@ -84,7 +84,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Variance
+    _shortname = Variance  #! Note: deprecated. Change the value to "var" in v0.42
 
     @property
     def numeric_type(self):
@@ -124,6 +124,18 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+        # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
+        return self._calculate_variance(prob)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
+        # we use ``wires`` instead of ``op`` because the observable was
+        # already applied to the state
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 

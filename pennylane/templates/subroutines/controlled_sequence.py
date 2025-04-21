@@ -165,8 +165,8 @@ class ControlledSequence(SymbolicOp, Operation):
         2: ─│────────────│────────────╭●───────────┤  State
         3: ─╰(RX(1.00))──╰(RX(0.50))──╰(RX(0.25))──┤  State
 
-        To display the operators as powers of the base operator without further simplifcation,
-        the `compute_decompostion` method can be used with `lazy=True`.
+        To display the operators as powers of the base operator without further simplification,
+        the `compute_decomposition` method can be used with `lazy=True`.
 
         .. code-block:: python
 

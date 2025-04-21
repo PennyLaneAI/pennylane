@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _check_capture
 
 
 class TestDecompositionErrors:
@@ -303,6 +304,28 @@ class TestPytree:
             assert_valid(op, skip_pickle=True)
 
 
+@pytest.mark.jax
+def test_bad_capture():
+    """Tests that the correct error is raised when something goes wrong with program capture."""
+
+    class MyBadOp(qml.operation.Operator):
+
+        def _flatten(self):
+            return (self.hyperparameters["target_op"], self.data[0]), ()
+
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            return cls(*data)
+
+        def __init__(self, target_op, val):
+            super().__init__(val, wires=target_op.wires)
+            self.hyperparameters["target_op"] = target_op
+
+    op = MyBadOp(qml.X(0), 2)
+    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
+        _check_capture(op)
+
+
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
@@ -358,6 +381,9 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
 
+    if class_to_validate.__module__[10:14] == "ftqc":
+        pytest.skip(reason="skip tests for ftqc ops")
+
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:
     #   1. Update your Operator to meet PL standards so it passes
@@ -376,13 +402,10 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
 
 
 @pytest.mark.jax
-def test_explicit_list_of_ops(valid_instance):
+def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
-    if valid_instance.name == "Hamiltonian":
-        with qml.operation.disable_new_opmath_cm():
-            assert_valid(valid_instance)
-    else:
-        assert_valid(valid_instance)
+    valid_instance, kwargs = valid_instance_and_kwargs
+    assert_valid(valid_instance, **kwargs)
 
 
 @pytest.mark.jax

@@ -22,6 +22,16 @@ from inspect import Signature, signature
 from .switches import enabled
 
 
+def _stop_autograph(f):
+    """Stop the autograph interpretation of operators by making it so that ``f`` always
+    belongs to the pennylane namespace."""
+
+    def new_f(*args, **kwargs):
+        return f(*args, **kwargs)
+
+    return new_f
+
+
 # pylint: disable=no-self-argument, too-few-public-methods
 class CaptureMeta(type):
     """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
@@ -78,6 +88,7 @@ class CaptureMeta(type):
             " gain integration with plxpr program capture."
         )
 
+    @_stop_autograph
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__

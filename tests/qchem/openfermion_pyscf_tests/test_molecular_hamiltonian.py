@@ -16,12 +16,12 @@ Unit tests for molecular Hamiltonians.
 """
 # pylint: disable=too-many-arguments, protected-access
 import pytest
+from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 
 test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 test_coordinates = np.array(
@@ -65,12 +65,12 @@ test_coordinates = np.array(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
+        pytest.param(1, 2, "openfermion", 3, 4, "BRAVYI_kitaev", marks=xfail_on_numpy2),
+        pytest.param(-1, 2, "openfermion", 1, 2, "jordan_WIGNER", marks=xfail_on_numpy2),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian(
     charge,
     mult,
@@ -98,10 +98,7 @@ def test_building_hamiltonian(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -116,12 +113,12 @@ def test_building_hamiltonian(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
+        pytest.param(1, 2, "openfermion", 3, 4, "BRAVYI_kitaev", marks=xfail_on_numpy2),
+        pytest.param(-1, 2, "openfermion", 1, 2, "jordan_WIGNER", marks=xfail_on_numpy2),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian_molecule_class(
     charge,
     mult,
@@ -147,10 +144,7 @@ def test_building_hamiltonian_molecule_class(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(args, **kwargs)
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -348,7 +342,6 @@ def test_building_hamiltonian_molecule_class(
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
@@ -362,10 +355,7 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     geometry.requires_grad = False
     h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping=mapping)[0]
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = list(map(qml.simplify, h_ref_data[1]))
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     h_ref_coeffs, h_ref_ops = h_ref.terms()
@@ -580,7 +570,6 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian generated using the molecule class
     returns the correct Hamiltonian with the differentiable backend."""
@@ -594,10 +583,7 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     molecule = qchem.Molecule(symbols, geometry)
     h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf", mapping=mapping)[0]
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = list(map(qml.simplify, h_ref_data[1]))
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     h_ref_coeffs, h_ref_ops = h_ref.terms()
@@ -618,7 +604,6 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap"),
     [
@@ -670,7 +655,6 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     assert set(hamiltonian.wires) == set(wiremap)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap", "args"),
     [
@@ -711,7 +695,6 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     assert wiremap_calc == wiremap_dict
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap", "args"),
     [
@@ -853,7 +836,7 @@ def test_diff_hamiltonian_error_molecule_class():
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
@@ -888,7 +871,7 @@ def test_real_hamiltonian(method, args, tmpdir):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian_molecule_class(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
@@ -940,7 +923,7 @@ def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     assert np.allclose(two, two_ref)
 
 
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_molecule_as_kwargs(tmpdir):
     r"""Test that molecular_hamiltonian function works with molecule as
     keyword argument
@@ -958,10 +941,7 @@ def test_molecule_as_kwargs(tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 4
 
 
@@ -989,6 +969,7 @@ def test_error_raised_for_missing_molecule_information():
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
 
 
+@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "mapping", "h_ref_data"),
     [
@@ -1233,7 +1214,6 @@ def test_error_raised_for_missing_molecule_information():
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_mapped_hamiltonian_pyscf_openfermion(
     symbols, geometry, charge, mapping, h_ref_data, tmpdir
 ):
@@ -1247,10 +1227,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
             molecule, method=method, mapping=mapping, outpath=tmpdir.strpath
         )[0]
 
-        ops = [
-            qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-            for op in map(qml.simplify, h_ref_data[1])
-        ]
+        ops = list(map(qml.simplify, h_ref_data[1]))
         h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
         h_ref_coeffs, h_ref_ops = h_ref.terms()
@@ -1267,7 +1244,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
     [
         "pyscf",
         "dhf",
-        "openfermion",
+        pytest.param("openfermion", marks=xfail_on_numpy2),
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
@@ -1300,7 +1277,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     [
         "pyscf",
         "dhf",
-        "openfermion",
+        pytest.param("openfermion", marks=xfail_on_numpy2),
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):

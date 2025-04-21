@@ -83,10 +83,6 @@ class TestAttribute:
         assert "RY" in new_attribute
         assert len(new_attribute) == 8
 
-    def test_tensor_check(self):
-        """Test that we can ask if a tensor is in the attribute."""
-        assert qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)) not in new_attribute
-
 
 single_scalar_single_wire_ops = [
     "RX",
@@ -137,7 +133,6 @@ separately_tested_ops = [
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
-    "QubitStateVector",
     "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",
@@ -288,15 +283,14 @@ class TestSupportsBroadcasting:
         actually does support broadcasting."""
 
         U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
-        wires = [0, "9"]
+        target_wires = [0, "9"]
+        control_wires = [1, "10"]
+        wires = control_wires + target_wires
 
-        op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
+        op = qml.ControlledQubitUnitary(U, wires=wires)
 
         mat1 = op.matrix()
-        single_mats = [
-            qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
-            for _U in U
-        ]
+        single_mats = [qml.ControlledQubitUnitary(_U, wires=wires).matrix() for _U in U]
 
         assert qml.math.allclose(mat1, single_mats)
 

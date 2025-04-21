@@ -20,16 +20,14 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 import inspect
 import logging
 from dataclasses import replace
-from functools import singledispatch
+from functools import lru_cache, singledispatch
 from numbers import Number
 from typing import Optional, Union
 
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -65,7 +63,14 @@ def _zero_measurement(
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
         shape = (batch_size,) + shape
+    if "jax" not in interface:
+        return _cached_zero_return(shape, interface, mp.numeric_type)
     return math.zeros(shape, like=interface, dtype=mp.numeric_type)
+
+
+@lru_cache(maxsize=128)
+def _cached_zero_return(shape, interface, dtype):
+    return math.zeros(shape, like=interface, dtype=dtype)
 
 
 @zero_measurement.register
@@ -118,6 +123,10 @@ def _(
     if batch_size is not None:
         state = [state] * batch_size
     return math.asarray(state, like=interface)
+
+
+def _interface(config: ExecutionConfig):
+    return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
 @simulator_tracking
@@ -178,8 +187,8 @@ class NullQubit(Device):
             circuit(params)
 
     >>> tracker.history["resources"][0]
-    wires: 100
-    gates: 10000
+    num_wires: 100
+    num_gates: 10000
     depth: 502
     shots: Shots(total=None)
     gate_types:
@@ -325,10 +334,7 @@ class NullQubit(Device):
                     str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
                 ),
             )
-
-        return tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        return tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
@@ -356,21 +362,15 @@ class NullQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(
-            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        jacs = tuple(
-            self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
         return results, jacs
 
@@ -380,7 +380,7 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
@@ -388,10 +388,8 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        jvps = tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
         return results, jvps
 
@@ -401,7 +399,7 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
@@ -409,8 +407,23 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        results = tuple(
-            self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
-        )
-        vjps = tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
+
+    # pylint: disable= unused-argument
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+    ) -> list:
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            AbstractMeasurement,
+        )
+
+        def zeros_like(var):
+            if isinstance(var.aval, AbstractMeasurement):
+                shots = self.shots.total_shots
+                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
+                return math.zeros(s, dtype=dtype, like="jax")
+            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
+
+        return [zeros_like(var) for var in jaxpr.outvars]

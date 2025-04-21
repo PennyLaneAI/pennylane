@@ -145,6 +145,18 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
 interfaces = ["tf"]
 
 
+def test_error_undefined_interface():
+    """Test that an error is raised in the qnode interface is not differentiable."""
+
+    @qml.qnode(qml.device("default.qubit"), interface=None)
+    def circuit(_var):
+        qml.RX(_var, 0)
+        return qml.expval(qml.Z(0))
+
+    with pytest.raises(ValueError, match="Undifferentiable interface numpy"):
+        classical_jacobian(circuit)(np.array(0.5))
+
+
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))

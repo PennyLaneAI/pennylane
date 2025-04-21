@@ -27,7 +27,6 @@ QNode without an exception being raised."""
 import pytest
 
 import pennylane as qml
-from pennylane import QuantumFunctionError
 from pennylane import numpy as np
 from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
 from pennylane.measurements.measurements import ObservableReturnTypes
@@ -259,7 +258,7 @@ class TestSupportedConfs:
         """Test diff_method=device raises an error for all interfaces for default.qubit"""
         msg = "does not support device with requested circuit"
 
-        with pytest.raises(QuantumFunctionError, match=msg):
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
             get_qnode(interface, "device", return_type, shots, wire_specs)
 
     @pytest.mark.parametrize(
@@ -330,7 +329,7 @@ class TestSupportedConfs:
 
         x = get_variable(None, wire_specs)
         qn = get_qnode(interface, "backprop", return_type, 100, wire_specs)
-        with pytest.raises(QuantumFunctionError, match=msg):
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
             qn(x)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -352,7 +351,7 @@ class TestSupportedConfs:
         elif return_type == ObservableReturnTypes.Probability and interface == "tf":
             with pytest.raises(Exception):
                 # tensorflow.python.framework.errors_impl.InvalidArgumentError
-                # TODO: figure out why
+                # TODO: figure out why [sc-52490]
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)

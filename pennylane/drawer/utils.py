@@ -14,9 +14,10 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+import numpy as np
+
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Conditional, Controlled
-from pennylane.tape import QuantumScript
 
 
 def default_wire_map(tape):
@@ -45,8 +46,14 @@ def default_bit_map(tape):
     Returns:
         dict: map from mid-circuit measurements to classical wires."""
     bit_map = {}
+    mcms = {}
 
+    mcm_idx = 0
     for op in tape:
+        if isinstance(op, MidMeasureMP):
+            mcms[op] = mcm_idx
+            mcm_idx += 1
+
         if isinstance(op, Conditional):
             for m in op.meas_val.measurements:
                 bit_map[m] = None
@@ -59,11 +66,7 @@ def default_bit_map(tape):
                 for m in op.mv:
                     bit_map[m.measurements[0]] = None
 
-    cur_cwire = 0
-    for op in tape:
-        if isinstance(op, MidMeasureMP) and op in bit_map:
-            bit_map[op] = cur_cwire
-            cur_cwire += 1
+    bit_map = {mcm: i for i, mcm in enumerate(sorted(bit_map, key=mcms.get))}
 
     return bit_map
 
@@ -150,8 +153,13 @@ def cwire_connections(layers, bit_map):
             classical conditions or measurement statistics as keys.
 
     Returns:
-        list, list: list of list of accessed layers for each classical wire, and largest wire
-        corresponding to the accessed layers in the list above.
+        dict, dict, dict: The first dictionary is the updated ``bit_map``, potentially with
+        some mid-circuit measurements mapped to new (smaller) classical wires. The second and third
+        dictionaries have the classical wires as keys and lists of lists as values, with the outer
+        list running over different (re)usages of the classical wire. For the second dictionary,
+        the inner lists contain the indices of the accessed layers, for the third dictionary,
+        they contain the measured quantum wires and the largest quantum wire of conditionally
+        applied operations (no entries for terminal statistics of mid-circuit measurements).
 
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
@@ -160,48 +168,96 @@ def cwire_connections(layers, bit_map):
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
     >>> layers = drawable_layers(tape)
-    >>> bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
-    >>> bit_map
-    {measure(wires=[0]): 0, measure(wires=[1]): 1}
+    >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    >>> new_bit_map == bit_map # No reusage happening
+    True
     >>> cwire_layers
-    [[0, 2, 3], [1, 2]]
+    {0: [[0, 2, 3]], 1: [[1, 2]]}
     >>> cwire_wires
-    [[0, 0, 3], [1, 0]]
+    {0: [[0, 0, 3]], 1: [[1, 0]]}
 
-    From this information, we can see that the first classical wire is active in layers
-    0, 2, and 3 while the second classical wire is active in layers 1 and 2.  The first "active"
+    From this information, we can see that classical wire ``0`` is active in layers
+    0, 2, and 3 while classical wire ``1`` is active in layers 1 and 2, with both classical
+    wires being used only once (the outer lists all have length 1). The first "active"
     layer will always be the one with the mid circuit measurement.
-
     """
     if len(bit_map) == 0:
-        return [], []
+        return bit_map, {}, {}
 
-    connected_layers = [[] for _ in bit_map]
-    connected_wires = [[] for _ in bit_map]
+    old_cwires = list(bit_map.values())
+    connected_layers = {cwire: [] for cwire in old_cwires}
+    connected_wires = {cwire: [] for cwire in old_cwires}
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
             if isinstance(op, MidMeasureMP) and op in bit_map:
-                connected_layers[bit_map[op]].append(layer_idx)
-                connected_wires[bit_map[op]].append(op.wires[0])
+                _meas = [op]
+                con_wire = op.wires[0]
 
             elif isinstance(op, Conditional):
-                for m in op.meas_val.measurements:
-                    cwire = bit_map[m]
-                    connected_layers[cwire].append(layer_idx)
-                    connected_wires[cwire].append(max(op.wires))
+                _meas = op.meas_val.measurements
+                con_wire = max(op.wires)
 
             elif isinstance(op, MeasurementProcess) and op.mv is not None:
                 if isinstance(op.mv, MeasurementValue):
-                    for m in op.mv.measurements:
-                        cwire = bit_map[m]
-                        connected_layers[cwire].append(layer_idx)
+                    _meas = op.mv.measurements
                 else:
-                    for m in op.mv:
-                        cwire = bit_map[m.measurements[0]]
-                        connected_layers[cwire].append(layer_idx)
+                    _meas = [m.measurements[0] for m in op.mv]
+                con_wire = None
 
-    return connected_layers, connected_wires
+            else:
+                continue
+
+            for m in _meas:
+                cwire = bit_map[m]
+                connected_layers[cwire].append(layer_idx)
+                if con_wire is not None:
+                    connected_wires[cwire].append(con_wire)
+
+    bit_map, connected_layers, connected_wires = _try_reusing_cwires(
+        bit_map, connected_layers, connected_wires
+    )
+
+    return bit_map, connected_layers, connected_wires
+
+
+def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
+    # Extract (start, end) tuples (incl end) where each cwire is occupied with old bit map
+    occupation = {
+        cwire: (min(con_layer), max(con_layer)) for cwire, con_layer in connected_layers.items()
+    }
+    # Mark until where each cwire is currently occupied during the following loop.
+    # Start with -1 for each cwire
+    occ_ends = -np.ones(len(bit_map))
+    # Write a map from old cwires to new cwires
+    cwire_map = {}
+    for cwire, occ in occupation.items():
+        # Find the first cwire that is currently not occupied, i.e. that has its occupation end
+        # before the current occ starts (first entry of occ)
+        new_cwire = int(np.where(occ_ends < occ[0])[0][0])
+        # allocate a new (or the old) cwire based on the first one that was free above
+        cwire_map[cwire] = new_cwire
+        # Update the occupation end of the newly allocated cwire
+        occ_ends[new_cwire] = occ[1]
+    # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
+    inv_cwire_map = {new_cwire: [] for new_cwire in cwire_map.values()}
+    for old_cwire in bit_map.values():
+        inv_cwire_map[cwire_map[old_cwire]].append(old_cwire)
+
+    # Collect the connected layers from all old cwires that are being mapped to the same new cwire
+    connected_layers = {
+        new_cwire: [connected_layers[w] for w in old_cwires]
+        for new_cwire, old_cwires in inv_cwire_map.items()
+    }
+    # Collect the connected wires from all old cwires that are being mapped to the same new cwire
+    connected_wires = {
+        new_cwire: [connected_wires[w] for w in old_cwires]
+        for new_cwire, old_cwires in inv_cwire_map.items()
+    }
+    # Update bit map according to the condensed/reused cwires
+    bit_map = {op: cwire_map[cwire] for op, cwire in bit_map.items()}
+    return bit_map, connected_layers, connected_wires
 
 
 def transform_deferred_measurements_tape(tape):
@@ -217,7 +273,7 @@ def transform_deferred_measurements_tape(tape):
                 new_measurements.append(new_m)
             else:
                 new_measurements.append(m)
-        new_tape = QuantumScript(tape.operations, new_measurements)
+        new_tape = tape.copy(measurements=new_measurements)
         return new_tape
 
     return tape

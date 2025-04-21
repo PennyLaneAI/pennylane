@@ -17,6 +17,7 @@ import copy
 
 import autograd.numpy
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -253,9 +254,9 @@ class TestClassicalShadow:
         shots = 100
 
         circuit = get_circuit(wires, shots, True)
-        circuit.construct((), {})
+        tape = qml.workflow.construct_tape(circuit)()
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.classical_shadow(wires=range(wires)).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -268,7 +269,7 @@ class TestClassicalShadow:
 
         copied_res = copy.copy(res)
         assert isinstance(copied_res, ClassicalShadowMP)
-        assert copied_res.return_type == res.return_type
+        assert isinstance(res, ClassicalShadowMP)
         assert copied_res.wires == res.wires
         assert copied_res.seed == res.seed
 
@@ -365,6 +366,25 @@ class TestClassicalShadow:
         assert qml.math.shape(res[0]) == (2, shots, wires)
         assert qml.math.shape(res[1]) == ()
 
+    @pytest.mark.parametrize("shots", shots_list)
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_parameter_broadcasting(self, wires, shots, params):
+        """Test that the classical_shadow measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=wires, shots=shots))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.classical_shadow(wires=range(wires))
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result) == (len(params), 2, shots, wires)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
+
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -430,9 +450,9 @@ class TestExpvalMeasurement:
         H = qml.PauliZ(0)
 
         circuit = hadamard_circuit(wires, shots)
-        circuit.construct((H,), {})
+        tape = qml.workflow.construct_tape(circuit)(H)
 
-        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        res = qml.execute([tape], circuit.device, None)[0]
         expected_shape = qml.shadow_expval(H).shape(shots, wires)
 
         assert res.shape == expected_shape
@@ -445,7 +465,7 @@ class TestExpvalMeasurement:
 
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
-        assert copied_res.return_type == res.return_type
+        assert copied_res._shortname == res._shortname  # pylint: disable=protected-access
         qml.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
@@ -460,16 +480,16 @@ class TestExpvalMeasurement:
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 
-    def test_multi_measurement_allowed(self):
+    def test_multi_measurement_allowed(self, seed):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=10000)
+        dev = qml.device("default.qubit", wires=2, shots=10000, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            return qml.shadow_expval(qml.PauliZ(0), seed=seed), qml.expval(qml.PauliZ(0))
 
         res = circuit()
         assert isinstance(res, tuple)
@@ -486,6 +506,24 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpvalMP)
+
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_expval_parameter_broadcasting(self, params):
+        """Test that the shadow_expval measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2, shots=10))
+        def circuit(x):
+            qml.RX(x, wires=1)
+            qml.Hadamard(wires=0)
+            return qml.shadow_expval([qml.PauliZ(0), qml.PauliZ(1)])
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result)[0] == len(params)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
 
 
 obs_hadamard = [
@@ -567,11 +605,7 @@ class TestExpvalForward:
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
 
-        legacy_msg = "Observable must be a linear combination of Pauli observables"
-        new_opmath_msg = "Observable must have a valid pauli representation."
-        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
-
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
 
@@ -719,12 +753,12 @@ class TestExpvalBackward:
         assert qml.math.allclose(actual, qml.math.stack(expected), atol=1e-1)
 
 
-def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.qubit.legacy"):
+def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed"):
     """
     Return a QNode that prepares a state in a given computational basis
     and performs a classical shadow measurement
     """
-    dev = qml.device(device or "default.qubit.legacy", wires=wires, shots=shots)
+    dev = qml.device(device or "default.mixed", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -758,9 +792,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit.tape.measurements[0].process(
-        circuit.tape, circuit.device.target_device
-    )
+    new_bits, new_recipes = circuit()
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -789,7 +821,128 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
     assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
 
+@pytest.mark.parametrize("wires", [1, 3])
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
+def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recipe):
+    """Test that the distribution of the bits and recipes are correct for a circuit
+    that prepares all qubits in a Pauli basis"""
+    # high number of shots to prevent true negatives
+    shots = 1000
+
+    dev = DefaultQubitLegacy(wires=wires, shots=shots)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        for wire in range(wires):
+            if circuit_basis in ("x", "y"):
+                qml.Hadamard(wire)
+            if circuit_basis == "y":
+                qml.RZ(np.pi / 2, wire)
+
+        return qml.classical_shadow(wires=range(wires))
+
+    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    tape = qml.workflow.construct_tape(circuit)()
+    new_bits, new_recipes = tape.measurements[0].process(tape, circuit.device.target_device)
+
+    # test that the recipes follow a rough uniform distribution
+    ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
+    assert np.allclose(ratios, 1 / 3, atol=1e-1)
+    new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
+    assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
+
+    # test that the bit is 0 for all X measurements
+    assert qml.math.allequal(bits[recipes == basis_recipe], 0)
+    assert qml.math.allequal(new_bits[new_recipes == basis_recipe], 0)
+
+    # test that the bits are uniformly distributed for all Y and Z measurements
+    bits1 = bits[recipes == (basis_recipe + 1) % 3]
+    ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
+    assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+    new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
+    new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
+    assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
+
+    bits2 = bits[recipes == (basis_recipe + 2) % 3]
+    ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
+    assert np.allclose(ratios2, 1 / 2, atol=1e-1)
+
+    new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
+    new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
+    assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
+
+
+@pytest.mark.parametrize("wires", [1, 3])
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
+def test_availability_legacy_arithmetic(wires, interface, circuit_basis, basis_recipe):
+    """Test that the legacy arithmetic can run. No check with results"""
+    # high number of shots to prevent true negatives
+    shots = 100
+
+    dev = DefaultQubitLegacy(wires=wires, shots=shots)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        for wire in range(wires):
+            if circuit_basis in ("x", "y"):
+                qml.Hadamard(wire)
+            if circuit_basis == "y":
+                qml.RZ(np.pi / 2, wire)
+
+        return qml.classical_shadow(wires=range(wires))
+
+    tape = qml.workflow.construct_tape(circuit)()
+    obs = tape.observables[0]
+    legacy_bits, legacy_recipes = dev.classical_shadow(obs=obs, circuit=circuit)
+
+    new_bits = legacy_bits[legacy_recipes == basis_recipe]
+    legacy_ratios = np.unique(new_bits, return_counts=True)[1] / (wires * shots)
+    # Check the shape with basis recipe
+    assert legacy_bits.shape == (shots, wires)
+    assert np.allclose(
+        legacy_ratios, 1 / 3, atol=5e-1
+    )  # Make sure large enough tol, we don't care about the accuracy of a legacy function
+
+    legacy_bits, legacy_recipes = super(type(dev), dev).classical_shadow(obs=obs, circuit=tape)
+    new_bits = legacy_bits[legacy_recipes == basis_recipe]
+    legacy_ratios = np.unique(new_bits, return_counts=True)[1] / (wires * shots)
+    # Check the shape with basis recipe
+    assert legacy_bits.shape == (shots, wires)
+    assert np.allclose(legacy_ratios, 1 / 3, atol=5e-1)
+
+
 def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
+    dev = DefaultQubitLegacy(wires=wires, shots=shots)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(obs, k=1):
+        for i in range(wires):
+            qml.Hadamard(wires=i)
+        return qml.shadow_expval(obs, k=k)
+
+    return circuit
+
+
+def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamard):
+    """Test that the expval estimation is correct for a uniform
+    superposition of qubits"""
+    circuit = hadamard_circuit_legacy(3, shots=50000)
+    actual = circuit(obs, k=k)
+
+    tape = qml.workflow.construct_tape(circuit)(obs)
+    new_actual = tape.measurements[0].process(tape, circuit.device.target_device)
+
+    assert actual.shape == (len(obs_hadamard),)
+    assert actual.dtype == np.float64
+    assert qml.math.allclose(actual, expected, atol=1e-1)
+    assert qml.math.allclose(new_actual, expected, atol=1e-1)
+
+
+def hadamard_circuit_mixed(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.mixed", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -801,16 +954,31 @@ def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
+def test_hadamard_expval_mixed(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
-    circuit = hadamard_circuit_legacy(3, shots=50000)
+    circuit = hadamard_circuit_mixed(3, shots=50000)
     actual = circuit(obs, k=k)
-
-    print(circuit.tape)
-    new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
+    new_actual = circuit(obs, k=k)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64
     assert qml.math.allclose(actual, expected, atol=1e-1)
     assert qml.math.allclose(new_actual, expected, atol=1e-1)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("circuit_basis", ["x", "y", "z"])
+def test_partitioned_shots(interface, circuit_basis):
+    """Test that mixed device works for partitioned shots"""
+    wires = 3
+    shot = 100
+    shots = (shot, shot)
+
+    device = "default.mixed"
+    circuit = get_basis_circuit(
+        wires, basis=circuit_basis, shots=shots, interface=interface, device=device
+    )
+    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    assert bits.shape == recipes.shape == (2, shot, 3)

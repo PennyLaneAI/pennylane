@@ -16,6 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+from typing import Sequence
 
 from scipy import sparse
 
@@ -27,6 +28,7 @@ from pennylane.operation import (
     Operation,
     SparseMatrixUndefinedError,
 )
+from pennylane.wires import WiresLike
 
 
 class Identity(CVObservable, Operation):
@@ -61,15 +63,16 @@ class Identity(CVObservable, Operation):
     ev_order = 1
 
     @classmethod
-    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(wires=wires, **kwargs)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires=None, id=None):
-        super().__init__(wires=[] if wires is None else wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        super().__init__(wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
@@ -80,10 +83,12 @@ class Identity(CVObservable, Operation):
         """String representation."""
         if len(self.wires) == 0:
             return "I()"
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"I('{wire}')"
-        return f"I({wire})"
+        if len(self.wires) == 1:
+            wire = self.wires[0]
+            if isinstance(wire, str):
+                return f"I('{wire}')"
+            return f"I({wire})"
+        return f"I({self.wires.tolist()})"
 
     @property
     def name(self):
@@ -137,8 +142,8 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2**n_wires), format="csr")
+    def compute_sparse_matrix(n_wires=1, format="csr"):  # pylint: disable=arguments-differ
+        return sparse.eye(int(2**n_wires), format=format)
 
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
@@ -305,13 +310,20 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
+    resource_keys = set()
+
     @classmethod
-    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, phi, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires=None, id=None):
-        super().__init__(phi, wires=[] if wires is None else wires, id=id)
+    def __init__(self, phi, wires: WiresLike = (), id=None):
+        super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -376,10 +388,10 @@ class GlobalPhase(Operation):
         return qml.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(phi, n_wires=1, format="csr"):  # pylint: disable=arguments-differ
         if qml.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
-        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format="csr")
+        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -410,7 +422,9 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        phi, wires: WiresLike = ()
+    ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::
@@ -444,9 +458,13 @@ class GlobalPhase(Operation):
     def eigvals(self):
         return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
 
-    def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+    def matrix(self, wire_order: Sequence = None):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def sparse_matrix(self, wire_order: Sequence = None, format="csr"):
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return self.compute_sparse_matrix(self.data[0], n_wires=n_wires, format=format)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)

@@ -196,7 +196,6 @@ def test_kernel(binary_matrix, result):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qml.paulix_ops(generators, num_qubits)
@@ -225,7 +224,6 @@ def test_generate_paulis(generators, num_qubits, result):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_symmetry_generators(symbols, geometry, res_generators):
     r"""Test that symmetry_generators returns the correct result."""
 
@@ -264,7 +262,6 @@ def test_symmetry_generators(symbols, geometry, res_generators):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_clifford(generator, paulixops, result):
     r"""Test that clifford returns the correct operator."""
     u = clifford(generator, paulixops)
@@ -296,7 +293,6 @@ def test_clifford(generator, paulixops, result):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.qchem.Molecule(symbols, geometry)
@@ -353,7 +349,6 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, result):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
@@ -459,7 +454,6 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_wires, result):
     r"""Test that transform_hf returns the correct result."""
 
@@ -507,7 +501,6 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_obs(symbols, geometry, charge):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
@@ -603,7 +596,6 @@ def test_taper_obs(symbols, geometry, charge):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_excitations(
     symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting
 ):
@@ -738,7 +730,6 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_consistent_taper_ops(operation, op_gen):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
 
@@ -897,7 +888,6 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_taper_matrix_ops(operation, op_wires, op_gen):
     """Test that taper_operation can be used with gate operation built using matrices"""
 
@@ -999,3 +989,62 @@ def test_split_pauli_sentence(ps_size, max_size):
         split_sentence = {**split_sentence, **ps}
 
     assert sentence == qml.pauli.PauliSentence(split_sentence)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry"),
+    [(["Li", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 3.13]]))],
+)
+def test_taper_wire_order(symbols, geometry):
+    r"""Test that a tapering workflow results in correct order of wires."""
+
+    molecule = qml.qchem.Molecule(symbols, geometry)
+    hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, num_wires)
+    paulix_sector = optimal_sector(hamiltonian, generators, molecule.n_electrons)
+
+    tapered_ham = qml.taper(hamiltonian, generators, paulixops, paulix_sector)
+    assert tapered_ham.wires.tolist() == list(sorted(tapered_ham.wires))
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+    ],
+)
+def test_taper_jax_jit(symbols, geometry, charge):
+    r"""Test that an observable can be tapred within a jax-jit workflow."""
+
+    import jax
+
+    molecule = qml.qchem.Molecule(symbols, jax.numpy.array(geometry), charge)
+    hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, num_wires)
+    paulix_sector = tuple(optimal_sector(hamiltonian, generators, molecule.n_electrons))
+
+    tapered_ham1 = qml.simplify(qml.taper(hamiltonian, generators, paulixops, paulix_sector))
+    tapered_ham2 = qml.simplify(
+        jax.jit(qml.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
+    )
+
+    assert qml.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
+    assert qml.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
+    qml.assert_equal(tapered_ham1, tapered_ham2)

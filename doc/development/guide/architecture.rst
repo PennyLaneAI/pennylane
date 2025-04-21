@@ -114,12 +114,6 @@ which are themselves operators.
 >>> m.obs
 PauliZ(wires=['a'])
 
-Furthermore, it specifies a "return type" which defines the kind of measurement performed,
-such as expectation, variance, probability, state, or sample.
-
->>> m.return_type
-ObservableReturnTypes.Expectation
-
 For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
 QuantumTape
@@ -168,7 +162,7 @@ Devices
 *******
 
 In PennyLane, the abstraction of a quantum computation device is encompassed
-within the :class:`pennylane.Device` class. The main job of devices is to
+within the :class:`pennylane.devices.Device` class. The main job of devices is to
 interpret and execute tapes. The most important method is ``batch_execute``,
 which executes a list of tapes, such as a list of the single tape created above:
 

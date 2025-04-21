@@ -53,7 +53,7 @@ array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 Empty Wires
 ^^^^^^^^^^^
 
-Some measurments allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
+Some measurements allow broadcasting over all available wires, like ``qml.probs()``, ``qml.sample()``,
 or ``qml.state()``. In such a case, the measurement process instance should have empty wires.
 The shape of the result object may be dictated either by the device or the other operations present in the circuit.
 
@@ -134,7 +134,7 @@ tuple where each entry corresponds to a different shot value.
 ({'0': 1}, {'0': 10}, {'0': 100})
 
 Let's look at an example with all forms of nesting.  Here, we have a tape with a batch size of ``3``, three
-diferent measurements with different fundamental shapes, and a shot vector with three different values.
+different measurements with different fundamental shapes, and a shot vector with three different values.
 
 >>> op = qml.RX((1.2, 2.3, 3.4), 0)
 >>> ms = (qml.expval(qml.Z(0)), qml.probs(wires=0), qml.counts())

@@ -128,7 +128,7 @@ class TestOptimizeMeasurements:
         grouped_coeffs_sol = [[1.43, 4.21]]
 
         grouped_coeffs = optimize_measurements(
-            obs, coefficients, grouping="qwc", colouring_method="rlf"
+            obs, coefficients, grouping="qwc", colouring_method="lf"
         )[2]
 
         assert len(grouped_coeffs) == len(grouped_coeffs)

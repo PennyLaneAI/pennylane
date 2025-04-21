@@ -22,6 +22,7 @@ from .adam import AdamOptimizer
 from .adaptive import AdaptiveOptimizer
 from .gradient_descent import GradientDescentOptimizer
 from .momentum import MomentumOptimizer
+from .momentum_qng import MomentumQNGOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .qng import QNGOptimizer
 from .qnspsa import QNSPSAOptimizer
@@ -39,13 +40,14 @@ __all__ = [
     "AdaptiveOptimizer",
     "GradientDescentOptimizer",
     "MomentumOptimizer",
+    "MomentumQNGOptimizer",
     "NesterovMomentumOptimizer",
     "RMSPropOptimizer",
     "QNGOptimizer",
+    "QNSPSAOptimizer",
     "RiemannianGradientOptimizer",
     "RotosolveOptimizer",
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",
     "SPSAOptimizer",
-    "QNSPSAOptimizer",
 ]
