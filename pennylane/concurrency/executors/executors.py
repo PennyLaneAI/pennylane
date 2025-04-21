@@ -36,15 +36,35 @@ class ExecBackends(Enum):
     MPI_CommEx = MPICommExec
 
 
-def get_executor(backend: ExecBackends = ExecBackends.MP_Pool):
+ExecBackendsMap = {
+    "mp_pool": MPPoolExec,
+    "cf_procpool": ProcPoolExec,
+    "cf_threadpool": ThreadPoolExec,
+    "serial": SerialExec,
+    "dask": DaskExec,
+    "mpi4py_pool": MPIPoolExec,
+    "mpi4py_comm": MPICommExec,
+}
+
+
+def get_supported_backends():
+    return ExecBackendsMap
+
+
+def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
     """
     Return the associated class type from the provided enumerated backends.
     """
-    return backend.value
+    if isinstance(backend, ExecBackends):
+        return backend.value
+    return ExecBackendsMap[backend]
 
 
-def create_executor(backend: ExecBackends = ExecBackends.MP_Pool, **kwargs):
+def create_executor(backend: ExecBackends | str = ExecBackends.MP_Pool, **kwargs):
     """
     Create an instance of the specified executor backend with forwarded keyword arguments
     """
-    return backend.value(**kwargs)
+    if isinstance(backend, ExecBackends):
+
+        return backend.value(**kwargs)
+    return ExecBackendsMap[backend](**kwargs)

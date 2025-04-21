@@ -23,7 +23,18 @@ from .base import ExtExec
 
 class MPIPoolExec(ExtExec):
     """
-    MPIPoolExecutor abstraction class functor.
+    MPIPoolExecutor abstraction class executor.
+
+    This executor wraps the mpi4py ``mpi4py.futures.MPIPoolExecutor`` API, and provides support for execution using multiple processes launched using MPI as
+
+    .. code-block:: console
+
+        $ mpirun -n 4 -m mpi4py.futures my_script.py
+
+
+
+
+    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
     """
 
     def __init__(self, max_workers=None, **kwargs):
