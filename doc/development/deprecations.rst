@@ -9,13 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
-  to be overridden unless the operator develop wants to validate that the correct number of wires is passed.
-
-  - Deprecated in v0.42
-  - Will be removed in v0.43
-
 * The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
 
   - Deprecated in v0.41

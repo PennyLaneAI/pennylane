@@ -17,17 +17,15 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
+  any number of wires.
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
-
-* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
-  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
-  and does not need to be overwritten unless the operator developer wants to add wire number validation.
-  [(#7311)](https://github.com/PennyLaneAI/pennylane/pull/7311)
 
 <h3>Internal changes ⚙️</h3>
 
