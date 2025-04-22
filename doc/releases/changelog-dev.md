@@ -12,6 +12,10 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* a new `angle_solver` method has been added in the `poly_to_angles` function. This allows to 
+  calculate the angles of polynomial degrees greater than our current method.
+ [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
+* 
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
@@ -91,4 +95,5 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Oumarou Oumarou,
 Andrija Paurevic

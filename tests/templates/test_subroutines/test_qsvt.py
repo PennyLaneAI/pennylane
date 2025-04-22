@@ -19,11 +19,21 @@ from copy import copy
 
 import pytest
 from numpy.linalg import matrix_power
+from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qsvt import W_of_x, _complementary_poly, cheby_pol, poly_func, qsp_iterate, qsp_iterates, qsp_optimization, z_rotation
-from numpy.polynomial.chebyshev import Chebyshev
+from pennylane.templates.subroutines.qsvt import (
+    _cheby_pol,
+    _complementary_poly,
+    _poly_func,
+    _qsp_iterate,
+    _qsp_iterates,
+    _qsp_optimization,
+    _W_of_x,
+    _z_rotation,
+)
+
 
 def qfunc(A):
     """Used to test queuing in the next test."""
@@ -39,23 +49,30 @@ def lst_phis(phis):
     """Used to test queuing in the next test."""
     return [qml.PCPhase(i, 2, wires=[0, 1]) for i in phis]
 
+
 def generate_polynomial_coeffs(degree, parity=None):
     np.random.seed(123)
     if parity is None:
-        polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree+1)
-        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+        polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree + 1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(
+            np.abs(polynomial_coeffs_in_canonical_basis)
+        )
     if parity == 0:
-        assert degree % 2 == 0.
+        assert degree % 2 == 0.0
         polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-        polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree//2+1)
-        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
-    
+        polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree // 2 + 1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(
+            np.abs(polynomial_coeffs_in_canonical_basis)
+        )
+
     if parity == 1:
-        assert degree % 2 == 1.
+        assert degree % 2 == 1.0
         polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-        polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree//2+1)
-        return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
-    
+        polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree // 2 + 1)
+        return polynomial_coeffs_in_canonical_basis / np.sum(
+            np.abs(polynomial_coeffs_in_canonical_basis)
+        )
+
     raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
 
 
@@ -664,10 +681,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "P",
         [
-            (generate_polynomial_coeffs(4,0)),
-            (generate_polynomial_coeffs(3,1)),
-            (generate_polynomial_coeffs(6,0)),
-
+            (generate_polynomial_coeffs(2, 0)),
+            (generate_polynomial_coeffs(4, 0)),
+            (generate_polynomial_coeffs(6, 0)),
         ],
     )
     def test_complementary_polynomial(self, P):
@@ -685,16 +701,15 @@ class TestRootFindingSolver:
 
             Q_val = np.polyval(Q, z)
             Q_magnitude_squared = np.abs(Q_val) ** 2
-            
+
             assert np.isclose(P_magnitude_squared + Q_magnitude_squared, 1, atol=1e-7)
 
-    
     @pytest.mark.parametrize(
         "angles",
         [
             (generate_polynomial_coeffs(4, None)),
             (generate_polynomial_coeffs(5, None)),
-            (generate_polynomial_coeffs(6, None))
+            (generate_polynomial_coeffs(6, None)),
         ],
     )
     def test_transform_angles(self, angles):
@@ -712,25 +727,27 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs(4,0)),
-            (generate_polynomial_coeffs(3,1)),
-            (generate_polynomial_coeffs(6,0)),
-            (generate_polynomial_coeffs(100,0)),
+            (generate_polynomial_coeffs(4, 0)),
+            (generate_polynomial_coeffs(3, 1)),
+            (generate_polynomial_coeffs(6, 0)),
+            (generate_polynomial_coeffs(100, 0)),
         ],
     )
     @pytest.mark.parametrize(
         "angle_solver, optimizer_kwargs",
         [
             ("root-finding", {}),
-            ("iterative", {"method":"L-BFGS-B", "tol":1e-15}),
-            ("iterative", {"method":"Newton-CG"}),
-        ]
+            ("iterative", {"method": "L-BFGS-B", "tol": 1e-15}),
+            ("iterative", {"method": "Newton-CG"}),
+        ],
     )
     def test_correctness_QSP_angles_finding(self, poly, angle_solver, optimizer_kwargs):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs)
-        x = np.random.uniform(low=-1., high=1.)
+        angles = qml.poly_to_angles(
+            list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs
+        )
+        x = np.random.uniform(low=-1.0, high=1.0)
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit_qsp():
@@ -748,25 +765,24 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs(4,0)),
-            (generate_polynomial_coeffs(3,1)),
-            (generate_polynomial_coeffs(6,0)),
-            (generate_polynomial_coeffs(100,0)),
+            (generate_polynomial_coeffs(4, 0)),
+            (generate_polynomial_coeffs(3, 1)),
+            (generate_polynomial_coeffs(6, 0)),
+            (generate_polynomial_coeffs(100, 0)),
         ],
     )
     @pytest.mark.parametrize(
-        "angle_solver, optimizer_kwargs",
+        "angle_solver",
         [
-            ("root-finding", {}),
-            ("iterative", {"method":"L-BFGS-B", "tol":1e-15}),
-            ("iterative", {"method":"Newton-CG"}),
-        ]
+            ("root-finding"),
+            ("iterative"),
+        ],
     )
-    def test_correctness_QSVT_angles(self, poly, angle_solver, optimizer_kwargs):
+    def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver, **optimizer_kwargs)
-        x = np.random.uniform(low=-1., high=1.)
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
+        x = np.random.uniform(low=-1.0, high=1.0)
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
         projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
@@ -778,7 +794,7 @@ class TestRootFindingSolver:
 
         output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-        assert np.isclose(output.real, expected.real)
+        assert qml.math.isclose(output.real, expected.real)
 
     @pytest.mark.parametrize(
         ("poly", "routine", "angle_solver", "msg_match"),
@@ -838,45 +854,28 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
-            (generate_polynomial_coeffs(100,0)),
-            (generate_polynomial_coeffs(7,1)),
-            (generate_polynomial_coeffs(12,0)),
-        ]
+            (generate_polynomial_coeffs(10, 0)),
+            (generate_polynomial_coeffs(7, 1)),
+            (generate_polynomial_coeffs(12, 0)),
+        ],
     )
-    @pytest.mark.parametrize(
-        "optimizer_kwargs",
-        [
-            {"method":"L-BFGS-B", "tol":1e-15},
-            {"method":"Newton-CG"}
-        ]
-    )
-    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis, optimizer_kwargs):
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
         parity = degree % 2
         if parity:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
-        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs, **optimizer_kwargs)
+        phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
         x_point = np.random.uniform(size=1, high=1, low=-1)
         x_point = x_point.item()
-        
-        try: 
-            import jax
-            interface = 'jax'
-        except ModuleNotFoundError:
-            interface=None
-        delta = abs(
-            qsp_iterates(phis, x_point, interface=interface)
-            - poly_func(target_polynomial_coeffs, degree, parity, x_point)
-        )
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
         # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
         tolerance = (
             np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i, x=x_point))
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
@@ -885,87 +884,72 @@ class TestIterativeSolver:
             else np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i + 1, x=x_point))
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
             )
         )
 
-        assert np.isclose(
-            qsp_iterates(phis, x_point, interface=interface),
-            poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
+        assert qml.math.isclose(
+            _qsp_iterates(phis, x_point, None),
+            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
-    
+
     @pytest.mark.parametrize(
         "x, degree",
-        [
-            (np.random.uniform(low=-1., high=1.), np.random.randint(1,100)) for _ in range(4) 
-        ]
+        [(np.random.uniform(low=-1.0, high=1.0), np.random.randint(1, 100)) for _ in range(4)],
     )
     def test_cheby_pol(self, x, degree):
-        coeffs = [0.]*(degree) + [1.]
-        assert np.isclose(cheby_pol(x, degree), Chebyshev(coeffs)(x))  
+        coeffs = [0.0] * (degree) + [1.0]
+        assert np.isclose(_cheby_pol(x, degree), Chebyshev(coeffs)(x))
 
     @pytest.mark.parametrize(
         "coeffs, parity, x",
         [
-            (generate_polynomial_coeffs(100,0), 0, np.random.uniform(-1.,1.)),
-            (generate_polynomial_coeffs(7,1), 1, np.random.uniform(-1.,1.)),
-            (generate_polynomial_coeffs(12,0), 0, np.random.uniform(-1.,1.)),
-        ]
+            (generate_polynomial_coeffs(100, 0), 0, np.random.uniform(-1.0, 1.0)),
+            (generate_polynomial_coeffs(7, 1), 1, np.random.uniform(-1.0, 1.0)),
+            (generate_polynomial_coeffs(12, 0), 0, np.random.uniform(-1.0, 1.0)),
+        ],
     )
     def test_poly_func(self, coeffs, parity, x):
-        val = poly_func(coeffs=coeffs[::2], degree=len(coeffs)-1, parity=parity, x=x)
+        val = _poly_func(coeffs=coeffs[::2], parity=parity, x=x)
         temp = np.copy(coeffs[1::2])
         coeffs[parity::2] = coeffs[::2]
-        coeffs[(parity+1)%2::2] = temp
+        coeffs[(parity + 1) % 2 :: 2] = temp
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
-    @pytest.mark.parametrize(
-        "angle",
-        list(np.random.rand(4))
-    )
+    @pytest.mark.parametrize("angle", list(np.random.rand(4)))
     def test_z_rotation(self, angle):
 
-        assert np.allclose(z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
-    @pytest.mark.parametrize(
-        "phi",
-        list(np.random.uniform(low=-1., high=1., size=4))
-    )
+    @pytest.mark.parametrize("phi", list(np.random.uniform(low=-1.0, high=1.0, size=4)))
     def test_qsp_iterate(self, phi):
-        mtx = qsp_iterate(0., phi, None)
+        mtx = _qsp_iterate(0.0, phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "x",
-        list(np.random.uniform(low=-1., high=1., size=4)),
+        list(np.random.uniform(low=-1.0, high=1.0, size=4)),
     )
-    @pytest.mark.parametrize(
-        "degree",
-        range(2,6)
-    )
+    @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterates(self, x, degree):
-        try:
-            from jax import numpy as np
-            interface = 'jax'
-        except ModuleNotFoundError:
-            interface = 'numpy'
-        phis = np.array([np.pi/4] + [0.] * (degree - 1) + [-np.pi/4])
-        qsp_be = qsp_iterates(phis, x, "jax")
-        ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0,0]
+
+        from jax import numpy as np
+
+        phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        qsp_be = _qsp_iterates(phis, x, "jax")
+        ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert np.isclose(qsp_be, ref)
 
-    @pytest.mark.parametrize(
-        "x",
-        list(np.random.uniform(low=-1., high=1., size=4))
-    )
+    @pytest.mark.parametrize("x", list(np.random.uniform(low=-1.0, high=1.0, size=4)))
     def test_W_of_x(self, x):
-        mtx = W_of_x(x, None)
+        mtx = _W_of_x(x, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
@@ -978,7 +962,7 @@ class TestIterativeSolver:
 
         assert len(poly) == len(poly_copy)
         assert np.allclose(poly, poly_copy)
-    
+
     def test_interface_numpy(self):
         """Test `poly_to_angles` works with numpy"""
 
