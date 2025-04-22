@@ -65,8 +65,8 @@ class DaskExec(ExtExec):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
 
-    def map(self, fn: Callable, *args: Sequence):
-        output_f = self._exec_backend.map(fn, *args)
+    def map(self, fn: Callable, *args: Sequence, **kwargs):
+        output_f = self._exec_backend.map(fn, *args, **kwargs)
         return [o.result() for o in output_f]
 
     def starmap(self, fn: Callable, args: Sequence):
