@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The method ``qml.QNode.get_gradient_fn`` is deprecated because no longer needed. Instead, use ``qml.workflow.get_best_diff_method`` to get the gradient function.
+
+  - Deprecated in v0.41
+  - Will be removed in v0.42
+
 * The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
 
   - Deprecated in v0.41
