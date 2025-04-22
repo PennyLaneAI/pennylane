@@ -20,6 +20,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The property `MeasurementProcess.return_type` has been removed.
+  [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
   [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)

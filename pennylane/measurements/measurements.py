@@ -17,7 +17,6 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
