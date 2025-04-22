@@ -12,7 +12,6 @@ This module contains functions and classes for creating and manipulating fermion
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
-    :no-index-entry:
 
 FermiC and FermiA
 -----------------

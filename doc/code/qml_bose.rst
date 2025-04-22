@@ -14,7 +14,7 @@ BoseWord and BoseSentence
 
 .. autosummary::
     :toctree: api
-    :no-index-entry:
+    :no-index:
 
     ~BoseWord
     ~BoseSentence
