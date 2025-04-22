@@ -228,9 +228,8 @@ def get_transform_program(
     return resolved_program
 
 
-# !TODO: remove KerasLayer in 0.42
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
+    qnode: Union[QNode, "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
@@ -340,14 +339,6 @@ def construct_batch(
             shots = kwargs.pop("shots", qnode.device.shots)
 
         context_fn = nullcontext
-
-        # !TODO: remove KerasLayer in 0.42
-        if type(qnode).__name__ == "KerasLayer":
-            # note that calling qml.qnn.KerasLayer pulls in a tf import
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
-
-            context_fn = tf.GradientTape
 
         elif type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
