@@ -19,7 +19,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The `KerasLayer` in `qml.qnn.keras` has been deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
+* The `KerasLayer` in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
