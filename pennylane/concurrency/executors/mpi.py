@@ -21,6 +21,7 @@ from typing import Any, Optional
 from .base import ExecBackendConfig, ExtExec
 
 
+# pylint: disable=import-outside-toplevel
 class MPIPoolExec(ExtExec):
     """
     MPIPoolExecutor abstraction class executor.
@@ -99,6 +100,7 @@ class MPIPoolExec(ExtExec):
         self.shutdown()
 
 
+# pylint: disable=import-outside-toplevel
 class MPICommExec(ExtExec):
     """
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning

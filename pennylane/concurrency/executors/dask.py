@@ -21,6 +21,7 @@ from collections.abc import Callable, Sequence
 from .base import ExtExec
 
 
+# pylint: disable=import-outside-toplevel
 class DaskExec(ExtExec):
     """
     Dask distributed abstraction class functor.
