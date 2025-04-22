@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.abspath("."), "pennylane"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "8.0."
+needs_sphinx = "8.0.0"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -93,7 +93,7 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees")]
+ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees", "duplicate object description of")]
 autodoc_mock_imports = ["torch"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
