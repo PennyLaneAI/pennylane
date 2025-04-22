@@ -55,10 +55,7 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        base (array[complex]): square unitary matrix or a QubitUnitary
-            operation. If passing a matrix, this will be used to construct a QubitUnitary
-            operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
-            this will be used as the base directly.
+        base (array[complex]): square unitary matrix.
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
