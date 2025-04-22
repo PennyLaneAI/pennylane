@@ -79,6 +79,7 @@ Functions for computing Trotter error estimates.
 .. autosummary::
     :toctree: api
 
+    ~effective_hamiltonian
     ~perturbation_error
     ~trotter_error
 
@@ -94,7 +95,12 @@ Classes for representing product formulas.
 
 from .abstract import AbstractState, Fragment
 from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
-from .product_formulas import ProductFormula, perturbation_error, trotter_error
+from .product_formulas import (
+    ProductFormula,
+    effective_hamiltonian,
+    perturbation_error,
+    trotter_error,
+)
 from .realspace import (
     RealspaceCoeffs,
     RealspaceMatrix,

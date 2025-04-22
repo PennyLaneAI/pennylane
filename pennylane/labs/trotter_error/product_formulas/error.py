@@ -13,10 +13,11 @@
 # limitations under the License.
 """Functions for retreiving effective error from fragments"""
 
-from typing import List, Sequence
+from typing import Dict, Hashable, List, Sequence
 
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
 class _AdditiveIdentity:
@@ -84,6 +85,25 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
                 eff += 2 * nested_commutator([fragments[k], fragments[i], fragments[j]])
 
     eff = scalar * eff
+    return eff
+
+
+def effective_hamiltonian(
+    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int = 2
+):
+    bch = product_formula.bch_approx(order)
+
+    if len(fragments) == 0:
+        return fragments
+
+    eff = _AdditiveIdentity()
+
+    for terms in bch:
+        for commutator, coeff in terms.items():
+            eff += coeff * nested_commutator(
+                [product_formula.coeffs[i] * fragments[i] for i in commutator]
+            )
+
     return eff
 
 
