@@ -55,8 +55,6 @@ def execute(
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
     mcm_config="unset",
-    config="unset",
-    inner_transform="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -98,10 +96,6 @@ def execute(
             determining the gradients of tapes.
         mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
             and ``mcm_method`` and will be removed in v0.42.
-        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
-            will be removed in v0.42.
-        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
-            and will be removed in v0.42.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -164,22 +158,6 @@ def execute(
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
-
-    if config != "unset":
-        warn(
-            "The config argument has been deprecated and will be removed in v0.42. "
-            "The provided config argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if inner_transform != "unset":
-        warn(
-            "The inner_transform argument has been deprecated and will be removed in v0.42. "
-            "The provided inner_transform argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if mcm_config != "unset":
         warn(
