@@ -18,12 +18,55 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* The new graph-based decomposition system now supports `QubitUnitary`.
+* New decomposition rules have been added to `QubitUnitary` that can be accessed with the new 
+  graph-based decomposition system. The most efficient rotations will be chosen based on the
+  target gate set
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  from functools import partial
+  import numpy as np
+  import pennylane as qml
+  
+  qml.decomposition.enable_graph()
+  
+  U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+  
+  @partial(qml.transforms.decompose, gate_set={"RX", "RY", "GlobalPhase"})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.QubitUnitary(np.array([[1, 1], [1, -1]]) / np.sqrt(2), wires=[0])
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
+  ```
 
 * Added `qml.decomposition.DecompositionNotApplicable` that can be raised from decomposition rules
   if the decomposition rule is not applicable under a certain set of parameters.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  from pennylane import qml
+  from pennylane.decomposition import DecompositionNotApplicable
+  from pennylane.math.decomposition import zyz_rotation_angles
+  
+  def _zyz_resource(num_wires):
+      if num_wires != 1:
+          # This decomposition is only applicable when num_wires is 1
+          raise DecompositionNotApplicable
+      return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
+
+  def zyz_decomposition(U, wires, **__):
+      phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+      qml.RZ(phi, wires=wires[0])
+      qml.RY(theta, wires=wires[0])
+      qml.RZ(omega, wires=wires[0])
+      qml.GlobalPhase(-phase)
+  ```
+  
+  This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
 <h3>Improvements 🛠</h3>
 
