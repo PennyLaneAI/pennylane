@@ -16,8 +16,6 @@
 import numpy as np
 import pytest
 
-from collections import defaultdict
-
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
 
