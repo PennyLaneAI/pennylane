@@ -34,7 +34,7 @@ import importlib
 from . import cost
 
 class_map = {"TorchLayer": "torch"}
-mods = ("torch")
+mods = "torch"
 
 
 def __getattr__(name):

@@ -340,7 +340,7 @@ def construct_batch(
 
         context_fn = nullcontext
 
-        elif type(qnode).__name__ == "TorchLayer":
+        if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
             x = args[0]
             kwargs = {
