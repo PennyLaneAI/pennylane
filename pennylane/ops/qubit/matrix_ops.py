@@ -87,7 +87,7 @@ def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
 
 
 def _compute_udv(a, b):
-    """Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
+    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
     of equation (36) [https://arxiv.org/pdf/quant-ph/0504100]:
 
     .. math::
