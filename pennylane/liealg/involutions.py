@@ -19,9 +19,9 @@ from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import Y, Z, matrix
+import pennylane.ops.functions as op_func
 from pennylane.operation import Operator
+from pennylane.ops import Y, Z, op_math
 from pennylane.pauli import PauliSentence
 
 # Canonical involutions
@@ -92,7 +92,9 @@ def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -112,7 +114,7 @@ def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -298,7 +300,7 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _AIII_matrix(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _AIII_matrix(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_AIII.register(Operator)
@@ -320,7 +322,9 @@ def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = Non
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -432,7 +436,9 @@ def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -452,7 +458,7 @@ def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -539,7 +545,7 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int]
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _CII(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _CII(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_CII.register(Operator)
@@ -568,7 +574,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import even_odd_involution
+    >>> from pennylane.liealg import even_odd_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
     >>> [even_odd_involution(op) for op in ops]
     [True, False, True]
@@ -608,8 +614,8 @@ def _even_odd_involution_ps(op: PauliSentence):
 def _even_odd_involution_matrix(op: np.ndarray):
     """see Table CI in https://arxiv.org/abs/2406.04418"""
     n = int(np.round(np.log2(op.shape[-1])))
-    YYY = qml.prod(*[Y(i) for i in range(n)])
-    YYY = qml.matrix(YYY, range(n))
+    YYY = op_math.prod(*[Y(i) for i in range(n)])
+    YYY = op_func.matrix(YYY, range(n))
 
     transformed = YYY @ op.conj() @ YYY
     if np.allclose(transformed, op):
@@ -644,7 +650,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bo
     **Example**
 
     >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import concurrence_involution
+    >>> from pennylane.liealg import concurrence_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2), Y(0) @ Y(2)]
     >>> [concurrence_involution(op) for op in ops]
     [False, True, True, False]

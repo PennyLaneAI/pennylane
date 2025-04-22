@@ -97,7 +97,7 @@ class TestResourceCH:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
     )
 
@@ -186,7 +186,7 @@ class TestResourceCY:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
     )
 
@@ -274,7 +274,7 @@ class TestResourceCZ:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
     )
 
@@ -361,7 +361,7 @@ class TestResourceCSWAP:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
     )
 
@@ -448,7 +448,7 @@ class TestResourceCCZ:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
     )
 
@@ -532,9 +532,9 @@ class TestResourceCNOT:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
-        (8, {}),
+        (8, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
@@ -625,9 +625,9 @@ class TestResourceToffoli:
 
     pow_data = (
         (1, {op.resource_rep(): 1}),
-        (2, {}),
+        (2, {re.ResourceIdentity.resource_rep(): 1}),
         (5, {op.resource_rep(): 1}),
-        (8, {}),
+        (8, {re.ResourceIdentity.resource_rep(): 1}),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)

@@ -42,7 +42,9 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     with np.errstate(divide="ignore", invalid="ignore"):
-        determinants = math.linalg.det(U)
+        # we already know is 2x2, so no scaling problems from converting to dense
+        U_temp = U.todense() if math.get_interface(U) == "scipy" else U
+        determinants = math.linalg.det(U_temp)
     phase = math.angle(determinants) / 2
     U = (
         U * math.exp(-1j * phase)
@@ -274,7 +276,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
+        global_phase = math.squeeze(global_phase[0])
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations
@@ -377,7 +379,18 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
+    lams, thetas, phis, gammas = xzx_rotation_angles(U)
 
+    operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
+    if return_global_phase:
+        operations.append(qml.GlobalPhase(-gammas))
+
+    return operations
+
+
+def xzx_rotation_angles(U):
+    """Helper function to separate getting the angles for the xzx decomposition.
+    These angles are also used in the ftqc module"""
     # Small number to add to denominators to avoid division by zero
     EPS = 1e-64
 
@@ -409,11 +422,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
     thetas = thetas % (4 * np.pi)
     lams = lams % (4 * np.pi)
 
-    operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
-    if return_global_phase:
-        operations.append(qml.GlobalPhase(-gammas))
-
-    return operations
+    return lams, thetas, phis, gammas
 
 
 def _zxz_decomposition(U, wire, return_global_phase=False):

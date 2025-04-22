@@ -25,6 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -55,6 +56,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_keys = set()
+
     _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
@@ -78,6 +81,10 @@ class Hadamard(Observable, Operation):
     @property
     def name(self) -> str:
         return "Hadamard"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -199,6 +206,31 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
+def _hadamard_rz_rx_resources():
+    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_rx_resources)
+def _hadamard_to_rz_rx(wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RX(np.pi / 2, wires=wires)
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
+
+
+def _hadamard_rz_ry_resources():
+    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_ry_resources)
+def _hadamard_to_rz_ry(wires: WiresLike, **__):
+    qml.RZ(np.pi, wires=wires)
+    qml.RY(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -242,6 +274,8 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
+    resource_keys = set()
+
     batch_size = None
 
     _queue_category = "_ops"
@@ -275,6 +309,10 @@ class PauliX(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliX"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -411,6 +449,19 @@ Args:
 """
 
 
+def _paulix_to_rx_gp_resources():
+    return {qml.GlobalPhase: 1, qml.RX: 1}
+
+
+@register_resources(_paulix_to_rx_gp_resources)
+def _paulix_to_rx_gp(wires: WiresLike, **__):
+    qml.RX(np.pi, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
+
+
+add_decomps(PauliX, _paulix_to_rx_gp)
+
+
 class PauliY(Observable, Operation):
     r"""
     The Pauli Y operator
@@ -433,6 +484,8 @@ class PauliY(Observable, Operation):
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    resource_keys = set()
 
     basis = "Y"
 
@@ -469,6 +522,10 @@ class PauliY(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliY"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -604,6 +661,19 @@ Args:
 """
 
 
+def _pauliy_to_ry_gp_resources():
+    return {qml.GlobalPhase: 1, qml.RY: 1}
+
+
+@register_resources(_pauliy_to_ry_gp_resources)
+def _pauliy_to_ry_gp(wires: WiresLike, **__):
+    qml.RY(np.pi, wires=wires)
+    qml.GlobalPhase(-np.pi / 2, wires=wires)
+
+
+add_decomps(PauliY, _pauliy_to_ry_gp)
+
+
 class PauliZ(Observable, Operation):
     r"""
     The Pauli Z operator
@@ -625,9 +695,13 @@ class PauliZ(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_keys = set()
+
     basis = "Z"
 
     batch_size = None
+
+    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -660,6 +734,10 @@ class PauliZ(Observable, Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -804,6 +882,18 @@ Args:
 """
 
 
+def _pauliz_to_ps_resources():
+    return {qml.PhaseShift: 1}
+
+
+@register_resources(_pauliz_to_ps_resources)
+def _pauliz_to_ps(wires: WiresLike, **__):
+    qml.PhaseShift(np.pi, wires=wires)
+
+
+add_decomps(PauliZ, _pauliz_to_ps)
+
+
 class S(Operation):
     r"""S(wires)
     The single-qubit phase gate
@@ -830,6 +920,8 @@ class S(Operation):
 
     batch_size = None
 
+    resource_keys = set()
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -847,6 +939,10 @@ class S(Operation):
         if isinstance(wire, str):
             return f"S('{wire}')"
         return f"S({wire})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -934,6 +1030,18 @@ class S(Operation):
         return [np.pi / 2, 0.0, 0.0]
 
 
+def _s_phaseshift_resources():
+    return {qml.PhaseShift: 1}
+
+
+@register_resources(_s_phaseshift_resources)
+def _s_phaseshift(wires, **__):
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomps(S, _s_phaseshift)
+
+
 class T(Operation):
     r"""T(wires)
     The single-qubit T gate
@@ -960,6 +1068,8 @@ class T(Operation):
 
     batch_size = None
 
+    resource_keys = set()
+
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -977,6 +1087,10 @@ class T(Operation):
         if isinstance(wire, str):
             return f"T('{wire}')"
         return f"T({wire})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     @lru_cache()
@@ -1064,6 +1178,18 @@ class T(Operation):
         return [np.pi / 4, 0.0, 0.0]
 
 
+def _t_phaseshift_resources():
+    return {qml.PhaseShift: 1}
+
+
+@register_resources(_t_phaseshift_resources)
+def _t_phaseshift(wires, **__):
+    qml.PhaseShift(np.pi / 4, wires=wires)
+
+
+add_decomps(T, _t_phaseshift)
+
+
 class SX(Operation):
     r"""SX(wires)
     The single-qubit Square-Root X operator.
@@ -1087,6 +1213,12 @@ class SX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1195,6 +1327,21 @@ class SX(Operation):
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
+def _sx_to_rz_ry_rz_ps_resources():
+    return {qml.PhaseShift: 1, qml.RZ: 2, qml.RY: 1}
+
+
+@register_resources(_sx_to_rz_ry_rz_ps_resources)
+def _sx_to_rz_ry_rz_ps(wires: WiresLike, **__):
+    qml.RZ(np.pi / 2, wires=wires)
+    qml.RY(np.pi / 2, wires=wires)
+    qml.RZ(-np.pi, wires=wires)
+    qml.PhaseShift(np.pi / 2, wires=wires)
+
+
+add_decomps(SX, _sx_to_rz_ry_rz_ps)
+
+
 class SWAP(Operation):
     r"""SWAP(wires)
     The swap operator
@@ -1219,6 +1366,7 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    resource_keys = set()
     batch_size = None
 
     @property
@@ -1316,6 +1464,10 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
@@ -1328,6 +1480,20 @@ class SWAP(Operation):
     @property
     def is_hermitian(self) -> bool:
         return True
+
+
+def _swap_to_cnot_resources():
+    return {qml.CNOT: 3}
+
+
+@register_resources(_swap_to_cnot_resources)
+def _swap_to_cnot(wires, **__):
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(SWAP, _swap_to_cnot)
 
 
 class ECR(Operation):
@@ -1356,6 +1522,12 @@ class ECR(Operation):
     num_params = 0
 
     batch_size = None
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1470,6 +1642,23 @@ class ECR(Operation):
         return super().pow(z % 2)
 
 
+def _ecr_decomp_resources():
+    return {Z: 1, qml.CNOT: 1, SX: 1, qml.RX: 2, qml.RY: 1}
+
+
+@register_resources(_ecr_decomp_resources)
+def _ecr_decomp(wires, **__):
+    Z(wires=[wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=[wires[1]])
+    qml.RX(np.pi / 2, wires=[wires[0]])
+    qml.RY(np.pi / 2, wires=[wires[0]])
+    qml.RX(np.pi / 2, wires=[wires[0]])
+
+
+add_decomps(ECR, _ecr_decomp)
+
+
 class ISWAP(Operation):
     r"""ISWAP(wires)
     The i-swap operator
@@ -1495,6 +1684,11 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1600,6 +1794,23 @@ class ISWAP(Operation):
         return super().pow(z_mod2)
 
 
+def _iswap_decomp_resources():
+    return {qml.S: 2, qml.Hadamard: 2, qml.CNOT: 2}
+
+
+@register_resources(_iswap_decomp_resources)
+def _iswap_decomp(wires, **__):
+    S(wires=wires[0])
+    S(wires=wires[1])
+    Hadamard(wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[0]])
+    Hadamard(wires=wires[1])
+
+
+add_decomps(ISWAP, _iswap_decomp)
+
+
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
@@ -1625,6 +1836,11 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     batch_size = None
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def pauli_rep(self):
@@ -1749,5 +1965,27 @@ class SISWAP(Operation):
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
+
+def _siswap_decomp_resources():
+    return {SX: 6, qml.RZ: 4, qml.CNOT: 2}
+
+
+@register_resources(_siswap_decomp_resources)
+def _siswap_decomp(wires, **__):
+    SX(wires=wires[0])
+    qml.RZ(np.pi / 2, wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=wires[0])
+    qml.RZ(7 * np.pi / 4, wires=wires[0])
+    SX(wires=wires[0])
+    qml.RZ(np.pi / 2, wires=wires[0])
+    SX(wires=wires[1])
+    qml.RZ(7 * np.pi / 4, wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    SX(wires=wires[0])
+    SX(wires=wires[1])
+
+
+add_decomps(SISWAP, _siswap_decomp)
 
 SQISW = SISWAP

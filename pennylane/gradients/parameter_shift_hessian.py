@@ -18,7 +18,7 @@ of a qubit-based quantum tape.
 import itertools as it
 import warnings
 from functools import partial
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
 
@@ -64,15 +64,12 @@ def _process_jacs(jac, qhess):
         # contracting the quantum Hessian with the classical jacobian twice gives
         # a result with shape (num_qnode_args, num_qnode_args, output_shape)
 
-        qh_indices = "ab..."
-
         # contract the first axis of the jacobian with the first and second axes of the Hessian
-        first_jac_indices = f"a{ABC[2:2 + jac_ndim - 1]}"
-        second_jac_indices = f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
+        qnode_ids_0 = ascii_letters[2 : 2 + jac_ndim - 1]
+        qnode_ids_1 = ascii_letters[2 + jac_ndim - 1 : 2 + 2 * jac_ndim - 2]
 
-        result_indices = f"{ABC[2:2 + 2 * jac_ndim - 2]}..."
         qh = qml.math.einsum(
-            f"{qh_indices},{first_jac_indices},{second_jac_indices}->{result_indices}",
+            f"ab...,a{qnode_ids_0},b{qnode_ids_1}->{qnode_ids_0}{qnode_ids_1}...",
             qh,
             jac,
             jac,
@@ -413,8 +410,9 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qhess, cjac, tape):
+def contract_qjac_with_cjac(qhess, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
+    qhess = (qhess,)
     if len(tape.measurements) > 1:
         qhess = qhess[0]
     has_single_arg = False
@@ -438,7 +436,7 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
     return hessians[0] if has_single_arg else tuple(hessians)
 
 
-@partial(transform, classical_cotransform=_contract_qjac_with_cjac, final_transform=True)
+@partial(transform, classical_cotransform=contract_qjac_with_cjac, final_transform=True)
 def param_shift_hessian(
     tape: QuantumScript,
     argnum=None,
