@@ -12,10 +12,25 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* Added `convert_to_su2` and `convert_to_su4` to `qml.math` that converts a unitary matrix to SU(2)
+  and SU(4) respectively, and optionally a global phase.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+<h4>Resource-efficient Decompositions 🔎</h4>
+
+* Implemented decomposition rules for `QubitUnitary` that is compatible with the new graph-based
+  decomposition system and program capture.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
+* Two-qubit `QubitUnitary` gates no longer decompose to fundamental rotation gates, it now 
+  decomposes to single-qubit `QubitUnitary` gates. This allows the decomposition system to
+  further decompose single-qubit unitary gates more flexibly using different rotations.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Breaking changes 💔</h3>
 
@@ -37,6 +52,10 @@
   
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
+
+* Moved functions that calculate rotation angles for unitary decompositions into an internal
+  module `qml.math.decomposition`
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Documentation 📝</h3>
 
@@ -63,8 +82,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
-Lillian Frederiksen
+Guillermo Alonso-Linaje,
+Astral Cai,
+Lillian Frederiksen,
 Andrija Paurevic,
 Korbinian Kottmann,
 Christina Lee

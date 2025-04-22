@@ -18,14 +18,16 @@ Tests for the QubitUnitary decomposition transforms.
 
 from functools import reduce
 
+import numpy as np
 import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_num_cnots
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -60,7 +62,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
         ), "Incorrect gate parameters"
 
     obtained_mat = reduce(
-        np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
     )
 
     if len(obtained_mat.shape) == 2:
@@ -1366,3 +1368,72 @@ class TestTwoQubitDecompositionWarnings:
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
             qnode(1.0 + 0.5j)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestQubitUnitaryDecompositionGraph:
+    """Tests that the decomposition rules for QubitUnitary work with graph-enabled."""
+
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "GlobalPhase"),
+            ("RX", "RZ", "GlobalPhase"),
+            ("RZ", "RY", "GlobalPhase"),
+            ("Rot", "GlobalPhase"),
+        ],
+    )
+    def test_single_qubit_decomposition(self, gate_set):
+        """Tests that a single-qubit unitary can be decomposed."""
+
+        # Just a random matrix
+        U = np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        )
+
+        op = qml.QubitUnitary(U, wires=[0])
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "GlobalPhase"),
+            ("RX", "RZ", "GlobalPhase"),
+            ("RZ", "RY", "GlobalPhase"),
+            ("Rot", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_single_qubit_decomposition_capture(self, gate_set):
+        """Tests that a single-qubit unitary can be decomposed with capture enabled."""
+
+        import jax
+
+        # Just a random matrix
+        U = np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        )
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(mat):
+            qml.QubitUnitary(mat, wires=[0])
+
+        jaxpr = jax.make_jaxpr(circuit)(U)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
+        decomp = collector.state["ops"]
+
+        decomp_tape = qml.tape.QuantumScript(decomp)
+        matrix = qml.matrix(decomp_tape)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
