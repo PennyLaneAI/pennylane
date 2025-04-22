@@ -79,8 +79,14 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     theta = math.where(
         math.isclose(math.sin(half_lam_plus_phi), math.zeros_like(half_lam_plus_phi)),
-        2 * math.arccos(math.real(U[..., 1, 1]) / (math.cos(half_lam_plus_phi) + EPS)),
-        2 * math.arccos(-math.imag(U[..., 0, 1]) / (math.sin(half_lam_plus_phi) + EPS)),
+        2
+        * math.arccos(
+            math.clip(math.real(U[..., 1, 1]) / (math.cos(half_lam_plus_phi) + EPS), -1, 1)
+        ),
+        2
+        * math.arccos(
+            math.clip(-math.imag(U[..., 0, 1]) / (math.sin(half_lam_plus_phi) + EPS), -1, 1)
+        ),
     )
 
     phi = math.squeeze(phi % (4 * np.pi))
@@ -122,8 +128,14 @@ def xzx_rotation_angles(U, return_global_phase=False):
     # Compute \theta
     theta = math.where(
         math.isclose(math.sin(half_phi_plus_lambdas), math.zeros_like(half_phi_plus_lambdas)),
-        2 * math.arccos(sum_diagonal_real / (2 * math.cos(half_phi_plus_lambdas) + EPS)),
-        2 * math.arccos(-sum_off_diagonal_imag / (2 * math.sin(half_phi_plus_lambdas) + EPS)),
+        2
+        * math.arccos(
+            math.clip(sum_diagonal_real / (2 * math.cos(half_phi_plus_lambdas) + EPS), -1, 1)
+        ),
+        2
+        * math.arccos(
+            math.clip(-sum_off_diagonal_imag / (2 * math.sin(half_phi_plus_lambdas) + EPS), -1, 1)
+        ),
     )
 
     phi = math.squeeze(phi % (4 * np.pi))

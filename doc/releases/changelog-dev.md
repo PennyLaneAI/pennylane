@@ -18,8 +18,7 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* Implemented decomposition rules for `QubitUnitary` that is compatible with the new graph-based
-  decomposition system and program capture.
+* The new graph-based decomposition system supports `QubitUnitary`.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Improvements 🛠</h3>

@@ -1402,6 +1402,7 @@ class TestQubitUnitaryDecompositionGraph:
         assert qml.math.allclose(matrix, U, atol=1e-7)
 
     @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "gate_set",
         [
@@ -1411,7 +1412,6 @@ class TestQubitUnitaryDecompositionGraph:
             ("Rot", "GlobalPhase"),
         ],
     )
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_single_qubit_decomposition_capture(self, gate_set):
         """Tests that a single-qubit unitary can be decomposed with capture enabled."""
 
@@ -1436,4 +1436,54 @@ class TestQubitUnitaryDecompositionGraph:
 
         decomp_tape = qml.tape.QuantumScript(decomp)
         matrix = qml.matrix(decomp_tape)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition(self, gate_set, U):
+        """Tests that the two-qubit unitary can be decomposed."""
+
+        op = qml.QubitUnitary(U, wires=[0, 1])
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp, wire_order=[0, 1])
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition_capture(self, gate_set, U):
+        """Tests that the two-qubit unitary can be decomposed with capture enabled."""
+
+        import jax
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(mat):
+            qml.QubitUnitary(mat, wires=[0, 1])
+
+        jaxpr = jax.make_jaxpr(circuit)(U)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
+        decomp = collector.state["ops"]
+
+        decomp_tape = qml.tape.QuantumScript(decomp)
+        matrix = qml.matrix(decomp_tape, wire_order=[0, 1])
         assert qml.math.allclose(matrix, U, atol=1e-7)
