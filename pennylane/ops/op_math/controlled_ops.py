@@ -120,7 +120,7 @@ class ControlledQubitUnitary(ControlledOp):
     def _primitive_bind_call(
         cls,
         base,
-        wires: WiresLike = None,
+        wires: WiresLike,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
@@ -135,28 +135,29 @@ class ControlledQubitUnitary(ControlledOp):
     def __init__(
         self,
         base,
-        wires: WiresLike = None,
+        wires: WiresLike,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
+
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
+
+        if not isinstance(base, Iterable):
+            raise ValueError("Base must be a matrix.")
+
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        if not wires:
-            raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
-        control_wires = wires[:-1]  # default
+        num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+        target_wires = wires[-num_base_wires:]
+        control_wires = wires[:-num_base_wires]
 
-        if isinstance(base, Iterable):
-            num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-            target_wires = wires[-num_base_wires:]
-            control_wires = wires[:-num_base_wires]
-            # We use type.__call__ instead of calling the class directly so that we don't bind the
-            # operator primitive when new program capture is enabled
-            base = type.__call__(
-                qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
-            )
-        else:
-            raise ValueError("Base must be a matrix.")
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(
+            qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
+        )
 
         super().__init__(
             base,
@@ -164,6 +165,7 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=control_values,
             work_wires=work_wires,
         )
+
         self._name = "ControlledQubitUnitary"
 
     @property
