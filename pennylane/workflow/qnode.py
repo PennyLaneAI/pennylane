@@ -763,6 +763,11 @@ class QNode:
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
+        .. warning::
+
+            This function is deprecated and will be removed in v0.42. Instead, use
+            ``qml.workflow.get_best_diff_method`` to determine the best differentiation method.
+
         Args:
             device (.device.Device): PennyLane device
             interface (str): name of the requested interface
