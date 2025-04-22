@@ -479,36 +479,6 @@ class Prod(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
-
-        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
-
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
-
-        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
-
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
