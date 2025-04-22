@@ -26,7 +26,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_num_cnots
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
@@ -1416,6 +1415,7 @@ class TestQubitUnitaryDecompositionGraph:
         """Tests that a single-qubit unitary can be decomposed with capture enabled."""
 
         import jax
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         # Just a random matrix
         U = np.array(
@@ -1474,6 +1474,7 @@ class TestQubitUnitaryDecompositionGraph:
         """Tests that the two-qubit unitary can be decomposed with capture enabled."""
 
         import jax
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         @DecomposeInterpreter(gate_set=gate_set)
         def circuit(mat):
