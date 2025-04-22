@@ -762,6 +762,9 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
+    import jax
+    from jax import jvp, make_jaxpr
+    from jax.interpreters import ad
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
     cond_prim = NonInterpPrimitive("cond")
@@ -813,5 +816,106 @@ def _get_cond_qfunc_prim():
                 return qml.capture.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
+
+    def _cond_jvp(primals, tangents, *, jaxpr_branches, consts_slices, args_slice):
+        # n_branches = len(jaxpr_branches)
+        # conditions = args[:n_branches]
+        # inner_args = args[args_slice]
+        # inner_tangents = tangents[args_slice]
+
+        # for pred, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
+        #     if jaxpr is None:
+        #         continue
+
+        #     consts = args[consts_slice]
+        #     if pred:
+
+        #         def wrapper(*_args):
+        #             return qml.capture.eval_jaxpr(jaxpr, consts, *_args)
+
+        #         return jvp(wrapper, inner_args, inner_tangents)
+
+        ##### SECOND DRAFT
+        # n_branches = len(jaxpr_branches)
+        # conditions = args[:n_branches]
+        # inner_args = args[args_slice]
+        # inner_tangents = tangents[args_slice]
+
+        # consts_and_tangents = [
+        #     (args[consts_slice], tangents[consts_slice]) for consts_slice in consts_slices
+        # ]
+        # jvp_jaxpr_branches = []
+        # new_consts = []
+        # new_consts_slices = []
+
+        # def jvp_wrapper(jaxpr, n_consts, *_args):
+        #     consts = _args[:n_consts]
+        #     return qml.capture.eval_jaxpr(jaxpr, consts, *_args[n_consts:])
+
+        # for jaxpr, cs_and_ts in zip(jaxpr_branches, consts_and_tangents, strict=True):
+        #     if jaxpr is None:
+        #         jvp_jaxpr_branches.append(None)
+        #         continue
+
+        #     consts = cs_and_ts[0]
+        #     c_tangents = cs_and_ts[1]
+        #     jvp_fn = jvp(
+        #         functools.partial(jvp_wrapper, jaxpr, len(consts)),
+        #         (*consts, *inner_args),
+        #         (*c_tangents, *inner_tangents),
+        #     )
+        #     jvp_jaxpr = make_jaxpr(jvp_fn)(*consts, *inner_args)
+
+        nonzeros = [not isinstance(t, ad.Zero) for t in tangents]
+
+        n_branches = len(jaxpr_branches)
+        preds_nz, args_nz = nonzeros[:n_branches], nonzeros[args_slice]
+        assert all(index_nz is False for index_nz in preds_nz)
+
+        branches_out_nz = []
+        for i, (jaxpr, consts_slice) in enumerate(zip(jaxpr_branches, consts_slices, strict=True)):
+            print(f"branches_out_nz iter: {i}")
+
+            if jaxpr is None:
+                branches_out_nz.append([])
+                continue
+
+            cjaxpr = jax.extend.core.ClosedJaxpr(jaxpr, primals[consts_slice])
+            res = ad.jvp_jaxpr(cjaxpr, args_nz, instantiate=False)
+            branches_out_nz.append(res[1])
+
+        out_nz = [any(nz) for nz in zip(*branches_out_nz)]
+
+        branches_jvp = []
+        for i, (jaxpr, consts_slice) in enumerate(zip(jaxpr_branches, consts_slices, strict=True)):
+            print(f"branches_jvp iter: {i}")
+
+            if jaxpr is None:
+                branches_jvp.append([])
+                continue
+
+            cjaxpr = jax.extend.core.ClosedJaxpr(jaxpr, primals[consts_slice])
+            res = ad.jvp_jaxpr(cjaxpr, args_nz, instantiate=False)
+            branches_jvp.append(res[0])
+
+        # Changes needed below this line
+        preds = primals[:n_branches]
+        args = primals[n_branches:]
+        arg_tangents = tangents[n_branches:]
+        arg_tangents = [t for t in arg_tangents if not isinstance(t, ad.Zero)]
+
+        # THE CODE BELOW THIS DOES NOT WORK. WE DON'T HAVE AN IMPLEMENTATION OF split_list,
+        # AND THE COND PRIMITIVE'S SIGNATURE IS INCOMPLETE BECAUSE I'M NOT SURE HOW TO DEAL WITH
+        # CONSTS.
+        out = cond_prim.bind(*preds, *args, *arg_tangents, jaxpr_branches=branches_jvp)
+        out_primals, out_tangents = split_list(out, [len(out_nz)])
+        out_tangents_iter = iter(out_tangents)
+        out_tangents = [
+            next(out_tangents_iter) if nz else ad.Zero.from_primal_value(p)
+            for p, nz in zip(out_primals, out_nz)
+        ]
+        return out_primals, out_tangents
+
+    ad.primitive_jvps[cond_prim] = _cond_jvp
 
     return cond_prim
