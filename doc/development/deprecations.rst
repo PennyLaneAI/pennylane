@@ -44,12 +44,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
-  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
@@ -91,6 +85,12 @@ Completed deprecation cycles
 
 * The ``KerasLayer`` in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
 
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
+  
   - Deprecated in v0.41
   - Removed in v0.42
 

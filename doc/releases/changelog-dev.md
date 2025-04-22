@@ -22,6 +22,9 @@
 * The `KerasLayer` in `qml.qnn.keras` has been deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
+* The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
+  [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
+
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
   [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
 
@@ -88,6 +91,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Yushao Chen,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic
