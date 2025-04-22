@@ -267,7 +267,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         * base_params (dict): the resource parameters required to extract the cost of the base operator
         * num_ctrl_wires (int): the number of qubits the operation is controlled on
         * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-        * num_work_wires (int): the number of additional qubits that can be used for decomposition
+        * ctrl_num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
         The resources are determined as follows. If the base operation class :code:`base_class`
@@ -300,7 +300,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     ...     base_params = {"num_wires": 3},
     ...     num_ctrl_wires = 3,
     ...     num_ctrl_values = 0,
-    ...     num_work_wires = 2,
+    ...     ctrl_num_work_wires = 2,
     ... )
     defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
 
@@ -308,7 +308,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         :title: Usage Details
 
         We can configure the resources for the controlled of a base operation by modifying
-        its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
+        its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires,
         **resource_params)` method. Consider for example this custom PauliZ class, where the
         controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
 
@@ -318,7 +318,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             class CustomZ(re.ResourceZ):
 
                 @classmethod
-                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires):
                     raise re.ResourcesNotDefined
 
         When this method is not defined, the controlled resources are computed by taking the
@@ -326,7 +326,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
         >>> CustomZ.resources()
         {S: 2}
-        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, ctrl_num_work_wires=0)
         defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
         We can update the controlled resources with the observation that the PauliZ gate when controlled
@@ -338,7 +338,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             class CustomZ(re.ResourceZ):
 
                 @classmethod
-                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires):
                     if num_ctrl_wires == 1 and num_ctrl_values == 0:
                         return {
                             re.ResourceHadamard.resource_rep(): 2,
@@ -346,14 +346,14 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                         }
                     raise re.ResourcesNotDefined
 
-        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, ctrl_num_work_wires=0)
         {Hadamard: 2, CNOT: 1}
 
     """
 
     @classmethod
     def _resource_decomp(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -363,7 +363,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+            ctrl_num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The resources are determined as follows. If the base operation class :code:`base_class`
@@ -396,7 +396,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         ...     base_params = {"num_wires": 3},
         ...     num_ctrl_wires = 3,
         ...     num_ctrl_values = 0,
-        ...     num_work_wires = 2,
+        ...     ctrl_num_work_wires = 2,
         ... )
         defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
 
@@ -404,7 +404,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             :title: Usage Details
 
             We can configure the resources for the controlled of a base operation by modifying
-            its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
+            its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires,
             **resource_params)` method. Consider for example this custom PauliZ class, where the
             controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
 
@@ -413,7 +413,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 class CustomZ(re.ResourceZ):
 
                     @classmethod
-                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires):
                         raise re.ResourcesNotDefined
 
             When this method is not defined, the controlled resources are computed by taking the
@@ -421,7 +421,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
             >>> CustomZ.resources()
             {S: 2}
-            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, ctrl_num_work_wires=0)
             defaultdict(<class 'int'>, {C(S,2,0,3): 2})
 
             We can update the controlled resources with the observation that the PauliZ gate when controlled
@@ -433,7 +433,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 class CustomZ(re.ResourceZ):
 
                     @classmethod
-                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
+                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires):
                         if num_ctrl_wires == 1 and num_ctrl_values == 0:
                             return {
                                 re.ResourceHadamard.resource_rep(): 2,
@@ -441,13 +441,13 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                             }
                         raise re.ResourcesNotDefined
 
-            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
+            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, ctrl_num_work_wires=0)
             {Hadamard: 2, CNOT: 1}
 
         """
         try:
             return base_class.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
+                num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires, **base_params
             )
         except re.ResourcesNotDefined:
             pass
@@ -457,12 +457,12 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                rep = cls.resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires)
+                rep = cls.resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, ctrl_num_work_wires)
                 gate_types[rep] = count
 
             return gate_types
 
-        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
+        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, ctrl_num_work_wires)
         x = re.ResourceX.resource_rep()
         gate_types[no_control] = 1
         gate_types[x] = 2 * num_ctrl_values
@@ -479,19 +479,19 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 * base_params (dict): the resource parameters required to extract the cost of the base operator
                 * num_ctrl_wires (int): the number of qubits the operation is controlled on
                 * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-                * num_work_wires (int): the number of additional qubits that can be used for decomposition
+                * ctrl_num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
             "num_ctrl_wires": len(self.control_wires),
             "num_ctrl_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
+            "ctrl_num_work_wires": len(self.work_wires),
         }
 
     @classmethod
     def resource_rep(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires
     ) -> re.CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -501,7 +501,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             base_params (dict): the resource parameters required to extract the cost of the base operator
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+            ctrl_num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -513,7 +513,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 "base_params": base_params,
                 "num_ctrl_wires": num_ctrl_wires,
                 "num_ctrl_values": num_ctrl_values,
-                "num_work_wires": num_work_wires,
+                "ctrl_num_work_wires": ctrl_num_work_wires,
             },
         )
 
@@ -527,7 +527,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         base_params,
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
+        ctrl_num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -543,7 +543,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
                 when in the :math:`|0\rangle` state.
-            num_work_wires (int): The number of additional qubits that can be used for the
+            ctrl_num_work_wires (int): The number of additional qubits that can be used for the
                 decomposition of the operation.
 
         Resources:
@@ -561,15 +561,15 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 base_params,
                 outer_num_ctrl_wires + num_ctrl_wires,
                 outer_num_ctrl_values + num_ctrl_values,
-                outer_num_work_wires + num_work_wires,
+                outer_num_work_wires + ctrl_num_work_wires,
             ): 1
         }
 
     @staticmethod
-    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
+    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, ctrl_num_work_wires):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_class.tracking_name(**base_params)
-        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{num_work_wires})"
+        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{ctrl_num_work_wires})"
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):

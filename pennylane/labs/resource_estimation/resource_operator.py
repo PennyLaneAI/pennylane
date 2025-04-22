@@ -123,7 +123,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires: int, num_ctrl_values: int, num_work_wires: int, *args, **kwargs
+        cls, num_ctrl_wires: int, num_ctrl_values: int, ctrl_num_work_wires: int, *args, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 

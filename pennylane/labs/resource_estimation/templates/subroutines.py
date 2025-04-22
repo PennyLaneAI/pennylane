@@ -1428,6 +1428,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         the number of batches of unitaries to select.
         """
         gate_types = {}
+        
         x = re.ResourceX.resource_rep()
 
         if num_control_wires == 0:
@@ -1611,7 +1612,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             base_params=O_params,
             num_ctrl_wires=1,
             num_ctrl_values=0,
-            num_work_wires=0,
+            ctrl_num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()

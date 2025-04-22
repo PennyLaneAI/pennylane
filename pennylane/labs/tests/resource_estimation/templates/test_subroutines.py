@@ -105,7 +105,7 @@ class TestControlledSequence:
                 "base_params": base_params,
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
-                "num_work_wires": 0,
+                "ctrl_num_work_wires": 0,
             },
         )
         expected = {resource_controlled_sequence: num_cseq}
@@ -162,7 +162,7 @@ class TestControlledSequence:
                 "base_params": base_params,
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
-                "num_work_wires": 0,
+                "ctrl_num_work_wires": 0,
             },
         )
 
@@ -479,7 +479,7 @@ class TestResourceModExp:
                     "base_params": comp_rep.params,
                     "num_ctrl_wires": 1,
                     "num_ctrl_values": 0,
-                    "num_work_wires": 0,
+                    "ctrl_num_work_wires": 0,
                 },
             )
 
@@ -551,7 +551,7 @@ class TestResourceModExp:
                     "base_params": comp_rep.params,
                     "num_ctrl_wires": 1,
                     "num_ctrl_values": 0,
-                    "num_work_wires": 0,
+                    "ctrl_num_work_wires": 0,
                 },
             )
 
@@ -909,7 +909,7 @@ class TestResourceAmplitudeAmplification:
             base_params=O_params,
             num_ctrl_wires=1,
             num_ctrl_values=0,
-            num_work_wires=0,
+            ctrl_num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
@@ -1015,7 +1015,7 @@ class TestResourceAmplitudeAmplification:
             base_params=O_params,
             num_ctrl_wires=1,
             num_ctrl_values=0,
-            num_work_wires=0,
+            ctrl_num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()

@@ -151,7 +151,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
@@ -549,7 +549,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
@@ -710,7 +710,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
@@ -875,14 +875,14 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
             ctrl_ry = re.ResourceControlled.resource_rep(
                 base_class=re.ResourceRY,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
@@ -1044,7 +1044,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
@@ -1204,14 +1204,14 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
             ctrl_ps = re.ResourceControlled.resource_rep(
                 base_class=re.ResourcePhaseShift,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+                ctrl_num_work_wires=num_work_wires,
             )
 
             gate_types = {}
