@@ -43,8 +43,7 @@ class MCMConfig:
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
-            raise ValueError(
-                f"Invalid postselection mode '{self.postselect_mode}'.")
+            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 
 # pylint: disable=too-many-instance-attributes

@@ -17,6 +17,9 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* Improved readability of `ExecutionConfig` with a custom `__str__`. 
+  [(#7308)](https://github.com/PennyLaneAI/pennylane/pull/7308)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.tape.TapeError` has been removed.
@@ -64,6 +67,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje
+Po-Ying Chiu
 Lillian Frederiksen
 Andrija Paurevic,
 Korbinian Kottmann,
