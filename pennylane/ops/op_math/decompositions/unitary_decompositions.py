@@ -442,6 +442,13 @@ def _extract_su2su2_prefactors(U, V):
     q = math.dot(q, math.diag([1, 1, 1, math.sign(math.linalg.det(q))]))
 
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
+    # TODO: no you don't, the eigenvectors returned from math.linalg.eigh are not guaranteed to
+    #       be in any particular order, especially when there is degeneracy. This means that p
+    #       and q are not necessarily "in the same order" as claimed above. This may sometimes
+    #       lead to incorrect results (see https://github.com/PennyLaneAI/pennylane/issues/5308)
+    #       The current solution is to add a small perturbation to U and V to break the potential
+    #       degeneracy. We should probably find a better algorithm at some point.
+
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
     G = math.dot(math.cast_like(p, 1j), math.T(q))
