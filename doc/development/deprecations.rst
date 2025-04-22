@@ -89,7 +89,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The ``KerasLayer`` in ``qml.qnn.keras`` has been deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
+* The ``KerasLayer`` in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
 
   - Deprecated in v0.41
   - Removed in v0.42
