@@ -20,7 +20,7 @@ from pennylane.transforms import transform
 
 @transform
 def measurements_from_samples(tape):
-    r"""Replace all measurements from a tape with a single sample measurement,
+    r"""Replaces all measurements from a tape with a single sample measurement,
     and adds postprocessing functions for each original measurement.
 
     .. note::
@@ -105,8 +105,14 @@ def measurements_from_samples(tape):
 
 @transform
 def measurements_from_counts(tape):
-    r"""Replace all measurements from a tape with a single counts measurement,
+    r"""Replaces all measurements from a tape with a single counts measurement,
     and adds postprocessing functions for each original measurement.
+
+    .. note::
+        This transform diagonalizes all the operations on the tape. An error will
+        be raised if non-commuting terms are encountered. To avoid non-commuting
+        terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
+        transform can be applied.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
