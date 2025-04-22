@@ -92,7 +92,6 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Yushao Chen,
 Lillian Frederiksen,
-Pietropaolo Frisoni,,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
