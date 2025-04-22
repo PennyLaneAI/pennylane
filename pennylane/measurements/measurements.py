@@ -270,16 +270,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         self.queue()
 
     @property
-    def return_type(self) -> Optional[ObservableReturnTypes]:
-        """Measurement return type."""
-        warnings.warn(
-            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
-            "Instead, please use isinstance for type checking directly.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._shortname
-
-    @property
     def numeric_type(self) -> type:
         """The Python numeric type of the measurement result.
 
