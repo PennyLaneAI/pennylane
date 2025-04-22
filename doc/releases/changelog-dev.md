@@ -31,9 +31,6 @@
 * Specifying `pipeline=None` with `qml.compile` has been removed.
   [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
 
-* The `mcm_method` keyword argument in `qml.execute` has been removed.
-  [(#7301)](https://github.com/PennyLaneAI/pennylane/pull/7301)
-
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
