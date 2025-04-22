@@ -15,7 +15,6 @@
 This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
-import warnings
 from collections.abc import Iterable
 from functools import lru_cache
 from typing import List, Literal, Union
@@ -61,13 +60,13 @@ class ControlledQubitUnitary(ControlledOp):
             operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
             this will be used as the base directly.
         wires (Union[Wires, Sequence[int], or int]): the wires the full
-        controlled unitary acts on, composed of the controlled wires followed
-        by the target wires
+            controlled unitary acts on, composed of the controlled wires followed
+            by the target wire.
         control_values (List[int, bool]): a list providing the state of the control qubits to
-            control on (default is the all 1s state)
+            control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
-            operator (default False)
-        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized in during
+            operator (default False).
+        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized during
             the decomposition of the operator into native operations.
 
     **Example**
