@@ -22,15 +22,18 @@ import pytest
 import pennylane as qml
 from pennylane.devices.preprocess import validate_device_wires
 from pennylane.transforms.measurements_from_computational_basis import (
-    measurements_from_computational_basis,
+    measurements_from_counts,
+    measurements_from_samples,
 )
 
 
 class TestTransform:
     """Tests for transforms modifying measurements"""
 
-    @pytest.mark.parametrize("from_counts", (True, False))
-    def test_measurements_from_computational_basis(self, from_counts):
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_samples, measurements_from_counts)
+    )
+    def test_measurements_from_computational_basis(self, meas_transform):
         """Test the measurements_from_computational_basis transform with a single measurement"""
 
         dev = qml.device("lightning.qubit", wires=4, shots=1000)
@@ -42,7 +45,7 @@ class TestTransform:
             qml.RX(theta / 3, 2)
             return qml.expval(qml.Y(0))
 
-        transformed_circuit = measurements_from_computational_basis(circuit, from_counts)
+        transformed_circuit = meas_transform(circuit)
 
         theta = 1.2
         expected = circuit(theta)
@@ -51,7 +54,9 @@ class TestTransform:
         assert np.allclose(expected, res, atol=0.05)
 
     # pylint: disable=unnecessary-lambda
-    @pytest.mark.parametrize("from_counts", (True, False))
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
     @pytest.mark.parametrize(
         "input_measurement, expected_res",
         [
@@ -79,7 +84,7 @@ class TestTransform:
     @pytest.mark.parametrize("shots", [3000, (3000, 4000), (3000, 3500, 4000)])
     def test_measurements_from_computational_basis_analytic(
         self,
-        from_counts,
+        meas_transform,
         input_measurement,
         expected_res,
         shots,
@@ -89,7 +94,7 @@ class TestTransform:
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
 
-        @partial(measurements_from_computational_basis, from_counts=from_counts)
+        @meas_transform
         @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
         def circuit(theta: float):
