@@ -23,7 +23,7 @@ from copy import copy
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, TermsUndefinedError
 
 from .sum import Sum
 
@@ -291,14 +291,12 @@ class LinearCombination(Sum):
                 return [], [], pr
 
             # collect coefficients and ops
-            new_coeffs = []
-            new_ops = []
-
-            for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=pr.wires)
-                new_ops.append(pw_op)
-                new_coeffs.append(coeff)
-
+            pr.simplify()
+            new_op = pr.operation(wire_order=pr.wires)
+            try:
+                new_coeffs, new_ops = new_op.terms()
+            except TermsUndefinedError:
+                return [1], [new_op], pr
             return new_coeffs, new_ops, pr
 
         if len(ops) == 1:

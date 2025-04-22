@@ -227,6 +227,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -2426,7 +2427,7 @@ def __getattr__(name):
             "A generic Operator class should be used instead. "
             "If defining an Operator, set the is_hermitian property to True. "
             "If checking if an Operator is Hermitian, check the is_hermitian property. ",
-            PendingDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         return Observable
     if name == "StatePrep":

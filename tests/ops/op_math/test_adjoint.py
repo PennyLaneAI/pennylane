@@ -48,7 +48,7 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, AdjointOperation)
 
@@ -70,7 +70,7 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, AdjointOperation)
 
@@ -81,7 +81,7 @@ class TestInheritanceMixins:
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             # pylint: disable=too-few-public-methods
             class CustomObs(qml.operation.Observable):
                 num_wires = 1
@@ -93,12 +93,12 @@ class TestInheritanceMixins:
         assert isinstance(ob, Adjoint)
         assert isinstance(ob, qml.operation.Operator)
         assert not isinstance(ob, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert isinstance(ob, qml.operation.Observable)
         assert not isinstance(ob, AdjointOperation)
 
         # Check some basic observable functionality
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert ob.compare(ob)
         assert isinstance(1.0 * ob @ ob, qml.ops.Prod)
 
@@ -1010,7 +1010,7 @@ class TestAdjointConstructorOutsideofQueuing:
         obs = adjoint(base)
 
         assert isinstance(obs, Adjoint)
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert isinstance(base, qml.operation.Observable) == isinstance(
                 obs, qml.operation.Observable
             )

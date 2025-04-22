@@ -388,13 +388,13 @@ class TestHamiltonianReturn:
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen == ObservableOp(0.5, wires=0).generator()
+        assert gen == qml.Hamiltonian(*ObservableOp(0.5, wires=0).generator().terms())
 
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen == TensorOp(0.5, wires=[0, 1]).generator()
+        assert gen == qml.Hamiltonian(*TensorOp(0.5, wires=[0, 1]).generator().terms())
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""

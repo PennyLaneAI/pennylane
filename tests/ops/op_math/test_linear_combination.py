@@ -585,10 +585,10 @@ class TestLinearCombination:
         H1, H2, true_res = (
             qml.ops.LinearCombination([1, 2], [X(4), Z(2)]),  # not failing with float coeffs
             qml.ops.LinearCombination([1, 2], [X(4), Z(2)]),
-            qml.ops.LinearCombination([], []),
+            qml.ops.LinearCombination([0, 0], [qml.X(4), qml.Z(2)]),
         )
         res = H1 - H2
-        assert res == (true_res)
+        qml.assert_equal(qml.simplify(res), true_res)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -670,7 +670,9 @@ class TestLinearCombination:
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
         old_H = old_H.simplify()
-        assert old_H == (new_H)
+        print(old_H)
+        print(new_H)
+        qml.assert_equal(old_H, new_H)
 
     def test_simplify_while_queueing(self):
         """Tests that simplifying a LinearCombination in a tape context
@@ -699,12 +701,14 @@ class TestLinearCombination:
 
     @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
     def test_compare_to_simple_ops(self, H, op):
-        assert H == (op)
+        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
+            assert H.compare(op)
 
     def test_compare_raises_error(self):
         op = qml.ops.LinearCombination([], [])
-        with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
-            _ = op == (0)
+        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
+                op.compare(0)
 
     @pytest.mark.xfail
     def test_compare_gell_mann(self):
@@ -719,34 +723,36 @@ class TestLinearCombination:
             [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
         )
 
-        assert H1 == (qml.GellMann(wires=2, index=2))
-        assert H1 != (qml.GellMann(wires=2, index=1))
-        assert H1 != H3
-        assert H2 == (qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
-        assert H2 != (qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
-        assert H2 != (H4)
+        assert H1.compare(qml.GellMann(wires=2, index=2))
+        assert H1.compare(qml.GellMann(wires=2, index=1))
+        assert H1.compare(H3)
+        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
+        assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
+        assert not H2.compaure(H4)
 
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
         H = qml.ops.LinearCombination([1], [Z(0)])
-        with pytest.raises(
-            ValueError,
-            match=r"Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor.",
-        ):
-            _ = H == ([[1, 0], [0, -1]])
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(
+                ValueError,
+                match=r"Can only compare a LinearCombination and an Operator.",
+            ):
+                _ = H.compare([[1, 0], [0, -1]])
 
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_LinearCombinations)
     def test_LinearCombination_equal(self, H1, H2, res):
         """Tests that equality can be checked between LinearCombinations"""
-        assert H1 == (H2) == res
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert H1.compare(H2) == res
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
     def test_LinearCombination_add(self, H1, H2, H):
         """Tests that LinearCombinations are added correctly"""
         res = H1 + H2
         assert isinstance(res, LinearCombination)
-        assert H == (res)
+        qml.assert_equal(H, qml.simplify(res))
 
     @pytest.mark.parametrize("H", add_zero_LinearCombinations)
     def test_LinearCombination_add_zero(self, H):
@@ -773,7 +779,7 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_LinearCombinations)
     def test_LinearCombination_sub(self, H1, H2, H):
         """Tests that LinearCombinations are subtracted correctly"""
-        assert H == (H1 - H2)
+        qml.assert_equal(H, qml.simplify(H1 - H2))
 
     def test_LinearCombination_tensor_matmul(self):
         """Tests that a LinearCombination can be multiplied by a tensor."""
@@ -788,7 +794,7 @@ class TestLinearCombination:
                 Y(0) @ Z(1) @ Z(2),
             ],
         )
-        assert expected == (out)
+        qml.assert_equal(expected, qml.simplify(out))
 
     def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
         """Test that an error is raised when attempting to multiply two
