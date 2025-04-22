@@ -24,12 +24,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The property ```MeasurementProcess.return_type``` has been deprecated.
-  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
@@ -87,6 +81,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The property ```MeasurementProcess.return_type``` has been removed.
+  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
