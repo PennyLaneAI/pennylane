@@ -196,7 +196,7 @@ def two_qubit_decomposition(U, wires):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
-            global_phase += _decompose_3_cnots(U, wires=wires)
+            global_phase += _decompose_3_cnots(U, wires=wires, initial_phase=global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
             global_phase += ops.cond(
@@ -207,7 +207,7 @@ def two_qubit_decomposition(U, wires):
                     (num_cnots == 1, _decompose_1_cnot),
                     (num_cnots == 2, _decompose_2_cnots),
                 ],
-            )(U, wires=wires)
+            )(U, wires=wires, initial_phase=global_phase)
 
         ops.GlobalPhase(-global_phase)
 
@@ -469,7 +469,7 @@ def _extract_su2su2_prefactors(U, V):
     return A, B, C, D
 
 
-def _decompose_0_cnots(U, wires):
+def _decompose_0_cnots(U, wires, initial_phase):
     r"""If there are no CNOTs, this is just a tensor product of two single-qubit gates.
     We can perform that decomposition directly:
      -╭U- = -A-
@@ -480,10 +480,10 @@ def _decompose_0_cnots(U, wires):
     B, phaseB = math.convert_to_su2(B, return_global_phase=True)
     ops.QubitUnitary(A, wires=wires[0])
     ops.QubitUnitary(B, wires=wires[1])
-    return phaseA + phaseB
+    return math.cast_like(phaseA + phaseB, initial_phase)
 
 
-def _decompose_1_cnot(U, wires):
+def _decompose_1_cnot(U, wires, initial_phase):
     r"""If there is just one CNOT, we can write the circuit in the form
      -╭U- = -C--╭C--A-
      -╰U- = -D--╰X--B-
@@ -559,10 +559,10 @@ def _decompose_1_cnot(U, wires):
     ops.QubitUnitary(A, wires=wires[1])
     ops.QubitUnitary(B, wires=wires[0])
 
-    return math.cast_like(-np.pi / 4, U)
+    return math.cast_like(-np.pi / 4, initial_phase)
 
 
-def _decompose_2_cnots(U, wires):
+def _decompose_2_cnots(U, wires, initial_phase):
     r"""If 2 CNOTs are required, we can write the circuit as
      -╭U- = -A--╭X--RZ(d)--╭X--C-
      -╰U- = -B--╰C--RX(p)--╰C--D-
@@ -614,10 +614,10 @@ def _decompose_2_cnots(U, wires):
     ops.QubitUnitary(A, wires[0])
     ops.QubitUnitary(B, wires[1])
 
-    return math.cast_like(0, U)
+    return math.cast_like(0, initial_phase)
 
 
-def _decompose_3_cnots(U, wires):
+def _decompose_3_cnots(U, wires, initial_phase):
     r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
     where V is as depicted in the circuit below:
      -╭U- = -C--╭X--RZ(d)--╭C---------╭X--A-
@@ -702,7 +702,7 @@ def _decompose_3_cnots(U, wires):
     ops.QubitUnitary(A, wires[1])
     ops.QubitUnitary(B, wires[0])
 
-    return math.cast_like(-np.pi / 4, U)
+    return math.cast_like(-np.pi / 4, initial_phase)
 
 
 def _two_qubit_resource(num_wires):
@@ -736,6 +736,6 @@ def two_qubit_decomp_rule(U, wires, **__):
             (num_cnots == 1, _decompose_1_cnot),
             (num_cnots == 2, _decompose_2_cnots),
         ],
-    )(U, wires=wires)
+    )(U, wires=wires, initial_phase=initial_phase)
     total_phase = initial_phase + additional_phase
     ops.GlobalPhase(-total_phase)
