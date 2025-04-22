@@ -1692,7 +1692,11 @@ class TestGetGradientFn:
             qml.QuantumFunctionError,
             match=r"Device CustomDevice does not support adjoint",
         ):
-            QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
 
     def test_error_for_backprop_with_custom_device(self):
         """Test that an error is raised when backprop is requested for a device that does not support it."""
@@ -1700,7 +1704,11 @@ class TestGetGradientFn:
             qml.QuantumFunctionError,
             match=r"Device CustomDevice does not support backprop",
         ):
-            QNode.get_gradient_fn(self.dev, "autograd", "backprop")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                QNode.get_gradient_fn(self.dev, "autograd", "backprop")
 
     def test_custom_device_that_supports_backprop(self):
         """Test that a custom device and designate that it supports backprop derivatives."""
@@ -1782,7 +1790,11 @@ class TestGetGradientFn:
             qml.QuantumFunctionError,
             match="Differentiation method invalid-method not recognized",
         ):
-            QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
     def test_valid_diff_method_str(self, diff_method):
