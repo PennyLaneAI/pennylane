@@ -33,6 +33,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
+  [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
+
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
   [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
 
@@ -104,6 +107,7 @@ Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic
