@@ -314,7 +314,6 @@ class WiresEnum(IntEnum):
     AllWires = -2
     """A enumeration that represents that an operator acts on all wires in the system.
 
-    .. warning::
 
         **Deprecated**: Operator.num_wires = None should be used instead.
     """
