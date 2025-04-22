@@ -1479,6 +1479,7 @@ class TestQubitUnitaryDecompositionGraph:
         def circuit(mat):
             qml.QubitUnitary(mat, wires=[0, 1])
 
+        U = jax.numpy.array(U)
         jaxpr = jax.make_jaxpr(circuit)(U)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, U)

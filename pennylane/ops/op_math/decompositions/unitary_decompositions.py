@@ -552,7 +552,7 @@ def _decompose_1_cnot(U, wires):
     ops.QubitUnitary(A, wires=wires[1])
     ops.QubitUnitary(B, wires=wires[0])
 
-    return -np.pi / 4
+    return math.cast_like(-np.pi / 4, U)
 
 
 def _decompose_2_cnots(U, wires):
@@ -607,7 +607,7 @@ def _decompose_2_cnots(U, wires):
     ops.QubitUnitary(A, wires[0])
     ops.QubitUnitary(B, wires[1])
 
-    return 0.0
+    return math.cast_like(0, U)
 
 
 def _decompose_3_cnots(U, wires):
@@ -695,7 +695,7 @@ def _decompose_3_cnots(U, wires):
     ops.QubitUnitary(A, wires[1])
     ops.QubitUnitary(B, wires[0])
 
-    return -np.pi / 4
+    return math.cast_like(-np.pi / 4, U)
 
 
 def _two_qubit_resource(num_wires):
