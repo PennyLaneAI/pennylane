@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
+  [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
+
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
   [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
 

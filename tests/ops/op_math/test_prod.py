@@ -90,18 +90,6 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-def test_obs_attribute():
-    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
-    op = qml.prod(X(0), X(1), X(2))
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
-    ):
-        obs = op.obs
-
-    assert obs == (X(0), X(1), X(2))
-
-
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
