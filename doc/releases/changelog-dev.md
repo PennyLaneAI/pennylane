@@ -12,15 +12,14 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
-* Added `convert_to_su2` and `convert_to_su4` to `qml.math` that converts a unitary matrix to SU(2)
-  and SU(4) respectively, and optionally a global phase.
+* Two new functions called `convert_to_su2` and `convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* New decomposition rules have been added to `QubitUnitary` that can be accessed with the new 
-  graph-based decomposition system. The most efficient rotations will be chosen based on the
-  target gate set
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
+  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
+  decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
   ```python
@@ -43,8 +42,8 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
-* Added `qml.decomposition.DecompositionNotApplicable` that can be raised from decomposition rules
-  if the decomposition rule is not applicable under a certain set of parameters.
+* Decomposition rules can be marked as not-applicable with `qml.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
+  rules based on parameters that affects the rule's resources.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
   ```python
@@ -73,8 +72,8 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
-* Two-qubit `QubitUnitary` gates no longer decompose to fundamental rotation gates, it now 
-  decomposes to single-qubit `QubitUnitary` gates. This allows the decomposition system to
+* Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
+  decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
   further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
@@ -146,7 +145,7 @@
 * Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
-* Fixes a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
+* Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Contributors ✍️</h3>
