@@ -675,7 +675,7 @@ def _gather_input_soqs(
     return qvars_in
 
 
-def optional_inherit(cls):
+def _inherit_from_bloq(cls):
     if qualtran:
 
         @frozen
@@ -795,6 +795,7 @@ def optional_inherit(cls):
                     raise qt.DecomposeNotImplementedError
 
             def build_call_graph(self, ssa):
+                # ToDo: implement build_call_graphs for each high level operation
                 if isinstance(self.op, qml.QuantumPhaseEstimation):
                     return {
                         ToBloq(self.op.hyperparameters["unitary"]): 1,
@@ -813,13 +814,47 @@ def optional_inherit(cls):
     return cls
 
 
-@optional_inherit
+@_inherit_from_bloq
 class ToBloq:
-    """
-    Placeholder for ToBloq. Functionality requires 'qualtran' installation.
+    r"""
+    An adapter for using a PennyLane :class:`~.Operation as a 
+    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
-    This class is defined because the optional dependency 'qualtran' (and/or 'attrs')
-    was not found. Install the required libraries to enable functionality.
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+
+    Raises:
+        TypeError: operator must be an instance of :class:`~.Operation.
+
+    **Example**
+
+    This example shows how to use ``qml.ToBloq``:
+
+    >>> wrapped_op = qml.ToBloq(qml.CNOT([0, 1]))
+    >>> wrapped_op.tensor_contract()
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+
+    This example shows how to use ``qml.ToBloq`` for resource estimation:
+
+    >>> from qualtran.bloqs.basic_gates import CNOT
+    >>> dev = qml.device("default.qubit") # Execute on device
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.FromBloq(CNOT(), wires=[0, 1])
+    ...     return qml.state()
+    >>> circuit()
+    array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
     """
 
     _dependency_missing = True
