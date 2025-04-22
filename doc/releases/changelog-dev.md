@@ -30,6 +30,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See each function's docstring
+  for equivalent code. These include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``,
+  ``has_nopar``, ``has_unitary_gen``, ``is_measurement``, ``is_trainable``,
+  ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+
+
 <h3>Internal changes ⚙️</h3>
 
 * Introduce module dependency management using `tach`.

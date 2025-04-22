@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See each function's docstring for equivalent code.
+  These include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``, ``has_nopar``, ``has_unitary_gen``, ``is_measurement``,
+  ``is_trainable``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
+
 * The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
 
   - Deprecated in v0.41
