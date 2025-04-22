@@ -11,7 +11,7 @@ numpy
 pygments-github-lexers
 packaging
 scipy
-docutils~=0.19
+docutils>0.19
 sphinx~=8.1.0
 sphinx-automodapi==0.18
 sphinx-copybutton
@@ -26,10 +26,10 @@ tensorflow_macos==2.9.0; sys_platform == "darwin" and platform_machine == "arm64
 tensornetwork==0.3
 tomlkit
 torch==2.5.1
-jinja2~=3.1
+jinja2>=3.1
 rustworkx>=0.14.0
 networkx==3.1
-requests~=2.32.2
+requests==2.32.3
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
