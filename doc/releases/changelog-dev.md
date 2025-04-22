@@ -22,6 +22,12 @@
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
   [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
 
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
+  [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
+
+* Specifying `pipeline=None` with `qml.compile` has been removed.
+  [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
+  
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
@@ -45,6 +51,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Adds an informative error if `qml.cond` is used with an abstract condition with
+  jitting on `default.qubit` if capture is enabled.
+  [(#7314)](https://github.com/PennyLaneAI/pennylane/pull/7314)
+
+* Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
+  [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
+
+* Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
+  [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
+
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
@@ -63,9 +79,12 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
-Lillian Frederiksen
+Guillermo Alonso-Linaje,
+Lillian Frederiksen,
 Pietropaolo Frisoni,
-Andrija Paurevic,
+Guillermo Alonso-Linaje,
+Yushao Chen,
+Lillian Frederiksen,
 Korbinian Kottmann,
-Christina Lee
+Christina Lee,
+Andrija Paurevic

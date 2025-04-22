@@ -27,7 +27,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
-    _contract_qjac_with_cjac,
     _no_trainable_grad,
     _try_zero_grad_from_graph_or_get_grad_method,
     assert_no_probability,
@@ -35,6 +34,7 @@ from .gradient_transform import (
     assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
 from .metric_tensor import _get_aux_wire
 
@@ -89,7 +89,7 @@ def _expand_transform_hadamard(
 @partial(
     transform,
     expand_transform=_expand_transform_hadamard,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def hadamard_grad(
