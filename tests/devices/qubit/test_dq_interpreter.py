@@ -213,6 +213,22 @@ def test_projector(basis_state):
     assert qml.math.allclose(circuit(x), expected_state)
 
 
+def test_informative_error_if_jitting_abstract_conditionals():
+    """Test that an informative error is raised if jitting is attempted with abtract conditionals."""
+
+    config = ExecutionConfig()
+
+    @DefaultQubitInterpreter(num_wires=1, shots=None, execution_config=config)
+    def circuit(val):
+        qml.cond(val, qml.X, qml.Y)(0)
+        return qml.state()
+
+    with pytest.raises(
+        NotImplementedError, match="does not yet support jitting cond with abstract conditions"
+    ):
+        _ = jax.jit(circuit)(True)
+
+
 class TestSampling:
     """Test cases for generating samples."""
 
