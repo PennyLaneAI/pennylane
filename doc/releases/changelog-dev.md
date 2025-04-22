@@ -18,7 +18,11 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* The new graph-based decomposition system supports `QubitUnitary`.
+* The new graph-based decomposition system now supports `QubitUnitary`.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* Added `qml.decomposition.DecompositionNotApplicable` that can be raised from decomposition rules
+  if the decomposition rule is not applicable under a certain set of parameters.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Improvements 🛠</h3>
