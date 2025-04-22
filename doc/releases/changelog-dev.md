@@ -103,6 +103,9 @@
 * Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
+* Fixes a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
