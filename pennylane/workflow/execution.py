@@ -54,8 +54,6 @@ def execute(
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
-    config="unset",
-    inner_transform="unset",
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -95,10 +93,6 @@ def execute(
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
-            will be removed in v0.42.
-        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
-            and will be removed in v0.42.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -161,22 +155,6 @@ def execute(
     """
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
-
-    if config != "unset":
-        warn(
-            "The config argument has been deprecated and will be removed in v0.42. "
-            "The provided config argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if inner_transform != "unset":
-        warn(
-            "The inner_transform argument has been deprecated and will be removed in v0.42. "
-            "The provided inner_transform argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
