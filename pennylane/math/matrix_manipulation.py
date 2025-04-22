@@ -464,4 +464,4 @@ def convert_to_su4(U, return_global_phase=False):
     else:
         c_phase = math.cast_like(global_phase, 1j)
         U = U * math.exp(-1j * c_phase)
-    return (U, global_phase) if return_global_phase else U
+    return (U, c_phase) if return_global_phase else U
