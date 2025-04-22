@@ -140,10 +140,10 @@ pandocfilters==1.5.1
 parso==0.8.4
 pathspec==0.12.1
 pbr==6.1.1
-PennyLane-Catalyst==0.12.0.dev4
-PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@14779eb0cecfafd5a56c025bd22c411359936dd1
+PennyLane-Catalyst==0.11.0
+PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@af5226f4a10885e6e01935c6fc3564d94d30984d
 PennyLane_Lightning==0.41.0
-PennyLane_Lightning_Kokkos==0.41.0.dev22
+PennyLane_Lightning_Kokkos==0.41.0
 pexpect==4.9.0
 pillow==11.2.1
 platformdirs==4.3.7

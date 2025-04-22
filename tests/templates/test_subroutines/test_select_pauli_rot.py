@@ -23,6 +23,22 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+def get_tape(angles, wires):
+    """Auxiliary function to generate a tape with the operator given some angles"""
+
+    return qml.tape.QuantumScript(
+        [
+            qml.SelectPauliRot(
+                angles,
+                control_wires=wires["control"],
+                target_wire=wires["target"],
+                rot_axis="Y",
+            )
+        ],
+        [qml.state()],
+    )
+
+
 class TestSelectPauliRot:
 
     def test_standard_validity(self):
@@ -135,33 +151,13 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    jnp.array(angles),
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="X",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(jnp.array(angles), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_jax = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    angles,
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="X",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
@@ -180,33 +176,13 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    torch.tensor(angles),
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="Y",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(torch.tensor(angles), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_torch = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    angles,
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="Y",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
@@ -225,33 +201,13 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    tf.Variable(angles),
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="Y",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(tf.Variable(angles), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_tf = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    angles,
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="Y",
-                )
-            ],
-            [qml.state()],
-        )
+        qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
@@ -271,22 +227,18 @@ class TestSelectPauliRot:
         wires = qml.registers({"control": 2, "target": 1})
         dev = qml.device("default.qubit", wires=3)
 
-        qs = qml.tape.QuantumScript(
-            [
-                qml.SelectPauliRot(
-                    angles,
-                    control_wires=wires["control"],
-                    target_wire=wires["target"],
-                    rot_axis="Y",
-                )
-            ],
-            [qml.state()],
-        )
+        @qml.qnode(dev)
+        def circuit(angles):
+            qml.SelectPauliRot(
+                angles,
+                control_wires=wires["control"],
+                target_wire=wires["target"],
+                rot_axis="Y",
+            )
+            return qml.state()
 
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        expected_output = dev.execute(tape[0])[0]
-        generated_output = jax.jit(dev.execute)(tape[0])[0]
+        expected_output = circuit(angles)
+        generated_output = jax.jit(circuit)(angles)
 
         assert np.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "jax"
