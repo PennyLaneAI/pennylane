@@ -202,7 +202,7 @@ class ProcPoolExec(PyNativeExec):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
@@ -228,7 +228,7 @@ class ThreadPoolExec(PyNativeExec):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",

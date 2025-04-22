@@ -18,7 +18,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from .base import ExtExec
+from .base import ExecBackendConfig, ExtExec
 
 
 class MPIPoolExec(ExtExec):
@@ -46,7 +46,7 @@ class MPIPoolExec(ExtExec):
         self._exec_backend = executor
         self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
 
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
@@ -116,7 +116,7 @@ class MPICommExec(ExtExec):
         self._comm = MPI.COMM_WORLD
         self._size = MPI.COMM_WORLD.Get_size()
 
-        self._cfg = self.LocalConfig(
+        self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
