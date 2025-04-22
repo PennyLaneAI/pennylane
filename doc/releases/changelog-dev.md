@@ -22,6 +22,9 @@
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
   [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
 
+* The `mcm_method` keyword argument in `qml.execute` has been removed.
+  [(#7301)](https://github.com/PennyLaneAI/pennylane/pull/7301)
+
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
   [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
 
