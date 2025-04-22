@@ -447,7 +447,7 @@ def _extract_su2su2_prefactors(U, V):
     #       and q are not necessarily "in the same order" as claimed above. This may sometimes
     #       lead to incorrect results (see https://github.com/PennyLaneAI/pennylane/issues/5308)
     #       The current solution is to add a small perturbation to U and V to break the potential
-    #       degeneracy. We should probably find a better algorithm at some point.
+    #       degeneracy. We should probably find a better algorithm at some point. [sc-89460]
 
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
