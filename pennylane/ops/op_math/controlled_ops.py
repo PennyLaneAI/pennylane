@@ -130,14 +130,6 @@ class ControlledQubitUnitary(ControlledOp):
     ):
 
         work_wires = Wires(() if work_wires is None else work_wires)
-        if hasattr(base, "wires"):
-            warnings.warn(
-                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
-                qml.PennyLaneDeprecationWarning,
-            )
-            base = base.matrix()
-
         return cls._primitive.bind(
             base, wires=wires, control_values=control_values, work_wires=work_wires
         )
