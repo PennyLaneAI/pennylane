@@ -867,7 +867,6 @@ class QNode:
             interface=self.interface,
             transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
-            executor_backend=self.executor_backend,
             **self.execute_kwargs,
         )
         res = res[0]
