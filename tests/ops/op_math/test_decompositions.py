@@ -1415,6 +1415,7 @@ class TestQubitUnitaryDecompositionGraph:
         """Tests that a single-qubit unitary can be decomposed with capture enabled."""
 
         import jax
+
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         # Just a random matrix
@@ -1474,6 +1475,7 @@ class TestQubitUnitaryDecompositionGraph:
         """Tests that the two-qubit unitary can be decomposed with capture enabled."""
 
         import jax
+
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         @DecomposeInterpreter(gate_set=gate_set)
