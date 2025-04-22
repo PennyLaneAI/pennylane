@@ -309,9 +309,6 @@ class WiresEnum(IntEnum):
     AnyWires = -1
     """A enumeration that represents that an operator can act on any number of wires.
 
-    .. warning::
-
-        **Deprecated**: Operator.num_wires = None should be used instead.
     """
 
     AllWires = -2
