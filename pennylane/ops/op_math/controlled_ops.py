@@ -55,7 +55,7 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        base (Union[array[complex], QubitUnitary]): square unitary matrix or a QubitUnitary
+        base (array[complex]): square unitary matrix or a QubitUnitary
             operation. If passing a matrix, this will be used to construct a QubitUnitary
             operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
             this will be used as the base directly.
