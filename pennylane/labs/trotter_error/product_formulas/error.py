@@ -30,31 +30,17 @@ class _AdditiveIdentity:
         return other
 
 
-def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
-    r"""Compute the second-order Trotter error operator.
-
-    For a Hamiltonian :math:`H` expressed as a sum of
-    fragments :math:`\sum_{m=1}^L H_m`, the second order Trotter formula is given by
-
-    .. math:: e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
-
-    where :math:`\tilde{H} = H + \hat{\epsilon}`. The leading term of the error operator :math:`\hat{\epsilon}` is given by
-
-    .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
-
-    Args:
-        fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
-            objects to compute Trotter error from
-        delta (float): time step for the trotter formula.
-
-    Returns:
-        Fragment: the Trotter error operator
+def effective_hamiltonian(
+    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int = 3
+):
+    """Compute the effective Hamiltonian according to the product formula
 
     **Example**
 
     >>> import numpy as np
     >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
-    >>> from pennylane.labs.trotter_error.product_formulas import trotter_error
+    >>> from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
+
     >>> n_modes = 4
     >>> r_state = np.random.RandomState(42)
     >>> freqs = r_state.random(4)
@@ -64,33 +50,16 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     >>>     r_state.random(size=(n_modes, n_modes)),
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
-    >>> delta = 0.001
-    >>> type(trotter_error(frags, delta))
-    <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
 
+    >>> delta = 0.001
+    >>> frag_labels = [0, 1, 1, 0]
+    >>> frag_coeffs = [delta/2, delta/2, delta/2, delta/2]
+
+    >>> pf = ProductFormula(frag_coeffs, frag_labels)
+    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
-    if len(fragments) == 0:
-        return fragments
-
-    eff = _AdditiveIdentity()
-    n_frags = len(fragments)
-    scalar = -(delta**2) / 24
-
-    for i in range(n_frags - 1):
-        for j in range(i + 1, n_frags):
-            eff += nested_commutator([fragments[i], fragments[i], fragments[j]])
-            for k in range(i + 1, n_frags):
-                eff += 2 * nested_commutator([fragments[k], fragments[i], fragments[j]])
-
-    eff = scalar * eff
-    return eff
-
-
-def effective_hamiltonian(
-    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int = 2
-):
     bch = product_formula.bch_approx(order)
 
     if len(fragments) == 0:
@@ -108,7 +77,10 @@ def effective_hamiltonian(
 
 
 def perturbation_error(
-    fragments: Sequence[Fragment], states: Sequence[AbstractState], delta: float = 1
+    product_formula: ProductFormula,
+    fragments: Sequence[Fragment],
+    states: Sequence[AbstractState],
+    order: int = 3,
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
@@ -129,8 +101,13 @@ def perturbation_error(
 
     **Example**
 
-    >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
     >>> import numpy as np
+    >>> from pennylane.labs.trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
+
+    >>> frag_labels = [0, 1, 1, 0]
+    >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
+    >>> pf = ProductFormula(frag_coeffs, frag_labels)
+
     >>> n_modes = 2
     >>> r_state = np.random.RandomState(42)
     >>> freqs = r_state.random(n_modes)
@@ -141,13 +118,16 @@ def perturbation_error(
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
     >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+
     >>> gridpoints = 5
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
-    >>> perturbation_error(frags, [state1, state2])
+
+    >>> perturbation_error(pf, frags, [state1, state2])
     [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
-    error = trotter_error(fragments, delta)
+    eff = effective_hamiltonian(product_formula, fragments, order=order)
+    error = eff - sum(fragments, _AdditiveIdentity())
 
     return [error.expectation(state, state) for state in states]

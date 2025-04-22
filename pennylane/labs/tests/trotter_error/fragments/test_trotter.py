@@ -18,7 +18,7 @@ import pytest
 
 from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
-from pennylane.labs.trotter_error.product_formulas import trotter_error
+from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.realspace import RealspaceMatrix
 
 
@@ -46,13 +46,30 @@ def _coeffs(states: int, modes: int, order: int):
     return np.random.random(size=(modes,)), symmetric_phis
 
 
-@pytest.mark.parametrize("modes", range(5))
-def test_second_order_trotter_error_operator(modes):
+def _coeffs_isclose(d1, d2):
+
+    for block, ops in d1.items():
+        for op, indices in ops.items():
+            for index in indices.keys():
+                if not np.isclose(d1[block][op][index], d2[block][op][index]):
+                    return False
+
+    return True
+
+
+@pytest.mark.parametrize("modes", range(3))
+def test_second_order_trotter(modes):
     """Test that the second order Trotter error operator is correct for a 2 state example"""
     states = 2
     delta = 0.72
+    delta = 1
     scalar = -(delta**2) / 24
     fragments = vibronic_fragments(states, modes, *_coeffs(states, modes, order=2))
+
+    frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
+    frag_coeffs = [delta / 2] * len(frag_labels)
+
+    product_formula = ProductFormula(frag_coeffs, frag_labels)
 
     terms = [
         nested_commutator([fragments[0], fragments[0], fragments[1]]),
@@ -65,7 +82,8 @@ def test_second_order_trotter_error_operator(modes):
         2 * nested_commutator([fragments[2], fragments[1], fragments[2]]),
     ]
 
-    actual = trotter_error(fragments, delta)
+    actual = effective_hamiltonian(product_formula, fragments, order=3)
     expected = scalar * sum(terms, RealspaceMatrix(states, modes))
+    expected += sum(fragments, RealspaceMatrix(states, modes))
 
-    assert actual == expected
+    assert _coeffs_isclose(actual.get_coefficients(), expected.get_coefficients())

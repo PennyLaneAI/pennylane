@@ -100,7 +100,7 @@ class RealspaceCoeffs:
         return self._tree.compute(index)
 
     def __eq__(self, other: RealspaceCoeffs) -> bool:
-        return self._tree == other._tree
+        return self._tree.nonzero() == other._tree.nonzero()
 
     @property
     def is_zero(self) -> bool:

@@ -81,7 +81,6 @@ Functions for computing Trotter error estimates.
 
     ~effective_hamiltonian
     ~perturbation_error
-    ~trotter_error
 
 Product Formula Classes
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +98,6 @@ from .product_formulas import (
     ProductFormula,
     effective_hamiltonian,
     perturbation_error,
-    trotter_error,
 )
 from .realspace import (
     RealspaceCoeffs,
