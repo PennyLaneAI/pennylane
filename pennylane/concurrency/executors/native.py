@@ -19,14 +19,12 @@ import abc
 import inspect
 import os
 import sys
-import weakref
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor as exec_pp
 from concurrent.futures import ThreadPoolExecutor as exec_tp
-from dataclasses import dataclass
 from itertools import starmap
 from multiprocessing import Pool as exec_mp
-from typing import Any, Optional
+from typing import Any
 
 from .base import ExecBackendConfig, IntExec
 
@@ -148,6 +146,7 @@ class SerialExec(PyNativeExec):
             blocking=True,
         )
 
+    @classmethod
     def _exec_backend(cls):
         return SerialExec.StdLibWrapper
 
@@ -180,11 +179,11 @@ class MPPoolExec(PyNativeExec):
             try:
                 # attempt offloading to starmap
                 return self.starmap(fn, zip(*args))
-            except:
+            except Exception as e:
                 raise ValueError(
                     "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. "
                     "Consider a different backend, or use `starmap` instead."
-                )
+                ) from e
         return super().map(fn, *args)
 
 

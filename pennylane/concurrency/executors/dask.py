@@ -18,81 +18,66 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 import os
 from collections.abc import Callable, Sequence
 
-try:
-    from dask.bag import from_sequence
-    from dask.distributed import Client, LocalCluster
-    from dask.distributed.deploy import Cluster
-
-    DASK_FOUND = True
-except:
-    DASK_FOUND = False
 from .base import ExtExec
 
-if DASK_FOUND:
 
-    class DaskExec(ExtExec):
-        """
-        Dask distributed abstraction class functor.
-        """
+class DaskExec(ExtExec):
+    """
+    Dask distributed abstraction class functor.
+    """
 
-        def __init__(self, max_workers=4, client_provider=None, **kwargs):
-            super().__init__(max_workers=max_workers, **kwargs)
-
-            if client_provider is None:
-                proc_threads = int(os.getenv("OMP_NUM_THREADS", "1"))
-                self._cluster = LocalCluster(
-                    n_workers=max_workers, processes=True, threads_per_worker=proc_threads
-                )
-                self._exec_backend = Client(self._cluster)
-
-            # Note: urllib does not validate
-            # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
-            # so branch on str as URL
-            elif isinstance(client_provider, str):
-                self._exec_backend = Client(client_provider)
-
-            elif isinstance(client_provider, Cluster):
-                self._exec_backend = client_provider.get_client()
-
-            self._size = len(self._exec_backend.scheduler_info()["workers"])
-
-        def __call__(self, fn: Callable, data: Sequence):
-            output_f = self._exec_backend.map(fn, data)
-            return [o.result() for o in output_f]
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            self.shutdown()
-
-        def map(self, fn: Callable, *args: Sequence):
-            output_f = self._exec_backend.map(fn, *args)
-            return [o.result() for o in output_f]
-
-        def starmap(self, fn: Callable, args: Sequence):
-            seq_to_bag = from_sequence(args)
-            return 1
-
-        def shutdown(self):
-            self._exec_backend.shutdown()
-            self._cluster.close()
-
-        def submit(self, fn, *args, **kwargs):
-            return self._exec_backend.submit(fn, *args, **kwargs).result()
-
-        @property
-        def size(self):
-            return self._size
-
-else:
-
-    class DaskExec(ExtExec):
-        """
-        Mock Dask distributed abstraction class functor.
-        """
-
-        def __init__(self, max_workers=4, client_provider=None, **kwargs):
+    def __init__(self, max_workers=4, client_provider=None, **kwargs):
+        super().__init__(max_workers=max_workers, **kwargs)
+        try:
+            from dask.distributed import Client, LocalCluster
+            from dask.distributed.deploy import Cluster
+        except ImportError as ie:
             raise RuntimeError(
                 "Dask Distributed cannot be found.\nPlease install via `pip install dask distributed`"
+            ) from ie
+
+        if client_provider is None:
+            proc_threads = int(os.getenv("OMP_NUM_THREADS", "1"))
+            self._cluster = LocalCluster(
+                n_workers=max_workers, processes=True, threads_per_worker=proc_threads
             )
+            self._exec_backend = Client(self._cluster)
+
+        # Note: urllib does not validate
+        # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
+        # so branch on str as URL
+        elif isinstance(client_provider, str):
+            self._exec_backend = Client(client_provider)
+
+        elif isinstance(client_provider, Cluster):
+            self._exec_backend = client_provider.get_client()
+
+        self._size = len(self._exec_backend.scheduler_info()["workers"])
+
+    def __call__(self, fn: Callable, data: Sequence):
+        output_f = self._exec_backend.map(fn, data)
+        return [o.result() for o in output_f]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown()
+
+    def map(self, fn: Callable, *args: Sequence):
+        output_f = self._exec_backend.map(fn, *args)
+        return [o.result() for o in output_f]
+
+    def starmap(self, fn: Callable, args: Sequence):
+        raise NotImplementedError("Please use another backend for access to `starmap`")
+
+    def shutdown(self):
+        self._exec_backend.shutdown()
+        self._cluster.close()
+
+    def submit(self, fn, *args, **kwargs):
+        return self._exec_backend.submit(fn, *args, **kwargs).result()
+
+    @property
+    def size(self):
+        return self._size

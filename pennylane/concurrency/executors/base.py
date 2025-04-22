@@ -18,7 +18,6 @@ Contains concurrent executor abstractions for task-based workloads.
 import abc
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from itertools import starmap
 from typing import Optional
 
 
@@ -66,9 +65,10 @@ class RemoteExec(abc.ABC):
             executor goes out-of-scope.
     """
 
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, *args, **kwargs):
+    def __init__(self, *args, max_workers: int = 0, persist: bool = False, **kwargs):
         self._size = max_workers
         self._persist = persist
+        self._inputs = (args, kwargs)
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
         """
@@ -160,12 +160,8 @@ class IntExec(RemoteExec, abc.ABC):
     Executor class for native Python library concurrency support
     """
 
-    pass
-
 
 class ExtExec(RemoteExec, abc.ABC):
     """
     Executor class for external package provided concurrency support
     """
-
-    pass

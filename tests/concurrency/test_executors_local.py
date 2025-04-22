@@ -18,7 +18,6 @@ from multiprocessing import cpu_count
 import numpy as np
 import pytest
 
-import pennylane as qml
 from pennylane.concurrency.executors import ExecBackends, create_executor
 from pennylane.concurrency.executors.native import (
     MPPoolExec,
@@ -125,17 +124,12 @@ class TestLocalExecutor:
         [
             (
                 custom_func3,
-                [(i, j) for i, j in zip(range(9), np.ones(9))],
+                list(zip(range(9), np.ones(9))),
                 [custom_func3(i, j) for i, j in zip(range(9), np.ones(9))],
             ),
             (
                 custom_func4,
-                [
-                    (i, j, k)
-                    for i, j, k in zip(
-                        [np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10)
-                    )
-                ],
+                list(zip([np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10))),
                 [
                     custom_func4(i, j, k)
                     for i, j, k in zip(

@@ -16,7 +16,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, Optional
 
 from .base import ExecBackendConfig, ExtExec
 
@@ -35,7 +35,9 @@ class MPIPoolExec(ExtExec):
     All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
     """
 
-    def __init__(self, max_workers=None, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+        if persist:
+            raise RuntimeError("The MPIPoolExec backend does not currently support persistence.")
         super().__init__(max_workers=max_workers, **kwargs)
 
         # Imports will initialise the MPI environment.
@@ -92,9 +94,6 @@ class MPIPoolExec(ExtExec):
 
     def shutdown(self):
         "Shutdown the executor backend, if valid."
-        if self._persist:
-            self._shutdown_fn(self._backend)()
-            self._backend = None
 
     def __del__(self):
         self.shutdown()
@@ -106,7 +105,10 @@ class MPICommExec(ExtExec):
     required by MPIPoolExec is unsupported by the MPI implementation.
     """
 
-    def __init__(self, max_workers=None, **kwargs):
+    def __init__(self, max_workers=None, persist: bool = False, **kwargs):
+        if persist:
+            raise RuntimeError("The MPIPoolExec backend does not currently support persistence.")
+
         super().__init__(max_workers=max_workers, **kwargs)
 
         from mpi4py import MPI  # Required to call MPI_Init
@@ -166,9 +168,6 @@ class MPICommExec(ExtExec):
 
     def shutdown(self):
         "Shutdown the executor backend, if valid."
-        if self._persist:
-            self._shutdown_fn(self._backend)()
-            self._backend = None
 
     def __del__(self):
         self.shutdown()
