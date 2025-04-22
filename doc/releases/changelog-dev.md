@@ -19,6 +19,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `KerasLayer` in `qml.qnn.keras` has been deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
+
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
   [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
 

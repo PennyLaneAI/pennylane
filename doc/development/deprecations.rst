@@ -9,11 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
@@ -93,6 +88,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``KerasLayer`` in ``qml.qnn.keras`` has been deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been removed. Instead, please use
   :meth:`~.Operator.terms`.
