@@ -19,7 +19,6 @@ differentiation support.
 import inspect
 import logging
 from typing import Callable, Literal, Optional, Union
-from warnings import warn
 
 from cachetools import Cache
 
