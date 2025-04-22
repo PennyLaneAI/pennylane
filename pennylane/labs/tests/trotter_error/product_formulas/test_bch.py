@@ -58,6 +58,8 @@ def test_second_order(fragments):
 
 
 def test_two_fragments():
+    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+
     frag_labels = [0, 1]
     frag_coeffs = [1, 1]
 
@@ -74,6 +76,8 @@ def test_two_fragments():
 
 
 def test_three_fragments():
+    """Test against BCH expansion on three fragments. The expected value comes from Section 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+
     frag_labels = [0, 1, 2]
     frag_coeffs = [1, 1, 1]
 

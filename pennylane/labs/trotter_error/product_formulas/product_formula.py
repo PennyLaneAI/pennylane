@@ -59,6 +59,10 @@ class ProductFormula:
         return "*".join(reps)
 
     def bch_approx(self, max_order: int) -> Dict[Tuple[int], float]:
+        """Returns an approximation of the BCH expansion in terms of right-nested commutators up to order `max_order`.
+        This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
+        """
+
         terms = []
 
         for k in range(1, max_order + 1):
