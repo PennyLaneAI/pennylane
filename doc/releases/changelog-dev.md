@@ -46,6 +46,12 @@
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
+  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
+  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and 
+  disabling program capture.
+  [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
+
 <h3>Bug fixes 🐛</h3>
 
 * Adds an informative error if `qml.cond` is used with an abstract condition with
