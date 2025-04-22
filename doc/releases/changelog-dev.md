@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
+  [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
+
 * `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
   [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
 
@@ -45,6 +48,12 @@
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
 <h3>Documentation 📝</h3>
+
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
+  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
+  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and 
+  disabling program capture.
+  [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -79,6 +88,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Yushao Chen,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic
