@@ -475,7 +475,7 @@ def group_observables(
     graph using graph-colouring heuristic algorithms.
 
     Args:
-        observables (list[Operator]): a list of Pauli word ``Operator` instances (Pauli
+        observables (list[Operator]): a list of Pauli word ``Operator`` instances (Pauli
             operation instances and tensor products thereof)
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
