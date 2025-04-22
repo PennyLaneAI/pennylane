@@ -91,15 +91,17 @@ def _compute_udv(a, b):
     of equation (36) [https://arxiv.org/pdf/quant-ph/0504100]."""
 
     # Calculates u and d diagonalizing ab^dagger (Eq.39)
-    ab_dagger = a @ b.conj().T
-    d_square, u = sp.linalg.eig(ab_dagger)
-    u, _ = sp.linalg.qr(u)
-    d = qml.math.diag(qml.math.exp(1j * qml.math.angle(d_square) / 2))  # complex square root
+    ab_dagger = a @ qml.math.conj(b.T)
+    d_square, u = qml.math.linalg.eig(ab_dagger)
+    u, _ = qml.math.linalg.qr(u)
+
+    # complex square root of eigenvalues
+    d = qml.math.diag(qml.math.exp(1j * qml.math.angle(d_square) / 2))
 
     # Calculates v using Eq.40
-    v = d.conj().T @ u.conj().T @ a
+    v = qml.math.conj(d.T) @ qml.math.conj(u.T) @ a
 
-    return u, np.diag(d), v
+    return u, qml.math.diag(d), v
 
 
 class QubitUnitary(Operation):
@@ -311,19 +313,62 @@ class QubitUnitary(Operation):
 
         ops = []
 
-        # Combining the two equalities in Fig 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
-        # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexers (qml.SelectPauliRot)
+        try:
+            # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
 
-        (u1, u2), theta, (v1_dagg, v2_dagg) = sp.linalg.cossin(
-            U, p=2 ** (len(wires) - 1), q=2 ** (len(wires) - 1), separate=True
-        )
+            import jax
+
+            def scipy_cossin_callback(U_flat, p, q):
+                dim = int(np.sqrt(U_flat.size))
+                U_np = U_flat.reshape((dim, dim))
+                (u1, u2), theta, (v1_dagg, v2_dagg) = sp.linalg.cossin(
+                    U_np, p=p, q=q, separate=True
+                )
+                return u1, u2, theta, v1_dagg, v2_dagg
+
+            def cossin_decomposition(U, p, q):
+                dtype = U.dtype
+                U_flat = U.reshape(-1)
+
+                def callback(U_flat):
+                    return tuple(
+                        arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p, q)
+                    )
+
+                u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
+                    callback,
+                    result_shape_dtypes=(
+                        jax.ShapeDtypeStruct((p, p), dtype),
+                        jax.ShapeDtypeStruct((p, p), dtype),
+                        jax.ShapeDtypeStruct((p,), dtype),
+                        jax.ShapeDtypeStruct((q, q), dtype),
+                        jax.ShapeDtypeStruct((q, q), dtype),
+                    ),
+                    U_flat=U_flat,
+                )
+
+                return (u1, u2), theta, (v1_dagg, v2_dagg)
+
+        except:
+            cossin_decomposition = sp.linalg.cossin
+
+        # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+        # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+
+        p = 2 ** (len(wires) - 1)
+        q = 2 ** (len(wires) - 1)
+        (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p, q)
+
         v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
         u11, diag_u, u12 = _compute_udv(u1, u2)
 
         ops += QubitUnitary.compute_decomposition(v12_dagg, wires=wires[1:])
         ops.append(
             qml.SelectPauliRot(
-                -2 * np.angle(diag_v), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"
+                -2 * qml.math.angle(diag_v),
+                target_wire=wires[0],
+                control_wires=wires[1:],
+                rot_axis="Z",
             )
         )
         ops += QubitUnitary.compute_decomposition(v11_dagg, wires=wires[1:])
@@ -337,7 +382,10 @@ class QubitUnitary(Operation):
         ops += QubitUnitary.compute_decomposition(u12, wires=wires[1:])
         ops.append(
             qml.SelectPauliRot(
-                -2 * np.angle(diag_u), target_wire=wires[0], control_wires=wires[1:], rot_axis="Z"
+                -2 * qml.math.angle(diag_u),
+                target_wire=wires[0],
+                control_wires=wires[1:],
+                rot_axis="Z",
             )
         )
         ops += QubitUnitary.compute_decomposition(u11, wires=wires[1:])

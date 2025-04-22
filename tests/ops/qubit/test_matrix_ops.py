@@ -430,6 +430,27 @@ class TestQubitUnitary:
         out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
+    @pytest.mark.jax
+    def test_qubit_unitary_jax_jit_decomposition(self):
+        """Tests that QubitUnitary works with jitting when decomposing the operator."""
+
+        import jax
+        from jax import numpy as jnp
+
+        matrix = jnp.array(qml.matrix(qml.QFT(wires=[0, 1, 2])))
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(matrix):
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
+            return qml.state()
+
+        state_expected = circuit(matrix)
+        state_jit = jax.jit(circuit)(matrix)
+
+        assert qml.math.allclose(state_expected, state_jit)
+
     @pytest.mark.parametrize(
         "U, expected_params",
         [
