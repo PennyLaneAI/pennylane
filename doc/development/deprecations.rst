@@ -32,12 +32,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The `qml.gradients.hamiltonian_grad` function has been deprecated.
-  This gradient recipe is not required with the new operator arithmetic system.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
  - Deprecated in v0.40
@@ -70,6 +64,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``qml.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` has been removed.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
