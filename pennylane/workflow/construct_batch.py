@@ -14,7 +14,6 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
 import inspect
 from collections.abc import Callable
-from contextlib import nullcontext
 from functools import wraps
 from typing import Literal, Union
 
