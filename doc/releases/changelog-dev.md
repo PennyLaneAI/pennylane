@@ -47,6 +47,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+  [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
+
 <h3>Internal changes ⚙️</h3>
 
 * Introduce module dependency management using `tach`.
