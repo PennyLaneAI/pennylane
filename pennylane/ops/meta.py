@@ -229,9 +229,8 @@ class Snapshot(Operation):
 
         if measurement is None:
             measurement = qml.state()
-            if shots == "workflow":
-                # always use analytic with state
-                shots = None
+        if isinstance(measurement, qml.measurements.StateMP) and shots == "workflow":
+            shots = None  # always use analytic with state
         if isinstance(measurement, qml.measurements.MidMeasureMP):
             raise ValueError("Mid-circuit measurements can not be used in snapshots.")
         if isinstance(measurement, qml.measurements.MeasurementProcess):
