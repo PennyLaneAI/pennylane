@@ -338,8 +338,6 @@ def construct_batch(
         else:
             shots = kwargs.pop("shots", qnode.device.shots)
 
-        context_fn = nullcontext
-
         if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
             x = args[0]
@@ -347,7 +345,7 @@ def construct_batch(
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        with context_fn() as cntxt:
+        with nullcontext() as cntxt:
             # If TF tape, use the watch function
             if hasattr(cntxt, "watch"):
                 cntxt.watch(list(qnode.qnode_weights.values()))
