@@ -404,16 +404,17 @@ Using program capture with Catalyst
 -----------------------------------
 
 To use the program capture feature with Catalyst, the ``qml.capture.enable()`` toggle
-is not required. Instead, when decorating a workflow with :func:`~.pennylane.qjit`, 
-add the ``experimental_capture=True`` flag:
+is also required.
 
 .. code-block:: python
 
     import pennylane as qml
 
+    qml.capture.enable()
+
     dev = qml.device('lightning.qubit', wires=1)
 
-    @qml.qjit(experimental_capture=True)
+    @qml.qjit
     @qml.qnode(dev)
     def circuit():
         qml.RX(0.1, wires=0)
