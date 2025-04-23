@@ -47,7 +47,7 @@
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
   ```python
-  from pennylane import qml
+  import pennylane as qml
   from pennylane.decomposition import DecompositionNotApplicable
   from pennylane.math.decomposition import zyz_rotation_angles
   
