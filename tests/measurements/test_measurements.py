@@ -31,7 +31,6 @@ from pennylane.measurements import (
     SampleMP,
     ShadowExpvalMP,
     Shots,
-    State,
     StateMeasurement,
     StateMP,
     VarianceMP,

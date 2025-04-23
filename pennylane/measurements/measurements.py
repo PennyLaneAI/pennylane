@@ -29,6 +29,7 @@ from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
     quantum tape."""
@@ -503,7 +504,7 @@ class SampleMeasurement(MeasurementProcess):
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
-    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+    _shortname = "sample"
 
     @abstractmethod
     def process_samples(
