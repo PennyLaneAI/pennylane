@@ -767,7 +767,7 @@ class QNode:
 
             This function is deprecated and will be removed in v0.43. Instead, use
 
-            ``qml.workflow.get_best_diff_method`` to determine the best differentiation method.
+            `:func:`~.workflow.get_best_diff_method` to determine the best differentiation method.
 
         Args:
             device (.device.Device): PennyLane device
