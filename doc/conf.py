@@ -97,8 +97,9 @@ ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.trans
 autodoc_mock_imports = ["torch"]
 nitpick_ignore_regexes = ["^.+: WARNING: duplicate object description of .+, other instance in .+, use :no-index: for one of them$"]
 
+
 # Ignore warnings about duplicate entries in the table of contents
-suppress_warnings = ["toc.duplicate_entry", "duplicate_declaration.c", "duplicate_declaration.cpp", "epub.duplicated_toc_entry", "toc.not_included"]
+suppress_warnings = ["toc.duplicate_entry", "duplicate_declaration.c", "duplicate_declaration.cpp", "epub.duplicated_toc_entry", "toc.not_included","app.add_directive:duplicate object description of pennylane.bose.BoseWord.keys"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
