@@ -148,11 +148,15 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                     self.previous_ops.pop(w)
                 return []
 
-            # Putting the operations in a set to avoid applying the same op multiple times
-            # Using a set causes order to no longer be guaranteed, so the new order of the
-            # operations might differ from the original order. However, this only impacts
-            # operators without any shared wires, so correctness will not be impacted.
-            previous_ops_on_wires = set(self.previous_ops.get(w) for w in op.wires)
+            seen_ops = set()
+            previous_ops_on_wires = []
+
+            for w in op.wires:
+                o = self.previous_ops.get(w)
+                if o is not None and o not in seen_ops:
+                    previous_ops_on_wires.append(o)
+                    seen_ops.add(o)
+
             for o in previous_ops_on_wires:
                 if o is not None:
                     for w in o.wires:
@@ -168,7 +172,16 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
         def interpret_all_previous_ops(self) -> None:
             """Interpret all operators in ``previous_ops``. This is done when any previously
             uninterpreted operators, saved for cancellation, no longer need to be stored."""
-            ops_remaining = set(self.previous_ops.values())
+
+            seen_ops = set()
+            ops_remaining = []
+
+            for w in self.previous_ops:
+                op = self.previous_ops[w]
+                if op not in seen_ops:
+                    ops_remaining.append(op)
+                    seen_ops.add(op)
+
             for op in ops_remaining:
                 super().interpret_operation(op)
 
