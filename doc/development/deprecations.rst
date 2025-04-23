@@ -101,7 +101,6 @@ Completed deprecation cycles
 
   - Deprecated in v0.41
   - Removed in v0.42
-  
 * The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
   Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
