@@ -22,6 +22,12 @@
 * The property `MeasurementProcess.return_type` has been removed.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
+* Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
+  [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
+
+* The `mcm_method` keyword argument in `qml.execute` has been removed.
+  [(#7301)](https://github.com/PennyLaneAI/pennylane/pull/7301)
+
 * The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
   [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
 
@@ -30,6 +36,10 @@
 
 * Specifying `pipeline=None` with `qml.compile` has been removed.
   [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been removed.
+  Furthermore, the `ControlledQubitUnitary` no longer accepts `QubitUnitary` objects as arguments as its `base`.
+  [(#7305)](https://github.com/PennyLaneAI/pennylane/pull/7305)
 
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)

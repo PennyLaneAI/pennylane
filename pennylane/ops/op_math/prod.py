@@ -16,7 +16,6 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
-import warnings
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
@@ -252,18 +251,6 @@ class Prod(CompositeOp):
     @property
     def has_decomposition(self):
         return True
-
-    @property
-    def obs(self):
-        r"""Access the operands of a ``Prod`` instance"""
-        # This is temporary property to smoothen the transition to the new operator arithmetic system.
-        # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
-        warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated and will be removed "
-            "in Pennylane v0.42. Instead, please use op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self.operands
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
