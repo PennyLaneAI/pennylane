@@ -189,9 +189,6 @@ class IntExec(RemoteExec, abc.ABC):
 
     """
 
-    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
-        super().__init__(*args, max_workers=max_workers, persist=persist, **kwargs)
-
 
 class ExtExec(RemoteExec, abc.ABC):
     """
@@ -211,6 +208,3 @@ class ExtExec(RemoteExec, abc.ABC):
         *args: Non keyword arguments to pass through to executor backend.
         **kwargs: Keyword arguments to pass through to executor backend.
     """
-
-    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
-        super().__init__(*args, max_workers=max_workers, persist=persist, **kwargs)

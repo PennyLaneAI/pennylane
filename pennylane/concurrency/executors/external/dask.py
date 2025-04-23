@@ -30,7 +30,7 @@ class DaskExec(ExtExec):  # pragma: no cover
     def __init__(self, max_workers=4, client_provider=None, **kwargs):
         super().__init__(max_workers=max_workers, **kwargs)
         try:
-            from dask.distributed import Client, LocalCluster
+            from dask.distributed import LocalCluster
             from dask.distributed.deploy import Cluster
         except ImportError as ie:
             raise RuntimeError(
@@ -42,21 +42,21 @@ class DaskExec(ExtExec):  # pragma: no cover
             self._cluster = LocalCluster(
                 n_workers=max_workers, processes=True, threads_per_worker=proc_threads
             )
-            self._exec_backend = Client(self._cluster)
+            self._client = self._exec_backend()(self._cluster)
 
         # Note: urllib does not validate
         # (see https://docs.python.org/3/library/urllib.parse.html#url-parsing-security),
         # so branch on str as URL
         elif isinstance(client_provider, str):
-            self._exec_backend = Client(client_provider)
+            self._client = self._exec_backend()(client_provider)
 
         elif isinstance(client_provider, Cluster):
-            self._exec_backend = client_provider.get_client()
+            self._client = client_provider.get_client()
 
-        self._size = len(self._exec_backend.scheduler_info()["workers"])
+        self._size = len(self._client.scheduler_info()["workers"])
 
     def __call__(self, fn: Callable, data: Sequence):
-        output_f = self._exec_backend.map(fn, data)
+        output_f = self._client.map(fn, data)
         return [o.result() for o in output_f]
 
     def __enter__(self):
@@ -66,19 +66,25 @@ class DaskExec(ExtExec):  # pragma: no cover
         self.shutdown()
 
     def map(self, fn: Callable, *args: Sequence, **kwargs):
-        output_f = self._exec_backend.map(fn, *args, **kwargs)
+        output_f = self._client.map(fn, *args, **kwargs)
         return [o.result() for o in output_f]
 
     def starmap(self, fn: Callable, args: Sequence, **kwargs):
         raise NotImplementedError("Please use another backend for access to ``starmap``")
 
     def shutdown(self):
-        self._exec_backend.shutdown()
+        self._client.shutdown()
         self._cluster.close()
 
     def submit(self, fn, *args, **kwargs):
-        return self._exec_backend.submit(fn, *args, **kwargs).result()
+        return self._client.submit(fn, *args, **kwargs).result()
 
     @property
     def size(self):
         return self._size
+
+    @classmethod
+    def _exec_backend(cls):
+        from dask.distributed import Client
+
+        return Client

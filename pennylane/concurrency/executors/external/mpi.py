@@ -44,10 +44,9 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         # Imports will initialise the MPI environment.
         # Handle set-up upon object creation only.
         from mpi4py import MPI
-        from mpi4py.futures import MPIPoolExecutor as executor
 
-        self._exec_backend = executor
         self._size = max_workers
+        self._comm = MPI.COMM_WORLD
 
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
@@ -79,25 +78,21 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         return self._size
 
     def submit(self, fn: Callable, *args, **kwargs):
-        exec_args = {"use_pkl5": True}
-
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.submit(fn, *args, **kwargs)
         return output_f.result()
 
     def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
-        exec_args = {"use_pkl5": True}
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
     def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
-        exec_args = {"use_pkl5": True}
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
@@ -107,7 +102,8 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
     def __del__(self):
         self.shutdown()
 
-    def _exec_backend(self):
+    @classmethod
+    def _exec_backend(cls):
         from mpi4py.futures import MPIPoolExecutor
 
         return MPIPoolExecutor
@@ -142,10 +138,9 @@ class MPICommExec(ExtExec):
         )
 
     def __call__(self, fn: Callable, data: Sequence):
-        exec_args = {"use_pkl5": True}
         chunksize = max(len(data) // self._size, 1)
 
-        with self._exec_backend(self._comm, root=0, **exec_args) as executor:
+        with self._exec_backend()(self._comm, root=0, use_pkl5=True) as executor:
             if executor is not None:
                 output_f = executor.map(fn, data, chunksize=chunksize)
             else:
@@ -153,25 +148,21 @@ class MPICommExec(ExtExec):
         return output_f
 
     def submit(self, fn: Callable, *args, **kwargs):
-        exec_args = {"use_pkl5": True}
-
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.submit(fn, *args, **kwargs)
         return output_f.result()
 
     def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
-        exec_args = {"use_pkl5": True}
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.map(fn, *args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
     def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
-        exec_args = {"use_pkl5": True}
         chunksize = max(len(args) // self._size, 1)
 
-        with self._exec_backend(max_workers=self.size, **exec_args) as executor:
+        with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
             output_f = executor.starmap(fn, args, chunksize=chunksize, **kwargs)
         return list(output_f)
 
@@ -185,7 +176,8 @@ class MPICommExec(ExtExec):
     def __del__(self):
         self.shutdown()
 
-    def _exec_backend(self):
+    @classmethod
+    def _exec_backend(cls):
         from mpi4py.futures import MPICommExecutor
 
         return MPICommExecutor

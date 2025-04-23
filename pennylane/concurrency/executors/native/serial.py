@@ -38,7 +38,8 @@ class StdLibBackend:
     def __init__(self, *args, **kwargs):
         pass
 
-    def submit(self, fn: Callable, *args, **kwargs):
+    @classmethod
+    def submit(cls, fn: Callable, *args, **kwargs):
         "Directly execute the function as fn(*args, **kwargs)"
         return fn(*args, **kwargs)
 
