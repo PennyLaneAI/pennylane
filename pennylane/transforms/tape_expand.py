@@ -57,7 +57,8 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
+    >>> def stop_at(obj):
+    ...     return not (len(op.data) > 1 and any(qml.math.requires_grad(d) for d in obj.data))
 
     Then the expansion function can be obtained via
 

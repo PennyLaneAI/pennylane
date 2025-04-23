@@ -26,6 +26,7 @@ from typing import Optional, Sequence, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane import math
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -64,7 +65,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
     if op.name == "FromBloq" and len(op.wires) > 3:
         return False
@@ -221,7 +222,7 @@ def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
-        or not qml.operation.is_trainable(op)
+        or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)
     )
 
