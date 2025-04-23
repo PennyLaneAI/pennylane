@@ -27,6 +27,7 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
+from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 
@@ -105,6 +106,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                 target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
                 target_gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+                target_gate_names = {translate_op_alias(name) for name in target_gate_names}
 
                 def _in_gate_set(op: Operator) -> bool:
                     return (op.name in target_gate_names) or isinstance(op, target_gate_types)
@@ -649,6 +651,7 @@ def decompose(
     if isinstance(gate_set, Iterable):
         target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
         target_gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+        target_gate_names = {translate_op_alias(name) for name in target_gate_names}
 
         def gate_set_contains(op):
             return (op.name in target_gate_names) or isinstance(op, target_gate_types)

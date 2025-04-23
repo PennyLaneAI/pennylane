@@ -120,6 +120,15 @@ class CompressedResourceOp:
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
 
+    @property
+    def name(self) -> str:
+        """The name of the operator type."""
+        if issubclass(self.op_type, (qml.ops.Adjoint, qml.ops.Pow)):
+            return f"{self.op_type.__name__}({self.params['base_class'].__name__})"
+        if self.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+            return f"C({self.params['base_class'].__name__})"
+        return self.op_type.__name__
+
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))
 
