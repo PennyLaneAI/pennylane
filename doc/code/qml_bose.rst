@@ -1,3 +1,5 @@
+:orphan:
+
 qml.bose
 =========
 
@@ -13,7 +15,7 @@ BoseWord and BoseSentence
 .. currentmodule:: pennylane.bose
 
 .. autosummary::
-    :toctree: api
+    :toctree:
 
     ~BoseWord
     ~BoseSentence
@@ -24,7 +26,7 @@ Mapping to qubit operators
 .. currentmodule:: pennylane.bose
 
 .. autosummary::
-    :toctree: api
+    :toctree:
 
     ~binary_mapping
     ~unary_mapping
