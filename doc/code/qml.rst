@@ -3,7 +3,7 @@ qml
 
 .. currentmodule:: pennylane
 
-.. automodapi:: pennylane
-    :no-heading:
-    :include-all-objects:
-    :no-inherited-members:
+.. .. automodapi:: pennylane
+..     :no-heading:
+..     :include-all-objects:
+..     :no-inherited-members:
