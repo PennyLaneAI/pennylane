@@ -33,7 +33,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
         $ mpirun -n 4 -m mpi4py.futures my_script.py
 
-    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
+    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
     """
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):

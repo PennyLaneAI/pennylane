@@ -35,7 +35,7 @@ class ExecBackendConfig:
         shutdown_fn (str): The backend function that best matches the ``shutdown`` API call.
         submit_unpack (bool): Whether the arguments to ``submit`` are to be unpacked (*args) or directly passed (args) to ``submit_fn``.
         map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (*args) or directly passed (args) to ``map_unpack``.
-        blocking (bool): Whether the return values from ``submit``, ``map`` and `starmap`` are blocking (synchronous) or non-blocking (asynchronous).
+        blocking (bool): Whether the return values from ``submit``, ``map`` and ``starmap`` are blocking (synchronous) or non-blocking (asynchronous).
 
     """
 
@@ -55,7 +55,7 @@ class RemoteExec(abc.ABC):
     This ABC is intended to provide the highest-layer abstraction in the inheritance tree.
 
     Args:
-        max_workers (int): The size of the worker pool. This value will directly control (given backend support),
+        max_workers (int): The size of the worker pool. This value will directly control (given backend support)
             the number of concurrent executions that the backend can avail of. Generally, this value should match
             the number of physical cores on the executing system, or with the executing remote environment. Defaults
             to ``None``.
@@ -175,5 +175,5 @@ class IntExec(RemoteExec, abc.ABC):
 
 class ExtExec(RemoteExec, abc.ABC):
     """
-    Executor class for external package provided concurrency support
+    Executor class for external packages providing concurrency support
     """

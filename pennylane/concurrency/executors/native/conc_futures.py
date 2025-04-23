@@ -26,7 +26,7 @@ class ProcPoolExec(PyNativeExec):
     concurrent.futures.ProcessPoolExecutor class executor.
 
     This executor wraps Python standard library ``concurrent.futures.ProcessPoolExecutor`` API, and provides support for execution using multiple processes.
-    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
+    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
         *args: non keyword arguments to pass through to the executor backend.
@@ -57,7 +57,7 @@ class ThreadPoolExec(PyNativeExec):
 
     This executor wraps Python standard library ``concurrent.futures.ThreadPoolExecutor`` API, and provides support for execution using multiple threads.
     Due to the presence of the GIL in most currently supported releases of CPython, the threading executor may not provide execution speed-ups for tasks.
-    All calls to the executor as synchronous, and do not currently support the use of futures as a return object.
+    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
         *args: non keyword arguments to pass through to the executor backend.
