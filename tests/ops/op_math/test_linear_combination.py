@@ -111,7 +111,7 @@ simplify_LinearCombinations = [
     ),
     (
         qml.ops.LinearCombination([-1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
-        qml.ops.LinearCombination([1], [X(1)]),
+        qml.ops.LinearCombination([0, 1], [qml.X(0), X(1)]),
     ),
     (
         qml.ops.LinearCombination(
@@ -137,18 +137,18 @@ simplify_LinearCombinations = [
     # Simplifies to zero LinearCombination
     (
         qml.ops.LinearCombination([1, -0.5, -0.5], [X(0) @ qml.Identity(1), X(0), X(0)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0.0], [qml.X(0)]),
     ),
     (
         qml.ops.LinearCombination(
             [1, -1],
             [X(4) @ qml.Identity(0) @ X(1), X(4) @ X(1)],
         ),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0.0], [qml.X(4) @ qml.X(1)]),
     ),
     (
         qml.ops.LinearCombination([0], [qml.Identity(0)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0], [qml.I(0)]),
     ),
 ]
 
@@ -282,23 +282,33 @@ sub_LinearCombinations = [
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         X(0) @ qml.Identity(1),
-        qml.ops.LinearCombination([1.2, 0.1], [Z(1), X(2)]),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1.0], [qml.X(0), Z(1), qml.X(2), -1 * (qml.X(0) @ qml.I(1))]
+        ),
     ),
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
         X("b") @ qml.Identity(1),
-        qml.ops.LinearCombination([1.2, 0.1], [Z(3.1), X(1.6)]),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1], [X("b"), Z(3.1), X(1.6), -1 * (qml.X("b") @ qml.I(1))]
+        ),
     ),
     # The result is the zero LinearCombination
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1],
+            [X(0), Z(1), X(2), -1 * qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)])],
+        ),
     ),
     (
         qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
         qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination(
+            [1.0, 2.0, 1.0],
+            [qml.X(4), qml.Z(2), -1 * qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)])],
+        ),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
@@ -670,8 +680,6 @@ class TestLinearCombination:
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
         old_H = old_H.simplify()
-        print(old_H)
-        print(new_H)
         qml.assert_equal(old_H, new_H)
 
     def test_simplify_while_queueing(self):
@@ -779,7 +787,7 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_LinearCombinations)
     def test_LinearCombination_sub(self, H1, H2, H):
         """Tests that LinearCombinations are subtracted correctly"""
-        qml.assert_equal(H, qml.simplify(H1 - H2))
+        qml.assert_equal(H, H1 - H2)
 
     def test_LinearCombination_tensor_matmul(self):
         """Tests that a LinearCombination can be multiplied by a tensor."""
@@ -787,14 +795,7 @@ class TestLinearCombination:
         t = Z(1) @ Z(2)
         out = H @ t
 
-        expected = qml.ops.LinearCombination(
-            [1, 1],
-            [
-                X(0) @ Z(1) @ Z(2),
-                Y(0) @ Z(1) @ Z(2),
-            ],
-        )
-        qml.assert_equal(expected, qml.simplify(out))
+        qml.assert_equal(qml.prod(H, t), out)
 
     def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
         """Test that an error is raised when attempting to multiply two

@@ -23,7 +23,7 @@ from copy import copy
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Operator, TermsUndefinedError
+from pennylane.operation import Operator
 
 from .sum import Sum
 
@@ -291,12 +291,14 @@ class LinearCombination(Sum):
                 return [], [], pr
 
             # collect coefficients and ops
-            pr.simplify()
-            new_op = pr.operation(wire_order=pr.wires)
-            try:
-                new_coeffs, new_ops = new_op.terms()
-            except TermsUndefinedError:
-                return [1], [new_op], pr
+            new_coeffs = []
+            new_ops = []
+
+            for pw, coeff in pr.items():
+                pw_op = pw.operation(wire_order=pr.wires)
+                new_ops.append(pw_op)
+                new_coeffs.append(coeff)
+
             return new_coeffs, new_ops, pr
 
         if len(ops) == 1:
@@ -421,7 +423,12 @@ class LinearCombination(Sum):
             ops.append(H)
 
             return qml.ops.LinearCombination(coeffs, ops)
+        return NotImplemented
 
+    def __sub__(self, H: Operator) -> Operator:
+        r"""The subtraction operation between a LinearCombination and a LinearCombination/Observable."""
+        if isinstance(H, Operator):
+            return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     __radd__ = __add__
