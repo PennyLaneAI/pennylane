@@ -52,6 +52,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
+  [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
+
 * Introduce module dependency management using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
 
