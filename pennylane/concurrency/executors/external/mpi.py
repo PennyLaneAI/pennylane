@@ -137,15 +137,20 @@ class MPICommExec(ExtExec):
             blocking=False,
         )
 
-    def __call__(self, fn: Callable, data: Sequence):
-        chunksize = max(len(data) // self._size, 1)
-
-        with self._exec_backend()(self._comm, root=0, use_pkl5=True) as executor:
-            if executor is not None:
-                output_f = executor.map(fn, data, chunksize=chunksize)
-            else:
-                raise RuntimeError(f"Failed to start executor {self._exec_backend}")
-        return output_f
+    def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
+        """
+        dispatch:   the named method to pass the function parameters
+        fn:         the callable function to run on the executor backend
+        args:       the arguments to pass to ``fn``
+        kwargs:     the keyword arguments to pass to ``fn``
+        """
+        kwargs.update({"use_pkl5": True})
+        return super().__call__(
+            dispatch,
+            fn,
+            *args,
+            **kwargs,
+        )
 
     def submit(self, fn: Callable, *args, **kwargs):
         with self._exec_backend()(max_workers=self.size, use_pkl5=True) as executor:
