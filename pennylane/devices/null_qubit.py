@@ -139,13 +139,16 @@ def _simulate_resource_use(circuit):
     gate_types = defaultdict(int)
 
     for op in circuit.operations:
-        name = ""
+        prefix = ""
+        suffix = ""
         while hasattr(op, "base"):
             if type(op) in (Controlled, ControlledOp):
                 # Don't check this with `isinstance` to avoid unrolling ops like CNOT
-                name += "C_"
+                prefix += 'C('
+                suffix += ")"
             elif isinstance(op, Adjoint):
-                name += "adj_"
+                prefix += "Adj("
+                suffix += ")"
             else:
                 break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
             # TODO: How should these be handled?
@@ -158,7 +161,7 @@ def _simulate_resource_use(circuit):
             # (this confuses codecov, despite being tested)
             continue  # pragma: no cover
 
-        name += op.name
+        name = prefix + op.name + suffix
 
         gate_types[name] += 1
     # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.

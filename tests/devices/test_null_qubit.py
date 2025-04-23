@@ -108,10 +108,10 @@ def test_resource_tracking_attribute():
             "gate_types": {
                 "PauliX": 1,
                 "Hadamard": 1,
-                "C_adj_T": 1,
+                "C(Adj(T))": 1,
                 "CNOT": 1,
-                "C_IsingXX": 1,
-                "adj_S": 1,
+                "C(IsingXX)": 1,
+                "Adj(S)": 1,
             },
         }
     )
