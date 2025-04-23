@@ -93,7 +93,7 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees", "^.+: duplicate object description of .+, other instance in .+, use :no-index: for one of them$")]
+ignore_warnings = [("code/api/qml_transforms*", "code/api/pennylane.Bose*", "code/api/pennylane.data.*", "code/api/pennylane.Tracker", "ode/api/pennylane.Fermi*", "code/api/pennylane.From*")]
 autodoc_mock_imports = ["torch"]
 nitpick_ignore_regexes = ["^.+: WARNING: duplicate object description of .+, other instance in .+, use :no-index: for one of them$"]
 
