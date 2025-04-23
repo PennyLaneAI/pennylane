@@ -21,13 +21,13 @@ import re
 from functools import partial
 
 import pytest
+from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
-from device_shots_to_analytic import shots_to_analytic
 
 
 def test_broadcasted_postselection(mocker):
