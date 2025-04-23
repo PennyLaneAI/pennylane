@@ -15,14 +15,12 @@
 
 import os
 import sys
-from multiprocessing import cpu_count
 
 import numpy as np
 import pytest
 
 from pennylane.concurrency.executors.backends import (
     ExecBackends,
-    _ExecBackendsMap,
     create_executor,
     get_executor,
     get_supported_backends,
