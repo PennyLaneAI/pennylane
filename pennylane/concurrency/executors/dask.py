@@ -69,7 +69,7 @@ class DaskExec(ExtExec):
         output_f = self._exec_backend.map(fn, *args, **kwargs)
         return [o.result() for o in output_f]
 
-    def starmap(self, fn: Callable, args: Sequence):
+    def starmap(self, fn: Callable, args: Sequence, **kwargs):
         raise NotImplementedError("Please use another backend for access to `starmap`")
 
     def shutdown(self):

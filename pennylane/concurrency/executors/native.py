@@ -22,6 +22,7 @@ import sys
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor as exec_pp
 from concurrent.futures import ThreadPoolExecutor as exec_tp
+from functools import partial
 from itertools import starmap
 from multiprocessing import Pool as exec_mp
 from typing import Any
@@ -84,21 +85,23 @@ class PyNativeExec(IntExec, abc.ABC):
             return output
         return output.result()
 
-    def map(self, fn: Callable, *args: Sequence[Any]):
+    def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
         exec_be = self._get_backend()
         output = None
+        fn_p = partial(fn, **kwargs)
         if self._cfg.map_unpack and len(inspect.signature(fn).parameters) > 1:
-            output = self._map_fn(exec_be)(fn, *args)
+            output = self._map_fn(exec_be)(fn_p, *args)
         else:
-            output = self._map_fn(exec_be)(fn, args)
+            output = self._map_fn(exec_be)(fn_p, args)
 
         return list(output)
 
-    def starmap(self, fn: Callable, data: Sequence[tuple]):
+    def starmap(self, fn: Callable, data: Sequence[tuple], **kwargs):
         exec_be = self._get_backend()
         if not hasattr(exec_be, "starmap"):
-            return super().starmap(fn, data)
-        return list(exec_be.starmap(fn, data))
+            return list(self.map(fn, *list(zip(*data))), **kwargs)
+        fn_p = partial(fn, **kwargs)
+        return list(exec_be.starmap(fn_p, data))
 
     @classmethod
     @abc.abstractmethod
@@ -123,15 +126,21 @@ class SerialExec(PyNativeExec):
             pass
 
         def submit(self, fn: Callable, *args, **kwargs):
+            "Directly execute the function as fn(*args, **kwargs)"
             return fn(*args, **kwargs)
 
-        def map(self, fn: Callable, *args: Sequence[Any]):
-            return list(map(fn, *args))
+        def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
+            "Offload execution of the function to map and return the results as a list."
+            fn_p = partial(fn, **kwargs)
+            return list(map(fn_p, *args))
 
-        def starmap(self, fn: Callable, data: Sequence[tuple]):
-            return list(starmap(fn, data))
+        def starmap(self, fn: Callable, data: Sequence[tuple], **kwargs):
+            "Offload to itertools.starmap for execution, and return results as a list."
+            fn_p = partial(fn, **kwargs)
+            return list(starmap(fn_p, data))
 
-        def close(self):
+        def shutdown(self):
+            "No-op close shutdown"
             pass
 
     def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
@@ -140,7 +149,7 @@ class SerialExec(PyNativeExec):
             submit_fn="submit",
             map_fn="map",
             starmap_fn="starmap",
-            shutdown_fn="close",
+            shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
             blocking=True,

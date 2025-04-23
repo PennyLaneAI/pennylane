@@ -106,29 +106,29 @@ class RemoteExec(abc.ABC):
         """
         Single function submission for remote execution with provided args.
         """
-        ...
 
+    @abc.abstractmethod
     def map(self, fn: Callable, *args, **kwargs):
         """
         Single iterable map for batching execution of fn over data entries.
         Length of every entry in *args must be consistent.
         kwargs are assumed as broadcastable to each function call.
         """
-        for a in zip(*args):
-            yield self.submit(fn, *a, **kwargs)
+        raise NotImplementedError
 
-    def starmap(self, fn: Callable, args: Sequence):
+    @abc.abstractmethod
+    def starmap(self, fn: Callable, args: Sequence, **kwargs):
         """
         Single iterable map for batching execution of fn over data entries, with each entry being a tuple of arguments to fn.
         """
-        for a in args:
-            yield fn(*a)
+        raise NotImplementedError
 
     @abc.abstractmethod
     def shutdown(self):
         """
         Disconnect from executor backend and release acquired resources.
         """
+        raise NotImplementedError
 
     def _submit_fn(self, backend):
         "Helper utility to return the config-defined submit function for the given backend."
