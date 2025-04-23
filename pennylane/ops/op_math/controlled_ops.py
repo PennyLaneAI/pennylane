@@ -15,7 +15,6 @@
 This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
-import warnings
 from collections.abc import Iterable
 from functools import lru_cache
 from typing import List, Literal, Union
@@ -36,29 +35,14 @@ from .controlled_decompositions import decompose_mcx
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
-def _deprecate_control_wires(control_wires):
-    if control_wires != "unset":
-        warnings.warn(
-            "The control_wires input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-            "Please note that the second positional arg of your input is going to be the new wires, following wires=controlled_wires+target_wires, where target_wires is the optional arg wires in the legacy interface.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-
 # pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, wires)
     Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
 
-    .. warning::
-
-        The ``control_wires`` argument is deprecated and will be removed in
-        v0.42. Please use the ``wires`` argument instead.
-
     In addition to default ``Operation`` instance attributes, the following are
     available for ``ControlledQubitUnitary``:
 
-    * ``control_wires``: (deprecated) wires that act as control for the operation
     * ``wires``: wires of the final controlled unitary, consisting of control wires following by target wires
     * ``control_values``: the state on which to apply the controlled operation (see below)
     * ``work_wires``: wires made use of during the decomposition of the operation into native operations
@@ -71,19 +55,16 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        base (Union[array[complex], QubitUnitary]): square unitary matrix or a QubitUnitary
-            operation. If passing a matrix, this will be used to construct a QubitUnitary
-            operator that will be used as the base operator. If providing a ``qml.QubitUnitary``,
-            this will be used as the base directly.
+        base (array[complex]): a square unitary matrix that will be used to construct a QubitUnitary
+            operator, used as the base operator.
         wires (Union[Wires, Sequence[int], or int]): the wires the full
-        controlled unitary acts on, composed of the controlled wires followed
-        by the target wires
-        control_wires (Union[Wires, Sequence[int], or int]): (deprecated) the control wire(s)
+            controlled unitary acts on, composed of the controlled wires followed
+            by the target wire.
         control_values (List[int, bool]): a list providing the state of the control qubits to
-            control on (default is the all 1s state)
+            control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
-            operator (default False)
-        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized in during
+            operator (default False).
+        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized during
             the decomposition of the operator into native operations.
 
     **Example**
@@ -139,91 +120,44 @@ class ControlledQubitUnitary(ControlledOp):
     def _primitive_bind_call(
         cls,
         base,
-        control_wires: WiresLike = "unset",
-        wires: WiresLike = None,
+        wires: WiresLike,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        _deprecate_control_wires(control_wires)
+
         work_wires = Wires(() if work_wires is None else work_wires)
-        if hasattr(base, "wires"):
-            warnings.warn(
-                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
-                qml.PennyLaneDeprecationWarning,
-            )
-            base = base.matrix()
-
-        if control_wires == "unset":
-
-            return cls._primitive.bind(
-                base, wires=wires, control_values=control_values, work_wires=work_wires
-            )
-        # Below is the legacy interface, where control_wires provided
-        wires = Wires(() if wires is None else wires)
-
-        all_wires = control_wires + wires
         return cls._primitive.bind(
-            base, control_wires=all_wires, control_values=control_values, work_wires=work_wires
+            base, wires=wires, control_values=control_values, work_wires=work_wires
         )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base,
-        control_wires: WiresLike = "unset",
-        wires: WiresLike = None,
+        wires: WiresLike,
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        _deprecate_control_wires(control_wires)
+
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
+
+        if not isinstance(base, Iterable):
+            raise ValueError("Base must be a matrix.")
+
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        if hasattr(base, "wires"):
-            warnings.warn(
-                "QubitUnitary input to ControlledQubitUnitary is deprecated and will be removed in v0.42. "
-                "Instead, please use a full matrix as input, or try qml.ctrl for controlled QubitUnitary.",
-                qml.PennyLaneDeprecationWarning,
-            )
-            base = base.matrix()
+        num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+        target_wires = wires[-num_base_wires:]
+        control_wires = wires[:-num_base_wires]
 
-        if control_wires == "unset":
-            if not wires:
-                raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
-            control_wires = wires[:-1]  # default
-
-            if isinstance(base, Iterable):
-                num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                target_wires = wires[-num_base_wires:]
-                control_wires = wires[:-num_base_wires]
-                # We use type.__call__ instead of calling the class directly so that we don't bind the
-                # operator primitive when new program capture is enabled
-                base = type.__call__(
-                    qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
-                )
-            else:
-                raise ValueError("Base must be a matrix.")
-        else:
-            # Below is the legacy interface, where control_wires provided
-            wires = Wires(() if wires is None else wires)
-            control_wires = Wires(control_wires)
-            if isinstance(base, Iterable):
-                if len(wires) == 0:
-                    if len(control_wires) > 1:
-                        num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
-                        wires = control_wires[-num_base_wires:]
-                        control_wires = control_wires[:-num_base_wires]
-                    else:
-                        raise TypeError(
-                            "Must specify a set of wires. None is not a valid `wires` label."
-                        )
-                # We use type.__call__ instead of calling the class directly so that we don't bind the
-                # operator primitive when new program capture is enabled
-                base = type.__call__(
-                    qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check
-                )
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(
+            qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
+        )
 
         super().__init__(
             base,
@@ -231,6 +165,7 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=control_values,
             work_wires=work_wires,
         )
+
         self._name = "ControlledQubitUnitary"
 
     @property
