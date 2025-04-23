@@ -144,7 +144,7 @@ def _simulate_resource_use(circuit):
         while hasattr(op, "base"):
             if type(op) in (Controlled, ControlledOp):
                 # Don't check this with `isinstance` to avoid unrolling ops like CNOT
-                prefix += 'C('
+                prefix += "C("
                 suffix += ")"
             elif isinstance(op, Adjoint):
                 prefix += "Adj("
