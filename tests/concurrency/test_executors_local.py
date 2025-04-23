@@ -20,7 +20,13 @@ from multiprocessing import cpu_count
 import numpy as np
 import pytest
 
-from pennylane.concurrency.executors import ExecBackends, create_executor
+from pennylane.concurrency.executors.backends import (
+    ExecBackends,
+    _ExecBackendsMap,
+    create_executor,
+    get_executor,
+    get_supported_backends,
+)
 from pennylane.concurrency.executors.native import (
     MPPoolExec,
     ProcPoolExec,
@@ -54,10 +60,34 @@ def custom_func4(arg0, arg1, arg2):
 @pytest.mark.parametrize(
     "backend",
     [
-        (ExecBackends.MP_Pool, MPPoolExec),
-        (ExecBackends.CF_ProcPool, ProcPoolExec),
-        (ExecBackends.CF_ThreadPool, ThreadPoolExec),
-        (ExecBackends.Serial, SerialExec),
+        (ExecBackends.MP_Pool, "mp_pool", MPPoolExec),
+        (ExecBackends.CF_ProcPool, "cf_procpool", ProcPoolExec),
+        (ExecBackends.CF_ThreadPool, "cf_threadpool", ThreadPoolExec),
+        (ExecBackends.Serial, "serial", SerialExec),
+    ],
+)
+class TestExecutorBackends:
+    "Test the supported backends and mappings"
+
+    def test_get_supported_backends(self, backend):
+        backends = get_supported_backends()
+        assert backend[2] in set(backends.values())
+
+    def test_get_executor(self, backend):
+        be = get_executor(backend[0])
+        assert be == backend[2]
+
+        be = get_executor(backend[1])
+        assert be == backend[2]
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        (ExecBackends.MP_Pool, "mp_pool", MPPoolExec),
+        (ExecBackends.CF_ProcPool, "cf_procpool", ProcPoolExec),
+        (ExecBackends.CF_ThreadPool, "cf_threadpool", ThreadPoolExec),
+        (ExecBackends.Serial, "serial", SerialExec),
     ],
 )
 class TestLocalExecutor:
@@ -65,22 +95,32 @@ class TestLocalExecutor:
 
     def test_construction(self, backend):
         executor = create_executor(backend[0])
-        assert isinstance(executor, backend[1])
+        assert isinstance(executor, backend[2])
+        executor = create_executor(backend[1])
+        assert isinstance(executor, backend[2])
 
     def test_max_workpool_size(self, backend):
         "Test executor creation with the maximum permitted worker count"
-        if "Serial" in backend[1].__name__:
+        if "Serial" in backend[2].__name__:
             pytest.skip("Serial backends have a single worker")
         executor = create_executor(backend[0])
         assert executor.size == get_core_count()
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            assert executor_ctx.size == get_core_count()
 
     @pytest.mark.parametrize("workers", [1, 2, 6])
     def test_fixed_workpool_size(self, backend, workers):
         "Test executor creation with a predefined worker count"
-        if "Serial" in backend[1].__name__:
+        if "Serial" in backend[2].__name__:
             pytest.skip("Serial backends have a single worker")
         executor = create_executor(backend[0], max_workers=workers)
         assert executor.size == workers
+        executor.shutdown()
+
+        with create_executor(backend[0], max_workers=workers) as executor_ctx:
+            assert executor_ctx.size == workers
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -101,6 +141,14 @@ class TestLocalExecutor:
             assert np.isclose(result, exec_result)
         else:
             assert np.allclose(result, exec_result)
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            exec_result = executor_ctx.submit(fn, data)
+            if not isinstance(result, list):
+                assert np.isclose(result, exec_result)
+            else:
+                assert np.allclose(result, exec_result)
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -120,6 +168,14 @@ class TestLocalExecutor:
             assert np.isclose(result, exec_result)
         else:
             assert np.allclose(result, exec_result)
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            exec_result = executor.submit(fn, *data)
+            if not isinstance(result, list):
+                assert np.isclose(result, exec_result)
+            else:
+                assert np.allclose(result, exec_result)
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -141,6 +197,10 @@ class TestLocalExecutor:
 
         executor = create_executor(backend[0])
         assert np.allclose(result, list(executor.map(fn, *data)))
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            assert np.allclose(result, list(executor_ctx.map(fn, *data)))
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -169,12 +229,18 @@ class TestLocalExecutor:
 
         executor = create_executor(backend[0])
         assert np.allclose(result, list(executor.starmap(fn, data)))
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            assert np.allclose(result, list(executor_ctx.starmap(fn, data)))
 
     def test_persistence(self, backend):
         executor_temporal = create_executor(backend[0])
         executor_persist = create_executor(backend[0], persist=True)
         assert not executor_temporal.persist
         assert executor_persist.persist
+        executor_persist.shutdown()
+        assert not executor_persist.persist
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -195,3 +261,12 @@ class TestLocalExecutor:
         assert np.allclose(result, executor("map", fn, *data))
         assert np.allclose(result, executor("map", fn, *data))
         assert np.allclose(result, executor("starmap", fn, zip(*data)))
+
+        executor.shutdown()
+
+        with create_executor(backend[0]) as executor_ctx:
+            for i, a in enumerate(zip(*data)):
+                assert np.isclose(result[i], executor_ctx("submit", fn, *a))
+            assert np.allclose(result, executor_ctx("map", fn, *data))
+            assert np.allclose(result, executor_ctx("map", fn, *data))
+            assert np.allclose(result, executor_ctx("starmap", fn, zip(*data)))

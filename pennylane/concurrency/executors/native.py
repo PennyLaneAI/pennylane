@@ -39,7 +39,8 @@ class PyNativeExec(IntExec, abc.ABC):
         """
         max_workers:    the maximum number of concurrent units (threads, processes) to use
         persist:        allow the executor backend to persist between executions. True avoids
-                            potentially costly set-up and tear-down, where supported.
+                        potentially costly set-up and tear-down, where supported.
+                        Explicit calls to ``shutdown`` will set this to False.
         """
         super().__init__(max_workers=max_workers, **kwargs)
         if max_workers:
@@ -66,6 +67,7 @@ class PyNativeExec(IntExec, abc.ABC):
         if self._persist:
             self._shutdown_fn(self._persistent_backend)()
             self._persistent_backend = None
+            self._persist = False
 
     def __del__(self):
         self.shutdown()
