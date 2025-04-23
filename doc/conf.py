@@ -95,7 +95,9 @@ mathjax_path = (
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees", "duplicate object description of")]
 autodoc_mock_imports = ["torch"]
-suppress_warnings = ["toc.duplicate_entry"]
+
+# Ignore warnings about duplicate entries in the table of contents
+suppress_warnings = ["toc.duplicate_entry", "duplicate_declaration.c", "duplicate_declaration.cpp"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
