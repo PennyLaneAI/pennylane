@@ -19,8 +19,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The `KerasLayer` in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework.
+* The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
