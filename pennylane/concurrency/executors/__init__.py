@@ -31,11 +31,6 @@ Local and remote function execution through an instantiated ``executor`` can be 
     # with each paired values running on the executor backend
     executor.starmap(self, fn: Callable, args, **kwargs)
 
-
-.. automodapi:: pennylane.concurrency.executors
-    :no-heading:
-    :include-all-objects:
-
 .. currentmodule:: pennylane.concurrency.executors
 .. autosummary::
     :toctree: api

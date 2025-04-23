@@ -22,7 +22,7 @@ from .base import ExtExec
 
 
 # pylint: disable=import-outside-toplevel
-class DaskExec(ExtExec):
+class DaskExec(ExtExec):  # pragma: no cover
     """
     Dask distributed abstraction class functor.
     """
@@ -34,7 +34,7 @@ class DaskExec(ExtExec):
             from dask.distributed.deploy import Cluster
         except ImportError as ie:
             raise RuntimeError(
-                "Dask Distributed cannot be found.\nPlease install via `pip install dask distributed`"
+                "Dask Distributed cannot be found.\nPlease install via ``pip install dask distributed``"
             ) from ie
 
         if client_provider is None:
@@ -70,7 +70,7 @@ class DaskExec(ExtExec):
         return [o.result() for o in output_f]
 
     def starmap(self, fn: Callable, args: Sequence, **kwargs):
-        raise NotImplementedError("Please use another backend for access to `starmap`")
+        raise NotImplementedError("Please use another backend for access to ``starmap``")
 
     def shutdown(self):
         self._exec_backend.shutdown()

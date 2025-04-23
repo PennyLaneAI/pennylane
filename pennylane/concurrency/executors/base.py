@@ -29,10 +29,10 @@ class ExecBackendConfig:
     To allow for differences in each executor backend implementation, this class dynamically defines overloads to the main API functions. For explicitly-defined executors, this class is optional, and is provided for convenience with hierarchical inheritance class structures, where subtle differences are best resolved dynamically, rather than with API modifications. All initial values default to ``None``.
 
     Args:
-        submit_fn (str): The backend function that best matches the `submit` API call.
-        map_fn (str): The backend function that best matches the `map` API call.
+        submit_fn (str): The backend function that best matches the ``submit`` API call.
+        map_fn (str): The backend function that best matches the ``map`` API call.
         starmap_fn (str): The backend function that best matches the `starmap` API call.
-        shutdown_fn (str): The backend function that best matches the `shutdown` API call.
+        shutdown_fn (str): The backend function that best matches the ``shutdown`` API call.
         submit_unpack (bool): Whether the arguments to ``submit`` are to be unpacked (*args) or directly passed (args) to ``submit_fn``.
         map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (*args) or directly passed (args) to ``map_unpack``.
         blocking (bool): Whether the return values from ``submit``, ``map`` and `starmap`` are blocking (synchronous) or non-blocking (asynchronous).
@@ -59,10 +59,10 @@ class RemoteExec(abc.ABC):
             the number of concurrent executions that the backend can avail of. Generally, this value should match
             the number of physical cores on the executing system, or with the executing remote environment. Defaults
             to ``None``.
-        persist (bool): Indicates to the executor backend that the state should persist between calls. If supported,
-            this allows a pre-configured device to be reused for several computations but removing the need to
-            automatically shutdown. The pool may require manual shutdown upon completion of the work, even if the
-            executor goes out-of-scope.
+        persist (bool): Indicates to the executor backend that the state should persist between
+            calls. If supported, this allows a pre-configured device to be reused for several
+            computations but removing the need to automatically shutdown. The pool may require
+            manual shutdown upon completion of the work, even if the executor goes out-of-scope.
     """
 
     def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
@@ -76,8 +76,8 @@ class RemoteExec(abc.ABC):
         """
         dispatch:   the named method to pass the function parameters
         fn:         the callable function to run on the executor backend
-        args:       the arguments to pass to `fn`
-        kwargs:     the keyword arguments to pass to `fn`
+        args:       the arguments to pass to ``fn``
+        kwargs:     the keyword arguments to pass to ``fn``
         """
         return getattr(self, dispatch)(fn, *args, **kwargs)
 
@@ -98,10 +98,17 @@ class RemoteExec(abc.ABC):
         return self._persist
 
     def __enter__(self):
+        """Context-manager entry point for executor.
+
+        Returns:
+            RemoteExec: this instance
+        """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def __exit__(self, exception_type, exception_value, traceback):
+        """Context-manager clean-up for executor."""
+        if not self._persist:
+            self.shutdown()
 
     @abc.abstractmethod
     def submit(self, fn: Callable, *args, **kwargs):
@@ -113,44 +120,41 @@ class RemoteExec(abc.ABC):
     def map(self, fn: Callable, *args, **kwargs):
         """
         Single iterable map for batching execution of fn over data entries.
-        Length of every entry in *args must be consistent.
+        Length of every entry in ``*args`` must be consistent.
         kwargs are assumed as broadcastable to each function call.
         """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def starmap(self, fn: Callable, args: Sequence, **kwargs):
         """
         Single iterable map for batching execution of fn over data entries, with each entry being a tuple of arguments to fn.
         """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def shutdown(self):
         """
         Disconnect from executor backend and release acquired resources.
         """
-        raise NotImplementedError
 
-    def _submit_fn(self, backend):
+    def _submit_fn(self, backend):  # pragma: no cover
         "Helper utility to return the config-defined submit function for the given backend."
         return getattr(backend, self._cfg.submit_fn)
 
-    def _map_fn(self, backend):
+    def _map_fn(self, backend):  # pragma: no cover
         "Helper utility to return the config-defined map function for the given backend."
         return getattr(backend, self._cfg.map_fn)
 
-    def _starmap_fn(self, backend):
+    def _starmap_fn(self, backend):  # pragma: no cover
         "Helper utility to return the config-defined starmap function for the given backend."
 
         return getattr(backend, self._cfg.starmap_fn)
 
-    def _shutdown_fn(self, backend):
+    def _shutdown_fn(self, backend):  # pragma: no cover
         "Helper utility to return the config-defined shutdown function for the given backend."
 
         return getattr(backend, self._cfg.shutdown_fn)
 
-    def _get_backend(self):
+    def _get_backend(self):  # pragma: no cover
         "Convenience method to return the existing backend if persistence is enabled, or to create a new temporary backend with the defined size if not."
         if self._persist:
             return self._persistent_backend
@@ -160,7 +164,6 @@ class RemoteExec(abc.ABC):
     @abc.abstractmethod
     def _exec_backend(cls):
         "Return the class type of the given backend variant."
-        raise NotImplementedError("{cls} does not currently support execution")
 
 
 class IntExec(RemoteExec, abc.ABC):

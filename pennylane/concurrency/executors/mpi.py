@@ -22,7 +22,7 @@ from .base import ExecBackendConfig, ExtExec
 
 
 # pylint: disable=import-outside-toplevel
-class MPIPoolExec(ExtExec):
+class MPIPoolExec(ExtExec):  # pragma: no cover
     """
     MPIPoolExecutor abstraction class executor.
 

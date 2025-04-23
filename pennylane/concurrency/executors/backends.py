@@ -15,11 +15,6 @@ r"""
 Contains concurrent executor abstractions for task-based workloads.
 
 .. currentmodule:: pennylane.concurrency.executors.backends
-.. automodapi:: pennylane.concurrency.executors.backends
-    :no-heading:
-    :include-all-objects:
-    :inheritance-diagram:
-
 """
 
 from enum import Enum

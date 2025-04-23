@@ -55,13 +55,6 @@ class PyNativeExec(IntExec, abc.ABC):
 
         self._cfg = ExecBackendConfig()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if not self._persist:
-            self.shutdown()
-
     def shutdown(self):
         "Shutdown the executor backend, if valid."
         if self._persist:
