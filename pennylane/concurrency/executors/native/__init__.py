@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .native import PyNativeExec, MPPoolExec, ProcPoolExec, ThreadPoolExec, SerialExec
+"""
+Submodule for concurrent executors relying on the Python standard library.
+"""
+
+from .api import PyNativeExec
+from .multiproc import MPPoolExec
+from .conc_futures import ProcPoolExec, ThreadPoolExec
+from .serial import SerialExec
 
 __all__ = ["MPPoolExec", "PyNativeExec", "ProcPoolExec", "ThreadPoolExec", "SerialExec"]

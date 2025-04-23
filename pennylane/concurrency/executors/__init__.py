@@ -13,34 +13,6 @@
 # limitations under the License.
 r"""
 Provides abstractions for task-based parallel workloads within PennyLane using a simplified `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`__ executor-like interface.
-
-Local and remote function execution through an instantiated ``executor`` can be through the following API calls:
-
-.. code-block:: python
-
-    executor = create_executor(...)
-    ...
-    # Single function execution on the executor backend
-    executor.submit(self, fn: Callable, *args, **kwargs)
-
-    # Map provided function to all iterables provided in ``args``,
-    # with each index in *args running on the executor backend
-    executor.map(self, fn: Callable, *args, **kwargs)
-
-    # Map provided function to all tuples provided in ``args``,
-    # with each paired values running on the executor backend
-    executor.starmap(self, fn: Callable, args, **kwargs)
-
-.. currentmodule:: pennylane.concurrency.executors
-.. autosummary::
-    :toctree: api
-
-    backends
-    base
-    dask
-    mpi
-    native
-
 """
 
 from .backends import ExecBackends, create_executor, get_executor, get_supported_backends

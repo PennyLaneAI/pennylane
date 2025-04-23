@@ -63,6 +63,7 @@ class RemoteExec(abc.ABC):
             calls. If supported, this allows a pre-configured device to be reused for several
             computations but removing the need to automatically shutdown. The pool may require
             manual shutdown upon completion of the work, even if the executor goes out-of-scope.
+
     """
 
     def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):

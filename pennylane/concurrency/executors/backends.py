@@ -13,8 +13,6 @@
 # limitations under the License.
 r"""
 Contains concurrent executor abstractions for task-based workloads.
-
-.. currentmodule:: pennylane.concurrency.executors.backends
 """
 
 from enum import Enum
