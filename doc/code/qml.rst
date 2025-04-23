@@ -5,5 +5,5 @@ qml
 
 .. automodapi:: pennylane
     :no-heading:
-..     :include-all-objects:
-..     :no-inherited-members:
+    :include-all-objects:
+    :no-inherited-members:
