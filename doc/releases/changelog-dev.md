@@ -19,6 +19,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
+  [(#7302)](https://github.com/PennyLaneAI/pennylane/pull/7302)
+
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
   [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
 
@@ -42,6 +46,9 @@
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
+
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+  [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
 
