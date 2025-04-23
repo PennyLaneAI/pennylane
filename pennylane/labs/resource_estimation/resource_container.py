@@ -14,12 +14,13 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
+from typing import Type, Optional, Hashable
 
-from pennylane.decomposition.resources import CompressedResourceOp as _CompressedResourceOp
-from pennylane.labs.resource_estimation import ResourceOperator
+from pennylane.operation import Operator
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 
 
-class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
     Args:
@@ -38,7 +39,7 @@ class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-pu
         Hadamard(num_wires=1)
     """
 
-    def __init__(self, op_type, params: dict, name=None) -> None:
+    def __init__(self, op_type: Type[Operator], params: Optional[dict] = None, name: str = None):
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
@@ -56,14 +57,38 @@ class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-pu
             >>> print(op_tp)
             Hadamard(num_wires=1)
         """
+        if not isinstance(op_type, type):
+            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
+        if not issubclass(op_type, Operator):
+            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
 
-        super().__init__(op_type, params)
+        self.op_type = op_type
+        self.params = params or {}
+        self._hashable_params = _make_hashable(params) if params else ()
         self._name = name or op_type.tracking_name(**params)
 
-    def __repr__(self) -> str:
-        return self._name
+    def __hash__(self) -> int:
+        return hash((self.op_type, self._hashable_params))
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, CompressedResourceOp)
+            and self.op_type == other.op_type
+            and self.params == other.params
+            and self._name == other._name
+        )
+
+def _make_hashable(d) -> tuple:
+    if isinstance(d, Hashable):
+        return d
+
+    if isinstance(d, dict):
+        sorted_keys = sorted(d)
+        return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
+
+    return tuple(d)
 
 
 # @dataclass
