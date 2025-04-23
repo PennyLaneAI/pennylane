@@ -27,6 +27,7 @@ import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
+from device_shots_to_analytic import shots_to_analytic
 
 
 def test_broadcasted_postselection(mocker):
@@ -336,6 +337,7 @@ class TestQNode:
         """Test that a qnode with a single mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
