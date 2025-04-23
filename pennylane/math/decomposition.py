@@ -35,7 +35,7 @@ def zyz_rotation_angles(U, return_global_phase=False):
     """
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
-
+    # assume U = [[a, b], [c, d]], then here we take U[0, 1] as b
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arcsin(abs_b)
 
