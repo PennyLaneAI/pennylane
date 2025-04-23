@@ -60,7 +60,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
+* The ``qml.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
   longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
 
   - Deprecated in v0.41
