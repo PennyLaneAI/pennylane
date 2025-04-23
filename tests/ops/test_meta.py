@@ -250,6 +250,12 @@ class TestSnapshot:
         snapshot = qml.Snapshot()
         assert isinstance(snapshot, qml.Snapshot)
 
+    def test_shots_none_for_no_measurement(self):
+        """Test that the shots become None if no measurement is provided."""
+
+        op = qml.Snapshot()
+        assert op.hyperparameters["shots"] == qml.measurements.Shots(None)
+
     @pytest.mark.parametrize(
         "mp", (qml.expval(qml.Z(0)), qml.measurements.StateMP(wires=(2, 1, 0)))
     )

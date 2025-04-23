@@ -17,6 +17,8 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* Snapshot specific shots can now be passed to `qml.Snapshot`. 
+
 <h3>Breaking changes 💔</h3>
 
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
