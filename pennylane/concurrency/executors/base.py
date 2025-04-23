@@ -16,6 +16,8 @@ Contains concurrent executor abstractions for task-based workloads.
 """
 
 import abc
+import os
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Optional
@@ -167,6 +169,12 @@ class RemoteExec(abc.ABC):
     @abc.abstractmethod
     def _exec_backend(cls):
         "Return the class type of the given backend variant."
+
+    @staticmethod
+    def _get_system_core_count():
+        if sys.version_info.minor >= 13:
+            return os.process_cpu_count()
+        return os.cpu_count()
 
 
 class IntExec(RemoteExec, abc.ABC):
