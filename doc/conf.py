@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.abspath("."), "pennylane"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "8.0.0"
+needs_sphinx = "8.2"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -95,6 +95,7 @@ mathjax_path = (
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees", "duplicate object description of")]
 autodoc_mock_imports = ["torch"]
+suppress_warnings = ["toc.duplicate_entry"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
