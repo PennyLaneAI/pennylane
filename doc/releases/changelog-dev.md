@@ -17,6 +17,9 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* PennyLane no longer validates that operations that can exist on any number of wires
+  have at least one wire.
+
 <h3>Breaking changes 💔</h3>
 
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
