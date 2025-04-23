@@ -33,7 +33,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The method ``qml.QNode.get_gradient_fn`` is deprecated because no longer needed. Instead, use ``qml.workflow.get_best_diff_method`` to get the gradient function.
+* The method `qml.QNode.get_gradient_fn` is deprecated because no longer needed. Instead, use `qml.workflow.get_best_diff_method` to get the gradient function.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
