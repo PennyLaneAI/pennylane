@@ -41,7 +41,7 @@ class PyNativeExec(IntExec, abc.ABC):
     """
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
-        super().__init__(max_workers=max_workers, **kwargs)
+        super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         if max_workers:
             self._size = max_workers
         elif sys.version_info.minor >= 13:
