@@ -18,7 +18,7 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 import os
 from collections.abc import Callable, Sequence
 
-from .base import ExtExec
+from ..base import ExtExec
 
 
 # pylint: disable=import-outside-toplevel

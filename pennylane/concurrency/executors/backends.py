@@ -20,8 +20,7 @@ Contains concurrent executor abstractions for task-based workloads.
 from enum import Enum
 from typing import Union
 
-from .dask import DaskExec
-from .mpi import MPICommExec, MPIPoolExec
+from .external import DaskExec, MPICommExec, MPIPoolExec
 from .native import MPPoolExec, ProcPoolExec, SerialExec, ThreadPoolExec
 
 

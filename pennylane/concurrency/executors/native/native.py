@@ -27,7 +27,7 @@ from itertools import starmap
 from multiprocessing import Pool as exec_mp
 from typing import Any, Optional
 
-from .base import ExecBackendConfig, IntExec
+from ..base import ExecBackendConfig, IntExec
 
 
 class PyNativeExec(IntExec, abc.ABC):
