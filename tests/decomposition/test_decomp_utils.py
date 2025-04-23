@@ -62,6 +62,6 @@ def test_translate_op_alias(base_op_alias, expected_op_name):
     """Test the translation of operator aliases to their proper names."""
 
     assert translate_op_alias(base_op_alias) == expected_op_name
-    assert translate_op_alias(f"C({base_op_alias})") == f"C{expected_op_name}"
+    assert translate_op_alias(f"C({base_op_alias})") == f"C({expected_op_name})"
     assert translate_op_alias(f"Adjoint({base_op_alias})") == f"Adjoint({expected_op_name})"
     assert translate_op_alias(f"Pow({base_op_alias})") == f"Pow({expected_op_name})"

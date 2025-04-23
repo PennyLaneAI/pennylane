@@ -68,6 +68,21 @@
   
   This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
+* The `decompose` transform now supports symbolic operators specified as strings in the gate set
+  when the new graph-based decomposition system is enabled.
+  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+
+  ```python
+  from functools import partial
+  import pennylane as qml
+  
+  qml.decomposition.enable_graph()
+   
+  @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+  def circuit():
+      ...
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
@@ -77,6 +92,10 @@
   decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
   further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* The `gate_set` argument of `qml.transforms.decompose` accepts `"X"`, `"Y"`, `"Z"`, `"H"`, `"I"` as
+  aliases for `qml.X`, `qml.Y`, `qml.Z`, `qml.H`, and `qml.I`.
+  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
 <h3>Breaking changes 💔</h3>
 
