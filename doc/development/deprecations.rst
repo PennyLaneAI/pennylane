@@ -19,24 +19,8 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * The property ```MeasurementProcess.return_type``` has been deprecated.
   If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
-  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
@@ -52,12 +36,6 @@ Pending deprecations
   This gradient recipe is not required with the new operator arithmetic system.
 
   - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
-  A user should use :class:`op.operands <~.CompositeOp>` instead.
-
-  - Deprecated in v0.36
   - Will be removed in v0.42
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
@@ -93,6 +71,18 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` has been removed.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+  - Removed in v0.42
+
+* The ``mcm_config`` keyword argument to ``qml.execute`` has been removed.
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
   
@@ -110,6 +100,18 @@ Completed deprecation cycles
 
   - Deprecated in v0.41
   - Removed in v0.42
+
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+  Instead, please use the ``wires`` argument.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
+  Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42  
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
