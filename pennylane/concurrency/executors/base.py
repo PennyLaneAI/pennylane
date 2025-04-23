@@ -63,6 +63,8 @@ class RemoteExec(abc.ABC):
             calls. If supported, this allows a pre-configured device to be reused for several
             computations but removing the need to automatically shutdown. The pool may require
             manual shutdown upon completion of the work, even if the executor goes out-of-scope.
+        *args: Non keyword arguments to pass through to executor backend.
+        **kwargs: Keyword arguments to pass through to executor backend.
 
     """
 
@@ -169,11 +171,42 @@ class RemoteExec(abc.ABC):
 
 class IntExec(RemoteExec, abc.ABC):
     """
-    Executor class for native Python library concurrency support
+    Executor class for native Python library concurrency support.
+
+    Args:
+        max_workers (int): The size of the worker pool. This value will directly control (given backend support)
+            the number of concurrent executions that the backend can avail of. Generally, this value should match
+            the number of physical cores on the executing system, or with the executing remote environment. Defaults
+            to ``None``.
+        persist (bool): Indicates to the executor backend that the state should persist between
+            calls. If supported, this allows a pre-configured device to be reused for several
+            computations but removing the need to automatically shutdown. The pool may require
+            manual shutdown upon completion of the work, even if the executor goes out-of-scope.
+        *args: Non keyword arguments to pass through to executor backend.
+        **kwargs: Keyword arguments to pass through to executor backend.
+
     """
+
+    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+        super().__init__(*args, max_workers=max_workers, persist=persist, **kwargs)
 
 
 class ExtExec(RemoteExec, abc.ABC):
     """
-    Executor class for external packages providing concurrency support
+    Executor class for external packages providing concurrency support.
+
+    Args:
+        max_workers (int): The size of the worker pool. This value will directly control (given backend support)
+            the number of concurrent executions that the backend can avail of. Generally, this value should match
+            the number of physical cores on the executing system, or with the executing remote environment. Defaults
+            to ``None``.
+        persist (bool): Indicates to the executor backend that the state should persist between
+            calls. If supported, this allows a pre-configured device to be reused for several
+            computations but removing the need to automatically shutdown. The pool may require
+            manual shutdown upon completion of the work, even if the executor goes out-of-scope.
+        *args: Non keyword arguments to pass through to executor backend.
+        **kwargs: Keyword arguments to pass through to executor backend.
     """
+
+    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+        super().__init__(*args, max_workers=max_workers, persist=persist, **kwargs)
