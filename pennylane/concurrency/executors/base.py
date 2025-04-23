@@ -58,7 +58,7 @@ class RemoteExec(abc.ABC):
         max_workers (int): The size of the worker pool. This value will directly control (given backend support)
             the number of concurrent executions that the backend can avail of. Generally, this value should match
             the number of physical cores on the executing system, or with the executing remote environment. Defaults
-            to ``None``.
+            to ``None``, which defers to support provided by the child class.
         persist (bool): Indicates to the executor backend that the state should persist between
             calls. If supported, this allows a pre-configured device to be reused for several
             computations but removing the need to automatically shutdown. The pool may require
@@ -173,11 +173,13 @@ class IntExec(RemoteExec, abc.ABC):
     """
     Executor class for native Python library concurrency support.
 
+    This class is intended to be used as the parent-class for building Python-native executors, allowing an ease of distinction from the external-based classes implemented using :class:`~.RemoteExec`.
+
     Args:
         max_workers (int): The size of the worker pool. This value will directly control (given backend support)
             the number of concurrent executions that the backend can avail of. Generally, this value should match
             the number of physical cores on the executing system, or with the executing remote environment. Defaults
-            to ``None``.
+            to ``None``, leaving interpretation to the child class.
         persist (bool): Indicates to the executor backend that the state should persist between
             calls. If supported, this allows a pre-configured device to be reused for several
             computations but removing the need to automatically shutdown. The pool may require
@@ -195,11 +197,13 @@ class ExtExec(RemoteExec, abc.ABC):
     """
     Executor class for external packages providing concurrency support.
 
+    This class is intended to be used as the parent-class for building external package-based executors, allowing an ease of distinction from the Python-native classes implemented using :class:`~.IntExec`.
+
     Args:
         max_workers (int): The size of the worker pool. This value will directly control (given backend support)
             the number of concurrent executions that the backend can avail of. Generally, this value should match
             the number of physical cores on the executing system, or with the executing remote environment. Defaults
-            to ``None``.
+            to ``None``, leaving interpretation to the child class.
         persist (bool): Indicates to the executor backend that the state should persist between
             calls. If supported, this allows a pre-configured device to be reused for several
             computations but removing the need to automatically shutdown. The pool may require
