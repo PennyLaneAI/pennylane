@@ -107,7 +107,7 @@ class ExecutionConfig:
 
     executor_backend: Optional[RemoteExec] = None
     """
-    Defines the class for the executor backend. 
+    Defines the class for the executor backend.
     """
 
     def __post_init__(self):

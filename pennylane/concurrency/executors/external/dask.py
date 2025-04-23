@@ -55,10 +55,6 @@ class DaskExec(ExtExec):  # pragma: no cover
 
         self._size = len(self._client.scheduler_info()["workers"])
 
-    def __call__(self, fn: Callable, data: Sequence):
-        output_f = self._client.map(fn, data)
-        return [o.result() for o in output_f]
-
     def __enter__(self):
         return self
 

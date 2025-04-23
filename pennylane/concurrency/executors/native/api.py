@@ -45,9 +45,9 @@ class PyNativeExec(IntExec, abc.ABC):
         if max_workers:
             self._size = max_workers
         elif sys.version_info.minor >= 13:
-            self._size = os.process_cpu_count()
+            self._size = os.process_cpu_count()  # pylint: disable=no-member
         else:
-            self._size = os.cpu_count()  # pylint: disable=no-member
+            self._size = os.cpu_count()
         self._persist = persist
         if self._persist:
             self._persistent_backend = self._exec_backend()(self._size)
