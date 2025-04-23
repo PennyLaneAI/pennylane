@@ -380,6 +380,7 @@ class TestQNode:
         """Test that a qnode with some mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -428,6 +429,7 @@ class TestQNode:
         """Test that a qnode with all mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         # Initializing mid circuit measurements here so that id can be controlled (affects
         # wire ordering for qml.cond)
@@ -505,6 +507,7 @@ class TestQNode:
         """Test that users can collect measurement statistics on
         a single mid-circuit measurement."""
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -514,6 +517,7 @@ class TestQNode:
             return qml.probs(op=m0)
 
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -528,6 +532,7 @@ class TestQNode:
         """Test that collecting statistics on a measurement value works correctly
         when the measured wire is reused."""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -538,6 +543,7 @@ class TestQNode:
             return qml.probs(op=m0)
 
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -564,6 +570,7 @@ class TestQNode:
         can be made together."""
         # Using DefaultQubit to allow non-commuting measurements
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -574,6 +581,7 @@ class TestQNode:
             return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
 
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x, y):
@@ -597,6 +605,7 @@ class TestQNode:
         after a mid-circuit measurement yields the correct results and is
         transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
+        dev = shots_to_analytic(dev)
 
         def func1():
             qml.RY(0.123, wires=0)
