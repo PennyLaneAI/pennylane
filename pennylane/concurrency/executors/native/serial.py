@@ -43,12 +43,14 @@ class StdLibBackend:
         "Directly execute the function as fn(*args, **kwargs)"
         return fn(*args, **kwargs)
 
-    def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
+    @classmethod
+    def map(cls, fn: Callable, *args: Sequence[Any], **kwargs):
         "Offload execution of the function to map and return the results as a list."
         fn_p = partial(fn, **kwargs)
         return list(map(fn_p, *args))
 
-    def starmap(self, fn: Callable, data: Sequence[tuple], **kwargs):
+    @classmethod
+    def starmap(cls, fn: Callable, data: Sequence[tuple], **kwargs):
         "Offload to itertools.starmap for execution, and return results as a list."
         fn_p = partial(fn, **kwargs)
         return list(starmap(fn_p, data))
