@@ -47,7 +47,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         from mpi4py.futures import MPIPoolExecutor as executor
 
         self._exec_backend = executor
-        self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
+        self._size = max_workers
 
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
@@ -59,12 +59,20 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
             blocking=False,
         )
 
-    def __call__(self, fn: Callable, data: Sequence):
-        kwargs = {"use_pkl5": True}
-        chunksize = max(len(data) // self._size, 1)
-        with self._exec_backend(max_workers=self.size, **kwargs) as executor:
-            output_f = executor.map(fn, data, chunksize=chunksize)
-        return output_f
+    def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
+        """
+        dispatch:   the named method to pass the function parameters
+        fn:         the callable function to run on the executor backend
+        args:       the arguments to pass to ``fn``
+        kwargs:     the keyword arguments to pass to ``fn``
+        """
+        kwargs.update({"use_pkl5": True})
+        return super().__call__(
+            dispatch,
+            fn,
+            *args,
+            **kwargs,
+        )
 
     @property
     def size(self):
@@ -99,6 +107,11 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
     def __del__(self):
         self.shutdown()
 
+    def _exec_backend(self):
+        from mpi4py.futures import MPIPoolExecutor
+
+        return MPIPoolExecutor
+
 
 # pylint: disable=import-outside-toplevel
 class MPICommExec(ExtExec):
@@ -114,9 +127,7 @@ class MPICommExec(ExtExec):
         super().__init__(max_workers=max_workers, **kwargs)
 
         from mpi4py import MPI  # Required to call MPI_Init
-        from mpi4py.futures import MPICommExecutor as executor
 
-        self._exec_backend = executor
         self._comm = MPI.COMM_WORLD
         self._size = MPI.COMM_WORLD.Get_size()
 
@@ -173,3 +184,8 @@ class MPICommExec(ExtExec):
 
     def __del__(self):
         self.shutdown()
+
+    def _exec_backend(self):
+        from mpi4py.futures import MPICommExecutor
+
+        return MPICommExecutor

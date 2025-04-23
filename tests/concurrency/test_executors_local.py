@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for local `qml.workflow.executors`"""
 
+# pylint: disable=too-many-arguments
+
 import os
 import sys
 
@@ -169,7 +171,7 @@ class TestLocalExecutor:
         executor.shutdown()
 
         with create_executor(backend[0]) as executor_ctx:
-            exec_result = executor.submit(fn, *data)
+            exec_result = executor_ctx.submit(fn, *data)
             if not isinstance(result, list):
                 assert np.isclose(result, exec_result)
             else:
