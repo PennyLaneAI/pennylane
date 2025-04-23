@@ -62,6 +62,7 @@ ogp_social_cards = {
     "line_color": "#03b2ff",
 }
 ogp_image = "_static/opengraph.png"
+numpydoc_show_class_members = False
 
 
 # The base URL with a proper language and version.
