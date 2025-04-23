@@ -345,19 +345,9 @@ def construct_batch(
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        with nullcontext() as cntxt:
-            # If TF tape, use the watch function
-            if hasattr(cntxt, "watch"):
-                cntxt.watch(list(qnode.qnode_weights.values()))
-
-                kwargs = {
-                    **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
-                    **kwargs,
-                }
-
-            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-            params = initial_tape.get_parameters(trainable_only=False)
-            initial_tape.trainable_params = qml.math.get_trainable_indices(params)
+        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        params = initial_tape.get_parameters(trainable_only=False)
+        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
