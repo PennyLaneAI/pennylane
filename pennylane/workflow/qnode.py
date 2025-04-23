@@ -765,7 +765,8 @@ class QNode:
 
         .. warning::
 
-            This function is deprecated and will be removed in v0.42. Instead, use
+            This function is deprecated and will be removed in v0.43. Instead, use
+
             ``qml.workflow.get_best_diff_method`` to determine the best differentiation method.
 
         Args:
