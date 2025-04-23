@@ -23,8 +23,17 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_container import CompressedResourceOp, Resources
-from .resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp, Resources
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.qubit_manager import (
+    QubitManager,
+    grab_qubits,
+    free_qubits,
+    clean_qubits, 
+    dirty_qubits,
+    borrowable_qubits,
+)
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -315,5 +324,198 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
             except NotImplementedError:
                 decomp = op.decomposition()
                 cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
+
+    return cmp_rep_ops
+
+
+### ------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------- ###
+
+
+@singledispatch
+def new_get_resources(
+    obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config, work_wires=0, tight_budget=False,
+) -> Union[Resources, Callable]:
+    r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
+    in the gate_set.
+
+    Args:
+        obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
+        gate_set (Set, optional): python set of strings specifying the names of operations to track
+        config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
+
+    Returns:
+        Resources: the total resources of the quantum circuit
+
+    Raises:
+        TypeError: could not obtain resources for obj of type `type(obj)`
+
+    **Example**
+
+    We can track the resources of a quantum workflow by passing the quantum function defining our workflow directly
+    into this function.
+
+    .. code-block:: python
+
+        import copy
+        import pennylane.labs.resource_estimation as re
+
+        def my_circuit():
+            for w in range(2):
+                re.ResourceHadamard(w)
+
+            re.ResourceCNOT([0, 1])
+            re.ResourceRX(1.23, 0)
+            re.ResourceRY(-4.56, 1)
+
+            re.ResourceQFT(wires=[0, 1, 2])
+            return qml.expval(re.ResourceHadamard(2))
+
+    Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this workflow are then obtained by:
+
+    >>> res = re.get_resources(my_circuit)()
+    >>> print(res)
+    wires: 3
+    gates: 202
+    gate_types:
+    {'Hadamard': 5, 'CNOT': 10, 'T': 187}
+
+    .. details::
+        :title: Usage Details
+
+        Users can provide custom gatesets to track resources with. Consider :code:`my_circuit()` from above:
+
+        >>> my_gateset = {"Hadamard", "RX", "RY", "QFT(3)", "CNOT"}
+        >>> print(re.get_resources(my_circuit, gate_set = my_gateset)())
+        wires: 3
+        gates: 6
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 1, 'RX': 1, 'RY': 1, 'QFT(3)': 1}
+
+        We can also obtain resources for individual operations and quantum tapes in a similar manner:
+
+        >>> op = re.ResourceRX(1.23, 0)
+        >>> print(re.get_resources(op))
+        wires: 1
+        gates: 17
+        gate_types:
+        {'T': 17}
+
+        Finally, we can modify the config values listed in the global :code:`labs.resource_estimation.resource_config`
+        dictionary to have finegrain control of how the resources are computed.
+
+        >>> re.resource_config
+        {'error_rx': 0.01, 'error_ry': 0.01, 'error_rz': 0.01}
+        >>>
+        >>> my_config = copy.copy(re.resource_config)
+        >>> my_config["error_rx"] = 0.001
+        >>>
+        >>> print(re.get_resources(op, config=my_config))
+        wires: 1
+        gates: 21
+        gate_types:
+        {'T': 21}
+
+    """
+
+    raise TypeError(
+        f"Could not obtain resources for obj of type {type(obj)}. obj must be one of Operation, Callable or QuantumScript"
+    )
+
+
+@new_get_resources.register
+def new_resources_from_qfunc(
+    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config, work_wires=0, tight_budget=False,
+) -> Callable:
+    """Get resources from a quantum function which queues operations"""
+
+    @wraps(obj)
+    def wrapper(*args, **kwargs):
+        with QubitManager(work_wires, tight_budget) as qm:
+            with AnnotatedQueue() as q:
+                obj(*args, **kwargs)
+
+            # Get algorithm wires: 
+            algo_wires = Wires.all_wires(tuple(op.wires for op in q.queue if op._queue_category in ["_ops", "_resource_op"]))
+            qm.algo_qubits = len(algo_wires)  # set the algorithmic qubits in the qubit manager
+
+            # Obtain resources in the gate_set
+            compressed_res_ops_lst = _new_ops_to_compressed_reps(q.queue)
+            
+            initial_gate_set = set.union(gate_set, _StandardGateSet)
+
+            gate_counts_dict = defaultdict(int)
+            for cmp_rep_op in compressed_res_ops_lst:  # Initial pre-processing to optimize decompositions
+                _new_counts_from_compressed_res_op(
+                    cmp_rep_op, gate_counts_dict, gate_set=initial_gate_set, config=config
+                )
+
+            condensed_gate_counts = defaultdict(int)
+            for sub_cmp_rep, counts in gate_counts_dict.items():
+                _new_counts_from_compressed_res_op(
+                    sub_cmp_rep, condensed_gate_counts, scalar=counts, gate_set=gate_set, config=config
+                )
+
+        # Update:
+        num_wires = qm.algo_qubits + qm.clean_qubits + qm.dirty_qubits
+        clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
+        num_gates = sum(clean_gate_counts.values())
+        return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
+
+    return wrapper
+
+
+def _new_counts_from_compressed_res_op(
+    cp_rep: CompressedResourceOp,
+    gate_counts_dict,
+    gate_set: Set,
+    scalar: int = 1,
+    config: Dict = resource_config,
+) -> None:
+    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
+
+    Args:
+        cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
+        gate_counts_dict (Dict): base dictionary to modify with the resource counts
+        gate_set (Set): the set of operations to track resources with respect to
+        scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
+        config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
+    """
+    ## If op in gate_set add to resources
+    if cp_rep._name in gate_set:
+        gate_counts_dict[cp_rep] += scalar
+        return
+
+    ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
+    resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
+
+    for sub_cp_rep, counts in resource_decomp.items():
+        _new_counts_from_compressed_res_op(
+            sub_cp_rep, gate_counts_dict, scalar=scalar * counts, gate_set=gate_set, config=config
+        )
+
+    return
+
+
+@qml.QueuingManager.stop_recording()
+def _new_ops_to_compressed_reps(
+    ops: Iterable[Union[Operation, ResourceOperator]]
+) -> List[CompressedResourceOp]:
+    """Convert the sequence of operations to a list of compressed resource ops.
+
+    Args:
+        ops (Iterable[Operation]): set of operations to convert
+
+    Returns:
+        List[CompressedResourceOp]: set of converted compressed resource ops
+    """
+    cmp_rep_ops = []
+    for op in ops:
+        if op._queue_category == "_resource_op":
+            cmp_rep_ops.append(op.resource_rep_from_op())
+
+        elif op._queue_category == "_ops":
+            cmp_rep_ops.append(map_to_resource_op(op))
 
     return cmp_rep_ops

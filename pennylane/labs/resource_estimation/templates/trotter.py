@@ -21,14 +21,13 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import (
-    CompressedResourceOp,
     ResourceExp,
-    ResourceOperator,
     ResourcesNotDefined,
 )
 from pennylane.templates import TrotterProduct
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
-
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 # pylint: disable=arguments-differ
 
 

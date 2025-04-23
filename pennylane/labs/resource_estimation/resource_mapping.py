@@ -123,7 +123,7 @@ def map_to_resource_op(op):
 
     Raise:
         TypeError: The op is not a valid operation
-        ValueError: Operation doesn't have a resource equivalent and doesn't define
+        NotImplementedError: Operation doesn't have a resource equivalent and doesn't define
             a decomposition.
 
     Return:
@@ -134,14 +134,15 @@ def map_to_resource_op(op):
 
     try:
         mapped_ops = tuple(map_to_resource_op(sub_op) for sub_op in op.decomposition())
-        return ResourceProd(*mapped_ops)
+        return ResourceProd.resource_rep(mapped_ops)
 
     except DecompositionUndefinedError as e:
-        raise ValueError(
+        raise NotImplementedError(
             "Operation doesn't have a resource equivalent and doesn't define a decomposition."
         ) from e
 
 
+# Parametric Single Qubit:
 @map_to_resource_op.register
 def _(op: PhaseShift):
     return ResourcePhaseShift.resource_rep()
@@ -167,6 +168,7 @@ def _(op: Rot):
     return ResourceRot.resource_rep()
 
 
+# Controlled Ops:
 @map_to_resource_op.register
 def _(op: CH):
     return ResourceCH.resource_rep()
@@ -215,3 +217,155 @@ def _(op: CRot):
 @map_to_resource_op.register
 def _(op: ControlledPhaseShift):
     return ResourceControlledPhaseShift.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: MultiControlledX):
+    num_control = len(op.hyperparameters["control_wires"])
+    num_work_wires = len(op.hyperparameters["work_wires"])
+    num_control_values = len([val for val in op.hyperparameters["control_values"] if not val])
+
+    params = {
+            "num_ctrl_wires": num_control,
+            "num_ctrl_values": num_control_values,
+            "num_work_wires": num_work_wires,
+        }
+    return ResourceMultiControlledX.resource_rep(**params)
+
+
+@map_to_resource_op.register
+def _(op: Toffoli):
+    return ResourceToffoli.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: CNOT):
+    return ResourceCNOT.resource_rep()
+
+
+# Non-parametric Ops:
+@map_to_resource_op.register
+def _(op: PauliX):
+    return ResourceX.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: PauliY):
+    return ResourceY.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: PauliZ):
+    return ResourceZ.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: T):
+    return ResourceT.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: S):
+    return ResourceS.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: Hadamard):
+    return ResourceHadamard.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: SWAP):
+    return ResourceSWAP.resource_rep()
+
+
+# Identity Ops: 
+@map_to_resource_op.register
+def _(op: Identity):
+    return ResourceIdentity.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: GlobalPhase):
+    return ResourceGlobalPhase.resource_rep()
+
+
+# Qchem Ops:
+@map_to_resource_op.register
+def _(op: SingleExcitation):
+    return ResourceSingleExcitation.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: SingleExcitationPlus):
+    return ResourceSingleExcitationPlus.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: SingleExcitationMinus):
+    return ResourceSingleExcitationMinus.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: DoubleExcitation):
+    return ResourceDoubleExcitation.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: DoubleExcitationPlus):
+    return ResourceDoubleExcitationPlus.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: DoubleExcitationMinus):
+    return ResourceDoubleExcitationMinus.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: OrbitalRotation):
+    return ResourceOrbitalRotation.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: FermionicSWAP):
+    return ResourceFermionicSWAP.resource_rep()
+
+
+# Parametric Multi-qubit Ops:
+@map_to_resource_op.register
+def _(op: IsingXX):
+    return ResourceIsingXX.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: IsingXY):
+    return ResourceIsingXY.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: IsingYY):
+    return ResourceIsingYY.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: IsingZZ):
+    return ResourceIsingZZ.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: PSWAP):
+    return ResourcePSWAP.resource_rep()
+
+
+@map_to_resource_op.register
+def _(op: PauliRot):
+    pauli_string = op.hyperparameters["pauli_word"]
+    return ResourcePauliRot.resource_rep(pauli_string=pauli_string)
+
+
+@map_to_resource_op.register
+def _(op: MultiRZ):
+    num_wires = len(op.wires)
+    return ResourceMultiRZ.resource_rep(num_wires=num_wires)
+
+

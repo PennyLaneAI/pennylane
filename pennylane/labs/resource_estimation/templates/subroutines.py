@@ -19,8 +19,8 @@ from typing import Dict
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
-
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 # pylint: disable=arguments-differ, protected-access
 
 
@@ -134,7 +134,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         return f"QFT({num_wires})"
 
 
-class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
+class ResourceControlledSequence(qml.ControlledSequence, ResourceOperator):
     """Resource class for the ControlledSequence template.
 
     Args:
@@ -166,7 +166,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(
         base_class, base_params, num_ctrl_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -203,7 +203,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, num_ctrl_wires) -> re.CompressedResourceOp:
+    def resource_rep(cls, base_class, base_params, num_ctrl_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -217,7 +217,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(
+        return CompressedResourceOp(
             cls,
             {
                 "base_class": base_class,
@@ -232,7 +232,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         return f"ControlledSequence({base_name}, {num_ctrl_wires})"
 
 
-class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
+class ResourcePhaseAdder(qml.PhaseAdder, ResourceOperator):
     r"""Resource class for the PhaseAdder template.
 
     Args:
@@ -272,7 +272,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(mod, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(mod, num_x_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -333,7 +333,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_x_wires) -> re.CompressedResourceOp:
+    def resource_rep(cls, mod, num_x_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -345,10 +345,10 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
 
-        return re.CompressedResourceOp(cls, {"mod": mod, "num_x_wires": num_x_wires})
+        return CompressedResourceOp(cls, {"mod": mod, "num_x_wires": num_x_wires})
 
 
-class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
+class ResourceMultiplier(qml.Multiplier, ResourceOperator):
     """Resource class for the Multiplier template.
 
     Args:
@@ -386,7 +386,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(
         mod, num_work_wires, num_x_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -455,7 +455,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
+    def resource_rep(cls, mod, num_work_wires, num_x_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -467,12 +467,12 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(
+        return CompressedResourceOp(
             cls, {"mod": mod, "num_work_wires": num_work_wires, "num_x_wires": num_x_wires}
         )
 
 
-class ResourceModExp(qml.ModExp, re.ResourceOperator):
+class ResourceModExp(qml.ModExp, ResourceOperator):
     r"""Resource class for the :class:`~.ModExp` template.
 
     Args:
@@ -515,7 +515,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(
         mod, num_output_wires, num_work_wires, num_x_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -564,7 +564,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     @classmethod
     def resource_rep(
         cls, mod, num_output_wires, num_work_wires, num_x_wires
-    ) -> re.CompressedResourceOp:
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -580,7 +580,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(
+        return CompressedResourceOp(
             cls,
             {
                 "mod": mod,
@@ -671,7 +671,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
         op = self.hyperparameters["unitary"]
         num_estimation_wires = len(self.hyperparameters["estimation_wires"])
 
-        if not isinstance(op, re.ResourceOperator):
+        if not isinstance(op, ResourceOperator):
             raise TypeError(
                 f"Can't obtain QPE resources when the base unitary {op} isn't an instance"
                 " of ResourceOperator"
@@ -1686,7 +1686,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         )
 
         if not fixed_point:
-            oracles = re.CompressedResourceOp(O_op, params=O_params)
+            oracles = CompressedResourceOp(O_op, params=O_params)
             gate_types[oracles] = iters
             gate_types[reflection] = iters
 

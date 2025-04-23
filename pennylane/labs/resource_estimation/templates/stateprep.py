@@ -18,7 +18,8 @@ from typing import Dict
 
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 from pennylane.operation import Operation
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
@@ -798,4 +799,4 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
             "num_phase_gradient_wires": num_precision_wires,
             "positive_and_real": positive_and_real,
         }
-        return re.CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, params)

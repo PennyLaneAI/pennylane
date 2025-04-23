@@ -12,11 +12,12 @@
 r"""Resource operators for qchem operations."""
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 # pylint: disable=arguments-differ
 
 
-class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
+class ResourceSingleExcitation(ResourceOperator):
     r"""Resource class for the SingleExcitation gate.
 
     Args:
@@ -108,10 +109,10 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperator):
+class ResourceSingleExcitationMinus(ResourceOperator):
     r"""Resource class for the SingleExcitationMinus gate.
 
     Args:
@@ -195,10 +196,10 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator):
+class ResourceSingleExcitationPlus(ResourceOperator):
     r"""Resource class for the SingleExcitationPlus gate.
 
     Args:
@@ -282,10 +283,10 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
+class ResourceDoubleExcitation(ResourceOperator):
     r"""Resource class for the DoubleExcitation gate.
 
     Args:
@@ -373,10 +374,10 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperator):
+class ResourceDoubleExcitationMinus(ResourceOperator):
     r"""Resource class for the DoubleExcitationMinus gate.
 
     Args:
@@ -451,10 +452,10 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator):
+class ResourceDoubleExcitationPlus(ResourceOperator):
     r"""Resource class for the DoubleExcitationPlus gate.
 
     Args:
@@ -529,10 +530,10 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
+class ResourceOrbitalRotation(ResourceOperator):
     r"""Resource class for the OrbitalRotation gate.
 
     Args:
@@ -597,10 +598,10 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
 
-class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
+class ResourceFermionicSWAP(ResourceOperator):
     r"""Resource class for the FermionicSWAP gate.
 
     Args:
@@ -686,4 +687,4 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})

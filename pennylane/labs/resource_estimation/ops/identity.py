@@ -16,11 +16,13 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, AddQubits, CutQubits, GateCount
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 
 
-class ResourceIdentity(qml.Identity, re.ResourceOperator):
+class ResourceIdentity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
@@ -37,7 +39,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -48,7 +50,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         Returns:
             dict: empty dictionary
         """
-        return {}
+        return []
 
     @property
     def resource_params(self) -> dict:
@@ -60,13 +62,13 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -76,12 +78,12 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @classmethod
     def controlled_resource_decomp(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
-    ) -> Dict[re.CompressedResourceOp, int]:
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -97,10 +99,10 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -114,10 +116,10 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
 
-class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
+class ResourceGlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
@@ -135,7 +137,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -146,7 +148,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         Returns:
             dict: empty dictionary
         """
-        return {}
+        return []
 
     @property
     def resource_params(self) -> dict:
@@ -158,13 +160,13 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
+    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return re.CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {})
 
-    @staticmethod
-    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -175,12 +177,12 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceGlobalPhase.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
-    @staticmethod
+    @classmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
-    ) -> Dict[re.CompressedResourceOp, int]:
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -201,10 +203,10 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1:
-            gate_types = {re.ResourcePhaseShift.resource_rep(): 1}
+            gate_types = [GateCount(re.ResourcePhaseShift.resource_rep())]
 
             if num_ctrl_values:
-                gate_types[re.ResourceX.resource_rep()] = 2
+                gate_types.append(GateCount(re.ResourceX.resource_rep(), 2))
 
             return gate_types
 
@@ -215,10 +217,10 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             num_work_wires=num_work_wires,
         )
 
-        return {ps: 1, mcx: 2}
+        return [GateCount(ps), GateCount(mcx,2)]
 
-    @staticmethod
-    def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -232,4 +234,4 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceGlobalPhase.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]

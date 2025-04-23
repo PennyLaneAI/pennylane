@@ -15,7 +15,7 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -84,6 +84,10 @@ class ResourceOperator(ABC):
         self.wires = Wires([]) if wires is None else Wires(wires)
         self.queue()
         super().__init__()
+
+    def __repr__(self) -> str:
+        str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
+        return str_rep
 
     @staticmethod
     @abstractmethod
@@ -204,3 +208,31 @@ class ResourceOperator(ABC):
 
 class ResourcesNotDefined(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+
+
+class GateCount:
+
+    def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
+        self.gate = gate
+        self.count = count
+    
+    def __repr__(self) -> str:
+        return f"({self.count} x {self.gate._name})"
+    
+
+class AddQubits:
+
+    def __init__(self, n: int) -> None:
+        self.n = n
+    
+    def __repr__(self) -> str:
+        return f"AllocatedQubits({self.n})"
+
+
+class CutQubits:
+
+    def __init__(self, n: int) -> None:
+        self.n = n
+    
+    def __repr__(self) -> str:
+        return f"DeallocatedQubits({self.n})"
