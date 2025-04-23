@@ -15,7 +15,7 @@ BoseWord and BoseSentence
 .. currentmodule:: pennylane.bose
 
 .. autosummary::
-    :toctree:
+    :toctree: api
 
     ~BoseWord
     ~BoseSentence
@@ -26,7 +26,7 @@ Mapping to qubit operators
 .. currentmodule:: pennylane.bose
 
 .. autosummary::
-    :toctree:
+    :toctree: api
 
     ~binary_mapping
     ~unary_mapping

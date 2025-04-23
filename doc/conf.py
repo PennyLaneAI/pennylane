@@ -95,6 +95,7 @@ mathjax_path = (
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "document is referenced in multiple toctrees", "duplicate object description of")]
 autodoc_mock_imports = ["torch"]
+nitpick_ignore_regexes = ["^.+: WARNING: duplicate object description of .+, other instance in .+, use :no-index: for one of them$"]
 
 # Ignore warnings about duplicate entries in the table of contents
 suppress_warnings = ["toc.duplicate_entry", "duplicate_declaration.c", "duplicate_declaration.cpp", "epub.duplicated_toc_entry", "toc.not_included"]
