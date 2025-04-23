@@ -31,7 +31,7 @@ class DaskExec(ExtExec):  # pragma: no cover
     def __init__(
         self,
         max_workers: Optional[int] = None,
-        persist: bool = True,
+        persist: bool = False,
         client_provider=None,
         **kwargs,
     ):
