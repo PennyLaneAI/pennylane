@@ -62,8 +62,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like [Pytorch](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch)
-  or [JAX](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
