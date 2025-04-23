@@ -65,7 +65,7 @@ class RemoteExec(abc.ABC):
             executor goes out-of-scope.
     """
 
-    def __init__(self, *args, max_workers: int = 0, persist: bool = False, **kwargs):
+    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         self._size = max_workers
         self._persist = persist
         self._inputs = (args, kwargs)

@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor as exec_tp
 from functools import partial
 from itertools import starmap
 from multiprocessing import Pool as exec_mp
-from typing import Any
+from typing import Any, Optional
 
 from .base import ExecBackendConfig, IntExec
 
@@ -35,7 +35,7 @@ class PyNativeExec(IntExec, abc.ABC):
     Python standard library backed ABC for executor API.
     """
 
-    def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         """
         max_workers:    the maximum number of concurrent units (threads, processes) to use
         persist:        allow the executor backend to persist between executions. True avoids
@@ -137,8 +137,10 @@ class SerialExec(PyNativeExec):
         def shutdown(self):
             "No-op close shutdown"
 
-    def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
+        if max_workers > 1:
+            raise RuntimeError("The serial executor backend cannot have more than 1 worker.")
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
             map_fn="map",
@@ -187,7 +189,7 @@ class MPPoolExec(PyNativeExec):
                     "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. "
                     "Consider a different backend, or use `starmap` instead."
                 ) from e
-        return super().map(fn, *args)
+        return super().map(fn, *args, **kwargs)
 
 
 class ProcPoolExec(PyNativeExec):

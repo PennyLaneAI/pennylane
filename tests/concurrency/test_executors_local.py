@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for local `qml.workflow.executors`"""
 
+import os
+import sys
 from multiprocessing import cpu_count
 
 import numpy as np
@@ -25,6 +27,12 @@ from pennylane.concurrency.executors.native import (
     SerialExec,
     ThreadPoolExec,
 )
+
+
+def get_core_count():
+    if sys.version_info.minor >= 13:
+        return os.process_cpu_count()
+    return os.cpu_count()
 
 
 def custom_func1(arg0):
@@ -58,6 +66,21 @@ class TestLocalExecutor:
     def test_construction(self, backend):
         executor = create_executor(backend[0])
         assert isinstance(executor, backend[1])
+
+    def test_max_workpool_size(self, backend):
+        "Test executor creation with the maximum permitted worker count"
+        if "Serial" in backend[1].__name__:
+            pytest.skip("Serial backends have a single worker")
+        executor = create_executor(backend[0])
+        assert executor.size == get_core_count()
+
+    @pytest.mark.parametrize("workers", [1, 2, 6])
+    def test_fixed_workpool_size(self, backend, workers):
+        "Test executor creation with a predefined worker count"
+        if "Serial" in backend[1].__name__:
+            pytest.skip("Serial backends have a single worker")
+        executor = create_executor(backend[0], max_workers=workers)
+        assert executor.size == workers
 
     @pytest.mark.parametrize(
         "fn,data,result",
@@ -147,23 +170,28 @@ class TestLocalExecutor:
         executor = create_executor(backend[0])
         assert np.allclose(result, list(executor.starmap(fn, data)))
 
-    @pytest.mark.parametrize(
-        "workers",
-        [None, 1, 2, cpu_count()],
-    )
-    def test_workers(self, backend, workers):
-        """
-        Test executor creation with a fixed worker count
-        """
-        executor = create_executor(backend[0], max_workers=workers)
-
-        if workers is None:
-            assert executor.size == cpu_count()
-            return
-        assert executor.size == workers
-
     def test_persistence(self, backend):
         executor_temporal = create_executor(backend[0])
         executor_persist = create_executor(backend[0], persist=True)
         assert not executor_temporal.persist
         assert executor_persist.persist
+
+    @pytest.mark.parametrize(
+        "fn,data,result",
+        [
+            (custom_func3, (range(3), range(3)), list(map(custom_func3, range(3), range(3)))),
+            (
+                custom_func4,
+                (range(3), range(3), range(3)),
+                list(map(custom_func4, range(3), range(3), range(3))),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("exec_kwargs", [{}, {"chunksize": 2}, {"chunksize": 4}])
+    def test_functor_call(self, backend, fn, data, result, exec_kwargs):
+        executor = create_executor(backend[0], **exec_kwargs)
+        for i, a in enumerate(zip(*data)):
+            assert np.isclose(result[i], executor("submit", fn, *a))
+        assert np.allclose(result, executor("map", fn, *data))
+        assert np.allclose(result, executor("map", fn, *data))
+        assert np.allclose(result, executor("starmap", fn, zip(*data)))
