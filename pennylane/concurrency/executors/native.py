@@ -50,7 +50,7 @@ class PyNativeExec(IntExec, abc.ABC):
             self._size = os.cpu_count()
         self._persist = persist
         if self._persist:
-            self._backend = self._exec_backend()(self._size)
+            self._persistent_backend = self._exec_backend()(self._size)
 
         self._cfg = ExecBackendConfig()
 
@@ -64,8 +64,8 @@ class PyNativeExec(IntExec, abc.ABC):
     def shutdown(self):
         "Shutdown the executor backend, if valid."
         if self._persist:
-            self._shutdown_fn(self._backend)()
-            self._backend = None
+            self._shutdown_fn(self._persistent_backend)()
+            self._persistent_backend = None
 
     def __del__(self):
         self.shutdown()
@@ -96,17 +96,12 @@ class PyNativeExec(IntExec, abc.ABC):
 
         return list(output)
 
-    def starmap(self, fn: Callable, data: Sequence[tuple], **kwargs):
+    def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
         exec_be = self._get_backend()
         if not hasattr(exec_be, "starmap"):
-            return list(self.map(fn, *list(zip(*data))), **kwargs)
+            return list(self.map(fn, *list(zip(*args))), **kwargs)
         fn_p = partial(fn, **kwargs)
-        return list(exec_be.starmap(fn_p, data))
-
-    @classmethod
-    @abc.abstractmethod
-    def _exec_backend(cls):
-        raise NotImplementedError("{cls} does not currently support execution")
+        return list(exec_be.starmap(fn_p, args))
 
 
 class SerialExec(PyNativeExec):
@@ -141,7 +136,6 @@ class SerialExec(PyNativeExec):
 
         def shutdown(self):
             "No-op close shutdown"
-            pass
 
     def __init__(self, max_workers: int = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
@@ -183,11 +177,11 @@ class MPPoolExec(PyNativeExec):
             blocking=True,
         )
 
-    def map(self, fn: Callable, *args: Sequence[Any]):
+    def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
         if len(inspect.signature(fn).parameters) > 1:
             try:
                 # attempt offloading to starmap
-                return self.starmap(fn, zip(*args))
+                return self.starmap(fn, zip(*args), **kwargs)
             except Exception as e:
                 raise ValueError(
                     "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. "

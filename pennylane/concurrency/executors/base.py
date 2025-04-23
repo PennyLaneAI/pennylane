@@ -69,6 +69,8 @@ class RemoteExec(abc.ABC):
         self._size = max_workers
         self._persist = persist
         self._inputs = (args, kwargs)
+        self._cfg = ExecBackendConfig()
+        self._persistent_backend = None
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
         """
@@ -151,8 +153,14 @@ class RemoteExec(abc.ABC):
     def _get_backend(self):
         "Convenience method to return the existing backend if persistence is enabled, or to create a new temporary backend with the defined size if not."
         if self._persist:
-            return self._backend
+            return self._persistent_backend
         return self._exec_backend()(self._size)
+
+    @classmethod
+    @abc.abstractmethod
+    def _exec_backend(cls):
+        "Return the class type of the given backend variant."
+        raise NotImplementedError("{cls} does not currently support execution")
 
 
 class IntExec(RemoteExec, abc.ABC):
