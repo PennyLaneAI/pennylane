@@ -14,16 +14,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * The property ```MeasurementProcess.return_type``` has been deprecated.
   If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
 
@@ -105,6 +95,18 @@ Completed deprecation cycles
 
   - Deprecated in v0.41
   - Removed in v0.42
+
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+  Instead, please use the ``wires`` argument.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
+  Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42  
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 

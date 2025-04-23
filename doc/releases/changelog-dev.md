@@ -34,6 +34,10 @@
 * Specifying `pipeline=None` with `qml.compile` has been removed.
   [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
 
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been removed.
+  Furthermore, the `ControlledQubitUnitary` no longer accepts `QubitUnitary` objects as arguments as its `base`.
+  [(#7305)](https://github.com/PennyLaneAI/pennylane/pull/7305)
+
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
