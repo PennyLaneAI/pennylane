@@ -17,10 +17,12 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops.functions as op_func
+from pennylane import math
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 def _all_commutators(ops):
@@ -305,38 +307,38 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     if getattr(g[0], "wires", False):
         # operator input
-        all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
+        all_wires = Wires.all_wires([_.wires for _ in g])
         n = len(all_wires)
         assert all_wires.toset() == set(range(n))
 
-        g = qml.math.array(
-            [qml.matrix(op, wire_order=range(n)) for op in g], dtype=complex, like=g[0]
+        g = math.array(
+            [op_func.matrix(op, wire_order=range(n)) for op in g], dtype=complex, like=g[0]
         )
         chi = 2**n
         assert np.shape(g) == (len(g), chi, chi)
 
-    interface = qml.math.get_interface(g[0])
+    interface = math.get_interface(g[0])
 
     if isinstance(g[0], TensorLike) and isinstance(g, (list, tuple)):
         # list of matrices
-        g = qml.math.stack(g, like=interface)
+        g = math.stack(g, like=interface)
 
-    chi = qml.math.shape(g[0])[0]
-    assert qml.math.shape(g) == (len(g), chi, chi)
-    assert qml.math.allclose(
-        qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
+    chi = math.shape(g[0])[0]
+    assert math.shape(g) == (len(g), chi, chi)
+    assert math.allclose(
+        math.transpose(math.conj(g), (0, 2, 1)), g
     ), "Input matrices to structure_constants not Hermitian"
 
     # compute all commutators by computing all products first.
     # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
-    prod = qml.math.tensordot(g, g, axes=[[2], [1]])
+    prod = math.tensordot(g, g, axes=[[2], [1]])
     # The commutators now are the difference of prod with itself, with dimg axes swapped
-    all_coms = prod - qml.math.transpose(prod, (2, 1, 0, 3))
+    all_coms = prod - math.transpose(prod, (2, 1, 0, 3))
 
     # project commutators on the basis of g, see docstring for details.
     # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
     # Normalize trace inner product by dimension chi
-    adj = qml.math.real(1j * qml.math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
+    adj = math.real(1j * math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
 
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
@@ -349,9 +351,9 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
             )
         else:
             # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            pre_diag = math.diagonal(math.diagonal(prod, 0, 1, 3), 0, 0, 1)
 
-        gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
+        gram_diag = math.real(math.sum(pre_diag, axis=0))
 
         adj = (chi / gram_diag[:, None, None]) * adj
 
@@ -362,12 +364,12 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
         # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
         # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
         # This contraction is missing the normalization factor 1/chi of the trace inner product.
-        gram_inv = qml.math.linalg.pinv(
-            qml.math.real(qml.math.sum(qml.math.diagonal(prod, axis1=1, axis2=3), axis=-1))
+        gram_inv = math.linalg.pinv(
+            math.real(math.sum(math.diagonal(prod, axis1=1, axis2=3), axis=-1))
         )
         # Axis ordering for contraction with gamma axis of raw structure constants:
         # (dimg, _dimg_), (_dimg_, dimg, dimg) -> (dimg, dimg, dim)
         # Here we add the missing normalization factor of the trace inner product (after inversion)
-        adj = qml.math.tensordot(gram_inv * chi, adj, axes=1)
+        adj = math.tensordot(gram_inv * chi, adj, axes=1)
 
     return adj
