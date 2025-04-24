@@ -59,8 +59,8 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The property ```MeasurementProcess.return_type``` has been removed.
-  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name.
+* The ``return_type`` property of ``MeasurementProcess`` has been removed.
+  If observable type checking is needed, please use ``isinstance`` instead; if other text information is needed, please use class name.
 
   - Deprecated in v0.41
   - Removed in v0.42
