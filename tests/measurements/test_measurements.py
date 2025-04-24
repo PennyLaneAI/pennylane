@@ -570,7 +570,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            _shortname = State
+            _shortname = "state"
 
             def shape(self):
                 return ()
@@ -590,7 +590,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            _shortname = State
+            _shortname = "state"
 
             def shape(self):
                 return ()
