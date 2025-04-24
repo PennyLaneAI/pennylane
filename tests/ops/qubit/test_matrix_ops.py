@@ -1026,6 +1026,27 @@ class TestBlockEncode:
             with pytest.raises(qml.operation.SparseMatrixUndefinedError):
                 op.sparse_matrix()
 
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "input_matrix",
+        [
+            np.array([[1, 0], [0, 1]]),
+            X,
+            csr_matrix([[1, 0], [0, 1]]),
+        ],
+    )
+    def test_applicable(self, input_matrix):
+        """Integration Test that BlockEncode can be applied onto a state."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BlockEncode(input_matrix, wires=range(2))
+            return qml.state()
+
+        state = circuit()
+        assert state.shape == (2**2,)
+
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
         [
