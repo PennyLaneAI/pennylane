@@ -26,12 +26,6 @@ Pending deprecations
   - Deprecated in v0.41
   - Will be removed in v0.42
 
-* The `qml.gradients.hamiltonian_grad` function has been deprecated.
-  This gradient recipe is not required with the new operator arithmetic system.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
  - Deprecated in v0.40
@@ -67,6 +61,12 @@ Completed deprecation cycles
 
 * The property ```MeasurementProcess.return_type``` has been removed.
   If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``qml.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
