@@ -27,7 +27,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
-    _contract_qjac_with_cjac,
     _no_trainable_grad,
     _try_zero_grad_from_graph_or_get_grad_method,
     assert_no_probability,
@@ -35,6 +34,7 @@ from .gradient_transform import (
     assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
 from .metric_tensor import _get_aux_wire
 
@@ -89,7 +89,7 @@ def _expand_transform_hadamard(
 @partial(
     transform,
     expand_transform=_expand_transform_hadamard,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def hadamard_grad(
@@ -152,7 +152,7 @@ def hadamard_grad(
 
     >>> import jax
     >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard"})
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
@@ -275,6 +275,81 @@ def hadamard_grad(
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
+
+    .. details::
+        :title: Variants of the standard hadamard gradient
+
+        This gradient method has three modes that are adaptations of the standard Hadamard gradient
+        method (these are outlined in detail in `arXiv:2408.05406 <https://arxiv.org/pdf/2408.05406>`__).
+
+        **Reversed mode**
+
+        With the ``"reversed"`` mode, the observable being measured and the generators of the unitary
+        operations in the circuit are reversed; the generators are now the observables, and the Pauli
+        decomposition of the observables are now gates in the circuit:
+
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit')
+            >>> @qml.qnode(dev)
+            ... def circuit(x):
+            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
+            ...     return qml.expval(qml.Z(0))
+            ...
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
+            1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
+            2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
+
+        **Direct mode**
+
+        With the ``"direct"`` mode, the additional auxiliary qubit needed in the standard Hadamard gradient
+        is exchanged for additional circuit executions:
+
+        .. code-block:: pycon
+
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
+
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j X@X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j X@X)─┤
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j X@X)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j X@X)─┤
+
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤
+
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j Z@Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j Z@Z)─┤
+
+            0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j Z@Z)─┤  <Z>
+            1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j Z@Z)─┤
+
+        **Reversed direct mode**
+
+        The ``"reversed-direct"`` mode is a combination of the ``"direct"`` and ``"reversed"`` modes,
+        where the role of the observable and the generators of the unitary operations in the circuit
+        swap, and the additional auxiliary qubit is exchanged for additional circuit executions:
+
+        .. code-block:: pycon
+
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
+            >>> print(qml.draw(grad)(numpy.array(0.5)))
+            0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
+            1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
+
+            0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤ ╭<-1.00*𝓗>
+            1: ─╰Exp(-0.50j 𝓗)───────────────┤ ╰<-1.00*𝓗>
     """
 
     modes = {

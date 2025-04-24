@@ -22,6 +22,7 @@ from typing import Callable, Optional, Sequence
 import jax
 
 import pennylane as qml
+from pennylane import math
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -675,6 +676,10 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[const_slice]
+        if math.is_abstract(pred):
+            raise NotImplementedError(
+                f"{self} does not yet support jitting cond with abstract conditions."
+            )
         if pred and jaxpr is not None:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
@@ -726,7 +731,7 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
     >>> jaxpr = jax.make_jaxpr(f)(3)
     >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     [Array([0, 1], dtype=int32)]
-    >>>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO
 
     """

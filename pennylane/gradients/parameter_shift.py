@@ -35,13 +35,13 @@ from .general_shift_rules import (
 )
 from .gradient_transform import (
     _all_zero_grad,
-    _contract_qjac_with_cjac,
     _move_first_axis_to_third_pos,
     _no_trainable_grad,
     _swap_first_two_axes,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
     reorder_grads,
 )
@@ -385,12 +385,6 @@ def expval_param_shift(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
-
-            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
-            gradient_tapes.extend(g_tapes)
-            # hamiltonian_grad always returns a list with a single tape!
-            gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
-            continue
 
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
         recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
@@ -802,7 +796,7 @@ def _expand_transform_param_shift(
 @partial(
     transform,
     expand_transform=_expand_transform_param_shift,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def param_shift(

@@ -89,7 +89,7 @@ Resource Functions
 Tracking Resources for Custom Operations
 ----------------------------------------
 
-We can use the :code:`null.qubit` device with the :code:`qml.Tracker` to track the resources
+We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
 used in a quantum circuit with custom operations without execution.
 
 .. code-block:: python3
