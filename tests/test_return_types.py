@@ -1279,7 +1279,8 @@ class TestDeviceNewUnits:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(
-            qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
+            qml.DeviceError,
+            match="not accepted for analytic simulation on default.qubit",
         ):
             program = dev.preprocess_transforms()
             qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)

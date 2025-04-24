@@ -834,7 +834,8 @@ class TestCommutingFunction:
         rho = np.zeros((2**1, 2**1), dtype=np.complex128)
         rho[0, 0] = 1
         with pytest.raises(
-            qml.QuantumFunctionError, match="Operation QubitDensityMatrix not supported."
+            qml.QuantumFunctionError,
+            match="Operation QubitDensityMatrix not supported.",
         ):
             qml.is_commuting(qml.QubitDensityMatrix(rho, wires=[0]), qml.PauliX(wires=0))
 
