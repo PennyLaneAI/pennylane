@@ -428,7 +428,7 @@ class TestSample:
 
         class SomeObservable(qml.operation.Observable):
             num_wires = 1
-            return_type = Sample
+            return_type = "Sample"
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
