@@ -109,14 +109,13 @@ See the links below for walkthroughs of each specific interface:
     </div>
 
 In addition to the core automatic differentiation frameworks discussed above,
-PennyLane also provides higher-level classes for converting QNodes into both Keras and ``torch.nn`` layers:
+PennyLane also provides higher-level classes for converting QNodes into ``torch.nn`` layers:
 
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
 
-    pennylane.qnn.KerasLayer
     pennylane.qnn.TorchLayer
 
 

@@ -19,6 +19,14 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
+
+* The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
+  [(#7302)](https://github.com/PennyLaneAI/pennylane/pull/7302)
+
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
   [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
 
@@ -47,6 +55,9 @@
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
+  [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
 
 * Introduce module dependency management using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)

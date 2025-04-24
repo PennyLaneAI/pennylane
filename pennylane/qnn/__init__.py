@@ -13,12 +13,13 @@
 # limitations under the License.
 """
 This module contains functionality for converting PennyLane QNodes into layers that are compatible
-with Keras and PyTorch.
+with PyTorch.
 
 .. note::
 
     Check out our `Keras <demos/qnn_module_tf>` and
     `Torch <demos/tutorial_qnn_module_torch>` tutorials for further details.
+
 
 
 .. rubric:: Classes
@@ -28,19 +29,18 @@ with Keras and PyTorch.
     :nosignatures:
     :template: autosummary/class_no_inherited.rst
 
-    ~KerasLayer
     ~TorchLayer
 """
 import importlib
 
 from . import cost
 
-class_map = {"KerasLayer": "keras", "TorchLayer": "torch"}
-mods = ("keras", "torch")
+class_map = {"TorchLayer": "torch"}
+mods = "torch"
 
 
 def __getattr__(name):
-    """Allow for lazy-loading of KerasLayer and TorchLayer so that TensorFlow and PyTorch are not
+    """Allow for lazy-loading of TorchLayer so that PyTorch are not
     automatically loaded with PennyLane"""
     if name in class_map:
         mod = importlib.import_module("." + class_map[name], __name__)
