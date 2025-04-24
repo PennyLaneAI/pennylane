@@ -9,34 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* Specifying ``pipeline=None`` with ``qml.compile`` is now deprecated.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``ControlledQubitUnitary`` will stop accepting `QubitUnitary` objects as arguments as its ``base``. Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class is deprecated. Instead, use the ``wires`` argument.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
 * The property ```MeasurementProcess.return_type``` has been deprecated.
   If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``mcm_config`` argument to ``qml.execute`` has been deprecated.
-  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
   - Deprecated in v0.41
   - Will be removed in v0.42
@@ -46,30 +25,6 @@ Pending deprecations
   keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
 
   - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The `qml.gradients.hamiltonian_grad` function has been deprecated.
-  This gradient recipe is not required with the new operator arithmetic system.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* The ``inner_transform_program`` and ``config`` keyword arguments in ``qml.execute`` have been deprecated.
-  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
-* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been deprecated. Instead, please use
-  :meth:`~.Operator.terms` instead.
-
-  - Deprecated in v0.35
-  - Will be removed in v0.42
-
-* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
-  A user should use :class:`op.operands <~.CompositeOp>` instead.
-
-  - Deprecated in v0.36
   - Will be removed in v0.42
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
@@ -104,6 +59,60 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``qml.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` has been removed.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+  - Removed in v0.42
+
+* The ``mcm_config`` keyword argument to ``qml.execute`` has been removed.
+  Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
+  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
+  
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been removed. Instead, please use
+  :meth:`~.Operator.terms`.
+
+  - Deprecated in v0.35
+  - Removed in v0.42
+
+* Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
+  A sequence of transforms should now always be specified.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+  Instead, please use the ``wires`` argument.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
+  Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+
+  - Deprecated in v0.41
+  - Removed in v0.42  
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 

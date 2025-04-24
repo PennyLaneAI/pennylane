@@ -573,7 +573,7 @@ The device tracker stores and records information when tracking mode is turned o
 the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
 in a customizable way.
 
-Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
+Three aspects of the :class:`~pennylane.devices.Tracker` class are relevant to plugin designers:
 
 * The boolean ``active`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information
@@ -589,7 +589,7 @@ to the device:
         ...
 
 
-``simulator_tracking`` is useful when the device can simulataneously measure non-commuting measurements or
+``simulator_tracking`` is useful when the device can simultaneously measure non-commuting measurements or
 handle parameter-broadcasting, as it both tracks simulations and the corresponding number of QPU-like
 circuits.
 
@@ -609,7 +609,7 @@ number of execute and derivative batches, and number of derivatives.
 
 While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
 within the device. While the above example tracks executions, shots, and batches, the 
-:meth:`~.Tracker.update` method can accept any combination of
+:meth:`~pennylane.devices.Tracker.update` method can accept any combination of
 keyword-value pairs.  For example, a device could also track cost and a job ID via:
 
 .. code-block:: python
