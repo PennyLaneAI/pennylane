@@ -88,7 +88,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     will have a weight of 2, because the decomposition rule contains 2 additional ``H`` gates.
     Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't supported
-    and is in turn decomposed to two ``RZ`` gates and an ``RX`` gate, the weight of this edge
+    and is in turn decomposed to two ``RZ`` gates and one ``RX`` gate, the weight of this edge
     becomes 2 * 3 = 6. This way, the total distance from the basis gate set to a high-level gate is
     conveniently the total number of basis gates required to decompose this high-level gate, which
     allows us to use Dijkstra's algorithm to find the most efficient decomposition.
