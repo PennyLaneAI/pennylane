@@ -176,7 +176,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             seen_ops = set()
             ops_remaining = []
 
-            for op in self.previous_ops.items():
+            for op in self.previous_ops.values():
                 if op not in seen_ops:
                     ops_remaining.append(op)
                     seen_ops.add(op)
