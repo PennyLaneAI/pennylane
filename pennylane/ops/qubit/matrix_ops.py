@@ -697,16 +697,20 @@ class BlockEncode(Operation):
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
-        if sp.sparse.issparse(params[0]):
+        A = params[0]
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
             raise qml.operation.MatrixUndefinedError(
                 "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
             )
-        return _process_blockencode(*params, **hyperparams)
+        return _process_blockencode(A, subspace)
 
     @staticmethod
-    def compute_sparse_matrix(A, *, norm, subspace):
-        if sp.sparse.issparse(params[0]):
-            return _process_blockencode(*params, **hyperparams)
+    def compute_sparse_matrix(*params, **hyperparams):
+        A = params[0]
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
+            return _process_blockencode(A, subspace)
         raise qml.operation.SparseMatrixUndefinedError(
             "The operator is initialized with a dense matrix, use the matrix method instead."
         )
@@ -724,12 +728,11 @@ class BlockEncode(Operation):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 
 
-def _process_blockencode(*params, **hyperparams):
+def _process_blockencode(A, subspace):
     """
     Process the BlockEncode operation.
     """
-    A = params[0]
-    n, m, k = hyperparams["subspace"]
+    n, m, k = subspace
     shape_a = qml.math.shape(A)
 
     sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
