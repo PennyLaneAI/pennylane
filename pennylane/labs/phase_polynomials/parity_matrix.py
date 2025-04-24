@@ -26,7 +26,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Iterable = None):
 
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
-        wire_order (Iterable)
+        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered.
 
     Returns:
         np.ndarray: :math:`n \times n` Parity matrix
