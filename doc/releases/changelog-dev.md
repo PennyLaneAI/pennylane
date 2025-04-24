@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
+  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
@@ -111,4 +114,5 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
-Andrija Paurevic
+Andrija Paurevic,
+Jake Zaia

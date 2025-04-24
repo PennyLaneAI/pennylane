@@ -189,7 +189,7 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-
+        track_resources (bool): If ``True``, track the number of resources used by the device. This argument is experimental and subject to change.
     **Example:**
 
     .. code-block:: python
