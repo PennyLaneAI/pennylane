@@ -176,8 +176,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             seen_ops = set()
             ops_remaining = []
 
-            for w in self.previous_ops:
-                op = self.previous_ops[w]
+            for op in self.previous_ops.items():
                 if op not in seen_ops:
                     ops_remaining.append(op)
                     seen_ops.add(op)
@@ -185,9 +184,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             for op in ops_remaining:
                 super().interpret_operation(op)
 
-            all_wires = tuple(self.previous_ops.keys())
-            for w in all_wires:
-                self.previous_ops.pop(w)
+            self.previous_ops.clear()
 
         def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.

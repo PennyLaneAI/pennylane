@@ -14,6 +14,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qml.transforms.cancel_inverses` transform now provides operators on the same wire in a deterministic order.
+  [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
+
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
