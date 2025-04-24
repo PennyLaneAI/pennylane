@@ -202,7 +202,9 @@ def two_qubit_decomposition(U, wires):
         )
 
     if sp.issparse(U):
-        raise DecompositionUndefinedError("two_qubit_decomposition does not accept sparse matrices.")
+        raise DecompositionUndefinedError(
+            "two_qubit_decomposition does not accept sparse matrices."
+        )
 
     with queuing.AnnotatedQueue() as q:
 

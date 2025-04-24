@@ -79,14 +79,8 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     theta = math.where(
         math.isclose(math.sin(half_lam_plus_phi), math.zeros_like(half_lam_plus_phi)),
-        2
-        * math.arccos(
-            math.clip(math.real(U[..., 1, 1]) / (math.cos(half_lam_plus_phi) + EPS), -1, 1)
-        ),
-        2
-        * math.arccos(
-            math.clip(-math.imag(U[..., 0, 1]) / (math.sin(half_lam_plus_phi) + EPS), -1, 1)
-        ),
+        2 * math.arccos(math.clip(math.real(U[..., 1, 1]) / math.cos(half_lam_plus_phi), -1, 1)),
+        2 * math.arccos(math.clip(-math.imag(U[..., 0, 1]) / math.sin(half_lam_plus_phi), -1, 1)),
     )
 
     phi = math.squeeze(phi % (4 * np.pi))

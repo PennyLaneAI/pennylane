@@ -144,7 +144,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     op_matrix = qml.matrix(op)
     decomp_matrix = qml.matrix(tape, wire_order=op.wires)
     assert qml.math.allclose(
-        op_matrix, decomp_matrix, atol=1e-7
+        op_matrix, decomp_matrix
     ), "decomposition must produce the same matrix as the operator."
 
 
