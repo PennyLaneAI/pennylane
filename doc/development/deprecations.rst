@@ -61,7 +61,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>` or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
@@ -86,7 +86,7 @@ Completed deprecation cycles
 
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-  
+
   - Deprecated in v0.41
   - Removed in v0.42
 
@@ -96,23 +96,23 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.42
 
-* Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
+* Specifying ``pipeline=None`` with ``qml.compile`` has been removed.
   A sequence of transforms should now always be specified.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed.
   Instead, please use the ``wires`` argument.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``.
   Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
-  - Removed in v0.42  
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
@@ -124,19 +124,19 @@ Completed deprecation cycles
   - Deprecated in v0.22
   - Removed in v0.41
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed.
   Instead, use the ``qml.workflow.construct_tape`` function.
-  
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -145,9 +145,9 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
-  
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed.
+  Instead, use the ``qml.workflow.get_best_diff_method`` function.
+
   - Deprecated in v0.40
   - Removed in v0.41
 
@@ -180,7 +180,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 
 * The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
 
@@ -203,7 +203,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
 
   - Deprecated in v0.39
@@ -220,7 +220,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
   ``qml.shadow_expval`` measurement process.
 
@@ -272,7 +272,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed. 
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed.
   Instead, use the ``level`` argument which provides a superset of options.
 
   - Deprecated in v0.38
@@ -318,7 +318,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.38
 
-* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use
   ``measurements=[]`` to remove measurements from the original circuit.
 
   - Deprecated in v0.37
@@ -388,7 +388,7 @@ Completed deprecation cycles
 
 * ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
-  
+
   - Deprecated in v0.35
   - Removed in v0.36
 

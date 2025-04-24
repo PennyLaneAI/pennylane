@@ -181,9 +181,6 @@ Other
     :toctree: api
 
     ~operation_derivative
-    ~WiresEnum
-    ~AllWires
-    ~AnyWires
 
 .. currentmodule:: pennylane
 
@@ -309,12 +306,12 @@ class WiresEnum(IntEnum):
 
 
 AllWires = WiresEnum.AllWires
-# """IntEnum: An enumeration which represents all wires in the
-# subsystem. It is equivalent to an integer with value 0."""
+"""IntEnum: An enumeration which represents all wires in the
+subsystem. It is equivalent to an integer with value 0."""
 
 AnyWires = WiresEnum.AnyWires
-# """IntEnum: An enumeration which represents any wires in the
-# subsystem. It is equivalent to an integer with value -1."""
+"""IntEnum: An enumeration which represents any wires in the
+subsystem. It is equivalent to an integer with value -1."""
 
 
 # =============================================================================
