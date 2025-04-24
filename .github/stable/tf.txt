@@ -11,7 +11,7 @@ cfgv==3.4.0
 charset-normalizer==3.4.1
 clarabel==0.10.0
 click==8.1.8
-contourpy==1.3.1
+contourpy==1.3.2
 coverage==7.8.0
 cvxopt==1.3.2
 cvxpy==1.6.5
@@ -30,7 +30,7 @@ GitPython==3.1.44
 google-pasta==0.2.0
 grpcio==1.71.0
 h5py==3.13.0
-identify==2.6.9
+identify==2.6.10
 idna==3.10
 iniconfig==2.1.0
 isort==5.13.2
@@ -38,7 +38,7 @@ Jinja2==3.1.6
 joblib==1.4.2
 keras==3.9.2
 kiwisolver==1.4.8
-lazy-object-proxy==1.10.0
+lazy-object-proxy==1.11.0
 libclang==18.1.1
 Markdown==3.8
 markdown-it-py==3.0.0
@@ -55,15 +55,15 @@ numpy==2.0.2
 opt_einsum==3.4.0
 optree==0.15.0
 osqp==1.0.3
-packaging==24.2
+packaging==25.0
 pandas==2.2.3
 pathspec==0.12.1
-PennyLane_Lightning==0.41.0rc3
+PennyLane_Lightning==0.42.0
 pillow==11.2.1
 platformdirs==4.3.7
 pluggy==1.5.0
 pre_commit==4.2.0
-prompt_toolkit==3.0.50
+prompt_toolkit==3.0.51
 protobuf==5.29.4
 py==1.11.0
 py-cpuinfo==9.0.0
@@ -90,7 +90,7 @@ scipy-openblas32==0.3.29.0.0
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2
-tach==0.13.1
+tach==0.28.5
 tensorboard==2.18.0
 tensorboard-data-server==0.7.2
 tensorflow==2.18.1
