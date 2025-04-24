@@ -19,7 +19,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The property `MeasurementProcess.return_type` has been removed.
+* The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
 * The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
