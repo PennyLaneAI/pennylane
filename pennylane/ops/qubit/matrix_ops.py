@@ -319,6 +319,7 @@ class QubitUnitary(Operation):
 
         ops = []
 
+        # pylint: disable=import-outside-toplevel
         try:
             # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
 
@@ -355,7 +356,7 @@ class QubitUnitary(Operation):
 
                 return (u1, u2), theta, (v1_dagg, v2_dagg)
 
-        except:
+        except ImportError:
             cossin_decomposition = sp.linalg.cossin
 
         # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
