@@ -267,3 +267,26 @@ class TestSnapshot:
         target_mp = mp.map_wires(wire_map)
         qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
+
+    # pylint: disable=unused-argument
+    @pytest.mark.jax
+    @pytest.mark.parametrize("measurement", (None, "state"))
+    def test_capture_measurement(self, measurement, enable_disable_plxpr):
+        """Test that a snapshot can be captured into plxpr."""
+
+        import jax
+
+        def f():
+            if measurement is None:
+                qml.Snapshot()
+            else:
+                qml.Snapshot(measurement=qml.state())
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        if measurement is None:
+            assert jaxpr.eqns[0].primitive == qml.Snapshot._primitive
+        else:
+            assert jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
+            assert jaxpr.eqns[1].primitive == qml.Snapshot._primitive
+            assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
