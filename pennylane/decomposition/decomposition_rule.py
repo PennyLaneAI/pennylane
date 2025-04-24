@@ -233,17 +233,17 @@ def _auto_wrap(op_type):
 
 
 _decompositions = defaultdict(list)
-"""dict[type, list[DecompositionRule]]: A dictionary mapping operator types to decomposition rules."""
+"""dict[str, list[DecompositionRule]]: Maps operator names to decomposition rules."""
 
 
-def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: Type[Operator] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        doing decompositions is generally more resource-efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using :func:`~pennylane.register_resources`
@@ -253,7 +253,7 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
     decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
-        op_type: the operator type for which new decomposition rules are specified.
+        op_type (type or str): the operator type for which new decomposition rules are specified.
         decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
             ``qml.register_resources``.
@@ -297,21 +297,23 @@ def add_decomps(op_type: Type[Operator], *decomps: DecompositionRule) -> None:
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
     _decompositions[op_type].extend(decomps)
 
 
-def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
+def list_decomps(op_type: Type[Operator] | str) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        doing decompositions is generally more resource-efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
-        op_type: the operator class to retrieve decomposition rules for.
+        op_type (type or str): the operator class to retrieve decomposition rules for.
 
     Returns:
         list[DecompositionRule]: a list of decomposition rules registered for the given operator.
@@ -338,24 +340,28 @@ def list_decomps(op_type: Type[Operator]) -> list[DecompositionRule]:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
     return _decompositions[op_type][:]
 
 
-def has_decomp(op_type: Type[Operator]) -> bool:
+def has_decomp(op_type: Type[Operator] | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     .. note::
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        doing decompositions is generally more resource-efficient and accommodates multiple alternative
         decomposition rules for an operator.
 
     Args:
-        op_type: the operator class to check for decomposition rules.
+        op_type (type or str): the operator class to check for decomposition rules.
 
     Returns:
         bool: whether decomposition rules are defined for the given operator.
 
     """
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
     return op_type in _decompositions and len(_decompositions[op_type]) > 0

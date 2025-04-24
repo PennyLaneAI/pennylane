@@ -177,7 +177,7 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
-        _decompositions.pop(CustomOp)  # cleanup
+        _decompositions.pop("CustomOp")  # cleanup
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""

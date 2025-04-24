@@ -140,8 +140,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
-        self._fixed_decomps = fixed_decomps or {}
-        self._alt_decomps = alt_decomps or {}
+        fixed_decomps = fixed_decomps or {}
+        alt_decomps = alt_decomps or {}
+        self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
+        self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
@@ -150,11 +152,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # Construct the decomposition graph
         self._construct_graph(operations)
 
-    def _get_decompositions(self, op_type) -> list[DecompositionRule]:
+    def _get_decompositions(self, op) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
-        if op_type in self._fixed_decomps:
-            return [self._fixed_decomps[op_type]]
-        return self._alt_decomps.get(op_type, []) + list_decomps(op_type)
+        op_name = _to_name(op)
+        if op_name in self._fixed_decomps:
+            return [self._fixed_decomps[op_name]]
+        return self._alt_decomps.get(op_name, []) + list_decomps(op_name)
 
     def _construct_graph(self, operations):
         """Constructs the decomposition graph."""
@@ -498,3 +501,12 @@ class _DecompositionNode:
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
         return self.decomp_resource.gate_counts.get(op, 0)
+
+
+def _to_name(op):
+    if isinstance(op, type):
+        return op.__name__
+    if isinstance(op, CompressedResourceOp):
+        return op.name
+    assert isinstance(op, str)
+    return translate_op_alias(op)
