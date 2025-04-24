@@ -60,7 +60,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The property ```MeasurementProcess.return_type``` has been removed.
-  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
+  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name.
 
   - Deprecated in v0.41
   - Removed in v0.42
