@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
-
-This module contains concurrent execution functionality for PennyLane workloads.
-
 .. currentmodule:: pennylane.concurrency
 
 Executors
 =========
+
+This module contains concurrent execution functionality for PennyLane workloads.
 
 .. automodule:: pennylane.concurrency.executors
 

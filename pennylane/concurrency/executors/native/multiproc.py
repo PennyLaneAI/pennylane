@@ -18,7 +18,7 @@ This module provides abstractions around the Python ``multiprocessing`` library,
 import inspect
 from collections.abc import Callable, Sequence
 from multiprocessing import Pool
-from typing import Any
+from typing import Any, Optional
 
 from ..base import ExecBackendConfig
 from .api import PyNativeExec
