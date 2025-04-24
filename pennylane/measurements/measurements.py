@@ -270,7 +270,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{getattr(self._shortname, 'value', 'None')}(wires={self.wires.tolist()})"
+        name_str = self._shortname if self._shortname else "None"
+        return f"{name_str}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
