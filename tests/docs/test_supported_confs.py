@@ -273,13 +273,13 @@ class TestSupportedConfs:
 
         msg = None
         error_type = qml.DeviceError
-        if diff_method == "adjoint" and (shots is not None or return_type is "Sample"):
+        if diff_method == "adjoint" and (shots is not None or return_type == "Sample"):
             error_type = qml.QuantumFunctionError
             msg = f"does not support {diff_method} with requested circuit"
         elif diff_method == "backprop" and shots:
             error_type = qml.QuantumFunctionError
             msg = f"does not support {diff_method} with requested circuit"
-        elif not shots and return_type is "Sample":
+        elif not shots and return_type == "Sample":
             msg = "not accepted for analytic simulation"
         elif shots and return_type in (
             "VnEntropy",
