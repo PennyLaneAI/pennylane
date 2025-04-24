@@ -20,8 +20,7 @@ Phase Polynomials intermediate representation
 .. autosummary::
     :toctree: api
 
-    ~recursive_cartan_decomp
-    ~variational_kak_adj
+    ~parity_matrix
 
 
 """

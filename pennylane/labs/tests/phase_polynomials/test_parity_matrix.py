@@ -42,10 +42,8 @@ P2 = np.array(
     [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 0.0]]
 )
 
-parity_matrix_tests = ((circ1, P1), (circ2, P2))
 
-
-@pytest.mark.parametrize("circ, P_true", parity_matrix_tests)
+@pytest.mark.parametrize("circ, P_true", ((circ1, P1), (circ2, P2)))
 def test_parity_matrix(circ, P_true):
     """Test parity matrix computation"""
     P = parity_matrix(circ, wire_order=range(len(circ.wires)))
