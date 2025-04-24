@@ -171,7 +171,7 @@ class SProd(ScalarSymbolicOp):
             if obs == self:
                 return f"H:{i}"
         cache["large_ops"].append(self)
-        return f"H:{len(cache["large_ops"])-1}"
+        return f"H{len(cache["large_ops"])-1}"
 
     @property
     @handle_recursion_error

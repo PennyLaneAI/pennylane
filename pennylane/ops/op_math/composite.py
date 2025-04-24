@@ -315,18 +315,37 @@ class CompositeOp(Operator):
                 )
         return diag_gates
 
+    def _base_label(self, decimals=None, base_label=None, cache=None):
+        def _label(op, decimals, base_label, cache):
+            sub_label = op.label(decimals, base_label, cache)
+            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self):
+                raise ValueError(
+                    "Composite operator labels require ``base_label`` keyword to be same length as operands."
+                )
+            return self._op_symbol.join(
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
+            )
+
+        return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
+
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        if cache is None or not isinstance(cache.get("large_ops", None), list):
-            decimals = None if (len(self.parameters) > 3) else decimals
-            return Operator.label(
-                self, decimals=decimals, base_label=base_label or "𝓗", cache=cache
-            )
+        base_label = self._base_label(decimals, base_label)
+        if (
+            cache is None
+            or not isinstance(cache.get("large_ops", None), list)
+            or len(base_label) < 5
+        ):
+            return base_label
+
         for i, obs in enumerate(cache["large_ops"]):
             if obs == self:
-                return f"H:{i}"
+                return f"H{i}"
         cache["large_ops"].append(self)
-        return f"H:{len(cache["large_ops"])-1}"
+        return f"H{len(cache["large_ops"])-1}"
 
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
