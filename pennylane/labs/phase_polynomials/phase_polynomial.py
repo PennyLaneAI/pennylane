@@ -47,6 +47,28 @@ def phase_polynomial(
 
     .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - (x_1 \oplus x_2) \right)} |x_1, x_2\rangle
 
+    Roughyl, this function implements
+
+    .. code-block:: python
+
+        def compute_phase_polynomial(circ, verbose=False):
+            wires = circ.wires
+            parity_matrix = np.eye(len(wires), dtype=int)
+            parity_table = []
+            angles = []
+
+            for op in circ.operations:
+
+                if op.name == "CNOT":
+                    control, target = op.wires
+                    parity_matrix[target] = (parity_matrix[target] + parity_matrix[control]) % 2
+
+                elif op.name == "RZ":
+                    angles.append(op.data[0]) # append theta_i
+                    parity_table.append(parity_matrix[op.wires[0]].copy()) # append _current_ parity (hence the copy)
+
+            return parity_matrix, np.array(parity_table).T, angles
+
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
         wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered.
