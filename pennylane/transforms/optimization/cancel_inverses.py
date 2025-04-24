@@ -148,19 +148,13 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                     self.previous_ops.pop(w)
                 return []
 
-            seen_ops = set()
-            previous_ops_on_wires = []
-
-            for w in op.wires:
-                o = self.previous_ops.get(w)
-                if o is not None and o not in seen_ops:
-                    previous_ops_on_wires.append(o)
-                    seen_ops.add(o)
+            previous_ops_on_wires = list(
+                dict.fromkeys(o for w in op.wires if (o := self.previous_ops.get(w)) is not None)
+            )
 
             for o in previous_ops_on_wires:
-                if o is not None:
-                    for w in o.wires:
-                        self.previous_ops.pop(w)
+                for w in o.wires:
+                    self.previous_ops.pop(w)
             for w in op.wires:
                 self.previous_ops[w] = op
 
@@ -173,13 +167,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             """Interpret all operators in ``previous_ops``. This is done when any previously
             uninterpreted operators, saved for cancellation, no longer need to be stored."""
 
-            seen_ops = set()
-            ops_remaining = []
-
-            for op in self.previous_ops.values():
-                if op not in seen_ops:
-                    ops_remaining.append(op)
-                    seen_ops.add(op)
+            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
 
             for op in ops_remaining:
                 super().interpret_operation(op)
