@@ -248,7 +248,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
-        qubit_indexed_wires = qml.wires.Wires(list(range(max(all_wires) + 1)))
+        qubit_indexed_wires = qml.wires.Wires(range(max(all_wires) + 1))
 
     coeffs = np.array(coeffs)
     if (np.abs(coeffs.imag) < tol).all():
