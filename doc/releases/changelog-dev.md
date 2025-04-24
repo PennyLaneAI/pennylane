@@ -17,6 +17,10 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* `Sum`, `Prod`, `SProd`, and `LinearCombination` are now represented by a reference in the text
+  drawer, with a longer label printed underneath.
+  [(#7279)](https://github.com/PennyLaneAI/pennylane/pull/7279)
+
 <h3>Breaking changes 💔</h3>
 
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.

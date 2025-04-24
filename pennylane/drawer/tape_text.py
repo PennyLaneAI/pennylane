@@ -215,6 +215,14 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
+def _large_op_label(op, ind: int, max_length: int) -> str:
+    op_str = str(op)
+    threshold = max_length - 7 - len(str(ind))
+    if len(op_str) > threshold:
+        op_str = op_str[:threshold] + "..."
+    return f"\nH{ind} = {op_str}"
+
+
 # pylint: disable=too-many-arguments
 def tape_text(
     tape,
@@ -412,6 +420,7 @@ def tape_text(
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
+    cache.setdefault("large_ops", [])
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
@@ -475,6 +484,11 @@ def tape_text(
         )
         tape_totals = "\n".join([tape_totals, label, tape_str])
 
+    if cache["large_ops"]:
+        obs_str = "".join(
+            _large_op_label(H, i, max_length) for i, H in enumerate(cache["large_ops"])
+        )
+        tape_totals = tape_totals + obs_str
     if show_matrices:
         mat_str = "".join(f"\nM{i} = \n{mat}" for i, mat in enumerate(cache["matrices"]))
         return tape_totals + mat_str
