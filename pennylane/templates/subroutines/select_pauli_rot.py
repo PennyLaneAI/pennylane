@@ -23,7 +23,7 @@ from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotat
 class SelectPauliRot(Operation):
     r"""Applies the multiplexer with Pauli rotations.
 
-    This operator, also called multiplexed rotation, applies a sequence of uniformly controlled
+    This operator, also called a "multiplexed rotation", applies a sequence of uniformly controlled
     rotations to a target qubit. The rotations are selected based on the values encoded in the control qubits.
     Its definition is given by:
 
@@ -32,7 +32,7 @@ class SelectPauliRot(Operation):
        \sum_i | i \rangle \langle i | \otimes R(\alpha_i)
 
     Here, :math:`| i \rangle` refers to the computational basis state of the control register,
-    and :math:`R(\cdot)` denotes a unitary Pauli rotation applied to the target qubit,
+    and :math:`R(\cdot)` denotes a Pauli rotation applied to the target qubit,
     parametrized by :math:`\alpha_i`.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
