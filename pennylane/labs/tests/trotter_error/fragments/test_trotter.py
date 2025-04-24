@@ -64,7 +64,7 @@ def test_second_order_trotter(modes):
     delta = 0.72
     delta = 1
     scalar = -(delta**2) / 24
-    fragments = vibronic_fragments(states, modes, *_coeffs(states, modes, order=2))
+    fragments = dict(enumerate(vibronic_fragments(states, modes, *_coeffs(states, modes, order=2))))
 
     frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
     frag_coeffs = [delta / 2] * len(frag_labels)
@@ -84,6 +84,6 @@ def test_second_order_trotter(modes):
 
     actual = effective_hamiltonian(product_formula, fragments, order=3)
     expected = scalar * sum(terms, RealspaceMatrix(states, modes))
-    expected += sum(fragments, RealspaceMatrix(states, modes))
+    expected += sum(fragments.values(), RealspaceMatrix(states, modes))
 
     assert _coeffs_isclose(actual.get_coefficients(), expected.get_coefficients())
