@@ -14,11 +14,6 @@ Pending deprecations
   - Deprecated in v0.42
   - Will be removed in v0.43
 
-* The ``KerasLayer`` in ``qml.qnn.keras`` is deprecated because Keras 2 is no longer actively maintained.  Please consider using a different machine learning framework instead of ``TensorFlow/Keras 2``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
   and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
   keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
@@ -61,6 +56,12 @@ Completed deprecation cycles
 
 * The ``return_type`` property of ``MeasurementProcess`` has been removed.
   If observable type checking is needed, please use ``isinstance`` instead; if other text information is needed, please use class name.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
+
+* The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
