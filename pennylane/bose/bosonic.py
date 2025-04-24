@@ -426,8 +426,6 @@ class BoseSentence(dict):
     >>> print(s)
     1.2 * b⁺(0) b(1)
     + 3.1 * b⁺(1) b(2)
-
-    .. :no-index:
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
