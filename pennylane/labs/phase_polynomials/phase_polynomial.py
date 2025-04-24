@@ -1,0 +1,145 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Phase polynomial intermediate representation"""
+from typing import Iterable
+
+import numpy as np
+
+import pennylane as qml
+
+
+def phase_polynomial(
+    circ: qml.tape.QuantumScript, wire_order: Iterable = None, verbose: bool = False
+):
+    r"""
+    :doc:`Parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit
+
+    Args:
+        circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
+        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered.
+        verbose (bool): Whether or not progress should be printed during computation.
+
+    Returns:
+        tuple(np.ndarray, np.ndarray, np.ndarray): A tuple consisting of the :func:`~parity_matrix`, parity table and corresponding angles for each parity.
+
+    **Example**
+
+    We look at the circuit in Figure 1 in `arXiv:2104.00934 <https://arxiv.org/abs/2104.00934>`__.
+
+    >>> circ = qml.tape.QuantumScript([
+    ...     qml.CNOT((1, 0)),
+    ...     qml.RZ(1, 0),
+    ...     qml.CNOT((2, 0)),
+    ...     qml.RZ(2, 0),
+    ...     qml.CNOT((0, 1)),
+    ...     qml.CNOT((3, 1)),
+    ...     qml.RZ(3, 1)
+    ... ], [])
+    >>> print(qml.drawer.tape_text(circ, decimals=0, wire_order=range(4)))
+    0: ─╭X──RZ(1)─╭X──RZ(2)─╭●───────────┤
+    1: ─╰●────────│─────────╰X─╭X──RZ(3)─┤
+    2: ───────────╰●───────────│─────────┤
+    3: ────────────────────────╰●────────┤
+
+    The phase polynomial representation consisting of the parity matrix, parity table and associated
+    angles are given by ``phase_polynomial``.
+
+    >>> pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
+
+    .. details::
+        :title: Usage Details
+
+        We can go through explicitly reconstructing the output wavefunction.
+        First, let us compute the exact wavefunction from the circuit.
+
+        .. code-block:: python
+
+            input = np.array([1, 1, 1, 1]) # computational basis state
+
+            def comp_basis_to_wf(basis_state):
+                zero, one = np.eye(2)
+                wf = one if basis_state[0] == 1 else zero
+                for val in basis_state[1:]:
+                    if val==1:
+                        wf = np.kron(wf, one)
+                    elif val==0:
+                        wf = np.kron(wf, zero)
+                return wf
+
+            input_wf = comp_basis_to_wf(input)
+            output_wf = qml.matrix(circ, wire_order=range(4)) @ input_wf
+
+        The output wavefunction is given by :math:`e^{2i} * |1 1 1 1\rangle`, which we can confirm:
+
+        >>> np.allclose(output_wf, np.exp(2j) * input_wf)
+        True
+
+        Note that the action of an :class:`~RZ` gate is given by
+
+        .. math:: \text{RZ}(\theta) |x\rangle = e^{-i \frac{\theta}{2} \sigma_z} |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle
+
+        Hence, we need to convert the collected parities, accordingly. In particular, the collected phase :math:`p(x)` is given by
+
+        >>> output_phase = -(1 - 2 * ((input @ ptab) % 2))/2
+        >>> output_phase = output_phase @ angles
+
+        The final output wavefunction from the phase polynomial description is then given by the following.
+
+        >>> output_wf_re = np.exp(1j * output_phase) * comp_basis_to_wf(pmat @ input % 2)
+
+        We can compare it to the exact output wavefunction and see that they match:
+
+        >>> np.allclose(output_wf_re, output_wf)
+        True
+
+    """
+    wires = circ.wires
+
+    if wire_order is None:
+        wire_order = wires
+
+    wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+
+    parity_matrix = np.eye(len(wires), dtype=int)
+    parity_table = []
+    angles = []
+    i = 1
+    for op in circ.operations:
+
+        if op.name == "CNOT":
+            control, target = op.wires
+            parity_matrix[wire_map[target]] = (
+                parity_matrix[wire_map[target]] + parity_matrix[wire_map[control]]
+            ) % 2
+        elif op.name == "RZ":
+            angles.append(op.data[0])  # append theta_i
+            RZ_wire = wire_map[op.wires[0]]
+
+            parity_table.append(
+                parity_matrix[RZ_wire].copy()
+            )  # append _current_ parity (hence the copy)
+        else:
+            raise TypeError(
+                f"phase polynomials can only handle CNOT and RZ operators, received {op}"
+            )
+
+        if verbose:
+            print(f"Operator {op.name} - #{i}")
+            print(
+                f"parity matrix: \n{parity_matrix}\n parity table: \n{np.array(parity_table).T}\n angles: {angles}"
+            )
+
+        i += 1
+
+    return parity_matrix, np.array(parity_table).T, angles

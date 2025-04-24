@@ -26,3 +26,4 @@ Phase Polynomials intermediate representation
 """
 
 from .parity_matrix import parity_matrix
+from .phase_polynomial import phase_polynomial
