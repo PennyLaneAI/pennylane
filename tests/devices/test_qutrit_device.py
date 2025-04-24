@@ -353,7 +353,15 @@ class TestExtractStatistics:
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in ["Expectation", "Variance", "Sample", "Probability", "State", "Counts", None]
+        assert returntype not in [
+            "Expectation",
+            "Variance",
+            "Sample",
+            "Probability",
+            "State",
+            "Counts",
+            None,
+        ]
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
