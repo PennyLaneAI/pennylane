@@ -82,7 +82,7 @@ class MultiRZ(Operation):
         super().__init__(theta, wires=wires, id=id)
         if not self._wires:
             raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be given."
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
     @staticmethod
@@ -319,7 +319,7 @@ class PauliRot(Operation):
 
         if not self._wires:
             raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be given."
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
         self.hyperparameters["pauli_word"] = pauli_word

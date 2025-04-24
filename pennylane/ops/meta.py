@@ -125,7 +125,7 @@ class WireCut(Operation):
         super().__init__(wires=wires, id=id)
         if not self._wires:
             raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be given."
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
     @staticmethod
