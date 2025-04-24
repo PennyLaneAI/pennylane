@@ -413,10 +413,10 @@ def convert_to_su2(U, return_global_phase=False):
             If `False`, only the :math:`SU(2)` representation is returned.
 
     Returns:
-        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
-            equivalent to U up to a global phase. If ``return_global_phase=True``, a
-            2-element tuple is returned, with the first element being the :math:`SU(2)`
-            equivalent and the second, the global phase.
+        array[complex]:
+            A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is equivalent to U up to a
+            global phase. If ``return_global_phase=True``, a 2-element tuple is returned, with
+            the first element being the :math:`SU(2)` equivalent and the second, the global phase.
 
     """
     # Compute the determinant
@@ -445,10 +445,10 @@ def convert_to_su4(U, return_global_phase=False):
             If `False`, only the :math:`SU(4)` representation is returned.
 
     Returns:
-        array[complex]: A :math:`4 \times 4` matrix in :math:`SU(4)` that is
-            equivalent to U up to a global phase. If ``return_global_phase=True``, a
-            2-element tuple is returned, with the first element being the :math:`SU(4)`
-            equivalent and the second, the global phase.
+        array[complex]:
+            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up to a global
+            phase. If ``return_global_phase=True``, a 2-element tuple is returned, with the first
+            element being the :math:`SU(4)` equivalent and the second, the global phase.
 
     """
     # Compute the determinant
