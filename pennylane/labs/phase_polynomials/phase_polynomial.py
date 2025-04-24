@@ -23,7 +23,29 @@ def phase_polynomial(
     circ: qml.tape.QuantumScript, wire_order: Iterable = None, verbose: bool = False
 ):
     r"""
-    :doc:`Parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit
+    (Z) Phase polynomial intermediate representation for circuits consisting of (CNOT, RZ).
+
+    Such circuits can be described by a phase polynomial :math:`p(x)` and a :func:`~parity_matrix` :math:`A` in the following way:
+
+    .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |A \boldsymbol{x}\rangle.
+
+    Since the parity matrix is part of this description, both in conjunction are sometimes referred to the phase polynomial intermediate representation.
+
+    The phase polynomial :math:`p(x)` is described in terms of its parity table and associated angles. For this, note that
+    the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
+
+    .. math:: \text{RZ}(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
+
+    The parity table is made up of the `parities` :math:`\boldsymbol{x}` at the point in the circuit where the associated :class:`~RZ` gate is acting.
+    We thus simply collect the current parity and remember the angle.
+    Here is a simple example. Take the circuit ``[CNOT((0, 1)), RZ(theta, 1)], CNOT((0, 1))`` (read from left to right like a circuit diagram). We start by some arbitrary computational basis state
+    ``x = [x1, x2]``. The first CNOT is transforming the input state to ``[x1, x1 ⊕ x2]``.
+    Now that ``RZ`` is acting we remember the angle ``theta`` as well as the current parity ``x1 ⊕ x2`` on that wire. The second CNOT gate undoes the parity change and restores the final computational basis state ``[x1, x2]``.
+
+    Hence, the parity matrix is simply the identity, but the parity table is ``[[x1 ⊕ x2]]`` (or ``[[1, 1]]``) together with the angle ``[theta]``.
+    The computation of the circuit is thus simply
+
+    .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - (x_1 \oplus x_2) \right)} |x_1, x_2\rangle
 
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
