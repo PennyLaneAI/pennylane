@@ -17,7 +17,8 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
-* PennyLane no longer validates that an operation has at least one wire.
+* PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
+  interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
 <h3>Breaking changes 💔</h3>
