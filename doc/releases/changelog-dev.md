@@ -57,6 +57,7 @@
           raise DecompositionNotApplicable
       return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
 
+  @qml.register_resources(_zyz_resource)
   def zyz_decomposition(U, wires, **__):
       phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
       qml.RZ(phi, wires=wires[0])

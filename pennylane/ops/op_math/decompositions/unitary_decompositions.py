@@ -196,7 +196,7 @@ def two_qubit_decomposition(U, wires):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
-            global_phase += _decompose_3_cnots(U, wires=wires, initial_phase=global_phase)
+            global_phase += _decompose_3_cnots(U, wires, global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
             global_phase += ops.cond(
@@ -207,7 +207,7 @@ def two_qubit_decomposition(U, wires):
                     (num_cnots == 1, _decompose_1_cnot),
                     (num_cnots == 2, _decompose_2_cnots),
                 ],
-            )(U, wires=wires, initial_phase=global_phase)
+            )(U, wires, global_phase)
 
         ops.GlobalPhase(-global_phase)
 
@@ -736,6 +736,6 @@ def two_qubit_decomp_rule(U, wires, **__):
             (num_cnots == 1, _decompose_1_cnot),
             (num_cnots == 2, _decompose_2_cnots),
         ],
-    )(U, wires=wires, initial_phase=initial_phase)
+    )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.GlobalPhase(-total_phase)
