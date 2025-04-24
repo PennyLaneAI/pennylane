@@ -173,7 +173,23 @@ def two_qubit_decomposition(U, wires):
 
     We can compute its decompositon like so:
 
-    >>> qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp
+    [QubitUnitary(array([[ 0.02867704+0.82548843j,  0.5568274 -0.08769111j],
+           [-0.5568274 -0.08769111j,  0.02867704-0.82548843j]]), wires=[0]),
+    QubitUnitary(array([[ 0.32799033-0.78598401j,  0.40660725+0.33063881j],
+           [-0.40660725+0.33063881j,  0.32799033+0.78598401j]]), wires=[1]),
+    CNOT(wires=[1, 0]),
+    RZ(0.259291854677022, wires=[0]),
+    RY(-0.05808874413267284, wires=[1]),
+    CNOT(wires=[0, 1]),
+    RY(-1.6742322786950354, wires=[1]),
+    CNOT(wires=[1, 0]),
+    QubitUnitary(array([[ 0.91031205-0.21930866j,  0.20674186-0.28371375j],
+           [-0.20674186-0.28371375j,  0.91031205+0.21930866j]]), wires=[1]),
+    QubitUnitary(array([[-0.81886788-0.02979899j,  0.53279787-0.21140919j],
+           [-0.53279787-0.21140919j, -0.81886788+0.02979899j]]), wires=[0]),
+    GlobalPhase(0.1180587403699308, wires=[])]
 
     """
 
@@ -186,7 +202,7 @@ def two_qubit_decomposition(U, wires):
         )
 
     if sp.issparse(U):
-        raise DecompositionUndefinedError("two_qubit_decomposition does not accept sparse matrics.")
+        raise DecompositionUndefinedError("two_qubit_decomposition does not accept sparse matrices.")
 
     with queuing.AnnotatedQueue() as q:
 
@@ -511,6 +527,7 @@ def _decompose_1_cnot(U, wires, initial_phase):
 
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
     # eigenvalues in ascending order.
+    # !Note: future review on the eigh usage and risky eigvec order is needed: [sc-89460]
     _, p = math.linalg.eigh(math.real(uuT))
 
     # Fix the determinant if necessary so that p is in SO(4)
@@ -636,6 +653,7 @@ def _decompose_3_cnots(U, wires, initial_phase):
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
     u = math.dot(E_dag, math.dot(swap_U, E))
     gammaU = math.dot(u, math.T(u))
+    # !Note: [sc-89460]
     evs, _ = math.linalg.eig(gammaU)
 
     x = math.angle(evs[0])
