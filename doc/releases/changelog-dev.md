@@ -93,8 +93,10 @@
   further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* The `gate_set` argument of `qml.transforms.decompose` accepts `"X"`, `"Y"`, `"Z"`, `"H"`, `"I"` as
-  aliases for `qml.X`, `qml.Y`, `qml.Z`, `qml.H`, and `qml.I`.
+* The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
+  `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
+  aliases are also recognized as part of symbolic operators. For example, `"Adjoint(H)"` is now 
+  accepted as an alias for `"Adjoint(Hadamard)"`.
   [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
 <h3>Breaking changes 💔</h3>
@@ -151,9 +153,14 @@
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
+<<<<<<< HEAD
 * Moved functions that calculate rotation angles for unitary decompositions into an internal
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+=======
+* The `Identity` operator can now be accessed via its alias, `I`, in the `qml.ops` module.
+  [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+>>>>>>> 4f12417ee (apply suggestions from code review)
 
 <h3>Documentation 📝</h3>
 
