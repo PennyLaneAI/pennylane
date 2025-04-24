@@ -699,16 +699,16 @@ class BlockEncode(Operation):
         """
         if sp.sparse.issparse(params[0]):
             raise qml.operation.MatrixUndefinedError(
-                "A is sparse matrix. Use sparse_matrix method instead."
+                "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
             )
         return _process_blockencode(*params, **hyperparams)
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    def compute_sparse_matrix(A, *, norm, subspace):
         if sp.sparse.issparse(params[0]):
             return _process_blockencode(*params, **hyperparams)
         raise qml.operation.SparseMatrixUndefinedError(
-            "A is dense matrix. Use matrix method instead."
+            "The operator is initialized with a dense matrix, use the matrix method instead."
         )
 
     def adjoint(self) -> "BlockEncode":

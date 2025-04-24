@@ -19,7 +19,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes ``BlockEncode`` bug that users cannot use them as actual sparse operators in circuits to apply on states.
+* Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
 
 * Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
