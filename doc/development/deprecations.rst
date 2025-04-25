@@ -14,12 +14,6 @@ Pending deprecations
   - Deprecated in v0.42
   - Will be removed in v0.43
 
-* The property ```MeasurementProcess.return_type``` has been deprecated.
-  If observable type checking is needed, please use direct ```isinstance```; if other text information is needed, please use class name, or another internal temporary private member ``_shortname``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
   and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
   keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
@@ -59,6 +53,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``return_type`` property of ``MeasurementProcess`` has been removed.
+  If observable type checking is needed, please use ``isinstance`` instead.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
   Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>` or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.

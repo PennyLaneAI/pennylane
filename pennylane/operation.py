@@ -1133,25 +1133,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires in {AllWires, AnyWires}:
-            if (
-                not isinstance(
-                    self,
-                    (
-                        qml.Barrier,
-                        qml.Snapshot,
-                        qml.ops.LinearCombination,
-                        qml.GlobalPhase,
-                        qml.Identity,
-                    ),
-                )
-                and len(qml.wires.Wires(wires)) == 0
-            ):
-                raise ValueError(
-                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
-                )
-
-        elif len(self._wires) != self.num_wires:
+        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
