@@ -23,7 +23,14 @@ import pytest
 from conftest import decompositions, to_resources
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionError, DecompositionGraph
+from pennylane.decomposition import (
+    DecompositionError,
+    DecompositionGraph,
+    DecompositionNotApplicable,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    pow_resource_rep,
+)
 
 
 @pytest.mark.unit
@@ -47,12 +54,12 @@ class TestDecompositionGraph:
             qml.PhaseShift(np.pi / 2, wires=wires)
             qml.RY(np.pi / 2, wires=wires)
 
-        graph = DecompositionGraph(operations=[qml.Hadamard(0)], target_gate_set={"RX", "RY", "RZ"})
+        graph = DecompositionGraph(operations=[qml.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
         assert graph._get_decompositions(qml.Hadamard) == decompositions[qml.Hadamard]
 
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
-            target_gate_set={"RX", "RY", "RZ"},
+            gate_set={"RX", "RY", "RZ"},
             fixed_decomps={qml.Hadamard: custom_hadamard},
         )
         assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
@@ -60,7 +67,7 @@ class TestDecompositionGraph:
         alt_dec = [custom_hadamard, custom_hadamard_2]
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
-            target_gate_set={"RX", "RY", "RZ"},
+            gate_set={"RX", "RY", "RZ"},
             alt_decomps={qml.Hadamard: alt_dec},
         )
         exp_dec = alt_dec + decompositions[qml.Hadamard]
@@ -68,7 +75,7 @@ class TestDecompositionGraph:
 
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
-            target_gate_set={"RX", "RY", "RZ"},
+            gate_set={"RX", "RY", "RZ"},
             alt_decomps={qml.Hadamard: alt_dec},
             fixed_decomps={qml.Hadamard: custom_hadamard},
         )
@@ -78,18 +85,98 @@ class TestDecompositionGraph:
         """Tests constructing a graph from a single Hadamard."""
 
         op = qml.Hadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RZ", "GlobalPhase"})
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RZ", "GlobalPhase"})
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY)
         assert len(graph._graph.nodes()) == 8
         # 8 edges from ops to decompositions and 3 from decompositions to ops
         assert len(graph._graph.edges()) == 11
 
         # Check that graph construction stops at gates in the target gate set.
-        graph2 = DecompositionGraph(operations=[op], target_gate_set={"RY", "RZ", "GlobalPhase"})
+        graph2 = DecompositionGraph(operations=[op], gate_set={"RY", "RZ", "GlobalPhase"})
         # 5 ops and 2 decompositions (RY is in the target gate set now)
         assert len(graph2._graph.nodes()) == 7
         # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
+
+    def test_graph_construction_non_applicable_rules(self, _):
+        """Tests rules that raise DecompositionNotApplicable are skipped."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom op"""
+
+            resource_keys = {"num_wires"}
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        def _some_resource(num_wires):
+            if num_wires > 1:
+                raise DecompositionNotApplicable
+            return {qml.RZ: 1, qml.CNOT: 1}
+
+        @qml.register_resources(_some_resource)
+        def some_rule(*_, **__):
+            raise NotImplementedError
+
+        def _some_other_resource(num_wires):
+            if num_wires < 2:
+                raise DecompositionNotApplicable
+            return {qml.RZ: 1, qml.CNOT: num_wires - 1}
+
+        @qml.register_resources(_some_other_resource)
+        def some_other_rule(*_, **__):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(wires=[0, 1])],
+            gate_set={"CNOT", "RZ"},
+            alt_decomps={CustomOp: [some_rule, some_other_rule]},
+        )
+        # 3 ops (CustomOp, CNOT, RZ) and 1 decompositions (only some_other_rule)
+        assert len(graph._graph.nodes()) == 4
+        # 2 edges from ops to decompositions and 1 from decompositions to ops
+        assert len(graph._graph.edges()) == 3
+
+    def test_gate_set(self, _):
+        """Tests that graph construction stops at the target gate set."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources(
+            {
+                qml.RX: 1,
+                qml.X: 1,
+                adjoint_resource_rep(qml.RY): 1,
+                controlled_resource_rep(qml.T, {}, num_control_wires=2): 1,
+                pow_resource_rep(qml.Z, {}, z=2): 1,
+            }
+        )
+        def custom_decomp(wires):
+            qml.RX(0.1, wires=wires[0])
+            qml.X(wires=wires[1])
+            qml.adjoint(qml.RY(0.1, wires=wires[2]))
+            qml.ctrl(qml.T(0), control=[1, 2])
+            qml.pow(qml.Z(0), 2)
+
+        op = CustomOp(wires=[0, 1, 2])
+        graph = DecompositionGraph(
+            [op],
+            gate_set={"RX", "X", "Adjoint(RY)", "C(T)", "Pow(Z)"},
+            fixed_decomps={CustomOp: custom_decomp},
+        )
+
+        # 1 node for CustomOp, 1 decomposition node, and 5 for the ops in the decomposition
+        assert len(graph._graph.nodes()) == 7
+        # 5 edges from ops to decompositions and 1 edge from decompositions to ops
+        assert len(graph._graph.edges()) == 6
 
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
@@ -97,7 +184,7 @@ class TestDecompositionGraph:
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"RX", "RY", "RZ", "GlobalPhase"},
+            gate_set={"RX", "RY", "RZ", "GlobalPhase"},
         )
         graph.solve()
 
@@ -110,7 +197,7 @@ class TestDecompositionGraph:
         """Tests that the correct error is raised if a decomposition isn't found."""
 
         op = qml.Hadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX", "RY", "GlobalPhase"})
+        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
         with pytest.raises(DecompositionError, match="Decomposition not found for {'Hadamard'}"):
             graph.solve()
 
@@ -149,7 +236,7 @@ class TestDecompositionGraph:
 
         graph = DecompositionGraph(
             operations=[CustomOp(wires=[0])],
-            target_gate_set={"CNOT", "RZ"},
+            gate_set={"CNOT", "RZ"},
             alt_decomps={
                 CustomOp: [_custom_decomp, _custom_decomp_2],
                 AnotherOp: [_another_decomp],
@@ -192,7 +279,7 @@ class TestDecompositionGraph:
         op = CustomOp(wires=[0, 1, 2, 3])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+            gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
             alt_decomps={CustomOp: [_custom_decomp]},
         )
         # 10 ops (CustomOp, MultiRZ(4), MultiRZ(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
@@ -229,9 +316,7 @@ class TestControlledDecompositions:
 
         op1 = qml.ctrl(qml.GlobalPhase(0.5), control=[1])
         op2 = qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2])
-        graph = DecompositionGraph(
-            [op1, op2], target_gate_set={"ControlledPhaseShift", "PhaseShift"}
-        )
+        graph = DecompositionGraph([op1, op2], gate_set={"ControlledPhaseShift", "PhaseShift"})
         # 4 op nodes and 2 decomposition nodes.
         assert len(graph._graph.nodes()) == 6
         # 2 edges from decompositions to ops and 2 edges from ops to decompositions
@@ -255,7 +340,7 @@ class TestControlledDecompositions:
         op2 = qml.ops.Controlled(qml.H(0), control_wires=[1])
         graph = DecompositionGraph(
             operations=[op1, op2],
-            target_gate_set={"CNOT", "CH"},
+            gate_set={"CNOT", "CH"},
         )
         # 4 op nodes and 2 decomposition nodes.
         assert len(graph._graph.nodes()) == 6
@@ -322,7 +407,7 @@ class TestControlledDecompositions:
         op3 = qml.ctrl(CustomControlledOp(wires=[0, 1]), control=[2], control_values=[False])
         graph = DecompositionGraph(
             operations=[op1, op2, op3],
-            target_gate_set={"CNOT", "Toffoli", "CCZ", "RZ", "RX", "GlobalPhase"},
+            gate_set={"CNOT", "Toffoli", "CCZ", "RZ", "RX", "GlobalPhase"},
             alt_decomps={
                 CustomOp: [custom_decomp, second_decomp],
                 CustomControlledOp: [custom_controlled_decomp],
@@ -356,7 +441,7 @@ class TestSymbolicDecompositions:
 
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=[0])))
 
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
         # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
         assert len(graph._graph.nodes()) == 3
         assert len(graph._graph.edges()) == 2
@@ -373,7 +458,7 @@ class TestSymbolicDecompositions:
 
         op = qml.adjoint(qml.pow(qml.H(0), z=3))
 
-        graph = DecompositionGraph(operations=[op], target_gate_set={"Hadamard"})
+        graph = DecompositionGraph(operations=[op], gate_set={"H"})
         # 3 operator nodes: Adjoint(Pow(H)), Pow(H), and H
         # 2 decomposition nodes for Adjoint(Pow(H)) and Pow(H)
         assert len(graph._graph.nodes()) == 5
@@ -393,7 +478,7 @@ class TestSymbolicDecompositions:
 
         op = qml.adjoint(qml.RX(0.5, wires=[0]))
 
-        graph = DecompositionGraph(operations=[op], target_gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node.
         assert len(graph._graph.nodes()) == 3
         assert len(graph._graph.edges()) == 2
@@ -411,9 +496,7 @@ class TestSymbolicDecompositions:
         op = qml.adjoint(qml.ops.Controlled(qml.RX(0.5, wires=[0]), control_wires=1))
         op2 = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=[1]))
 
-        graph = DecompositionGraph(
-            operations=[op, op2], target_gate_set={"ControlledPhaseShift", "CRX"}
-        )
+        graph = DecompositionGraph(operations=[op, op2], gate_set={"ControlledPhaseShift", "CRX"})
         # 5 operator nodes: Adjoint(C(RX)), Adjoint(C(U1)), CRX, C(U1), ControlledPhaseShift
         # 3 decomposition nodes leading into Adjoint(C(RX)), Adjoint(C(U1)), and C(U1)
         assert len(graph._graph.nodes()) == 8
@@ -457,7 +540,7 @@ class TestSymbolicDecompositions:
         op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"Hadamard", "CNOT", "RX", "PhaseShift"},
+            gate_set={"H", "CNOT", "RX", "PhaseShift"},
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 10 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX, A(PhaseShift), PhaseShift
@@ -485,7 +568,7 @@ class TestSymbolicDecompositions:
         """Tests nested power decompositions."""
 
         op = qml.pow(qml.pow(qml.H(0), 3), 2)
-        graph = DecompositionGraph(operations=[op], target_gate_set={"Hadamard"})
+        graph = DecompositionGraph(operations=[op], gate_set={"H"})
         # 3 operator nodes: Pow(Pow(H)), Pow(H), and H
         # 2 decomposition nodes for Pow(Pow(H)) and Pow(H)
         assert len(graph._graph.nodes()) == 5

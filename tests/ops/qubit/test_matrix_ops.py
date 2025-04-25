@@ -1006,6 +1006,48 @@ class TestBlockEncode:
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
+        ("input_matrix", "issparse"),
+        [
+            (np.array([[1, 0], [0, 1]]), False),
+            (X, False),
+            (csr_matrix([[1, 0], [0, 1]]), True),
+        ],
+    )
+    def test_property(self, input_matrix, issparse):
+        """Test that BlockEncode has the correct properties."""
+        op = qml.BlockEncode(input_matrix, wires=range(2))
+        assert op.has_matrix != issparse
+        assert op.has_sparse_matrix == issparse
+        if issparse:
+            # Test if there's correct error out
+            with pytest.raises(qml.operation.MatrixUndefinedError):
+                op.matrix()
+        else:
+            with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+                op.sparse_matrix()
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "input_matrix",
+        [
+            np.array([[1, 0], [0, 1]]),
+            X,
+            csr_matrix([[1, 0], [0, 1]]),
+        ],
+    )
+    def test_applicable(self, input_matrix):
+        """Integration Test that BlockEncode can be applied onto a state."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BlockEncode(input_matrix, wires=range(2))
+            return qml.state()
+
+        state = circuit()
+        assert state.shape == (2**2,)
+
+    @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
         [
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
@@ -1390,7 +1432,7 @@ class TestBlockEncode:
         op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
 
         # Test the operator is unitary
-        mat = qml.matrix(op)
+        mat = op.sparse_matrix()
         assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qml.math.allclose(mat, mat_dense)
