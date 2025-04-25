@@ -21,6 +21,7 @@ Phase Polynomials intermediate representation
     :toctree: api
 
     ~parity_matrix
+    ~phase_polynomial
 
 
 """

@@ -23,13 +23,13 @@ def phase_polynomial(
     circ: qml.tape.QuantumScript, wire_order: Iterable = None, verbose: bool = False
 ):
     r"""
-    (Z) Phase polynomial intermediate representation for circuits consisting of (CNOT, RZ).
+    Phase polynomial IR for circuits consisting of CNOT and RZ gates.
 
     Such circuits can be described by a phase polynomial :math:`p(x)` and a :func:`~parity_matrix` :math:`A` in the following way:
 
     .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |A \boldsymbol{x}\rangle.
 
-    Since the parity matrix is part of this description, both in conjunction are sometimes referred to the phase polynomial intermediate representation.
+    Since the parity matrix is part of this description, both in conjunction are sometimes referred to the phase polynomial intermediate representation (IR).
 
     The phase polynomial :math:`p(x)` is described in terms of its parity table and associated angles. For this, note that
     the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
@@ -47,7 +47,7 @@ def phase_polynomial(
 
     .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - (x_1 \oplus x_2) \right)} |x_1, x_2\rangle
 
-    Roughyl, this function implements
+    The semantics of this function is roughly given by the following implementation:
 
     .. code-block:: python
 
