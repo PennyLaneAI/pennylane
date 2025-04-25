@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from itertools import permutations
-from typing import Dict, Generator, List, Sequence, Tuple
+from typing import Dict, Generator, Hashable, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -28,47 +28,103 @@ class ProductFormula:
 
     def __init__(
         self,
-        coeffs: Sequence[float],
-        fragments: Sequence[int],
-        exponent: int = 1,
+        terms: Union[Sequence[Hashable], Sequence[ProductFormula]],
+        coeffs: Sequence[float] = None,
+        exponent: float = 1.0,
+        label: str = None,
     ):
 
-        if len(coeffs) != len(fragments):
-            raise ValueError(f"Got {len(coeffs)} coefficients and {len(fragments)} fragments.")
+        if any(not isinstance(term, type(terms[0])) for term in terms):
+            raise TypeError("All terms must have the same type.")
 
-        for fragment in fragments:
-            if not isinstance(fragment, int):
-                raise TypeError(f"Fragments must have type int, got {type(fragment)} instead.")
+        if not isinstance(terms[0], (Hashable, ProductFormula)):
+            raise TypeError(
+                f"Terms must either be Hashable type or of type ProductFormula. Got {type(terms[0])} instead."
+            )
 
-        self.labels = set()
-        for fragment in fragments:
-            if isinstance(fragment, ProductFormula):
-                self.labels = set.union(self.labels, fragment.labels)
+        if isinstance(terms[0], ProductFormula):
+            self.recursive = True
+        elif isinstance(terms[0], Hashable):
+            if coeffs is None:
+                raise ValueError("List of coefficients must be given.")
+            if len(coeffs) != len(terms):
+                raise ValueError("Number of coefficients must equal number of terms.")
+
+            self.recursive = False
+
+        self.fragments = set()
+        for term in terms:
+            if isinstance(term, ProductFormula):
+                self.fragments = set.union(self.fragments, term.fragments)
             else:
-                self.labels.add(fragment)
+                self.fragments.add(term)
 
+        self.terms = terms
         self.coeffs = coeffs
-        self.fragments = fragments
         self.exponent = exponent
+        self.label = label
+
+        self._ordered_terms = {}
+        position = 0
+        for term in self.terms:
+            if term not in self._ordered_terms:
+                self._ordered_terms[term] = position
+                position += 1
+
+    def __call__(self, t: float):
+        if self.recursive:
+            return ProductFormula(
+                [term(t) for term in self.terms], exponent=self.exponent, label=f"{self.label}({t})"
+            )
+
+        return ProductFormula(
+            self.terms,
+            coeffs=[t * coeff for coeff in self.coeffs],
+            exponent=self.exponent,
+            label=f"{self.label}({t})",
+        )
+
+    def __eq__(self, other: ProductFormula) -> bool:
+        if self.terms != other.terms:
+            return False
+
+        if not self.recursive and self.coeffs != other.coeffs:
+            return False
+
+        return self.exponent == other.exponent
+
+    def __hash__(self) -> int:
+        terms = tuple(self.terms)
+        return hash((terms, self.exponent))
+
+    def __matmul__(self, other: ProductFormula) -> ProductFormula:
+        return ProductFormula([self, other], label=f"{self.label}@{other.label}")
+
+    def __pow__(self, z: float) -> ProductFormula:
+        return ProductFormula(
+            self.terms,
+            coeffs=self.coeffs,
+            exponent=z * self.exponent,
+            label=f"{self.label}**{z * self.exponent}",
+        )
 
     def __repr__(self) -> str:
-        reps = [
-            f"Exp({coeff}*H_{fragment})" for coeff, fragment in zip(self.coeffs, self.fragments)
-        ]
+        # if self.label:
+        #    return f"{self.label}**{self.exponent}" if self.exponent != 1 else f"{self.label}"
 
-        return "*".join(reps)
+        if self.recursive:
+            return "@".join(term.__repr__() for term in self.terms)
+
+        return "@".join([f"Exp({coeff}*H_{term})" for coeff, term in zip(self.coeffs, self.terms)])
 
     def bch_approx(self, max_order: int) -> Dict[Tuple[int], float]:
         """Returns an approximation of the BCH expansion in terms of right-nested commutators up to order `max_order`.
         This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
         """
 
-        terms = []
-
-        for k in range(1, max_order + 1):
-            terms.append(_kth_order_terms(self.fragments, k))
-
-        return _remove_redundancies(terms)
+        return _remove_redundancies(
+            [_kth_order_terms(self.terms, k) for k in range(1, max_order + 1)], self._ordered_terms
+        )
 
 
 def _kth_order_terms(fragments: Sequence[int], k: int) -> Dict[Tuple[int], float]:
@@ -126,6 +182,7 @@ def _n_descents(permutation: Sequence[int]) -> int:
 
 def _remove_redundancies(
     term_dicts: List[Dict[Tuple[int], float]],
+    term_order: Dict[Hashable, int],
 ) -> List[Dict[Tuple[int], float]]:
 
     max_order = len(term_dicts)
@@ -137,7 +194,7 @@ def _remove_redundancies(
         for commutator in terms.keys():
             if commutator[-1] == commutator[-2]:
                 delete.append(commutator)
-            if commutator[-1] < commutator[-2]:
+            if term_order[commutator[-1]] < term_order[commutator[-2]]:
                 swap.append(commutator)
 
         for commutator in delete:
@@ -157,7 +214,7 @@ def _remove_redundancies(
 
     swap = []
     for commutator in term_dicts[3].keys():
-        if commutator[1] < commutator[0]:
+        if term_order[commutator[1]] < term_order[commutator[0]]:
             swap.append(commutator)
 
     for commutator in swap:

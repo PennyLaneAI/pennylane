@@ -38,7 +38,7 @@ def test_second_order(fragments):
     frag_labels = list(range(n_frags)) + list(range(n_frags - 1, -1, -1))
     coeffs = [1 / 2] * len(frag_labels)
 
-    pf = ProductFormula(coeffs, frag_labels)
+    pf = ProductFormula(frag_labels, coeffs=coeffs)
     actual = effective_hamiltonian(pf, fragments, 3)
 
     expected = np.zeros(shape=(3, 3))
@@ -63,7 +63,7 @@ def test_two_fragments():
     frag_labels = [0, 1]
     frag_coeffs = [1, 1]
 
-    actual = ProductFormula(frag_coeffs, frag_labels).bch_approx(max_order=4)
+    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=4)
 
     expected = [
         {(0,): 1, (1,): 1},
@@ -81,7 +81,7 @@ def test_three_fragments():
     frag_labels = [0, 1, 2]
     frag_coeffs = [1, 1, 1]
 
-    actual = ProductFormula(frag_coeffs, frag_labels).bch_approx(max_order=3)
+    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
     expected = [
         {(0,): 1, (1,): 1, (2,): 1},
         {(0, 1): 1 / 2, (0, 2): 1 / 2, (1, 2): 1 / 2},

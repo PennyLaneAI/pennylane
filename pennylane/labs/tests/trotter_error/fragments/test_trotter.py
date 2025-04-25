@@ -61,7 +61,7 @@ def _coeffs_isclose(d1, d2):
 def test_second_order_trotter(modes):
     """Test that the second order Trotter error operator is correct for a 2 state example"""
     states = 2
-    delta = 0.72
+
     delta = 1
     scalar = -(delta**2) / 24
     fragments = dict(enumerate(vibronic_fragments(states, modes, *_coeffs(states, modes, order=2))))
@@ -69,7 +69,7 @@ def test_second_order_trotter(modes):
     frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
     frag_coeffs = [delta / 2] * len(frag_labels)
 
-    product_formula = ProductFormula(frag_coeffs, frag_labels)
+    product_formula = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
     terms = [
         nested_commutator([fragments[0], fragments[0], fragments[1]]),

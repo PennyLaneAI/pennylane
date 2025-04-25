@@ -60,20 +60,28 @@ def effective_hamiltonian(
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
+    if not product_formula.fragments.issubset(fragments.keys()):
+        raise ValueError("Fragments do not match product formula")
+
+    if product_formula.recursive:
+        fragments = {
+            pf: effective_hamiltonian(pf, fragments, order) for pf in product_formula.terms
+        }
+
     bch = product_formula.bch_approx(order)
-
-    if len(fragments) == 0:
-        return fragments
-
     eff = _AdditiveIdentity()
 
-    for terms in bch:
-        for commutator, coeff in terms.items():
-            eff += coeff * nested_commutator(
-                [product_formula.coeffs[i] * fragments[i] for i in commutator]
-            )
+    def frag_coeff(i):
+        if product_formula.coeffs is None:
+            return 1
 
-    return eff
+        return product_formula.coeffs[i]
+
+    for commutator_order in bch:
+        for commutator, coeff in commutator_order.items():
+            eff += coeff * nested_commutator([frag_coeff(i) * fragments[i] for i in commutator])
+
+    return product_formula.exponent * eff
 
 
 def perturbation_error(
