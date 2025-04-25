@@ -145,7 +145,7 @@ def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
     N is the number of spin orbitals.
     Each CDF term contains a basis rotation and a set of CZZ gates.
     """
-    Y2kp1 = Y2kp1dN2 * N**2
+    Y2kp1 = Y2kp1dN2 * (N/10)**2
     rotations = Trotter_cost(N, order)
     for key, value in rotations.items():
         rotations[key] = value * (Y2kp1/epsilon)**(1/(order)) * time
@@ -270,8 +270,89 @@ def plot_cost_vs_precision():
     
     return fig
 
+
+def trotter_formulas():
+    """
+    Creates a plot showing how T-gate count and active volume scale with precision (epsilon)
+    for different algorithms.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import ScalarFormatter
+    import scienceplots
+    plt.style.use('science')
+    
+    # Range of precision values to evaluate
+    epsilons = np.logspace(-4, 0, 20)  # Precision from 10^-6 to 10^-1
+    
+    # Dictionary to store results
+    results = {
+        '2nd order': {'T_gates': [], 'active_volume': []},
+        '4th order': {'T_gates': [], 'active_volume': []},
+        '6th order': {'T_gates': [], 'active_volume': []}
+    }
+    # Calculate costs of spectroscopy for each precision
+    # time is -np.log(epsilon*eta)/eta, eta = epsilon, because N_trot = tau * jmax/Delta = 1/(2*eta) * 1/Delta
+
+    for eps in epsilons:
+        eta = eps
+        # 2nd order costs
+        spec_rotations = spectroscopy_longest(N, 2, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        spec_av = active_volume(spec_rotations)
+        results['2nd order']['T_gates'].append(spec_t)
+        results['2nd order']['active_volume'].append(spec_av)
+
+        # 4th order costs
+        spec_rotations = spectroscopy_longest(N, 4, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        spec_av = active_volume(spec_rotations)
+        results['4th order']['T_gates'].append(spec_t)
+        results['4th order']['active_volume'].append(spec_av)
+
+        # 6th order costs
+        spec_rotations = spectroscopy_longest(N, 6, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        spec_av = active_volume(spec_rotations)
+        results['6th order']['T_gates'].append(spec_t)
+        results['6th order']['active_volume'].append(spec_av)
+
+    # Create plots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    # T-gates plot
+    for alg in results.keys():
+        ax1.plot(epsilons, results[alg]['T_gates'], marker='o', linestyle='-', label=alg)
+    ax1.set_xlabel('Precision ($\\epsilon$, Ha)')
+    ax1.set_ylabel('T-gate count')
+    ax1.set_title('T-gate Count vs Precision')
+    ax1.grid(True, which="both", ls="-", alpha=0.2)
+    ax1.legend()
+    ax1.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+
+
+    # Active volume plot
+    for alg in results.keys():
+        ax2.plot(epsilons, results[alg]['active_volume'], marker='o', linestyle='-', label=alg)
+    ax2.set_xlabel('Precision ($\\epsilon$, Ha)')
+    ax2.set_ylabel('Active Volume')
+    ax2.set_title('Active Volume vs Precision')
+    ax2.grid(True, which="both", ls="-", alpha=0.2)
+    ax2.legend()
+    ax2.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
+    ax2.set_xscale('log')
+    ax2.set_yscale('log')
+    plt.tight_layout()
+    # Save the figure
+    save_path = '/Users/pablo.casares/Developer/pennylane/pennylane/labs/trotter_vs_qubitization/product_formulas.png'
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+
+
+
+
+
 # Execute the plotting function if this script is run directly
 if __name__ == "__main__":
     print("\nGenerating cost vs precision plot...")
-    plot_cost_vs_precision()
+    trotter_formulas()
     print("Done!")
