@@ -155,6 +155,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
+  [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
+
 * Adds an informative error if `qml.cond` is used with an abstract condition with
   jitting on `default.qubit` if capture is enabled.
   [(#7314)](https://github.com/PennyLaneAI/pennylane/pull/7314)
