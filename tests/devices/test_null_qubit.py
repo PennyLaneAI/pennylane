@@ -82,6 +82,8 @@ def test_resource_tracking_attribute():
         op = qml.adjoint(op)
         op = qml.ctrl(op, control=1, control_values=[1])
 
+        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+
         qml.CNOT([0, 1])
         qml.Barrier()
 
@@ -104,11 +106,12 @@ def test_resource_tracking_attribute():
     assert stats == json.dumps(
         {
             "num_wires": 3,
-            "num_gates": 6,
+            "num_gates": 7,
             "gate_types": {
                 "PauliX": 1,
                 "Hadamard": 1,
                 "C(Adj(T))": 1,
+                "2C(S)": 1,
                 "CNOT": 1,
                 "C(IsingXX)": 1,
                 "Adj(S)": 1,

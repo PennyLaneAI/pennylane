@@ -132,28 +132,23 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
-def _simulate_resource_use(circuit):
-    RESOURCES_FNAME = "__pennylane_resources_data.json"
-
+def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.json"):
     num_wires = len(circuit.wires)
     gate_types = defaultdict(int)
 
     for op in circuit.operations:
-        prefix = ""
-        suffix = ""
+        controls = 0
+        adj = False
+
         while hasattr(op, "base"):
             if type(op) in (Controlled, ControlledOp):
                 # Don't check this with `isinstance` to avoid unrolling ops like CNOT
-                prefix += "C("
-                suffix += ")"
+                controls += len(op.control_wires)
             elif isinstance(op, Adjoint):
-                prefix += "Adj("
-                suffix += ")"
+                adj = not adj
             else:
                 break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
-            # TODO: How should these be handled?
-            # if isinstance(op, (Pow, Exp)):
-            #     op = op.base
+            # NOTE: Pow, Exp, Add, etc. intentionally not handled to be compatible with Catalyst
             op = op.base
 
         # Barrier is not a gate and takes no resources, so we skip it
@@ -161,12 +156,16 @@ def _simulate_resource_use(circuit):
             # (this confuses codecov, despite being tested)
             continue  # pragma: no cover
 
-        name = prefix + op.name + suffix
+        name = op.name
+        if adj:
+            name = f"Adj({name})"
+        if controls:
+            name = f"{controls if controls > 1 else ''}C({name})"
 
         gate_types[name] += 1
     # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
     #  In the future it may be better to return this information in a more structured way.
-    with open(RESOURCES_FNAME, "w") as f:
+    with open(resources_fname, "w") as f:
         json.dump(
             {
                 "num_wires": num_wires,
