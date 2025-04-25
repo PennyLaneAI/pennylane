@@ -8,8 +8,10 @@ This module contains functions and classes for creating and manipulating fermion
 
 .. currentmodule:: pennylane.fermi
 
-.. autosummary::
-  :toctree: api
+.. automodapi:: pennylane.fermi
+    :no-heading:
+    :no-main-docstr:
+    :no-inherited-members:
 
 FermiC and FermiA
 -----------------
