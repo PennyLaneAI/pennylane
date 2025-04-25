@@ -20,6 +20,10 @@
 * Improved readability of `ExecutionConfig` with a custom `__str__`. 
   [(#7308)](https://github.com/PennyLaneAI/pennylane/pull/7308)
 
+* PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
+  interface to maintain a list of special implementations.
+  [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
+
 <h3>Breaking changes 💔</h3>
 
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
