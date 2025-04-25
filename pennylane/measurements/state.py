@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
 
-from .measurements import State, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def state() -> "StateMP":
@@ -138,7 +138,7 @@ class StateMP(StateMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = State  #! Note: deprecated. Change the value to "state" in v0.42
+    _shortname = "state"
 
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
