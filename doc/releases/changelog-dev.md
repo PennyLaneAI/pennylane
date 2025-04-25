@@ -1,4 +1,4 @@
-from pennylane import QubitUnitary:orphan:
+:orphan:
 
 # Release 0.42.0-dev (development release)
 
