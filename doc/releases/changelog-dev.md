@@ -12,6 +12,64 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+<h4>Resource-efficient Decompositions 🔎</h4>
+
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
+  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
+  decompose into will be chosen based on the target gate set.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  from functools import partial
+  import numpy as np
+  import pennylane as qml
+  
+  qml.decomposition.enable_graph()
+  
+  U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+  
+  @partial(qml.transforms.decompose, gate_set={"RX", "RY", "GlobalPhase"})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.QubitUnitary(np.array([[1, 1], [1, -1]]) / np.sqrt(2), wires=[0])
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
+  ```
+
+* Decomposition rules can be marked as not-applicable with :class:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
+  rules based on parameters that affects the rule's resources.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  import pennylane as qml
+  from pennylane.decomposition import DecompositionNotApplicable
+  from pennylane.math.decomposition import zyz_rotation_angles
+  
+  def _zyz_resource(num_wires):
+      if num_wires != 1:
+          # This decomposition is only applicable when num_wires is 1
+          raise DecompositionNotApplicable
+      return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
+
+  @qml.register_resources(_zyz_resource)
+  def zyz_decomposition(U, wires, **__):
+      phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+      qml.RZ(phi, wires=wires[0])
+      qml.RY(theta, wires=wires[0])
+      qml.RZ(omega, wires=wires[0])
+      qml.GlobalPhase(-phase)
+  
+  qml.add_decomps(QubitUnitary, zyz_decomposition)
+  ```
+  
+  This decomposition will be ignored for `QubitUnitary` on more than one wire.
+
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
@@ -19,6 +77,11 @@
 
 * Improved readability of `ExecutionConfig` with a custom `__str__`. 
   [(#7308)](https://github.com/PennyLaneAI/pennylane/pull/7308)
+
+* Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
+  decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
+  further decompose single-qubit unitary gates more flexibly using different rotations.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 * PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
   interface to maintain a list of special implementations.
@@ -81,6 +144,10 @@
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
+* Moved functions that calculate rotation angles for unitary decompositions into an internal
+  module `qml.math.decomposition`
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Documentation 📝</h3>
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
@@ -115,11 +182,15 @@
 * Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
+* Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Astral Cai,
 Yushao Chen,
 Po-Ying Chiu,
 Lillian Frederiksen,
