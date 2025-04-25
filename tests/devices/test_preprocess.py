@@ -534,6 +534,7 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
+    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
@@ -603,8 +604,8 @@ class TestMeasurementsFromCountsOrSamples:
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
     def test_with_counts_output(self, counts_kwargs, meas_transform):
-        """Test that the measurements with an optional observable argument work
-        as expected when an observable (instead of wires) is provided."""
+        """Test that returning counts works as expected for all wires, specific wires, or an observable,
+        when using both the measurements_from_counts and measurements_from_samples transforms."""
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
 
@@ -642,8 +643,8 @@ class TestMeasurementsFromCountsOrSamples:
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
     def test_with_sample_output(self, sample_kwargs, meas_transform):
-        """Test that the measurements with an optional observable argument work
-        as expected when an observable (instead of wires) is provided."""
+        """Test that returning sample works as expected for all wires, specific wires, or an observable,
+        when using both the measurements_from_counts and measurements_from_samples transforms."""
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
 
@@ -668,11 +669,44 @@ class TestMeasurementsFromCountsOrSamples:
         assert set(res.flatten()) == set(expected.flatten())
 
     @pytest.mark.parametrize(
+        "counts_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform):
+        """Test that the measurements with counts when only some states have non-zero counts,
+        and confirm that all_counts returns the expected entries"""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit():
+            return qml.counts(**counts_kwargs, all_outcomes=all_outcomes)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        res = transformed_circuit()
+        expected = basic_circuit()
+
+        # +/- 200 shots is pretty reasonable with 5000 shots total
+        assert res.keys() == expected.keys()
+        for key in res.keys():
+            assert np.isclose(res[key], expected[key], atol=200)
+
+    @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
     def test_multiple_measurements(self, meas_transform):
-        """Test the transforms for measurements_from_counts to other measurement types
-        with multiple measurements"""
+        """Test the results of applying measurements_from_counts/measurements_from_samples with
+        multiple measurements"""
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
 
