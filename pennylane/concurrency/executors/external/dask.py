@@ -29,7 +29,7 @@ class DaskExec(ExtExec):  # pragma: no cover
     """
     Dask distributed executor wrapper.
 
-    This executor relies on `Dask's distributed interface <https://distributed.dask.org/en/stable/>`_ to offload task execution to a either a local, or configured remote cluster backend.
+    This executor relies on `Dask's distributed interface <https://distributed.dask.org/en/stable/>`_ to offload task execution to either a local or configured remote cluster backend.
 
     Args:
         max_workers:    the maximum number of concurrent units (threads, processes) to use. The serial backend defaults to 1 and will return a ``RuntimeError`` if more are requested.
