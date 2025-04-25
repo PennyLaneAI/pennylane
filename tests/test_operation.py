@@ -231,6 +231,14 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(1.234)
 
+    def test_no_wires_for_op_with_any_wires(self):
+        """Test that an operator that allows any number of wires can have zero wires."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        assert DummyOp(wires=()).wires == qml.wires.Wires(())
+
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 
