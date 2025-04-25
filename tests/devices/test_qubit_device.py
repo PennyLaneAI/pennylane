@@ -25,17 +25,12 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice
 from pennylane.measurements import (
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
-    Probability,
     ProbabilityMP,
-    Sample,
     SampleMP,
     Shots,
-    State,
     StateMP,
-    Variance,
     VarianceMP,
 )
 from pennylane.resource import Resources
@@ -322,7 +317,8 @@ class TestObservables:
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                qml.QuantumFunctionError,
+                match="Unsupported return type specified for observable",
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
                 dev.execute(tape)
@@ -392,7 +388,7 @@ class TestExtractStatistics:
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
+        assert returntype not in ["Expectation", "Variance", "Sample", "Probability", "State", None]
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype

@@ -25,6 +25,7 @@ import logging
 import numpy as np
 
 import pennylane as qml
+
 from pennylane.math import get_canonical_interface_name
 from pennylane.logging import debug_logger, debug_logger_init
 
