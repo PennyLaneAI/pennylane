@@ -20,8 +20,8 @@ from pennylane.transforms import transform
 
 @transform
 def measurements_from_samples(tape):
-    r"""Replace all measurements from a tape with a single sample measurement,
-    and adds postprocessing functions for each original measurement.
+    r"""Quantum function transform that replaces all terminal measurements with a single sample 
+    measurement.
 
     .. note::
         This transform diagonalizes all the operations on the tape. An error will
