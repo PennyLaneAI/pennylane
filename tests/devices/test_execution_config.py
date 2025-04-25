@@ -15,7 +15,6 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
-import pprint
 
 import pytest
 
@@ -109,5 +108,18 @@ def test_str_representation():
     config = ExecutionConfig(
         gradient_method="backprop", interface="autograd", device_options={"shots": None}
     )
-    expected = pprint.pformat(config)
+    expected = (
+        "ExecutionConfig(\n"
+        "    grad_on_execution=None,\n"
+        "    use_device_gradient=None,\n"
+        "    use_device_jacobian_product=None,\n"
+        "    gradient_method='backprop',\n"
+        "    gradient_keyword_arguments={},\n"
+        "    device_options={'shots': None},\n"
+        "    interface=<Interface.AUTOGRAD: 'autograd'>,\n"
+        "    derivative_order=1,\n"
+        "    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),\n"
+        "    convert_to_numpy=True,\n"
+        ")"
+    )
     assert str(config) == expected
