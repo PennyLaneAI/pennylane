@@ -14,6 +14,22 @@
 
 """
 Submodule for concurrent executors relying on the Python standard library.
+
+.. currentmodule:: pennylane.concurrency.executor
+
+All executor functionality in this module is implemented directly using native Python abstractions.
+
+.. currentmodule:: pennylane.concurrency.executors.native
+
+.. autosummary::
+    :toctree: api
+
+    ~api.PyNativeExec
+    ~conc_futures.ProcPoolExec
+    ~conc_futures.ThreadPoolExec
+    ~multiproc.MPPoolExec
+    ~serial.SerialExec
+
 """
 
 from .api import PyNativeExec
@@ -21,4 +37,4 @@ from .multiproc import MPPoolExec
 from .conc_futures import ProcPoolExec, ThreadPoolExec
 from .serial import SerialExec
 
-__all__ = ["MPPoolExec", "PyNativeExec", "ProcPoolExec", "ThreadPoolExec", "SerialExec"]
+# __all__ = ["MPPoolExec", "PyNativeExec", "ProcPoolExec", "ThreadPoolExec", "SerialExec"]

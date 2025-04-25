@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.concurrency.executors import ExecBackends, get_executor
+from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher

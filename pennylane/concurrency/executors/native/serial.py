@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This module provides single-threaded, local executor support for function execution. All operations are directed to built-ins, and use direct function execution.
 """
 
@@ -25,7 +25,7 @@ from .api import PyNativeExec
 
 
 class StdLibBackend:
-    """
+    r"""
     Internal utility class for use with the executor API.
     All execution is local within the calling Python process.
 
@@ -60,8 +60,8 @@ class StdLibBackend:
 
 
 class SerialExec(PyNativeExec):
-    """
-    Serial Python standard library executor.
+    r"""
+    Serial Python standard library executor class.
 
     This executor wraps Python standard library calls without support for multithreaded or multiprocess execution. Any calls to external libraries that utilize threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
 

@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Provides abstractions for task-based parallel workloads within PennyLane using a simplified `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`__ executor-like interface.
+Provides abstractions for task-based parallel workloads within PennyLane using a simplified `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`_ executor-like interface.
 """
 
 from .backends import ExecBackends, create_executor, get_executor, get_supported_backends
-from .base import RemoteExec, IntExec, ExtExec
+from .base import RemoteExec, IntExec, ExtExec, ExecBackendConfig
 from .native import PyNativeExec, SerialExec, MPPoolExec, ProcPoolExec, ThreadPoolExec
 
-__all__ = [
-    "ExecBackends",
-    "create_executor",
-    "get_executor",
-    "get_supported_backends",
-    "RemoteExec",
-    "IntExec",
-    "ExtExec",
-    "PyNativeExec",
-    "SerialExec",
-    "MPPoolExec",
-    "ProcPoolExec",
-    "ThreadPoolExec",
-]
+# __all__ = [
+#    "ExecBackends",
+#    "create_executor",
+#    "get_executor",
+#    "get_supported_backends",
+#    "ExecBackendConfig",
+#    "RemoteExec",
+#    "IntExec",
+#    "ExtExec",
+#    "PyNativeExec",
+#    "SerialExec",
+#    "MPPoolExec",
+#    "ProcPoolExec",
+#    "ThreadPoolExec",
+# ]

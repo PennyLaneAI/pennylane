@@ -17,7 +17,7 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 
 import os
 from collections.abc import Callable, Sequence
-from typing import Optional
+from typing import Optional, Union
 
 from ..base import ExtExec
 
@@ -25,14 +25,23 @@ from ..base import ExtExec
 # pylint: disable=import-outside-toplevel
 class DaskExec(ExtExec):  # pragma: no cover
     """
-    Dask distributed abstraction class functor.
+    Dask distributed executor wrapper.
+
+    This executor relies on `Dask's distributed interface <https://distributed.dask.org/en/stable/>`_ to offload task execution to a either a local, or configured remote cluster backend.
+
+    Args:
+        max_workers:    the maximum number of concurrent units (threads, processes) to use. The serial backend defaults to 1 and will return a ``RuntimeError`` if more are requested.
+        persist:        allow the executor backend to persist between executions. This is ignored for the serial backend.
+        client_provider (str, dask.distributed.deploy.Cluster): provide an existing dask distributed cluster via a URL (str) or object to be used for job submission. When ``None``, creates an internal ``LocalCluster`` object using processes for job submission. Defaults to ``None``. Cluster backend documentation available at `Dask Distrubuted - Deploy Dask Clusters <https://docs.dask.org/en/stable/deploying.html>`_.
+        **kwargs:   Keyword arguments to pass-through to the executor backend. This is ignored for the serial backend.
+
     """
 
     def __init__(
         self,
         max_workers: Optional[int] = None,
         persist: bool = False,
-        client_provider=None,
+        client_provider: Optional[Union["Cluster", str]] = None,
         **kwargs,
     ):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)

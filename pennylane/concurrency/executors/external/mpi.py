@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 Contains concurrent executor abstractions for task-based workloads backed by mpi4py.
 """
 
@@ -23,17 +23,20 @@ from ..base import ExecBackendConfig, ExtExec
 
 # pylint: disable=import-outside-toplevel
 class MPIPoolExec(ExtExec):  # pragma: no cover
-    """
+    r"""
     MPIPoolExecutor abstraction class executor.
 
-    This executor wraps the mpi4py ``mpi4py.futures.MPIPoolExecutor`` API, and provides support for execution using multiple processes launched using MPI.
+    This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
     For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
 
     .. code-block:: console
 
         $ mpirun -n 4 -m mpi4py.futures my_script.py
 
-    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
+    See `mpi4py.futures - Command line <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line>`_ for additional details on launching jobs.
+
+    .. note::
+        All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
     """
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
@@ -59,7 +62,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
         )
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
-        """
+        r"""
         dispatch:   the named method to pass the function parameters
         fn:         the callable function to run on the executor backend
         args:       the arguments to pass to ``fn``
@@ -111,9 +114,21 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
 # pylint: disable=import-outside-toplevel
 class MPICommExec(ExtExec):
-    """
+    r"""
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning
     required by MPIPoolExec is unsupported by the MPI implementation.
+
+    This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_ class, and provides support for execution using multiple processes launched using MPI.
+    For an example script ``my_script.py``, and an installed mpi4py library with the active MPI environment, the executor can be used as follows:
+
+    .. code-block:: console
+
+        $ mpirun -n 4 -m mpi4py.futures my_script.py
+
+    See `mpi4py.futures - Command line <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#command-line>`_ for additional details on launching jobs.
+
+    .. note::
+        All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
     """
 
     def __init__(self, max_workers=None, persist: bool = False, **kwargs):
@@ -138,7 +153,7 @@ class MPICommExec(ExtExec):
         )
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
-        """
+        r"""
         dispatch:   the named method to pass the function parameters
         fn:         the callable function to run on the executor backend
         args:       the arguments to pass to ``fn``

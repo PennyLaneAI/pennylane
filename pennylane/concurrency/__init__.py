@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane.concurrency
+This module contains concurrent execution functionality for PennyLane workloads using a task-based executor abstraction.
 
-Executors
-=========
+.. currentmodule:: pennylane
 
-This module contains concurrent execution functionality for PennyLane workloads.
+Executors and backends
+**********************
 
-.. automodule:: pennylane.concurrency.executors
+.. currentmodule:: pennylane.concurrency.executors
+.. autosummary::
+    :toctree: api
+
+    native
+    external
+    backends
+    base
 
 
 Executor implementations in PennyLane build functional abstractions around the following API calls:
@@ -38,7 +45,7 @@ Executor implementations in PennyLane build functional abstractions around the f
     executor.starmap(fn: Callable, args, **kwargs)
 
 
-These loosely mirror the native Python functions ``map`` and ``itertools.starmap``, whilst also following the design  from the ``concurrent.futures`` interface. To allow for Liskov substitution, we define a uniform signature for functions with ``*args`` and ``**kwargs``, allowing reduced coupling between the caller and the executor backend. This allows an ease of scaling from local execution to remote execution by controlling the executor being instantiated.
+These loosely mirror the native Python functions `map <https://docs.python.org/3/library/functions.html#map>`_ and `itertools.starmap <https://docs.python.org/3/library/itertools.html#itertools.starmap>`_, whilst also following the design  from the ``concurrent.futures`` interface. To allow for `Liskov substitution <https://en.wikipedia.org/wiki/Liskov_substitution_principle>`_, we define a uniform signature for functions with ``*args`` and ``**kwargs``, allowing reduced coupling between the caller and the executor backend. This allows an ease of scaling from local execution to remote execution by controlling the executor being instantiated.
 
 Local and remote function execution through an instantiated ``executor`` is available through the above API calls, or via a functor-like dispatch mechanism:
 
@@ -50,46 +57,32 @@ Local and remote function execution through an instantiated ``executor`` is avai
 
 Support functions to query supported backends and initialize them are provided through the following functions.
 
-.. currentmodule:: pennylane.concurrency.executors
-.. autosummary::
-    :toctree: api
 
-    ~backends.get_supported_backends
-    ~backends.create_executor
-    ~backends.get_executor
+Supported executors
+===================
+
+PennyLane currently has support for a collection of executor implementations targeting local execution within the :mod:`~pennylane.concurrency.executors.native` module, and remote execution within the :mod:`~pennylane.concurrency.executors.external` module.
 
 Native Python executors
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-PennyLane currently has support for a collection of executor implementations targeting local execution within the ``pennylane.concurrency.executors.native`` module, and remote execution within the ``pennylane.concurrency.executors.external`` module
-
 .. currentmodule:: pennylane.concurrency.executors.native
-.. autosummary::
-    :toctree: api
+.. automodule:: pennylane.concurrency.executors.native
 
-    ~multiproc.MPPoolExec
-    ~conc_futures.ProcPoolExec
-    ~conc_futures.ThreadPoolExec
-    ~serial.SerialExec
+External package-backed executors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.concurrency.executors.external
+.. automodule:: pennylane.concurrency.executors.external
 
 
 Executor API
-^^^^^^^^^^^^
+============
 
-To build a new executor backend, the following abstract base classes provide scaffolding to simplify the creation around the required support and abstractions.
-
-.. currentmodule:: pennylane.concurrency.executors
-.. autosummary::
-    :toctree: api
-
-    ~base.ExecBackendConfig
-    ~base.RemoteExec
-    ~base.IntExec
-    ~base.ExtExec
-    ~native.api.PyNativeExec
-
+.. currentmodule:: pennylane.concurrency.executors.base
+.. automodule:: pennylane.concurrency.executors.base
 
 """
-from .executors import native, external, backends, base
+# from .executors import native
 
-__all__ = ["native", "external", "backends", "base"]
+# __all__ = ["native", "external", "backends", "base"]

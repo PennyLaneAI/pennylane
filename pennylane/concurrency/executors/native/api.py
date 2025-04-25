@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Base implementations for defining an executor relying on native Python standard library implementations.
+r"""
+Base API for defining an executor relying on native Python standard library implementations.
 """
 import abc
 import inspect
@@ -26,7 +26,7 @@ from ..base import ExecBackendConfig, IntExec
 
 
 class PyNativeExec(IntExec, abc.ABC):
-    """
+    r"""
     Python standard library backed ABC for executor API.
 
     This class abstracts single-machine environments and unifies the standard-library backed executor backend to support the same API call structure.
@@ -63,10 +63,6 @@ class PyNativeExec(IntExec, abc.ABC):
 
     def __del__(self):
         self.shutdown()
-
-    @property
-    def size(self):
-        return self._size
 
     def submit(self, fn: Callable, *args, **kwargs):
         exec_be = self._get_backend()

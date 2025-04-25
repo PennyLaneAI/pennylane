@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This module provides abstractions around the Python ``concurrent.futures`` library and interface. This module directly offloads to the in-built executors for both multithreaded and multiprocess function execution.
 """
 
@@ -23,11 +23,13 @@ from .api import PyNativeExec
 
 
 class ProcPoolExec(PyNativeExec):
-    """
+    r"""
     concurrent.futures.ProcessPoolExecutor class executor.
 
-    This executor wraps Python standard library ``concurrent.futures.ProcessPoolExecutor`` API, and provides support for execution using multiple processes.
-    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
+    This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_ interface, and provides support for execution using multiple processes.
+
+    .. note::
+        All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
         *args: non keyword arguments to pass through to the executor backend.
@@ -53,12 +55,14 @@ class ProcPoolExec(PyNativeExec):
 
 
 class ThreadPoolExec(PyNativeExec):
-    """
+    r"""
     concurrent.futures.ThreadPoolExecutor class executor.
 
-    This executor wraps Python standard library ``concurrent.futures.ThreadPoolExecutor`` API, and provides support for execution using multiple threads.
-    Due to the presence of the GIL in most currently supported releases of CPython, the threading executor may not provide execution speed-ups for tasks.
-    All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
+    This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_ interface, and provides support for execution using multiple threads.
+    The threading executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
+
+    .. note::
+        All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
         *args: non keyword arguments to pass through to the executor backend.

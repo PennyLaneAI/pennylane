@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This module provides abstractions around the Python ``multiprocessing`` library, with support for function execution using multiple processes.
 """
 
@@ -25,10 +25,10 @@ from .api import PyNativeExec
 
 
 class MPPoolExec(PyNativeExec):
-    """
-    multiprocessing.Pool class executor.
+    r"""
+    Python standard library executor class backed by ``multiprocessing.Pool``.
 
-    This executor wraps Python standard library ``multiprocessing.Pool`` API, and provides support for execution using multiple processes.
+    This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_ interface, and provides support for execution using multiple processes.
 
     Args:
         *args: non keyword arguments to pass through to the executor backend.
@@ -40,7 +40,7 @@ class MPPoolExec(PyNativeExec):
     def _exec_backend(cls):
         return Pool
 
-    def __init__(self, max_workers: Optional[int] = 1, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         self._cfg = ExecBackendConfig(
             submit_fn="apply",

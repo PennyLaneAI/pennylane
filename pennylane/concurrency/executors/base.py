@@ -11,8 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 Contains concurrent executor abstractions for task-based workloads.
+
+All of the base abstractions for building an executor follow a simplified `concurrent.futures.Executor <https://docs.python.org/3/library/concurrent.futures.html#executor-objects>`_ API design. Given the differences observed in support for ``*args`` and ``**kwargs`` in various modes of execution, the abstractions provide a fixed API to interface with each backend, performing function and argument transformations, where necessary.
+
+To build a new executor backend, the following classes provide scaffolding to simplify abstracting the function call signatures between each backend interface layer.
+
+.. currentmodule:: pennylane.concurrency.executors.base
+
+.. autosummary::
+    :toctree: api
+
+    ExecBackendConfig
+    RemoteExec
+    IntExec
+    ExtExec
+
 """
 
 import abc
@@ -25,7 +40,7 @@ from typing import Optional
 
 @dataclass
 class ExecBackendConfig:
-    """
+    r"""
     Executor backend configuration data-class.
 
     To allow for differences in each executor backend implementation, this class dynamically defines overloads to the main API functions. For explicitly-defined executors, this class is optional, and is provided for convenience with hierarchical inheritance class structures, where subtle differences are best resolved dynamically, rather than with API modifications. All initial values default to ``None``.
@@ -33,7 +48,7 @@ class ExecBackendConfig:
     Args:
         submit_fn (str): The backend function that best matches the ``submit`` API call.
         map_fn (str): The backend function that best matches the ``map`` API call.
-        starmap_fn (str): The backend function that best matches the `starmap` API call.
+        starmap_fn (str): The backend function that best matches the ``starmap`` API call.
         shutdown_fn (str): The backend function that best matches the ``shutdown`` API call.
         submit_unpack (bool): Whether the arguments to ``submit`` are to be unpacked (*args) or directly passed (args) to ``submit_fn``.
         map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (*args) or directly passed (args) to ``map_unpack``.
@@ -51,7 +66,7 @@ class ExecBackendConfig:
 
 
 class RemoteExec(abc.ABC):
-    """
+    r"""
     Abstract base class for defining a task-based parallel executor backend.
 
     This ABC is intended to provide the highest-layer abstraction in the inheritance tree.
@@ -70,10 +85,10 @@ class RemoteExec(abc.ABC):
 
     """
 
-    def __init__(self, *args, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         self._size = max_workers
         self._persist = persist
-        self._inputs = (args, kwargs)
+        self._inputs = kwargs
         self._cfg = ExecBackendConfig()
         self._persistent_backend = None
 
@@ -90,8 +105,6 @@ class RemoteExec(abc.ABC):
     def size(self):
         """
         The size of the worker pool for the given executor.
-
-        A larger worker pool indicates the number of potential executions that can happen concurrently.
         """
         return self._size
 
@@ -181,7 +194,7 @@ class IntExec(RemoteExec, abc.ABC):
     """
     Executor class for native Python library concurrency support.
 
-    This class is intended to be used as the parent-class for building Python-native executors, allowing an ease of distinction from the external-based classes implemented using :class:`~.RemoteExec`.
+    This class is intended to be used as the parent-class for building Python-native executors, allowing an ease of distinction from the external-based classes implemented using :class:`~.ExtExec`.
 
     Args:
         max_workers (int): The size of the worker pool. This value will directly control (given backend support)
@@ -196,6 +209,9 @@ class IntExec(RemoteExec, abc.ABC):
         **kwargs: Keyword arguments to pass through to executor backend.
 
     """
+
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 class ExtExec(RemoteExec, abc.ABC):
@@ -216,3 +232,6 @@ class ExtExec(RemoteExec, abc.ABC):
         *args: Non keyword arguments to pass through to executor backend.
         **kwargs: Keyword arguments to pass through to executor backend.
     """
+
+    def __init__(self, *args, **kwargs):
+        pass

@@ -295,7 +295,7 @@ class DefaultQubit(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
+        max_workers (int): A `:class:~.qml.concurrency.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
@@ -377,7 +377,7 @@ class DefaultQubit(Device):
 
 
     .. details::
-        :title: Accelerate calculations with multiprocessing
+        :title: Accelerate calculations with concurrent executors
 
         Suppose one has a processor with 5 cores or more, these scripts can be executed in
         parallel as follows
@@ -404,7 +404,7 @@ class DefaultQubit(Device):
 
         .. warning::
 
-            Multiprocessing may fail depending on your platform and environment (Python shell,
+            Concurrent executors using the multiprocessing backend (default) may fail depending on your platform and environment (Python shell,
             script with a protected entry point, Jupyter notebook, etc.) This may be solved
             changing the so-called start method. The supported start methods are the following:
 
