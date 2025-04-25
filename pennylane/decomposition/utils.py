@@ -22,6 +22,10 @@ class DecompositionError(Exception):
     """Base class for decomposition errors."""
 
 
+class DecompositionNotApplicable(Exception):
+    """Exception raised when a decomposition is not applicable to the given operator."""
+
+
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 

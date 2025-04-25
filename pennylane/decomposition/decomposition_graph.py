@@ -52,7 +52,7 @@ from .symbolic_decomposition import (
     same_type_adjoint_decomp,
     same_type_adjoint_ops,
 )
-from .utils import DecompositionError
+from .utils import DecompositionError, DecompositionNotApplicable
 
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
@@ -187,19 +187,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             return self._add_pow_decomp_node(op_node, op_node_idx)
 
         for decomposition in self._get_decompositions(op_node.op_type):
-            decomp_resource = decomposition.compute_resources(**op_node.params)
-            d_node_idx = self._recursively_add_decomposition_node(decomposition, decomp_resource)
-            self._graph.add_edge(d_node_idx, op_node_idx, 0)
+            self._add_decomp_rule_to_op(decomposition, op_node, op_node_idx)
 
         return op_node_idx
 
-    def _add_special_decomp_rule_to_op(
+    def _add_decomp_rule_to_op(
         self, rule: DecompositionRule, op_node: CompressedResourceOp, op_node_idx: int
     ):
         """Adds a special decomposition rule to the graph."""
-        decomp_resource = rule.compute_resources(**op_node.params)
-        d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
-        self._graph.add_edge(d_node_idx, op_node_idx, 0)
+        try:
+            decomp_resource = rule.compute_resources(**op_node.params)
+            d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
+            self._graph.add_edge(d_node_idx, op_node_idx, 0)
+        except DecompositionNotApplicable:
+            pass  # ignore decompositions that are not applicable to the given op params.
 
     def _add_adjoint_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
         """Adds an adjoint decomposition node."""
@@ -208,7 +209,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         if issubclass(base_class, qml.ops.Adjoint):
             rule = adjoint_adjoint_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         if (
@@ -216,12 +217,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             and base_params["base_class"] in same_type_adjoint_ops()
         ):
             rule = adjoint_pow_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         if base_class in same_type_adjoint_ops():
             rule = same_type_adjoint_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         if (
@@ -229,12 +230,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             and base_params["base_class"] in same_type_adjoint_ops()
         ):
             rule = adjoint_controlled_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         for base_decomposition in self._get_decompositions(base_class):
             rule = AdjointDecomp(base_decomposition)
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
 
         return op_node_idx
 
@@ -245,11 +246,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         if issubclass(base_class, qml.ops.Pow):
             rule = pow_pow_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         rule = pow_decomp
-        self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+        self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
         return op_node_idx
 
     def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
@@ -261,26 +262,26 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # Handle controlled global phase
         if base_class is qml.GlobalPhase:
             rule = controlled_global_phase_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         # Handle controlled-X gates
         if base_class is qml.X:
             rule = controlled_x_decomp
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         # Handle custom controlled ops
         if (base_class, num_control_wires) in base_to_custom_ctrl_op():
             custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
             rule = CustomControlledDecomposition(custom_op_type)
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
             return op_node_idx
 
         # General case
         for base_decomposition in self._get_decompositions(base_class):
             rule = ControlledBaseDecomposition(base_decomposition)
-            self._add_special_decomp_rule_to_op(rule, op_node, op_node_idx)
+            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
 
         return op_node_idx
 
