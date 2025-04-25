@@ -15,8 +15,8 @@ BoseWord and BoseSentence
 .. autosummary::
     :toctree: api
 
-    BoseWord
-    BoseSentence
+    ~BoseWord
+    ~BoseSentence
 
 Mapping to qubit operators
 --------------------------
