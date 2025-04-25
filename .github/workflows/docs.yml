@@ -46,6 +46,8 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
     - uses: actions/checkout@v4
+    - name: Set Python Version
+      run: echo "PYTHON_VERSION=3.10" >> $GITHUB_ENV
     - uses: runora95/sphinx-action@sc-88376-upd-sphinx-pyth
       with:
         docs-folder: "doc/"
