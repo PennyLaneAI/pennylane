@@ -19,16 +19,6 @@ This module contains concurrent execution functionality for PennyLane workloads 
 Executors and backends
 **********************
 
-.. currentmodule:: pennylane.concurrency.executors
-.. autosummary::
-    :toctree: api
-
-    native
-    external
-    backends
-    base
-
-
 Executor implementations in PennyLane build functional abstractions around the following API calls:
 
 .. code-block:: python
@@ -68,12 +58,15 @@ Native Python executors
 
 .. currentmodule:: pennylane.concurrency.executors.native
 .. automodule:: pennylane.concurrency.executors.native
+    :noindex:
+
 
 External package-backed executors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.concurrency.executors.external
 .. automodule:: pennylane.concurrency.executors.external
+    :noindex:
 
 
 Executor API
@@ -81,6 +74,7 @@ Executor API
 
 .. currentmodule:: pennylane.concurrency.executors.base
 .. automodule:: pennylane.concurrency.executors.base
+    :noindex:
 
 """
 # from .executors import native
