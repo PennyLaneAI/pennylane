@@ -51,7 +51,14 @@ _INSTANCES_TO_TEST = [
     (qml.Projector([1], 0), {"skip_differentiation": True}),
     (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
-    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (
+        qml.QubitUnitary(np.eye(2), wires=[0]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.QubitUnitary(np.eye(4), wires=[0, 1]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
     (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
     (qml.PauliRot(1.1, "X", wires=[0]), {}),

@@ -79,6 +79,10 @@ class MultiRZ(Operation):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
 
     @staticmethod
     def compute_matrix(
@@ -310,8 +314,13 @@ class PauliRot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
-        self.hyperparameters["pauli_word"] = pauli_word
 
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
+
+        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '

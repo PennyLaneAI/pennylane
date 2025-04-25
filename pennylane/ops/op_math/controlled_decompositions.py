@@ -23,10 +23,8 @@ import numpy.linalg as npl
 
 import pennylane as qml
 from pennylane import math
+from pennylane.math.decomposition import zyz_rotation_angles
 from pennylane.operation import Operation, Operator
-from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
-    _get_single_qubit_rot_angles_via_matrix,
-)
 from pennylane.wires import Wires, WiresLike
 
 
@@ -34,30 +32,6 @@ def _is_single_qubit_special_unitary(op):
     mat = op.matrix()
     det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
     return qml.math.allclose(det, 1)
-
-
-def _convert_to_su2(U, return_global_phase=False):
-    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
-
-    Args:
-        U (array[complex]): A matrix, presumed to be :math:`2 \times 2` and unitary.
-        return_global_phase (bool): If `True`, the return will include
-        the global phase. If `False`, only the :math:`SU(2)` representative
-        is returned.
-
-    Returns:
-        array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
-        equivalent to U up to a global phase. If ``return_global_phase=True``,
-        a 2-element tuple is returned, with the first element being the
-        :math:`SU(2)` equivalent and the second, the global phase.
-    """
-    # Compute the determinants
-    with np.errstate(divide="ignore", invalid="ignore"):
-        dets = math.linalg.det(U)
-
-    global_phase = math.cast_like(math.angle(dets), 1.0) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * global_phase)
-    return (U_SU2, global_phase) if return_global_phase else U_SU2
 
 
 def _convert_to_real_diagonal(q: np.ndarray) -> np.ndarray:
@@ -281,11 +255,11 @@ def ctrl_decomp_zyz(
         try:
             rot_angles = target_operation.single_qubit_rot_angles()
         except NotImplementedError:
-            rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
+            rot_angles = zyz_rotation_angles(qml.matrix(target_operation))
     else:
-        rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
+        rot_angles = zyz_rotation_angles(qml.matrix(target_operation))
 
-    _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
+    _, global_phase = math.convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
 
     return (
         _multi_controlled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
@@ -508,7 +482,7 @@ def ctrl_decomp_bisect(
     target_matrix = target_operation.matrix()
     target_wire = target_operation.wires
 
-    target_matrix = _convert_to_su2(target_matrix)
+    target_matrix = math.convert_to_su2(target_matrix)
     target_matrix_imag = np.imag(target_matrix)
 
     if np.isclose(target_matrix_imag[1, 0], 0) and np.isclose(target_matrix_imag[0, 1], 0):
@@ -731,7 +705,7 @@ def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
 
 
 def _decompose_mcx_with_one_worker_kg24(
-    control_wires: list[WiresLike],
+    control_wires: WiresLike,
     target_wire: int,
     work_wire: int,
     work_wire_type: Literal["clean", "dirty"] = "clean",
@@ -806,7 +780,7 @@ def _n_parallel_ccx_x(
 
 
 def _build_logn_depth_ccx_ladder(
-    work_wire: int, control_wires: list[WiresLike]
+    work_wire: int, control_wires: WiresLike
 ) -> tuple[list[Operator], list[Operator]]:
     r"""
     Helper function to build a log-depth ladder compose of CCX and X gates as shown in Fig. 4b of [1].
@@ -816,7 +790,7 @@ def _build_logn_depth_ccx_ladder(
         control_wires (list[Wire]): The control wires.
 
     Returns:
-        tuple[list[Operator], list[WiresLike]: log-depth ladder circuit of cond. clean ancillae and
+        tuple[list[Operator], WiresLike: log-depth ladder circuit of cond. clean ancillae and
         control_wires to apply the linear-depth MCX gate on.
 
     References:

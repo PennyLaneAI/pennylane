@@ -386,12 +386,6 @@ def expval_param_shift(
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
-            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
-            gradient_tapes.extend(g_tapes)
-            # hamiltonian_grad always returns a list with a single tape!
-            gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
-            continue
-
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
         recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
             recipe, at_least_one_unshifted, f0, gradient_tapes, tape
