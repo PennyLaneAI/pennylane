@@ -24,6 +24,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -322,14 +323,8 @@ def _single_excit(phi, wires, **__):
 
 
 add_decomps(SingleExcitation, _single_excit)
-
-
-@register_resources({SingleExcitation: 1})
-def _adjoint_single_excitation(phi, wires, **__):
-    SingleExcitation(-phi, wires=wires)
-
-
-add_decomps("Adjoint(SingleExcitation)", _adjoint_single_excitation)
+add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
+add_decomps("Pow(SingleExcitation)", pow_rotation)
 
 
 class SingleExcitationMinus(Operation):
@@ -489,14 +484,8 @@ def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
-
-
-@register_resources({SingleExcitationMinus: 1})
-def _adjoint_single_excitation_minus(phi, wires, **__):
-    SingleExcitationMinus(-phi, wires=wires)
-
-
-add_decomps("Adjoint(SingleExcitationMinus)", _adjoint_single_excitation_minus)
+add_decomps("Adjoint(SingleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationMinus)", pow_rotation)
 
 
 class SingleExcitationPlus(Operation):
@@ -656,14 +645,8 @@ def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
-
-
-@register_resources({SingleExcitationPlus: 1})
-def _adjoint_single_excitation_plus(phi, wires, **__):
-    SingleExcitationPlus(-phi, wires=wires)
-
-
-add_decomps("Adjoint(SingleExcitationPlus)", _adjoint_single_excitation_plus)
+add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
 
 
 class DoubleExcitation(Operation):
@@ -917,14 +900,8 @@ def _doublexcit(phi, wires, **__):
 
 
 add_decomps(DoubleExcitation, _doublexcit)
-
-
-@register_resources({DoubleExcitation: 1})
-def _adjoint_doublexcit(phi, wires, **__):
-    DoubleExcitation(-phi, wires=wires)
-
-
-add_decomps("Adjoint(DoubleExcitation)", _adjoint_doublexcit)
+add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
 
 class DoubleExcitationPlus(Operation):
@@ -1020,12 +997,8 @@ class DoubleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
-@register_resources({DoubleExcitationPlus: 1})
-def _adjoint_doublexcit_plus(phi, wires, **__):
-    DoubleExcitationPlus(-phi, wires=wires)
-
-
-add_decomps("Adjoint(DoubleExcitationPlus)", _adjoint_doublexcit_plus)
+add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationPlus)", pow_rotation)
 
 
 class DoubleExcitationMinus(Operation):
@@ -1119,12 +1092,8 @@ class DoubleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
 
-@register_resources({DoubleExcitationMinus: 1})
-def _adjoint_doublexcit_minus(phi, wires, **__):
-    DoubleExcitationMinus(-phi, wires=wires)
-
-
-add_decomps("Adjoint(DoubleExcitationMinus)", _adjoint_doublexcit_minus)
+add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
 class OrbitalRotation(Operation):
@@ -1339,14 +1308,8 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
-
-
-@register_resources({OrbitalRotation: 1})
-def _adjoint_orbital_rotation(phi, wires: WiresLike, **__):
-    OrbitalRotation(-phi, wires=wires)
-
-
-add_decomps("Adjoint(OrbitalRotation)", _adjoint_orbital_rotation)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
+add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
 class FermionicSWAP(Operation):
@@ -1580,11 +1543,5 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
-
-
-@register_resources({FermionicSWAP: 1})
-def _adjoint_fermionic_swap(phi, wires: WiresLike, **__):
-    FermionicSWAP(-phi, wires=wires)
-
-
-add_decomps("Adjoint(FermionicSWAP)", _adjoint_fermionic_swap)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation)
+add_decomps("Pow(FermionicSWAP)", pow_rotation)

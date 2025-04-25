@@ -23,8 +23,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
     cancel_adjoint,
+    merge_powers,
     pow_decomp,
-    pow_pow_decomp,
     same_type_adjoint_decomp,
 )
 from tests.decomposition.conftest import to_resources
@@ -205,10 +205,10 @@ class TestPowDecomposition:
 
         op = qml.pow(qml.pow(qml.H(0), 3), 2)
         with qml.queuing.AnnotatedQueue() as q:
-            pow_pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
-        assert pow_pow_decomp.compute_resources(**op.resource_params) == to_resources(
+        assert merge_powers.compute_resources(**op.resource_params) == to_resources(
             {pow_resource_rep(qml.H, {}, 6): 1}
         )
 

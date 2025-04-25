@@ -16,10 +16,13 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 import pennylane as qml
 
 from .decomposition_rule import DecompositionRule, register_resources
 from .resources import adjoint_resource_rep, pow_resource_rep, resource_rep
+from .utils import DecompositionNotApplicable
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -56,45 +59,123 @@ def cancel_adjoint(*params, wires, base):
     base.base._unflatten(params, new_struct)
 
 
-def _self_adjoint_resource(base_class, base_params):
+def _adjoint_rotation(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_self_adjoint_resource)
-def self_adjoint(*params, wires, base):
-    """The decomposition rule for an adjoint of an operator that is self-adjoint."""
+@register_resources(_adjoint_rotation)
+def adjoint_rotation(phi, wires, base, **__):
+    """Decompose the adjoint of a rotation operator by negating the angle."""
+    _, [_, metadata] = base._flatten()
+    new_struct = wires, metadata
+    base._unflatten((-phi,), new_struct)
+
+
+def is_integer(x):
+    """Checks if x is an integer."""
+    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
+
+
+def _repeat_pow_base_resource(base_class, base_params, z):
+    if (not is_integer(z)) or z < 0:
+        raise DecompositionNotApplicable
+    return {resource_rep(base_class, **base_params): z}
+
+
+@register_resources(_repeat_pow_base_resource)
+def repeat_pow_base(*params, wires, base, z, **__):
+    """Decompose the power of an operator by repeating the base operator. Assumes z
+    is a non-negative integer."""
+
+    @qml.for_loop(0, z)
+    def _loop(i):
+        _, [_, metadata] = base._flatten()
+        new_struct = wires, metadata
+        base._unflatten(params, new_struct)
+
+    _loop()
+
+
+def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    return {
+        pow_resource_rep(
+            base_params["base_class"],
+            base_params["base_params"],
+            z * base_params["z"],
+        ): 1
+    }
+
+
+@register_resources(_merge_powers_resource)
+def merge_powers(*params, wires, base, z, **__):
+    """Decompose nested powers by combining them."""
+    _, [_, metadata] = base.base._flatten()
+    new_struct = wires, metadata
+    base_op = base.base._unflatten(params, new_struct)
+    qml.pow(base_op, z * base_op.z)
+
+
+def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    # base class is adjoint, and the base of the base is the target class
+    target_class, target_params = base_params["base_class"], base_params["base_params"]
+    return {
+        adjoint_resource_rep(
+            qml.ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
+        ): 1
+    }
+
+
+@register_resources(_flip_pow_adjoint_resource)
+def flip_pow_adjoint(*params, wires, base, z, **__):
+    """Decompose the power of an adjoint by power to the base of the adjoint and
+    then taking the adjoint of the power."""
+    _, [_, metadata] = base.base._flatten()
+    new_struct = wires, metadata
+    base_op = base.base._unflatten(params, new_struct)
+    qml.adjoint(qml.pow(base_op, z))
+
+
+def _pow_self_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    if (not is_integer(z)) or z < 0:
+        raise DecompositionNotApplicable
+    return {resource_rep(base_class, **base_params): z % 2}
+
+
+@register_resources(_pow_self_adjoint_resource)
+def pow_self_adjoint(*params, wires, base, z, **__):
+    """Decompose the power of a self-adjoint operator, assumes z is an integer."""
+
+    def f():
+        _, [_, metadata] = base._flatten()
+        new_struct = wires, metadata
+        base._unflatten(params, new_struct)
+
+    qml.cond(z % 2 == 1, f)()
+
+
+def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    return {resource_rep(base_class, **base_params): 1}
+
+
+# pylint: disable=protected-access
+@register_resources(_pow_rotation_resource)
+def pow_rotation(phi, wires, base, z, **__):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle."""
+    _, [_, metadata] = base._flatten()
+    new_struct = wires, metadata
+    base._unflatten((phi * z,), new_struct)
+
+
+def _decompose_to_base_resource(base_class, base_params, **__):
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_decompose_to_base_resource)
+def decompose_to_base(*params, wires, base, **__):
+    """Decompose a symbolic operator to its base."""
     _, [_, metadata] = base._flatten()
     new_struct = wires, metadata
     base._unflatten(params, new_struct)
 
 
-def _pow_resource(base_class, base_params, z):
-    """Resources of the power of an operator."""
-    if not isinstance(z, int) or z < 0:
-        raise NotImplementedError("Non-integer or negative powers are not supported yet.")
-    return {resource_rep(base_class, **base_params): z}
-
-
-@register_resources(_pow_resource)
-def pow_decomp(*_, base, z, **__):
-    """Decompose the power of an operator."""
-    assert isinstance(z, int) and z >= 0
-    for _ in range(z):
-        base._unflatten(*base._flatten())  # pylint: disable=protected-access
-
-
-def _pow_pow_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    """Resources of the power of the power of an operator."""
-    base_class, base_params, base_z = (
-        base_params["base_class"],
-        base_params["base_params"],
-        base_params["z"],
-    )
-    return {pow_resource_rep(base_class, base_params, z * base_z): 1}
-
-
-@register_resources(_pow_pow_resource)
-def pow_pow_decomp(*_, base, z, **__):
-    """Decompose the power of the power of an operator."""
-    qml.pow(base.base, z=z * base.z)
+self_adjoint: DecompositionRule = decompose_to_base

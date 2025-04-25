@@ -40,10 +40,12 @@ from .controlled_decomposition import (
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
-from .decomposition_rule import DecompositionRule, list_decomps
+from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     cancel_adjoint,
+    decompose_to_base,
+    flip_pow_adjoint,
     make_adjoint_decomp,
     merge_powers,
     repeat_pow_base,
@@ -185,6 +187,26 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def _get_pow_decompositions(self, op) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
+
+        base_class = op.params["base_class"]
+
+        # Special case: power of zero
+        if op.params["z"] == 0:
+            return [null_decomp]
+
+        if op.params["z"] == 1:
+            return [decompose_to_base]
+
+        # Special case: power of a power
+        if isinstance(base_class, qml.ops.Pow):
+            return [merge_powers]
+
+        # Special case: power of an adjoint
+        if issubclass(base_class, qml.ops.Adjoint):
+            return [flip_pow_adjoint]
+
+        # General case: repeat the operator z times
+        return [repeat_pow_base]
 
     def _get_controlled_decompositions(self, op) -> list[DecompositionRule]:
         """Gets the decomposition rules for the controlled version of an operator."""

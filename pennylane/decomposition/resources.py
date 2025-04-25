@@ -356,13 +356,8 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     )
 
 
-def _is_integer(x):
-    """Checks if x is an integer."""
-    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
-
-
 def pow_resource_rep(base_class, base_params, z):
-    """Creates a ``CompressedResourceOp`` representation of the power of an operator.
+    """Creates a ``CompressedResourceOp`` representation a Pow operator.
 
     Args:
         base_class: the base operator type
@@ -370,8 +365,6 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
-        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,

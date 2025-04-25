@@ -25,6 +25,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -175,14 +176,8 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
-
-
-@register_resources({RX: 1})
-def _adjoint_rx(phi, wires, **__):
-    RX(-phi, wires=wires)
-
-
-add_decomps("Adjoint(RX)", _adjoint_rx)
+add_decomps("Adjoint(RX)", adjoint_rotation)
+add_decomps("Pow(RX)", pow_rotation)
 
 
 class RY(Operation):
@@ -315,14 +310,8 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
-
-
-@register_resources({RY: 1})
-def _adjoint_ry(phi, wires, **__):
-    RY(-phi, wires=wires)
-
-
-add_decomps("Adjoint(RY)", _adjoint_ry)
+add_decomps("Adjoint(RY)", adjoint_rotation)
+add_decomps("Pow(RY)", pow_rotation)
 
 
 class RZ(Operation):
@@ -494,14 +483,8 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
-
-
-@register_resources({RZ: 1})
-def _adjoint_rz(phi, wires, **__):
-    RZ(-phi, wires=wires)
-
-
-add_decomps("Adjoint(RZ)", _adjoint_rz)
+add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Pow(RZ)", pow_rotation)
 
 
 class PhaseShift(Operation):
@@ -691,14 +674,8 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
-
-
-@register_resources({PhaseShift: 1})
-def _adjoint_phaseshift(phi, wires, **__):
-    PhaseShift(-phi, wires=wires)
-
-
-add_decomps("Adjoint(PhaseShift)", _adjoint_phaseshift)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
+add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
 class Rot(Operation):
@@ -1048,14 +1025,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
-
-
-@register_resources({U1: 1})
-def _adjoint_u1(phi, wires, **__):
-    U1(-phi, wires=wires)
-
-
-add_decomps("Adjoint(U1)", _adjoint_u1)
+add_decomps("Adjoint(U1)", adjoint_rotation)
+add_decomps("Pow(U1)", pow_rotation)
 
 
 class U2(Operation):
