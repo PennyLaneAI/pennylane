@@ -300,7 +300,6 @@ class SampleMP(SampleMeasurement):
     def process_counts(self, counts: dict, wire_order: Wires):
         samples = []
         mapped_counts = self._map_counts(counts, wire_order)
-        print(mapped_counts)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
             if len(self.wires) == 1:
