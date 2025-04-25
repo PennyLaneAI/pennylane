@@ -74,7 +74,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed bug in `openfermion` interface where identity qubit-to-wires mapping was not obeyed.
+* Fixed bug in `to_openfermion` function where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
 
 * Adds an informative error if `qml.cond` is used with an abstract condition with
