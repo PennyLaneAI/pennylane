@@ -105,8 +105,8 @@ def measurements_from_samples(tape):
 
 @transform
 def measurements_from_counts(tape):
-    r"""Replace all measurements from a tape with a single counts measurement,
-    and adds postprocessing functions for each original measurement.
+    r"""Quantum function transform that replaces all terminal measurements with a single counts 
+    measurement.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
