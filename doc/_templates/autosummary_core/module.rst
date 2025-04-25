@@ -13,9 +13,6 @@
 ={% for i in range(mod|length) %}={% endfor %}{{ underline }}
 
 .. automodule:: {{ fullname }}
-   {% if module_tracker or module == "pennylane.devices.tracker" %}
-      :no-index:
-   {% endif %}
 
    {% block functions %}
    {% if functions %}
@@ -30,6 +27,7 @@
 
    {% block classes %}
    {% if classes %}
+   :no-index:
    .. rubric:: Classes
 
    .. autosummary::
