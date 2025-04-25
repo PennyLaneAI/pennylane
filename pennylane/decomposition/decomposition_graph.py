@@ -106,7 +106,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op = qml.CRX(0.5, wires=[0, 1])
         graph = DecompositionGraph(
             operations=[op],
-            target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+            gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
         )
         graph.solve()
 
@@ -363,7 +363,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             op = qml.CRX(0.5, wires=[0, 1])
             graph = DecompositionGraph(
                 operations=[op],
-                target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+                gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
             graph.solve()
 
@@ -406,7 +406,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             op = qml.CRX(0.5, wires=[0, 1])
             graph = DecompositionGraph(
                 operations=[op],
-                target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+                gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
             graph.solve()
             rule = graph.decomposition(op)
