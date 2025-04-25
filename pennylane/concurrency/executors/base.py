@@ -14,7 +14,7 @@
 r"""
 Contains concurrent executor abstractions for task-based workloads.
 
-All of the base abstractions for building an executor follow a simplified `concurrent.futures.Executor <https://docs.python.org/3/library/concurrent.futures.html#executor-objects>`_ API design. Given the differences observed in support for ``*args`` and ``**kwargs`` in various modes of execution, the abstractions provide a fixed API to interface with each backend, performing function and argument transformations, where necessary.
+All of the base abstractions for building an executor follow a simplified `concurrent.futures.Executor <https://docs.python.org/3/library/concurrent.futures.html#executor-objects>`_ interface. Given the differences observed in support for ``*args`` and ``**kwargs`` in various modes of execution, the abstractions provide a fixed API to interface with each backend, performing function and argument transformations, where necessary.
 
 To build a new executor backend, the following classes provide scaffolding to simplify abstracting the function call signatures between each backend interface layer.
 
@@ -210,9 +210,6 @@ class IntExec(RemoteExec, abc.ABC):
 
     """
 
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
-        super().__init__(max_workers, persist, **kwargs)
-
 
 class ExtExec(RemoteExec, abc.ABC):
     r"""
@@ -232,6 +229,3 @@ class ExtExec(RemoteExec, abc.ABC):
         *args: Non keyword arguments to pass through to executor backend.
         **kwargs: Keyword arguments to pass through to executor backend.
     """
-
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
-        super().__init__(max_workers, persist, **kwargs)

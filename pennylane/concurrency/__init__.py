@@ -35,7 +35,7 @@ Executor implementations in PennyLane build functional abstractions around the f
     executor.starmap(fn: Callable, args, **kwargs)
 
 
-These loosely mirror the native Python functions `map <https://docs.python.org/3/library/functions.html#map>`_ and `itertools.starmap <https://docs.python.org/3/library/itertools.html#itertools.starmap>`_, whilst also following the design  from the ``concurrent.futures`` interface. To allow for `Liskov substitution <https://en.wikipedia.org/wiki/Liskov_substitution_principle>`_, we define a uniform signature for functions with ``*args`` and ``**kwargs``, allowing reduced coupling between the caller and the executor backend. This allows an ease of scaling from local execution to remote execution by controlling the executor being instantiated.
+These loosely mirror the native Python functions `map <https://docs.python.org/3/library/functions.html#map>`_ and `itertools.starmap <https://docs.python.org/3/library/itertools.html#itertools.starmap>`_, whilst also following the design from the `concurrent.futures.Executor <https://docs.python.org/3/library/concurrent.futures.html#executor-objects>`_ interface. To allow for `Liskov substitution <https://en.wikipedia.org/wiki/Liskov_substitution_principle>`_, we define a uniform signature for functions with ``*args`` and ``**kwargs``, allowing reduced coupling between the caller and the executor backend. This allows an ease of scaling from local execution to remote execution by controlling the executor being instantiated.
 
 Local and remote function execution through an instantiated ``executor`` is available through the above API calls, or via a functor-like dispatch mechanism:
 
@@ -51,7 +51,7 @@ Support functions to query supported backends and initialize them are provided t
 Supported executors
 ===================
 
-PennyLane currently has support for a collection of executor implementations targeting local execution within the :mod:`~pennylane.concurrency.executors.native` module, and remote execution within the :mod:`~pennylane.concurrency.executors.external` module.
+PennyLane currently has support for a collection of executor implementations using local (Python native standard library) execution, and remote (third-party distributed) implemented backends.
 
 Native Python executors
 ^^^^^^^^^^^^^^^^^^^^^^^
