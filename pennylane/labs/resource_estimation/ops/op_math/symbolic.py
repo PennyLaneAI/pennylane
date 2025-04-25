@@ -751,17 +751,6 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        try:
-            gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params, **kwargs)
-            for gate, count in decomp.items():
-                rep = cls.resource_rep(gate.op_type, gate.params, z)
-                gate_types[rep] = count
-
-            return gate_types
-        except re.ResourcesNotDefined:
-            pass
-
         return {base_class.resource_rep(**base_params): z}
 
     @property
