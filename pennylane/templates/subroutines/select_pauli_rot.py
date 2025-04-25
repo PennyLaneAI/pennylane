@@ -112,6 +112,7 @@ class SelectPauliRot(Operation):
         return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map: dict):
+        """Map the control and target wires using the provided wire map."""
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["control_wires", "target_wire"]
@@ -125,9 +126,11 @@ class SelectPauliRot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        """Bind arguments to the primitive operation."""
         return cls._primitive.bind(*args, **kwargs)
 
     def decomposition(self):  # pylint: disable=arguments-differ
+        """Return the operator's decomposition using its parameters and hyperparameters."""
         return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
 
     @staticmethod
