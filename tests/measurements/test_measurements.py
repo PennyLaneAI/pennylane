@@ -31,7 +31,6 @@ from pennylane.measurements import (
     SampleMP,
     ShadowExpvalMP,
     Shots,
-    State,
     StateMeasurement,
     StateMP,
     VarianceMP,
@@ -87,22 +86,6 @@ def test_shape_unrecognized_error():
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
         mp.shape(dev, Shots(None))
-
-
-def test_none_return_type():
-    """Test that a measurement process without a return type property has return_type
-    `None`"""
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="MeasurementProcess property return_type is deprecated",
-    ):
-
-        class NoReturnTypeMeasurement(MeasurementProcess):
-            """Dummy measurement process with no return type."""
-
-        mp = NoReturnTypeMeasurement()
-        assert mp.return_type is None
 
 
 def test_eq_correctness():
@@ -587,7 +570,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            _shortname = State
+            _shortname = "state"
 
             def shape(self):
                 return ()
@@ -607,7 +590,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            _shortname = State
+            _shortname = "state"
 
             def shape(self):
                 return ()
@@ -688,14 +671,6 @@ class TestMeasurementProcess:
         (qml.mutual_info(wires0=0, wires1=1), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
-
-    def test_deprecation_return_type(self):
-        """Test that the return_type property is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="MeasurementProcess property return_type is deprecated",
-        ):
-            _ = MeasurementProcess().return_type
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
     def test_output_shapes_no_shots(self, measurement, expected_shape):
