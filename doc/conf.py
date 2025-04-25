@@ -92,6 +92,10 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
+autodoc_default_options = {
+    'ignore-module-all': True
+}
+
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
