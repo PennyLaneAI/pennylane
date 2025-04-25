@@ -55,7 +55,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The ``return_type`` property of ``MeasurementProcess`` has been removed.
-  If observable type checking is needed, please use ``isinstance`` instead; if other text information is needed, please use class name.
+  If observable type checking is needed, please use ``isinstance`` instead.
 
   - Deprecated in v0.41
   - Removed in v0.42
