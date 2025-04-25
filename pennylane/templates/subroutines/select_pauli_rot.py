@@ -65,7 +65,8 @@ class SelectPauliRot(Operation):
     .. seealso:: :class:`~.Select`.
 
     Args:
-        angles (tensor_like): The rotation angles to be applied.
+        angles (tensor_like): The rotation angles to be applied. The length of the angles array must
+            be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
         control_wires (Sequence[int]): The control qubits used to select the rotation.
         target_wire (Sequence[int]): The wire where the rotations are applied.
         rot_axis (str): The axis around the rotation is performed.
