@@ -130,7 +130,7 @@ class TestDecompositionGraph:
 
         graph = DecompositionGraph(
             [CustomOp(wires=[0, 1])],
-            target_gate_set={"CNOT", "RZ"},
+            gate_set={"CNOT", "RZ"},
             alt_decomps={CustomOp: [some_rule, some_other_rule]},
         )
         # 3 ops (CustomOp, CNOT, RZ) and 1 decompositions (only some_other_rule)
