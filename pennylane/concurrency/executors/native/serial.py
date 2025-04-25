@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane.concurrency.executors.native.serial
+
 This module provides single-threaded, local executor support for function execution. All operations are directed to built-ins, and use direct function execution.
 """
 

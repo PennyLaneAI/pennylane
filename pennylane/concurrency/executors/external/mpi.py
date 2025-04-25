@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane.concurrency.executors.external.mpi
+
 Contains concurrent executor abstractions for task-based workloads backed by mpi4py.
 """
 
@@ -37,6 +39,12 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     .. note::
         All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
+
+    Args:
+        *args: non keyword arguments to pass through to the executor backend.
+        **kwargs: keyword arguments to pass through to the executor backend.
+
+
     """
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
@@ -58,7 +66,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
             shutdown_fn="shutdown",
             submit_unpack=True,
             map_unpack=True,
-            blocking=False,
+            blocking=True,
         )
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):

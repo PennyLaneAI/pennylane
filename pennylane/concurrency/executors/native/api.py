@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane.concurrency.executors.native.api
+
 Base API for defining an executor relying on native Python standard library implementations.
 """
 import abc

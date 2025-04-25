@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane.concurrency.executors.external.dask
+
 Contains concurrent executor abstractions for task-based workloads based on support provided by Dask's distributed backend.
 """
 

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane.concurrency.executors
+
 Provides abstractions for task-based parallel workloads within PennyLane using a simplified `concurrent.futures <https://docs.python.org/3/library/concurrent.futures.html>`_ executor-like interface.
 """
 
