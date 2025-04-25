@@ -520,30 +520,20 @@ class TestMeasurementsFromCountsOrSamples:
     """Tests for transforms modifying measurements to be derived from either counts or samples"""
 
     @pytest.mark.parametrize(
-        "meas_transform", (measurements_from_samples, measurements_from_counts)
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
-    def test_measurements_from_samples_or_counts(self, meas_transform):
-        """Test the measurements_from_samples and measurements_from_counts transforms
-        with a single expval"""
+    def test_error_without_valid_wires(self, meas_transform):
+        """Test that a clear error is raised if the transform fails because a measurement
+        without wires is passed to it"""
 
-        dev = qml.device("lightning.qubit", wires=4, shots=1000)
+        tape = qml.tape.QuantumScript([], measurements=[qml.probs()])
 
-        @qml.qnode(dev)
-        def circuit(theta: float):
-            qml.RX(theta, 0)
-            qml.RX(theta / 2, 1)
-            qml.RX(theta / 3, 2)
-            return qml.expval(qml.Y(0))
+        with pytest.raises(
+            RuntimeError,
+            match="Please apply validate_device_wires transform before measurements_from_",
+        ):
+            meas_transform(tape)
 
-        transformed_circuit = meas_transform(circuit)
-
-        theta = 1.2
-        expected = circuit(theta)
-        res = transformed_circuit(theta)
-
-        assert np.allclose(expected, res, atol=0.05)
-
-    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
@@ -572,7 +562,7 @@ class TestMeasurementsFromCountsOrSamples:
         ],
     )
     @pytest.mark.parametrize("shots", [3000, (3000, 4000), (3000, 3500, 4000)])
-    def test_measurements_from_samples_or_counts_analytic(
+    def test_measurements_from_samples_or_counts(
         self,
         meas_transform,
         input_measurement,
@@ -580,7 +570,7 @@ class TestMeasurementsFromCountsOrSamples:
         shots,
     ):
         """Test the test_measurements_from_samples and measurements_from_counts transforms with a
-        single measurement, for measurements whose outcome can be directly compared to an expected analytic result.
+        single measurement, and compare outcome to the analytic result.
         """
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
@@ -600,6 +590,82 @@ class TestMeasurementsFromCountsOrSamples:
             assert len(res) == len(dev.shots.shot_vector)
 
         assert np.allclose(res, expected_res(theta), atol=0.05)
+
+    @pytest.mark.parametrize(
+        "counts_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_with_counts_output(self, counts_kwargs, meas_transform):
+        """Test that the measurements with an optional observable argument work
+        as expected when an observable (instead of wires) is provided."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.counts(**counts_kwargs)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        # +/- 100 shots is pretty reasonable with 3000 shots total
+        assert len(res) == len(expected)
+        assert res.keys() == expected.keys()
+        for key in res.keys():
+            assert np.isclose(res[key], expected[key], atol=100)
+
+    @pytest.mark.parametrize(
+        "sample_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_with_sample_output(self, sample_kwargs, meas_transform):
+        """Test that the measurements with an optional observable argument work
+        as expected when an observable (instead of wires) is provided."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.sample(**sample_kwargs)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        assert np.isclose(np.mean(res), np.mean(expected), atol=0.05)
+        assert res.shape == expected.shape
+        assert set(res.flatten()) == set(expected.flatten())
 
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
@@ -650,66 +716,6 @@ class TestMeasurementsFromCountsOrSamples:
         assert np.isclose(np.mean(sample_res), np.mean(sample_expected), atol=0.05)
         assert len(sample_res) == len(sample_expected)
         assert set(np.array(sample_res)) == set(sample_expected)
-
-    @pytest.mark.parametrize(
-        "meas_transform", [measurements_from_counts, measurements_from_samples]
-    )
-    def test_counts_with_observables(self, meas_transform):
-        """Test that the measurements with an optional observable argument work
-        as expected when an observable (instead of wires) is provided."""
-
-        dev = qml.device("default.qubit", wires=4, shots=5000)
-
-        @partial(validate_device_wires, wires=dev.wires)
-        @qml.qnode(dev)
-        def basic_circuit(theta: float):
-            qml.RY(theta, 0)
-            qml.RY(theta / 2, 1)
-            qml.RY(2 * theta, 2)
-            qml.RY(theta, 3)
-            return qml.counts(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2))
-
-        transformed_circuit = meas_transform(basic_circuit)
-
-        theta = 1.9
-
-        res = transformed_circuit(theta)
-        expected = basic_circuit(theta)
-
-        # +/- 100 shots is pretty reasonable with 3000 shots total
-        assert len(res) == len(expected)
-        assert res.keys() == expected.keys()
-        for key in res.keys():
-            assert np.isclose(res[key], expected[key], atol=100)
-
-    @pytest.mark.parametrize(
-        "meas_transform", [measurements_from_counts, measurements_from_samples]
-    )
-    def test_sample_with_observables(self, meas_transform):
-        """Test that the measurements with an optional observable argument work
-        as expected when an observable (instead of wires) is provided."""
-
-        dev = qml.device("default.qubit", wires=4, shots=5000)
-
-        @partial(validate_device_wires, wires=dev.wires)
-        @qml.qnode(dev)
-        def basic_circuit(theta: float):
-            qml.RY(theta, 0)
-            qml.RY(theta / 2, 1)
-            qml.RY(2 * theta, 2)
-            qml.RY(theta, 3)
-            return qml.sample(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2))
-
-        transformed_circuit = meas_transform(basic_circuit)
-
-        theta = 1.9
-
-        res = transformed_circuit(theta)
-        expected = basic_circuit(theta)
-
-        assert np.isclose(np.mean(res), np.mean(expected), atol=0.05)
-        assert len(res) == len(expected)
-        assert set(np.array(res)) == set(expected)
 
 
 def test_validate_multiprocessing_workers_None():
