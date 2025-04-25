@@ -155,6 +155,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Snapshots can now be used together with defer-measurements on `default.qubit`.
+
 * Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
 
