@@ -153,14 +153,12 @@
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
-<<<<<<< HEAD
 * Moved functions that calculate rotation angles for unitary decompositions into an internal
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-=======
+
 * The `Identity` operator can now be accessed via its alias, `I`, in the `qml.ops` module.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
->>>>>>> 4f12417ee (apply suggestions from code review)
 
 <h3>Documentation 📝</h3>
 
