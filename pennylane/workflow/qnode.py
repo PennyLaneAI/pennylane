@@ -760,6 +760,13 @@ class QNode:
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
+        .. warning::
+
+            This function is deprecated and will be removed in v0.43. Instead, use
+
+            :func:`~.workflow.get_best_diff_method` to determine the best differentiation method.
+
+
         Args:
             device (.device.Device): PennyLane device
             interface (str): name of the requested interface
@@ -773,6 +780,11 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
+        warnings.warn(
+            "The `qml.QNode.get_gradient_fn` method is deprecated and will be removed in a future release."
+            "Instead, use `qml.workflow.get_best_diff_method` to determine the best differentiation method.",
+            qml.PennyLaneDeprecationWarning,
+        )
         if diff_method is None:
             return None, {}, device
 

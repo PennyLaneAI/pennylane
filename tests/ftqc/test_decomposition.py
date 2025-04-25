@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import math
 from pennylane.devices.qubit.apply_operation import apply_operation
 from pennylane.ftqc import (
     GraphStatePrep,
@@ -32,7 +33,6 @@ from pennylane.ftqc import (
     measure_x,
 )
 from pennylane.ftqc.decomposition import _rot_to_xzx
-from pennylane.ops.op_math.decompositions.single_qubit_unitary import xzx_rotation_angles
 
 
 class TestGateSetDecomposition:
@@ -43,7 +43,7 @@ class TestGateSetDecomposition:
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
         mat = qml.Rot.compute_matrix(phi, theta, omega)
-        a1, a2, a3, _ = xzx_rotation_angles(mat)
+        a1, a2, a3 = math.decomposition.xzx_rotation_angles(mat)
 
         with qml.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
