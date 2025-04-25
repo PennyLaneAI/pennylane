@@ -1,4 +1,4 @@
-:orphan:
+from pennylane import QubitUnitary:orphan:
 
 # Release 0.42.0-dev (development release)
 
@@ -12,7 +12,7 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
-* Two new functions called `convert_to_su2` and `convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
+* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
@@ -42,7 +42,7 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
-* Decomposition rules can be marked as not-applicable with `qml.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
+* Decomposition rules can be marked as not-applicable with :func:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
   rules based on parameters that affects the rule's resources.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
@@ -64,6 +64,8 @@
       qml.RY(theta, wires=wires[0])
       qml.RZ(omega, wires=wires[0])
       qml.GlobalPhase(-phase)
+  
+  qml.add_decomps(QubitUnitary, zyz_decomposition)
   ```
   
   This decomposition will be ignored for `QubitUnitary` on more than one wire.
