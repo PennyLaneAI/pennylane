@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
+  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+
+  ```python
+  angles = np.array([1.0, 2.0, 3.0, 4.0])
+
+  wires = qml.registers({"control": 2, "target": 1})
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.SelectPauliRot(
+        angles,
+        control_wires=wires["control"],
+        target_wire=wires["target"],
+        rot_axis="Y")
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+  ```
+  
+
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
