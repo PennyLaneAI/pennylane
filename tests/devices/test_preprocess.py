@@ -13,13 +13,17 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 import warnings
+from functools import partial
 
+import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    measurements_from_counts,
+    measurements_from_samples,
     mid_circuit_measurements,
     no_sampling,
     null_postprocessing,
@@ -510,6 +514,202 @@ class TestMidCircuitMeasurements:
             match="dynamic_one_shot is only supported with finite shots.",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+
+
+class TestMeasurementsFromCountsOrSamples:
+    """Tests for transforms modifying measurements to be derived from either counts or samples"""
+
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_samples, measurements_from_counts)
+    )
+    def test_measurements_from_samples_or_counts(self, meas_transform):
+        """Test the measurements_from_samples and measurements_from_counts transforms
+        with a single expval"""
+
+        dev = qml.device("lightning.qubit", wires=4, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit(theta: float):
+            qml.RX(theta, 0)
+            qml.RX(theta / 2, 1)
+            qml.RX(theta / 3, 2)
+            return qml.expval(qml.Y(0))
+
+        transformed_circuit = meas_transform(circuit)
+
+        theta = 1.2
+        expected = circuit(theta)
+        res = transformed_circuit(theta)
+
+        assert np.allclose(expected, res, atol=0.05)
+
+    # pylint: disable=unnecessary-lambda
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    @pytest.mark.parametrize(
+        "input_measurement, expected_res",
+        [
+            (
+                lambda: qml.expval(qml.PauliY(wires=0) @ qml.PauliY(wires=1)),
+                lambda theta: np.sin(theta) * np.sin(theta / 2),
+            ),
+            (lambda: qml.var(qml.Y(wires=1)), lambda theta: 1 - np.sin(theta / 2) ** 2),
+            (
+                lambda: qml.probs(),
+                lambda theta: np.outer(
+                    np.outer(
+                        [np.cos(theta / 2) ** 2, np.sin(theta / 2) ** 2],
+                        [np.cos(theta / 4) ** 2, np.sin(theta / 4) ** 2],
+                    ),
+                    [1, 0, 0, 0],
+                ).flatten(),
+            ),
+            (
+                lambda: qml.probs(wires=[1]),
+                lambda theta: [np.cos(theta / 4) ** 2, np.sin(theta / 4) ** 2],
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("shots", [3000, (3000, 4000), (3000, 3500, 4000)])
+    def test_measurements_from_samples_or_counts_analytic(
+        self,
+        meas_transform,
+        input_measurement,
+        expected_res,
+        shots,
+    ):
+        """Test the test_measurements_from_samples and measurements_from_counts transforms with a
+        single measurement, for measurements whose outcome can be directly compared to an expected analytic result.
+        """
+
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+
+        @meas_transform
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def circuit(theta: float):
+            qml.RX(theta, 0)
+            qml.RX(theta / 2, 1)
+            return input_measurement()
+
+        theta = 2.5
+        res = circuit(theta)
+
+        if len(dev.shots.shot_vector) != 1:
+            assert len(res) == len(dev.shots.shot_vector)
+
+        assert np.allclose(res, expected_res(theta), atol=0.05)
+
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    def test_multiple_measurements(self, meas_transform):
+        """Test the transforms for measurements_from_counts to other measurement types
+        with multiple measurements"""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return (
+                qml.expval(qml.PauliX(wires=0) @ qml.PauliX(wires=1)),
+                qml.var(qml.PauliX(wires=2)),
+                qml.counts(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)),
+                qml.sample(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)),
+                qml.probs(wires=[3]),
+            )
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+        expval_res, var_res, counts_res, sample_res, probs_res = transformed_circuit(theta)
+
+        expval_expected = np.sin(theta) * np.sin(theta / 2)
+        var_expected = 1 - np.sin(2 * theta) ** 2
+        counts_expected = basic_circuit(theta)[2]
+        sample_expected = basic_circuit(theta)[3]
+        probs_expected = [np.cos(theta / 2) ** 2, np.sin(theta / 2) ** 2]
+
+        assert np.isclose(expval_res, expval_expected, atol=0.05)
+        assert np.isclose(var_res, var_expected, atol=0.05)
+        assert np.allclose(probs_res, probs_expected, atol=0.05)
+
+        # +/- 100 shots is pretty reasonable with 3000 shots total
+        assert len(counts_res) == len(counts_expected)
+        assert counts_res.keys() == counts_expected.keys()
+        for key in counts_res.keys():
+            assert np.isclose(counts_res[key], counts_expected[key], atol=100)
+
+        # # sample comparison
+        assert np.isclose(np.mean(sample_res), np.mean(sample_expected), atol=0.05)
+        assert len(sample_res) == len(sample_expected)
+        assert set(np.array(sample_res)) == set(sample_expected)
+
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_counts_with_observables(self, meas_transform):
+        """Test that the measurements with an optional observable argument work
+        as expected when an observable (instead of wires) is provided."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.counts(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2))
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        # +/- 100 shots is pretty reasonable with 3000 shots total
+        assert len(res) == len(expected)
+        assert res.keys() == expected.keys()
+        for key in res.keys():
+            assert np.isclose(res[key], expected[key], atol=100)
+
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_sample_with_observables(self, meas_transform):
+        """Test that the measurements with an optional observable argument work
+        as expected when an observable (instead of wires) is provided."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.sample(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2))
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        assert np.isclose(np.mean(res), np.mean(expected), atol=0.05)
+        assert len(res) == len(expected)
+        assert set(np.array(res)) == set(expected)
 
 
 def test_validate_multiprocessing_workers_None():
