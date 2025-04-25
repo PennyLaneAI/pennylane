@@ -81,8 +81,15 @@
   qml.decomposition.enable_graph()
    
   @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+  @qml.qnode(qml.device("default.qubit"))
   def circuit():
-      ...
+      qml.Toffoli(wires=[0, 1, 2])
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ───────────╭●───────────╭●────╭●──T──╭●─┤  
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤  
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
   ```
 
 <h3>Improvements 🛠</h3>
