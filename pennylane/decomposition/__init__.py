@@ -236,6 +236,15 @@ operator towards a target gate set.
     >>> graph.resource_estimate(op)
     <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
 
+Utility Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionError
+    ~DecompositionNotApplicable
+
 """
 
 from .utils import (
