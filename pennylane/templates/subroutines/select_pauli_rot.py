@@ -37,6 +37,22 @@ class SelectPauliRot(Operation):
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
 
+    .. seealso:: :class:`~.Select`.
+
+    Args:
+        angles (tensor_like): The rotation angles to be applied. The length of the angles array must
+            be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
+        control_wires (Sequence[int]): The control qubits used to select the rotation.
+        target_wire (Sequence[int]): The wire where the rotations are applied.
+        rot_axis (str): The axis around which the rotation is performed.
+            It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
+
+    Raises:
+        ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
+            of ``control_wires``.
+        ValueError: If ``rot_axis`` has a value different from ``X``, ``Y`` or ``Z``.
+        ValueError: If the number of the target wires is not one.
+
     **Example**
 
     .. code-block::
@@ -61,22 +77,6 @@ class SelectPauliRot(Operation):
         >>> print(circuit())
         [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
          0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
-
-    .. seealso:: :class:`~.Select`.
-
-    Args:
-        angles (tensor_like): The rotation angles to be applied. The length of the angles array must
-            be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
-        control_wires (Sequence[int]): The control qubits used to select the rotation.
-        target_wire (Sequence[int]): The wire where the rotations are applied.
-        rot_axis (str): The axis around which the rotation is performed.
-            It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
-
-    Raises:
-        ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
-            of ``control_wires``.
-        ValueError: If ``rot_axis`` has a value different from ``X``, ``Y`` or ``Z``.
-        ValueError: If the number of the target wires is not one.
     """
 
     num_wires = AnyWires
