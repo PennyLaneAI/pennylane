@@ -23,6 +23,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
+  [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
+
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
   Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
