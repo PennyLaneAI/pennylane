@@ -5,7 +5,8 @@
 <h3>New features since last release</h3>
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
-  is now available. It is an operator that appears frequently in unitary decompositions and block encoding techniques. [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
 
   ```python
   angles = np.array([1.0, 2.0, 3.0, 4.0])
@@ -38,19 +39,122 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+<h4>Resource-efficient Decompositions 🔎</h4>
+
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
+  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
+  decompose into will be chosen based on the target gate set.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  from functools import partial
+  import numpy as np
+  import pennylane as qml
+  
+  qml.decomposition.enable_graph()
+  
+  U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+  
+  @partial(qml.transforms.decompose, gate_set={"RX", "RY", "GlobalPhase"})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.QubitUnitary(np.array([[1, 1], [1, -1]]) / np.sqrt(2), wires=[0])
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
+  ```
+
+* Decomposition rules can be marked as not-applicable with :class:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
+  rules based on parameters that affects the rule's resources.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+  ```python
+  import pennylane as qml
+  from pennylane.decomposition import DecompositionNotApplicable
+  from pennylane.math.decomposition import zyz_rotation_angles
+  
+  def _zyz_resource(num_wires):
+      if num_wires != 1:
+          # This decomposition is only applicable when num_wires is 1
+          raise DecompositionNotApplicable
+      return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
+
+  @qml.register_resources(_zyz_resource)
+  def zyz_decomposition(U, wires, **__):
+      phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+      qml.RZ(phi, wires=wires[0])
+      qml.RY(theta, wires=wires[0])
+      qml.RZ(omega, wires=wires[0])
+      qml.GlobalPhase(-phase)
+  
+  qml.add_decomps(QubitUnitary, zyz_decomposition)
+  ```
+  
+  This decomposition will be ignored for `QubitUnitary` on more than one wire.
+
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
+  decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
+  further decompose single-qubit unitary gates more flexibly using different rotations.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
+  interface to maintain a list of special implementations.
+  [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
+
 <h3>Breaking changes 💔</h3>
+
+* The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
+  [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
+
+* The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
+
+* The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
+  longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
+  [(#7302)](https://github.com/PennyLaneAI/pennylane/pull/7302)
+
+* Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
+  [(#7324)](https://github.com/PennyLaneAI/pennylane/pull/7324)
+
+* The `mcm_method` keyword argument in `qml.execute` has been removed.
+  [(#7301)](https://github.com/PennyLaneAI/pennylane/pull/7301)
+
+* The `inner_transform` and `config` keyword arguments in `qml.execute` have been removed.
+  [(#7300)](https://github.com/PennyLaneAI/pennylane/pull/7300)
+
+* `Sum.ops`, `Sum.coeffs`, `Prod.ops` and `Prod.coeffs` have been removed.
+  [(#7304)](https://github.com/PennyLaneAI/pennylane/pull/7304)
+
+* Specifying `pipeline=None` with `qml.compile` has been removed.
+  [(#7307)](https://github.com/PennyLaneAI/pennylane/pull/7307)
+
+* The `control_wires` argument in `qml.ControlledQubitUnitary` has been removed.
+  Furthermore, the `ControlledQubitUnitary` no longer accepts `QubitUnitary` objects as arguments as its `base`.
+  [(#7305)](https://github.com/PennyLaneAI/pennylane/pull/7305)
 
 * `qml.tape.TapeError` has been removed.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+  [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
+
 <h3>Internal changes ⚙️</h3>
+
+* Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
+  [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
 
 * Introduce module dependency management using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
@@ -64,9 +168,26 @@
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
+* Moved functions that calculate rotation angles for unitary decompositions into an internal
+  module `qml.math.decomposition`
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
+  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
+  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and 
+  disabling program capture.
+  [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
+  [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
+
+* Adds an informative error if `qml.cond` is used with an abstract condition with
+  jitting on `default.qubit` if capture is enabled.
+  [(#7314)](https://github.com/PennyLaneAI/pennylane/pull/7314)
 
 * Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
   [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
@@ -88,13 +209,18 @@
 * Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
+* Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Astral Cai,
 Yushao Chen,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic

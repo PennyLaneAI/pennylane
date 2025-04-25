@@ -29,9 +29,9 @@ class SelectPauliRot(Operation):
 
     .. math::
 
-       \sum_i | i \rangle \langle i | \otimes R(\alpha_i)
+       \sum_i | i \rangle \langle i | \otimes R(\alpha_i),
 
-    Here, :math:`| i \rangle` refers to the computational basis state of the control register,
+    where :math:`| i \rangle` refers to the computational basis state of the control register
     and :math:`R(\cdot)` denotes a Pauli rotation applied to the target qubit,
     parametrized by :math:`\alpha_i`.
 
@@ -69,13 +69,13 @@ class SelectPauliRot(Operation):
             be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
         control_wires (Sequence[int]): The control qubits used to select the rotation.
         target_wire (Sequence[int]): The wire where the rotations are applied.
-        rot_axis (str): The axis around the rotation is performed.
+        rot_axis (str): The axis around which the rotation is performed.
             It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
 
     Raises:
         ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
             of ``control_wires``.
-        ValueError: If ``rot_axis`` has a value different from `X`, `Y` or `Z`.
+        ValueError: If ``rot_axis`` has a value different from ``X``, ``Y`` or ``Z``.
         ValueError: If the number of the target wires is not one.
     """
 
