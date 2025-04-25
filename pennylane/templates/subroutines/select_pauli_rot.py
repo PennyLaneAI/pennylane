@@ -37,8 +37,6 @@ class SelectPauliRot(Operation):
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
 
-    .. seealso:: :class:`~.Select`.
-
     Args:
         angles (tensor_like): The rotation angles to be applied. The length of the angles array must
             be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
@@ -52,6 +50,8 @@ class SelectPauliRot(Operation):
             of ``control_wires``.
         ValueError: If ``rot_axis`` has a value different from ``X``, ``Y`` or ``Z``.
         ValueError: If the number of the target wires is not one.
+
+    .. seealso:: :class:`~.Select`.
 
     **Example**
 
