@@ -178,9 +178,18 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
+    :class:`~.S`, and :class:`~.Hadamard`.
     """
     d_ops = []
+
+    if isinstance(op, qml.QubitUnitary):
+        ops = op.decomposition()
+        for o in ops[:-1]:
+            d_ops.extend(_rot_decompose(o))
+        d_ops.append(ops[-1])
+        return d_ops
+
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
@@ -271,7 +280,7 @@ def _two_qubit_decompose(op):
     d_ops = []
     for td_op in td_ops:
         d_ops.extend(
-            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+            _rot_decompose(td_op) if td_op.num_params and len(td_op.wires) == 1 else [td_op]
         )
 
     return d_ops
