@@ -300,6 +300,7 @@ class SampleMP(SampleMeasurement):
     def process_counts(self, counts: dict, wire_order: Wires):
         samples = []
         mapped_counts = self._map_counts(counts, wire_order)
+        print(mapped_counts)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
             if len(self.wires) == 1:
@@ -331,10 +332,8 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
-
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+            return eigvals[int(outcome, 2)]
 
-        return outcome_samples
+        return [int(bit) for bit in outcome]

@@ -384,7 +384,6 @@ class CountsMP(SampleMeasurement):
 
         if self.eigvals() is not None:
             eigvals_dict = {k: qml.math.int64(0) for k in self.eigvals()}
-            print(self)
 
             def outcome_to_eigval(outcome: str):
                 return self.eigvals()[int(outcome, 2)]
