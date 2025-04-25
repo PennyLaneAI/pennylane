@@ -269,25 +269,11 @@ from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shado
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
 from .measurements import (
-    AllCounts,
-    Counts,
-    Expectation,
     MeasurementProcess,
     MeasurementShapeError,
     MeasurementTransform,
-    MidMeasure,
-    MutualInfo,
-    ObservableReturnTypes,
-    Probability,
-    Purity,
-    Sample,
     SampleMeasurement,
-    Shadow,
-    ShadowExpval,
-    State,
     StateMeasurement,
-    Variance,
-    VnEntropy,
 )
 from .mid_measure import (
     MeasurementValue,
