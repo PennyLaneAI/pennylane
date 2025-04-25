@@ -15,9 +15,9 @@
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
 
+from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.ops import CNOT, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z
-from pennylane.ops.op_math.decompositions.single_qubit_unitary import xzx_rotation_angles
 from pennylane.transforms import decompose, transform
 
 from .operations import RotXZX
@@ -28,7 +28,7 @@ mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
-    lam, theta, phi, _ = xzx_rotation_angles(mat)
+    lam, theta, phi = math.decomposition.xzx_rotation_angles(mat)
     RotXZX(lam, theta, phi, wires)
 
 
