@@ -143,5 +143,8 @@ class ExecutionConfig:
             field_strs.append(f"    {k}={repr(v)},")
         return "ExecutionConfig(\n" + "\n".join(field_strs) + "\n)"
 
+    def __repr__(self):
+        return self.__str__()
+
 
 DefaultExecutionConfig = ExecutionConfig()
