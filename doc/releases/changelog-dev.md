@@ -157,9 +157,6 @@
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* The `Identity` operator can now be accessed via its alias, `I`, in the `qml.ops` module.
-  [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
-
 <h3>Documentation 📝</h3>
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
