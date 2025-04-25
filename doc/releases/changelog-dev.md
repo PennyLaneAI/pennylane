@@ -70,7 +70,7 @@
   
   This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
-* The `decompose` transform now supports symbolic operators specified as strings in the gate set
+* The :func:`~.transforms.decompose` transform now supports symbolic operators (e.g., `Adjoint` and `Controlled`) specified as strings in the `gate_set` argument
   when the new graph-based decomposition system is enabled.
   [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
