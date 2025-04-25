@@ -12,8 +12,9 @@
 r"""Resource operators for qchem operations."""
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+
 # pylint: disable=arguments-differ
 
 

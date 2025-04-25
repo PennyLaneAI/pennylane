@@ -17,8 +17,13 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
 
 # pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments
 
@@ -53,36 +58,7 @@ class ResourceCH(ResourceOperator):
     {Hadamard: 2, RY: 2, CNOT: 1}
     """
 
-    # @staticmethod
-    # def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-    #     r"""Returns a dictionary representing the resources of the operator. The
-    #     keys are the operators and the associated values are the counts.
-
-    #     Resources:
-    #         The resources are derived from the following identities (as presented in this
-    #         `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
-
-    #         .. math::
-
-    #             \begin{align}
-    #                 \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
-    #                 \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
-    #             \end{align}
-
-    #         Specifically, the resources are defined as two :class:`~.ResourceRY`, two
-    #         :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
-    #     """
-    #     gate_types = {}
-
-    #     ry = re.ResourceRY.resource_rep()
-    #     h = re.ResourceHadamard.resource_rep()
-    #     cnot = re.ResourceCNOT.resource_rep()
-
-    #     gate_types[h] = 2
-    #     gate_types[ry] = 2
-    #     gate_types[cnot] = 1
-
-    #     return gate_types
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -103,16 +79,10 @@ class ResourceCH(ResourceOperator):
             Specifically, the resources are defined as two :class:`~.ResourceRY`, two
             :class:`~.ResourceHadamard` and one :class:`~.ResourceCNOT` gates.
         """
-        gate_counts = kwargs["gate_counts"]
-
         ry = re.ResourceRY.resource_rep()
         h = re.ResourceHadamard.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
-
-        gate_counts.add(2, h)
-        gate_counts.add(2, ry)
-        gate_counts.add(1, cnot)
-        return
+        return [GateCount(h, 2), GateCount(ry, 2), GateCount(cnot, 1)]
 
     @property
     def resource_params(self) -> dict:
@@ -141,7 +111,7 @@ class ResourceCH(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -163,11 +133,13 @@ class ResourceCH(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -184,7 +156,11 @@ class ResourceCH(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceCY(ResourceOperator):
@@ -214,6 +190,8 @@ class ResourceCY(ResourceOperator):
     {CNOT: 1, S: 1, Adjoint(S): 1}
     """
 
+    num_wires = 2
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -228,17 +206,11 @@ class ResourceCY(ResourceOperator):
             obtain the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceS` gates.
         """
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         s = re.ResourceS.resource_rep()
         s_dag = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
 
-        gate_types[cnot] = 1
-        gate_types[s] = 1
-        gate_types[s_dag] = 1
-
-        return gate_types
+        return [GateCount(cnot), GateCount(s), GateCount(s_dag)]
 
     @property
     def resource_params(self) -> dict:
@@ -267,7 +239,7 @@ class ResourceCY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -289,11 +261,13 @@ class ResourceCY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -310,7 +284,11 @@ class ResourceCY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceCZ(ResourceOperator):
@@ -338,6 +316,8 @@ class ResourceCZ(ResourceOperator):
     {CNOT: 1, Hadamard: 2}
     """
 
+    num_wires = 2
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -352,15 +332,10 @@ class ResourceCZ(ResourceOperator):
             the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
         """
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         h = re.ResourceHadamard.resource_rep()
 
-        gate_types[cnot] = 1
-        gate_types[h] = 2
-
-        return gate_types
+        return [GateCount(cnot), GateCount(h, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -389,7 +364,7 @@ class ResourceCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -412,13 +387,15 @@ class ResourceCZ(ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceCCZ.resource_rep(): 1}
+            return [GateCount(re.ResourceCCZ.resource_rep())]
 
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -435,7 +412,11 @@ class ResourceCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceCSWAP(ResourceOperator):
@@ -457,6 +438,8 @@ class ResourceCSWAP(ResourceOperator):
 
     """
 
+    num_wires = 3
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -474,15 +457,10 @@ class ResourceCSWAP(ResourceOperator):
                 1: ─╭X─├●─╭X─┤
                 2: ─╰●─╰X─╰●─┤
         """
-        gate_types = {}
-
         tof = re.ResourceToffoli.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
-        gate_types[tof] = 1
-        gate_types[cnot] = 2
-
-        return gate_types
+        return [GateCount(tof), GateCount(cnot, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -511,7 +489,7 @@ class ResourceCSWAP(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -533,11 +511,13 @@ class ResourceCSWAP(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -554,7 +534,11 @@ class ResourceCSWAP(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceCCZ(ResourceOperator):
@@ -582,6 +566,8 @@ class ResourceCCZ(ResourceOperator):
     {Toffoli: 1, Hadamard: 2}
     """
 
+    num_wires = 3
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -596,15 +582,10 @@ class ResourceCCZ(ResourceOperator):
             the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceToffoli` gate conjugated by a pair of :class:`~.ResourceHadamard` gates.
         """
-        gate_types = {}
-
         toffoli = re.ResourceToffoli.resource_rep()
         h = re.ResourceHadamard.resource_rep()
 
-        gate_types[toffoli] = 1
-        gate_types[h] = 2
-
-        return gate_types
+        return [GateCount(toffoli), GateCount(h, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -633,7 +614,7 @@ class ResourceCCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -655,11 +636,13 @@ class ResourceCCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -676,7 +659,11 @@ class ResourceCCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceCNOT(ResourceOperator):
@@ -692,6 +679,8 @@ class ResourceCNOT(ResourceOperator):
     .. seealso:: :class:`~.CNOT`
 
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -734,7 +723,7 @@ class ResourceCNOT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        return [GateCount(cls.resource_rep())]
 
     @classmethod
     def controlled_resource_decomp(
@@ -755,13 +744,15 @@ class ResourceCNOT(ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
-            return {re.ResourceToffoli.resource_rep(): 1}
+            return [GateCount(re.ResourceToffoli.resource_rep())]
 
-        return {
-            re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceMultiControlledX.resource_rep(
+                    num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -778,7 +769,11 @@ class ResourceCNOT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep())]
+        )
 
 
 class ResourceToffoli(ResourceOperator):
@@ -816,14 +811,16 @@ class ResourceToffoli(ResourceOperator):
     {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
     """
 
+    num_wires = 3
+
     def __init__(self, elbow=None, wires=None) -> None:
         self.elbow = elbow
         super().__init__(wires=wires)
 
     @staticmethod
     def elbow_decomp(elbow="left"):
-        gate_types = {}
-        
+        gate_types = []
+
         t = re.ResourceT.resource_rep()
         t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
         h = re.ResourceHadamard.resource_rep()
@@ -831,19 +828,18 @@ class ResourceToffoli(ResourceOperator):
         s_dag = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
         cz = re.ResourceCZ.resource_rep()
 
-
         if elbow == "left":
-            gate_types[t] = 2
-            gate_types[t_dag] = 2
-            gate_types[cnot] = 3
-            gate_types[s_dag] = 1
+            gate_types.append(GateCount(t, 2))
+            gate_types.append(GateCount(t_dag, 2))
+            gate_types.append(GateCount(cnot, 3))
+            gate_types.append(GateCount(s_dag))
 
         if elbow == "right":
-            gate_types[h] = 1
-            gate_types[cz] = 1
+            gate_types.append(GateCount(h))
+            gate_types.append(GateCount(cz))
 
         return gate_types
-    
+
     @staticmethod
     def _resource_decomp(elbow=None, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -868,8 +864,6 @@ class ResourceToffoli(ResourceOperator):
             :class:`~.ResourceHadamard` gates, one :class:`~.ResourceCZ` gate, one :class:`~.ResourceS`
             gate, two :class:`~.ResourceT` gates and two adjoint :class:`~.ResourceT` gates.
         """
-        gate_types = {}
-
         if elbow:
             return ResourceToffoli.elbow_decomp(elbow)
 
@@ -880,14 +874,16 @@ class ResourceToffoli(ResourceOperator):
         cz = re.ResourceCZ.resource_rep()
         t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
 
-        gate_types[cnot] = 9
-        gate_types[h] = 3
-        gate_types[s] = 1
-        gate_types[cz] = 1
-        gate_types[t] = 2
-        gate_types[t_dag] = 2
-
-        return gate_types
+        return [
+            AddQubits(2),
+            GateCount(cnot, 9),
+            GateCount(h, 3),
+            GateCount(s),
+            GateCount(cz),
+            GateCount(t, 2),
+            GateCount(t_dag, 2),
+            CutQubits(2),
+        ]
 
     @staticmethod
     def textbook_resource_decomp(elbow=None, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -909,7 +905,6 @@ class ResourceToffoli(ResourceOperator):
             :class:`~.ResourceHadamard` gates, four :class:`~.ResourceT` gates and three adjoint
             :class:`~.ResourceT` gates.
         """
-        gate_types = {}
 
         if elbow:
             return ResourceToffoli.elbow_decomp(elbow)
@@ -919,12 +914,7 @@ class ResourceToffoli(ResourceOperator):
         h = re.ResourceHadamard.resource_rep()
         t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
 
-        gate_types[cnot] = 6
-        gate_types[h] = 2
-        gate_types[t] = 4
-        gate_types[t_dag] = 3
-
-        return gate_types
+        return [GateCount(cnot, 6), GateCount(h, 2), GateCount(t, 4), GateCount(t_dag, 3)]
 
     @property
     def resource_params(self) -> dict:
@@ -953,11 +943,18 @@ class ResourceToffoli(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(): 1}
+        if elbow is None:
+            raise re.ResourcesNotDefined
+
+        adj_elbow = "left" if elbow == "right" else "right"
+        return [GateCount(cls.resource_rep(elbow=adj_elbow))]
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, elbow=None,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        elbow=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -973,11 +970,13 @@ class ResourceToffoli(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires + 2, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceMultiControlledX.resource_rep(
+                    num_ctrl_wires + 2, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, elbow=None) -> Dict[CompressedResourceOp, int]:
@@ -994,7 +993,11 @@ class ResourceToffoli(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {re.ResourceIdentity.resource_rep(): 1} if z % 2 == 0 else {cls.resource_rep(elbow=elbow): 1}
+        return (
+            [GateCount(re.ResourceIdentity.resource_rep())]
+            if z % 2 == 0
+            else [GateCount(cls.resource_rep(elbow=elbow))]
+        )
 
 
 class ResourceMultiControlledX(ResourceOperator):
@@ -1040,8 +1043,10 @@ class ResourceMultiControlledX(ResourceOperator):
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
         self.num_work_wires = num_work_wires
+
+        self.num_wires = num_ctrl_wires + 1
         super().__init__(wires=wires)
-    
+
     @staticmethod
     def _resource_decomp(
         num_ctrl_wires,
@@ -1081,7 +1086,7 @@ class ResourceMultiControlledX(ResourceOperator):
         if num_ctrl_wires == 0:
             if num_ctrl_values:
                 return []
-            
+
             gate_types[x] += 1
             return [GateCount(x)]
 
@@ -1118,8 +1123,8 @@ class ResourceMultiControlledX(ResourceOperator):
             gate_types[toffoli] = 1
 
             res = [
-                AddQubits(num_ctrl_wires - 2), 
-                GateCount(l_elbow, num_ctrl_wires - 2), 
+                AddQubits(num_ctrl_wires - 2),
+                GateCount(l_elbow, num_ctrl_wires - 2),
                 GateCount(r_elbow, num_ctrl_wires - 2),
                 GateCount(toffoli, 1),
                 CutQubits(num_ctrl_wires - 2),
@@ -1129,7 +1134,7 @@ class ResourceMultiControlledX(ResourceOperator):
 
         gate_types[cnot] = 36 * num_ctrl_wires - 111
         res = [
-            AddQubits(1), 
+            AddQubits(1),
             GateCount(cnot, 36 * num_ctrl_wires - 111),
             CutQubits(1),
         ]
@@ -1154,9 +1159,7 @@ class ResourceMultiControlledX(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
-    ) -> CompressedResourceOp:
+    def resource_rep(cls, num_ctrl_wires, num_ctrl_values, num_work_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1196,7 +1199,7 @@ class ResourceMultiControlledX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires): 1}
+        return [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires))]
 
     @classmethod
     def controlled_resource_decomp(
@@ -1232,11 +1235,15 @@ class ResourceMultiControlledX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return cls.resources(
-            outer_num_ctrl_wires + num_ctrl_wires,
-            outer_num_ctrl_values + num_ctrl_values,
-            outer_num_work_wires + num_work_wires,
-        )
+        return [
+            GateCount(
+                cls.resource_rep(
+                    outer_num_ctrl_wires + num_ctrl_wires,
+                    outer_num_ctrl_values + num_ctrl_values,
+                    outer_num_work_wires + num_work_wires,
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(
@@ -1259,9 +1266,9 @@ class ResourceMultiControlledX(ResourceOperator):
                 values are the counts.
         """
         return (
-            {}
+            [GateCount(re.ResourceIdentity.resource_rep())]
             if z % 2 == 0
-            else {cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires): 1}
+            else [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires))]
         )
 
 
@@ -1294,6 +1301,8 @@ class ResourceCRX(ResourceOperator):
     {CNOT: 2, RZ: 2, Hadamard: 2}
     """
 
+    num_wires = 2
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
@@ -1314,17 +1323,11 @@ class ResourceCRX(ResourceOperator):
             Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates, two
             :class:`~.ResourceHadamard` gates and two :class:`~.ResourceRZ` gates.
         """
-        gate_types = {}
-
         h = re.ResourceHadamard.resource_rep()
         rz = re.ResourceRZ.resource_rep(eps)
         cnot = re.ResourceCNOT.resource_rep()
 
-        gate_types[cnot] = 2
-        gate_types[rz] = 2
-        gate_types[h] = 2
-
-        return gate_types
+        return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -1353,7 +1356,7 @@ class ResourceCRX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -1378,11 +1381,13 @@ class ResourceCRX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceRX, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceRX, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, eps=None) -> Dict[CompressedResourceOp, int]:
@@ -1399,7 +1404,7 @@ class ResourceCRX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
 
 class ResourceCRY(ResourceOperator):
@@ -1431,6 +1436,8 @@ class ResourceCRY(ResourceOperator):
     {CNOT: 2, RY: 2}
     """
 
+    num_wires = 2
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
@@ -1451,15 +1458,10 @@ class ResourceCRY(ResourceOperator):
             of the control qubit. Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates
             and two :class:`~.ResourceRY` gates.
         """
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         ry = re.ResourceRY.resource_rep(eps)
 
-        gate_types[cnot] = 2
-        gate_types[ry] = 2
-
-        return gate_types
+        return [GateCount(cnot, 2), GateCount(ry, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -1488,7 +1490,7 @@ class ResourceCRY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -1513,11 +1515,13 @@ class ResourceCRY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceRY, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceRY, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, eps=None) -> Dict[CompressedResourceOp, int]:
@@ -1534,7 +1538,7 @@ class ResourceCRY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
 
 class ResourceCRZ(ResourceOperator):
@@ -1566,6 +1570,8 @@ class ResourceCRZ(ResourceOperator):
     {CNOT: 2, RZ: 2}
     """
 
+    num_wires = 2
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
@@ -1586,15 +1592,10 @@ class ResourceCRZ(ResourceOperator):
             of the control qubit. Specifically, the resources are defined as two :class:`~.ResourceCNOT` gates
             and two :class:`~.ResourceRZ` gates.
         """
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep(eps)
 
-        gate_types[cnot] = 2
-        gate_types[rz] = 2
-
-        return gate_types
+        return [GateCount(cnot, 2), GateCount(rz, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -1623,7 +1624,7 @@ class ResourceCRZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -1648,11 +1649,13 @@ class ResourceCRZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceRZ, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceRZ, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, eps=None) -> Dict[CompressedResourceOp, int]:
@@ -1669,7 +1672,7 @@ class ResourceCRZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
 
 class ResourceCRot(ResourceOperator):
@@ -1711,6 +1714,8 @@ class ResourceCRot(ResourceOperator):
     {CNOT: 2, RZ: 3, RY: 2}
     """
 
+    num_wires = 2
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
@@ -1740,17 +1745,11 @@ class ResourceCRot(ResourceOperator):
                 trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
 
         """
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep()
         ry = re.ResourceRY.resource_rep()
 
-        gate_types[cnot] = 2
-        gate_types[rz] = 3
-        gate_types[ry] = 2
-
-        return gate_types
+        return [GateCount(cnot, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -1779,7 +1778,7 @@ class ResourceCRot(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -1801,11 +1800,13 @@ class ResourceCRot(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourceRot, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceRot, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, eps=None) -> Dict[CompressedResourceOp, int]:
@@ -1822,7 +1823,7 @@ class ResourceCRot(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
 
 class ResourceControlledPhaseShift(ResourceOperator):
@@ -1854,21 +1855,18 @@ class ResourceControlledPhaseShift(ResourceOperator):
     {CNOT: 2, RZ: 3}
     """
 
+    num_wires = 2
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
-        gate_types = {}
-
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep(eps)
 
-        gate_types[cnot] = 2
-        gate_types[rz] = 3
-
-        return gate_types
+        return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @property
     def resource_params(self):
@@ -1897,7 +1895,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]
 
     @staticmethod
     def controlled_resource_decomp(
@@ -1922,11 +1920,17 @@ class ResourceControlledPhaseShift(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {
-            re.ResourceControlled.resource_rep(
-                re.ResourcePhaseShift, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
-            ): 1
-        }
+        return [
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourcePhaseShift,
+                    {eps},
+                    num_ctrl_wires + 1,
+                    num_ctrl_values,
+                    num_work_wires,
+                )
+            ),
+        ]
 
     @classmethod
     def pow_resource_decomp(cls, z, eps=None) -> Dict[CompressedResourceOp, int]:
@@ -1943,4 +1947,4 @@ class ResourceControlledPhaseShift(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return {cls.resource_rep(eps): 1}
+        return [GateCount(cls.resource_rep(eps))]

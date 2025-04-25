@@ -13,19 +13,24 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from collections import defaultdict
-from typing import Dict
 from functools import singledispatch
+from typing import Dict
 
 import pennylane.labs.resource_estimation as re
 from pennylane import math
-from pennylane.labs.resource_estimation.resource_container import _scale_dict, CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp, _scale_dict
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
 from pennylane.operation import Operation
 from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.prod import Prod
 from pennylane.pauli import PauliSentence
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, AddQubits, CutQubits, GateCount
 from pennylane.queuing import QueuingManager
-
+from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
@@ -115,11 +120,24 @@ class ResourceAdjoint(ResourceOperator):
         if isinstance(base_op, ResourceOperator):
             self.queue(base_op)
             base_op = base_op.resource_rep_from_op()
-        else: 
+        else:
             self.queue()
 
         self.base_op = base_op
-        super().__init__(wires=wires)
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+            if isinstance(base_op, ResourceOperator):
+                self.num_wires = base_op.num_wires
+            else:
+                self.num_wires = (
+                    base_op.params["num_wires"]
+                    if "num_wires" in base_op.params
+                    else base_op.op_type.num_wires
+                )
 
     def queue(self, base_op=None, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
@@ -129,9 +147,7 @@ class ResourceAdjoint(ResourceOperator):
         return self
 
     @classmethod
-    def _resource_decomp(
-        cls, base_class, base_params, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(cls, base_class, base_params, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -368,18 +384,41 @@ class ResourceControlled(ResourceOperator):
 
     """
 
-    def __init__(self, base_op: CompressedResourceOp, num_ctrl_wires: int, num_ctrl_values: int, num_work_wires: int, wires=None) -> None:
+    def __init__(
+        self,
+        base_op: CompressedResourceOp,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
+        num_work_wires: int,
+        wires=None,
+    ) -> None:
         if isinstance(base_op, ResourceOperator):
             self.queue(base_op)
-            base_op = base_op.resource_rep_from_op()
-        else: 
+            # base_op = base_op.resource_rep_from_op()
+        else:
             self.queue()
 
         self.base_op = base_op
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
         self.num_work_wires = num_work_wires
-        super().__init__(wires=wires)
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+
+            if isinstance(base_op, ResourceOperator):
+                base_wires = base_op.num_wires
+            else:
+                base_wires = (
+                    base_op.params["num_wires"]
+                    if "num_wires" in base_op.params
+                    else base_op.op_type.num_wires
+                )
+
+            self.num_wires = num_ctrl_wires + base_wires
 
     def queue(self, base_op=None, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
@@ -387,7 +426,6 @@ class ResourceControlled(ResourceOperator):
             context.remove(base_op)
         context.append(self)
         return self
-
 
     @classmethod
     def _resource_decomp(
@@ -497,7 +535,9 @@ class ResourceControlled(ResourceOperator):
             for action in decomp:
                 if isinstance(action, GateCount):
                     gate = action.gate
-                    c_gate = cls.resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires)
+                    c_gate = cls.resource_rep(
+                        gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires
+                    )
                     gate_lst.append(c_gate, action.count)
 
                 else:
@@ -524,9 +564,15 @@ class ResourceControlled(ResourceOperator):
                 * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
                 * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
+        base_op = (
+            self.base_op.resource_rep_from_op()
+            if (self.base_op, ResourceOperator)
+            else self.base_op
+        )
+
         return {
-            "base_class": self.base_op.op_type,
-            "base_params": self.base_op.params,
+            "base_class": base_op.op_type,
+            "base_params": base_op.params,
             "num_ctrl_wires": self.num_ctrl_wires,
             "num_ctrl_values": self.num_ctrl_values,
             "num_work_wires": self.num_work_wires,
@@ -599,13 +645,15 @@ class ResourceControlled(ResourceOperator):
                 values are the counts.
         """
         return [
-            GateCount(cls.resource_rep(
-                base_class,
-                base_params,
-                outer_num_ctrl_wires + num_ctrl_wires,
-                outer_num_ctrl_values + num_ctrl_values,
-                outer_num_work_wires + num_work_wires,
-            )),
+            GateCount(
+                cls.resource_rep(
+                    base_class,
+                    base_params,
+                    outer_num_ctrl_wires + num_ctrl_wires,
+                    outer_num_ctrl_values + num_ctrl_values,
+                    outer_num_work_wires + num_work_wires,
+                )
+            ),
         ]
 
     @staticmethod
@@ -700,16 +748,29 @@ class ResourcePow(ResourceOperator):
 
     """
 
-    def __init__(self, base_op: CompressedResourceOp, z:int, wires=None) -> None:
+    def __init__(self, base_op: CompressedResourceOp, z: int, wires=None) -> None:
         if isinstance(base_op, ResourceOperator):
             self.queue(base_op)
             base_op = base_op.resource_rep_from_op()
-        else: 
+        else:
             self.queue()
 
         self.z = z
         self.base_op = base_op
-        super().__init__(wires=wires)
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+            if isinstance(base_op, ResourceOperator):
+                self.num_wires = base_op.num_wires
+            else:
+                self.num_wires = (
+                    base_op.params["num_wires"]
+                    if "num_wires" in base_op.params
+                    else base_op.op_type.num_wires
+                )
 
     def queue(self, base_op=None, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
@@ -861,9 +922,7 @@ class ResourcePow(ResourceOperator):
         )
 
     @classmethod
-    def pow_resource_decomp(
-        cls, z0, base_class, base_params, z
-    ) -> Dict[CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z0, base_class, base_params, z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -1325,10 +1384,7 @@ def _apply_adj(action):
 @_apply_adj.register
 def _(action: GateCount):
     gate = action.gate
-    return GateCount(
-        ResourceAdjoint.resource_rep(gate.op_type, gate.params),
-        action.count
-    )
+    return GateCount(ResourceAdjoint.resource_rep(gate.op_type, gate.params), action.count)
 
 
 @_apply_adj.register

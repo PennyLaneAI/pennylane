@@ -18,22 +18,26 @@ from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
+from pennylane.labs.resource_estimation.qubit_manager import (
+    QubitManager,
+    borrowable_qubits,
+    clean_qubits,
+    dirty_qubits,
+    free_qubits,
+    grab_qubits,
+)
+from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp, Resources
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-
-from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp, Resources
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
-from pennylane.labs.resource_estimation.qubit_manager import (
-    QubitManager,
-    grab_qubits,
-    free_qubits,
-    clean_qubits, 
-    dirty_qubits,
-    borrowable_qubits,
-)
-from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -335,7 +339,11 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
 
 @singledispatch
 def new_get_resources(
-    obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config, work_wires=0, tight_budget=False,
+    obj,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=0,
+    tight_budget=False,
 ) -> Union[Resources, Callable]:
     r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
@@ -426,42 +434,47 @@ def new_get_resources(
 
 @new_get_resources.register
 def new_resources_from_qfunc(
-    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config, work_wires=0, tight_budget=False,
+    obj: Callable,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=0,
+    tight_budget=False,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
+        with AnnotatedQueue() as q:
+            obj(*args, **kwargs)
         with QubitManager(work_wires, tight_budget) as qm:
-            with AnnotatedQueue() as q:
-                obj(*args, **kwargs)
 
-            # Get algorithm wires: 
-            algo_wires = Wires.all_wires(tuple(op.wires for op in q.queue if op._queue_category in ["_ops", "_resource_op"]))
-            qm.algo_qubits = len(algo_wires)  # set the algorithmic qubits in the qubit manager
+            # Get algorithm wires:
+            num_algo_qubits = 0
+            circuit_wires = []
+            for op in q.queue:
+                if op._queue_category in ["_ops", "_resource_op"]:
+                    if op.wires:
+                        circuit_wires.append(op.wires)
+                    else:
+                        num_algo_qubits += op.num_wires
+
+            num_algo_qubits += len(Wires.all_wires(circuit_wires))
+            qm.algo_qubits = num_algo_qubits  # set the algorithmic qubits in the qubit manager
 
             # Obtain resources in the gate_set
             compressed_res_ops_lst = _new_ops_to_compressed_reps(q.queue)
-            
-            initial_gate_set = set.union(gate_set, _StandardGateSet)
 
-            gate_counts_dict = defaultdict(int)
-            for cmp_rep_op in compressed_res_ops_lst:  # Initial pre-processing to optimize decompositions
+            gate_counts = defaultdict(int)
+            for cmp_rep_op in compressed_res_ops_lst:
                 _new_counts_from_compressed_res_op(
-                    cmp_rep_op, gate_counts_dict, gate_set=initial_gate_set, config=config
-                )
-
-            condensed_gate_counts = defaultdict(int)
-            for sub_cmp_rep, counts in gate_counts_dict.items():
-                _new_counts_from_compressed_res_op(
-                    sub_cmp_rep, condensed_gate_counts, scalar=counts, gate_set=gate_set, config=config
+                    cmp_rep_op, gate_counts, gate_set=gate_set, config=config
                 )
 
         # Update:
         num_wires = qm.algo_qubits + qm.clean_qubits + qm.dirty_qubits
-        clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
+        clean_gate_counts = _clean_gate_counts(gate_counts)
         num_gates = sum(clean_gate_counts.values())
-        return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
+        return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts), qm
 
     return wrapper
 
@@ -490,17 +503,28 @@ def _new_counts_from_compressed_res_op(
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
     resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
 
-    for sub_cp_rep, counts in resource_decomp.items():
-        _new_counts_from_compressed_res_op(
-            sub_cp_rep, gate_counts_dict, scalar=scalar * counts, gate_set=gate_set, config=config
-        )
+    for action in resource_decomp:
+        if isinstance(action, GateCount):
+            _new_counts_from_compressed_res_op(
+                action.gate,
+                gate_counts_dict,
+                scalar=scalar * action.count,
+                gate_set=gate_set,
+                config=config,
+            )
+            continue
+
+        if isinstance(action, AddQubits):
+            grab_qubits(action.n)
+        else:
+            free_qubits(action.n)
 
     return
 
 
 @qml.QueuingManager.stop_recording()
 def _new_ops_to_compressed_reps(
-    ops: Iterable[Union[Operation, ResourceOperator]]
+    ops: Iterable[Union[Operation, ResourceOperator]],
 ) -> List[CompressedResourceOp]:
     """Convert the sequence of operations to a list of compressed resource ops.
 

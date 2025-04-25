@@ -16,8 +16,14 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, AddQubits, CutQubits, GateCount
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
+
 # pylint: disable=arguments-differ
 
 
@@ -227,6 +233,7 @@ class ResourcePauliRot(ResourceOperator):
 
     def __init__(self, pauli_string, wires=None) -> None:
         self.pauli_string = pauli_string
+        self.num_wires = len(pauli_string)
         super().__init__(wires=wires)
 
     @staticmethod
@@ -379,7 +386,7 @@ class ResourcePauliRot(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        
+
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
             ctrl_gp = re.ResourceControlled.resource_rep(
                 re.ResourceGlobalPhase,
@@ -391,41 +398,53 @@ class ResourcePauliRot(ResourceOperator):
             return [GateCount(ctrl_gp)]
 
         if pauli_string == "X":
-            return [GateCount(re.ResourceControlled.resource_rep(
-                re.ResourceRX,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
-                num_work_wires,
-            ))]
+            return [
+                GateCount(
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRX,
+                        {},
+                        num_ctrl_wires,
+                        num_ctrl_values,
+                        num_work_wires,
+                    )
+                )
+            ]
         if pauli_string == "Y":
-            return [GateCount(re.ResourceControlled.resource_rep(
-                re.ResourceRY,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
-                num_work_wires,
-            ))]
+            return [
+                GateCount(
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRY,
+                        {},
+                        num_ctrl_wires,
+                        num_ctrl_values,
+                        num_work_wires,
+                    )
+                )
+            ]
         if pauli_string == "Z":
-            return [GateCount(re.ResourceControlled.resource_rep(
-                re.ResourceRZ,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
-                num_work_wires,
-            ))]
+            return [
+                GateCount(
+                    re.ResourceControlled.resource_rep(
+                        re.ResourceRZ,
+                        {},
+                        num_ctrl_wires,
+                        num_ctrl_values,
+                        num_work_wires,
+                    )
+                )
+            ]
 
         active_wires = len(pauli_string.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
         crz = re.ResourceControlled.resource_rep(
-                re.ResourceRZ,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
-                num_work_wires,
-            )
+            re.ResourceRZ,
+            {},
+            num_ctrl_wires,
+            num_ctrl_values,
+            num_work_wires,
+        )
         s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
         cnot = re.ResourceCNOT.resource_rep()
 
@@ -449,7 +468,7 @@ class ResourcePauliRot(ResourceOperator):
 
         gate_types.append(GateCount(crz))
         gate_types.append(GateCount(cnot, 2 * (active_wires - 1)))
-        
+
         return gate_types
 
     @classmethod
@@ -506,6 +525,8 @@ class ResourceIsingXX(ResourceOperator):
     >>> re.ResourceIsingXX.resources()
     {CNOT: 2, RX: 1}
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs):
@@ -657,6 +678,8 @@ class ResourceIsingYY(ResourceOperator):
     >>> re.ResourceIsingYY.resources()
     {CY: 2, RY: 1}
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs):
@@ -814,6 +837,8 @@ class ResourceIsingXY(ResourceOperator):
     >>> re.ResourceIsingXY.resources()
     {Hadamard: 2, CY: 2, RY: 1, RX: 1}
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs):
@@ -983,6 +1008,8 @@ class ResourceIsingZZ(ResourceOperator):
     {CNOT: 2, RZ: 1}
     """
 
+    num_wires = 2
+
     @staticmethod
     def _resource_decomp(**kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
@@ -1136,6 +1163,8 @@ class ResourcePSWAP(ResourceOperator):
     >>> re.ResourcePSWAP.resources()
     {SWAP: 1, CNOT: 2, PhaseShift: 1}
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs):

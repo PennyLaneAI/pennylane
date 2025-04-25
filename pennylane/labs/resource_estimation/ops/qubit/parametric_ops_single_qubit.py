@@ -18,9 +18,15 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.wires import Wires
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
+from pennylane.wires import Wires
+
 # pylint: disable=arguments-differ
 
 
@@ -69,6 +75,8 @@ class ResourcePhaseShift(ResourceOperator):
     >>> re.ResourcePhaseShift.resources()
     {RZ: 1, GlobalPhase: 1}
     """
+
+    num_wires = 1
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -208,6 +216,8 @@ class ResourceRX(ResourceOperator):
     >>> re.get_resources(re.ResourceRX(1.23, 0), config=config)
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
+
+    num_wires = 1
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -364,6 +374,8 @@ class ResourceRY(ResourceOperator):
     >>> re.get_resources(re.ResourceRY(1.23, 0), config=config)
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
     """
+
+    num_wires = 1
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -522,6 +534,8 @@ class ResourceRZ(ResourceOperator):
     {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}s
     """
 
+    num_wires = 1
+
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
         super().__init__(wires=wires)
@@ -666,6 +680,8 @@ class ResourceRot(ResourceOperator):
     >>> re.ResourceRot.resources()
     {RY: 1, RZ: 2}
     """
+
+    num_wires = 1
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps

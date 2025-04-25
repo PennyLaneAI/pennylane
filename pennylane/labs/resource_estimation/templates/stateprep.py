@@ -18,8 +18,8 @@ from typing import Dict
 
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 from pennylane.operation import Operation
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,

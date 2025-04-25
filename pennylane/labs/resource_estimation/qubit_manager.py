@@ -88,7 +88,7 @@ class QubitManager:
         """Add the current instance of the QubitManager to the global stack"""
         self.__class__._active_managers.append(self)
         return self
-    
+
     def __exit__(self, exc_type, exc_value, exc_tb):
         """Remove the current instance of the QubitManager from the global stack"""
         self.__class__._active_managers.pop()

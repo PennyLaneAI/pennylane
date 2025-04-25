@@ -78,10 +78,15 @@ class ResourceOperator(ABC):
 
     """
 
+    num_wires = 0
     _queue_category = "_resource_op"
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
-        self.wires = Wires([]) if wires is None else Wires(wires)
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
         self.queue()
         super().__init__()
 
@@ -215,16 +220,16 @@ class GateCount:
     def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
         self.gate = gate
         self.count = count
-    
+
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"
-    
+
 
 class AddQubits:
 
     def __init__(self, n: int) -> None:
         self.n = n
-    
+
     def __repr__(self) -> str:
         return f"AllocatedQubits({self.n})"
 
@@ -233,6 +238,6 @@ class CutQubits:
 
     def __init__(self, n: int) -> None:
         self.n = n
-    
+
     def __repr__(self) -> str:
         return f"DeallocatedQubits({self.n})"

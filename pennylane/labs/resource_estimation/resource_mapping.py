@@ -226,10 +226,10 @@ def _(op: MultiControlledX):
     num_control_values = len([val for val in op.hyperparameters["control_values"] if not val])
 
     params = {
-            "num_ctrl_wires": num_control,
-            "num_ctrl_values": num_control_values,
-            "num_work_wires": num_work_wires,
-        }
+        "num_ctrl_wires": num_control,
+        "num_ctrl_values": num_control_values,
+        "num_work_wires": num_work_wires,
+    }
     return ResourceMultiControlledX.resource_rep(**params)
 
 
@@ -279,7 +279,7 @@ def _(op: SWAP):
     return ResourceSWAP.resource_rep()
 
 
-# Identity Ops: 
+# Identity Ops:
 @map_to_resource_op.register
 def _(op: Identity):
     return ResourceIdentity.resource_rep()
@@ -367,5 +367,3 @@ def _(op: PauliRot):
 def _(op: MultiRZ):
     num_wires = len(op.wires)
     return ResourceMultiRZ.resource_rep(num_wires=num_wires)
-
-

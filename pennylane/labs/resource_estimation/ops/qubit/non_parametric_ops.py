@@ -16,8 +16,13 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
 
 # pylint: disable=arguments-differ
 
@@ -35,6 +40,8 @@ class ResourceHadamard(ResourceOperator):
     .. seealso:: :class:`~.Hadamard`
 
     """
+
+    num_wires = 1
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -176,6 +183,8 @@ class ResourceS(ResourceOperator):
     {T: 2}
     """
 
+    num_wires = 1
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -244,7 +253,7 @@ class ResourceS(ResourceOperator):
             gate_lst = [GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)]
 
             if num_ctrl_values:
-                gate_lst.append(GateCount(re.ResourceX.resource_rep(),2))
+                gate_lst.append(GateCount(re.ResourceX.resource_rep(), 2))
 
             return gate_lst
 
@@ -323,6 +332,8 @@ class ResourceSWAP(ResourceOperator):
     >>> re.ResourceSWAP.resources()
     {CNOT: 3}
     """
+
+    num_wires = 2
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -432,7 +443,7 @@ class ResourceSWAP(ResourceOperator):
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
         )
-        return [GateCount(cnot,2), GateCount(mcx)]
+        return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -467,6 +478,8 @@ class ResourceT(ResourceOperator):
     .. seealso:: :class:`~.T`
 
     """
+
+    num_wires = 1
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -550,7 +563,7 @@ class ResourceT(ResourceOperator):
             num_ctrl_values=num_ctrl_values,
             num_work_wires=num_work_wires,
         )
-        return [GateCount(ct), GateCount(mcx,2)]
+        return [GateCount(ct), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
@@ -601,6 +614,8 @@ class ResourceX(ResourceOperator):
     >>> re.ResourceX.resources()
     {S: 2, Hadamard: 2}
     """
+
+    num_wires = 1
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -676,7 +691,13 @@ class ResourceX(ResourceOperator):
                 values are the counts.
         """
         if num_ctrl_wires > 2:
-            return [GateCount(re.ResourceMultiControlledX.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires))]
+            return [
+                GateCount(
+                    re.ResourceMultiControlledX.resource_rep(
+                        num_ctrl_wires, num_ctrl_values, num_work_wires
+                    )
+                )
+            ]
 
         gate_lst = []
         if num_ctrl_values:
@@ -740,6 +761,8 @@ class ResourceY(ResourceOperator):
     >>> re.ResourceY.resources()
     {S: 6, Hadamard: 2}
     """
+
+    num_wires = 1
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
@@ -890,6 +913,8 @@ class ResourceZ(ResourceOperator):
     {S: 2}
     """
 
+    num_wires = 1
+
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -971,7 +996,7 @@ class ResourceZ(ResourceOperator):
                 num_ctrl_values=num_ctrl_values,
                 num_work_wires=num_work_wires,
             )
-            return [GateCount(h,2), GateCount(mcx)]
+            return [GateCount(h, 2), GateCount(mcx)]
 
         gate_list = []
         if num_ctrl_wires == 1:

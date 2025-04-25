@@ -17,7 +17,12 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, AddQubits, CutQubits, GateCount
+from pennylane.labs.resource_estimation.resource_operator import (
+    AddQubits,
+    CutQubits,
+    GateCount,
+    ResourceOperator,
+)
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 
@@ -217,7 +222,7 @@ class ResourceGlobalPhase(ResourceOperator):
             num_work_wires=num_work_wires,
         )
 
-        return [GateCount(ps), GateCount(mcx,2)]
+        return [GateCount(ps), GateCount(mcx, 2)]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
