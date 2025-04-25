@@ -305,25 +305,22 @@ class _WiresEnum(IntEnum):
     to represent the number of wires
     an operation acts on.
 
-    .. warning:: This class is
     """
 
     AnyWires = -1
     """A enumeration that represents that an operator can act on any number of wires.
 
-    .. warning::
-
-        **Deprecated**: Operator.num_wires = None should be used instead.
     """
 
     AllWires = -2
     """A enumeration that represents that an operator acts on all wires in the system.
 
-    .. warning::
 
-        **Deprecated**: Operator.num_wires = None should be used instead.
     """
 
+
+AnyWires = WiresEnum.AnyWires
+AllWires = WiresEnum.AllWires
 
 # =============================================================================
 # Class property
@@ -1139,25 +1136,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires is None or isinstance(self.num_wires, _WiresEnum):
-            if (
-                not isinstance(
-                    self,
-                    (
-                        qml.Barrier,
-                        qml.Snapshot,
-                        qml.ops.LinearCombination,
-                        qml.GlobalPhase,
-                        qml.Identity,
-                    ),
-                )
-                and len(qml.wires.Wires(wires)) == 0
-            ):
-                raise ValueError(
-                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
-                )
-
-        elif len(self._wires) != self.num_wires:
+        if (self.num_wires is None or isinstance(self.num_wires, WiresEnum)) and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
@@ -1907,7 +1886,7 @@ class Operation(Operator):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(gen, k=2**self.num_wires)
+                eigvals = qml.eigvals(gen, k=2 ** len(self.wires))
 
             eigvals = tuple(np.round(eigvals, 8))
             return [qml.gradients.eigvals_to_frequencies(eigvals)]

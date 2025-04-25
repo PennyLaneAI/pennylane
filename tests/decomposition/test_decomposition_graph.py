@@ -23,7 +23,11 @@ import pytest
 from conftest import decompositions, to_resources
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionError, DecompositionGraph
+from pennylane.decomposition import (
+    DecompositionError,
+    DecompositionGraph,
+    DecompositionNotApplicable,
+)
 
 
 @pytest.mark.unit
@@ -90,6 +94,46 @@ class TestDecompositionGraph:
         assert len(graph2._graph.nodes()) == 7
         # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
+
+    def test_graph_construction_non_applicable_rules(self, _):
+        """Tests rules that raise DecompositionNotApplicable are skipped."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom op"""
+
+            resource_keys = {"num_wires"}
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        def _some_resource(num_wires):
+            if num_wires > 1:
+                raise DecompositionNotApplicable
+            return {qml.RZ: 1, qml.CNOT: 1}
+
+        @qml.register_resources(_some_resource)
+        def some_rule(*_, **__):
+            raise NotImplementedError
+
+        def _some_other_resource(num_wires):
+            if num_wires < 2:
+                raise DecompositionNotApplicable
+            return {qml.RZ: 1, qml.CNOT: num_wires - 1}
+
+        @qml.register_resources(_some_other_resource)
+        def some_other_rule(*_, **__):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(wires=[0, 1])],
+            target_gate_set={"CNOT", "RZ"},
+            alt_decomps={CustomOp: [some_rule, some_other_rule]},
+        )
+        # 3 ops (CustomOp, CNOT, RZ) and 1 decompositions (only some_other_rule)
+        assert len(graph._graph.nodes()) == 4
+        # 2 edges from ops to decompositions and 1 from decompositions to ops
+        assert len(graph._graph.edges()) == 3
 
     def test_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions."""
