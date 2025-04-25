@@ -24,7 +24,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -240,6 +240,19 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
+
+
+def _adjoint_multi_rz_resource(base_class, base_params):  # pylint: disable=unused-argument
+    num_wires = base_params["num_wires"]
+    return {resource_rep(MultiRZ, num_wires=num_wires): 1}
+
+
+@register_resources(_adjoint_multi_rz_resource)
+def _adjoint_multi_rz_decomposition(theta, wires, **__):
+    return MultiRZ(-theta, wires=wires)
+
+
+add_decomps("Adjoint(MultiRZ)", _adjoint_multi_rz_decomposition)
 
 
 class PauliRot(Operation):
@@ -569,6 +582,18 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {qml.GlobalPhase: 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+    }
+
+
+@register_resources(_pauli_rot_resources)
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
@@ -589,19 +614,19 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
             qml.RX(-np.pi / 2, wires=[wire])
 
 
-def _pauli_rot_resources(pauli_word):
-    if set(pauli_word) == {"I"}:
-        return {qml.GlobalPhase: 1}
-    num_active_wires = len(pauli_word.replace("I", ""))
-    return {
-        qml.Hadamard: 2 * pauli_word.count("X"),
-        qml.RX: 2 * pauli_word.count("Y"),
-        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
-    }
+add_decomps(PauliRot, _pauli_rot_decomposition)
 
 
-pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
-add_decomps(PauliRot, pauli_rot_decomposition)
+def _adjoint_pauli_rot_resource(base_class, base_params):  # pylint: disable=unused-argument
+    return {resource_rep(PauliRot, **base_params): 1}
+
+
+@register_resources(_adjoint_pauli_rot_resource)
+def _adjoint_pauli_rot_decomposition(theta, wires, base):
+    PauliRot(-theta, base.hyperparameters["pauli_word"], wires=wires)
+
+
+add_decomps("Adjoint(PauliRot)", _adjoint_pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
@@ -986,6 +1011,14 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
 
 
+@register_resources({IsingXX: 1})
+def _adjoint_isingxx(phi, wires, **__):
+    IsingXX(-phi, wires=wires)
+
+
+add_decomps("Adjoint(IsingXX)", _adjoint_isingxx)
+
+
 class IsingYY(Operation):
     r"""
     Ising YY coupling gate
@@ -1146,6 +1179,14 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+
+
+@register_resources({IsingYY: 1})
+def _adjoint_isingyy(phi, wires, **__):
+    IsingYY(-phi, wires=wires)
+
+
+add_decomps("Adjoint(IsingYY)", _adjoint_isingyy)
 
 
 class IsingZZ(Operation):
@@ -1339,6 +1380,14 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+
+
+@register_resources({IsingZZ: 1})
+def _adjoint_isingzz(phi, wires, **__):
+    IsingZZ(-phi, wires=wires)
+
+
+add_decomps("Adjoint(IsingZZ)", _adjoint_isingzz)
 
 
 class IsingXY(Operation):
@@ -1565,6 +1614,14 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 add_decomps(IsingXY, _isingxy_to_h_cy)
 
 
+@register_resources({IsingXY: 1})
+def _adjoint_isingxy(phi, wires, **__):
+    IsingXY(-phi, wires=wires)
+
+
+add_decomps("Adjoint(IsingXY)", _adjoint_isingxy)
+
+
 class PSWAP(Operation):
     r"""Phase SWAP gate
 
@@ -1739,6 +1796,14 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+
+
+@register_resources({PSWAP: 1})
+def _adjoint_pswap(phi, wires, **__):
+    PSWAP(-phi, wires=wires)
+
+
+add_decomps("Adjoint(PSWAP)", _adjoint_pswap)
 
 
 class CPhaseShift00(Operation):
@@ -1959,6 +2024,14 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 add_decomps(CPhaseShift00, _cphaseshift00)
 
 
+@register_resources({CPhaseShift00: 1})
+def _adjoint_cphaseshift00(phi, wires, **__):
+    CPhaseShift00(-phi, wires=wires)
+
+
+add_decomps("Adjoint(CPhaseShift00)", _adjoint_cphaseshift00)
+
+
 class CPhaseShift01(Operation):
     r"""
     A qubit controlled phase shift.
@@ -2168,6 +2241,14 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 add_decomps(CPhaseShift01, _cphaseshift01)
 
 
+@register_resources({CPhaseShift01: 1})
+def _adjoint_cphaseshift01(phi, wires, **__):
+    CPhaseShift01(-phi, wires=wires)
+
+
+add_decomps("Adjoint(CPhaseShift01)", _adjoint_cphaseshift01)
+
+
 class CPhaseShift10(Operation):
     r"""
     A qubit controlled phase shift.
@@ -2369,3 +2450,11 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, _cphaseshift10)
+
+
+@register_resources({CPhaseShift10: 1})
+def _adjoint_cphaseshift10(phi, wires, **__):
+    CPhaseShift10(-phi, wires=wires)
+
+
+add_decomps("Adjoint(CPhaseShift10)", _adjoint_cphaseshift10)

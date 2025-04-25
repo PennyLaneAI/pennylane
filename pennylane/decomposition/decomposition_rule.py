@@ -191,7 +191,7 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         self._source = inspect.getsource(func)
         if isinstance(resources, dict):
 
-            def resource_fn():
+            def resource_fn(*_, **__):
                 return resources
 
             self._compute_resources = resource_fn

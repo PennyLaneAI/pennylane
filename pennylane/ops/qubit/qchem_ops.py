@@ -324,6 +324,14 @@ def _single_excit(phi, wires, **__):
 add_decomps(SingleExcitation, _single_excit)
 
 
+@register_resources({SingleExcitation: 1})
+def _adjoint_single_excitation(phi, wires, **__):
+    SingleExcitation(-phi, wires=wires)
+
+
+add_decomps("Adjoint(SingleExcitation)", _adjoint_single_excitation)
+
+
 class SingleExcitationMinus(Operation):
     r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
@@ -483,6 +491,14 @@ def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
 
 
+@register_resources({SingleExcitationMinus: 1})
+def _adjoint_single_excitation_minus(phi, wires, **__):
+    SingleExcitationMinus(-phi, wires=wires)
+
+
+add_decomps("Adjoint(SingleExcitationMinus)", _adjoint_single_excitation_minus)
+
+
 class SingleExcitationPlus(Operation):
     r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
@@ -640,6 +656,14 @@ def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
+
+
+@register_resources({SingleExcitationPlus: 1})
+def _adjoint_single_excitation_plus(phi, wires, **__):
+    SingleExcitationPlus(-phi, wires=wires)
+
+
+add_decomps("Adjoint(SingleExcitationPlus)", _adjoint_single_excitation_plus)
 
 
 class DoubleExcitation(Operation):
@@ -895,6 +919,14 @@ def _doublexcit(phi, wires, **__):
 add_decomps(DoubleExcitation, _doublexcit)
 
 
+@register_resources({DoubleExcitation: 1})
+def _adjoint_doublexcit(phi, wires, **__):
+    DoubleExcitation(-phi, wires=wires)
+
+
+add_decomps("Adjoint(DoubleExcitation)", _adjoint_doublexcit)
+
+
 class DoubleExcitationPlus(Operation):
     r"""
     Double excitation rotation with positive phase-shift outside the rotation subspace.
@@ -988,6 +1020,14 @@ class DoubleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
+@register_resources({DoubleExcitationPlus: 1})
+def _adjoint_doublexcit_plus(phi, wires, **__):
+    DoubleExcitationPlus(-phi, wires=wires)
+
+
+add_decomps("Adjoint(DoubleExcitationPlus)", _adjoint_doublexcit_plus)
+
+
 class DoubleExcitationMinus(Operation):
     r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
@@ -1077,6 +1117,14 @@ class DoubleExcitationMinus(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
+
+
+@register_resources({DoubleExcitationMinus: 1})
+def _adjoint_doublexcit_minus(phi, wires, **__):
+    DoubleExcitationMinus(-phi, wires=wires)
+
+
+add_decomps("Adjoint(DoubleExcitationMinus)", _adjoint_doublexcit_minus)
 
 
 class OrbitalRotation(Operation):
@@ -1291,6 +1339,14 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
+
+
+@register_resources({OrbitalRotation: 1})
+def _adjoint_orbital_rotation(phi, wires: WiresLike, **__):
+    OrbitalRotation(-phi, wires=wires)
+
+
+add_decomps("Adjoint(OrbitalRotation)", _adjoint_orbital_rotation)
 
 
 class FermionicSWAP(Operation):
@@ -1524,3 +1580,11 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
+
+
+@register_resources({FermionicSWAP: 1})
+def _adjoint_fermionic_swap(phi, wires: WiresLike, **__):
+    FermionicSWAP(-phi, wires=wires)
+
+
+add_decomps("Adjoint(FermionicSWAP)", _adjoint_fermionic_swap)

@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -230,6 +231,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+add_decomps("Adjoint(Hadamard)", self_adjoint)
 
 H = Hadamard
 r"""H(wires)
@@ -460,6 +462,7 @@ def _paulix_to_rx_gp(wires: WiresLike, **__):
 
 
 add_decomps(PauliX, _paulix_to_rx_gp)
+add_decomps("Adjoint(PauliX)", self_adjoint)
 
 
 class PauliY(Observable, Operation):
@@ -672,6 +675,7 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
+add_decomps("Adjoint(PauliY)", self_adjoint)
 
 
 class PauliZ(Observable, Operation):
@@ -892,6 +896,7 @@ def _pauliz_to_ps(wires: WiresLike, **__):
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
+add_decomps("Adjoint(PauliZ)", self_adjoint)
 
 
 class S(Operation):
@@ -1494,6 +1499,7 @@ def _swap_to_cnot(wires, **__):
 
 
 add_decomps(SWAP, _swap_to_cnot)
+add_decomps("Adjoint(SWAP)", self_adjoint)
 
 
 class ECR(Operation):
@@ -1657,6 +1663,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
+add_decomps("Adjoint(ECR)", self_adjoint)
 
 
 class ISWAP(Operation):

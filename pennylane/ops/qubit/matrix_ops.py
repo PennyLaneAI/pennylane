@@ -26,19 +26,9 @@ from scipy.linalg import fractional_matrix_power
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.decomposition.decomposition_rule import add_decomps
-from pennylane.math import (
-    cast,
-    conj,
-    eye,
-    norm,
-    sqrt,
-    sqrt_matrix,
-    sqrt_matrix_sparse,
-    transpose,
-    zeros,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     rot_decomp_rule,
@@ -364,6 +354,23 @@ add_decomps(
     two_qubit_decomp_rule,
 )
 
+def _adjoint_qubit_unitary_resource(base_class, base_params):
+    num_wires = base_params["num_wires"]
+    return {resource_rep(QubitUnitary, num_wires=num_wires): 1}
+
+
+@register_resources(_adjoint_qubit_unitary_resource)
+def _adjoint_qubit_unitary(U, wires, **_):
+    U = (
+        U.conjugate().transpose()
+        if sp.sparse.issparse(U)
+        else qml.math.moveaxis(qml.math.conj(U), -2, -1)
+    )
+    QubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
+
 
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
@@ -392,6 +399,12 @@ class DiagonalQubitUnitary(Operation):
 
     grad_method = None
     """Gradient computation method."""
+
+    resource_keys = {"num_wires"}
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -552,6 +565,20 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
+def _adjoint_diagonal_unitary(base_class, base_params):
+    num_wires = base_params["num_wires"]
+    return {resource_rep(DiagonalQubitUnitary, num_wires=num_wires): 1}
+
+
+@register_resources(_adjoint_diagonal_unitary)
+def _adjoint_diagonal_unitary(U, wires, **_):
+    U = qml.math.conj(U)
+    DiagonalQubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
+
+
 class BlockEncode(Operation):
     r"""BlockEncode(A, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
@@ -651,8 +678,8 @@ class BlockEncode(Operation):
                 shape_a = qml.math.shape(A)
 
             normalization = qml.math.maximum(
-                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
+                math.norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
+                math.norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
@@ -755,6 +782,7 @@ def _process_blockencode(A, subspace):
     n, m, k = subspace
     shape_a = qml.math.shape(A)
 
+        sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
     sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
 
     def _stack(lst, h=False, like=None):

@@ -20,9 +20,9 @@ import pennylane as qml
 from pennylane.decomposition.resources import Resources, pow_resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     AdjointDecomp,
-    adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
+    cancel_adjoint,
     pow_decomp,
     pow_pow_decomp,
     same_type_adjoint_decomp,
@@ -39,12 +39,10 @@ class TestAdjointDecompositionRules:
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
 
         with qml.queuing.AnnotatedQueue() as q:
-            adjoint_adjoint_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(0.5, wires=0)]
-        assert adjoint_adjoint_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.RX: 1}
-        )
+        assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources({qml.RX: 1})
 
     @pytest.mark.jax
     def test_adjoint_adjoint_capture(self):
@@ -58,7 +56,7 @@ class TestAdjointDecompositionRules:
         qml.capture.enable()
 
         def circuit():
-            adjoint_adjoint_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
