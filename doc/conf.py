@@ -92,8 +92,12 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
+# autodoc_default_options = {
+#     'ignore-module-all': True
+# }
+
 autodoc_default_options = {
-    'ignore-module-all': True
+    'exclude-members': 'Tracker, FromBloq',
 }
 
 mathjax_path = (
