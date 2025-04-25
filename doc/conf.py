@@ -79,7 +79,6 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
-# autosummary_ignore_module_all = False
 
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
 bibtex_bibfiles = ["bibfile.bib"]
@@ -92,20 +91,12 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
-# autodoc_default_options = {
-#     'ignore-module-all': True
-# }
-
-autodoc_default_options = {
-    'exclude-members': 'Tracker, FromBloq',
-}
 
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms", "code/api/pennylane.Bose*", "code/api/pennylane.data.*", "code/api/pennylane.Tracker", "code/api/pennylane.Fermi*", "code/api/pennylane.From*")]
+ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
-nitpick_ignore_regexes = ["^.+: WARNING: duplicate object description of .+, other instance in .+, use :no-index: for one of them$"]
 
 
 # Ignore warnings about duplicate entries in the table of contents

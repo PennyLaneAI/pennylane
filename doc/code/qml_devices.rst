@@ -14,7 +14,3 @@ qml.devices
 .. rubric:: Modules
 
 .. automodule:: pennylane.devices
-    :exclude-members: pennylane.devices.tracker.Tracker
-
-.. autoclass:: pennylane.devices.tracker.Tracker
-   :no-index:
