@@ -391,6 +391,8 @@ class CountsMP(SampleMeasurement):
             for outcome, count in mapped_counts.items():
                 eigvals_dict[outcome_to_eigval(outcome)] += count
 
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
             return eigvals_dict
 
         return mapped_counts

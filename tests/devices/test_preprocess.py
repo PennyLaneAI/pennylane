@@ -604,7 +604,7 @@ class TestMeasurementsFromCountsOrSamples:
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
     def test_with_counts_output(self, counts_kwargs, meas_transform):
-        """Test that returning counts works as expected for all wires, specific wires, or an observable,
+        """Test that returning counts works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
@@ -643,7 +643,7 @@ class TestMeasurementsFromCountsOrSamples:
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
     def test_with_sample_output(self, sample_kwargs, meas_transform):
-        """Test that returning sample works as expected for all wires, specific wires, or an observable,
+        """Test that returning sample works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
@@ -673,7 +673,7 @@ class TestMeasurementsFromCountsOrSamples:
         [
             {},
             {"wires": [2, 3]},
-            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+            {"op": qml.Z(wires=0) @ qml.Z(wires=1) @ qml.Z(wires=2)},
         ],
     )
     @pytest.mark.parametrize("all_outcomes", [True, False])
