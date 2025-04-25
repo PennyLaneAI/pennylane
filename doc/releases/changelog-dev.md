@@ -42,7 +42,7 @@ from pennylane import QubitUnitary:orphan:
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
-* Decomposition rules can be marked as not-applicable with :func:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
+* Decomposition rules can be marked as not-applicable with :class:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
   rules based on parameters that affects the rule's resources.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
