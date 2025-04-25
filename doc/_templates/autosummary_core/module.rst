@@ -27,7 +27,6 @@
 
    {% block classes %}
    {% if classes %}
-   :no-index:
    .. rubric:: Classes
 
    .. autosummary::
