@@ -46,13 +46,13 @@ class ExecBackendConfig:
     To allow for differences in each executor backend implementation, this class dynamically defines overloads to the main API functions. For explicitly-defined executors, this class is optional, and is provided for convenience with hierarchical inheritance class structures, where subtle differences are best resolved dynamically, rather than with API modifications. All initial values default to ``None``.
 
     Args:
-        submit_fn (str): The backend function that best matches the ``submit`` API call.
+        submit_fn (str, None): The backend function that best matches the ``submit`` API call.
         map_fn (str): The backend function that best matches the ``map`` API call.
-        starmap_fn (str): The backend function that best matches the ``starmap`` API call.
-        shutdown_fn (str): The backend function that best matches the ``shutdown`` API call.
-        submit_unpack (bool): Whether the arguments to ``submit`` are to be unpacked (*args) or directly passed (args) to ``submit_fn``.
-        map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (*args) or directly passed (args) to ``map_unpack``.
-        blocking (bool): Whether the return values from ``submit``, ``map`` and ``starmap`` are blocking (synchronous) or non-blocking (asynchronous).
+        starmap_fn (str, None): The backend function that best matches the ``starmap`` API call.
+        shutdown_fn (str, None): The backend function that best matches the ``shutdown`` API call.
+        submit_unpack (bool, None): Whether the arguments to ``submit`` are to be unpacked (``*args``) or directly passed (``args``) to ``submit_fn``.
+        map_unpack (bool): Whether the arguments to ``map`` are to be unpacked (``*args``) or directly passed (``args``) to ``map_unpack``.
+        blocking (bool, None): Whether the return values from ``submit``, ``map`` and ``starmap`` are blocking (synchronous) or non-blocking (asynchronous).
 
     """
 
@@ -93,7 +93,7 @@ class RemoteExec(abc.ABC):
         self._persistent_backend = None
 
     def __call__(self, dispatch: str, fn: Callable, *args, **kwargs):
-        """
+        r"""
         dispatch:   the named method to pass the function parameters
         fn:         the callable function to run on the executor backend
         args:       the arguments to pass to ``fn``
@@ -136,7 +136,7 @@ class RemoteExec(abc.ABC):
 
     @abc.abstractmethod
     def map(self, fn: Callable, *args, **kwargs):
-        """
+        r"""
         Single iterable map for batching execution of fn over data entries.
         Length of every entry in ``*args`` must be consistent.
         kwargs are assumed as broadcastable to each function call.
@@ -186,12 +186,12 @@ class RemoteExec(abc.ABC):
     @staticmethod
     def _get_system_core_count():
         if sys.version_info.minor >= 13:
-            return os.process_cpu_count()
+            return os.process_cpu_count()  # pylint: disable=no-member
         return os.cpu_count()
 
 
 class IntExec(RemoteExec, abc.ABC):
-    """
+    r"""
     Executor class for native Python library concurrency support.
 
     This class is intended to be used as the parent-class for building Python-native executors, allowing an ease of distinction from the external-based classes implemented using :class:`~.ExtExec`.
@@ -210,12 +210,12 @@ class IntExec(RemoteExec, abc.ABC):
 
     """
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+        super().__init__(max_workers, persist, **kwargs)
 
 
 class ExtExec(RemoteExec, abc.ABC):
-    """
+    r"""
     Executor class for external packages providing concurrency support.
 
     This class is intended to be used as the parent-class for building external package-based executors, allowing an ease of distinction from the Python-native classes implemented using :class:`~.IntExec`.
@@ -233,5 +233,5 @@ class ExtExec(RemoteExec, abc.ABC):
         **kwargs: Keyword arguments to pass through to executor backend.
     """
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+        super().__init__(max_workers, persist, **kwargs)
