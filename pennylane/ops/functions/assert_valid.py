@@ -25,7 +25,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition import DecompositionNotApplicable, DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -96,7 +96,7 @@ def _check_decomposition(op, skip_wire_mapping):
         )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
-def _check_decomposition_new(op):
+def _check_decomposition_new(op, heuristic_resources=False):
     """Checks involving the new system of decompositions."""
 
     if type(op).resource_params is qml.operation.Operator.resource_params:
@@ -110,14 +110,18 @@ def _check_decomposition_new(op):
     ), "resource_params must have the same keys as specified by resource_keys"
 
     for rule in qml.list_decomps(type(op)):
-        _test_decomposition_rule(op, rule)
+        _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule):
+def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
 
     # Test that the resource function is correct
-    resources = rule.compute_resources(**op.resource_params)
+    try:
+        resources = rule.compute_resources(**op.resource_params)
+    except DecompositionNotApplicable:
+        return
+
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -127,7 +131,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule):
     for _op in tape.operations:
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
-    assert gate_counts == actual_gate_counts
+
+    if heuristic_resources:
+        # If the resource estimate is not expected to match exactly to the actual
+        # decomposition, at least make sure that all gates are accounted for.
+        assert all(op in gate_counts for op in actual_gate_counts)
+    else:
+        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        assert non_zero_gate_counts == actual_gate_counts
 
     # Tests that the decomposition produces the same matrix
     op_matrix = qml.matrix(op)
@@ -411,6 +422,8 @@ def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
             the operator is parametrized but not differentiable.
         skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
             defined using the new system.
+        heuristic_resources: If ``True``, the decomposition is not required to match exactly
+            with the registered resource estimate.
 
     **Examples:**
 
@@ -461,7 +474,7 @@ def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
     _check_bind_new_parameters(op)
     _check_decomposition(op, kwargs.get("skip_wire_mapping", False))
     if not kwargs.get("skip_new_decomp", False):
-        _check_decomposition_new(op)
+        _check_decomposition_new(op, heuristic_resources=kwargs.get("heuristic_resources", False))
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
