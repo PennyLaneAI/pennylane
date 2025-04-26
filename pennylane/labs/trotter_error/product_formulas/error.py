@@ -71,15 +71,11 @@ def effective_hamiltonian(
     bch = product_formula.bch_approx(order)
     eff = _AdditiveIdentity()
 
-    def frag_coeff(i):
-        if product_formula.coeffs is None:
-            return 1
-
-        return product_formula.coeffs[i]
-
     for commutator_order in bch:
         for commutator, coeff in commutator_order.items():
-            eff += coeff * nested_commutator([frag_coeff(i) * fragments[i] for i in commutator])
+            eff += coeff * nested_commutator(
+                [frag_coeff * fragments[label] for label, frag_coeff in commutator]
+            )
 
     return product_formula.exponent * eff
 

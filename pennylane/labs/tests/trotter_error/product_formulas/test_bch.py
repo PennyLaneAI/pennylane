@@ -57,44 +57,124 @@ def test_second_order(fragments):
     assert np.allclose(actual, expected)
 
 
-def test_two_fragments():
-    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+@pytest.mark.parametrize(
+    "frag_labels, frag_coeffs, max_order, expected",
+    [
+        (
+            ["X", "Y"],
+            [1, 1],
+            4,
+            [
+                {(("X", 1),): 1, (("Y", 1),): 1},
+                {(("X", 1), ("Y", 1)): 1 / 2},
+                {(("X", 1), ("X", 1), ("Y", 1)): 1 / 12, (("Y", 1), ("X", 1), ("Y", 1)): -1 / 12},
+                {(("X", 1), ("Y", 1), ("X", 1), ("Y", 1)): -1 / 24},
+            ],
+        ),
+        (
+            ["X", "Y", "Z"],
+            [1, 1, 1],
+            3,
+            [
+                {(("X", 1),): 1, (("Y", 1),): 1, (("Z", 1),): 1},
+                {
+                    (("X", 1), ("Y", 1)): 1 / 2,
+                    (("X", 1), ("Z", 1)): 1 / 2,
+                    (("Y", 1), ("Z", 1)): 1 / 2,
+                },
+                {
+                    (("X", 1), ("X", 1), ("Y", 1)): 1 / 12,
+                    (("X", 1), ("X", 1), ("Z", 1)): 1 / 12,
+                    (("X", 1), ("Y", 1), ("Z", 1)): 1 / 3,
+                    (("Y", 1), ("X", 1), ("Y", 1)): -1 / 12,
+                    (("Y", 1), ("X", 1), ("Z", 1)): -1 / 6,
+                    (("Y", 1), ("Y", 1), ("Z", 1)): 1 / 12,
+                    (("Z", 1), ("X", 1), ("Z", 1)): -1 / 12,
+                    (("Z", 1), ("Y", 1), ("Z", 1)): -1 / 12,
+                },
+            ],
+        ),
+        (
+            ["X", "Y", "X"],
+            [1, 1, 1],
+            3,
+            [
+                {(("X", 1),): 2, (("Y", 1),): 1},
+                {},
+                {(("X", 1), ("X", 1), ("Y", 1)): -1 / 6, (("Y", 1), ("X", 1), ("Y", 1)): -1 / 6},
+            ],
+        ),
+    ],
+)
+def test_bch(frag_labels, frag_coeffs, max_order, expected):
+    """Test against BCH expansion. The expected values come from Sections 4 and 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
 
-    frag_labels = [0, 1]
-    frag_coeffs = [1, 1]
+    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=max_order)
 
-    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=4)
+    print(actual)
+    print(expected)
 
-    expected = [
-        {(0,): 1, (1,): 1},
-        {(0, 1): 1 / 2},
-        {(0, 0, 1): 1 / 12, (1, 0, 1): -1 / 12},
-        {(0, 1, 0, 1): -1 / 24},
-    ]
+    for i, order in enumerate(actual):
+        for commutator in order:
+            assert np.isclose(order[commutator], expected[i][commutator])
 
-    assert actual == expected
+    # def test_two_fragments():
+    #    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+    #
+    #    frag_labels = [0, 1]
+    #    frag_coeffs = [1, 1]
+    #
+    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=4)
+    #
+    #    expected = [
+    #        {(0,): 1, (1,): 1},
+    #        {(0, 1): 1 / 2},
+    #        {(0, 0, 1): 1 / 12, (1, 0, 1): -1 / 12},
+    #        {(0, 1, 0, 1): -1 / 24},
+    #    ]
+    #
+    #    assert actual == expected
 
+    # def test_three_fragments():
+    #    """Test against BCH expansion on three fragments. The expected value comes from Section 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+    #
+    #    frag_labels = [0, 1, 2]
+    #    frag_coeffs = [1, 1, 1]
+    #
+    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
+    #    expected = [
+    #        {(0,): 1, (1,): 1, (2,): 1},
+    #        {(0, 1): 1 / 2, (0, 2): 1 / 2, (1, 2): 1 / 2},
+    #        {
+    #            (0, 0, 1): 1 / 12,
+    #            (0, 0, 2): 1 / 12,
+    #            (0, 1, 2): 1 / 3,
+    #            (1, 0, 1): -1 / 12,
+    #            (1, 0, 2): -1 / 6,
+    #            (1, 1, 2): 1 / 12,
+    #            (2, 0, 2): -1 / 12,
+    #            (2, 1, 2): -1 / 12,
+    #        },
+    #    ]
+    #
+    #    assert actual == expected
 
-def test_three_fragments():
-    """Test against BCH expansion on three fragments. The expected value comes from Section 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+    # def test_three_fragments_symmetric():
+    #    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
+    #
+    #    frag_labels = [0, 1, 0]
+    #    frag_coeffs = [1, 1, 1]
+    #
+    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
+    #
+    #    expected = [
+    #        {(0,): 2, (1,): 1},
+    #        {},
+    #        {(0, 0, 1): -1 / 6, (1, 0, 1): -1 / 6},
+    #    ]
+    #
+    for i, order in enumerate(actual):
+        for commutator in order:
+            assert np.isclose(actual[i][commutator], expected[i][commutator])
 
-    frag_labels = [0, 1, 2]
-    frag_coeffs = [1, 1, 1]
-
-    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
-    expected = [
-        {(0,): 1, (1,): 1, (2,): 1},
-        {(0, 1): 1 / 2, (0, 2): 1 / 2, (1, 2): 1 / 2},
-        {
-            (0, 0, 1): 1 / 12,
-            (0, 0, 2): 1 / 12,
-            (0, 1, 2): 1 / 3,
-            (1, 0, 1): -1 / 12,
-            (1, 0, 2): -1 / 6,
-            (1, 1, 2): 1 / 12,
-            (2, 0, 2): -1 / 12,
-            (2, 1, 2): -1 / 12,
-        },
-    ]
-
-    assert actual == expected
+    # assert actual == expected

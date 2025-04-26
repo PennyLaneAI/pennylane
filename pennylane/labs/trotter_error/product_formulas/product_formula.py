@@ -60,7 +60,7 @@ class ProductFormula:
                 self.fragments.add(term)
 
         self.terms = terms
-        self.coeffs = coeffs
+        self.coeffs = coeffs or [1] * len(self.terms)
         self.exponent = exponent
         self.label = label
 
@@ -109,8 +109,8 @@ class ProductFormula:
         )
 
     def __repr__(self) -> str:
-        # if self.label:
-        #    return f"{self.label}**{self.exponent}" if self.exponent != 1 else f"{self.label}"
+        if self.label:
+            return f"{self.label}**{self.exponent}" if self.exponent != 1 else f"{self.label}"
 
         if self.recursive:
             return "@".join(term.__repr__() for term in self.terms)
@@ -123,11 +123,14 @@ class ProductFormula:
         """
 
         return _remove_redundancies(
-            [_kth_order_terms(self.terms, k) for k in range(1, max_order + 1)], self._ordered_terms
+            [_kth_order_terms(self.terms, self.coeffs, k) for k in range(1, max_order + 1)],
+            self._ordered_terms,
         )
 
 
-def _kth_order_terms(fragments: Sequence[int], k: int) -> Dict[Tuple[int], float]:
+def _kth_order_terms(
+    fragments: Sequence[int], coeffs: Sequence[float], k: int
+) -> Dict[Tuple[int], float]:
     n = len(fragments)
 
     terms = defaultdict(float)
@@ -137,7 +140,7 @@ def _kth_order_terms(fragments: Sequence[int], k: int) -> Dict[Tuple[int], float
         coeff = 1 / math.prod(math.factorial(i) for i in partition)
 
         for i, j in enumerate(partition):
-            args += (fragments[i],) * j
+            args += ((fragments[i], coeffs[i]),) * j
 
         for key, value in _phi(args).items():
             terms[key] += coeff * value
@@ -194,7 +197,7 @@ def _remove_redundancies(
         for commutator in terms.keys():
             if commutator[-1] == commutator[-2]:
                 delete.append(commutator)
-            if term_order[commutator[-1]] < term_order[commutator[-2]]:
+            if term_order[commutator[-1][0]] < term_order[commutator[-2][0]]:
                 swap.append(commutator)
 
         for commutator in delete:
@@ -214,7 +217,7 @@ def _remove_redundancies(
 
     swap = []
     for commutator in term_dicts[3].keys():
-        if term_order[commutator[1]] < term_order[commutator[0]]:
+        if term_order[commutator[1][0]] < term_order[commutator[0][0]]:
             swap.append(commutator)
 
     for commutator in swap:
