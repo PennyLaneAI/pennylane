@@ -19,18 +19,19 @@ import pytest
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
 
-fragments_list = [
-    {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
-    {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
-    {
-        0: np.random.random(size=(3, 3)),
-        1: np.random.random(size=(3, 3)),
-        2: np.random.random(size=(3, 3)),
-    },
-]
 
-
-@pytest.mark.parametrize("fragments", fragments_list)
+@pytest.mark.parametrize(
+    "fragments",
+    [
+        {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
+        {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
+        {
+            0: np.random.random(size=(3, 3)),
+            1: np.random.random(size=(3, 3)),
+            2: np.random.random(size=(3, 3)),
+        },
+    ],
+)
 def test_second_order(fragments):
     """Test against the second order Trotter error formula"""
 
@@ -111,70 +112,6 @@ def test_bch(frag_labels, frag_coeffs, max_order, expected):
 
     actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=max_order)
 
-    print(actual)
-    print(expected)
-
     for i, order in enumerate(actual):
         for commutator in order:
             assert np.isclose(order[commutator], expected[i][commutator])
-
-    # def test_two_fragments():
-    #    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
-    #
-    #    frag_labels = [0, 1]
-    #    frag_coeffs = [1, 1]
-    #
-    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=4)
-    #
-    #    expected = [
-    #        {(0,): 1, (1,): 1},
-    #        {(0, 1): 1 / 2},
-    #        {(0, 0, 1): 1 / 12, (1, 0, 1): -1 / 12},
-    #        {(0, 1, 0, 1): -1 / 24},
-    #    ]
-    #
-    #    assert actual == expected
-
-    # def test_three_fragments():
-    #    """Test against BCH expansion on three fragments. The expected value comes from Section 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
-    #
-    #    frag_labels = [0, 1, 2]
-    #    frag_coeffs = [1, 1, 1]
-    #
-    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
-    #    expected = [
-    #        {(0,): 1, (1,): 1, (2,): 1},
-    #        {(0, 1): 1 / 2, (0, 2): 1 / 2, (1, 2): 1 / 2},
-    #        {
-    #            (0, 0, 1): 1 / 12,
-    #            (0, 0, 2): 1 / 12,
-    #            (0, 1, 2): 1 / 3,
-    #            (1, 0, 1): -1 / 12,
-    #            (1, 0, 2): -1 / 6,
-    #            (1, 1, 2): 1 / 12,
-    #            (2, 0, 2): -1 / 12,
-    #            (2, 1, 2): -1 / 12,
-    #        },
-    #    ]
-    #
-    #    assert actual == expected
-
-    # def test_three_fragments_symmetric():
-    #    """Test against BCH expansion on two fragments. The expected value comes from Section 4 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
-    #
-    #    frag_labels = [0, 1, 0]
-    #    frag_coeffs = [1, 1, 1]
-    #
-    #    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=3)
-    #
-    #    expected = [
-    #        {(0,): 2, (1,): 1},
-    #        {},
-    #        {(0, 0, 1): -1 / 6, (1, 0, 1): -1 / 6},
-    #    ]
-    #
-    for i, order in enumerate(actual):
-        for commutator in order:
-            assert np.isclose(actual[i][commutator], expected[i][commutator])
-
-    # assert actual == expected
