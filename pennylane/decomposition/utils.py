@@ -17,9 +17,40 @@ This module implements utility functions for the decomposition module.
 
 """
 
+import re
+
 
 class DecompositionError(Exception):
     """Base class for decomposition errors."""
+
+
+class DecompositionNotApplicable(Exception):
+    """Exception raised when a decomposition is not applicable to the given operator."""
+
+
+OP_NAME_ALIASES = {
+    "X": "PauliX",
+    "Y": "PauliY",
+    "Z": "PauliZ",
+    "I": "Identity",
+    "H": "Hadamard",
+}
+
+
+def translate_op_alias(op_alias):
+    """Translates an operator alias to its proper name."""
+    if op_alias in OP_NAME_ALIASES:
+        return OP_NAME_ALIASES[op_alias]
+    if match := re.match(r"C\((\w+)\)", op_alias):
+        base_op_name = match.group(1)
+        return f"C({translate_op_alias(base_op_name)})"
+    if match := re.match(r"Adjoint\((\w+)\)", op_alias):
+        base_op_name = match.group(1)
+        return f"Adjoint({translate_op_alias(base_op_name)})"
+    if match := re.match(r"Pow\((\w+)\)", op_alias):
+        base_op_name = match.group(1)
+        return f"Pow({translate_op_alias(base_op_name)})"
+    return op_alias
 
 
 def toggle_graph_decomposition():
@@ -45,7 +76,7 @@ def toggle_graph_decomposition():
         system in PennyLane (introduced in v0.41). The experimental graph-based
         decomposition system is disabled by default in PennyLane.
 
-        See also: :func:`~pennylane.decomposition.enable_graph`
+        .. seealso:: :func:`~pennylane.decomposition.enable_graph`
         """
 
         nonlocal _GRAPH_DECOMPOSITION
@@ -57,7 +88,7 @@ def toggle_graph_decomposition():
         decomposition system in PennyLane (introduced in v0.41). The experimental
         graph-based decomposition system is disabled by default in PennyLane.
 
-        See also: :func:`~pennylane.decomposition.enable_graph`
+        .. seealso:: :func:`~pennylane.decomposition.enable_graph`
         """
 
         nonlocal _GRAPH_DECOMPOSITION
