@@ -40,7 +40,7 @@ def test_second_order_representations(fragment_dict):
 def test_fourth_order_recursive(fragment_dict):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
-    t = 0.1
+    t = 0.01
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
     frag_coeffs = [
