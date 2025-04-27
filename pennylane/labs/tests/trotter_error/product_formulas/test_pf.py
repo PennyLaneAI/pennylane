@@ -25,6 +25,7 @@ fragment_dicts = [
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_second_order_representations(fragment_dict):
+    """Test that two representations of second order Trotter are equal"""
 
     pf1 = ProductFormula([0, 1, 0], coeffs=[1 / 2, 1, 1 / 2])
     pf2 = ProductFormula([0, 1, 1, 0], coeffs=[1 / 2, 1 / 2, 1 / 2, 1 / 2])
@@ -79,6 +80,7 @@ def test_fourth_order_recursive(fragment_dict):
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_fourth_order_mult(fragment_dict):
+    """Test that fourth order Trotter can be built from multiplying second order Trotters"""
     t = 0.1
     u = 1 / (4 - 4 ** (1 / 3))
 
@@ -101,6 +103,7 @@ def test_fourth_order_mult(fragment_dict):
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_pow(fragment_dict):
+    """Test that product formulas can be correctly raised to a power"""
     second_order_labels = [0, 1, 1, 0]
     second_order_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
 
@@ -121,6 +124,7 @@ def test_pow(fragment_dict):
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_mul(fragment_dict):
+    """Test that three ways of multiplying product formulas return the same result"""
 
     t = 0.01
     frags = [0, 1, 0]
