@@ -13,7 +13,8 @@
 # limitations under the License.
 """Functions for retreiving effective error from fragments"""
 
-from typing import Dict, Hashable, List, Sequence
+from collections.abc import Hashable
+from typing import Dict, List, Sequence
 
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator

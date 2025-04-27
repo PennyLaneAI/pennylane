@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from collections.abc import Hashable
 from itertools import permutations
-from typing import Dict, Generator, Hashable, List, Sequence, Tuple, Union
+from typing import Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
 
