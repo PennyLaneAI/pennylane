@@ -28,10 +28,16 @@ import pennylane as qml
 from pennylane.decomposition import (
     DecompositionNotApplicable,
     add_decomps,
+    adjoint_resource_rep,
     pow_resource_rep,
     register_resources,
+    resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import pow_self_adjoint, self_adjoint
+from pennylane.decomposition.symbolic_decomposition import (
+    flip_zero_control,
+    pow_self_adjoint,
+    self_adjoint,
+)
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -238,6 +244,38 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_self_adjoint)
+
+
+def _controlled_h_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CH: 1}
+    return {
+        qml.H: 2,
+        qml.RY: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_h_resources)
+def _controlled_hadamard(wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CH(wires)
+        return
+
+    qml.RY(-np.pi / 4, wires=wires[-1])
+    qml.H(wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.H(wires=wires[-1])
+    qml.RY(np.pi / 4, wires=wires[-1])
+
+
+add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 H = Hadamard
 r"""H(wires)
@@ -457,19 +495,62 @@ Args:
 """
 
 
-def _paulix_to_rx_gp_resources():
+def _paulix_to_rx_resources():
     return {qml.GlobalPhase: 1, qml.RX: 1}
 
 
-@register_resources(_paulix_to_rx_gp_resources)
-def _paulix_to_rx_gp(wires: WiresLike, **__):
+@register_resources(_paulix_to_rx_resources)
+def _paulix_to_rx(wires: WiresLike, **__):
     qml.RX(np.pi, wires=wires)
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-add_decomps(PauliX, _paulix_to_rx_gp)
+add_decomps(PauliX, _paulix_to_rx)
 add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_self_adjoint)
+
+
+def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CNOT: 1, PauliX: num_zero_control_values}
+    if num_control_wires == 2:
+        return {qml.Toffoli: 1, PauliX: num_zero_control_values * 2}
+    return {
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_x_resource)
+def _controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **__):
+    """The decomposition rule for a controlled PauliX."""
+
+    if len(control_wires) == 1 and not control_values[0]:
+        qml.CNOT(wires=wires)
+        qml.X(wires[1])
+        return
+
+    if len(control_wires) == 1:
+        qml.CNOT(wires=wires)
+        return
+
+    if len(control_wires) > 2:
+        qml.MultiControlledX(wires=wires, control_values=control_values, work_wires=work_wires)
+        return
+
+    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    for w in zero_control_wires:
+        qml.PauliX(w)
+    qml.Toffoli(wires=wires)
+    for w in zero_control_wires:
+        qml.PauliX(w)
+
+
+add_decomps("C(PauliX)", _controlled_x_decomp)
 
 
 class PauliY(Observable, Operation):
@@ -684,6 +765,36 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 add_decomps(PauliY, _pauliy_to_ry_gp)
 add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_self_adjoint)
+
+
+def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CY: 1}
+    return {
+        qml.S: 1,
+        adjoint_resource_rep(qml.S): 1,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_y_resource)
+def _controlled_y_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if control_wires == 1:
+        qml.CY(wires=wires)
+        return
+
+    qml.adjoint(qml.S(wires[-1]))
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.S(wires=wires[-1])
+
+
+add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
 
 
 class PauliZ(Observable, Operation):
@@ -906,6 +1017,41 @@ def _pauliz_to_ps(wires: WiresLike, **__):
 add_decomps(PauliZ, _pauliz_to_ps)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_self_adjoint)
+
+
+def _controlled_z_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CZ: 1}
+    if num_control_wires == 2:
+        return {qml.CCZ: 1}
+    return {
+        qml.H: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_wires=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_z_resources)
+def _controlled_z_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CZ(wires=wires)
+        return
+
+    if len(control_wires) == 2:
+        qml.CCZ(wires=wires)
+        return
+
+    qml.H(wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.H(wires=wires[-1])
+
+
+add_decomps("C(PauliZ)", flip_zero_control(_controlled_z_decomp))
 
 
 class S(Operation):
@@ -1584,6 +1730,35 @@ def _swap_to_cnot(wires, **__):
 add_decomps(SWAP, _swap_to_cnot)
 add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_self_adjoint)
+
+
+def _controlled_swap_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CSWAP: 1}
+    return {
+        qml.CNOT: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_wires=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_swap_resources)
+def _controlled_swap_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CSWAP(wires=wires)
+        return
+
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
 
 
 class ECR(Operation):

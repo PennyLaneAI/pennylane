@@ -17,17 +17,17 @@
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition.controlled_decomposition import (
-    ControlledBaseDecomposition,
-    CustomControlledDecomposition,
-    controlled_global_phase_decomp,
-    controlled_x_decomp,
-)
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
     controlled_resource_rep,
     resource_rep,
+)
+from pennylane.decomposition.symbolic_decomposition import (
+    ControlledBaseDecomposition,
+    CustomControlledDecomposition,
+    controlled_global_phase_decomp,
+    controlled_x_decomp,
 )
 from tests.decomposition.conftest import to_resources
 

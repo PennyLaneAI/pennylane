@@ -382,12 +382,29 @@ def _matrix_pow(U, z):
     return qml.math.convert_like(fractional_matrix_power(U, z), U)
 
 
-@register_resources({"QubitUnitary": 1})
+@register_resources({QubitUnitary: 1})
 def _pow_qubit_unitary(U, wires, z, **_):
     QubitUnitary(_matrix_pow(U, z), wires=wires)
 
 
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
+
+
+# pylint: disable=unused-argument
+def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
+        ): 1,
+    }
+
+
+@register_resources(_controlled_qubit_unitary_resource)
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, **__):
+    qml.ControlledQubitUnitary(U, wires, control_values=control_values, work_wires=work_wires)
+
+
+add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
 
 
 class DiagonalQubitUnitary(Operation):
@@ -597,7 +614,7 @@ def _adjoint_diagonal_unitary(U, wires, **_):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
 
 
-@register_resources({"DiagonalQubitUnitary": 1})
+@register_resources({DiagonalQubitUnitary: 1})
 def _pow_diagonal_unitary(U, wires, z, **_):
     DiagonalQubitUnitary(qml.math.cast(U, np.complex128) ** z, wires=wires)
 

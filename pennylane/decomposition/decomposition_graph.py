@@ -33,13 +33,6 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.operation import Operator
 
-from .controlled_decomposition import (
-    ControlledBaseDecomposition,
-    CustomControlledDecomposition,
-    base_to_custom_ctrl_op,
-    controlled_global_phase_decomp,
-    controlled_x_decomp,
-)
 from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
@@ -47,6 +40,7 @@ from .symbolic_decomposition import (
     decompose_to_base,
     flip_pow_adjoint,
     make_adjoint_decomp,
+    make_controlled_decomp,
     merge_powers,
     repeat_pow_base,
 )
@@ -185,7 +179,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         base = resource_rep(base_class, **base_params)
         return [make_adjoint_decomp(base_decomp) for base_decomp in self._get_decompositions(base)]
 
-    def _get_pow_decompositions(self, op) -> list[DecompositionRule]:
+    @staticmethod
+    def _get_pow_decompositions(op) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
         base_class = op.params["base_class"]
@@ -210,6 +205,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def _get_controlled_decompositions(self, op) -> list[DecompositionRule]:
         """Gets the decomposition rules for the controlled version of an operator."""
+
+        base_class, base_params = op.params["base_class"], op.params["base_params"]
+
+        # General case: apply control to the base op's decomposition rules.
+        base = resource_rep(base_class, **base_params)
+        return [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
 
     def _construct_graph(self, operations):
         """Constructs the decomposition graph."""
@@ -252,52 +253,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._graph.add_edge(d_node_idx, op_node_idx, 0)
         except DecompositionNotApplicable:
             pass  # ignore decompositions that are not applicable to the given op params.
-
-    # def _add_pow_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
-    #     """Adds a power decomposition node to the graph."""
-    #
-    #     base_class = op_node.params["base_class"]
-    #
-    #     if issubclass(base_class, qml.ops.Pow):
-    #         rule = pow_pow_decomp
-    #         self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #         return op_node_idx
-    #
-    #     rule = pow_decomp
-    #     self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #     return op_node_idx
-    #
-    # def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
-    #     """Adds a controlled decomposition node to the graph."""
-    #
-    #     base_class = op_node.params["base_class"]
-    #     num_control_wires = op_node.params["num_control_wires"]
-    #
-    #     # Handle controlled global phase
-    #     if base_class is qml.GlobalPhase:
-    #         rule = controlled_global_phase_decomp
-    #         self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #         return op_node_idx
-    #
-    #     # Handle controlled-X gates
-    #     if base_class is qml.X:
-    #         rule = controlled_x_decomp
-    #         self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #         return op_node_idx
-    #
-    #     # Handle custom controlled ops
-    #     if (base_class, num_control_wires) in base_to_custom_ctrl_op():
-    #         custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
-    #         rule = CustomControlledDecomposition(custom_op_type)
-    #         self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #         return op_node_idx
-    #
-    #     # General case
-    #     for base_decomposition in self._get_decompositions(base_class):
-    #         rule = ControlledBaseDecomposition(base_decomposition)
-    #         self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-    #
-    #     return op_node_idx
 
     def _recursively_add_decomposition_node(
         self, rule: DecompositionRule, decomp_resource: Resources

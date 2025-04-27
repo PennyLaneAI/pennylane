@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from .decomposition_rule import DecompositionRule, register_resources
-from .resources import adjoint_resource_rep, pow_resource_rep, resource_rep
+from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
 from .utils import DecompositionNotApplicable
 
 
@@ -179,3 +179,116 @@ def decompose_to_base(*params, wires, base, **__):
 
 
 self_adjoint: DecompositionRule = decompose_to_base
+
+
+def make_controlled_decomp(base_decomposition):
+    """Create a decomposition rule for the control of a decomposition rule."""
+
+    def _resource_fn(
+        *_, base_params, num_control_wires, num_zero_control_values, num_work_wires, **__
+    ):
+        base_resources = base_decomposition.compute_resources(**base_params)
+        gate_counts = {
+            _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
+            for base_op_rep, count in base_resources.gate_counts.items()
+        }
+        # None of the other gates in gate_counts will be X, because they are all
+        # controlled operations. So we can safely set the X gate counts here.
+        gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
+        return gate_counts
+
+    @register_resources(_resource_fn)
+    def _impl(*params, wires, control_wires, control_values, work_wires, base, **__):
+        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        for w in zero_control_wires:
+            qml.PauliX(w)
+        # We're extracting control wires and base wires from the wires argument instead
+        # of directly using control_wires and base.wires, `wires` is properly traced, but
+        # `control_wires` and `base.wires` are not.
+        qml.ctrl(
+            base_decomposition._impl,  # pylint: disable=protected-access
+            control=wires[: len(control_wires)],
+            work_wires=work_wires,
+        )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
+        for w in zero_control_wires:
+            qml.PauliX(w)
+
+    return _impl
+
+
+def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
+    """Returns the resource rep of a controlled op, dispatches to a custom op if possible.
+
+    The purpose of this function is to replicate the dispatch logic in qml.ctrl. Since in the
+    decomposition rule, qml.ctrl is called on the base decomposition, and it may dispatch to
+    one of the custom controlled ops, the resource function should also reflect that.
+
+    """
+
+    base_to_custom_ctrl_op = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
+    custom_ctrl = base_to_custom_ctrl_op.get((base_op_rep.op_type, num_control_wires))
+    if custom_ctrl is not None:
+        return resource_rep(custom_ctrl)
+
+    if base_op_rep.op_type in (qml.X, qml.CNOT, qml.Toffoli, qml.MultiControlledX):
+        # First call controlled_resource_rep to flatten any nested structures
+        rep = controlled_resource_rep(
+            base_class=base_op_rep.op_type,
+            base_params=base_op_rep.params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        )
+        if rep.params["num_control_wires"] == 1:
+            return resource_rep(qml.CNOT)
+        if rep.params["num_control_wires"] == 2:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=rep.params["num_control_wires"],
+            num_zero_control_values=rep.params["num_zero_control_values"],
+            num_work_wires=rep.params["num_work_wires"],
+        )
+
+    return controlled_resource_rep(
+        base_class=base_op_rep.op_type,
+        base_params=base_op_rep.params,
+        num_control_wires=num_control_wires,
+        num_zero_control_values=0,
+        num_work_wires=num_work_wires,
+    )
+
+
+def flip_zero_control(inner_decomp):
+    """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
+
+    def _resource_fn(**resource_params):
+        inner_resource = inner_decomp.compute_resources(
+            base_class=resource_params["base_class"],
+            base_params=resource_params["base_params"],
+            num_control_wires=resource_params["num_control_wires"],
+            num_zero_control_values=0,  # we will flip them.
+            num_work_wires=resource_params["num_work_wires"],
+        )
+        num_x = resource_params["num_zero_control_values"]
+        gate_counts = inner_resource.gate_counts.copy()
+        # Add the counts of the flipping X gates to the gate count
+        gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
+        return gate_counts
+
+    @register_resources(_resource_fn)
+    def _impl(*params, wires, control_wires, control_values, **kwargs):
+        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        for w in zero_control_wires:
+            qml.PauliX(w)
+        inner_decomp._impl(  # pylint: disable=protected-access
+            *params,
+            wires=wires,
+            control_wires=control_wires,
+            control_values=[1] * len(control_wires),  # all control values are 1 now
+            **kwargs,
+        )
+        for w in zero_control_wires:
+            qml.PauliX(w)
+
+    return _impl
