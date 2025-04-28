@@ -39,9 +39,10 @@
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
-* a new `angle_solver` method has been added in the `poly_to_angles` function. This allows to 
-  calculate the angles of polynomial degrees greater than our current method.
- [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
+* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles` function,
+  allowing angle computation for polynomials of large degrees (>1000).
+  Set `angle_solver="iterative"` in the :func:`poly_to_angles` function (or from the :func:`qsvt` function!) to use it.
+  [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
