@@ -1214,7 +1214,7 @@ def _pow_s_resource(base_class, base_params, z):  # pylint: disable=unused_argum
 
 
 @register_resources(_pow_s_resource)
-def _pow_s(*params, wires, z, base, **__):
+def _pow_s(wires, z, **__):
     z_mod4 = z % 4
     qml.cond(
         z_mod4 == 0.5,
@@ -1389,7 +1389,7 @@ def _pow_t_resource(base_class, base_params, z):  # pylint: disable=unused-argum
 
 
 @register_resources(_pow_t_resource)
-def _pow_t(*params, wires, z, base, **__):
+def _pow_t(wires, z, **__):
     z_mod8 = z % 8
     qml.cond(
         z_mod8 == 2,
@@ -2088,7 +2088,7 @@ def _pow_iswap_to_siswap_resource(base_class, base_params, z):  # pylint: disabl
 
 
 @register_resources(_pow_iswap_to_siswap_resource)
-def _pow_iswap_to_siswap(*params, wires, z, base, **__):
+def _pow_iswap_to_siswap(wires, z, **__):
     z_mod2 = z % 2
     qml.cond(
         z_mod2 == 0.5,
@@ -2288,7 +2288,7 @@ def _pow_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-
 
 
 @register_resources(_pow_siswap_resource)
-def _pow_siswap(wires, z, base, **__):
+def _pow_siswap(wires, z, **__):
     z_mod4 = z % 4
     qml.cond(
         qml.math.allclose(z_mod4, 2),

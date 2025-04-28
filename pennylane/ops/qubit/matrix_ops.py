@@ -356,12 +356,11 @@ add_decomps(
 )
 
 
-def _adjoint_qubit_unitary_resource(base_class, base_params):
-    num_wires = base_params["num_wires"]
-    return {resource_rep(QubitUnitary, num_wires=num_wires): 1}
+def _qubit_unitary_resource(base_class, base_params):
+    return {resource_rep(base_class, **base_params): 1}
 
 
-@register_resources(_adjoint_qubit_unitary_resource)
+@register_resources(_qubit_unitary_resource)
 def _adjoint_qubit_unitary(U, wires, **_):
     U = (
         U.conjugate().transpose()
@@ -382,7 +381,7 @@ def _matrix_pow(U, z):
     return qml.math.convert_like(fractional_matrix_power(U, z), U)
 
 
-@register_resources({QubitUnitary: 1})
+@register_resources(_qubit_unitary_resource)
 def _pow_qubit_unitary(U, wires, z, **_):
     QubitUnitary(_matrix_pow(U, z), wires=wires)
 
@@ -600,12 +599,11 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _adjoint_diagonal_unitary(base_class, base_params):
-    num_wires = base_params["num_wires"]
-    return {resource_rep(DiagonalQubitUnitary, num_wires=num_wires): 1}
+def _diagonal_qubit_unitary_resource(base_class, base_params):
+    return {resource_rep(base_class, **base_params): 1}
 
 
-@register_resources(_adjoint_diagonal_unitary)
+@register_resources(_diagonal_qubit_unitary_resource)
 def _adjoint_diagonal_unitary(U, wires, **_):
     U = qml.math.conj(U)
     DiagonalQubitUnitary(U, wires=wires)
@@ -614,7 +612,7 @@ def _adjoint_diagonal_unitary(U, wires, **_):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
 
 
-@register_resources({DiagonalQubitUnitary: 1})
+@register_resources(_diagonal_qubit_unitary_resource)
 def _pow_diagonal_unitary(U, wires, z, **_):
     DiagonalQubitUnitary(qml.math.cast(U, np.complex128) ** z, wires=wires)
 

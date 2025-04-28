@@ -246,7 +246,7 @@ simulators should always be equal to 1.
 
 add_decomps(Identity, null_decomp)
 add_decomps("Adjoint(Identity)", null_decomp)
-add_decomps("Controlled(Identity)", null_decomp)
+add_decomps("C(Identity)", null_decomp)
 add_decomps("Pow(Identity)", null_decomp)
 
 

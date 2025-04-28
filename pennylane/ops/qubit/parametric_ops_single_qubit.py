@@ -24,7 +24,12 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionNotApplicable, add_decomps, register_resources
+from pennylane.decomposition import (
+    DecompositionNotApplicable,
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -34,7 +39,6 @@ from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
-from ... import resource_rep
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
