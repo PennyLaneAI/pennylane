@@ -29,12 +29,110 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 # pylint: disable=arguments-differ, protected-access
 
+class ResourceMultiplexer(re.ResourceOperator):
+
+    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=1e-5, wires=None) -> None:
+        self.num_ctrl_wires= num_ctrl_wires
+        self.rotation_axis = rotation_axis
+        self.precision = precision
+
+        self.num_wires = num_ctrl_wires + 1
+        super().__init__(wires=wires)
+    
+    @property
+    def resource_params(self):
+        return {"num_ctrl_wires": self.num_ctrl_wires, "rotation_axis": self.rotation_axis, "precision": self.precision}
+
+    @classmethod
+    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision):
+        return CompressedResourceOp(cls, {"num_ctrl_wires": num_ctrl_wires, "rotation_axis": rotation_axis, "precision": precision})
+    
+    @staticmethod
+    def _resource_decomp(num_ctrl_wires, rotation_axis, precision, **kwargs):
+        gate = re.ResourceRZ.resource_rep(eps=precision)
+        cnot = re.ResourceCNOT.resource_rep()
+        
+        gate_lst = [
+            GateCount(gate, 2**num_ctrl_wires),
+            GateCount(cnot, 2**num_ctrl_wires),
+        ]
+
+        if rotation_axis == "X":
+            gate_lst.append(GateCount(re.ResourceHadamard.resource_rep(), 2))
+        if rotation_axis == "Y":
+            gate_lst.append(GateCount(re.ResourceHadamard.resource_rep(), 2))
+            gate_lst.append(GateCount(re.ResourceS.resource_rep()))
+            gate_lst.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(re.ResourceS, {})
+                )
+            )
+        
+        return gate_lst
+
+    @staticmethod
+    def phase_grad_resource_decomp(num_ctrl_wires, rotation_axis, precision, **kwargs):
+        gate_lst = []
+        num_prec_wires = abs(math.floor(math.log2(precision)))
+
+        gate_lst.append(AddQubits(num_prec_wires))
+        gate_lst.append(
+            GateCount(
+                re.ResourceQROM.resource_rep(
+                    num_bitstrings= 2**num_ctrl_wires,
+                    num_bit_flips = 2**num_ctrl_wires * num_prec_wires / 2,
+                    q_num_control_wires=None,
+                    q_num_work_wires=None,
+                    size_bitstring=num_prec_wires,
+                    clean=False,
+                )
+            )
+        )
+        gate_lst.append(
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    re.ResourceSemiAdder,
+                    {"max_register_size": num_prec_wires},
+                    1, 0, 0,
+                )
+            )
+        )
+        gate_lst.append(
+            GateCount(
+                re.ResourceAdjoint.resource_rep(
+                    re.ResourceQROM,
+                    {
+                        "num_bitstrings":2**num_ctrl_wires,
+                        "num_bit_flips": 2**num_ctrl_wires * num_prec_wires / 2,
+                        "q_num_control_wires": None,
+                        "q_num_work_wires": None,
+                        "size_bitstring": num_prec_wires,
+                        "clean": False,
+                    },
+                )
+            )
+        )
+        gate_lst.append(CutQubits(num_prec_wires))
+
+        if rotation_axis == "X":
+            gate_lst.append(GateCount(re.ResourceHadamard.resource_rep(), 2))
+        if rotation_axis == "Y":
+            gate_lst.append(GateCount(re.ResourceHadamard.resource_rep(), 2))
+            gate_lst.append(GateCount(re.ResourceS.resource_rep()))
+            gate_lst.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(re.ResourceS, {})
+                )
+            )
+
+        return gate_lst
+
 
 class ResourcePhaseGradient(ResourceOperator):
 
     def __init__(self, num_wires, wires=None):
         self.num_wires = num_wires
-        super.__init__(wires=wires)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self):
@@ -1504,7 +1602,7 @@ class ResourceQROM(ResourceOperator):
         return w2 if t_cost_func(w2) < t_cost_func(w1) else w1
 
     def __init__(
-        self, num_bitstrings, size_bitstring, num_bit_flips=None, clean=False, wires=None
+        self, num_bitstrings, size_bitstring, num_bit_flips=None, clean=True, wires=None
     ) -> None:
         self.clean = clean
         self.num_bitstrings = num_bitstrings
@@ -1583,7 +1681,9 @@ class ResourceQROM(ResourceOperator):
         # SWAP cost:
         ctrl_swap = re.ResourceCSWAP.resource_rep()
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
-        gate_cost.append(CutQubits((W_opt - 1) * size_bitstring))  # release Swap registers
+    
+        if clean:
+            gate_cost.append(CutQubits((W_opt - 1) * size_bitstring))  # release Swap registers
 
         return gate_cost
 
@@ -1641,9 +1741,11 @@ class ResourceQROM(ResourceOperator):
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
         gate_cost.append(GateCount(r_elbow, w))
 
-        gate_cost.append(
-            CutQubits((W_opt - 1) * size_bitstring + 1)
-        )  # release Swap registers + temp wires
+        gate_cost.append(CutQubits(1)) # temp wires
+        if clean:
+            gate_cost.append(
+                CutQubits((W_opt - 1) * size_bitstring)
+            )  # release Swap registers + temp wires
         return gate_cost
 
     @classmethod

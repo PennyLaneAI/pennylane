@@ -29,6 +29,9 @@ from .subroutines import (
     ResourcePhaseAdder,
     ResourceAmplitudeAmplification,
     ResourceQubitUnitary,
+    ResourceSemiAdder,
+    ResourcePhaseGradient,
+    ResourceMultiplexer
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize

@@ -253,6 +253,9 @@ from .templates import (
     ResourceBasisState,
     ResourceMPSPrep,
     ResourceQubitUnitary,
+    ResourcePhaseGradient,
+    ResourceSemiAdder,
+    ResourceMultiplexer,
 )
 
 from .compact import CompactState
