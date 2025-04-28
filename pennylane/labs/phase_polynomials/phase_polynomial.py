@@ -125,14 +125,7 @@ def phase_polynomial(
             input = np.array([1, 1, 1, 1]) # computational basis state
 
             def comp_basis_to_wf(basis_state):
-                zero, one = np.eye(2)
-                wf = one if basis_state[0] == 1 else zero
-                for val in basis_state[1:]:
-                    if val==1:
-                        wf = np.kron(wf, one)
-                    elif val==0:
-                        wf = np.kron(wf, zero)
-                return wf
+                return qml.BasisState(np.array(basis_state), range(4)).state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
             output_wf = qml.matrix(circ, wire_order=range(4)) @ input_wf
@@ -144,7 +137,7 @@ def phase_polynomial(
 
         Note that the action of an :class:`~RZ` gate is given by
 
-        .. math:: \text{RZ}(\theta) |x\rangle = e^{-i \frac{\theta}{2} \sigma_z} |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle
+        .. math:: R_Z(\theta) |x\rangle = e^{-i \frac{\theta}{2} Z} |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle
 
         Hence, we need to convert the collected parities :math:`\boldsymbol{x}` as :math:`-(1 - 2\boldsymbol{x})/2`, accordingly. In particular, the collected phase :math:`p(x)` is given by
 
