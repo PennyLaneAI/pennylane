@@ -292,3 +292,36 @@ def flip_zero_control(inner_decomp):
             qml.PauliX(w)
 
     return _impl
+
+
+def _flip_control_adjoint_resource(
+    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+):  # pylint: disable=unused-argument
+    # base class is adjoint, and the base of the base is the target class
+    target_class, target_params = base_params["base_class"], base_params["base_params"]
+    return {
+        adjoint_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": target_class,
+                "base_params": target_params,
+                "num_control_wires": num_control_wires,
+                "num_zero_control_values": num_zero_control_values,
+                "num_work_wires": num_work_wires,
+            },
+        ): 1
+    }
+
+
+@register_resources(_flip_control_adjoint_resource)
+def flip_control_adjoint(*params, wires, control_wires, control_values, work_wires, base, **__):
+    """Decompose the control of an adjoint by applying control to the base of the adjoint
+    and taking the adjoint of the control."""
+    _, [_, metadata] = base.base._flatten()
+    new_struct = wires, metadata
+    base_op = base.base._unflatten(params, new_struct)
+    qml.adjoint(
+        qml.ctrl(
+            base_op, control=control_wires, control_values=control_values, work_wires=work_wires
+        )
+    )

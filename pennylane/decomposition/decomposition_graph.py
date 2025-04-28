@@ -38,6 +38,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     cancel_adjoint,
     decompose_to_base,
+    flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
     make_controlled_decomp,
@@ -207,6 +208,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """Gets the decomposition rules for the controlled version of an operator."""
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
+
+        # Special case: control of an adjoint
+        if issubclass(base_class, qml.ops.Adjoint):
+            return [flip_control_adjoint]
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
