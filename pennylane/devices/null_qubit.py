@@ -357,7 +357,7 @@ class NullQubit(Device):
 
         updated_values = {}
         if execution_config.gradient_method in ["best", "adjoint"]:
-            updated_values["gradient_method"] = "device"  # This would be the line to change
+            updated_values["gradient_method"] = "device"
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = execution_config.gradient_method in {
                 "best",
