@@ -723,7 +723,7 @@ class PCPhase(Operation):
 
     This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
     basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
-    to the remaining basis vectors. For example, consider the 2-qubit case where :math:`dim = 3`:
+    to the remaining basis vectors. For example, consider the 2-qubit case where ``dim = 3``:
 
     .. math:: \Pi(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
@@ -733,7 +733,8 @@ class PCPhase(Operation):
             \end{bmatrix}.
 
     This can also be written as :math:`\Pi(\phi) = \exp(i\phi(2\Pi-\mathbb{I}_N))`, where
-    :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+    :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits and :math:`\Pi` is
+    the diagonal projector with ``dim`` ones and ``N-dim`` zeros.
 
     **Details:**
 
@@ -954,13 +955,18 @@ class PCPhase(Operation):
         How do we realize this projector decomposition on the gate level?
 
         A singly-controlled phase shift gate applies a phase to a quarter of all computational
-        basis states. For :math:`n=4`, this amounts to :math:`2^4/4=4` states, which is exactly
+        basis states (the control filters by the state of one qubit, and the phase shift gate
+        itself filters by the :math:`|1\rangle` state of the target qubit, cutting the number
+        of states we are acting on in half each time).
+        For :math:`n=4`, this amounts to :math:`2^4/4=4` states, which is exactly
         what we need for the first term above. To apply the phase to the *first* four states,
         :math:`|0000\rangle`, :math:`|0001\rangle`, :math:`|0010\rangle`, and :math:`|0011\rangle`,
-        we control on the :math:`|0\rangle` state of qubit :math:`0`, act on qubit :math:`1`, and
-        switch the state of qubit :math:`1` to which ``PhaseShift`` is applying the phase,
-        from the :math:`|1\rangle` state to the :math:`|0\rangle` state. This can be done simply
-        by flipping qubit :math:`1` before and after the controlled phase shift.
+        we want to "filter by" the first two qubits being in the :math:`|0\rangle` state.
+        For qubit :math:`0`, we do this by controlling on the :math:`|0\rangle` state.
+        For qubit :math:`1`, we pick it as the target of the controlled phase shift operation.
+        Generically, this would make it act on the :math:`|1\rangle` state, so we simply flip
+        qubit :math:`1` before and after the operation to apply the phase to the :math:`|0\rangle`
+        state instead.
         Thus, we conclude this first step by applying the gates
         ``qml.X(1)``, ``qml.ctrl(qml.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
         and ``qml.X(1)``.
