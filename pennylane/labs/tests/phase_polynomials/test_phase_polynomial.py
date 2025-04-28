@@ -18,6 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane.labs.phase_polynomials import phase_polynomial
 
+# trivial example
 circ0 = qml.tape.QuantumScript([])
 pmat0 = np.eye(4)
 ptab0 = np.array([])
