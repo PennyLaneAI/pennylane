@@ -23,9 +23,6 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("_ext"))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(".")), "doc"))
-sys.path.insert(0, os.path.abspath("../"))
-sys.path.insert(0, os.path.abspath("."))
-sys.path.insert(0, os.path.join(os.path.abspath("."), "pennylane"))
 
 # -- General configuration ------------------------------------------------
 
@@ -98,8 +95,6 @@ mathjax_path = (
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
 
-
-# Ignore warnings about duplicate entries in the table of contents
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
