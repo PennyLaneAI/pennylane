@@ -85,7 +85,7 @@ def circuit_measure_max_twice():
 
 
 def circuit_measure_multiple_with_max_twice():
-    """A fixture of a circuit that measures wire 0 twice."""
+    """A fixture of a circuit that measures wires 0-2 twice."""
     return (
         qml.expval(qml.PauliZ(wires=0)),
         qml.probs(wires=[0, 1, 2]),

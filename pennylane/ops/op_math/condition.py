@@ -118,6 +118,49 @@ class Conditional(SymbolicOp, Operation):
         then_op = self.base.map_wires(wire_map)
         return Conditional(meas_val, then_op=then_op)
 
+    @property
+    def parameter_frequencies(self):
+        # The cost function does not change its functional form between application of
+        # base and cond(base).
+        return self.base.parameter_frequencies
+
+    """
+    @property
+    def parameter_frequencies(self):
+        import pennylane as qml
+
+        # TODO: Add the following optimization once MCM parameter-shit rules can
+        # tackle the scenario in which auxiliary probability differentiating PSRs
+        # have more terms than the PSR of the original function.
+        if all(m.postselect is not None for m in self.meas_val.measurements):
+            return self.then_op.parameter_frequencies
+        if self.then_op.num_params == 1:
+            try:
+                then_op_gen = qml.generator(self.then_op, format="observable")
+            except operation.GeneratorUndefinedError as e:
+                raise operation.ParameterFrequenciesUndefinedError(
+                    f"Operation {self.then_op.name} does not have parameter frequencies defined."
+                ) from e
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                then_op_gen_eigvals = qml.eigvals(then_op_gen, k=2**self.then_op.num_wires)
+
+            # The projectors in the full generator add a eigenvalue of `0` to
+            # the eigenvalues of the then_op generator.
+            gen_eigvals = np.append(then_op_gen_eigvals, 0)
+
+            processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
+            return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
+        raise operation.ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed via generator for more than one "
+            "parameter."
+        )
+    """
+
     def matrix(self, wire_order=None):
         return self.base.matrix(wire_order=wire_order)
 
