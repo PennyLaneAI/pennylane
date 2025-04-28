@@ -121,6 +121,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
+  [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
+
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
@@ -181,6 +184,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
+  [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
+
 * Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
 
@@ -240,6 +246,14 @@
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a bug that caused `CountsMP.process_counts` to return results in the computational basis, even if
+  an observable was specified.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
+* Fixed a bug that caused `SamplesMP.process_counts` used with an observable to return a list of eigenvalues 
+  for each individual operation in the observable, instead of the overall result.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -251,4 +265,5 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Lee J. O'Riordan,
 Andrija Paurevic
