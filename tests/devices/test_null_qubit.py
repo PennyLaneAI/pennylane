@@ -71,7 +71,7 @@ def test_resource_tracking_attribute():
 
     dev = NullQubit(track_resources=True)
 
-    def small_circ():
+    def small_circ(params):
         qml.X(0)
         qml.H(0)
 
@@ -90,10 +90,19 @@ def test_resource_tracking_attribute():
         qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
         qml.adjoint(qml.S(0))
 
-        return qml.state()
+        qml.RX(params[0], wires=0)
+        qml.RX(params[0] * 2, wires=1)
 
-    qnode = qml.QNode(small_circ, dev)
-    qnode()
+        return qml.expval(qml.PauliZ(0))
+
+    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
+
+    inputs = qml.numpy.array([0.5])
+
+    qnode(inputs)
+
+    # Check that resource tracking doesn't interfere with backprop
+    assert qml.grad(qnode)(inputs) == 0
 
     RESOURCES_FNAME = "__pennylane_resources_data.json"
     assert os.path.exists(RESOURCES_FNAME)
@@ -106,7 +115,7 @@ def test_resource_tracking_attribute():
     assert stats == json.dumps(
         {
             "num_wires": 3,
-            "num_gates": 7,
+            "num_gates": 9,
             "gate_types": {
                 "PauliX": 1,
                 "Hadamard": 1,
@@ -115,6 +124,7 @@ def test_resource_tracking_attribute():
                 "CNOT": 1,
                 "C(IsingXX)": 1,
                 "Adj(S)": 1,
+                "RX": 2,
             },
         }
     )
