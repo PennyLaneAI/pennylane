@@ -22,7 +22,7 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, ParamSpec, TypeVar, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -1342,10 +1342,12 @@ class QuantumScript:
         return fn(tapes)
 
 
-# TODO: Use "ParamSpecs" when min Python version is 3.10
-def make_qscript(
-    fn: Callable[..., Any], shots: Optional[ShotsLike] = None
-) -> Callable[..., QuantumScript]:
+# ParamSpec is used to preserve the exact signature of the input function `fn`
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def make_qscript(fn: Callable[P, T], shots: Optional[ShotsLike] = None) -> Callable[P, QS]:
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 
