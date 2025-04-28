@@ -29,7 +29,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
         wire_order (Sequence): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``circ.wires``).
 
     Returns:
-        np.ndarray: :math:`n \times n` Parity matrix
+        np.ndarray: :math:`n \times n` Parity matrix for :math:`n` qubits.
 
     **Example**
 
