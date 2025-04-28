@@ -938,7 +938,7 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
             class DummyObserv(qml.operation.Observable):
                 r"""Dummy custom observable"""
@@ -952,16 +952,16 @@ class TestObservableConstruction:
     def test_observable_is_not_operation_but_operator(self):
         """Check that the Observable class inherits from an Operator, not from an Operation"""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert issubclass(qml.operation.Observable, qml.operation.Operator)
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not issubclass(qml.operation.Observable, qml.operation.Operation)
 
     def test_observable_is_operation_as_well(self):
         """Check that the Observable class inherits from an Operator class as well"""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
             class DummyObserv(qml.operation.Observable, qml.operation.Operation):
                 r"""Dummy custom observable"""
@@ -970,7 +970,7 @@ class TestObservableConstruction:
                 grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert issubclass(DummyObserv, qml.operation.Observable)
         assert issubclass(DummyObserv, qml.operation.Operation)
 
@@ -1027,7 +1027,7 @@ class TestObservableConstruction:
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
             class DummyObserv(qml.operation.Observable):
                 r"""Dummy custom observable"""
@@ -1041,7 +1041,7 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
             class DummyObservable(qml.operation.Observable):
                 num_wires = 1
@@ -1052,7 +1052,7 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        with pytest.warns(qml.exceptions.PennylaneDeprecationWarning):
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
             class DummyObserv(qml.operation.Observable):
                 r"""Dummy custom observable"""
