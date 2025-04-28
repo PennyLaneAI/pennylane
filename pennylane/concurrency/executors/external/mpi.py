@@ -121,7 +121,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
 
 # pylint: disable=import-outside-toplevel
-class MPICommExec(ExtExec):
+class MPICommExec(ExtExec):  # pragma: no cover
     r"""
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning
     required by MPIPoolExec is unsupported by the MPI implementation.

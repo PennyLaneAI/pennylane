@@ -18,8 +18,6 @@ Base API for defining an executor relying on native Python standard library impl
 """
 import abc
 import inspect
-import os
-import sys
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any, Optional
@@ -46,10 +44,8 @@ class PyNativeExec(IntExec, abc.ABC):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         if max_workers:
             self._size = max_workers
-        elif sys.version_info.minor >= 13:
-            self._size = os.process_cpu_count()  # pylint: disable=no-member
         else:
-            self._size = os.cpu_count()
+            self._size = self._get_system_core_count()
         self._persist = persist
         if self._persist:
             self._persistent_backend = self._exec_backend()(self._size)

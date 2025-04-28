@@ -184,7 +184,7 @@ class RemoteExec(abc.ABC):
         "Return the class type of the given backend variant."
 
     @staticmethod
-    def _get_system_core_count():
+    def _get_system_core_count():  # pragma: no cover
         if sys.version_info.minor >= 13:
             return os.process_cpu_count()  # pylint: disable=no-member
         return os.cpu_count()
