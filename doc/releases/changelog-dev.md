@@ -17,7 +17,8 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
-* Snapshot specific shots can now be passed to `qml.Snapshot`. 
+* Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
+  [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
 <h3>Breaking changes 💔</h3>
 
