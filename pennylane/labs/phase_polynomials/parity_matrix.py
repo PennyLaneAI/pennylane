@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
-    r"""Compute the :doc:`parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit.
+    r"""Compute the `parity matrix intermediate representation <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ of a CNOT circuit.
 
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
