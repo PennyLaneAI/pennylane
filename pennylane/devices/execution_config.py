@@ -17,6 +17,8 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+from pennylane.concurrency.executors.backends import ExecBackends, get_executor
+from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
@@ -103,6 +105,11 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
+    executor_backend: Optional[RemoteExec] = None
+    """
+    Defines the class for the executor backend.
+    """
+
     def __post_init__(self):
         """
         Validate the configured execution options.
@@ -135,6 +142,9 @@ class ExecutionConfig:
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
+
+        if self.executor_backend is None:
+            self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
 
 
 DefaultExecutionConfig = ExecutionConfig()
