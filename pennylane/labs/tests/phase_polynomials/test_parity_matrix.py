@@ -64,9 +64,14 @@ class TestParityMatrix:
         P1_re = parity_matrix(circ1, wire_order=wire_order)
         assert np.allclose(P1_re[np.argsort(wire_order)][:, np.argsort(wire_order)], P1)
 
-    def test_WireError(
-        self,
-    ):
+    def test_WireError(self):
         """Test that WireError is raised when wires in the provided wire_order dont match the circuit wires"""
         with pytest.raises(qml.wires.WireError, match="The provided wire_order"):
             _ = parity_matrix(circ1, wire_order=[1, 2, 3, 4])
+
+    def test_input_validation(self):
+        """Test that input circuits are correctly validated"""
+        circ = qml.tape.QuantumScript([qml.CNOT((0, 2)), qml.RZ(0.5, 0)])
+
+        with pytest.raises(TypeError, match="parity_matrix requires all input circuits"):
+            _ = parity_matrix(circ)
