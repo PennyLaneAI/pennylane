@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/phase_polynomials/parity_matrix.py"""
+# pylint: disable = no-self-use
 from itertools import permutations
 
 import numpy as np
