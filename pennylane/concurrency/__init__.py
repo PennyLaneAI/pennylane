@@ -77,6 +77,6 @@ Executor API
     :noindex:
 
 """
-# from .executors import native
+from .executors import native
 
-# __all__ = ["native", "external", "backends", "base"]
+__all__ = ["native", "external", "backends", "base"]

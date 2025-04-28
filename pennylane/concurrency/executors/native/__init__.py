@@ -37,4 +37,4 @@ from .multiproc import MPPoolExec
 from .conc_futures import ProcPoolExec, ThreadPoolExec
 from .serial import SerialExec
 
-# __all__ = ["MPPoolExec", "PyNativeExec", "ProcPoolExec", "ThreadPoolExec", "SerialExec"]
+__all__ = ["MPPoolExec", "PyNativeExec", "ProcPoolExec", "ThreadPoolExec", "SerialExec"]

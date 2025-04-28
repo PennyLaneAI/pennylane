@@ -58,7 +58,7 @@ class MPPoolExec(PyNativeExec):
         )
 
     def map(self, fn: Callable, *args: Sequence[Any], **kwargs):
-        if len(inspect.signature(fn).parameters) > 1:
+        if len(inspect.signature(fn).parameters) > 1:  # pragma: no cover
             try:
                 # attempt offloading to starmap
                 return self.starmap(fn, zip(*args), **kwargs)

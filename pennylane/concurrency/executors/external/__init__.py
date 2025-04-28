@@ -32,8 +32,8 @@ All executor functionality in this module is implemented using external packages
 from .dask import DaskExec
 from .mpi import MPICommExec, MPIPoolExec
 
-# __all__ = [
-#    "DaskExec",
-#    "MPICommExec",
-#    "MPIPoolExec",
-# ]
+__all__ = [
+    "DaskExec",
+    "MPICommExec",
+    "MPIPoolExec",
+]

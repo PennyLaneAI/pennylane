@@ -76,7 +76,7 @@ class SerialExec(PyNativeExec):
 
     def __init__(self, max_workers: Optional[int] = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
-        if max_workers > 1:
+        if max_workers > 1:  # pragma: no cover
             raise RuntimeError("The serial executor backend cannot have more than 1 worker.")
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
