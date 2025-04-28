@@ -112,6 +112,13 @@ def _check_decomposition_new(op, heuristic_resources=False):
     for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"C({type(op).__name__})"):
+        for num_control_wires in range(1, 4):
+            ctrl_op = qml.ops.Controlled(
+                op, control_wires=[i + len(op.wires) for i in range(num_control_wires)]
+            )
+            _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""

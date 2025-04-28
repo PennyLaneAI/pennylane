@@ -798,6 +798,7 @@ def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, **
 
     if len(control_wires) == 1:
         qml.ControlledPhaseShift(*params, wires=wires)
+        return
 
     qml.MultiControlledX(wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:])
     qml.ControlledPhaseShift(*params, wires=[work_wires[0], wires[-1]])
@@ -1031,7 +1032,7 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
-        ): 1,
+        ): 2,
     }
 
 
@@ -1044,7 +1045,7 @@ def _controlled_rot_decomp(phi, theta, omega, wires, control_wires, work_wires, 
 
     qml.RZ((phi - omega) / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires)
-    qml.RZ(-(phi - omega) / 2, wires=wires[-1])
+    qml.RZ(-(phi + omega) / 2, wires=wires[-1])
     qml.RY(-theta / 2, wires=wires[-1])
     qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RY(theta / 2, wires=wires[-1])

@@ -785,7 +785,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(*_, wires, control_wires, work_wires, **__):
 
-    if control_wires == 1:
+    if len(control_wires) == 1:
         qml.CY(wires=wires)
         return
 
@@ -1029,7 +1029,7 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, **__):
         resource_rep(
             qml.MultiControlledX,
             num_control_wires=num_control_wires,
-            num_zero_control_wires=0,
+            num_zero_control_values=0,
             num_work_wires=num_work_wires,
         ): 1,
     }
@@ -1739,8 +1739,8 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, **__):
         qml.CNOT: 2,
         resource_rep(
             qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_wires=0,
+            num_control_wires=num_control_wires + 1,
+            num_zero_control_values=0,
             num_work_wires=num_work_wires,
         ): 1,
     }
@@ -1753,9 +1753,9 @@ def _controlled_swap_decomp(*_, wires, control_wires, work_wires, **__):
         qml.CSWAP(wires=wires)
         return
 
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires)
-    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[-2], wires[-1]])
+    qml.MultiControlledX(wires=wires[:-2] + [wires[-1], wires[-2]], work_wires=work_wires)
+    qml.CNOT(wires=[wires[-2], wires[-1]])
 
 
 add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
