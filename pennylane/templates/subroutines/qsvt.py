@@ -55,7 +55,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
 
     .. note::
 
-        The function ``poly_to_angles``, used within ``qsvt``, is not JIT-compatible, which
+        The function :func:`~.poly_to_angles`, used within ``qsvt``, is not JIT-compatible, which
         prevents ``poly`` from being traceable in ``qsvt``. However, ``A`` is traceable
         and can be optimized by JIT within this function.
 
@@ -201,9 +201,6 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
 
     """
 
-    projectors = []
-
-    # If the input A is a Hamiltonian
     if hasattr(A, "pauli_rep"):
 
         if block_encoding not in ["prepselprep", "qubitization", None]:
@@ -215,6 +212,17 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
             raise ValueError(
                 f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
             )
+    else:
+        if block_encoding not in ["embedding", "fable", None]:
+            raise ValueError(
+                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
+            )
+
+    # compute angles
+    angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
+
+    # If the input A is a Hamiltonian
+    if hasattr(A, "pauli_rep"):
 
         encoding = (
             qml.Qubitization(A, control=encoding_wires)
@@ -222,46 +230,37 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
             else qml.PrepSelPrep(A, control=encoding_wires)
         )
 
-        angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
-
         projectors = [
             qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
             for angle in angles
         ]
 
-    else:
+        return QSVT(encoding, projectors)
 
-        if block_encoding not in ["embedding", "fable", None]:
+    # If the input A is not a Hamiltonian
+    A = qml.math.atleast_2d(A)
+    max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
+
+    if block_encoding == "fable":
+        if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
             raise ValueError(
-                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
+                "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
             )
 
-        A = qml.math.atleast_2d(A)
-        max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
+        # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+        fable_norm = int(np.ceil(np.log2(max_dimension)))
+        encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
+        projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
-        if block_encoding == "fable":
-            if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
-                raise ValueError(
-                    "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
-                )
+    else:
+        c, r = qml.math.shape(A)
+        projectors = []
 
-            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+        for idx, phi in enumerate(angles):
+            dim = c if idx % 2 else r
+            projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
 
-            fable_norm = int(np.ceil(np.log2(max_dimension)))
-            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
-            angles = qml.poly_to_angles(poly, "QSVT")
-
-            projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
-
-        else:
-            c, r = qml.math.shape(A)
-
-            angles = qml.poly_to_angles(poly, "QSVT")
-            for idx, phi in enumerate(angles):
-                dim = c if idx % 2 else r
-                projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
-
-            encoding = qml.BlockEncode(A, wires=encoding_wires)
+        encoding = qml.BlockEncode(A, wires=encoding_wires)
 
     return QSVT(encoding, projectors)
 
@@ -1132,7 +1131,7 @@ def poly_to_angles(
 
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
-        angle_solver (str): The method used to calculate the angles; either `"root-finding"` or `"iterative"`.
+        angle_solver (str): The method used to calculate the angles; either ``"root-finding"`` or ``"iterative"``.
             Default is ``"root-finding"``. ``"root-finding"`` is a method that works with all three routines, and
             is effective for polynomials of degree up to ~1000.
             `"iterative"` employs an optimization method allowing angle computation
