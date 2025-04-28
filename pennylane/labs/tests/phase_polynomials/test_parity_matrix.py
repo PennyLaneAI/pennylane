@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,17 +29,16 @@ circ1 = qml.tape.QuantumScript(
         qml.CNOT((3, 0)),
         qml.CNOT((0, 2)),
     ],
-    [],
 )
 P1 = np.array(
-    [[1.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
+    [[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]]
 )
 
 circ2 = qml.tape.QuantumScript(
     [qml.SWAP((0, 1)), qml.SWAP((1, 2)), qml.SWAP((2, 3))], []
 ).expand()  # expand into CNOTs
 P2 = np.array(
-    [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 0.0]]
+    [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]]
 )
 
 
