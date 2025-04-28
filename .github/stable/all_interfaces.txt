@@ -6,7 +6,7 @@ autograd==1.7.0
 autoray==0.7.1
 black==25.1.0
 cachetools==5.5.2
-certifi==2025.1.31
+certifi==2025.4.26
 cfgv==3.4.0
 charset-normalizer==3.4.1
 clarabel==0.10.0
@@ -51,8 +51,8 @@ mccabe==0.6.1
 mdurl==0.1.2
 ml_dtypes==0.5.1
 mpmath==1.3.0
-mypy-extensions==1.0.0
-namex==0.0.8
+mypy_extensions==1.1.0
+namex==0.0.9
 networkx==3.4.2
 nodeenv==1.9.1
 numpy==2.0.2
@@ -74,7 +74,7 @@ osqp==1.0.3
 packaging==25.0
 pandas==2.2.3
 pathspec==0.12.1
-PennyLane_Lightning==0.42.0
+PennyLane_Lightning==0.42.0.dev7
 pillow==11.2.1
 platformdirs==4.3.7
 pluggy==1.5.0
