@@ -142,11 +142,11 @@ def _pow_self_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 
 
 @register_resources(_pow_self_adjoint_resource)
-def pow_self_adjoint(*params, wires, base, z, **__):
+def pow_of_self_adjoint(*params, wires, base, z, **__):
     """Decompose the power of a self-adjoint operator, assumes z is an integer."""
 
     def f():
-        _, struct = base.base._flatten()
+        _, struct = base._flatten()
         new_struct = (wires, *struct[1:])
         base._unflatten(params, new_struct)
 

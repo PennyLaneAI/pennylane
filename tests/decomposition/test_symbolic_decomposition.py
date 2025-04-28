@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
+from pennylane.decomposition import DecompositionNotApplicable
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -27,8 +28,11 @@ from pennylane.decomposition.resources import (
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    flip_pow_adjoint,
     make_adjoint_decomp,
     merge_powers,
+    pow_of_self_adjoint,
+    pow_rotation,
     repeat_pow_base,
     self_adjoint,
 )
@@ -202,3 +206,89 @@ class TestPowDecomposition:
 
         if not capture_enabled:
             qml.capture.disable()
+
+    def test_non_integer_pow_not_applicable(self):
+        """Tests that DecompositionNotApplicable is raised when z isn't a positive integer."""
+
+        op = qml.pow(qml.H(0), 0.5)
+        with pytest.raises(DecompositionNotApplicable):
+            repeat_pow_base.compute_resources(**op.resource_params)
+        op = qml.pow(qml.H(0), -1)
+        with pytest.raises(DecompositionNotApplicable):
+            repeat_pow_base.compute_resources(**op.resource_params)
+
+    def test_flip_pow_adjoint(self):
+        """Tests the flip_pow_adjoint decomposition."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        op = qml.pow(qml.adjoint(CustomOp(0.5, wires=[0, 1, 2])), 2)
+        with queuing.AnnotatedQueue() as q:
+            flip_pow_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.adjoint(qml.pow(CustomOp(0.5, wires=[0, 1, 2]), 2))]
+        assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
+            {
+                adjoint_resource_rep(
+                    qml.ops.Pow, {"base_class": CustomOp, "base_params": {}, "z": 2}
+                ): 1
+            }
+        )
+
+    def test_pow_of_self_adjoint(self):
+        """Tests the pow_of_self_adjoint decomposition."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        op1 = qml.pow(CustomOp(wires=[0, 1, 2]), 1)
+        op2 = qml.pow(CustomOp(wires=[0, 1, 2]), 2)
+        op3 = qml.pow(CustomOp(wires=[0, 1, 2]), 3)
+        op4 = qml.pow(CustomOp(wires=[0, 1, 2]), 4)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            pow_of_self_adjoint(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            pow_of_self_adjoint(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            pow_of_self_adjoint(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            pow_of_self_adjoint(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+
+        assert q.queue == [CustomOp(wires=[0, 1, 2]), CustomOp(wires=[0, 1, 2])]
+        assert pow_of_self_adjoint.compute_resources(**op1.resource_params) == Resources(
+            {resource_rep(CustomOp): 1}
+        )
+        assert pow_of_self_adjoint.compute_resources(**op3.resource_params) == Resources(
+            {resource_rep(CustomOp): 1}
+        )
+        assert pow_of_self_adjoint.compute_resources(**op2.resource_params) == Resources()
+        assert pow_of_self_adjoint.compute_resources(**op4.resource_params) == Resources()
+
+    def test_pow_rotations(self):
+        """Tests the pow_rotations decomposition."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        op = qml.pow(CustomOp(0.3, wires=[0, 1, 2]), 2.5)
+        with queuing.AnnotatedQueue() as q:
+            pow_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
+        assert pow_rotation.compute_resources(**op.resource_params) == Resources(
+            {resource_rep(CustomOp): 1}
+        )
