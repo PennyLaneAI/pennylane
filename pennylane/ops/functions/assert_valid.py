@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import itertools
 import pickle
 from collections import defaultdict
 from string import ascii_lowercase
@@ -113,9 +114,11 @@ def _check_decomposition_new(op, heuristic_resources=False):
         _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
     for rule in qml.list_decomps(f"C({type(op).__name__})"):
-        for num_control_wires in range(1, 4):
+        for num_control_wires, control_value in itertools.product([1, 2, 3], [0, 1]):
             ctrl_op = qml.ops.Controlled(
-                op, control_wires=[i + len(op.wires) for i in range(num_control_wires)]
+                op,
+                control_wires=[i + len(op.wires) for i in range(num_control_wires)],
+                control_values=[control_value] * num_control_wires,
             )
             _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
 
