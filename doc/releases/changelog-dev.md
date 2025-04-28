@@ -246,6 +246,9 @@
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
+  [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
