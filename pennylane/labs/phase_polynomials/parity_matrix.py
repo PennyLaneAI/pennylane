@@ -13,27 +13,29 @@
 # limitations under the License.
 """Parity matrix representation"""
 
-from typing import Iterable
+from typing import Sequence
 
 import numpy as np
 
 import pennylane as qml
 
 
-def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Iterable = None):
-    r"""
-    :doc:`Parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit
+def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
+    r"""Compute the :doc:`parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit.
 
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
-        wire_order (Iterable): ``wire_order`` indicating how rows and columns should be ordered.
+        wire_order (Sequence): ``wire_order`` indicating how rows and columns should be ordered. If ``None`` is provided, we take the wires of the input circuit (``circ.wires``).
 
     Returns:
-        np.ndarray: :math:`n \times n` Parity matrix
+        np.ndarray: :math:`n \times n` Parity matrix for :math:`n` qubits.
 
     **Example**
 
     .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.labs.phase_polynomials import parity_matrix
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((3, 2)),
@@ -52,7 +54,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Iterable = None):
            [0., 0., 1., 1.],
            [0., 0., 0., 1.]])
 
-    The corresponding circuit is the following.
+    The corresponding circuit is the following, with output values of the qubits denoted at the right end.
 
     .. code-block::
 
@@ -72,11 +74,17 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Iterable = None):
             f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
         )
 
+    if any(op.name != "CNOT" for op in circ.operations):
+        raise TypeError(
+            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
+        )
+
     wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
-    P = np.eye(len(wire_order))
+    P = np.eye(len(wire_order), dtype=int)
     for op in circ.operations:
+
         control, target = op.wires
-        P[wire_map[target]] = P[wire_map[target]] + P[wire_map[control]]
+        P[wire_map[target]] += P[wire_map[control]]
 
     return P % 2
