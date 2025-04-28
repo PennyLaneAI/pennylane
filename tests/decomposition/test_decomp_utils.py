@@ -19,6 +19,7 @@ Unit tests for utility functions in the ``decomposition`` module.
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition.utils import translate_op_alias
 
 
 @pytest.mark.unit
@@ -44,3 +45,23 @@ def test_toggle_graph_decomposition():
 
     qml.decomposition.disable_graph()
     assert not qml.decomposition.enabled_graph()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "base_op_alias, expected_op_name",
+    [
+        ("X", "PauliX"),
+        ("Y", "PauliY"),
+        ("Z", "PauliZ"),
+        ("I", "Identity"),
+        ("H", "Hadamard"),
+    ],
+)
+def test_translate_op_alias(base_op_alias, expected_op_name):
+    """Test the translation of operator aliases to their proper names."""
+
+    assert translate_op_alias(base_op_alias) == expected_op_name
+    assert translate_op_alias(f"C({base_op_alias})") == f"C({expected_op_name})"
+    assert translate_op_alias(f"Adjoint({base_op_alias})") == f"Adjoint({expected_op_name})"
+    assert translate_op_alias(f"Pow({base_op_alias})") == f"Pow({expected_op_name})"
