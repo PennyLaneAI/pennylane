@@ -38,7 +38,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     @register_resources(_resource_fn)
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
-        qml.adjoint(base_decomposition._impl)(*params, wires, **base.hyperparameters)
+        qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
     return _impl
 
