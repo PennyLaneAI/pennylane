@@ -30,40 +30,43 @@ circ1 = qml.tape.QuantumScript(
         qml.CNOT((0, 2)),
     ],
 )
-P1 = np.array(
-    [[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]]
-)
+wire_order_abcd = ["a", "b", "c", "d"]
+(circ1_letters,), _ = qml.map_wires(circ1, dict(enumerate(wire_order_abcd)))
+
+P1 = np.array([[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
 
 circ2 = qml.tape.QuantumScript(
     [qml.SWAP((0, 1)), qml.SWAP((1, 2)), qml.SWAP((2, 3))], []
 ).expand()  # expand into CNOTs
-P2 = np.array(
-    [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]]
-)
+P2 = np.array([[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]])
 
 
-@pytest.mark.parametrize("circ, P_true", ((circ1, P1), (circ2, P2)))
-def test_parity_matrix(circ, P_true):
-    """Test parity matrix computation"""
-    P = parity_matrix(circ, wire_order=range(len(circ.wires)))
+class TestParityMatrix:
+    """Tests for parity_matrix function"""
 
-    assert np.allclose(P, P_true)
+    @pytest.mark.parametrize("circ, P_true", ((circ1, P1), (circ2, P2)))
+    def test_parity_matrix(self, circ, P_true):
+        """Test parity matrix computation"""
+        P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 
+        assert np.allclose(P, P_true)
 
-wire_order_abcd = ["a", "b", "c", "d"]
-(circ1_letters,), _ = qml.map_wires(circ1, dict(enumerate(wire_order_abcd)))
+    def test_parity_matrix_with_string_wires(self):
+        """Test parity matrix computation with string valued wires"""
+        wire_order1 = ["a", "b", "c", "d"]
+        P_re = parity_matrix(circ1_letters, wire_order=wire_order1)
 
+        assert np.allclose(P_re, P1)
 
-def test_parity_matrix_with_string_wires():
-    """Test parity matrix computation with string valued wires"""
-    wire_order1 = ["a", "b", "c", "d"]
-    P_re = parity_matrix(circ1_letters, wire_order=wire_order1)
+    @pytest.mark.parametrize("wire_order", list(permutations(range(4), 4)))
+    def test_parity_matrix_wire_order(self, wire_order):
+        """Test wire_order works as expected"""
+        P1_re = parity_matrix(circ1, wire_order=wire_order)
+        assert np.allclose(P1_re[np.argsort(wire_order)][:, np.argsort(wire_order)], P1)
 
-    assert np.allclose(P_re, P1)
-
-
-@pytest.mark.parametrize("wire_order", list(permutations(range(4), 4)))
-def test_parity_matrix_wire_order(wire_order):
-    """Test wire_order works as expected"""
-    P1_re = parity_matrix(circ1, wire_order=wire_order)
-    assert np.allclose(P1_re[np.argsort(wire_order)][:, np.argsort(wire_order)], P1)
+    def test_WireError(
+        self,
+    ):
+        """Test that WireError is raised when wires in the provided wire_order dont match the circuit wires"""
+        with pytest.raises(qml.wires.WireError, match="The provided wire_order"):
+            _ = parity_matrix(circ1, wire_order=[1, 2, 3, 4])

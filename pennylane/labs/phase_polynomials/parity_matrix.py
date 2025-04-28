@@ -21,8 +21,7 @@ import pennylane as qml
 
 
 def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
-    r"""Compute the
-    :doc:`parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit.
+    r"""Compute the :doc:`parity matrix intermediate representation <compilation/parity-matrix-intermediate-representation>` of a CNOT circuit.
 
     Args:
         circ (qml.tape.QuantumScript): Quantum circuit containing only CNOT gates.
@@ -34,6 +33,9 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
     **Example**
 
     .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.labs.phase_polynomials import parity_matrix
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((3, 2)),
@@ -72,10 +74,16 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
             f"The provided wire_order {wire_order} does not contain all wires of the circuit {wires}"
         )
 
+    if any(op.name != "CNOT" for op in circ.operations):
+        raise TypeError(
+            f"parity_matrix requires all input circuits to consist solely of CNOT gates. Received circuit with the following gates: {circ.operations}"
+        )
+
     wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
     P = np.eye(len(wire_order), dtype=int)
     for op in circ.operations:
+
         control, target = op.wires
         P[wire_map[target]] += P[wire_map[control]]
 
