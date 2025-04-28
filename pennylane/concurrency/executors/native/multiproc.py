@@ -33,8 +33,11 @@ class MPPoolExec(PyNativeExec):
     This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_ interface, and provides support for execution using multiple processes.
 
     Args:
-        *args: non keyword arguments to pass through to the executor backend.
-        **kwargs: keyword arguments to pass through to the executor backend.
+        max_workers: the maximum number of concurrent units (processes) to use
+        persist: allow the executor backend to persist between executions. True avoids
+                    potentially costly set-up and tear-down, where supported.
+                    Explicit calls to ``shutdown`` will set this to False.
+        **kwargs: Keyword arguments to pass-through to the executor backend.
 
     """
 

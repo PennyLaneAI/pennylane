@@ -34,8 +34,11 @@ class ProcPoolExec(PyNativeExec):
         All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
-        *args: non keyword arguments to pass through to the executor backend.
-        **kwargs: keyword arguments to pass through to the executor backend.
+        max_workers: the maximum number of concurrent units (processes) to use
+        persist: allow the executor backend to persist between executions. True avoids
+                    potentially costly set-up and tear-down, where supported.
+                    Explicit calls to ``shutdown`` will set this to False.
+        **kwargs: Keyword arguments to pass-through to the executor backend.
 
     """
 
@@ -67,8 +70,11 @@ class ThreadPoolExec(PyNativeExec):
         All calls to the executor are synchronous, and do not currently support the use of futures as a return object.
 
     Args:
-        *args: non keyword arguments to pass through to the executor backend.
-        **kwargs: keyword arguments to pass through to the executor backend.
+        max_workers: the maximum number of concurrent units (threads) to use
+        persist: allow the executor backend to persist between executions. True avoids
+                    potentially costly set-up and tear-down, where supported.
+                    Explicit calls to ``shutdown`` will set this to False.
+        **kwargs: Keyword arguments to pass-through to the executor backend.
 
     """
 
