@@ -20,8 +20,10 @@ import pennylane as qml
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,
+    pow_resource_rep,
     resource_rep,
 )
 
@@ -205,6 +207,19 @@ class TestCompressedResourceOp:
 
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(foo=2, bar=1)"
+
+    @pytest.mark.parametrize(
+        "op, expected_name",
+        [
+            (resource_rep(qml.RX), "RX"),
+            (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
+            (controlled_resource_rep(qml.RX, {}, 1, 0, 0), "C(RX)"),
+            (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
+        ],
+    )
+    def test_name(self, op, expected_name):
+        """Tests the name property of a CompressedResourceOp object."""
+        assert op.name == expected_name
 
 
 @pytest.mark.unit
