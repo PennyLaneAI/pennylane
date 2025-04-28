@@ -101,6 +101,18 @@ def phase_polynomial(
     angles are computed by ``phase_polynomial``.
 
     >>> pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
+    >>> pmat
+    array([[1, 1, 1, 0],
+           [1, 0, 1, 1],
+           [0, 0, 1, 0],
+           [0, 0, 0, 1]])
+    >>> ptab
+    array([[1, 1, 1],
+           [1, 1, 0],
+           [0, 1, 1],
+           [0, 0, 1]])
+    >>> angles
+    array([1, 2, 3])
 
     .. details::
         :title: Usage Details
