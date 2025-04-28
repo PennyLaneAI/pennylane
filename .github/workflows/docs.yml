@@ -41,7 +41,7 @@ jobs:
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
-    if: github.event.pull_request.draft == false
+    # if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
@@ -69,7 +69,7 @@ jobs:
         path: doc.txt
 
   upload-stable-deps:
-    if: github.event_name == 'schedule'
+    # if: github.event_name == 'schedule'
     needs:
       - determine_runner
       - sphinx
