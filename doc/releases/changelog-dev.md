@@ -125,6 +125,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
+  [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
+
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
@@ -184,6 +187,9 @@
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
+  [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
 
 * Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
@@ -255,5 +261,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Anton Naim Ibrahim,
 Oumarou Oumarou,
+Lee J. O'Riordan,
 Andrija Paurevic
