@@ -161,7 +161,7 @@ def phase_polynomial(
 
     wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
 
-    parity_matrix = np.eye(len(wires), dtype=int)
+    parity_matrix = np.eye(len(wire_map), dtype=int)
     parity_table = []
     angles = []
     i = 0

@@ -18,6 +18,11 @@ import pytest
 import pennylane as qml
 from pennylane.labs.phase_polynomials import phase_polynomial
 
+circ0 = qml.tape.QuantumScript([])
+pmat0 = np.eye(4)
+ptab0 = np.array([])
+angles0 = np.array([])
+
 # example from fig. 1 in https://arxiv.org/abs/2104.00934
 circ1 = qml.tape.QuantumScript(
     [
@@ -40,7 +45,13 @@ angles1 = np.array([1, 2, 3])
 class TestPhasePolynomial:
     """Tests for qml.labs.dla.phase_polynomials.phase_polynomial"""
 
-    @pytest.mark.parametrize("circ, res", ((circ1, (pmat1, ptab1, angles1)),))
+    @pytest.mark.parametrize(
+        "circ, res",
+        (
+            (circ0, (pmat0, ptab0, angles0)),
+            (circ1, (pmat1, ptab1, angles1)),
+        ),
+    )
     def test_computation(self, circ, res):
         """Test phase_polynomial computes the correct parity matrix, parity table and angles"""
 
