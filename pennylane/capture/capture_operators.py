@@ -116,9 +116,9 @@ def create_operator_primitive(
         # need to convert array values into integers
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
-        wires = tuple(w if qml.math.is_abstract(w) else int(w) for w in args[split:])
-        args = args[:split]
-        return type.__call__(operator_type, *args, wires=wires, **kwargs)
+        wire_args = args[split:] if split else ()
+        wires = tuple(w if qml.math.is_abstract(w) else int(w) for w in wire_args)
+        return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
 
