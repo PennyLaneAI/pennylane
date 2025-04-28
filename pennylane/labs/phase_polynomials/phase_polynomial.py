@@ -31,7 +31,7 @@ def phase_polynomial(
 
     Since the parity matrix :math:`P` is part of this description, :math:`p` and :math:`P` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
 
-    The phase polynomial :math:`p(x)` is described in terms of its parity table and associated angles. For this, note that
+    The phase polynomial :math:`p(\boldsymbol{x})` is described in terms of its parity table and associated angles. For this, note that
     the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
 
     .. math:: R_Z(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
