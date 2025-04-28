@@ -164,7 +164,7 @@ def phase_polynomial(
     parity_matrix = np.eye(len(wires), dtype=int)
     parity_table = []
     angles = []
-    i = 1
+    i = 0
     for op in circ.operations:
 
         if op.name == "CNOT":

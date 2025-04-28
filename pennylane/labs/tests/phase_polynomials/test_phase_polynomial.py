@@ -55,9 +55,9 @@ class TestPhasePolynomial:
         """Test the verbose output of phase_polynomial"""
         _ = phase_polynomial(circ1, verbose=True)
         captured = capsys.readouterr()
-        assert "Operator CNOT - #1" in captured.out
-        assert "Operator RZ - #2" in captured.out
-        assert "Operator CNOT - #3" in captured.out
+        assert "Operator CNOT - #0" in captured.out
+        assert "Operator RZ - #1" in captured.out
+        assert "Operator CNOT - #2" in captured.out
 
     def test_wire_order_string_wires(self):
         """Test wire_order with string wires"""
