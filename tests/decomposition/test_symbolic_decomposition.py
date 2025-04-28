@@ -30,6 +30,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_adjoint_decomp,
     merge_powers,
     repeat_pow_base,
+    self_adjoint,
 )
 from tests.decomposition.conftest import to_resources
 
@@ -114,7 +115,7 @@ class TestAdjointDecompositionRules:
         )
 
     def test_adjoint_rotation(self):
-        """Tests the adjoint_rotation decomposition"""
+        """Tests the adjoint_rotation decomposition."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
@@ -130,6 +131,26 @@ class TestAdjointDecompositionRules:
 
         assert q.queue == [CustomOp(-0.5, wires=[0, 1, 2])]
         assert adjoint_rotation.compute_resources(**op.resource_params) == Resources(
+            {resource_rep(CustomOp): 1}
+        )
+
+    def test_self_adjoint(self):
+        """Tests the self_adjoint decomposition."""
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
+        with queuing.AnnotatedQueue() as q:
+            self_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
+        assert self_adjoint.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
 
