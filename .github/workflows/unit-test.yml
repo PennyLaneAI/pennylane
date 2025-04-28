@@ -87,9 +87,15 @@ on:
         required: false
         type: string
         default: ''	
+      pytest_xml_file_path:
+        description: Path to pytest xml file. This is used to upload pytest results to the analytics service. An empty string will not generate an xml file.
+        required: false
+        type: string
+        default: ''
 
 env:
   UV_SYSTEM_PYTHON: 1
+  TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
   test:
@@ -176,6 +182,9 @@ jobs:
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
+      - name: Create test reports directory
+        run: mkdir -p ${{ env.TEST_REPORTS_DIR }}
+
       - name: Set PyTest Args
         id: pytest_args
         env:
@@ -183,8 +192,9 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}" --store-durations --clean-durations', inputs.pytest_durations_file_path) || '' }}
+          PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}/{1}"', env.TEST_REPORTS_DIR, inputs.pytest_xml_file_path) || '' }}
         run: |
-          echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
+          echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_XML_ARGS" >> $GITHUB_OUTPUT
 
       - name: Run PennyLane Unit Tests
         env:
@@ -197,7 +207,7 @@ jobs:
       - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
+        run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
 
       - name: Upload frozen requirements
         if: inputs.requirements_file != ''
@@ -212,6 +222,14 @@ jobs:
         with:
           name: durations-${{ inputs.job_name }}
           path: ${{ inputs.pytest_durations_file_path }}
+          include-hidden-files: true
+
+      - name: Upload Test Report Failures as artifact
+        if: (failure() || cancelled()) && inputs.pytest_xml_file_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ inputs.job_name }}
+          path: ${{ env.TEST_REPORTS_DIR }}/${{ inputs.pytest_xml_file_path }}
           include-hidden-files: true
 
       - name: Adjust coverage file for Codecov

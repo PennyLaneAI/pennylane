@@ -48,22 +48,25 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
+    # Dev Note: batch 1 and batch None are different cases. We need to carefully treat them
+    # or there will be issue e.g. https://github.com/PennyLaneAI/pennylane/issues/7220
+    is_state_batched = True
     if isinstance(prep_operation, qml.QubitDensityMatrix):
         density_matrix = prep_operation.data
-
     else:  # Use pure state prep
         pure_state = prep_operation.state_vector(wire_order=list(wires))
         batch_size = math.get_batch_size(
-            pure_state, expected_shape=[], expected_size=2**num_wires
+            pure_state, expected_shape=(2,) * num_wires, expected_size=2**num_wires
         )  # don't assume the expected shape to be fixed
-        if batch_size == 1:
+        if batch_size is None:
+            is_state_batched = False
             density_matrix = np.outer(pure_state, np.conj(pure_state))
         else:
             density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
-    return _post_process(density_matrix, num_axes, like)
+    return _post_process(density_matrix, num_axes, like, is_state_batched)
 
 
-def _post_process(density_matrix, num_axes, like):
+def _post_process(density_matrix, num_axes, like, is_state_batched=True):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -75,6 +78,6 @@ def _post_process(density_matrix, num_axes, like):
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
-    if density_matrix.shape[0] == 1:  # non batch
+    if not is_state_batched:
         density_matrix = np.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)

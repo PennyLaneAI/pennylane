@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Channel, Observable, Operation, Operator
+from pennylane.operation import Channel, Observable, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
@@ -51,7 +51,14 @@ _INSTANCES_TO_TEST = [
     (qml.Projector([1], 0), {"skip_differentiation": True}),
     (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
-    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (
+        qml.QubitUnitary(np.eye(2), wires=[0]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.QubitUnitary(np.eye(4), wires=[0, 1]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
     (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
     (qml.PauliRot(1.1, "X", wires=[0]), {}),
@@ -150,13 +157,14 @@ _ABSTRACT_OR_META_TYPES = {
     qml.ops.ControlledOp,
     qml.ops.qubit.BasisStateProjector,
     qml.ops.qubit.StateVectorProjector,
-    qml.ops.qubit.StatePrepBase,
+    StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
     PowOpObs,
     PowOperation,
     PowObs,
     qml.StatePrep,
+    qml.FromBloq,
 }
 """Types that should not have actual instances created."""
 

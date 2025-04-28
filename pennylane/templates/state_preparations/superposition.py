@@ -53,7 +53,7 @@ def _assign_states(basis_list):
 
     .. code-block:: pycon
 
-        >>>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
+        >>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
         >>> _assign_states(basis_list)
         {
         [1, 1, 0, 0]: [0, 0, 0, 0],
