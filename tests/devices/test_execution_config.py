@@ -120,6 +120,7 @@ def test_str_representation():
         "    derivative_order=1,\n"
         "    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),\n"
         "    convert_to_numpy=True,\n"
+        "    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>,\n"
         ")"
     )
     assert str(config) == expected
