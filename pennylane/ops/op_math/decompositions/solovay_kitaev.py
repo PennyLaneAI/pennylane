@@ -21,18 +21,6 @@ import scipy as sp
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 
-_CLIFFORD_T_BASIS = {
-    "I": qml.Identity(0),
-    "X": qml.X(0),
-    "Y": qml.Y(0),
-    "Z": qml.Z(0),
-    "H": qml.Hadamard(0),
-    "T": qml.T(0),
-    "T*": qml.adjoint(qml.T(0)),
-    "S": qml.S(0),
-    "S*": qml.adjoint(qml.S(0)),
-}
-
 
 def _SU2_transform(matrix):
     r"""Perform a U(2) to SU(2) transformation via a global phase addition.
@@ -152,6 +140,18 @@ def _approximate_set(basis_gates, max_length=10):
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
+    _CLIFFORD_T_BASIS = {
+        "I": qml.Identity(0),
+        "X": qml.X(0),
+        "Y": qml.Y(0),
+        "Z": qml.Z(0),
+        "H": qml.Hadamard(0),
+        "T": qml.T(0),
+        "T*": qml.adjoint(qml.T(0)),
+        "S": qml.S(0),
+        "S*": qml.adjoint(qml.S(0)),
+    }
+
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
     t_set = {qml.T(0), qml.adjoint(qml.T(0))}
@@ -271,7 +271,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
 
     # Begin decomposition by computing the rotation operations V and W.
     v = qml.RX(phi, [0])
-    w = qml.RY(qml.math.where(axis[2] > 0, 2 * math.numpy.pi - phi, phi), [0])
+    w = qml.RY(qml.math.where(axis[2] > 0, 2 * math.pi - phi, phi), [0])
 
     # Get the similarity transormation matrices S and S.adjoint().
     ud = qml.math.linalg.eig(matrix)[1]
@@ -440,6 +440,18 @@ def sk_decomposition_jax(op, epsilon, max_depth=5, basis_set=("T", "T*", "H"), b
 
     with QueuingManager.stop_recording():
 
+        _CLIFFORD_T_BASIS = {
+            "I": qml.Identity(0),
+            "X": qml.X(0),
+            "Y": qml.Y(0),
+            "Z": qml.Z(0),
+            "H": qml.Hadamard(0),
+            "T": qml.T(0),
+            "T*": qml.adjoint(qml.T(0)),
+            "S": qml.S(0),
+            "S*": qml.adjoint(qml.S(0)),
+        }
+
         # Build the approximate set with caching
         approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
             tuple(basis_set), max_length=basis_length
@@ -461,18 +473,17 @@ def sk_decomposition_jax(op, epsilon, max_depth=5, basis_set=("T", "T*", "H"), b
         basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_set]
         adjop = [qml.adjoint(op, lazy=False) for op in basis]
         unqop = list(set([qml.I(0)] + basis + adjop))
-        mapop = dict(zip(unqop, range(len(unqop))))
 
-        int_basis = [mapop[op] for op in basis]
+        int_basis = [unqop.index(op) for op in basis]
         int_adjop = qml.math.zeros(len(int_basis) + 1, dtype=int)
-        for k, v in mapop.items():
-            int_adjop[v] = mapop[qml.adjoint(k, lazy=False)]
+        for k, v in enumerate(unqop):  # .items():
+            int_adjop[k] = unqop.index(qml.adjoint(v, lazy=False))
 
         approx_set_mat = qml.math.array(approx_set_mat)
         if has_jit:
             approx_set_idx = []
             for approx_set_id in approx_set_ids:
-                mapped_op = [mapop[op] for op in approx_set_id]
+                mapped_op = [unqop.index(op) for op in approx_set_id]
                 mapped_op = mapped_op + [0] * (basis_length - len(mapped_op))
                 approx_set_idx.append(mapped_op)
             approx_set_ids = qml.math.array(approx_set_idx)
@@ -589,7 +600,7 @@ def sk_decomposition_jax(op, epsilon, max_depth=5, basis_set=("T", "T*", "H"), b
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
     new_operations = new_tape.operations
 
-    return new_operations + [global_phase], mapop
+    return new_operations + [global_phase], unqop
 
 
 # pylint: disable=pointless-string-statement
