@@ -33,7 +33,7 @@ permissions: write-all
 
 jobs:
   determine_runner:
-    # if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
@@ -41,14 +41,12 @@ jobs:
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
-    # if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
     - uses: actions/checkout@v4
-    - uses: runora95/sphinx-action@sc-88376-upd-sphinx-pyth
-      env:
-        python_version: "3.10"
+    - uses: PennyLaneAI/sphinx-action@0.3
       with:
         docs-folder: "doc/"
         pre-build-command: >
@@ -56,7 +54,6 @@ jobs:
             && pip3 install -r doc/requirements.txt
             && pip3 install .
             && pip3 install openfermionpyscf
-            && apt install -y python3.10
         build-command: "sphinx-build -T -v -b html . _build -W "
 
     - name: Freeze dependencies
