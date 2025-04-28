@@ -249,7 +249,7 @@ class TestSnapshotGeneral:
                 qml.H(0)
             qml.Snapshot("sample", qml.sample(wires=0), shots=5)
             qml.Snapshot("counts", qml.counts(wires=0, all_outcomes=True), shots=20)
-            qml.Snapshot("probs", qml.probs(wires=0), shots=20)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=21)
             return qml.state()
 
         out = qml.snapshots(c)()
@@ -259,6 +259,26 @@ class TestSnapshotGeneral:
         if dev.name != "default.qutrit":
             # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
             assert not qml.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
+
+    def test_override_analytic(self, dev):
+        """Test that finite shots can be written with analytic calculations."""
+
+        if dev.name == "default.qutrit":
+            pytest.skip("hard to write generic test that works with qutrits.")
+
+        @qml.transform
+        def set_shots(tape, shots):
+            return (tape.copy(shots=shots),), lambda res: res[0]
+
+        @qml.qnode(dev, diff_method=None)
+        def c():
+            qml.H(0)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=None)
+            return qml.sample(wires=0)
+
+        out = qml.snapshots(set_shots(c, shots=10))()
+        assert qml.math.allclose(out["probs"], np.array([0.5, 0.5]))
+        assert out["execution_results"].shape == (10,)
 
 
 class TestSnapshotSupportedQNode:
