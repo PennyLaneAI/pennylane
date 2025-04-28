@@ -186,4 +186,4 @@ def phase_polynomial(
 
         i += 1
 
-    return parity_matrix, np.array(parity_table).T, angles
+    return parity_matrix, np.array(parity_table).T, np.array(angles)
