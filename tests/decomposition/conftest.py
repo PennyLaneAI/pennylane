@@ -27,7 +27,7 @@ decompositions = defaultdict(list)
 
 def to_resources(gate_count: dict) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count > 0})
+    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
