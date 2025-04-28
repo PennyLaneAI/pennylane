@@ -32,7 +32,7 @@ from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-branches, unused-argument
-def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
+def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-finding", **kwargs):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
     using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
@@ -78,6 +78,10 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
               Template not hardware compatible. Default encoding for matrices.
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
 
+        angle_solver (str): Specifies the method used to calculate the angles of the routine. Options include:
+
+            - ``"root-finding"``: effective in polynomials of degree up to 1000
+            - ``"iterative"``: useful in polynomials of higher degrees
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -217,7 +221,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
             else qml.PrepSelPrep(A, control=encoding_wires)
         )
 
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
 
         projectors = [
             qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
@@ -827,6 +831,7 @@ def _qsp_iterates(phis, x, interface):
 
     try:
         from jax import vmap
+
         interface = "jax"
         qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
     except ModuleNotFoundError:
@@ -843,7 +848,7 @@ def _qsp_iterates(phis, x, interface):
 try:
     from jax import jit
 
-    qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
+    _qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
 except ModuleNotFoundError:
     pass
 

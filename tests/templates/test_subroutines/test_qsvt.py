@@ -762,6 +762,45 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "poly",
+        [
+            (generate_polynomial_coeffs(4, 0)),
+            (generate_polynomial_coeffs(3, 1)),
+            (generate_polynomial_coeffs(6, 0)),
+            (generate_polynomial_coeffs(100, 0)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "angle_solver, optimizer_kwargs",
+        [
+            ("root-finding", {}),
+            ("iterative", {"method": "L-BFGS-B", "tol": 1e-15}),
+            ("iterative", {"method": "Newton-CG"}),
+        ],
+    )
+    def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver, optimizer_kwargs):
+        """Tests that angles generate desired poly"""
+
+        angles = qml.poly_to_angles(
+            list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs
+        )
+        x = np.random.uniform(low=-1.0, high=1.0)
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit_qsp():
+            qml.RX(2 * angles[0], wires=0)
+            for angle in angles[1:]:
+                qml.RZ(-2 * np.arccos(x), wires=0)
+                qml.RX(2 * angle, wires=0)
+
+            return qml.state()
+
+        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+        assert np.isclose(output.real, expected.real)
+
     @pytest.mark.parametrize(
         "poly",
         [
