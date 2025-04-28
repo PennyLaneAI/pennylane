@@ -19,6 +19,7 @@ This submodule contains the template for QFT.
 import functools
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
@@ -136,9 +137,10 @@ class QFT(Operation):
         "num_wires",
     }
 
-    def __init__(self, wires: WiresLike, id=None):
+    def __init__(self, wires: WiresLike, group="cyclic", id=None):
         wires = Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
+        self.hyperparameters["group"] = group
         super().__init__(wires=wires, id=id)
 
     def _flatten(self):
@@ -147,17 +149,26 @@ class QFT(Operation):
     @property
     def num_params(self):
         return 0
+    
+    @property
+    def group(self):
+        return self.hyperparameters["group"]
 
     def decomposition(self):
         return self.compute_decomposition(wires=self.wires)
 
     @staticmethod
     @functools.lru_cache()
-    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
-        return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
+    def compute_matrix(n_wires, group="cyclic"):  # pylint: disable=arguments-differ
+        if group == "cyclic": 
+            return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
+        if group == "Z2n":
+            return sp.hadamard(2**n_wires)
+        else:
+            raise NotImplementedError(f"Matrix representation of the QFT is not implemented for group={group}.")
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike, group="cyclic"):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -185,26 +196,39 @@ class QFT(Operation):
         """
         wires = Wires(wires)
         n_wires = len(wires)
+        
+        if group == "cyclic":
 
-        shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+            shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
-        shift_len = len(shifts)
-        decomp_ops = []
-        for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
+            shift_len = len(shifts)
+            decomp_ops = []
+            for i, wire in enumerate(wires):
+                decomp_ops.append(qml.Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
-                decomp_ops.append(op)
+                for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
+                    op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                    decomp_ops.append(op)
 
-        first_half_wires = wires[: n_wires // 2]
-        last_half_wires = wires[-(n_wires // 2) :]
+            first_half_wires = wires[: n_wires // 2]
+            last_half_wires = wires[-(n_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
-            decomp_ops.append(swap)
+            for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+                swap = qml.SWAP(wires=[wire1, wire2])
+                decomp_ops.append(swap)
 
-        return decomp_ops
+            return decomp_ops
+        
+        if group == "Z2n":
+
+            for wire in wires:
+                decomp_ops.append(qml.Hadamard(wire)) 
+
+            return decomp_ops
+        
+        else:
+            raise NotImplementedError(f"QFT over the group {group} is not implemented yet.")
+
 
     @property
     def resource_params(self) -> dict:

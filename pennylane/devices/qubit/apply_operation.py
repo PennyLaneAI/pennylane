@@ -626,6 +626,32 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 
 
 @apply_operation.register
+def apply_qft(op: qml.QFT, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply :class:`pennylane.QFT` operator to the quantum state, using 
+    a Fast Fourier Transform algorithm."""
+    if op.group == "symmetric":
+        return _apply_symmetric_fft(state)
+    if op.group == "cyclic":
+        return _apply_cyclic_fft(state)
+    if op.group == "Z2n":
+        return _apply_Z2n_fft(state)
+    raise NotImplementedError(f"QFT is not implemented for group={op.group}.")
+
+
+def _apply_symmetric_fft(state):
+    # TODO: use scipy's FFT? [need to check normalisation]
+    return state
+
+def _apply_Z2n_fft(state):
+    # TODO: Implement FFT for Z2n
+    return state
+    
+def _apply_cyclic_fft(state):
+    # TODO: use Snob2 FFT?
+    return state
+
+
+@apply_operation.register
 def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
