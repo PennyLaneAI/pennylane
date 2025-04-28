@@ -178,7 +178,7 @@
 
 * The boolean functions provided by ``pennylane.operation`` are deprecated. See each function's docstring
   for equivalent code. These include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``,
-  ``has_nopar``, ``has_unitary_gen``, ``is_measurement``, ``is_trainable``,
+  ``has_nopar``, ``has_unitary_gen``, ``is_measurement``,
   ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
 
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.

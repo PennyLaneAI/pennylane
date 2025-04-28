@@ -128,11 +128,14 @@ Returns:
 
 
 def _multipar_stopping_fn(obj):
-    return (
-        isinstance(obj, MeasurementProcess)
-        or len(obj.data) == 0
-        or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
-    )
+    try:
+        return (
+            isinstance(obj, MeasurementProcess)
+            or len(obj.data) == 0
+            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+        )
+    except qml.operation.TermsUndefinedError:
+        return True
 
 
 expand_multipar = create_expand_fn(

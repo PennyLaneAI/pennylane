@@ -2512,16 +2512,7 @@ def is_measurement(obj):
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``.
-
-    .. warning::
-
-        **Deprecated**: Use ``any(qml.math.requires_grad(p) for p in obj.parameters)`` instead.
-
     """
-    warnings.warn(
-        "is_trainable is deprecated. Use `any(qml.math.requires_grad(d) for d in op.data)` instead.",
-        PennyLaneDeprecationWarning,
-    )
     return any(qml.math.requires_grad(p) for p in obj.parameters)
 
 
