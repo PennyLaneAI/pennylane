@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ class TestPhasePolynomial:
 
     @pytest.mark.parametrize("circ, res", ((circ1, (pmat1, ptab1, angles1)),))
     def test_computation(self, circ, res):
-        """Test phase_polynomial computes the correct parity matrix and parity table"""
+        """Test phase_polynomial computes the correct parity matrix, parity table and angles"""
 
         pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
         pmat_true, ptab_true, angles_true = res
@@ -52,7 +52,7 @@ class TestPhasePolynomial:
         assert np.allclose(angles, angles_true)
 
     def test_verbose(self, capsys):
-        """Test the verbose output of check_cartan_decomp"""
+        """Test the verbose output of phase_polynomial"""
         _ = phase_polynomial(circ1, verbose=True)
         captured = capsys.readouterr()
         assert "Operator CNOT - #1" in captured.out

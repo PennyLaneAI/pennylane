@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Phase polynomial intermediate representation"""
-from typing import Iterable
+from typing import Sequence
 
 import numpy as np
 
@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def phase_polynomial(
-    circ: qml.tape.QuantumScript, wire_order: Iterable = None, verbose: bool = False
+    circ: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
 ):
     r"""
     Phase polynomial IR for circuits consisting of CNOT and RZ gates.
@@ -29,7 +29,7 @@ def phase_polynomial(
 
     .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |A \boldsymbol{x}\rangle.
 
-    Since the parity matrix :math:`A` is part of this description, both in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
+    Since the parity matrix :math:`A` is part of this description, :math:`p` and :math:`A` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
 
     The phase polynomial :math:`p(x)` is described in terms of its parity table and associated angles. For this, note that
     the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
@@ -37,16 +37,16 @@ def phase_polynomial(
     .. math:: \text{RZ}(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
 
     The parity table is made up of the `parities` :math:`\boldsymbol{x}` at the point in the circuit where the associated :class:`~RZ` gate is acting.
-    We thus simply collect the current parity and remember the angle.
-    Take for example the circuit ``[CNOT((0, 1)), RZ(theta, 1)], CNOT((0, 1))`` (read from left to right like a circuit diagram). We start by some arbitrary computational basis state
+    To track the impact of the gate, we thus simply collect the current parity and remember the angle.
+    Take for example the circuit ``[CNOT((0, 1)), RZ(theta, 1), CNOT((0, 1))]`` (read from left to right like a circuit diagram). We start in some arbitrary computational basis state
     ``x = [x1, x2]``. The first CNOT is transforming the input state to ``[x1, x1 ⊕ x2]``.
     For the action of ``RZ`` we remember the angle ``theta`` as well as the current parity ``x1 ⊕ x2`` on that wire.
-    The second CNOT gate undoes the parity change and restores the final computational basis state ``[x1, x2]``.
+    The second CNOT gate undoes the parity change and restores the original computational basis state ``[x1, x2]``.
 
-    Hence, the parity matrix is simply the identity, but the parity table is ``[[x1 ⊕ x2]]`` (or ``[[1, 1]]``) together with the angle ``theta`` in the list of angles ``[theta]``.
+    Hence, the parity matrix is simply the identity, but the parity table for the phase polynomial is ``[[x1 ⊕ x2]]`` (or ``[[1, 1]]``) together with the angle ``theta`` in the list of angles ``[theta]``.
     The computation of the circuit is thus simply
 
-    .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - (x_1 \oplus x_2) \right)} |x_1, x_2\rangle
+    .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - 2(x_1 \oplus x_2) \right)} |x_1, x_2\rangle
 
     The semantics of this function is roughly given by the following implementation:
 
@@ -90,7 +90,7 @@ def phase_polynomial(
     ...     qml.CNOT((0, 1)),
     ...     qml.CNOT((3, 1)),
     ...     qml.RZ(3, 1)
-    ... ], [])
+    ... ])
     >>> print(qml.drawer.tape_text(circ, decimals=0, wire_order=range(4)))
     0: ─╭X──RZ(1)─╭X──RZ(2)─╭●───────────┤
     1: ─╰●────────│─────────╰X─╭X──RZ(3)─┤
@@ -98,7 +98,7 @@ def phase_polynomial(
     3: ────────────────────────╰●────────┤
 
     The phase polynomial representation consisting of the parity matrix, parity table and associated
-    angles are given by ``phase_polynomial``.
+    angles are computed by ``phase_polynomial``.
 
     >>> pmat, ptab, angles = phase_polynomial(circ, wire_order=range(4))
 
@@ -171,12 +171,11 @@ def phase_polynomial(
             angles.append(op.data[0])  # append theta_i
             RZ_wire = wire_map[op.wires[0]]
 
-            parity_table.append(
-                parity_matrix[RZ_wire].copy()
-            )  # append _current_ parity (hence the copy)
+            # append _current_ parity (hence the copy)
+            parity_table.append(parity_matrix[RZ_wire].copy())
         else:
             raise TypeError(
-                f"phase polynomials can only handle CNOT and RZ operators, received {op}"
+                f"phase_polynomial can only handle CNOT and RZ operators, received {op}"
             )
 
         if verbose:
