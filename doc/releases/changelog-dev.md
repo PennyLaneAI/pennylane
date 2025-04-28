@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
+  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+
+  ```python
+  angles = np.array([1.0, 2.0, 3.0, 4.0])
+
+  wires = qml.registers({"control": 2, "target": 1})
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.SelectPauliRot(
+        angles,
+        control_wires=wires["control"],
+        target_wire=wires["target"],
+        rot_axis="Y")
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+  ```
+  
+
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
@@ -70,6 +97,28 @@
   
   This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
+* The :func:`~.transforms.decompose` transform now supports symbolic operators (e.g., `Adjoint` and `Controlled`) specified as strings in the `gate_set` argument
+  when the new graph-based decomposition system is enabled.
+  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+
+  ```python
+  from functools import partial
+  import pennylane as qml
+  
+  qml.decomposition.enable_graph()
+   
+  @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Toffoli(wires=[0, 1, 2])
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ───────────╭●───────────╭●────╭●──T──╭●─┤  
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤  
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
@@ -79,6 +128,12 @@
   decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
   further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
+  `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
+  aliases are also recognized as part of symbolic operators. For example, `"Adjoint(H)"` is now 
+  accepted as an alias for `"Adjoint(Hadamard)"`.
+  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
 * PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
   interface to maintain a list of special implementations.
