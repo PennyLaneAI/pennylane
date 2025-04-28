@@ -145,7 +145,7 @@ def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
     N is the number of spin orbitals.
     Each CDF term contains a basis rotation and a set of CZZ gates.
     """
-    Y2kp1 = Y2kp1dN2 * (N/10)**2
+    Y2kp1 = Y2kp1dN2 * (N/20)**2
     rotations = Trotter_cost(N, order)
     for key, value in rotations.items():
         rotations[key] = value * (Y2kp1/epsilon)**(1/(order)) * time
@@ -154,7 +154,7 @@ def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
 print('Spectroscopy simulation time')
 order = 6
 Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
-Y2kp1dN2 = 1
+Y2kp1dN2 = 0.1
 time = 1e3
 epsilon = 1e-3
 
@@ -296,21 +296,21 @@ def trotter_formulas():
     for eps in epsilons:
         eta = eps
         # 2nd order costs
-        spec_rotations = spectroscopy_longest(N, 2, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_rotations = spectroscopy_longest(N, 2, eps, -np.log(epsilon*eta)/eta, 1)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
         spec_av = active_volume(spec_rotations)
         results['2nd order']['T_gates'].append(spec_t)
         results['2nd order']['active_volume'].append(spec_av)
 
         # 4th order costs
-        spec_rotations = spectroscopy_longest(N, 4, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_rotations = spectroscopy_longest(N, 4, eps, -np.log(epsilon*eta)/eta, 0.1)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
         spec_av = active_volume(spec_rotations)
         results['4th order']['T_gates'].append(spec_t)
         results['4th order']['active_volume'].append(spec_av)
 
         # 6th order costs
-        spec_rotations = spectroscopy_longest(N, 6, eps, -np.log(epsilon*eta)/eta, Y2kp1dN2)
+        spec_rotations = spectroscopy_longest(N, 6, eps, -np.log(epsilon*eta)/eta, 0.01)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
         spec_av = active_volume(spec_rotations)
         results['6th order']['T_gates'].append(spec_t)
@@ -323,7 +323,7 @@ def trotter_formulas():
         ax1.plot(epsilons, results[alg]['T_gates'], marker='o', linestyle='-', label=alg)
     ax1.set_xlabel('Precision ($\\epsilon$, Ha)')
     ax1.set_ylabel('T-gate count')
-    ax1.set_title('T-gate Count vs Precision')
+    ax1.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}" + r"$\times 0.1^{(k/2-1)}$")
     ax1.grid(True, which="both", ls="-", alpha=0.2)
     ax1.legend()
     ax1.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
@@ -336,13 +336,16 @@ def trotter_formulas():
         ax2.plot(epsilons, results[alg]['active_volume'], marker='o', linestyle='-', label=alg)
     ax2.set_xlabel('Precision ($\\epsilon$, Ha)')
     ax2.set_ylabel('Active Volume')
-    ax2.set_title('Active Volume vs Precision')
+    ax2.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}" + r"$\times 0.1^{(k/2-1)}$")
     ax2.grid(True, which="both", ls="-", alpha=0.2)
     ax2.legend()
     ax2.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
     ax2.set_xscale('log')
     ax2.set_yscale('log')
     plt.tight_layout()
+
+
+
     # Save the figure
     save_path = '/Users/pablo.casares/Developer/pennylane/pennylane/labs/trotter_vs_qubitization/product_formulas.png'
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
