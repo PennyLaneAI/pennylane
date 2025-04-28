@@ -2401,13 +2401,13 @@ def not_tape(obj):
 
     .. warning::
 
-        **Deprecated**. Use ``isinstance(obj, qml.tape.QuantumScript)`` instead.
+        **Deprecated**. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.
     """
     warnings.warn(
-        "not_tape is deprecated. Use isinstance(obj, qml.tape.QuantumScript) instead.",
+        "not_tape is deprecated. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.",
         PennyLaneDeprecationWarning,
     )
-    return isinstance(obj, qml.tape.QuantumScript)
+    return not isinstance(obj, qml.tape.QuantumScript)
 
 
 @qml.BooleanFn

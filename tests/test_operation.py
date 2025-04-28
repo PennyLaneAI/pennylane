@@ -1701,6 +1701,19 @@ class TestCriteria:
             assert not both(self.rot)
             assert not both(self.exp)
 
+    def test_not_tape(self):
+        """Test the not_tape criterion."""
+
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert qml.operation.not_tape(2)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not qml.operation.not_tape(qml.tape.QuantumScript())
+
+    def test_defines_diagonalizing_gates(self):
+        """Test the defines_diagonalizing_gates criterion."""
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert qml.operation.defines_diagonalizing_gates(qml.X(0))
+
 
 pairs_of_ops = [
     (qml.S(0), qml.T(0)),
