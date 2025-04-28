@@ -100,7 +100,6 @@ autodoc_mock_imports = ["torch"]
 
 
 # Ignore warnings about duplicate entries in the table of contents
-# suppress_warnings = ["toc.duplicate_entry", "duplicate_declaration.c", "duplicate_declaration.cpp", "epub.duplicated_toc_entry", "toc.not_included","app.add_directive:duplicate object description of pennylane.bose.BoseWord.keys"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 

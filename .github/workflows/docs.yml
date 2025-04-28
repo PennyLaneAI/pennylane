@@ -54,7 +54,7 @@ jobs:
             && pip3 install -r doc/requirements.txt
             && pip3 install .
             && pip3 install openfermionpyscf
-        build-command: "sphinx-build -T -v -b html . _build -W "
+        build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Freeze dependencies
       shell: bash

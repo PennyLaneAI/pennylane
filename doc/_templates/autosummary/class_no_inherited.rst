@@ -3,7 +3,6 @@
 
 .. autoclass:: {{ fullname }}
    :show-inheritance:
-   :no-index:
 
    {% if '__init__' in methods %}
      {% set caught_result = methods.remove('__init__') %}
