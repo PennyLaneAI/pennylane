@@ -25,16 +25,16 @@ def phase_polynomial(
     r"""
     Phase polynomial IR for circuits consisting of CNOT and RZ gates.
 
-    The action of such circuits can be described by a phase polynomial :math:`p(x)` and a :func:`~parity_matrix` :math:`A` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
+    The action of such circuits can be described by a phase polynomial :math:`p(x)` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
 
-    .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |A \boldsymbol{x}\rangle.
+    .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |P \boldsymbol{x}\rangle.
 
-    Since the parity matrix :math:`A` is part of this description, :math:`p` and :math:`A` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
+    Since the parity matrix :math:`P` is part of this description, :math:`p` and :math:`P` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
 
     The phase polynomial :math:`p(x)` is described in terms of its parity table and associated angles. For this, note that
     the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
 
-    .. math:: \text{RZ}(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
+    .. math:: R_Z(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
 
     The parity table is made up of the `parities` :math:`\boldsymbol{x}` at the point in the circuit where the associated :class:`~RZ` gate is acting.
     To track the impact of the gate, we thus simply collect the current parity and remember the angle.
