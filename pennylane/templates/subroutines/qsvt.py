@@ -81,7 +81,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
         angle_solver (str): Specifies the method used to calculate the angles of the routine
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
-            - ``"root-finding"``: effective in polynomials of degree up to ~1000
+            - ``"root-finding"``: effective in polynomials of degree up to :math:`\sim 1000`
             - ``"iterative"``: useful in polynomials of higher degrees
 
     Returns:
@@ -1133,9 +1133,9 @@ def poly_to_angles(
 
         angle_solver (str): The method used to calculate the angles; either ``"root-finding"`` or ``"iterative"``.
             Default is ``"root-finding"``. ``"root-finding"`` is a method that works with all three routines, and
-            is effective for polynomials of degree up to ~1000.
+            is effective for polynomials of degree up to :math:`\sim 1000`.
             `"iterative"` employs an optimization method allowing angle computation
-            for polynomials of higher degree (>1000) for the ``"QSP"`` and ``"QSVT"`` routines.
+            for polynomials of higher degree (:math:`\gt 1000`) for the ``"QSP"`` and ``"QSVT"`` routines.
 
     Returns:
         (tensor-like): computed angles for the specified routine
