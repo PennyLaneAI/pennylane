@@ -302,8 +302,8 @@ class SampleMP(SampleMeasurement):
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1:
-                # If only one wire is sampled, flatten the list
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
                 outcome_sample = outcome_sample[0]
             samples.extend([outcome_sample] * count)
 
