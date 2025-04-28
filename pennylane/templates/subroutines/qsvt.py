@@ -1116,7 +1116,7 @@ def transform_angles(angles, routine1, routine2):
 
 
 def poly_to_angles(
-    poly, routine, angle_solver: Literal["root-finding"] = "root-finding", **optimizer_kwargs
+    poly, routine, angle_solver: Literal["root-finding"] = "root-finding"
 ):
     r"""
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
