@@ -112,7 +112,7 @@ def merge_powers(*params, wires, base, z, **__):
     _, struct = base.base._flatten()
     new_struct = (wires, *struct[1:])
     base_op = base.base._unflatten(params, new_struct)
-    qml.pow(base_op, z * base_op.z)
+    qml.pow(base_op, z * base.z)
 
 
 def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
