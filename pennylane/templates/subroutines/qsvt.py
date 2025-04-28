@@ -78,7 +78,8 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, angle_solver="root-f
               Template not hardware compatible. Default encoding for matrices.
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
 
-        angle_solver (str): Specifies the method used to calculate the angles of the routine. Options include:
+        angle_solver (str): Specifies the method used to calculate the angles of the routine
+            via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
             - ``"root-finding"``: effective in polynomials of degree up to 1000
             - ``"iterative"``: useful in polynomials of higher degrees
@@ -1131,10 +1132,11 @@ def poly_to_angles(
 
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
-        angle_solver (str): the method used to calculate the angles. It could be either `"root-finding"` or `"iterative"`.
-             Default is ``"root-finding"``. ``"root-finding"`` is a method that works with all three subroutines, giving
-             good results up to polynomials of degree 1000. `"iterative"`, on the other hand, is an optimization method
-             that allows to reach polynomials of higher degree for the ``"QSP"`` and ``"QSVT"`` subroutines.
+        angle_solver (str): The method used to calculate the angles; either `"root-finding"` or `"iterative"`.
+            Default is ``"root-finding"``. ``"root-finding"`` is a method that works with all three routines, and
+            is effective for polynomials of up to degree ~1000.
+            `"iterative"` employs an optimization method allowing angle computation
+            for polynomials of higher degree (>1000) for the ``"QSP"`` and ``"QSVT"`` routines.
 
     Returns:
         (tensor-like): computed angles for the specified routine
