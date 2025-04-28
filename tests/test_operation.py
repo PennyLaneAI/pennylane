@@ -1697,8 +1697,11 @@ class TestCriteria:
         both = qml.operation.has_gen & qml.operation.is_trainable
         with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert both(self.rx)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not both(self.cnot)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not both(self.rot)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
             assert not both(self.exp)
 
     def test_not_tape(self):

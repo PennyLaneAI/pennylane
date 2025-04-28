@@ -18,13 +18,13 @@ import contextlib
 import warnings
 
 import pennylane as qml
-from pennylane import math
+from pennylane.math import get_trainable_indices
 from pennylane.measurements import MeasurementProcess
 
 
 def _update_trainable_params(tape):
     params = tape.get_parameters(trainable_only=False)
-    tape.trainable_params = math.get_trainable_indices(params)
+    tape.trainable_params = get_trainable_indices(params)
 
 
 def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
