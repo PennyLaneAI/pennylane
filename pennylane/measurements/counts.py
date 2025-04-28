@@ -184,7 +184,7 @@ class CountsMP(SampleMeasurement):
 
     _shortname = "counts"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
@@ -381,6 +381,20 @@ class CountsMP(SampleMeasurement):
             self._include_all_outcomes(mapped_counts)
         else:
             _remove_unobserved_outcomes(mapped_counts)
+
+        if self.eigvals() is not None:
+            eigvals_dict = {k: qml.math.int64(0) for k in self.eigvals()}
+
+            def outcome_to_eigval(outcome: str):
+                return self.eigvals()[int(outcome, 2)]
+
+            for outcome, count in mapped_counts.items():
+                eigvals_dict[outcome_to_eigval(outcome)] += count
+
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
+            return eigvals_dict
+
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
