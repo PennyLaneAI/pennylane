@@ -54,8 +54,8 @@ def _cancel_adjoint_resource(*_, base_params, **__):
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    _, [_, metadata] = base.base._flatten()
-    new_struct = wires, metadata
+    _, struct = base.base._flatten()
+    new_struct = (wires, *struct[1:])
     base.base._unflatten(params, new_struct)
 
 
@@ -66,8 +66,8 @@ def _adjoint_rotation(base_class, base_params, **__):
 @register_resources(_adjoint_rotation)
 def adjoint_rotation(phi, wires, base, **__):
     """Decompose the adjoint of a rotation operator by negating the angle."""
-    _, [_, metadata] = base._flatten()
-    new_struct = wires, metadata
+    _, struct = base._flatten()
+    new_struct = (wires, *struct[1:])
     base._unflatten((-phi,), new_struct)
 
 
@@ -89,8 +89,8 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qml.for_loop(0, z)
     def _loop(i):
-        _, [_, metadata] = base._flatten()
-        new_struct = wires, metadata
+        _, struct = base._flatten()
+        new_struct = (wires, *struct[1:])
         base._unflatten(params, new_struct)
 
     _loop()
@@ -109,8 +109,8 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    _, [_, metadata] = base.base._flatten()
-    new_struct = wires, metadata
+    _, struct = base.base._flatten()
+    new_struct = (wires, *struct[1:])
     base_op = base.base._unflatten(params, new_struct)
     qml.pow(base_op, z * base_op.z)
 
@@ -129,8 +129,8 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    _, [_, metadata] = base.base._flatten()
-    new_struct = wires, metadata
+    _, struct = base.base._flatten()
+    new_struct = (wires, *struct[1:])
     base_op = base.base._unflatten(params, new_struct)
     qml.adjoint(qml.pow(base_op, z))
 
@@ -146,8 +146,8 @@ def pow_self_adjoint(*params, wires, base, z, **__):
     """Decompose the power of a self-adjoint operator, assumes z is an integer."""
 
     def f():
-        _, [_, metadata] = base._flatten()
-        new_struct = wires, metadata
+        _, struct = base.base._flatten()
+        new_struct = (wires, *struct[1:])
         base._unflatten(params, new_struct)
 
     qml.cond(z % 2 == 1, f)()
@@ -161,8 +161,8 @@ def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    _, [_, metadata] = base._flatten()
-    new_struct = wires, metadata
+    _, struct = base._flatten()
+    new_struct = (wires, *struct[1:])
     base._unflatten((phi * z,), new_struct)
 
 
@@ -173,8 +173,8 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    _, [_, metadata] = base._flatten()
-    new_struct = wires, metadata
+    _, struct = base._flatten()
+    new_struct = (wires, *struct[1:])
     base._unflatten(params, new_struct)
 
 
@@ -317,8 +317,8 @@ def _flip_control_adjoint_resource(
 def flip_control_adjoint(*params, wires, control_wires, control_values, work_wires, base, **__):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    _, [_, metadata] = base.base._flatten()
-    new_struct = wires, metadata
+    _, struct = base.base._flatten()
+    new_struct = (wires, *struct[1:])
     base_op = base.base._unflatten(params, new_struct)
     qml.adjoint(
         qml.ctrl(

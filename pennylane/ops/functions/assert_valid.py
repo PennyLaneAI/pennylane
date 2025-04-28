@@ -119,6 +119,10 @@ def _check_decomposition_new(op, heuristic_resources=False):
             )
             _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"Adjoint({type(op).__name__})"):
+        adj_op = qml.ops.Adjoint(op)
+        _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
