@@ -686,8 +686,9 @@ def _ctrl_phase_shift(phi, wire, subspace, control_data):
     Without controls, the first approach is nicer, because global phases usually are free
     operations. With controls, however, this approach would lead to a controlled global
     phase, which is equivalent to a phase shift on top of the controlled phase shift required
-    anyways. For the second approach, we may use the ctrl(compute-uncompute) pattern to avoid
-    controlling the Pauli-X operations, yielding two non-controlled Pauli-X gates and the
+    anyways. For the second approach, we may use
+    `the ctrl(compute-uncompute) pattern <https://iopscience.iop.org/article/10.1088/2058-9565/aaa5cc>`__
+    to avoid controlling the Pauli-X operations, yielding two non-controlled Pauli-X gates and the
     "main" controlled phase shift operation. We deem this decomposition to be better.
 
     Note that such considerations will be less relevant in the new decomposition framework in
