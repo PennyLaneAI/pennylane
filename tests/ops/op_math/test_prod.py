@@ -90,18 +90,6 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-def test_obs_attribute():
-    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
-    op = qml.prod(X(0), X(1), X(2))
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
-    ):
-        obs = op.obs
-
-    assert obs == (X(0), X(1), X(2))
-
-
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
@@ -526,6 +514,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Tests that prod explicitly checks that a single-arg is either an Operator or callable."""
         with pytest.raises(TypeError, match="Unexpected argument of type int passed to qml.prod"):
             prod(1)
+
+
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
 
 
 # pylint: disable=too-many-public-methods
