@@ -123,8 +123,29 @@
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
+  [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
+
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
+* Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
+  [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=10)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Snapshot("sample", measurement=qml.sample(qml.X(0)), shots=5)
+      return qml.sample(qml.X(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {'sample': array([-1., -1., -1., -1., -1.]),
+   'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
+  ```
 
 * Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
   decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
@@ -183,6 +204,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
+  [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
+
 * Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
 
@@ -211,6 +235,12 @@
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
+  [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
+
+* Fixes the repr for empty `Prod` and `Sum` instances to better communicate the existence of an empty instance.
+  [(#7346)](https://github.com/PennyLaneAI/pennylane/pull/7346)
 
 * Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
@@ -242,6 +272,9 @@
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
+  [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -254,4 +287,5 @@ Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
+Lee J. O'Riordan,
 Jake Zaia
