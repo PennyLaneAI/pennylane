@@ -273,6 +273,9 @@ class TestPowDecomposition:
         assert pow_of_self_adjoint.compute_resources(**op2.resource_params) == Resources()
         assert pow_of_self_adjoint.compute_resources(**op4.resource_params) == Resources()
 
+        with pytest.raises(DecompositionNotApplicable):
+            pow_of_self_adjoint.compute_resources(CustomOp, {}, z=0.5)
+
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 

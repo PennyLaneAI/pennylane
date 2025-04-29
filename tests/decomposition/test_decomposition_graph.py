@@ -596,3 +596,77 @@ class TestSymbolicDecompositions:
         assert graph.resource_estimate(op2) == to_resources({qml.H: 1})
         assert graph.resource_estimate(op3) == to_resources({qml.CH: 1})
         assert graph.resource_estimate(op4) == to_resources({qml.RX: 1})
+
+    def test_special_pow_decomps(self, _):
+        """Tests special cases for decomposing a power."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        graph = DecompositionGraph(
+            operations=[qml.pow(CustomOp(0), 0), qml.pow(CustomOp(1), 1)], gate_set={"CustomOp"}
+        )
+        # 3 operator nodes: Pow(CustomOp, 0), Pow(CustomOp, 1), and CustomOp
+        # 1 decomposition node for Pow(CustomOp, 0) and 1 node for Pow(CustomOp, 1)
+        # and the dummy starting node
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from decompositions to ops and 1 edge from ops to decompositions
+        # and 1 edge from the dummy starting node to the target gate set.
+        # and 1 edge from the dummy starting node to the empty decomposition.
+        assert len(graph._graph.edges()) == 5
+
+        op1 = qml.pow(CustomOp(0), 0)
+        op2 = qml.pow(CustomOp(1), 1)
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [CustomOp(1)]
+        assert graph.resource_estimate(op1) == to_resources({})
+        assert graph.resource_estimate(op2) == to_resources({CustomOp: 1})
+
+    def test_general_pow_decomps(self, _):
+        """Tests the more general power decomposition rules."""
+
+        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        graph = DecompositionGraph(
+            operations=[qml.pow(CustomOp(0), 2), qml.pow(qml.adjoint(CustomOp(1)), 2)],
+            gate_set={"CustomOp", "Adjoint(CustomOp)"},
+        )
+        # 5 operator nodes: Pow(CustomOp), Pow(Adjoint(CustomOp)), Adjoint(Pow(CustomOp)),
+        # Adjoint(CustomOp), CustomOp, and the dummy starting node
+        # 3 decomposition nodes for each of Pow(CustomOp), Pow(Adjoint(CustomOp)), Adjoint(Pow(CustomOp))
+        assert len(graph._graph.nodes()) == 9
+        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
+        # and 2 edges from the dummy starting node to the target gate set.
+        assert len(graph._graph.edges()) == 8
+
+        op1 = qml.pow(CustomOp(0), 2)
+        op2 = qml.pow(qml.adjoint(CustomOp(1)), 2)
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+
+        assert q.queue == [
+            CustomOp(0),
+            CustomOp(0),
+            qml.adjoint(qml.pow(CustomOp(1), 2)),
+        ]
