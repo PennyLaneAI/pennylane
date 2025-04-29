@@ -217,6 +217,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixes the repr for empty `Prod` and `Sum` instances to better communicate the existance of an empty instance.
+  [(#7346)](https://github.com/PennyLaneAI/pennylane/pull/7346)
 
 * Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
