@@ -115,7 +115,7 @@ def phase_polynomial(
     array([1, 2, 3])
 
     .. details::
-        :title: Usage Details
+        :title: Details
 
         We can go through explicitly reconstructing the output wavefunction.
         First, let us compute the exact wavefunction from the circuit.
