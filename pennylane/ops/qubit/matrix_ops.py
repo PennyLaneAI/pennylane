@@ -356,7 +356,7 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base_class, base_params):
+def _qubit_unitary_resource(base_class, base_params, **_):
     return {resource_rep(base_class, **base_params): 1}
 
 
@@ -582,7 +582,7 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qubit_unitary_resource(base_class, base_params):
+def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
     return {resource_rep(base_class, **base_params): 1}
 
 

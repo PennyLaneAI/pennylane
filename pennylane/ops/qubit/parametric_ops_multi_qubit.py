@@ -1753,7 +1753,6 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
 add_decomps("Adjoint(PSWAP)", adjoint_rotation)
-add_decomps("Pow(PSWAP)", pow_rotation)
 
 
 class CPhaseShift00(Operation):

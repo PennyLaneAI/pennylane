@@ -1881,10 +1881,10 @@ class ISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod2 = z % 2
-        if abs(z_mod2 - 0.5) < 1e-6:
+        z_mod4 = z % 4
+        if abs(z_mod4 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
-        return super().pow(z_mod2)
+        return super().pow(z_mod4)
 
 
 def _iswap_decomp_resources():
@@ -1905,21 +1905,21 @@ add_decomps(ISWAP, _iswap_decomp)
 
 
 def _pow_iswap_to_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    z_mod2 = z % 2
-    if z_mod2 == 0.5:
+    z_mod4 = z % 4
+    if z_mod4 == 0.5:
         return {SISWAP: 1}
-    if z != z_mod2:
-        return {pow_resource_rep(base_class, base_params, z=z_mod2): 1}
+    if z != z_mod4:
+        return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
     raise DecompositionNotApplicable
 
 
 @register_resources(_pow_iswap_to_siswap_resource)
 def _pow_iswap_to_siswap(wires, z, **__):
-    z_mod2 = z % 2
+    z_mod4 = z % 4
     qml.cond(
-        z_mod2 == 0.5,
+        z_mod4 == 0.5,
         lambda: SISWAP(wires=wires),
-        lambda: qml.pow(ISWAP(wires=wires), z_mod2),
+        lambda: qml.pow(ISWAP(wires=wires), z_mod4),
     )()
 
 
@@ -2120,7 +2120,7 @@ def _pow_siswap(wires, z, **__):
         qml.math.allclose(z_mod4, 2),
         lambda: ISWAP(wires=wires),
         lambda: qml.pow(SISWAP(wires=wires), z_mod4),
-    )
+    )()
 
 
 add_decomps("Pow(SISWAP)", _pow_siswap)
