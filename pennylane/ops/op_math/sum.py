@@ -281,7 +281,7 @@ class Sum(CompositeOp):
     def __str__(self):
         """String representation of the Sum."""
         if len(self) == 0:
-            return "Sum()"
+            return f"{type(self).__name__}()"
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
