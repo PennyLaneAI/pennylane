@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Phase Polynomials intermediate representation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Quantum circuit intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically offering a more efficient classical description for special classes of circuits.
 
 .. currentmodule:: pennylane.labs.intermediate_reps
 
