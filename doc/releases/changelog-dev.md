@@ -278,6 +278,10 @@
   for each individual operation in the observable, instead of the overall result.
   [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
 
+* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
+  [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
