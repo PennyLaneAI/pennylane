@@ -20,6 +20,21 @@
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=10)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Snapshot("sample", measurement=qml.sample(qml.X(0)), shots=5)
+      return qml.sample(qml.X(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {'sample': array([-1., -1., -1., -1., -1.]),
+   'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * Accessing terms of a tensor product (e.g., `op = X(0) @ X(1)`) via `op.obs` has been removed.
