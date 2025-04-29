@@ -19,7 +19,7 @@
 from collections import defaultdict
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionNotApplicable, Resources
+from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
