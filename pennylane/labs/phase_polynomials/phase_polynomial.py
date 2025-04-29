@@ -31,19 +31,19 @@ def phase_polynomial(
 
     Since the parity matrix :math:`P` is part of this description, :math:`p` and :math:`P` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
 
-    The phase polynomial :math:`p(\boldsymbol{x})` is described in terms of its parity table and associated angles. For this, note that
+    The phase polynomial :math:`p(\boldsymbol{x})` is described in terms of its parity table :math:`P_T` and associated angles. For this, note that
     the action of a :class:`~RZ` gate onto a computational basis state :math:`|x\rangle` is given by
 
     .. math:: R_Z(\theta) |x\rangle = e^{-i \frac{\theta}{2} (1 - 2x)} |x\rangle.
 
-    The parity table is made up of the `parities` :math:`\boldsymbol{x}` at the point in the circuit where the associated :class:`~RZ` gate is acting.
+    The parity table :math:`P_T` is made up of the `parities` :math:`\boldsymbol{x}` at the point in the circuit where the associated :class:`~RZ` gate is acting.
     To track the impact of the gate, we thus simply collect the current parity and remember the angle.
     Take for example the circuit ``[CNOT((0, 1)), RZ(theta, 1), CNOT((0, 1))]`` (read from left to right like a circuit diagram). We start in some arbitrary computational basis state
     ``x = [x1, x2]``. The first CNOT is transforming the input state to ``[x1, x1 ⊕ x2]``.
     For the action of ``RZ`` we remember the angle ``theta`` as well as the current parity ``x1 ⊕ x2`` on that wire.
     The second CNOT gate undoes the parity change and restores the original computational basis state ``[x1, x2]``.
 
-    Hence, the parity matrix is simply the identity, but the parity table for the phase polynomial is ``[[x1 ⊕ x2]]`` (or ``[[1, 1]]``) together with the angle ``theta`` in the list of angles ``[theta]``.
+    Hence, the parity matrix is simply the identity, but the parity table for the phase polynomial is ``P_T = [[x1 ⊕ x2]]`` (or ``[[1, 1]]``) together with the angle ``theta`` in the list of angles ``[theta]``.
     The computation of the circuit is thus simply
 
     .. math:: U |x_1, x_2\rangle = e^{-i \frac{\theta}{2} \left(1 - 2(x_1 \oplus x_2) \right)} |x_1, x_2\rangle
