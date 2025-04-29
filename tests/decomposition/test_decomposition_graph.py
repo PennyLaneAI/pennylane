@@ -613,26 +613,35 @@ class TestSymbolicDecompositions:
     def test_custom_symbolic_decompositions(self, _):
         """Tests that custom symbolic decompositions are used."""
 
+        @qml.register_resources({qml.RX: 1})
+        def my_adjoint_rx(theta, wires, **__):
+            qml.RX(-theta, wires=wires)
+
         graph = DecompositionGraph(
             operations=[
                 qml.adjoint(qml.H(0)),
                 qml.pow(qml.H(1), 3),
                 qml.ops.Controlled(qml.H(0), control_wires=1),
+                qml.adjoint(qml.RX(0.5, wires=0)),
             ],
-            gate_set={"H", "CH"},
+            fixed_decomps={"Adjoint(RX)": my_adjoint_rx},
+            gate_set={"H", "CH", "RX"},
         )
 
         op1 = qml.adjoint(qml.H(0))
         op2 = qml.pow(qml.H(1), 3)
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
+        op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
         graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
             graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
             graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            graph.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
 
-        assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0])]
+        assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0]), qml.RX(-0.5, wires=0)]
         assert graph.resource_estimate(op1) == to_resources({qml.H: 1})
         assert graph.resource_estimate(op2) == to_resources({qml.H: 1})
         assert graph.resource_estimate(op3) == to_resources({qml.CH: 1})
+        assert graph.resource_estimate(op4) == to_resources({qml.RX: 1})
