@@ -123,6 +123,10 @@ class WireCut(Operation):
     def __init__(self, wires: WiresLike = (), id=None):
         wires = Wires(wires)
         super().__init__(wires=wires, id=id)
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
 
     @staticmethod
     def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
