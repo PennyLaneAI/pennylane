@@ -22,8 +22,9 @@ from typing import Iterable, Optional, Union
 
 import numpy as np
 
-from pennylane import QuantumFunctionError, capture
+from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -48,10 +49,10 @@ def _create_parametrized_mid_measure_primitive():
 
     from pennylane.capture.custom_primitives import NonInterpPrimitive
 
-    mid_measure_p = NonInterpPrimitive("p_measure")
+    measure_in_basis_p = NonInterpPrimitive("measure_in_basis")
 
-    @mid_measure_p.def_impl
-    def _(wires, angle=0, plane="ZX", reset=False, postselect=None):
+    @measure_in_basis_p.def_impl
+    def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
         return _measure_impl(
             wires,
             measurement_class=ParametricMidMeasureMP,
@@ -61,12 +62,12 @@ def _create_parametrized_mid_measure_primitive():
             postselect=postselect,
         )
 
-    @mid_measure_p.def_abstract_eval
+    @measure_in_basis_p.def_abstract_eval
     def _(*_, **__):
         dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 
-    return mid_measure_p
+    return measure_in_basis_p
 
 
 def measure_arbitrary_basis(
