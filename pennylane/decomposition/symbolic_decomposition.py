@@ -93,7 +93,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
         new_struct = (wires, *struct[1:])
         base._unflatten(params, new_struct)
 
-    _loop()
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument

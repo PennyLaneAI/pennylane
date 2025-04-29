@@ -368,8 +368,6 @@ class TestControlledResourceRep:
     def test_nested_controlled_qubit_unitary(self):
         """Tests that a nested controlled qubit unitary is flattened."""
 
-        U = qml.math.eye(2)
-
         rep = controlled_resource_rep(
             qml.ops.Controlled,
             {

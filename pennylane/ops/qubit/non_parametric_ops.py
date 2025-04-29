@@ -28,10 +28,8 @@ import pennylane as qml
 from pennylane.decomposition import (
     DecompositionNotApplicable,
     add_decomps,
-    adjoint_resource_rep,
     pow_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import pow_of_self_adjoint, self_adjoint
 from pennylane.operation import Observable, Operation

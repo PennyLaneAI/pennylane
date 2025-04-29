@@ -222,10 +222,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         return op_node_idx
 
-    def _add_decomp(self, rule: DecompositionRule, op: CompressedResourceOp, op_idx: int):
+    def _add_decomp(self, rule: DecompositionRule, op_node: CompressedResourceOp, op_idx: int):
         """Adds a decomposition rule to the graph."""
         try:
-            decomp_resource = rule.compute_resources(**op.params)
+            decomp_resource = rule.compute_resources(**op_node.params)
             d_node = _DecompositionNode(rule, decomp_resource)
             d_node_idx = self._graph.add_node(d_node)
             if not decomp_resource.gate_counts:
