@@ -375,10 +375,10 @@ class TestControlledResourceRep:
             {
                 "base_class": qml.ControlledQubitUnitary,
                 "base_params": {
+                    "num_target_wires": 1,
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "base": qml.QubitUnitary(U, wires=[0]),
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,

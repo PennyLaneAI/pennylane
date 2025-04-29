@@ -23,6 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import pow_of_self_adjoint, self_adjoint
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops import Identity
 from pennylane.typing import TensorLike
@@ -357,6 +358,8 @@ def _qubitsum_to_cnots(wires: WiresLike, **__):
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
+add_decomps("Adjoint(QubitSum)", self_adjoint)
+add_decomps("Pow(QubitSum)", pow_of_self_adjoint)
 
 
 class IntegerComparator(Operation):

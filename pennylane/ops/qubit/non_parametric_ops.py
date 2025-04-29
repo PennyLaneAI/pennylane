@@ -25,7 +25,15 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import (
+    DecompositionNotApplicable,
+    add_decomps,
+    adjoint_resource_rep,
+    pow_resource_rep,
+    register_resources,
+    resource_rep,
+)
+from pennylane.decomposition.symbolic_decomposition import pow_of_self_adjoint, self_adjoint
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -230,6 +238,9 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+add_decomps("Adjoint(Hadamard)", self_adjoint)
+add_decomps("Pow(Hadamard)", pow_of_self_adjoint)
+
 
 H = Hadamard
 r"""H(wires)
@@ -449,17 +460,19 @@ Args:
 """
 
 
-def _paulix_to_rx_gp_resources():
+def _paulix_to_rx_resources():
     return {qml.GlobalPhase: 1, qml.RX: 1}
 
 
-@register_resources(_paulix_to_rx_gp_resources)
-def _paulix_to_rx_gp(wires: WiresLike, **__):
+@register_resources(_paulix_to_rx_resources)
+def _paulix_to_rx(wires: WiresLike, **__):
     qml.RX(np.pi, wires=wires)
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-add_decomps(PauliX, _paulix_to_rx_gp)
+add_decomps(PauliX, _paulix_to_rx)
+add_decomps("Adjoint(PauliX)", self_adjoint)
+add_decomps("Pow(PauliX)", pow_of_self_adjoint)
 
 
 class PauliY(Observable, Operation):
@@ -672,6 +685,8 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
+add_decomps("Adjoint(PauliY)", self_adjoint)
+add_decomps("Pow(PauliY)", pow_of_self_adjoint)
 
 
 class PauliZ(Observable, Operation):
@@ -892,6 +907,8 @@ def _pauliz_to_ps(wires: WiresLike, **__):
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
+add_decomps("Adjoint(PauliZ)", self_adjoint)
+add_decomps("Pow(PauliZ)", pow_of_self_adjoint)
 
 
 class S(Operation):
@@ -1042,6 +1059,33 @@ def _s_phaseshift(wires, **__):
 add_decomps(S, _s_phaseshift)
 
 
+def _pow_s_resource(base_class, base_params, z):  # pylint: disable=unused_argument
+    z_mod4 = z % 4
+    if z_mod4 == 0.5:
+        return {T: 1}
+    if z_mod4 == 2:
+        return {Z: 1}
+    if z != z_mod4:
+        return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
+    raise DecompositionNotApplicable
+
+
+@register_resources(_pow_s_resource)
+def _pow_s(wires, z, **__):
+    z_mod4 = z % 4
+    qml.cond(
+        z_mod4 == 0.5,
+        lambda: T(wires=wires),
+        lambda: qml.pow(S(wires), z_mod4),
+        elifs=[
+            (z_mod4 == 2, lambda: Z(wires=wires)),
+        ],
+    )()
+
+
+add_decomps("Pow(S)", _pow_s)
+
+
 class T(Operation):
     r"""T(wires)
     The single-qubit T gate
@@ -1190,6 +1234,33 @@ def _t_phaseshift(wires, **__):
 add_decomps(T, _t_phaseshift)
 
 
+def _pow_t_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    z_mod8 = z % 8
+    if z_mod8 == 2:
+        return {S: 1}
+    if z_mod8 == 4:
+        return {Z: 1}
+    if z != z_mod8:
+        return {pow_resource_rep(base_class, base_params, z=z_mod8): 1}
+    raise DecompositionNotApplicable
+
+
+@register_resources(_pow_t_resource)
+def _pow_t(wires, z, **__):
+    z_mod8 = z % 8
+    qml.cond(
+        z_mod8 == 2,
+        lambda: S(wires=wires),
+        lambda: qml.pow(T(wires), z_mod8),
+        elifs=[
+            (z_mod8 == 4, lambda: Z(wires=wires)),
+        ],
+    )()
+
+
+add_decomps("Pow(T)", _pow_t)
+
+
 class SX(Operation):
     r"""SX(wires)
     The single-qubit Square-Root X operator.
@@ -1327,19 +1398,39 @@ class SX(Operation):
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
-def _sx_to_rz_ry_rz_ps_resources():
-    return {qml.PhaseShift: 1, qml.RZ: 2, qml.RY: 1}
+def _sx_to_rx_resources():
+    return {qml.RX: 1, qml.GlobalPhase: 1}
 
 
-@register_resources(_sx_to_rz_ry_rz_ps_resources)
-def _sx_to_rz_ry_rz_ps(wires: WiresLike, **__):
-    qml.RZ(np.pi / 2, wires=wires)
-    qml.RY(np.pi / 2, wires=wires)
-    qml.RZ(-np.pi, wires=wires)
-    qml.PhaseShift(np.pi / 2, wires=wires)
+@register_resources(_sx_to_rx_resources)
+def _sx_to_rx(wires: WiresLike, **__):
+    qml.RX(np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 4, wires=wires)
 
 
-add_decomps(SX, _sx_to_rz_ry_rz_ps)
+add_decomps(SX, _sx_to_rx)
+
+
+def _pow_sx_to_x_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    z_mod4 = z % 4
+    if z_mod4 == 2:
+        return {X: 1}
+    if z != z_mod4:
+        return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
+    raise DecompositionNotApplicable
+
+
+@register_resources(_pow_sx_to_x_resource)
+def _pow_sx_to_x(*params, wires, z, base, **__):  # pylint: disable=unused-argument
+    z_mod4 = z % 4
+    qml.cond(
+        z_mod4 == 2,
+        lambda: X(wires=wires),
+        lambda: qml.pow(SX(wires), z_mod4),
+    )()
+
+
+add_decomps("Pow(SX)", _pow_sx_to_x)
 
 
 class SWAP(Operation):
@@ -1494,6 +1585,8 @@ def _swap_to_cnot(wires, **__):
 
 
 add_decomps(SWAP, _swap_to_cnot)
+add_decomps("Adjoint(SWAP)", self_adjoint)
+add_decomps("Pow(SWAP)", pow_of_self_adjoint)
 
 
 class ECR(Operation):
@@ -1657,6 +1750,8 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
+add_decomps("Adjoint(ECR)", self_adjoint)
+add_decomps("Pow(ECR)", pow_of_self_adjoint)
 
 
 class ISWAP(Operation):
@@ -1809,6 +1904,28 @@ def _iswap_decomp(wires, **__):
 
 
 add_decomps(ISWAP, _iswap_decomp)
+
+
+def _pow_iswap_to_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    z_mod2 = z % 2
+    if z_mod2 == 0.5:
+        return {SISWAP: 1}
+    if z != z_mod2:
+        return {pow_resource_rep(base_class, base_params, z=z_mod2): 1}
+    raise DecompositionNotApplicable
+
+
+@register_resources(_pow_iswap_to_siswap_resource)
+def _pow_iswap_to_siswap(wires, z, **__):
+    z_mod2 = z % 2
+    qml.cond(
+        z_mod2 == 0.5,
+        lambda: SISWAP(wires=wires),
+        lambda: qml.pow(ISWAP(wires=wires), z_mod2),
+    )()
+
+
+add_decomps("Pow(ISWAP)", _pow_iswap_to_siswap)
 
 
 class SISWAP(Operation):
@@ -1987,5 +2104,28 @@ def _siswap_decomp(wires, **__):
 
 
 add_decomps(SISWAP, _siswap_decomp)
+
+
+def _pow_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+    z_mod4 = z % 4
+    if qml.math.allclose(z_mod4, 2):
+        return {ISWAP: 1}
+    if z != z_mod4:
+        return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
+    raise DecompositionNotApplicable
+
+
+@register_resources(_pow_siswap_resource)
+def _pow_siswap(wires, z, **__):
+    z_mod4 = z % 4
+    qml.cond(
+        qml.math.allclose(z_mod4, 2),
+        lambda: ISWAP(wires=wires),
+        lambda: qml.pow(SISWAP(wires=wires), z_mod4),
+    )
+
+
+add_decomps("Pow(SISWAP)", _pow_siswap)
+
 
 SQISW = SISWAP

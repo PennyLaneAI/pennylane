@@ -449,7 +449,7 @@ class TestControlledDecompositions:
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
 
-    def test_adjoint_adjoint(self, _):
+    def test_cancel_adjoint(self, _):
         """Tests that a nested adjoint operator is flattened properly."""
 
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=[0])))
@@ -467,26 +467,6 @@ class TestSymbolicDecompositions:
         assert q.queue == [qml.RX(0.5, wires=[0])]
         assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
 
-    def test_adjoint_pow(self, _):
-        """tests that an adjoint of a power of am operator that has adjoint is decomposed."""
-
-        op = qml.adjoint(qml.pow(qml.H(0), z=3))
-
-        graph = DecompositionGraph(operations=[op], gate_set={"H"})
-        # 3 operator nodes: Adjoint(Pow(H)), Pow(H), and H, and 1 dummy starting node
-        # 1 decomposition nodes for Adjoint(Pow(H)) and two decomposition nodes for Pow(H)
-        assert len(graph._graph.nodes()) == 7
-        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
-        # and 1 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 7
-
-        graph.solve()
-        with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
-
-        assert q.queue == [qml.pow(qml.H(0), z=3)]
-        assert graph.resource_estimate(op) == to_resources({qml.H: 1})
-
     def test_adjoint_custom(self, _):
         """Tests adjoint of an operator that defines its own adjoint."""
 
@@ -503,35 +483,6 @@ class TestSymbolicDecompositions:
 
         assert q.queue == [qml.RX(-0.5, wires=[0])]
         assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
-
-    def test_adjoint_controlled(self, _):
-        """Tests that the adjoint of a controlled operator is decomposed properly."""
-
-        op = qml.adjoint(qml.ops.Controlled(qml.RX(0.5, wires=[0]), control_wires=1))
-        op2 = qml.adjoint(qml.ctrl(qml.U1(0.5, wires=0), control=[1]))
-
-        graph = DecompositionGraph(operations=[op, op2], gate_set={"ControlledPhaseShift", "CRX"})
-        # 5 operator nodes: Adjoint(C(RX)), Adjoint(C(U1)), CRX, C(U1), ControlledPhaseShift
-        # 3 decomposition nodes leading into Adjoint(C(RX)), Adjoint(C(U1)), and C(U1)
-        # and the dummy starting node
-        assert len(graph._graph.nodes()) == 9
-        # 3 edges from decompositions to ops and 3 edges from ops to decompositions,
-        # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 8
-
-        graph.solve()
-        with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-
-        assert q.queue == [qml.CRX(-0.5, wires=[1, 0]), qml.ctrl(qml.U1(-0.5, wires=0), control=1)]
-
-        op3 = qml.ctrl(qml.U1(-0.5, wires=0), control=1)
-        with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-
-        assert q.queue == [qml.ControlledPhaseShift(-0.5, wires=[1, 0])]
-        assert graph.resource_estimate(op2) == to_resources({qml.ControlledPhaseShift: 1})
 
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
@@ -560,13 +511,12 @@ class TestSymbolicDecompositions:
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 10 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX, A(PhaseShift), PhaseShift
-        # 5 decomposition nodes for: A(CustomOp), A(CNOT), A(RX), A(T), A(PhaseShift)
-        # 2 decomposition nodes for A(H)
+        # 6 decomposition nodes for: A(CustomOp), A(CNOT), A(RX), A(T), A(PhaseShift), A(H)
         # 1 dummy starting node
-        assert len(graph._graph.nodes()) == 18
-        # 10 edges from ops to decompositions and 7 edges from decompositions to ops.
+        assert len(graph._graph.nodes()) == 17
+        # 9 edges from ops to decompositions and 6 edges from decompositions to ops.
         # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 21
+        assert len(graph._graph.edges()) == 19
 
         graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
@@ -589,12 +539,13 @@ class TestSymbolicDecompositions:
         op = qml.pow(qml.pow(qml.H(0), 3), 2)
         graph = DecompositionGraph(operations=[op], gate_set={"H"})
         # 3 operator nodes: Pow(Pow(H)), Pow(H), and H
-        # 1 decomposition nodes for Pow(Pow(H)) and 2 nodes for Pow(H)
+        # 1 decomposition nodes for Pow(Pow(H)) and 1 nodes for Pow(H)
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 7
-        # 3 edges from decompositions to ops and 3 edges from ops to decompositions
-        # and 1 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 7
+        assert len(graph._graph.nodes()) == 5
+        # 2 edges from decompositions to ops and 1 edge from ops to decompositions
+        # and 1 edge from the dummy starting node to the target gate set. Note that
+        # H**6 decomposes to nothing, so H isn't counted.
+        assert len(graph._graph.edges()) == 4
 
         graph.solve()
         with qml.queuing.AnnotatedQueue() as q:

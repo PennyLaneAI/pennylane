@@ -326,7 +326,7 @@ def controlled_resource_rep(
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
-        base_params = base_params["base"].resource_params
+        base_params = {"num_wires": base_params["num_target_wires"]}
 
     return CompressedResourceOp(
         qml.ops.Controlled,

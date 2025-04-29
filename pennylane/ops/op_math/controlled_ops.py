@@ -24,6 +24,12 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_of_self_adjoint,
+    pow_rotation,
+    self_adjoint,
+)
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.typing import TensorLike
@@ -103,7 +109,12 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"base", "num_control_wires", "num_zero_control_values", "num_work_wires"}
+    resource_keys = {
+        "num_target_wires",
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+    }
 
     grad_method = None
     """Gradient computation method."""
@@ -171,7 +182,7 @@ class ControlledQubitUnitary(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {
-            "base": self.base,
+            "num_target_wires": len(self.base.wires),
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
@@ -329,6 +340,8 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
+add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Pow(CH)", pow_of_self_adjoint)
 
 
 class CY(ControlledOp):
@@ -462,6 +475,8 @@ def _cy(wires: WiresLike, **__):
 
 
 add_decomps(CY, _cy)
+add_decomps("Adjoint(CY)", self_adjoint)
+add_decomps("Pow(CY)", pow_of_self_adjoint)
 
 
 class CZ(ControlledOp):
@@ -578,6 +593,8 @@ def _cz_to_cnot(wires: WiresLike, **__):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
+add_decomps("Adjoint(CZ)", self_adjoint)
+add_decomps("Pow(CZ)", pow_of_self_adjoint)
 
 
 class CSWAP(ControlledOp):
@@ -728,6 +745,8 @@ def _cswap(wires: WiresLike, **__):
 
 
 add_decomps(CSWAP, _cswap)
+add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Pow(CSWAP)", pow_of_self_adjoint)
 
 
 class CCZ(ControlledOp):
@@ -924,6 +943,8 @@ def _ccz(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz)
+add_decomps("Adjoint(CCZ)", self_adjoint)
+add_decomps("Pow(CCZ)", pow_of_self_adjoint)
 
 
 class CNOT(ControlledOp):
@@ -1054,6 +1075,8 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
 
 
 add_decomps(CNOT, _cnot_to_cz_h)
+add_decomps("Adjoint(CNOT)", self_adjoint)
+add_decomps("Pow(CNOT)", pow_of_self_adjoint)
 
 
 class Toffoli(ControlledOp):
@@ -1266,6 +1289,8 @@ def _toffoli(wires: WiresLike, **__):
 
 
 add_decomps(Toffoli, _toffoli)
+add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Pow(Toffoli)", pow_of_self_adjoint)
 
 
 class MultiControlledX(ControlledOp):
@@ -1547,6 +1572,10 @@ class MultiControlledX(ControlledOp):
         )
 
 
+add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Pow(MultiControlledX)", pow_of_self_adjoint)
+
+
 class CRX(ControlledOp):
     r"""The controlled-RX operator
 
@@ -1752,6 +1781,8 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
+add_decomps("Adjoint(CRX)", adjoint_rotation)
+add_decomps("Pow(CRX)", pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -1929,6 +1960,8 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRY, _cry)
+add_decomps("Adjoint(CRY)", adjoint_rotation)
+add_decomps("Pow(CRY)", pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2147,6 +2180,8 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRZ, _crz)
+add_decomps("Adjoint(CRZ)", adjoint_rotation)
+add_decomps("Pow(CRZ)", pow_rotation)
 
 
 class CRot(ControlledOp):
@@ -2365,6 +2400,14 @@ def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLik
 add_decomps(CRot, _crot)
 
 
+@register_resources({CRot: 1})
+def _adjoint_crot(phi, theta, omega, wires, **_):
+    CRot(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(CRot)", _adjoint_crot)
+
+
 class ControlledPhaseShift(ControlledOp):
     r"""A qubit controlled phase shift.
 
@@ -2565,5 +2608,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
 CPhase = ControlledPhaseShift
