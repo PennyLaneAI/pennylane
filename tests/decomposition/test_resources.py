@@ -488,12 +488,3 @@ class TestSymbolicResourceRep:
 
         op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
         assert op.resource_params == rep.params
-
-    def test_non_integer_pow_not_supported(self):
-        """Tests that non-integer power is not supported yet."""
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)
