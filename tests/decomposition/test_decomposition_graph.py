@@ -609,3 +609,30 @@ class TestSymbolicDecompositions:
 
         assert q.queue == []
         assert graph.resource_estimate(op2) == to_resources({})
+
+    def test_custom_symbolic_decompositions(self, _):
+        """Tests that custom symbolic decompositions are used."""
+
+        graph = DecompositionGraph(
+            operations=[
+                qml.adjoint(qml.H(0)),
+                qml.pow(qml.H(1), 3),
+                qml.ops.Controlled(qml.H(0), control_wires=1),
+            ],
+            gate_set={"H", "CH"},
+        )
+
+        op1 = qml.adjoint(qml.H(0))
+        op2 = qml.pow(qml.H(1), 3)
+        op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
+
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+
+        assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0])]
+        assert graph.resource_estimate(op1) == to_resources({qml.H: 1})
+        assert graph.resource_estimate(op2) == to_resources({qml.H: 1})
+        assert graph.resource_estimate(op3) == to_resources({qml.CH: 1})

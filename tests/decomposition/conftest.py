@@ -128,8 +128,8 @@ decompositions["T"] = [_t_ps]
 
 
 @qml.register_resources({qml.H: 1})
-def _adjoint_hadamard(*_, **__):
-    raise NotImplementedError
+def _adjoint_hadamard(*_, wires, **__):
+    qml.H(wires)
 
 
 decompositions["Adjoint(Hadamard)"] = [_adjoint_hadamard]
@@ -154,5 +154,9 @@ def _controlled_hadamard_resource(num_control_wires, num_zero_control_values, **
 
 
 @qml.register_resources(_controlled_hadamard_resource)
-def _controlled_hadamard(*_, **__):
-    raise NotImplementedError
+def _controlled_hadamard(*_, wires, control_values, **__):
+    if not control_values[0]:
+        qml.PauliX(wires=wires[0])
+    qml.CH(wires=wires)
+    if not control_values[0]:
+        qml.PauliX(wires=wires[0])
