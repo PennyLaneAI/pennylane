@@ -19,7 +19,7 @@
 from collections import defaultdict
 
 import pennylane as qml
-from pennylane.decomposition import Resources
+from pennylane.decomposition import DecompositionNotApplicable, Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
@@ -125,3 +125,34 @@ def _t_ps(wires, **__):
 
 
 decompositions["T"] = [_t_ps]
+
+
+@qml.register_resources({qml.H: 1})
+def _adjoint_hadamard(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["Adjoint(Hadamard)"] = [_adjoint_hadamard]
+
+
+def _pow_hadamard_resource(z, **__):
+    return {qml.H: z % 2}
+
+
+@qml.register_resources(_pow_hadamard_resource)
+def _pow_hadamard(*_, wires, z, **__):
+    qml.cond(z % 2 == 1, qml.H)(wires=wires)
+
+
+decompositions["Pow(Hadamard)"] = [_pow_hadamard]
+
+
+def _controlled_hadamard_resource(num_control_wires, num_zero_control_values, **__):
+    if num_control_wires > 1:
+        raise DecompositionNotApplicable
+    return {qml.CH: 1, qml.X: num_zero_control_values * 2}
+
+
+@qml.register_resources(_controlled_hadamard_resource)
+def _controlled_hadamard(*_, **__):
+    raise NotImplementedError

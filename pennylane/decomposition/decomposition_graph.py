@@ -54,6 +54,8 @@ from .symbolic_decomposition import (
 )
 from .utils import DecompositionError, DecompositionNotApplicable, translate_op_alias
 
+NULL = "null"  # sentinel value for the start node in the graph
+
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     """A graph that models a decomposition problem.
@@ -136,7 +138,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
-        self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
@@ -150,6 +151,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._visitor = None
 
         # Construct the decomposition graph
+        self._start = self._graph.add_node(NULL)
         self._construct_graph(operations)
 
     def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
@@ -196,7 +198,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            self._target_ops_indices.add(op_node_idx)
+            self._graph.add_edge(self._start, op_node_idx, 1)
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
@@ -287,6 +289,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         d_node = _DecompositionNode(rule, decomp_resource)
         d_node_idx = self._graph.add_node(d_node)
+        if not decomp_resource.gate_counts:
+            # If an operator decomposes to nothing (e.g., a Hadamard raised to a
+            # power of 2), we must still connect something to this decomposition
+            # node so that it is accounted for.
+            self._graph.add_edge(self._start, d_node_idx, 0)
         for op in decomp_resource.gate_counts:
             op_node_idx = self._recursively_add_op_node(op)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
@@ -302,17 +309,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         """
         self._visitor = _DecompositionSearchVisitor(self._graph, self._original_ops_indices, lazy)
-        start = self._graph.add_node("dummy")
-        self._graph.add_edges_from(
-            [(start, op_node_idx, 1) for op_node_idx in self._target_ops_indices]
-        )
         rx.dijkstra_search(
             self._graph,
-            source=[start],
+            source=[self._start],
             weight_fn=self._visitor.edge_weight,
             visitor=self._visitor,
         )
-        self._graph.remove_node(start)
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
             op_names = set(op.name for op in unsolved_ops)
@@ -450,6 +452,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             return  # nothing is to be done for edges leading to an operator node
         if target_idx not in self.distances:
             self.distances[target_idx] = Resources()  # initialize with empty resource
+        if src_node == NULL:
+            return  # special case for when the decomposition produces nothing
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
         if target_idx not in self._num_edges_examined:
             self._num_edges_examined[target_idx] = 0
@@ -465,7 +469,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         """Triggered when an edge is relaxed during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
-        if self._graph[src_idx] == "dummy":
+        if self._graph[src_idx] == NULL and not isinstance(target_node, _DecompositionNode):
             self.distances[target_idx] = Resources({target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
