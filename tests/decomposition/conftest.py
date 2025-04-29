@@ -145,18 +145,3 @@ def _pow_hadamard(*_, wires, z, **__):
 
 
 decompositions["Pow(Hadamard)"] = [_pow_hadamard]
-
-
-def _controlled_hadamard_resource(num_control_wires, num_zero_control_values, **__):
-    if num_control_wires > 1:
-        raise DecompositionNotApplicable
-    return {qml.CH: 1, qml.X: num_zero_control_values * 2}
-
-
-@qml.register_resources(_controlled_hadamard_resource)
-def _controlled_hadamard(*_, wires, control_values, **__):
-    if not control_values[0]:
-        qml.PauliX(wires=wires[0])
-    qml.CH(wires=wires)
-    if not control_values[0]:
-        qml.PauliX(wires=wires[0])

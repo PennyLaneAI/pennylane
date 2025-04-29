@@ -182,9 +182,6 @@ class TestDecompositionRule:
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
-            pass
-
         @qml.register_resources({qml.RX: 1, qml.RZ: 1})
         def my_adjoint_custom_op(theta, wires, **__):
             qml.RX(theta, wires=wires[0])
