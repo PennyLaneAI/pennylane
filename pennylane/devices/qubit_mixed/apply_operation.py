@@ -678,7 +678,10 @@ def apply_snapshot(
         measurement = op.hyperparameters.get(
             "measurement", None
         )  # default: None, meaning no measurement, simply copy the state
-        shots = execution_kwargs.get("tape_shots", None)  # default: None, analytic
+        if op.hyperparameters["shots"] == "workflow":
+            shots = execution_kwargs.get("tape_shots")
+        else:
+            shots = op.hyperparameters["shots"]
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
@@ -690,7 +693,7 @@ def apply_snapshot(
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )
+            )[0]
 
         # Store snapshot with optional tag
         if op.tag:
