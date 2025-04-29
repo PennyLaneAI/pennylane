@@ -25,9 +25,9 @@ def phase_polynomial(
     r"""
     Phase polynomial IR for circuits consisting of CNOT and RZ gates.
 
-    The action of such circuits can be described by a phase polynomial :math:`p(x)` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
+    The action of such circuits can be described by a phase polynomial :math:`p(\boldsymbol{x})` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
 
-    .. math:: U |\boldsymbol{x}\rangle = e^{i p(x)} |P \boldsymbol{x}\rangle.
+    .. math:: U |\boldsymbol{x}\rangle = e^{i p(\boldsymbol{x})} |P \boldsymbol{x}\rangle.
 
     Since the parity matrix :math:`P` is part of this description, :math:`p` and :math:`P` in conjunction are sometimes referred to as the phase polynomial intermediate representation (IR).
 
