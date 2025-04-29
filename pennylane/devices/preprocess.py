@@ -534,3 +534,11 @@ def validate_measurements(
                 )
 
     return (tape,), null_postprocessing
+
+
+@transform
+def set_shots(tape: QuantumScript, shots: int) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Sets the shot(s) of a given tape"""
+    if tape.shots != shots:
+        tape = tape.copy(shots=shots)
+    return (tape,), null_postprocessing
