@@ -179,7 +179,10 @@ def apply_snapshot(
     if debugger and debugger.active:
         measurement = op.hyperparameters["measurement"]
 
-        shots = execution_kwargs.get("tape_shots")
+        if op.hyperparameters["shots"] == "workflow":
+            shots = execution_kwargs.get("tape_shots")
+        else:
+            shots = op.hyperparameters["shots"]
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
