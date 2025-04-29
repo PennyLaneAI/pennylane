@@ -23,6 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.wires import WiresLike
+from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -67,18 +68,18 @@ def _get_op_call_graph():
 
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
-def map_to_bloq():
+def _map_to_bloq():
     @singledispatch
     def _to_qt_bloq(op):
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation):
+    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation, mapping: dict):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
         return TextbookQPE(
-            unitary=map_to_bloq()(op.hyperparameters["unitary"]),
+            unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
             ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
         )
 
@@ -735,7 +736,7 @@ def _inherit_from_bloq(cls):
 
                     # 2. Add each operation to the composite Bloq.
                     for op in ops:
-                        bloq = map_to_bloq()(op)
+                        bloq = _map_to_bloq()(op)
                         if bloq.signature == qt.Signature([]):
                             bb.add(bloq)
                             continue
@@ -872,3 +873,44 @@ class ToBloq:
 
     def __call__(self, *args, **kwargs):
         raise ImportError(self._error_message)
+
+def to_bloq(circuit: QNode | Operation, map_ops: bool = True, custom_mapping: dict = None):
+    """
+    Converts the given circuit or :class:`~.Operation and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+    
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        circuit (QNode | Operation): a QNode or an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
+        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
+            as a `ToBloq`. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. A default mapping is used if not defined.
+
+    Returns:
+        Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation and
+            options.
+
+    **Example**
+
+    This example shows how to use ``qml.to_bloq``:
+
+    >>> qt_bloq = qml.to_bloq(qml.CNOT([0, 1]))
+    qt.CNOT()
+
+    .. details::
+        :title: Usage Details
+
+        Difference between mapping and wrapping:
+    """
+
+    if map_ops:
+        return _map_to_bloq()(circuit, custom_mapping)
+    
+    return ToBloq(circuit)
