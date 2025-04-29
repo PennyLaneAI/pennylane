@@ -13,8 +13,11 @@
 # limitations under the License.
 """Tests for the BCH approximation"""
 
+import math
+
 import numpy as np
 import pytest
+from scipy.linalg import expm, logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -56,6 +59,47 @@ def test_second_order(fragments):
         expected += fragment
 
     assert np.allclose(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "fragments",
+    [
+        {"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
+        {"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))},
+    ],
+)
+def test_fourth_order_two_fragments(fragments):
+    """Test against the fourth order Trotter error formula on two fragments"""
+
+    u = 1 / (4 - (4 ** (1 / 3)))
+    second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
+    fourth_order = ProductFormula(
+        [second_order(u) ** 2, second_order(1 - 4 * u), second_order(u) ** 2]
+    )
+
+    eff = effective_hamiltonian(fourth_order, fragments, order=5)
+    error = np.linalg.norm(eff - sum(fragments.values()))
+
+    commutator_coeffs = {
+        ("X", "X", "X", "Y", "X"): 0.0047,
+        ("X", "X", "Y", "Y", "X"): 0.0057,
+        ("X", "Y", "X", "Y", "X"): 0.0046,
+        ("X", "Y", "Y", "Y", "X"): 0.0074,
+        ("Y", "X", "X", "Y", "X"): 0.0097,
+        ("Y", "X", "Y", "Y", "X"): 0.0097,
+        ("Y", "Y", "X", "Y", "X"): 0.0173,
+        ("Y", "Y", "Y", "Y", "X"): 0.0284,
+    }
+
+    upper_bound = 0
+    for comm, coeff in commutator_coeffs.items():
+        mat = nested_commutator([fragments[frag] for frag in comm])
+        upper_bound += coeff * np.linalg.norm(mat)
+
+    print(error)
+    print(upper_bound)
+
+    assert error <= upper_bound
 
 
 X = ("X", 1)
@@ -112,7 +156,7 @@ Z = ("Z", 1)
         ),
     ],
 )
-def test_bch(frag_labels, frag_coeffs, max_order, expected):
+def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     """Test against BCH expansion. The expected values come from Sections 4 and 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
 
     actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=max_order)
@@ -120,3 +164,35 @@ def test_bch(frag_labels, frag_coeffs, max_order, expected):
     for i, order in enumerate(actual):
         for commutator in order:
             assert np.isclose(order[commutator], expected[i][commutator])
+
+
+@pytest.mark.parametrize(
+    "fragments",
+    [
+        ({"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))}),
+        ({"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))}),
+    ],
+)
+def test_second_order_against_matrix_log(fragments):
+    """Test the BCH expansion against directly computing the matrix logarithm."""
+    t = 1
+
+    second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[t / 2, t, t / 2])
+    bch_expansion = effective_hamiltonian(second_order_pf, fragments, order=9)
+
+    second_order_matrix = (
+        expm(-0.5j * t * fragments["X"])
+        @ expm(-1j * t * fragments["Y"])
+        @ expm(-1j * t * fragments["X"])
+    )
+    evals, evecs = np.linalg.eig(second_order_matrix)
+    theta = np.angle(evals)
+    matrix_log = evecs @ np.diag(theta) @ np.linalg.inv(evecs)
+
+    matrix_log2 = logm(second_order_matrix)
+
+    print(expm(bch_expansion))
+    print(expm(matrix_log))
+    print(expm(matrix_log2))
+
+    assert np.allclose(bch_expansion, matrix_log)
