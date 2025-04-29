@@ -111,7 +111,7 @@ def perturbation_error(
 
     >>> frag_labels = [0, 1, 1, 0]
     >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
-    >>> pf = ProductFormula(frag_coeffs, frag_labels)
+    >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
     >>> n_modes = 2
     >>> r_state = np.random.RandomState(42)
@@ -122,17 +122,17 @@ def perturbation_error(
     >>>     r_state.random(size=(n_modes, n_modes)),
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
 
     >>> gridpoints = 5
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
 
-    >>> perturbation_error(pf, frags, [state1, state2])
+    >>> errors = perturbation_error(pf, frags, [state1, state2])
     [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
     eff = effective_hamiltonian(product_formula, fragments, order=order)
-    error = eff - sum(fragments, _AdditiveIdentity())
+    error = eff - sum(fragments.values(), _AdditiveIdentity())
 
     return [error.expectation(state, state) for state in states]
