@@ -15,7 +15,7 @@ r"""
 Phase Polynomials intermediate representation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.phase_polynomials
+.. currentmodule:: pennylane.labs.intermediate_reps
 
 .. autosummary::
     :toctree: api
