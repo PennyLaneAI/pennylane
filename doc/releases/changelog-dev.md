@@ -210,6 +210,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
+  some arguments are trainable.
+  [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
+
 * Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
 
@@ -251,4 +255,5 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
-Andrija Paurevic
+Andrija Paurevic,
+David Wierichs
