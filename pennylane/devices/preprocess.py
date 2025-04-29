@@ -525,7 +525,6 @@ def validate_measurements(
 
     return (tape,), null_postprocessing
 
-    
 def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
     for op in tape.operations:
         if isinstance(op, qml.Snapshot):
@@ -546,7 +545,6 @@ def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, n
                         f"Measurement {m} not accepted for analytic simulation on {name}."
                     )
 
-                    
 @transform
 def measurements_from_samples(tape):
     """Quantum function transform that replaces all measurements from a tape with a single
@@ -754,4 +752,3 @@ def _get_diagonalized_tape_and_wires(tape):
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires
-
