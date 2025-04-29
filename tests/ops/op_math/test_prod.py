@@ -516,6 +516,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
+
+
 # pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
