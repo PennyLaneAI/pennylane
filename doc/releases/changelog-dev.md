@@ -122,6 +122,7 @@
     or as keys of the dictionaries passed to the `alt_decomps` and `fixed_decomps` arguments of the
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
+    [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
     ```python
     @register_resources({qml.RY: 1})
     def my_adjoint_ry(phi, wires, **_):
