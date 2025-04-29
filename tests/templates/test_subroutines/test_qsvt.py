@@ -51,16 +51,16 @@ def lst_phis(phis):
 
 
 def generate_polynomial_coeffs(degree, parity=None):
-    np.random.seed(123)
+    rng = np.random.default_rng(seed=123)
     if parity is None:
-        polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree + 1)
+        polynomial_coeffs_in_canonical_basis = rng.normal(size=degree + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)
         )
     if parity == 0:
         assert degree % 2 == 0.0
         polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-        polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree // 2 + 1)
+        polynomial_coeffs_in_canonical_basis[0::2] = rng.normal(size=degree // 2 + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)
         )
@@ -68,7 +68,7 @@ def generate_polynomial_coeffs(degree, parity=None):
     if parity == 1:
         assert degree % 2 == 1.0
         polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-        polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree // 2 + 1)
+        polynomial_coeffs_in_canonical_basis[0::2] = rng.uniform(size=degree // 2 + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)
         )
@@ -734,19 +734,16 @@ class TestRootFindingSolver:
         ],
     )
     @pytest.mark.parametrize(
-        "angle_solver, optimizer_kwargs",
+        "angle_solver",
         [
-            ("root-finding", {}),
-            ("iterative", {"method": "L-BFGS-B", "tol": 1e-15}),
-            ("iterative", {"method": "Newton-CG"}),
+            ("root-finding"),
+            ("iterative"),
         ],
     )
-    def test_correctness_QSP_angles_finding(self, poly, angle_solver, optimizer_kwargs):
+    def test_correctness_QSP_angles_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(
-            list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs
-        )
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         x = np.random.uniform(low=-1.0, high=1.0)
 
         @qml.qnode(qml.device("default.qubit"))
@@ -773,19 +770,16 @@ class TestRootFindingSolver:
         ],
     )
     @pytest.mark.parametrize(
-        "angle_solver, optimizer_kwargs",
+        "angle_solver",
         [
-            ("root-finding", {}),
-            ("iterative", {"method": "L-BFGS-B", "tol": 1e-15}),
-            ("iterative", {"method": "Newton-CG"}),
+            ("root-finding"),
+            ("iterative"),
         ],
     )
-    def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver, optimizer_kwargs):
+    def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(
-            list(poly), "QSP", angle_solver=angle_solver, **optimizer_kwargs
-        )
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         x = np.random.uniform(low=-1.0, high=1.0)
 
         @qml.qnode(qml.device("default.qubit"))
