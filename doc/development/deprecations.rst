@@ -9,9 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See each function's docstring for equivalent code.
-  These include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``, ``has_nopar``, ``has_unitary_gen``, ``is_measurement``,
-  ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
+  use instead.
+  These include :func:`not_tape`, :func:`~.operation.has_gen`, :func:`~.operation.has_grad_method`,
+  :func:`~.operation.has_multipar`, :func:`~.operation.has_nopar`, :func:`~.operation.has_unitary_gen`, :func:`~.operation.is_measurement`,
+  :func:`~.operation.defines_diagonalizing_gates`, and :func:`~.operation.gen_is_multi_term_hamiltonian`.
 
   - Deprecated in v0.42
   - Will be removed in v0.43
