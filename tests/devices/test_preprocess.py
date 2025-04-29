@@ -592,8 +592,6 @@ class TestSetShots:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        import numpy as np
-
-        x = np.array(0.5)
+        x = qml.numpy.array(0.5)
         with pytest.raises(qml.DeviceError, match="Finite shots are not supported with backprop"):
             circuit(x)

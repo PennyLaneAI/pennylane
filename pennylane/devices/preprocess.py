@@ -533,6 +533,7 @@ def set_shots(tape: QuantumScript, shots: int) -> tuple[QuantumScriptBatch, Post
         tape = tape.copy(shots=shots)
     return (tape,), null_postprocessing
 
+
 def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
     for op in tape.operations:
         if isinstance(op, qml.Snapshot):
