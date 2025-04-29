@@ -219,7 +219,7 @@ def measure_x(
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(wires, angle=0, plane="XY", reset=reset, postselect=postselect)
+        return primitive.bind(wires, angle=0.0, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
 
