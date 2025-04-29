@@ -234,6 +234,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
+  [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
+
 * Fixes the repr for empty `Prod` and `Sum` instances to better communicate the existence of an empty instance.
   [(#7346)](https://github.com/PennyLaneAI/pennylane/pull/7346)
 
