@@ -1210,6 +1210,8 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
 
+# This was the routine used to generate the problematic matrix in the original
+# bug report (see https://github.com/PennyLaneAI/pennylane/issues/5308)
 def _make_unitary(theta1):
     generator = (
         theta1
