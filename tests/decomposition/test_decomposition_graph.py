@@ -30,13 +30,15 @@ from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
     pow_resource_rep,
+    resource_rep,
 )
+from pennylane.decomposition.decomposition_graph import _to_name
 
 
 @pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[x],
+    side_effect=lambda x: decompositions[_to_name(x)],
 )
 class TestDecompositionGraph:
 
@@ -55,14 +57,14 @@ class TestDecompositionGraph:
             qml.RY(np.pi / 2, wires=wires)
 
         graph = DecompositionGraph(operations=[qml.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
-        assert graph._get_decompositions(qml.Hadamard) == decompositions[qml.Hadamard]
+        assert graph._get_decompositions(resource_rep(qml.H)) == decompositions["Hadamard"]
 
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
             gate_set={"RX", "RY", "RZ"},
             fixed_decomps={qml.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
+        assert graph._get_decompositions(resource_rep(qml.H)) == [custom_hadamard]
 
         alt_dec = [custom_hadamard, custom_hadamard_2]
         graph = DecompositionGraph(
@@ -70,8 +72,8 @@ class TestDecompositionGraph:
             gate_set={"RX", "RY", "RZ"},
             alt_decomps={qml.Hadamard: alt_dec},
         )
-        exp_dec = alt_dec + decompositions[qml.Hadamard]
-        assert graph._get_decompositions(qml.Hadamard) == exp_dec
+        exp_dec = alt_dec + decompositions["Hadamard"]
+        assert graph._get_decompositions(resource_rep(qml.H)) == exp_dec
 
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
@@ -79,7 +81,7 @@ class TestDecompositionGraph:
             alt_decomps={qml.Hadamard: alt_dec},
             fixed_decomps={qml.Hadamard: custom_hadamard},
         )
-        assert graph._get_decompositions(qml.Hadamard) == [custom_hadamard]
+        assert graph._get_decompositions(resource_rep(qml.H)) == [custom_hadamard]
 
     def test_graph_construction(self, _):
         """Tests constructing a graph from a single Hadamard."""

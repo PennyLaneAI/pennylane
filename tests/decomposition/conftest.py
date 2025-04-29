@@ -35,7 +35,7 @@ def _cz_to_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CZ] = [_cz_to_cnot]
+decompositions["CZ"] = [_cz_to_cnot]
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CZ: 1})
@@ -43,7 +43,7 @@ def _cnot_to_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CNOT] = [_cnot_to_cz]
+decompositions["CNOT"] = [_cnot_to_cz]
 
 
 def _multi_rz_decomposition_resources(num_wires):
@@ -55,7 +55,7 @@ def _multi_rz_decomposition(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.MultiRZ] = [_multi_rz_decomposition]
+decompositions["MultiRZ"] = [_multi_rz_decomposition]
 
 
 @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
@@ -68,7 +68,7 @@ def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.Hadamard] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
+decompositions["Hadamard"] = [_hadamard_to_rz_rx, _hadamard_to_rz_ry]
 
 
 @qml.register_resources({qml.RX: 1, qml.RZ: 2})
@@ -76,7 +76,7 @@ def _ry_to_rx_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.RY] = [_ry_to_rx_rz]
+decompositions["RY"] = [_ry_to_rx_rz]
 
 
 @qml.register_resources({qml.RX: 2, qml.CZ: 2})
@@ -84,7 +84,7 @@ def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.CRX] = [_crx_to_rx_cz]
+decompositions["CRX"] = [_crx_to_rx_cz]
 
 
 @qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})
@@ -92,7 +92,7 @@ def _cphase_to_rz_cnot(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.ControlledPhaseShift] = [_cphase_to_rz_cnot]
+decompositions["ControlledPhaseShift"] = [_cphase_to_rz_cnot]
 
 
 @qml.register_resources({qml.RZ: 1, qml.GlobalPhase: 1})
@@ -100,7 +100,7 @@ def _phase_shift_to_rz_gp(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.PhaseShift] = [_phase_shift_to_rz_gp]
+decompositions["PhaseShift"] = [_phase_shift_to_rz_gp]
 
 
 @qml.register_resources({qml.RX: 1, qml.GlobalPhase: 1})
@@ -108,7 +108,7 @@ def _x_to_rx(*_, **__):
     raise NotImplementedError
 
 
-decompositions[qml.X] = [_x_to_rx]
+decompositions["PauliX"] = [_x_to_rx]
 
 
 @qml.register_resources({qml.PhaseShift: 1})
@@ -116,7 +116,7 @@ def _u1_ps(phi, wires, **__):
     qml.PhaseShift(phi, wires=wires)
 
 
-decompositions[qml.U1] = [_u1_ps]
+decompositions["U1"] = [_u1_ps]
 
 
 @qml.register_resources({qml.PhaseShift: 1})
@@ -124,4 +124,4 @@ def _t_ps(wires, **__):
     raise NotImplementedError
 
 
-decompositions[qml.T] = [_t_ps]
+decompositions["T"] = [_t_ps]

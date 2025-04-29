@@ -77,7 +77,7 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 
 
 @register_resources(_adjoint_adjoint_resource)
-def adjoint_adjoint_decomp(*params, wires, base):  # pylint: disable=unused-argument
+def cancel_adjoint(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
     _, [_, metadata] = base.base._flatten()  # pylint: disable=protected-access
     new_struct = wires, metadata
@@ -157,7 +157,7 @@ def _pow_resource(base_class, base_params, z):
 
 
 @register_resources(_pow_resource)
-def pow_decomp(*_, base, z, **__):
+def repeat_pow_base(*_, base, z, **__):
     """Decompose the power of a gate."""
     assert isinstance(z, int) and z >= 0
     for _ in range(z):
@@ -175,7 +175,7 @@ def _pow_pow_resource(base_class, base_params, z):  # pylint: disable=unused-arg
 
 
 @register_resources(_pow_pow_resource)
-def pow_pow_decomp(*_, base, z, **__):
+def merge_powers(*_, base, z, **__):
     """Decompose the power of the power of a gate."""
     qml.pow(base.base, z=z * base.z)
 

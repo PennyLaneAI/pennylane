@@ -41,7 +41,7 @@ def translate_op_alias(op_alias):
     """Translates an operator alias to its proper name."""
     if op_alias in OP_NAME_ALIASES:
         return OP_NAME_ALIASES[op_alias]
-    if match := re.match(r"C\((\w+)\)", op_alias):
+    if match := re.match(r"(?:C|Controlled)\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"C({translate_op_alias(base_op_name)})"
     if match := re.match(r"Adjoint\((\w+)\)", op_alias):
