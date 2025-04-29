@@ -32,6 +32,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
 
 @pytest.mark.unit
@@ -313,6 +314,27 @@ class TestSymbolicDecompositions:
 
     def test_get_adjoint_decomp_rule(self, _):
         """Tests getting decomposition rules of an adjoint operator."""
+
+        op = qml.adjoint(qml.H(0))
+        graph = DecompositionGraph([op], gate_set={"RY", "RZ", "GlobalPhase"})
+        rules = graph._get_decompositions(resource_rep(type(op), **op.resource_params))
+        assert len(rules) == 3
+        assert self_adjoint in rules
+        rules.remove(self_adjoint)
+        assert rules[0].compute_resources(**op.resource_params) == to_resources(
+            {
+                adjoint_resource_rep(qml.RZ): 2,
+                adjoint_resource_rep(qml.RX): 1,
+                adjoint_resource_rep(qml.GlobalPhase): 1,
+            }
+        )
+        assert rules[1].compute_resources(**op.resource_params) == to_resources(
+            {
+                adjoint_resource_rep(qml.RZ): 1,
+                adjoint_resource_rep(qml.RY): 1,
+                adjoint_resource_rep(qml.GlobalPhase): 1,
+            }
+        )
 
     def test_get_pow_decomp_rule(self, _):
         """Tests getting decomposition rules of a power operator."""

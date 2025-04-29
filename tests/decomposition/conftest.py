@@ -21,6 +21,12 @@ from collections import defaultdict
 import pennylane as qml
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_of_self_adjoint,
+    pow_rotation,
+    self_adjoint,
+)
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_x_decomp
 
@@ -128,5 +134,13 @@ def _t_ps(wires, **__):
 
 decompositions["T"] = [_t_ps]
 
+################################################
+# Custom Decompositions For Symbolic Operators #
+################################################
+
 decompositions["C(X)"] = [_controlled_x_decomp]
 decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Pow(H)"] = [pow_of_self_adjoint]
+decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Pow(RX)"] = [pow_rotation]
