@@ -543,7 +543,9 @@ def measurements_from_samples(tape):
 
     This transform can be used to make tapes compatible with device backends that only return
     `samples`. The final output will return the initial requested measurements, calculated from
-     the raw counts returned immediately after execution.
+    the raw counts returned immediately after execution.
+
+    The transform is only applied if the tape is being executed with shots.
 
     .. note::
         This transform diagonalizes all the operations on the tape. An error will
@@ -595,6 +597,8 @@ def measurements_from_samples(tape):
     >>> fn((res,))
     (-0.2, array([0.6, 0.4]))
     """
+    if tape.shots.total_shots is None:
+        return (tape,), null_postprocessing
 
     for mp in tape.measurements:
         if not mp.obs and not mp.wires:
@@ -644,7 +648,9 @@ def measurements_from_counts(tape):
 
     This transform can be used to make tapes compatible with device backends that only return
     `counts`. The final output will return the initial requested measurements, calculated from
-     the raw counts returned immediately after execution.
+    the raw counts returned immediately after execution.
+
+    The transform is only applied if the tape is being executed with shots.
 
     .. note::
         This transform diagonalizes all the operations on the tape. An error will
@@ -690,6 +696,9 @@ def measurements_from_counts(tape):
     >>> fn((res,))
     (-0.19999999999999996, array([0.7, 0.3]))
     """
+    if tape.shots.total_shots is None:
+        print("returning the tape, because shots is None")
+        return (tape,), null_postprocessing
 
     for mp in tape.measurements:
         if not mp.obs and not mp.wires:

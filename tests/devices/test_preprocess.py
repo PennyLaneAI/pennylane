@@ -33,6 +33,7 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
+from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
@@ -526,7 +527,7 @@ class TestMeasurementsFromCountsOrSamples:
         """Test that a clear error is raised if the transform fails because a measurement
         without wires is passed to it"""
 
-        tape = qml.tape.QuantumScript([], measurements=[qml.probs()])
+        tape = qml.tape.QuantumScript([], measurements=[qml.probs()], shots=10)
 
         with pytest.raises(
             RuntimeError,
@@ -750,6 +751,27 @@ class TestMeasurementsFromCountsOrSamples:
         assert np.isclose(np.mean(sample_res), np.mean(sample_expected), atol=0.05)
         assert len(sample_res) == len(sample_expected)
         assert set(np.array(sample_res)) == set(sample_expected)
+
+    @pytest.mark.parametrize("shots", [None, 10])
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    def test_only_applied_if_no_shots(self, meas_transform, shots):
+        """Test that the transform is only applied if shots are being used"""
+
+        tape = qml.tape.QuantumScript(
+            [], measurements=[qml.expval(qml.Z(0)), qml.var(qml.X(1))], shots=shots
+        )
+
+        (new_tape,), fn = meas_transform(tape)
+
+        if shots is None:
+            assert qml.equal(new_tape, tape)
+            assert fn == null_postprocessing
+        else:
+            assert len(new_tape.measurements) == 1
+            assert isinstance(new_tape.measurements[0], (SampleMP, CountsMP))
+            assert fn != null_postprocessing
 
 
 def test_validate_multiprocessing_workers_None():
