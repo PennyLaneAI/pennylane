@@ -51,13 +51,14 @@ def effective_hamiltonian(
     >>>     r_state.random(size=(n_modes, n_modes)),
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-
+    >>>
     >>> delta = 0.001
     >>> frag_labels = [0, 1, 1, 0]
     >>> frag_coeffs = [delta/2, delta/2, delta/2, delta/2]
 
-    >>> pf = ProductFormula(frag_coeffs, frag_labels)
-    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+    >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    >>> type(effective_hamiltonian(pf, frags, order=5))
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
