@@ -21,8 +21,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional, Type
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 
