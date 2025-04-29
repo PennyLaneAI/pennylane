@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,30 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+Submodule for concurrent executors relying on 3rd-party packages.
 
-This module contains experimental features enabling
-advanced quantum computing research.
+.. currentmodule:: pennylane.concurrency.executor
 
-.. currentmodule:: pennylane.labs
+All executor functionality in this module is implemented using external packages to handle execution and orchestration.
 
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.concurrency.executors.external
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
-    trotter_error
-    intermediate_reps
+    ~dask.DaskExec
+    ~mpi.MPICommExec
+    ~mpi.MPIPoolExec
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import vibrational
-from pennylane.labs import trotter_error
-from pennylane.labs import intermediate_reps
+from .dask import DaskExec
+from .mpi import MPICommExec, MPIPoolExec
 
-__all__ = []
+__all__ = [
+    "DaskExec",
+    "MPICommExec",
+    "MPIPoolExec",
+]

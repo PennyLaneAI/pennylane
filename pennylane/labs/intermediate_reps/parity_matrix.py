@@ -35,7 +35,7 @@ def parity_matrix(circ: qml.tape.QuantumScript, wire_order: Sequence = None):
     .. code-block:: python
 
         import pennylane as qml
-        from pennylane.labs.phase_polynomials import parity_matrix
+        from pennylane.labs.intermediate_reps import parity_matrix
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((3, 2)),
