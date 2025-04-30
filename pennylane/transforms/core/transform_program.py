@@ -101,9 +101,6 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, **kwargs):
     tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
     new_tape = tapes[tape_idx]
-    # Update trainable parameter indices after applying the transform program
-    params = new_tape.get_parameters(trainable_only=False)
-    new_tape.trainable_params = qml.math.get_trainable_indices(params)
     return math.stack(new_tape.get_parameters(trainable_only=True))
 
 
@@ -566,8 +563,11 @@ class TransformProgram:
 
         processing_fns_stack = []
 
+        print(self)
+        print(tapes[0].trainable_params)
         for transform_idx, transform_container in enumerate(self):
             transform, targs, tkwargs, cotransform, _, _, _ = transform_container
+            print(f"Applying {transform}")
             tkwargs = {
                 key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
             }
@@ -608,7 +608,9 @@ class TransformProgram:
 
             # set input tapes for next iteration.
             tapes = execution_tapes
+            print(tapes[0].trainable_params)
 
+        print()
         postprocessing_fn = partial(
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,

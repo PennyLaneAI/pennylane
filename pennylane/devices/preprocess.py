@@ -174,7 +174,9 @@ def validate_device_wires(
                 new_mp._wires = wires  # pylint:disable=protected-access
                 measurements[m_idx] = new_mp
         if modified:
-            tape = tape.copy(ops=new_ops, measurements=measurements)
+            tape = tape.copy(
+                ops=new_ops, measurements=measurements, trainable_params=tape.trainable_params
+            )
 
     return (tape,), null_postprocessing
 
