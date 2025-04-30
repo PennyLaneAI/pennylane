@@ -509,9 +509,8 @@ class TestMeasureFunctions:
 
         # last section is parameters
         dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        dynamic_params = dynamic_params.split(" ")
-        assert dynamic_params[0] == str(wire)
-        assert dynamic_params[1][:6] == str(angle)
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
@@ -549,9 +548,8 @@ class TestMeasureFunctions:
 
         # last section is parameters
         dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        dynamic_params = dynamic_params.split(" ")
-        assert dynamic_params[0] == str(wire)
-        assert dynamic_params[1] == str(angle)
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])

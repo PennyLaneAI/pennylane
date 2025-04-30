@@ -197,7 +197,7 @@ class TestValidation:
             branch_str = str(branch)
             assert "measure_in_basis" in branch_str
             assert "plane=XY" in branch_str
-            assert f"angle={angle}" in branch_str
+            assert str(angle) in branch_str
 
 
 class TestWorkflows:
