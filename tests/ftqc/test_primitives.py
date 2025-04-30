@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the custom capture primitives for the ftqc module"""
+import pytest
+
 import pennylane.ftqc.primitives as ftqc_prim
 from pennylane.capture.custom_primitives import NonInterpPrimitive
 
 
+@pytest.mark.jax
 def test_importing_primitive():
     """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
     This is mostly for CodeCov."""
