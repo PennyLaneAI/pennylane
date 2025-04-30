@@ -19,12 +19,7 @@ from xdsl.dialects.builtin import IntegerType
 from xdsl.dialects.test import TestOp
 from xdsl.ir import AttributeCovT, OpResult
 
-
-from pennylane.compiler.python_compiler.quantum_dialect import (
-    AllocOp,
-    QuantumDialect,
-    QuregType,
-)
+from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, QuantumDialect, QuregType
 
 name = QuantumDialect.name
 all_ops = list(QuantumDialect.operations)
