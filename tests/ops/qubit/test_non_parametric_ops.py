@@ -919,7 +919,7 @@ class TestPowMethod:
         assert op_pow[0].__class__ is qml.PhaseShift
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
-    @pytest.mark.parametrize("n", (0.5, 4.5, -3.5))
+    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
     def test_ISWAP_sqaure_root(self, n):
         """Test that SISWAP is the square root of ISWAP."""
         op = qml.ISWAP(wires=(0, 1))
@@ -972,7 +972,7 @@ class TestPowMethod:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(2.43 + offset)
 
-    @pytest.mark.parametrize("offset", (0, 8, -8))
+    @pytest.mark.parametrize("offset", (0, 4, -4))
     def test_SISWAP_pow(self, offset):
         """Test powers of the SISWAP operator"""
         op = qml.SISWAP(wires=("b", "c"))

@@ -302,9 +302,6 @@
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* Fixes a bug where the `qml.ISWAP` raised to a power of 2 and `qml.SISWAP` raised to a power of 4 incorrectly decompose to nothing.
-  [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
