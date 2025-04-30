@@ -207,6 +207,11 @@
   that the operator instance is Hermitian.
   [(#7316)](https://github.com/PennyLaneAI/pennylane/pull/7316)
 
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
+  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
+  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+  [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
+
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
