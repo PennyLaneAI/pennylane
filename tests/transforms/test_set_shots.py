@@ -93,5 +93,6 @@ class TestSetShots:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         x = qml.numpy.array(0.5)
+        # !Note: this should be fixed after the pipeline is updated to use the new set_shots transform
         with pytest.raises(qml.DeviceError, match="Finite shots are not supported with backprop"):
             circuit(x)
