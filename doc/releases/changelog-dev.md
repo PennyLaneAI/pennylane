@@ -7,6 +7,7 @@
 * A new transfomer :func:`~.transforms.set_shots` has been added to set the number of shots for all QNodes in a pipeline.
   This transform can be used to set the number of shots for all QNodes in a pipeline.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
@@ -209,6 +210,9 @@
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Ajusted execution pipeline to be compatible with the new `set_shots` transform.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
