@@ -23,6 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
+from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
@@ -857,3 +858,54 @@ def reorder_after_kron(rho, complement_wires, op_wires, is_state_batched):
     # Apply the transpose
     rho = math.transpose(rho, axes=tuple(new_axes))
     return rho
+
+
+@apply_operation.register
+def apply_mid_measure(
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
+
+    if is_state_batched:
+        raise ValueError("MidMeasureMP cannot be applied to batched states.")
+    wire = op.wires
+    interface = qml.math.get_deep_interface(state)
+
+    if postselect_mode == "fill-shots" and op.postselect is not None:
+        sample = op.postselect
+    else:
+        raise NotImplementedError(
+            "MidMeasureMP only supports postselection in 'fill-shots' mode on default.mixed."
+        )
+    mid_measurements[op] = sample
+
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
+    # to select the sample branch enables jax.jit and prevents it from using Python callbacks
+    projector = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
+    state = apply_operation(
+        qml.QubitUnitary(projector, wire),
+        state,
+        is_state_batched=False,
+        debugger=debugger,
+    )
+    state = state / qml.math.norm(state)
+
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
+    # to reset enables jax.jit and prevents it from using Python callbacks
+    element = op.reset and sample == 1
+    conditional_flipper = qml.math.array(
+        [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]],
+        like=interface,
+        dtype=float,
+    )
+    state = apply_operation(
+        qml.QubitUnitary(conditional_flipper, wire),
+        state,
+        is_state_batched=False,
+        debugger=debugger,
+    )
+
+    return state
