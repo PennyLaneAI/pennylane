@@ -305,22 +305,33 @@ class _WiresEnum(IntEnum):
     to represent the number of wires
     an operation acts on.
 
+    .. warning::
+
+        This class is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
+
     """
 
     AnyWires = -1
     """A enumeration that represents that an operator can act on any number of wires.
+
+    .. warning::
+
+        ``AnyWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
 
     """
 
     AllWires = -2
     """A enumeration that represents that an operator acts on all wires in the system.
 
+    .. warning::
+
+        ``AllWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
 
     """
 
-
-AnyWires = WiresEnum.AnyWires
-AllWires = WiresEnum.AllWires
 
 # =============================================================================
 # Class property
@@ -1136,7 +1147,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (self.num_wires is not None and not isinstance(self.num_wires, WiresEnum)) and len(
+        if (self.num_wires is not None and not isinstance(self.num_wires, _WiresEnum)) and len(
             self._wires
         ) != self.num_wires:
             raise ValueError(
