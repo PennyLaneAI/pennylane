@@ -302,6 +302,7 @@ class TestInitialization:
         assert np.allclose(eig_vecs, cached_vecs)
 
     SUM_REPR = (
+        (qml.sum(), "Sum()"),
         (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
         (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
         (0.5 * X(0) + 0.7 * X(1), "0.5 * X(0) + 0.7 * X(1)"),
