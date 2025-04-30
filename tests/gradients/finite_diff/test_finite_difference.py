@@ -22,7 +22,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import finite_diff, finite_diff_coeffs
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import Observable
 
 
 def test_float32_warning():
@@ -494,8 +494,6 @@ class TestFiniteDiff:
         # pylint: disable=too-few-public-methods
         class SpecialObservable(Observable):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

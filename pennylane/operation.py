@@ -302,20 +302,24 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
 class WiresEnum(IntEnum):
     """Integer enumeration class
     to represent the number of wires
-    an operation acts on"""
+    an operation acts on.
+
+    """
 
     AnyWires = -1
+    """A enumeration that represents that an operator can act on any number of wires.
+
+    """
+
     AllWires = -2
+    """A enumeration that represents that an operator acts on all wires in the system.
 
 
-AllWires = WiresEnum.AllWires
-"""IntEnum: An enumeration which represents all wires in the
-subsystem. It is equivalent to an integer with value 0."""
+    """
+
 
 AnyWires = WiresEnum.AnyWires
-"""IntEnum: An enumeration which represents any wires in the
-subsystem. It is equivalent to an integer with value -1."""
-
+AllWires = WiresEnum.AllWires
 
 # =============================================================================
 # Class property
@@ -433,11 +437,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
 
         class FlipAndRotate(qml.operation.Operation):
-
-            # Define how many wires the operator acts on in total.
-            # In our case this may be one or two, which is why we
-            # use the AnyWires Enumeration to indicate a variable number.
-            num_wires = qml.operation.AnyWires
 
             # This attribute tells PennyLane what differentiation method to use. Here
             # we request parameter-shift (or "analytic") differentiation.
@@ -972,7 +971,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Union[int, WiresEnum] = AnyWires
+    num_wires: Optional[Union[int, WiresEnum]] = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1136,7 +1135,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
+        if (self.num_wires is not None and not isinstance(self.num_wires, WiresEnum)) and len(
+            self._wires
+        ) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
@@ -1886,7 +1887,7 @@ class Operation(Operator):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(gen, k=2**self.num_wires)
+                eigvals = qml.eigvals(gen, k=2 ** len(self.wires))
 
             eigvals = tuple(np.round(eigvals, 8))
             return [qml.gradients.eigvals_to_frequencies(eigvals)]

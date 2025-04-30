@@ -22,7 +22,7 @@ import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -428,9 +428,6 @@ class QSVT(Operation):
                    -2.98448441e-17-3.10878188e-17j,  0.00000000e+00+0.00000000e+00j,
                    -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     grad_method = None
     """Gradient computation method."""

@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -539,8 +539,8 @@ class TestMatrix:
         true_mat = mat1 @ mat2
 
         prod_op = Prod(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         prod_mat = prod_op.matrix()
 
