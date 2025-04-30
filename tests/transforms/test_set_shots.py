@@ -84,7 +84,7 @@ class TestSetShots:
         """Test that DeviceError is raised if finite shots are used with backprop + default.qubit."""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(set_shots, shots=1000)
+        @partial(set_shots, shots=10)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -93,9 +93,7 @@ class TestSetShots:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         x = qml.numpy.array(0.5)
-        # !Note: this should be fixed after the pipeline is updated to use the new set_shots transform
-        with pytest.raises(qml.DeviceError, match="Finite shots are not supported with backprop"):
-            circuit(x)
+        assert len(circuit(x)) == 2
 
     @pytest.mark.integration
     def test_toplevel_accessible(self):

@@ -160,6 +160,14 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
+    # If the transform program contains set_shots, we need to adjust the tape
+    if transform_program is not None and any(
+        getattr(getattr(t, "_transform"), "__name__", "") == "set_shots"
+        for t in getattr(transform_program, "_transform_program", [])
+    ):
+        tapes, _ = transform_program(tapes)
+        transform_program = None
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
