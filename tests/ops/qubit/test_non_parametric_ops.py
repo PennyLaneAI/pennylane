@@ -827,7 +827,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
     # Controlled operations
     qml.CNOT(wires=(0, 1)),
@@ -853,6 +852,11 @@ class TestPowMethod:
     def test_period_two_pow_even(self, op, n):
         """Test that ops with a period of 2 raised to an even power are empty lists."""
         assert len(op.pow(n)) == 0
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    def test_period_two_pow_even_identity(self, op):
+        """Test that ops with a period of 2 square equal to an identity matrix."""
+        assert qml.math.allclose((op@op).matrix(), qml.Identity(wires=op.wires).matrix())
 
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
@@ -921,6 +925,17 @@ class TestPowMethod:
 
     @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
     def test_ISWAP_sqaure_root(self, n):
+        """Test that SISWAP is the square root of ISWAP."""
+        op = qml.ISWAP(wires=(0, 1))
+
+        assert op.pow(n)[0].__class__ is qml.SISWAP
+
+        sqrt_mat = qml.matrix(op.pow, wire_order=[0, 1])(n)
+        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
+        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+
+    @pytest.mark.parametrize("n", (1, 2, 3, 4, 5))
+    def test_ISWAP_powers(self, n):
         """Test that SISWAP is the square root of ISWAP."""
         op = qml.ISWAP(wires=(0, 1))
 

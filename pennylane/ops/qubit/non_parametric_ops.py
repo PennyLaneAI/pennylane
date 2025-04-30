@@ -1788,10 +1788,14 @@ class ISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod2 = z % 2
+        z_mod2 = z % 4
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
-        return super().pow(z_mod2)
+        elif abs(z_mod2 - 2) < 1e-6:
+            return np.diag([1.0, -1.0, -1.0, 1.0])
+        elif abs(z_mod2 - 3) < 1e-6:
+            return np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, -1j, 0, 0], [0, 0, 0, 1]])
+        return super().pow(z_mod2)  # actually only gonna consider 0 or 1. Else not implemented.
 
 
 def _iswap_decomp_resources():
