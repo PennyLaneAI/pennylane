@@ -526,14 +526,6 @@ def validate_measurements(
     return (tape,), null_postprocessing
 
 
-@transform
-def set_shots(tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Sets the shot(s) of a given tape"""
-    if tape.shots != shots:
-        tape = tape.copy(shots=shots)
-    return (tape,), null_postprocessing
-
-
 def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
     for op in tape.operations:
         if isinstance(op, qml.Snapshot):
