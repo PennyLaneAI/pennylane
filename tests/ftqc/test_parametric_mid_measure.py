@@ -551,6 +551,21 @@ class TestMeasureFunctions:
         assert captured_measurement[:7] == "a:i64[]"
         assert "lambda ; a:i64[]" in conditional
 
+    @pytest.mark.parametrize(
+        "func, kwargs",
+        [
+            (measure_x, {"wires": 2}),
+            (measure_y, {"wires": 2}),
+            (measure_arbitrary_basis, {"wires": 2, "angle": 1.2, "plane": "XY"}),
+        ],
+    )
+    def test_calling_functions_with_capture_enabled(self, func, kwargs):
+        """Test that the functions can still be called and return a measurement value
+        with capture enabled."""
+
+        m = func(**kwargs)
+        assert isinstance(m, MeasurementValue)
+
 
 class TestDrawParametricMidMeasure:
     @pytest.mark.matplotlib

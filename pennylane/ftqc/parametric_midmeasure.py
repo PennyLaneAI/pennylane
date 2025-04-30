@@ -393,6 +393,16 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
+    # pylint: disable=too-many-positional-arguments
+    @classmethod
+    def _primitive_bind_call(
+        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
+    ):
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(
+            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
+        )
+
     def __repr__(self):
         """Representation of this class."""
         return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
