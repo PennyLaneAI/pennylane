@@ -14,7 +14,6 @@
 """Unit tests for the custom capture primitives for the ftqc module"""
 import pytest
 
-import pennylane.ftqc.primitives as ftqc_prim
 from pennylane.capture.custom_primitives import NonInterpPrimitive
 
 
@@ -22,7 +21,6 @@ from pennylane.capture.custom_primitives import NonInterpPrimitive
 def test_importing_primitive():
     """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
     This is mostly for CodeCov."""
+    from pennylane.ftqc.primitives import measure_in_basis_prim
 
-    primitive = ftqc_prim.measure_in_basis_prim
-
-    assert isinstance(primitive, NonInterpPrimitive)
+    assert isinstance(measure_in_basis_prim, NonInterpPrimitive)
