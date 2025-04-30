@@ -92,7 +92,7 @@ _jac_map = {
 
 
 # pylint: disable=unused-argument
-def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
+def _classical_preprocessing(qnode, program, tape_idx: int, *args, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
