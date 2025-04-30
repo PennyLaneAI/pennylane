@@ -128,6 +128,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
+    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
