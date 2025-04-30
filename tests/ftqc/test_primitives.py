@@ -14,12 +14,15 @@
 """Unit tests for the custom capture primitives for the ftqc module"""
 import pytest
 
+pytest.importorskip("jax")
 
-@pytest.mark.jax
+# pylint: disable=wrong-import-position
+from pennylane.capture.custom_primitives import NonInterpPrimitive
+from pennylane.ftqc.primitives import measure_in_basis_prim
+
+
 def test_importing_primitive():
     """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
     This is mostly for CodeCov."""
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
-    from pennylane.ftqc.primitives import measure_in_basis_prim
 
     assert isinstance(measure_in_basis_prim, NonInterpPrimitive)
