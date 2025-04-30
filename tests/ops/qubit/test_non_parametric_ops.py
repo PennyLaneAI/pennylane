@@ -923,10 +923,13 @@ class TestPowMethod:
         [
             (0, []),
             (4, []),
+            (-4, []),
+            (-3, [qml.ISWAP(wires=(0, 1))]),
             (5, [qml.ISWAP(wires=(0, 1))]),
             (0.5, [qml.SISWAP(wires=(0, 1))]),
             (4.5, [qml.SISWAP(wires=(0, 1))]),
             (2, [qml.Z(0), qml.Z(1)]),
+            (-2, [qml.Z(0), qml.Z(1)]),
             (6, [qml.Z(0), qml.Z(1)]),
         ],
     )
