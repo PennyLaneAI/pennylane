@@ -91,8 +91,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
     return encoding, projectors
 
 
-# pylint: disable=unused-argument
-def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
+def qsvt(A, poly, encoding_wires=None, block_encoding=None):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
     using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
