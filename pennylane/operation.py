@@ -232,6 +232,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -299,27 +300,38 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
 # =============================================================================
 
 
-class WiresEnum(IntEnum):
+class _WiresEnum(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on.
+
+    .. warning::
+
+        This class is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
 
     """
 
     AnyWires = -1
     """A enumeration that represents that an operator can act on any number of wires.
 
+    .. warning::
+
+        ``AnyWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
+
     """
 
     AllWires = -2
     """A enumeration that represents that an operator acts on all wires in the system.
 
+    .. warning::
+
+        ``AllWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
+        that an operator can exist on any number of wires.
 
     """
 
-
-AnyWires = WiresEnum.AnyWires
-AllWires = WiresEnum.AllWires
 
 # =============================================================================
 # Class property
@@ -971,7 +983,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Optional[Union[int, WiresEnum]] = None
+    num_wires: Optional[Union[int, _WiresEnum]] = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1135,7 +1147,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (self.num_wires is not None and not isinstance(self.num_wires, WiresEnum)) and len(
+        if (self.num_wires is not None and not isinstance(self.num_wires, _WiresEnum)) and len(
             self._wires
         ) != self.num_wires:
             raise ValueError(
@@ -2475,6 +2487,27 @@ def gen_is_multi_term_hamiltonian(obj):
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
+    if name == "AnyWires":
+        warnings.warn(
+            "AnyWires is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return _WiresEnum.AllWires
+    if name == "AllWires":
+        warnings.warn(
+            "AllWires is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return _WiresEnum.AllWires
+    if name == "WiresEnum":
+        warnings.warn(
+            "WiresEnum is deprecated and will be removed in v0.43. "
+            " If your operation accepts any number of wires, set num_wires=None instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return _WiresEnum
     if name == "StatePrep":
         return StatePrepBase
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
