@@ -26,7 +26,7 @@ from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
 from pennylane._deprecated_observable import Observable
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -449,7 +449,6 @@ class Projector(Observable):
 
     """
 
-    _queue_category = "_ops"
     is_hermitian = True
     name = "Projector"
     num_params = 1
@@ -697,6 +696,7 @@ class StateVectorProjector(Projector):
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
+    # pylint: disable=unused-argument
     def label(
         self,
         decimals: Optional[int] = None,
