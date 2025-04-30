@@ -197,8 +197,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* The boolean functions provided by `pennylane.operation` are deprecated. See the deprecations page
-  for equivalent code to use instead.. These include :func:`not_tape`, :func:`~.operation.has_gen`, :func:`~.operation.has_grad_method`,
+* The boolean functions provided in :mod:`qml.operation <pennylane.operation>` are deprecated. See the deprecations page
+  for equivalent code to use instead. These include :func:`~.operation.not_tape`, :func:`~.operation.has_gen`, :func:`~.operation.has_grad_method`,
   :func:`~.operation.has_multipar`, :func:`~.operation.has_nopar`, :func:`~.operation.has_unitary_gen`, :func:`~.operation.is_measurement`,
   :func:`~.operation.defines_diagonalizing_gates`, and :func:`~.operation.gen_is_multi_term_hamiltonian`.
   [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
