@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
@@ -355,8 +355,8 @@ class TestMatrix:
         true_mat = mat1 + mat2
 
         sum_op = Sum(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         sum_mat = sum_op.matrix()
 

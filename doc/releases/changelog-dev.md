@@ -127,6 +127,10 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
+  any number of wires.
+  [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
+
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
