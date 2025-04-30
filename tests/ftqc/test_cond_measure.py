@@ -180,7 +180,7 @@ class TestValidation:
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_program_capture(self):
-        """Test that a clear error is raised when executing with program capture"""
+        """Test that program capture works as expected with cond_measure"""
         import jax
 
         def func():

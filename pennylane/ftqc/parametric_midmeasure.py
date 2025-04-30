@@ -33,11 +33,12 @@ from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def _create_parametrized_mid_measure_primitive():
-    """Create a primitive corresponding to an mid-circuit measurement type.
+    """Create a primitive corresponding to a parametrized mid-circuit measurement type.
 
-    Called when using :func:`~pennylane.measure`.
+    Called when using a parametrized mid-circuit measurement, such as
+    :func:`~pennylane.measure_arbitrary_basis`.
 
     Returns:
         jax.core.Primitive: A new jax primitive corresponding to a mid-circuit

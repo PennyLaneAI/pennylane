@@ -32,11 +32,6 @@ def cond_measure(
     supplied expression. This conditional expression may involve the results of other mid-circuit
     qubit measurements.
 
-    .. note::
-
-        This function is currently not compatible with :func:`~.qjit`, or with
-        :func:`.pennylane.capture.enabled`.
-
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
@@ -49,7 +44,6 @@ def cond_measure(
         The mid-circuit measurements applied on the two branches must both be applied to the same
         wire, and they must have the same settings for `reset` and `postselection`. The two
         branches can differ only in regard to the measurement basis of the applied measurement.
-
 
     Returns:
         function: A new function that applies the conditional measurements. The returned
