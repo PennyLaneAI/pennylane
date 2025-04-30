@@ -96,3 +96,8 @@ class TestSetShots:
         # !Note: this should be fixed after the pipeline is updated to use the new set_shots transform
         with pytest.raises(qml.DeviceError, match="Finite shots are not supported with backprop"):
             circuit(x)
+
+    @pytest.mark.integration
+    def test_toplevel_accessible(self):
+        """Test that qml.set_shots is available at top-level."""
+        assert hasattr(qml, "set_shots")
