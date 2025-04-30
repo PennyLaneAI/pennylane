@@ -527,7 +527,7 @@ def validate_measurements(
 
 
 @transform
-def set_shots(tape: QuantumScript, shots: int) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def set_shots(tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Sets the shot(s) of a given tape"""
     if tape.shots != shots:
         tape = tape.copy(shots=shots)
