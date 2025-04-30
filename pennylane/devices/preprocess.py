@@ -606,7 +606,7 @@ def measurements_from_samples(tape):
     >>> fn((res,))
     (-0.2, array([0.6, 0.4]))
     """
-    if tape.shots.total_shots is None:
+    if not tape.shots:
         return (tape,), null_postprocessing
 
     for mp in tape.measurements:
@@ -635,7 +635,7 @@ def measurements_from_samples(tape):
         samples = results[0]
         results_processed = []
         for m in tape.measurements:
-            if len(tape.shots.shot_vector) > 1:
+            if tape.shots.has_partitioned_shots:
                 res = tuple(m.process_samples(unsqueezed(s), measured_wires) for s in samples)
             else:
                 res = m.process_samples(unsqueezed(samples), measured_wires)
