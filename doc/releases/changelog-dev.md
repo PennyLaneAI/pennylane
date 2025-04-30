@@ -291,6 +291,7 @@
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
 
 * Fixes a bug where the `qml.ISWAP` raised to a power of 2 and `qml.SISWAP` raised to a power of 4 incorrectly decompose to nothing.
+  [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
 <h3>Contributors ✍️</h3>
 
