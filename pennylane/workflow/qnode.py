@@ -32,7 +32,7 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .resolution import SupportedDiffMethods
+from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -602,6 +602,8 @@ class QNode:
         self.func = func
         self.device = device
         self._interface = get_canonical_interface_name(interface)
+        if self._interface in (Interface.JAX, Interface.JAX_JIT):
+            _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache

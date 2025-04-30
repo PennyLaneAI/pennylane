@@ -15,7 +15,12 @@
 from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
+from importlib.metadata import version
+from importlib.util import find_spec
 from typing import Literal, Optional, Union, get_args
+from warnings import warn
+
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -37,6 +42,29 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
+
+
+def _validate_jax_version():
+    """Checks if the installed version of JAX is supported. If an unsupported version of
+    JAX is installed, a ``RuntimeWarning`` is raised."""
+    if not find_spec("jax"):
+        return
+
+    jax_version = version("jax")
+    min_jax_version = "0.0.0"  # place holders than can be updated as needed
+    max_jax_version = "1.0.0"
+    if Version(jax_version) < Version(min_jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of less than {min_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+    if Version(max_jax_version) < Version(jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of greater than {max_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
 
 
 def _get_jax_interface_name() -> Interface:
