@@ -551,6 +551,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:7] == "a:i64[]"
         assert "lambda ; a:i64[]" in conditional
 
+    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "func, kwargs",
         [
