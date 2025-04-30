@@ -238,6 +238,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the capture of `QSVT` so that it no longer treats abstract values as metadata.
+
 * A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
   [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
 
