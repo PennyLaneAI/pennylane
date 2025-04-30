@@ -817,13 +817,12 @@ class TestSnapshot:
         if isinstance(measurement, qml.measurements.SampleMP):
             len_measured_wires = len(measurement.wires)
             assert (
-                snapshot_result[0].shape == (1000, len_measured_wires)
+                snapshot_result.shape == (1000, len_measured_wires)
                 if not is_state_batched
                 else (2, 1000, len_measured_wires)
             )
             assert set(np.unique(snapshot_result)) <= {0, 1}
         elif isinstance(measurement, qml.measurements.CountsMP):
-            snapshot_result = snapshot_result[0]
             if is_state_batched:
                 snapshot_result = snapshot_result[0]
             assert isinstance(snapshot_result, dict)
