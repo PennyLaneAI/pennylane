@@ -381,6 +381,17 @@ class CountsMP(SampleMeasurement):
             self._include_all_outcomes(mapped_counts)
         else:
             _remove_unobserved_outcomes(mapped_counts)
+
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            for outcome, count in mapped_counts.items():
+                val = eigvals[int(outcome, 2)]
+                eigvals_dict[val] += count
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
+            return eigvals_dict
+
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
