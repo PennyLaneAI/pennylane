@@ -351,15 +351,6 @@ diff_method_map = {"finite-diff": _finite_diff}
 @debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
 
-    def _make_zero(tan, arg):
-        return (
-            jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
-            if isinstance(tan, jax.interpreters.ad.Zero)
-            else tan
-        )
-
-    tangents = tuple(map(_make_zero, tangents, args))
-
     if execution_config.use_device_gradient:
         return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 

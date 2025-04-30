@@ -1893,7 +1893,7 @@ class TestQNodeCaptureCaching:
             qml.RY(y, 0)
             return qml.expval(qml.Z(0))
 
-        abstracted_axes = ({0: "a"},)
+        abstracted_axes = ({0: "a"}, ())
         spy = mocker.spy(jax, "make_jaxpr")
         _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
             jnp.arange(10), 3.5
@@ -1939,7 +1939,7 @@ class TestQNodeCaptureCaching:
             qml.RY(y[1], 1)
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-        abstracted_axes = ({"0": {0: "a"}, "1": {0: "b"}},)
+        abstracted_axes = ({"0": {0: "a"}, "1": {0: "b"}}, ())
         spy = mocker.spy(jax, "make_jaxpr")
         _ = jax.make_jaxpr(circuit, abstracted_axes=abstracted_axes, static_argnums=1)(
             {"0": jnp.arange(10), "1": jnp.arange(100)}, (3.5, 4.6)

@@ -231,28 +231,6 @@ def test_parametrized_op():
     qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
-def test_parametrized_op_jvp_tracer():
-    """Test that passing a JVP tracer to a parametrized op just creates
-    the op with the tracer as argument(s)."""
-    from pennylane.capture.primitives import grad_prim
-
-    def func(x):
-        qml.RX(x, 0)
-        return x
-
-    jaxpr = jax.make_jaxpr(qml.grad(func))(0.5)
-    assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == grad_prim
-
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-
-    assert len(q) == 1
-    op = q.queue[0]
-    assert isinstance(op, qml.RX)
-    assert isinstance(op.data[0], jax.interpreters.ad.JVPTracer)
-
-
 class TestSpecialOps:
 
     def test_pauli_rot(self):

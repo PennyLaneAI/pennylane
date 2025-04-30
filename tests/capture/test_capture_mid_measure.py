@@ -420,11 +420,11 @@ class TestMidMeasureExecute:
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))

@@ -311,7 +311,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
         assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
         # Make sure its on wire=0
-        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 0)
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1].val, 0)
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -323,7 +323,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
         assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
         # Make sure its on wire=1
-        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 1)
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1].val, 1)
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -335,7 +335,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert branch_jaxpr.eqns[-4].primitive == qml.RY._primitive
         assert branch_jaxpr.eqns[-3].primitive == qml.RZ._primitive
         # Make sure its on wire=2
-        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1], 2)
+        assert qml.math.allclose(branch_jaxpr.eqns[-3].invars[1].val, 2)
         # Measurement
         assert branch_jaxpr.eqns[-2].primitive == qml.PauliX._primitive
         assert branch_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive

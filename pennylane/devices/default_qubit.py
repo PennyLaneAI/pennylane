@@ -1021,6 +1021,15 @@ class DefaultQubit(Device):
                 jaxpr, consts, *non_const_args, execution_config=execution_config
             )
 
+        def _make_zero(tan, arg):
+            return (
+                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, jax.interpreters.ad.Zero)
+                else tan
+            )
+
+        tangents = tuple(map(_make_zero, tangents, args))
+
         return jax.jvp(eval_wrapper, args, tangents)
 
     # pylint :disable=import-outside-toplevel, unused-argument

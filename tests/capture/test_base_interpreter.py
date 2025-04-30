@@ -796,6 +796,7 @@ class TestDynamicShapes:
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
 
+    @pytest.mark.xfail  # v0.5.3 broke the ability to capture this
     def test_hstack(self):
         """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
         which currently does not work with dynamic shapes."""
