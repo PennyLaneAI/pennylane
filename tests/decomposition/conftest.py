@@ -27,6 +27,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
+from pennylane.ops.identity import _controlled_g_phase_decomp
+from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 
 decompositions = defaultdict(list)
 
@@ -136,6 +138,9 @@ decompositions["T"] = [_t_ps]
 # Custom Decompositions For Symbolic Operators #
 ################################################
 
+decompositions["C(PauliX)"] = [_controlled_x_decomp]
+decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
+decompositions["C(Hadamard)"] = [_controlled_hadamard]
 decompositions["Adjoint(Hadamard)"] = [self_adjoint]
 decompositions["Pow(Hadamard)"] = [pow_of_self_adjoint]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]
