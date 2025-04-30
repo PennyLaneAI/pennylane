@@ -172,7 +172,7 @@ def measure_arbitrary_basis(
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(wires, angle=angle, plane=plane, reset=reset, postselect=postselect)
+        return primitive.bind(wires, angle, plane=plane, reset=reset, postselect=postselect)
 
     return _measure_impl(
         wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
@@ -219,7 +219,7 @@ def measure_x(
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(wires, angle=0.0, plane="XY", reset=reset, postselect=postselect)
+        return primitive.bind(wires, 0.0, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
 
@@ -265,7 +265,7 @@ def measure_y(
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
         return primitive.bind(
-            wires, angle=np.pi / 2, plane="XY", reset=reset, postselect=postselect
+            wires, np.pi / 2, plane="XY", reset=reset, postselect=postselect
         )
 
     return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)

@@ -183,8 +183,6 @@ class TestValidation:
         """Test that a clear error is raised when executing with program capture"""
         import jax
 
-        qml.capture.enable()
-
         def func():
             m = qml.measure(0)
             cond_measure(m, measure_x, measure_y)(0)
