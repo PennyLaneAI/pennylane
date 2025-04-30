@@ -214,9 +214,9 @@
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
-* Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import.
+* Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
-
+  
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
@@ -226,8 +226,8 @@
 
 <h3>Documentation 📝</h3>
 
-* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
-  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
+  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
@@ -253,14 +253,14 @@
 * Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
   [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
 
-* Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.
+* Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
 
 * Using finite differences with program capture without x64 mode enabled now raises a warning.
   [(#7282)](https://github.com/PennyLaneAI/pennylane/pull/7282)
 
-* When the `mcm_method` is specified to the `"device"`, the `defer_measurements` transform will
+* When the `mcm_method` is specified to the `"device"`, the `defer_measurements` transform will 
   no longer be applied. Instead, the device will be responsible for all MCM handling.
   [(#7243)](https://github.com/PennyLaneAI/pennylane/pull/7243)
 

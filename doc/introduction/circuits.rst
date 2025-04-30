@@ -248,11 +248,11 @@ Re-configuring QNode settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There is often a need to modify an existing QNode setup to test a new configuration. This includes,
-but is not limited to, executing on a different quantum device, using a new differentiation method or
+but is not limited to, executing on a different quantum device, using a new differentiation method or 
 machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
-way to make these adjustments. To update one or more QNode settings, simply give a new value to the
+way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
-used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated
+used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
 using this method.
 
 For instance, to use a different quantum device, the configuration can be updated with,
@@ -262,8 +262,8 @@ For instance, to use a different quantum device, the configuration can be update
 >>> print(new_circuit.device.name)
 lightning.qubit
 >>> print(qml.draw(new_circuit)(np.pi/4, 0.7))
-aux: ───────────╭●─┤
- q1: ──RZ(0.79)─╰X─┤
+aux: ───────────╭●─┤     
+ q1: ──RZ(0.79)─╰X─┤     
  q2: ──RY(0.70)────┤  <Z>
 
 The QNode decorator

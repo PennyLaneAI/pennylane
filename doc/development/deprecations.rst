@@ -86,7 +86,7 @@ Completed deprecation cycles
 
 * The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
   If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
-
+  
   - Deprecated in v0.41
   - Removed in v0.42
 
@@ -108,7 +108,7 @@ Completed deprecation cycles
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``.
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
   Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
@@ -144,7 +144,7 @@ Completed deprecation cycles
 
   - Deprecated in v0.40
   - Removed in v0.41
-  
+
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
   Instead, use the ``qml.workflow.get_best_diff_method`` function. 
   
