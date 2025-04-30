@@ -14,3 +14,4 @@ requests
 rich
 diastatic-malt
 pandas
+xdsl # used for the Python compiler
