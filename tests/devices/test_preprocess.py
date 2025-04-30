@@ -563,7 +563,7 @@ class TestMeasurementsFromCountsOrSamples:
             ),
         ],
     )
-    @pytest.mark.parametrize("shots", [3000, (3000, 4000), (3000, 3500, 4000)])
+    @pytest.mark.parametrize("shots", [3000, (3000, 3000), (3000, 3500, 4000)])
     def test_measurements_from_samples_or_counts(
         self,
         meas_transform,
@@ -588,8 +588,8 @@ class TestMeasurementsFromCountsOrSamples:
         theta = 2.5
         res = circuit(theta)
 
-        if len(dev.shots.shot_vector) != 1:
-            assert len(res) == len(dev.shots.shot_vector)
+        if dev.shots.has_partitioned_shots:
+            assert len(res) == dev.shots.num_copies
 
         assert np.allclose(res, expected_res(theta), atol=0.05)
 
@@ -626,11 +626,11 @@ class TestMeasurementsFromCountsOrSamples:
         res = transformed_circuit(theta)
         expected = basic_circuit(theta)
 
-        # +/- 100 shots is pretty reasonable with 3000 shots total
+        # +/- 200 shots is pretty reasonable with 5000 shots total
         assert len(res) == len(expected)
         assert res.keys() == expected.keys()
         for key in res.keys():
-            assert np.isclose(res[key], expected[key], atol=100)
+            assert np.isclose(res[key], expected[key], atol=200)
 
     @pytest.mark.parametrize(
         "sample_kwargs",
@@ -741,11 +741,11 @@ class TestMeasurementsFromCountsOrSamples:
         assert np.isclose(var_res, var_expected, atol=0.05)
         assert np.allclose(probs_res, probs_expected, atol=0.05)
 
-        # +/- 100 shots is pretty reasonable with 3000 shots total
+        # +/- 200 shots is pretty reasonable with 5000 shots total
         assert len(counts_res) == len(counts_expected)
         assert counts_res.keys() == counts_expected.keys()
         for key in counts_res.keys():
-            assert np.isclose(counts_res[key], counts_expected[key], atol=100)
+            assert np.isclose(counts_res[key], counts_expected[key], atol=200)
 
         # # sample comparison
         assert np.isclose(np.mean(sample_res), np.mean(sample_expected), atol=0.05)
