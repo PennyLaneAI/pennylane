@@ -290,7 +290,7 @@
 * Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
 
-* Fixes a bug where the `qml.ISWAP` raised to a power of 2 and `qml.SISWAP` raised to a power of 4 incorrectly decompose to nothing.
+* Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
   [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
 <h3>Contributors ✍️</h3>
