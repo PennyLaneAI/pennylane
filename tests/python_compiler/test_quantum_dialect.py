@@ -22,12 +22,8 @@ from xdsl.ir import AttributeCovT, OpResult
 
 from pennylane.compiler.python_compiler.quantum_dialect import (
     AllocOp,
-    NamedObservableAttr,
-    ObservableType,
     QuantumDialect,
-    QubitType,
     QuregType,
-    ResultType,
 )
 
 name = QuantumDialect.name
@@ -108,26 +104,24 @@ def test_all_attributes_names(attr):
     assert attr.name == expected_name
 
 
-class TestAllocOp:
-    """Test the AllocOp class."""
+def test_alloc_op_empty():
+    """Test the AllocOp class with no arguments."""
 
-    def test_alloc_op_empty(self):
-        """Test the AllocOp class with no arguments."""
+    op = AllocOp(
+        operands=[None],
+        result_types=[QuregType()],
+    )
 
-        op = AllocOp(
-            operands=[None],
-            result_types=[QuregType()],
-        )
+    assert op.nqubits is None
+    assert op.nqubits_attr is None
+    assert isinstance(op.qreg.type, QuregType)
 
-        assert op.nqubits is None
-        assert op.nqubits_attr is None
-        assert isinstance(op.qreg.type, QuregType)
 
-    def test_alloc_op_with_nqubits(self):
-        """Test the AllocOp class with nqubits argument."""
+def test_alloc_op_with_nqubits():
+    """Test the AllocOp class with nqubits argument."""
 
-        dummy_value = create_ssa_value(IntegerType(64))
+    dummy_value = create_ssa_value(IntegerType(64))
 
-        op = AllocOp(operands=[dummy_value], result_types=[QuregType()])
-        assert op.nqubits is not None
-        assert isinstance(op.qreg.type, QuregType)
+    op = AllocOp(operands=[dummy_value], result_types=[QuregType()])
+    assert op.nqubits is not None
+    assert isinstance(op.qreg.type, QuregType)
