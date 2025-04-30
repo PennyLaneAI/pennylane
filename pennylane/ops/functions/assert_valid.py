@@ -117,7 +117,7 @@ def _check_decomposition_new(op, heuristic_resources=False):
         _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
 
     for rule in qml.list_decomps(f"Pow({type(op).__name__})"):
-        for z in [2, 3, 3.5]:
+        for z in [0.5, 2, 3, 4, 4.5]:
             pow_op = qml.ops.Pow(op, z)
             _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
 

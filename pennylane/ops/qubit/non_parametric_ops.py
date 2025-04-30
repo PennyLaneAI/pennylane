@@ -1904,26 +1904,36 @@ def _iswap_decomp(wires, **__):
 add_decomps(ISWAP, _iswap_decomp)
 
 
-def _pow_iswap_to_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_iswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     z_mod4 = z % 4
     if z_mod4 == 0.5:
         return {SISWAP: 1}
+    if z_mod4 == 2:
+        return {Z: 2}
     if z != z_mod4:
         return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
     raise DecompositionNotApplicable
 
 
-@register_resources(_pow_iswap_to_siswap_resource)
-def _pow_iswap_to_siswap(wires, z, **__):
+@register_resources(_pow_iswap_resource)
+def _pow_iswap_decomp(wires, z, **__):
+
     z_mod4 = z % 4
-    qml.cond(
-        z_mod4 == 0.5,
-        lambda: SISWAP(wires=wires),
-        lambda: qml.pow(ISWAP(wires=wires), z_mod4),
-    )()
+
+    def _siswap():
+        SISWAP(wires=wires)
+
+    def _general_case():
+        qml.pow(ISWAP(wires=wires), z_mod4)
+
+    def _zz():
+        qml.Z(wires[0])
+        qml.Z(wires[1])
+
+    qml.cond(z_mod4 == 0.5, _siswap, _general_case, elifs=[(z_mod4 == 2, _zz)])()
 
 
-add_decomps("Pow(ISWAP)", _pow_iswap_to_siswap)
+add_decomps("Pow(ISWAP)", _pow_iswap_decomp)
 
 
 class SISWAP(Operation):
@@ -2077,8 +2087,8 @@ class SISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod4 = z % 4
-        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
+        z_mod8 = z % 8
+        return [ISWAP(wires=self.wires)] if z_mod8 == 2 else super().pow(z_mod8)
 
 
 def _siswap_decomp_resources():
@@ -2105,21 +2115,36 @@ add_decomps(SISWAP, _siswap_decomp)
 
 
 def _pow_siswap_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    z_mod4 = z % 4
-    if qml.math.allclose(z_mod4, 2):
+    z_mod8 = z % 8
+    if qml.math.allclose(z_mod8, 2):
         return {ISWAP: 1}
-    if z != z_mod4:
-        return {pow_resource_rep(base_class, base_params, z=z_mod4): 1}
+    if qml.math.allclose(z_mod8, 4):
+        return {Z: 2}
+    if z != z_mod8:
+        return {pow_resource_rep(base_class, base_params, z=z_mod8): 1}
     raise DecompositionNotApplicable
 
 
 @register_resources(_pow_siswap_resource)
 def _pow_siswap(wires, z, **__):
-    z_mod4 = z % 4
+
+    z_mod8 = z % 8
+
+    def _iswap():
+        ISWAP(wires=wires)
+
+    def _zz():
+        qml.Z(wires[0])
+        qml.Z(wires[1])
+
+    def _general_case():
+        qml.pow(SISWAP(wires=wires), z_mod8)
+
     qml.cond(
-        qml.math.allclose(z_mod4, 2),
-        lambda: ISWAP(wires=wires),
-        lambda: qml.pow(SISWAP(wires=wires), z_mod4),
+        qml.math.allclose(z_mod8, 2),
+        _iswap,
+        _general_case,
+        elifs=[(qml.math.allclose(z_mod8, 4), _zz)],
     )()
 
 
