@@ -127,8 +127,28 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+
 * Improved readability of `ExecutionConfig` with a custom `__str__`. 
   [(#7308)](https://github.com/PennyLaneAI/pennylane/pull/7308)
+
+* Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
+  [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=10)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Snapshot("sample", measurement=qml.sample(qml.X(0)), shots=5)
+      return qml.sample(qml.X(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {'sample': array([-1., -1., -1., -1., -1.]),
+   'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
+  ```
+
 
 * Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
   decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
@@ -219,6 +239,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
+  [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
+
+* Fixes the repr for empty `Prod` and `Sum` instances to better communicate the existence of an empty instance.
+  [(#7346)](https://github.com/PennyLaneAI/pennylane/pull/7346)
+
 * Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
 
@@ -248,6 +274,18 @@
 
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* Fixed a bug that caused `CountsMP.process_counts` to return results in the computational basis, even if
+  an observable was specified.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
+* Fixed a bug that caused `SamplesMP.process_counts` used with an observable to return a list of eigenvalues 
+  for each individual operation in the observable, instead of the overall result.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
+* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
+  [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
+
 
 <h3>Contributors ✍️</h3>
 
