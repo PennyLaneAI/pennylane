@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
+  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
+
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
   - Deprecated in v0.42
