@@ -563,11 +563,8 @@ class TransformProgram:
 
         processing_fns_stack = []
 
-        print(self)
-        print(tapes[0].trainable_params)
         for transform_idx, transform_container in enumerate(self):
             transform, targs, tkwargs, cotransform, _, _, _ = transform_container
-            print(f"Applying {transform}")
             tkwargs = {
                 key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
             }
@@ -608,9 +605,7 @@ class TransformProgram:
 
             # set input tapes for next iteration.
             tapes = execution_tapes
-            print(tapes[0].trainable_params)
 
-        print()
         postprocessing_fn = partial(
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
