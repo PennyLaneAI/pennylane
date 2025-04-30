@@ -254,6 +254,7 @@ class TestExpandNonunitaryGen:
             "SingleExcitationPlus",
             "DoubleExcitationMinus",
             "DoubleExcitationPlus",
+            "GlobalPhase",
         ]
 
         with qml.queuing.AnnotatedQueue() as q:

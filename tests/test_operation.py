@@ -78,13 +78,13 @@ class TestOperatorConstruction:
             DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):
-        """Test that num_wires is `AnyWires` by default."""
+        """Test that num_wires is None by default."""
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
 
-        assert DummyOp.num_wires == qml.operation.AnyWires
-        assert Operator.num_wires == qml.operation.AnyWires
+        assert DummyOp.num_wires is None
+        assert Operator.num_wires is None
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
@@ -1901,7 +1901,6 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-        num_wires = qml.operation.AnyWires
         grad_method = "A"
 
         # pylint: disable=too-many-arguments,too-many-positional-arguments

@@ -19,7 +19,7 @@ import copy
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -107,7 +107,6 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):

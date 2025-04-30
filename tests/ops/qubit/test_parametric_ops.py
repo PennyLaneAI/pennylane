@@ -3660,7 +3660,7 @@ class TestSimplify:
         if op == qml.U2:
             pytest.skip("U2 gate does not simplify to Identity")
 
-        num_wires = op.num_wires if op.num_wires is not qml.operation.AnyWires else 2
+        num_wires = op.num_wires if op.num_wires is not None else 2
 
         if op == qml.PCPhase:
             unsimplified_op = op(*([0] * op.num_params), dim=2, wires=range(num_wires))
