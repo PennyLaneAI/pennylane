@@ -100,8 +100,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, **kwargs):
     """
     tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
-    new_tape = tapes[tape_idx]
-    return math.stack(new_tape.get_parameters(trainable_only=True))
+    return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
 
 def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
