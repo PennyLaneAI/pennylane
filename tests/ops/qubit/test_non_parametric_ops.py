@@ -45,7 +45,6 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.operation import AnyWires
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -123,14 +122,14 @@ class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
+        op = op_cls(wires=0 if op_cls.num_wires is None else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
+        op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
         res_static = op.compute_matrix()
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
