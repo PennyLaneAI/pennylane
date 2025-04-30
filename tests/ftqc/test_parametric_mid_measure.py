@@ -503,11 +503,15 @@ class TestMeasureFunctions:
 
         # measurement is captured as epxected
         assert "measure_in_basis" in captured_measurement
-        assert f"angle={angle}" in captured_measurement
         assert f"plane={plane}" in captured_measurement
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
-        assert captured_measurement[-1] == str(wire)
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        dynamic_params = dynamic_params.split(" ")
+        assert dynamic_params[0] == str(wire)
+        assert dynamic_params[1][:6] == str(angle)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
@@ -539,11 +543,15 @@ class TestMeasureFunctions:
 
         # measurement is captured as epxected
         assert "measure_in_basis" in captured_measurement
-        assert f"angle={angle}" in captured_measurement
         assert f"plane={plane}" in captured_measurement
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
-        assert captured_measurement[-1] == str(wire)
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        dynamic_params = dynamic_params.split(" ")
+        assert dynamic_params[0] == str(wire)
+        assert dynamic_params[1] == str(angle)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
