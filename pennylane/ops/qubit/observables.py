@@ -25,7 +25,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -58,7 +58,6 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -297,7 +296,6 @@ class SparseHamiltonian(Observable):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -446,7 +444,6 @@ class Projector(Observable):
     """
 
     name = "Projector"
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 

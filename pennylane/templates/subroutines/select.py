@@ -64,8 +64,6 @@ class Select(Operation):
 
     """
 
-    num_wires = qml.operation.AnyWires
-
     def _flatten(self):
         return (self.ops), (self.control)
 
