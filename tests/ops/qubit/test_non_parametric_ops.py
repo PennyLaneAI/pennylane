@@ -827,7 +827,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
     # Controlled operations
     qml.CNOT(wires=(0, 1)),
@@ -842,6 +841,7 @@ period_two_ops = (
 
 
 class TestPowMethod:
+
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
@@ -919,7 +919,7 @@ class TestPowMethod:
         assert op_pow[0].__class__ is qml.PhaseShift
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
-    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
+    @pytest.mark.parametrize("n", (0.5, 4.5, -3.5))
     def test_ISWAP_sqaure_root(self, n):
         """Test that SISWAP is the square root of ISWAP."""
         op = qml.ISWAP(wires=(0, 1))
