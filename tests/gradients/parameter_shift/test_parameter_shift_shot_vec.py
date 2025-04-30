@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -1938,8 +1937,6 @@ class TestParameterShiftRule:
 
         class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
