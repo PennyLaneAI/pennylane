@@ -17,3 +17,4 @@ typing_extensions>=4.6.0
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
 tach~=0.28.5
 diastatic-malt
+xdsl # used for the Python compiler
