@@ -201,6 +201,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* The boolean functions provided in `pennylane.operation` are deprecated. See the :doc:`deprecations page </development/deprecations>` 
+  for equivalent code to use instead. These include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`,
+  `has_nopar`, `has_unitary_gen`, `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
+
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
   an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
   and does not need to be overwritten unless the operator developer wants to add wire number validation.
