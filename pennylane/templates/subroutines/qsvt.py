@@ -16,7 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Sequence, Union
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
@@ -102,7 +102,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
 def qsvt(
     A: Union[Operator, TensorLike],
     poly: TensorLike,
-    encoding_wires: Optional[Sequence] = None,
+    encoding_wires: Sequence,
     block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,
 ):
     r"""
