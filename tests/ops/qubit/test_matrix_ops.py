@@ -589,8 +589,6 @@ class TestQubitUnitary:
             U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
         )
 
-        assert "QubitUnitary" not in [op.name for op in ops_decompostion]
-
     def test_compute_udv(self):
         """Test the helper function `_compute_udv` used in the QubitUnitary decomposition."""
 

@@ -375,7 +375,7 @@ class QubitUnitary(Operation):
         v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
         u11, diag_u, u12 = _compute_udv(u1, u2)
 
-        ops += QubitUnitary.compute_decomposition(v12_dagg, wires=wires[1:])
+        ops += QubitUnitary(v12_dagg, wires=wires[1:])
         ops.append(
             qml.SelectPauliRot(
                 -2 * qml.math.angle(diag_v),
@@ -384,7 +384,7 @@ class QubitUnitary(Operation):
                 rot_axis="Z",
             )
         )
-        ops += QubitUnitary.compute_decomposition(v11_dagg, wires=wires[1:])
+        ops += QubitUnitary(v11_dagg, wires=wires[1:])
 
         ops.append(
             qml.SelectPauliRot(
