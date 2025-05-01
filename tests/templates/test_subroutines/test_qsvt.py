@@ -979,12 +979,12 @@ class TestIterativeSolver:
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterates(self, x, degree):
 
-        from jax import numpy as np
+        from jax import numpy as jnp
 
-        phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterates(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert np.isclose(qsp_be, ref)
+        assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", list(np.random.uniform(low=-1.0, high=1.0, size=4)))
     def test_W_of_x(self, x):
