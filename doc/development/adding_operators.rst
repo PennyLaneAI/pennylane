@@ -139,11 +139,6 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
     class FlipAndRotate(qml.operation.Operation):
 
-        # Define how many wires the operator acts on in total.
-        # In our case this may be one or two, which is why we
-        # use the AnyWires Enumeration to indicate a variable number.
-        num_wires = qml.operation.AnyWires
-
         # This attribute tells PennyLane what differentiation method to use. Here
         # we request parameter-shift (or "analytic") differentiation.
         grad_method = "A"
@@ -242,8 +237,7 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
     For local testing, try type(op)._unflatten(*op._flatten())
 
 
-The new gate can be used with PennyLane devices. Device support for an operation can be checked via
-``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
+The new gate can be used with PennyLane devices.
 
 ``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
 
