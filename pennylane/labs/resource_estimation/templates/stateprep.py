@@ -19,13 +19,13 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
 from pennylane.operation import Operation
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
 
 
-class ResourceStatePrep(qml.StatePrep, ResourceOperator):
+class ResourceStatePrep(ResourceOperator):
     r"""Resource class for StatePrep.
 
     Args:
@@ -55,16 +55,9 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
     {MottonenStatePrep(3): 1}
     """
 
-    def __init__(self, state, wires, pad_with=None, normalize=False, id=None, validate_norm=True):
-        # Overriding the default init method to allow for CompactState as an input.
-
-        if isinstance(state, re.CompactState):
-            self.compact_state = state
-            Operation.__init__(self, state, wires=wires)
-            return
-
-        self.compact_state = None
-        super().__init__(state, wires, pad_with, normalize, id, validate_norm)
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -77,7 +70,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         Resources:
             Uses the resources as defined in the :class:`~.ResourceMottonenStatePreperation` template.
         """
-        return {re.ResourceMottonenStatePreparation.resource_rep(num_wires): 1}
+        return [GateCount(re.ResourceMottonenStatePreparation.resource_rep(num_wires), 1)]
 
     @property
     def resource_params(self) -> dict:
@@ -87,10 +80,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of wires that the operation acts on
         """
-        if self.compact_state:
-            return {"num_wires": self.compact_state.num_qubits}
-
-        return {"num_wires": len(self.wires)}
+        return {"num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
@@ -111,7 +101,7 @@ class ResourceStatePrep(qml.StatePrep, ResourceOperator):
         return f"StatePrep({num_wires})"
 
 
-class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOperator):
+class ResourceMottonenStatePreparation(ResourceOperator):
     """Resource class for the MottonenStatePreparation template.
 
     Args:
@@ -137,16 +127,9 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
     {RZ: 27, CNOT: 16}
     """
 
-    def __init__(self, state_vector, wires, id=None):
-        # Overriding the default init method to allow for CompactState as an input.
-
-        if isinstance(state_vector, re.CompactState):
-            self.compact_state = state_vector
-            Operation.__init__(self, state_vector, wires=wires)
-            return
-
-        self.compact_state = None
-        super().__init__(state_vector, wires, id)
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -161,7 +144,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
             The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
             :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
         """
-        gate_types = {}
+        gate_lst = []
         rz = re.ResourceRZ.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
@@ -169,11 +152,10 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
         cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
 
         if r_count:
-            gate_types[rz] = r_count
-
+            gate_lst.append(GateCount(rz, r_count))
         if cnot_count:
-            gate_types[cnot] = cnot_count
-        return gate_types
+            gate_lst.append(GateCount(cnot, cnot_count))
+        return gate_lst
 
     @property
     def resource_params(self) -> dict:
@@ -183,10 +165,7 @@ class ResourceMottonenStatePreparation(qml.MottonenStatePreparation, ResourceOpe
             dict: A dictionary containing the resource parameters:
                 * num_wires(int): the number of wires that the operation acts on
         """
-        if self.compact_state:
-            return {"num_wires": self.compact_state.num_qubits}
-
-        return {"num_wires": len(self.wires)}
+        return {"num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
@@ -368,7 +347,7 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         return CompressedResourceOp(cls, params)
 
 
-class ResourceBasisState(qml.BasisState, ResourceOperator):
+class ResourceBasisState(ResourceOperator):
     r"""Resource class for the BasisState template.
 
     Args:
@@ -393,16 +372,11 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
     {X: 6}
     """
 
-    def __init__(self, state, wires, id=None):
+    def __init__(self, num_wires, num_bit_flips, wires=None):
         # Overriding the default init method to allow for CompactState as an input.
-
-        if isinstance(state, re.CompactState):
-            self.compact_state = state
-            Operation.__init__(self, state, wires=wires)
-            return
-
-        self.compact_state = None
-        super().__init__(state, wires, id)
+        self.num_wires = num_wires
+        self.num_bit_flips = num_bit_flips
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(
@@ -418,11 +392,8 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         Resources:
             The resources for BasisState are according to the decomposition found in qml.BasisState.
         """
-        gate_types = {}
         x = re.ResourceX.resource_rep()
-        gate_types[x] = num_bit_flips
-
-        return gate_types
+        return [GateCount(x, num_bit_flips)]
 
     @property
     def resource_params(self) -> Dict:
@@ -432,12 +403,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bit_flips (int): number of qubits in the :math:`|1\rangle` state
         """
-        if self.compact_state:
-            return {"num_bit_flips": self.compact_state.num_bit_flips}
-
-        bitstring = self.parameters[0]
-        num_bit_flips = sum(bitstring)
-        return {"num_bit_flips": num_bit_flips}
+        return {"num_bit_flips": self.num_bit_flips}
 
     @classmethod
     def resource_rep(cls, num_bit_flips) -> CompressedResourceOp:
@@ -458,7 +424,7 @@ class ResourceBasisState(qml.BasisState, ResourceOperator):
         return f"BasisState({num_bit_flips})"
 
 
-class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
+class ResourceMPSPrep(ResourceOperator):
     r"""Resource class for the MPSPrep template.
 
     Args:
@@ -489,28 +455,15 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
     defaultdict(<class 'int'>, {QubitUnitary(2): 2, QubitUnitary(3): 3})
     """
 
-    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False, id=None):
-        # Overriding the default init method to allow for CompactState as an input.
-
-        if isinstance(mps, re.CompactState):
-            self.compact_state = mps
-
-            self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
-            all_wires = self.hyperparameters["input_wires"]
-            if work_wires:
-                self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
-                all_wires += qml.wires.Wires(work_wires)
-
-            Operation.__init__(self, mps, wires=all_wires)
-            return
-
-        self.compact_state = None
-        super().__init__(mps, wires, work_wires, right_canonicalize, id)
+    def __init__(self, num_mps_matrices, max_bond_dim, wires=None):
+        self.num_wires = num_mps_matrices
+        self.max_bond_dim = max_bond_dim
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(
         num_wires,
-        num_work_wires,
+        max_bond_dim,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -524,17 +477,18 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
         The resources for MPSPrep are according to the decomposition, which uses generic :class:`~.QubitUnitary`.
         The decomposition is based on the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
         """
-        gate_types = defaultdict(int)
-
+        num_work_wires = math.ceil(math.log2(max_bond_dim))
         log2_chi = min(num_work_wires, math.ceil(num_wires / 2))
 
+        gate_lst = [AddQubits(num_work_wires)]
+        
         for index in range(1, num_wires + 1):
             qubit_unitary_wires = min(index + 1, log2_chi + 1, (num_wires - index) + 2)
-
             qubit_unitary = re.ResourceQubitUnitary.resource_rep(num_wires=qubit_unitary_wires)
-            gate_types[qubit_unitary] += 1
-
-        return gate_types
+            gate_lst.append(GateCount(qubit_unitary))
+        
+        gate_lst.append(CutQubits(num_work_wires))
+        return gate_lst
 
     @property
     def resource_params(self) -> Dict:
@@ -545,20 +499,10 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
                 * num_wires (int): number of qubits corresponding to the state preparation register
                 * num_work_wires (int): number of additional qubits matching the bond dimension of the MPS.
         """
-        if self.compact_state:
-            return {
-                "num_wires": self.compact_state.num_qubits,
-                "num_work_wires": self.compact_state.num_work_wires,
-            }
-
-        ww = self.hyperparameters["work_wires"]
-        num_work_wires = len(ww) if ww else 0
-        num_wires = len(self.hyperparameters["input_wires"])
-
-        return {"num_wires": num_wires, "num_work_wires": num_work_wires}
+        return {"num_wires": self.num_wires, "max_bond_dim": self.max_bond_dim}
 
     @classmethod
-    def resource_rep(cls, num_wires, num_work_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, max_bond_dim) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -569,15 +513,15 @@ class ResourceMPSPrep(qml.MPSPrep, ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        params = {"num_wires": num_wires, "num_work_wires": num_work_wires}
+        params = {"num_wires": num_wires, "max_bond_dim": max_bond_dim}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def tracking_name(cls, num_wires, num_work_wires) -> str:
-        return f"MPSPrep({num_wires}, {num_work_wires})"
+    def tracking_name(cls, num_wires, max_bond_dim) -> str:
+        return f"MPSPrep({num_wires}, {max_bond_dim})"
 
 
-class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
+class ResourceQROMStatePreparation(ResourceOperator):
     r"""Resource class for the QROMStatePreparation template.
 
     This operation implements the state preparation method described
@@ -617,35 +561,17 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
     QROM: 1, Adjoint(QROM): 1, QROM: 1, Adjoint(QROM): 1, CRY: 15})
     """
 
-    def __init__(self, state_vector, wires, precision_wires, work_wires=None, id=None):
+    def __init__(self, num_state_qubits, precision=None, positive_and_real=False, wires=None):
         # Overriding the default init method to allow for CompactState as an input.
-
-        if isinstance(state_vector, re.CompactState):
-            self.state_vector = state_vector
-
-            self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
-            self.hyperparameters["precision_wires"] = qml.wires.Wires(precision_wires)
-            self.hyperparameters["work_wires"] = qml.wires.Wires(
-                () if work_wires is None else work_wires
-            )
-
-            all_wires = (
-                self.hyperparameters["input_wires"]
-                + self.hyperparameters["precision_wires"]
-                + self.hyperparameters["work_wires"]
-            )
-            Operation.__init__(state_vector, wires=all_wires, id=id)
-            return
-
-        self.compact_state = None
-        super().__init__(state_vector, wires, precision_wires, work_wires, id)
+        self.num_wires = num_state_qubits
+        self.precision = precision
+        self.positive_and_real = positive_and_real
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(
         num_state_qubits,
-        num_precision_wires,
-        num_work_wires,
-        num_phase_gradient_wires,
+        precision,
         positive_and_real,
         **kwargs,
     ):
@@ -664,80 +590,92 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
         """
-        gate_types = defaultdict(int)
+        gate_counts = []
+        precision = precision or kwargs["config"]["precision_qrom_state_prep"]
+        num_precision_wires = abs(math.floor(math.log2(precision)))
 
-        for j in range(num_state_qubits):
+        gate_counts.append(AddQubits(num_precision_wires))
+
+        for j in range(1, num_state_qubits):
             num_bitstrings = 2**j
             num_bit_flips = max(2 ** (j - 1), 1)
-            num_control_wires = j
 
-            gate_types[
-                re.ResourceQROM.resource_rep(
-                    num_bitstrings,
-                    num_bit_flips,
-                    num_control_wires,
-                    num_work_wires,
-                    num_precision_wires,
-                    clean=False,
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings,
+                        num_bit_flips,
+                        num_precision_wires,
+                        clean=False,
+                    )
                 )
-            ] += 1
+            )
 
-            gate_types[
-                re.ResourceAdjoint.resource_rep(
-                    base_class=re.ResourceQROM,
-                    base_params={
-                        "num_bitstrings": num_bitstrings,
-                        "num_bit_flips": num_bit_flips,
-                        "num_control_wires": num_control_wires,
-                        "num_work_wires": num_work_wires,
-                        "size_bitstring": num_precision_wires,
-                        "clean": False,
-                    },
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": num_bitstrings,
+                            "num_bit_flips": num_bit_flips,
+                            "size_bitstring": num_precision_wires,
+                            "clean": False,
+                        },
+                    )
                 )
-            ] += 1
+            )
 
         t = re.ResourceT.resource_rep()
         h = re.ResourceHadamard.resource_rep()
 
         # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
         # TODO: Update once we have qml.SemiAdder
-        gate_types[t] = (
-            2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)
-        ) * num_state_qubits
+        gate_counts.append(
+            GateCount(
+                t, 
+                (2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)) * num_state_qubits,
+            )
+        )
 
-        gate_types[h] = 2 * num_state_qubits
+        gate_counts.append(GateCount(h, 2 * num_state_qubits))
 
         if not positive_and_real:
-            gate_types[
-                re.ResourceQROM.resource_rep(
-                    2**num_state_qubits,
-                    2 ** (num_state_qubits - 1),
-                    num_state_qubits,
-                    num_work_wires,
-                    num_precision_wires,
-                    clean=False,
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        2**num_state_qubits,
+                        2 ** (num_state_qubits - 1),
+                        num_precision_wires,
+                        clean=False,
+                    )
                 )
-            ] += 1
+            )
 
             # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
             # TODO: Update once we have qml.SemiAdder
-            gate_types[t] += 2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)
-
-            gate_types[
-                re.ResourceAdjoint.resource_rep(
-                    base_class=re.ResourceQROM,
-                    base_params={
-                        "num_bitstrings": 2**num_state_qubits,
-                        "num_bit_flips": 2 ** (num_state_qubits - 1),
-                        "num_control_wires": num_state_qubits,
-                        "num_work_wires": num_work_wires,
-                        "size_bitstring": num_precision_wires,
-                        "clean": False,
-                    },
+            gate_counts.append(
+                GateCount(
+                    t, 
+                    2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1),
                 )
-            ] += 1
+            )
 
-        return gate_types
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": 2**num_state_qubits,
+                            "num_bit_flips": 2 ** (num_state_qubits - 1),
+                            "size_bitstring": num_precision_wires,
+                            "clean": False,
+                        },
+                    )
+                )
+            )
+
+        gate_counts.append(CutQubits(num_precision_wires))
+        return gate_counts
 
     @property
     def resource_params(self) -> dict:
@@ -750,36 +688,15 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
                 * num_work_wires (int): additional qubits which optimize the implementation
                 * positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
         """
-        state_vector = self.state_vector
-
-        if isinstance(state_vector, re.CompactState):
-            num_state_qubits = state_vector.num_qubits
-            num_work_wires = state_vector.num_work_wires
-            positive_and_real = state_vector.positive_and_real
-
-            p = state_vector.precision
-            num_precision_wires = abs(math.floor(math.log2(p)))
-
-        else:
-            positive_and_real = True
-            for c in state_vector:
-                if c.imag != 0 or c.real < 0:
-                    positive_and_real = False
-                    break
-
-            num_state_qubits = int(math.log2(len(self.state_vector)))
-            num_precision_wires = len(self.hyperparameters["precision_wires"])
-            num_work_wires = len(self.hyperparameters["work_wires"])
 
         return {
-            "num_state_qubits": num_state_qubits,
-            "num_precision_wires": num_precision_wires,
-            "num_work_wires": num_work_wires,
-            "positive_and_real": positive_and_real,
+            "num_state_qubits": self.num_wires,
+            "precision": self.precision,
+            "positive_and_real": self.positive_and_real,
         }
 
     @classmethod
-    def resource_rep(cls, num_state_qubits, num_precision_wires, num_work_wires, positive_and_real):
+    def resource_rep(cls, num_state_qubits, precision=None, positive_and_real=False):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -794,9 +711,7 @@ class ResourceQROMStatePreparation(qml.QROMStatePreparation, ResourceOperator):
         """
         params = {
             "num_state_qubits": num_state_qubits,
-            "num_precision_wires": num_precision_wires,
-            "num_work_wires": num_work_wires,
-            "num_phase_gradient_wires": num_precision_wires,
+            "precision": precision,
             "positive_and_real": positive_and_real,
         }
         return CompressedResourceOp(cls, params)

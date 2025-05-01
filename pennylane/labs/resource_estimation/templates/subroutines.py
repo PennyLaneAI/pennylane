@@ -29,9 +29,9 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 # pylint: disable=arguments-differ, protected-access
 
-class ResourceMultiplexer(re.ResourceOperator):
+class ResourceMultiplexer(ResourceOperator):
 
-    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=1e-5, wires=None) -> None:
+    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=None, wires=None) -> None:
         self.num_ctrl_wires= num_ctrl_wires
         self.rotation_axis = rotation_axis
         self.precision = precision
@@ -44,11 +44,12 @@ class ResourceMultiplexer(re.ResourceOperator):
         return {"num_ctrl_wires": self.num_ctrl_wires, "rotation_axis": self.rotation_axis, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision):
+    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision=None):
         return CompressedResourceOp(cls, {"num_ctrl_wires": num_ctrl_wires, "rotation_axis": rotation_axis, "precision": precision})
     
     @staticmethod
     def _resource_decomp(num_ctrl_wires, rotation_axis, precision, **kwargs):
+        precision = precision or kwargs["config"]["precision_multiplexer"]
         gate = re.ResourceRZ.resource_rep(eps=precision)
         cnot = re.ResourceCNOT.resource_rep()
         
@@ -67,13 +68,14 @@ class ResourceMultiplexer(re.ResourceOperator):
                     re.ResourceAdjoint.resource_rep(re.ResourceS, {})
                 )
             )
-        
+
         return gate_lst
 
     @staticmethod
     def phase_grad_resource_decomp(num_ctrl_wires, rotation_axis, precision, **kwargs):
-        gate_lst = []
+        precision = precision or kwargs["config"]["precision_multiplexer"]
         num_prec_wires = abs(math.floor(math.log2(precision)))
+        gate_lst = []
 
         gate_lst.append(AddQubits(num_prec_wires))
         gate_lst.append(
@@ -81,8 +83,6 @@ class ResourceMultiplexer(re.ResourceOperator):
                 re.ResourceQROM.resource_rep(
                     num_bitstrings= 2**num_ctrl_wires,
                     num_bit_flips = 2**num_ctrl_wires * num_prec_wires / 2,
-                    q_num_control_wires=None,
-                    q_num_work_wires=None,
                     size_bitstring=num_prec_wires,
                     clean=False,
                 )
@@ -104,8 +104,6 @@ class ResourceMultiplexer(re.ResourceOperator):
                     {
                         "num_bitstrings":2**num_ctrl_wires,
                         "num_bit_flips": 2**num_ctrl_wires * num_prec_wires / 2,
-                        "q_num_control_wires": None,
-                        "q_num_work_wires": None,
                         "size_bitstring": num_prec_wires,
                         "clean": False,
                     },
@@ -1596,10 +1594,18 @@ class ResourceQROM(ResourceOperator):
         w1 = 2 ** math.floor(math.log2(opt_width_continuous))
         w2 = 2 ** math.ceil(math.log2(opt_width_continuous))
 
+        if w1 < 1 and w2 < 1:
+            return 1
+
         def t_cost_func(w):
             return 4 * (math.ceil(num_bitstrings / w) - 2) + 6 * (w - 1) * size_bitstring
 
-        return w2 if t_cost_func(w2) < t_cost_func(w1) else w1
+        if t_cost_func(w2) < t_cost_func(w1) and w2 >= 1:
+            return w2
+        elif t_cost_func(w2) >= t_cost_func(w1) and w1 >= 1:
+            return w1
+        else:
+            return 1
 
     def __init__(
         self, num_bitstrings, size_bitstring, num_bit_flips=None, clean=True, wires=None
@@ -1626,8 +1632,6 @@ class ResourceQROM(ResourceOperator):
     def _resource_decomp(
         num_bitstrings,
         num_bit_flips,
-        q_num_control_wires,
-        q_num_work_wires,
         size_bitstring,
         clean,
         **kwargs,
@@ -1756,8 +1760,6 @@ class ResourceQROM(ResourceOperator):
         num_work_wires: int,
         num_bitstrings,
         num_bit_flips,
-        q_num_control_wires,
-        q_num_work_wires,
         size_bitstring,
         clean,
         **kwargs,
@@ -1911,8 +1913,6 @@ class ResourceQROM(ResourceOperator):
         return {
             "num_bitstrings": self.num_bitstrings,
             "num_bit_flips": self.num_bit_flips,
-            "q_num_control_wires": self.num_control_wires,
-            "q_num_work_wires": 0,
             "size_bitstring": self.size_bitstring,
             "clean": self.clean,
         }
@@ -1922,8 +1922,6 @@ class ResourceQROM(ResourceOperator):
         cls,
         num_bitstrings,
         num_bit_flips,
-        q_num_control_wires,
-        q_num_work_wires,
         size_bitstring,
         clean,
     ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
@@ -1944,8 +1942,6 @@ class ResourceQROM(ResourceOperator):
         params = {
             "num_bitstrings": num_bitstrings,
             "num_bit_flips": num_bit_flips,
-            "q_num_control_wires": q_num_control_wires,
-            "q_num_work_wires": q_num_work_wires,
             "size_bitstring": size_bitstring,
             "clean": clean,
         }
@@ -2124,7 +2120,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
         return CompressedResourceOp(cls, params)
 
 
-class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
+class ResourceQubitUnitary(ResourceOperator):
     r"""Resource class for the QubitUnitary template.
 
     Args:
@@ -2137,6 +2133,10 @@ class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
     .. seealso:: :class:`~.QubitUnitary`
 
     """
+
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -2151,7 +2151,43 @@ class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
             gate raises a :code:`ResourcesNotDefined` error.
 
         """
-        raise re.ResourcesNotDefined
+        # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], 
+        # we can express a n-qubit unitary U with four (n-1)-qubit unitaries and three 
+        # multiplexed rotations ( via `re.ResourceMultiplexer`)
+        gate_lst = []
+        precision = 1e-3
+        num_gates = round(1.149 * math.log2(1 / precision) + 9.2)
+        
+        one_qubit_decomp_cost = [GateCount(re.ResourceT.resource_rep(), num_gates)]
+        two_qubit_decomp_cost = [
+                GateCount(re.ResourceT.resource_rep(), 4 * num_gates),
+                GateCount(re.ResourceCNOT.resource_rep(), 3),
+            ]
+
+        if num_wires == 1: 
+            return one_qubit_decomp_cost
+    
+        if num_wires == 2:
+            return two_qubit_decomp_cost
+        
+        for gc in two_qubit_decomp_cost:
+            gate_lst.append(4**(num_wires-2) * gc)
+        
+        for index in range(2, num_wires):
+            gate_lst.append(
+                GateCount(
+                    re.ResourceMultiplexer.resource_rep(num_ctrl_wires=index, rotation_axis="Z"),
+                    2 * 4**(num_wires - (1+index)),
+                )
+            ),
+            gate_lst.append(
+                GateCount(
+                    re.ResourceMultiplexer.resource_rep(num_ctrl_wires=index, rotation_axis="Y"),
+                    4**(num_wires - (1+index)),
+                )
+            ),
+
+        return gate_lst
 
     @property
     def resource_params(self) -> dict:
@@ -2163,7 +2199,7 @@ class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
         Returns:
             dict: dictionary containing the resource parameters
         """
-        return {"num_wires": len(self.wires)}
+        return {"num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:

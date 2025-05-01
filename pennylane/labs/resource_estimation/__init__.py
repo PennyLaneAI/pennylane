@@ -256,6 +256,7 @@ from .templates import (
     ResourcePhaseGradient,
     ResourceSemiAdder,
     ResourceMultiplexer,
+    ResourceQROMStatePreparation,
 )
 
 from .compact import CompactState

@@ -72,6 +72,8 @@ resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,
     "error_rz": 10e-3,
+    "precision_multiplexer": 1e-3,
+    "precision_qrom_state_prep": 1e-3,
 }
 
 

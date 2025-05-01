@@ -220,6 +220,18 @@ class GateCount:
     def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
         self.gate = gate
         self.count = count
+    
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return self.__class__(self.gate, self.count * other)
+        raise NotImplementedError
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__) and (self.gate == other.gate):
+            return self.__class__(self.gate, self.count + other.count)
+        raise NotImplementedError
+
+    __rmul__ = __mul__
 
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"

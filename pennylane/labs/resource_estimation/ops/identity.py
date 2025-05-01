@@ -222,7 +222,7 @@ class ResourceGlobalPhase(ResourceOperator):
             num_work_wires=num_work_wires,
         )
 
-        return [GateCount(ps), GateCount(mcx, 2)]
+        return [AddQubits(1), GateCount(ps), GateCount(mcx,2), CutQubits(1)]
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
