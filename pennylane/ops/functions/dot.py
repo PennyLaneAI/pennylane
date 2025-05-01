@@ -171,7 +171,7 @@ def dot(
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     operands = [
-        op if not qml.math.is_abstract(coeff) and coeff == 1 else qml.s_prod(coeff, op)
+        op if (not qml.math.is_abstract(coeff) and coeff == 1) else qml.s_prod(coeff, op)
         for coeff, op in zip(coeffs, ops)
     ]
     return (
