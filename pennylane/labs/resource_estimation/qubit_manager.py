@@ -94,6 +94,14 @@ class QubitManager:
         self.__class__._active_managers.pop()
         return
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, self.__class__):
+            return (
+                (self.clean_qubits == other.clean_qubits) and 
+                (self.dirty_qubits == other.dirty_qubits) and 
+                (self.algo_qubits == other.algo_qubits)
+            )
+
     @property
     def clean_qubits(self):
         return self._clean_qubit_counts

@@ -160,6 +160,15 @@ Resource Object Functions:
     ~substitute
 """
 
+from .qubit_manager import (
+    QubitManager,
+    grab_qubits,
+    free_qubits,
+    clean_qubits,
+    dirty_qubits,
+    borrowable_qubits,
+)
+
 from .resource_operator import (
     ResourceOperator,
     ResourcesNotDefined,
@@ -167,7 +176,6 @@ from .resource_operator import (
     CutQubits,
     GateCount,
 )
-from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .resource_container import (
     CompressedResourceOp,
@@ -176,8 +184,10 @@ from .resource_container import (
     add_in_parallel,
     mul_in_series,
     mul_in_parallel,
-    substitute,
 )
+
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
+
 
 from .ops import (
     ResourceAdjoint,
@@ -260,13 +270,4 @@ from .templates import (
 )
 
 from .compact import CompactState
-
-from .qubit_manager import (
-    QubitManager,
-    grab_qubits,
-    free_qubits,
-    clean_qubits,
-    dirty_qubits,
-    borrowable_qubits,
-)
 from .resource_mapping import map_to_resource_op

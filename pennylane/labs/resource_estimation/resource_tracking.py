@@ -473,12 +473,30 @@ def new_resources_from_qfunc(
                 )
 
         # Update:
-        num_wires = qm.algo_qubits + qm.clean_qubits + qm.dirty_qubits
-        clean_gate_counts = _clean_gate_counts(gate_counts)
-        num_gates = sum(clean_gate_counts.values())
-        return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts), qm
+        return Resources(qubit_manager=qm, gate_types=gate_counts)
 
     return wrapper
+
+
+@new_get_resources.register
+def new_resources_from_resource(
+    obj: Resources,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=0,
+    tight_budget=False,
+) -> Callable:
+    
+    existing_qm = obj.qubit_manager
+    with existing_qm:
+        gate_counts = defaultdict(int)
+        for cmpr_rep_op, count in obj.gate_types.items():
+            _new_counts_from_compressed_res_op(
+                cmpr_rep_op, gate_counts, gate_set=gate_set, scalar=count, config=config
+            )
+
+    # Update:
+    return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
 def _new_counts_from_compressed_res_op(

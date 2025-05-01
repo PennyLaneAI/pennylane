@@ -15,10 +15,14 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Callable, Dict
 
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+# from pennylane.labs import resource_estimation as re
+from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
@@ -93,6 +97,27 @@ class ResourceOperator(ABC):
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
         return str_rep
+
+    def __mul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = self.num_wires
+
+        from pennylane.labs.resource_estimation.resource_container import Resources
+        return Resources(qubit_manager, gate_types)
+    
+    def __matmul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = scalar * self.num_wires
+
+        from pennylane.labs.resource_estimation.resource_container import Resources
+        return Resources(qubit_manager, gate_types)
+
+    __rmul__ = __mul__
+    __rmatmul__ = __matmul__
 
     @staticmethod
     @abstractmethod

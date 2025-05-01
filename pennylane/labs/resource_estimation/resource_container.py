@@ -15,10 +15,12 @@ r"""Base classes for resource estimation."""
 from __future__ import annotations
 
 import copy
+from decimal import Decimal
 from collections import defaultdict
 from typing import Hashable, Optional, Type
 
-from pennylane.labs.resource_estimation import ResourceOperator
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
@@ -101,11 +103,10 @@ class Resources:
         {'Hadamard': 1, 'CNOT': 1}
     """
 
-    def __init__(self, num_wires: int = 0, num_gates: int = 0, gate_types: dict = None):
+    def __init__(self, qubit_manager, gate_types: dict = None):
         gate_types = gate_types or {}
 
-        self.num_wires = num_wires
-        self.num_gates = num_gates
+        self.qubit_manager = qubit_manager
         self.gate_types = (
             gate_types
             if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
@@ -114,52 +115,67 @@ class Resources:
 
     def __add__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
+        assert isinstance(other, (self.__class__, ResourceOperator))
         return add_in_series(self, other)
+
+    def __and__(self, other: "Resources") -> "Resources":
+        """Add two resources objects in parallel"""
+        assert isinstance(other, (self.__class__, ResourceOperator))
+        return add_in_parallel(self, other)
 
     def __eq__(self, other: "Resources") -> bool:
         """Test if two resource objects are equal"""
-        if self.num_wires != other.num_wires:
-            return False
-        if self.num_gates != other.num_gates:
-            return False
-
-        return self.gate_types == other.gate_types
+        return (self.gate_types == other.gate_types) and (self.qubit_manager == other.qubit_manager)
 
     def __mul__(self, scalar: int) -> "Resources":
         """Scale a resources object in series"""
+        assert isinstance(scalar, int)
         return mul_in_series(self, scalar)
+    
+    def __matmul__(self, scalar: int) -> "Resources":
+        """Scale a resources object in parallel"""
+        assert isinstance(scalar, int)
+        return mul_in_parallel(self, scalar)
 
-    __rmul__ = __mul__  # same implementation
+    __rmul__ = __mul__
+    __radd__ = __add__
+    __rand__ = __and__
+    __rmatmul__ = __matmul__
 
-    def __iadd__(self, other: "Resources") -> "Resources":
-        """Add two resources objects in series"""
-        return add_in_series(self, other, in_place=True)
+    @property
+    def clean_gate_counts(self):
+        clean_gate_counts = defaultdict(int)
 
-    def __imull__(self, scalar: int) -> "Resources":
-        """Scale a resources object in series"""
-        return mul_in_series(self, scalar, in_place=True)
+        for cmp_res_op, counts in self.gate_types.items():
+            clean_gate_counts[cmp_res_op._name] += counts
+
+        return clean_gate_counts
 
     def __str__(self):
         """String representation of the Resources object."""
-        keys = ["wires", "gates"]
-        vals = [self.num_wires, self.num_gates]
-        items = "\n".join([str(i) for i in zip(keys, vals)])
-        items = items.replace("('", "")
-        items = items.replace("',", ":")
-        items = items.replace(")", "")
+        # keys = ["wires", "gates"]
+        # vals = [self.num_wires, self.num_gates]
+        # items = "\n".join([str(i) for i in zip(keys, vals)])
+        # items = items.replace("('", "")
+        # items = items.replace("',", ":")
+        # items = items.replace(")", "")
 
         gate_type_str = ", ".join(
-            [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
+            [f"'{gate_name}': {Decimal(count):.3E}" for gate_name, count in self.clean_gate_counts.items()]
         )
-        items += "\ngate_types:\n{" + gate_type_str + "}"
+
+        items = "--- Resources: ---\n"
+        items += f" qubit manager: {self.qubit_manager}\n"
+        items += f" total # qubits: {Decimal(sum(self.clean_gate_counts.values())):.3E}\n"
+        items += " gate_types:\n  {" + gate_type_str + "}"
+
         return items
 
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return {
+            "qubit manager": self.qubit_manager,
             "gate_types": self.gate_types,
-            "num_gates": self.num_gates,
-            "num_wires": self.num_wires,
         }.__repr__()
 
     def _ipython_display_(self):
@@ -167,7 +183,7 @@ class Resources:
         print(str(self))
 
 
-def add_in_series(first: Resources, other: Resources, in_place=False) -> Resources:
+def add_in_series(first: Resources, other, in_place=False) -> Resources:  # + 
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
@@ -178,19 +194,39 @@ def add_in_series(first: Resources, other: Resources, in_place=False) -> Resourc
     Returns:
         Resources: combined resources
     """
-    new_wires = max(first.num_wires, other.num_wires)
-    new_gates = first.num_gates + other.num_gates
-    new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=in_place)
+    if isinstance(other, Resources):
+        qm1, qm2 = (first.qubit_manager, other.qubit_manager)
+        
+        new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
+        new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
+        new_budget = qm1.tight_budget or qm2.tight_budget
+        new_logic = max(qm1.algo_qubits, qm2.algo_qubits)
 
-    if in_place:
-        first.num_wires = new_wires
-        first.num_gates = new_gates
-        return first
+        new_qubit_manager = QubitManager(
+            work_wires={"clean": new_clean, "dirty": new_dirty}, 
+            tight_budget=new_budget
+        )
 
-    return Resources(new_wires, new_gates, new_gate_types)
+        new_qubit_manager._logic_qubit_counts = new_logic
+        new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=False)
+
+    else: 
+        qm = first.qubit_manager
+        new_logic = max(qm.algo_qubits, other.num_wires)
+
+        new_qubit_manager = QubitManager(
+            work_wires={"clean": qm.clean_qubits, "dirty": qm.dirty_qubits}, 
+            tight_budget=qm.tight_budget
+        )
+
+        new_qubit_manager._logic_qubit_counts = new_logic
+        new_gate_types = copy.copy(first.gate_types)
+        new_gate_types[other.resource_rep_from_op()] += 1
+    
+    return Resources(new_qubit_manager, new_gate_types)
 
 
-def add_in_parallel(first: Resources, other: Resources, in_place=False) -> Resources:
+def add_in_parallel(first: Resources, other, in_place=False) -> Resources:  # & 
     r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
@@ -201,19 +237,39 @@ def add_in_parallel(first: Resources, other: Resources, in_place=False) -> Resou
     Returns:
         Resources: combined resources
     """
-    new_wires = first.num_wires + other.num_wires
-    new_gates = first.num_gates + other.num_gates
-    new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=in_place)
+    if isinstance(other, Resources):
+        qm1, qm2 = (first.qubit_manager, other.qubit_manager)
+        
+        new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
+        new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
+        new_budget = qm1.tight_budget or qm2.tight_budget
+        new_logic = qm1.algo_qubits + qm2.algo_qubits
 
-    if in_place:
-        first.num_wires = new_wires
-        first.num_gates = new_gates
-        return first
+        new_qubit_manager = QubitManager(
+            work_wires={"clean": new_clean, "dirty": new_dirty}, 
+            tight_budget=new_budget,
+        )
 
-    return Resources(new_wires, new_gates, new_gate_types)
+        new_qubit_manager._logic_qubit_counts = new_logic
+        new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=False)
+    
+    else: 
+        qm = first.qubit_manager
+        new_logic = qm.algo_qubits + other.num_wires
+
+        new_qubit_manager = QubitManager(
+            work_wires={"clean": qm.clean_qubits, "dirty": qm.dirty_qubits}, 
+            tight_budget=qm.tight_budget
+        )
+
+        new_qubit_manager._logic_qubit_counts = new_logic
+        new_gate_types = copy.copy(first.gate_types)
+        new_gate_types[other.resource_rep_from_op()] += 1
+    
+    return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:
+def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:  # * 
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
@@ -224,17 +280,25 @@ def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:
     Returns:
         Resources: combined resources
     """
-    new_gates = scalar * first.num_gates
-    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=in_place)
+    qm = first.qubit_manager
+    
+    new_clean = qm.clean_qubits
+    new_dirty = scalar * qm.dirty_qubits
+    new_budget = first.tight_budget
+    new_logic = qm.algo_qubits
 
-    if in_place:
-        first.num_gates = new_gates
-        return first
+    new_qubit_manager = QubitManager(
+        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        tight_budget=new_budget,
+    )
 
-    return Resources(first.num_wires, new_gates, new_gate_types)
+    new_qubit_manager._logic_qubit_counts = new_logic
+    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=False)
+
+    return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
+def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:  # @ 
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
@@ -245,91 +309,97 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
     Returns:
         Resources: combined resources
     """
-    new_wires = scalar * first.num_wires
-    new_gates = scalar * first.num_gates
-    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=in_place)
+    qm = first.qubit_manager
+    
+    new_clean = qm.clean_qubits
+    new_dirty = scalar * qm.dirty_qubits
+    new_budget = first.tight_budget
+    new_logic = scalar * qm.algo_qubits
 
-    if in_place:
-        first.num_wires = new_wires
-        first.num_gates = new_gates
-        return first
+    new_qubit_manager = QubitManager(
+        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        tight_budget=new_budget,
+    )
 
-    return Resources(new_wires, new_gates, new_gate_types)
+    new_qubit_manager._logic_qubit_counts = new_logic
+    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=False)
+
+    return Resources(new_qubit_manager, new_gate_types)
 
 
-def substitute(
-    initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
-) -> Resources:
-    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of
-    another :class:`~.resource.Resources` object.
+# def substitute(
+#     initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
+# ) -> Resources:
+#     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of
+#     another :class:`~.resource.Resources` object.
 
-    Args:
-        initial_resources (Resources): the resources to be modified
-        gate_name (str): the name of the operation to be replaced
-        replacement (Resources): the resources to be substituted instead of the gate
-        in_place (bool): determines if the initial resources are modified in place or if a new copy is
-            created
+#     Args:
+#         initial_resources (Resources): the resources to be modified
+#         gate_name (str): the name of the operation to be replaced
+#         replacement (Resources): the resources to be substituted instead of the gate
+#         in_place (bool): determines if the initial resources are modified in place or if a new copy is
+#             created
 
-    Returns:
-        Resources: the updated :class:`~.Resources` after substitution
+#     Returns:
+#         Resources: the updated :class:`~.Resources` after substitution
 
-    .. details::
+#     .. details::
 
-        **Example**
+#         **Example**
 
-        In this example we replace the resources for the :code:`RX` gate:
+#         In this example we replace the resources for the :code:`RX` gate:
 
-        .. code-block:: python3
+#         .. code-block:: python3
 
-            from pennylane.labs.resource_estimation import Resources
+#             from pennylane.labs.resource_estimation import Resources
 
-            replace_gate_name = "RX"
+#             replace_gate_name = "RX"
 
-            initial_resources = Resources(
-                num_wires = 2,
-                num_gates = 3,
-                gate_types = {"RX": 2, "CNOT": 1},
-            )
+#             initial_resources = Resources(
+#                 num_wires = 2,
+#                 num_gates = 3,
+#                 gate_types = {"RX": 2, "CNOT": 1},
+#             )
 
-            replacement_rx_resources = Resources(
-                num_wires = 1,
-                num_gates = 7,
-                gate_types = {"Hadamard": 3, "S": 4},
-            )
+#             replacement_rx_resources = Resources(
+#                 num_wires = 1,
+#                 num_gates = 7,
+#                 gate_types = {"Hadamard": 3, "S": 4},
+#             )
 
-        Executing the substitution produces:
+#         Executing the substitution produces:
 
-        >>> from pennylane.labs.resource_estimation import substitute
-        >>> res = substitute(
-        ...     initial_resources, replace_gate_name, replacement_rx_resources,
-        ... )
-        >>> print(res)
-        wires: 2
-        gates: 15
-        gate_types:
-        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
-    """
+#         >>> from pennylane.labs.resource_estimation import substitute
+#         >>> res = substitute(
+#         ...     initial_resources, replace_gate_name, replacement_rx_resources,
+#         ... )
+#         >>> print(res)
+#         wires: 2
+#         gates: 15
+#         gate_types:
+#         {'CNOT': 1, 'Hadamard': 6, 'S': 8}
+#     """
 
-    count = initial_resources.gate_types.get(gate_name, 0)
+#     count = initial_resources.gate_types.get(gate_name, 0)
 
-    if count > 0:
-        new_gates = initial_resources.num_gates - count + (count * replacement_resources.num_gates)
+#     if count > 0:
+#         new_gates = initial_resources.num_gates - count + (count * replacement_resources.num_gates)
 
-        replacement_gate_types = _scale_dict(
-            replacement_resources.gate_types, count, in_place=in_place
-        )
-        new_gate_types = _combine_dict(
-            initial_resources.gate_types, replacement_gate_types, in_place=in_place
-        )
-        new_gate_types.pop(gate_name)
+#         replacement_gate_types = _scale_dict(
+#             replacement_resources.gate_types, count, in_place=in_place
+#         )
+#         new_gate_types = _combine_dict(
+#             initial_resources.gate_types, replacement_gate_types, in_place=in_place
+#         )
+#         new_gate_types.pop(gate_name)
 
-        if in_place:
-            initial_resources.num_gates = new_gates
-            return initial_resources
+#         if in_place:
+#             initial_resources.num_gates = new_gates
+#             return initial_resources
 
-        return Resources(initial_resources.num_wires, new_gates, new_gate_types)
+#         return Resources(initial_resources.num_wires, new_gates, new_gate_types)
 
-    return initial_resources
+#     return initial_resources
 
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
