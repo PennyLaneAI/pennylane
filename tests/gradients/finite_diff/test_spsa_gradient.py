@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
@@ -559,8 +559,6 @@ class TestSpsaGradient:
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

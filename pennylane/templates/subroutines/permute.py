@@ -16,7 +16,7 @@ Contains the Permute template.
 """
 import copy
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import SWAP
 from pennylane.wires import Wires
 
@@ -143,7 +143,6 @@ class Permute(Operation):
     def __repr__(self):
         return f"Permute({self.hyperparameters['permutation']}, wires={self.wires.tolist()})"
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, permutation, wires, id=None):

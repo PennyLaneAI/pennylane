@@ -16,7 +16,7 @@ Contains the FlipSign template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class FlipSign(Operation):
@@ -63,8 +63,6 @@ class FlipSign(Operation):
         tensor([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j], requires_grad=True)
 
     """
-
-    num_wires = AnyWires
 
     def _flatten(self):
         hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
