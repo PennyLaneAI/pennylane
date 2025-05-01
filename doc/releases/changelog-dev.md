@@ -206,6 +206,11 @@
   `has_nopar`, `has_unitary_gen`, `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
   [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
 
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
+  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
+  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+  [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
+
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
@@ -290,6 +295,8 @@
 * Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
 
+* Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
+  [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
 <h3>Contributors ✍️</h3>
 
