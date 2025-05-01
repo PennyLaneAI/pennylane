@@ -463,6 +463,7 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
