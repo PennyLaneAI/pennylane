@@ -438,6 +438,16 @@ class TestControlledDecompositions:
         assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
         assert graph.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))
 
+    def test_flip_controlled_adjoint(self, _):
+        """Tests that the controlled form of an adjoint operator is decomposed properly."""
+
+        op = qml.ctrl(qml.adjoint(qml.U1(0.5, wires=0)), control=[1])
+        graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+        assert q.queue == [qml.adjoint(qml.ops.Controlled(qml.U1(0.5, wires=0), control_wires=[1]))]
+
 
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
