@@ -168,13 +168,15 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`__ or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
@@ -247,9 +249,9 @@
 
 <h3>Documentation 📝</h3>
 
-* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
-  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and 
+  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
