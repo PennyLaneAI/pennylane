@@ -29,10 +29,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
-from pennylane.ops.qubit.parametric_ops_single_qubit import (
-    _controlled_phase_shift_decomp,
-    _controlled_rx_decomp,
-)
+from pennylane.ops.qubit.parametric_ops_single_qubit import _controlled_phase_shift_decomp
 
 decompositions = defaultdict(list)
 
