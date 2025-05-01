@@ -132,6 +132,7 @@
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
+  [(#7368)](https://github.com/PennyLaneAI/pennylane/pull/7368)
 
 * `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
   any number of wires.
