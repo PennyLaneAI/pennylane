@@ -684,7 +684,7 @@ class TestControlledDecomposition:
         with queuing.AnnotatedQueue() as q:
             flip_control_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.adjoint(qml.pow(CustomMultiQubitOp(0.5, wires=[0, 1, 2]), 2))]
+        assert q.queue == [qml.adjoint(qml.pow(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
         assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
