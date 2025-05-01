@@ -42,7 +42,7 @@ on:
         description: Additional arguments to pass to pytest
         required: false
         type: string
-        default: ''
+        default: -vvv
       run_lightened_ci:
         description: |
           Indicate if a lightened version of the CI should be run instead of the entire suite.
