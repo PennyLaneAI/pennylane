@@ -890,8 +890,7 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
 
         # pylint: disable=import-outside-toplevel
         try:
-            from jax import vmap
-            from jax import jit
+            from jax import jit, vmap
 
             qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
 
