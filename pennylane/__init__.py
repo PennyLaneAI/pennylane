@@ -22,6 +22,8 @@ import warnings
 def _warn_if_jax_incompatible():  # pragma: no cover
     """Warn the user if an incompatible JAX version is installed."""
 
+    # pylint: disable=import-outside-toplevel
+
     import importlib.metadata as importlib_metadata
 
     try:
@@ -35,7 +37,7 @@ def _warn_if_jax_incompatible():  # pragma: no cover
         warnings.warn(
             f"PennyLane is not yet compatible with JAX versions > 0.4.28. "
             f"You have JAX {jax_version} installed. "
-            f"Please downgrade JAX to <=0.4.28 to avoid runtime errors. ",
+            f"Please downgrade JAX to <=0.4.28 to avoid runtime errors.",
             RuntimeWarning,
         )
 
