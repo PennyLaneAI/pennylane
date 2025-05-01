@@ -18,7 +18,7 @@ Contains the hardware-efficient ParticleConservingU1 template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def decompose_ua(phi, wires=None):
@@ -243,7 +243,6 @@ class ParticleConservingU1(Operation):
             params = np.random.random(size=shape)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, id=None):

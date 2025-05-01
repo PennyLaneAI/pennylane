@@ -16,26 +16,42 @@ Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
 
 class SelectPauliRot(Operation):
     r"""Applies the multiplexer with Pauli rotations.
 
-    This operator, also called multiplexed rotation, applies a sequence of uniformly controlled
+    This operator, also called a "multiplexed rotation", applies a sequence of uniformly controlled
     rotations to a target qubit. The rotations are selected based on the values encoded in the control qubits.
     Its definition is given by:
 
     .. math::
 
-       \sum_i | i \rangle \langle i | \otimes R(\alpha_i)
+       \sum_i | i \rangle \langle i | \otimes R(\alpha_i),
 
-    Here, :math:`| i \rangle` refers to the computational basis state of the control register,
-    and :math:`R(\cdot)` denotes a unitary Pauli rotation applied to the target qubit,
+    where :math:`| i \rangle` refers to the computational basis state of the control register
+    and :math:`R(\cdot)` denotes a Pauli rotation applied to the target qubit,
     parametrized by :math:`\alpha_i`.
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
+
+    Args:
+        angles (tensor_like): The rotation angles to be applied. The length of the angles array must
+            be :math:`2^n`, where :math:`n` is the number of ``control_wires``.
+        control_wires (Sequence[int]): The control qubits used to select the rotation.
+        target_wire (Sequence[int]): The wire where the rotations are applied.
+        rot_axis (str): The axis around which the rotation is performed.
+            It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
+
+    Raises:
+        ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
+            of ``control_wires``.
+        ValueError: If ``rot_axis`` has a value different from ``X``, ``Y`` or ``Z``.
+        ValueError: If the number of the target wires is not one.
+
+    .. seealso:: :class:`~.Select`.
 
     **Example**
 
@@ -61,24 +77,8 @@ class SelectPauliRot(Operation):
         >>> print(circuit())
         [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
          0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
-
-    .. seealso:: :class:`~.Select`.
-
-    Args:
-        angles (tensor_like): The rotation angles to be applied.
-        control_wires (Sequence[int]): The control qubits used to select the rotation.
-        target_wire (Sequence[int]): The wire where the rotations are applied.
-        rot_axis (str): The axis around the rotation is performed.
-            It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
-
-    Raises:
-        ValueError: If the length of the angles array is not :math:`2^n`, where :math:`n` is the number
-            of ``control_wires``.
-        ValueError: If ``rot_axis`` has a value different from `X`, `Y` or `Z`.
-        ValueError: If the number of the target wires is not one.
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 
@@ -112,6 +112,7 @@ class SelectPauliRot(Operation):
         return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map: dict):
+        """Map the control and target wires using the provided wire map."""
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
             for key in ["control_wires", "target_wire"]
@@ -125,9 +126,11 @@ class SelectPauliRot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        """Bind arguments to the primitive operation."""
         return cls._primitive.bind(*args, **kwargs)
 
     def decomposition(self):  # pylint: disable=arguments-differ
+        """Return the operator's decomposition using its parameters and hyperparameters."""
         return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
 
     @staticmethod

@@ -218,7 +218,7 @@ operator towards a target gate set.
     op = qml.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
     graph.solve()
 
@@ -236,9 +236,24 @@ operator towards a target gate set.
     >>> graph.resource_estimate(op)
     <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
 
+Utility Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionError
+    ~DecompositionNotApplicable
+
 """
 
-from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
+from .utils import (
+    DecompositionError,
+    DecompositionNotApplicable,
+    enable_graph,
+    disable_graph,
+    enabled_graph,
+)
 from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,

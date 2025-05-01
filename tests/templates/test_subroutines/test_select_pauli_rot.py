@@ -108,7 +108,7 @@ class TestSelectPauliRot:
 
         gate = {"Z": qml.RZ, "Y": qml.RY, "X": qml.RX}
 
-        # Check that applying the SelectPauliRot and adjoint(Select) to an state,
+        # Check that applying the SelectPauliRot and adjoint(Select) to a state,
         # does not modify the state
         qs = qml.tape.QuantumScript(
             [

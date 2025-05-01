@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .measurements import MeasurementShapeError, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -155,7 +155,7 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+    _shortname = "sample"
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
@@ -302,8 +302,8 @@ class SampleMP(SampleMeasurement):
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1:
-                # If only one wire is sampled, flatten the list
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
                 outcome_sample = outcome_sample[0]
             samples.extend([outcome_sample] * count)
 
@@ -331,10 +331,8 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
-
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+            return eigvals[int(outcome, 2)]
 
-        return outcome_samples
+        return [int(bit) for bit in outcome]
