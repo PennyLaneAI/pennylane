@@ -91,7 +91,7 @@ class TestAdjointDecompositionRules:
                 return {}
 
         @qml.register_resources({qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.T: 1})
-        def custom_decomp(phi, wires):
+        def _custom_decomp(phi, wires):
             qml.H(wires[0])
             qml.CNOT(wires=wires[:2])
             qml.RX(phi, wires=wires[1])
@@ -99,7 +99,7 @@ class TestAdjointDecompositionRules:
             qml.T(wires[2])
 
         op = qml.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
-        rule = make_adjoint_decomp(custom_decomp)
+        rule = make_adjoint_decomp(_custom_decomp)
 
         with qml.queuing.AnnotatedQueue() as q:
             rule(*op.parameters, wires=op.wires, **op.hyperparameters)
