@@ -1,13 +1,15 @@
 import io
 from typing import Callable
 
-from xdsl.interpreter import Interpreter, PythonValues, register_impls
+from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
 from xdsl.interpreters.transform import TransformFunctions
+from xdsl.context import Context
 from xdsl.dialects import transform
 from xdsl.parser import Parser
 from xdsl.passes import ModulePass, PipelinePass
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
+from xdsl.utils import parse_pipeline
 
 from catalyst.compiler import _quantum_opt
 

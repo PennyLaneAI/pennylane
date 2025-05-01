@@ -12,6 +12,8 @@ from xdsl.passes import PipelinePass
 
 from .quantum_dialect import QuantumDialect as Quantum
 
+from .transforms import ApplyTransformSequence
+
 class Compiler:
 
     def run(self, jmod: jaxModule) -> jaxModule:
@@ -33,7 +35,7 @@ class Compiler:
         ctx.load_dialect(Quantum)
 
         xmod: builtin.ModuleOp = Parser(ctx, gentxtmod).parse_module()
-        pipeline = passes.PipelinePass((ApplyTransformSequence(),))
+        pipeline = PipelinePass((ApplyTransformSequence(),))
         # xmod is modified in place
         pipeline.apply(ctx, xmod)
 
@@ -43,6 +45,6 @@ class Compiler:
             ctx.allow_unregistered_dialects = True
             ctx.append_dialect_registry(mlir.upstream_dialects)
             stablehlo.register_dialect(ctx)
-            newmod: jaxModule = Module.parse(buffer.getvalue())
+            newmod: jaxModule = jaxModule.parse(buffer.getvalue())
 
         return newmod

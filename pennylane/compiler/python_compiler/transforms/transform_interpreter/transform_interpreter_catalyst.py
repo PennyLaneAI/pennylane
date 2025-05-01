@@ -1,19 +1,23 @@
 from dataclasses import dataclass
+from typing import Callable
 
+from xdsl.context import Context
 from xdsl.dialects import builtin, transform
 from xdsl.interpreters import Interpreter
 from xdsl.passes import ModulePass
 
-from interpreter import TransformFunctionsExt
+from .interpreter import TransformFunctionsExt
 
-@dataclass(frozen=True)
 class TransformInterpreterPass(ModulePass):
     """Transform dialect interpreter"""
 
+    passes: dict[str, Callable[[], type[ModulePass]]]
     name = "transform-interpreter"
 
     entry_point: str = "__transform_main"
-    passes: dict[str, Callable[[], type[ModulePass]]]
+
+    def __init__(self, passes):
+        self.passes = passes
 
     @staticmethod
     def find_transform_entry_point(
@@ -34,6 +38,6 @@ class TransformInterpreterPass(ModulePass):
             op, self.entry_point
         )
         interpreter = Interpreter(op)
-        interpreter.register_implementations(TransformFunctionsExt(ctx, passes))
+        interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes))
         schedule.parent_op().detach()
         interpreter.call_op(schedule, (op,))

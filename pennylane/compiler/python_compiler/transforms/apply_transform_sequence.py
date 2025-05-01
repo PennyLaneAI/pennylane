@@ -1,8 +1,10 @@
+from dataclasses import dataclass
+
 from xdsl.dialects import builtin
 from xdsl.context import MLContext
 from xdsl.passes import ModulePass, PipelinePass
 
-from transform_interpreter import TransformInterpreterPass
+from .transform_interpreter import TransformInterpreterPass
 
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
@@ -16,7 +18,7 @@ class ApplyTransformSequence(ModulePass):
                     if isinstance(op, builtin.ModuleOp):
                         nested_modules.append(op)
 
-        pipeline = PipelinePass((TransformInterpreterPass({}),))
+        pipeline = PipelinePass((TransformInterpreterPass(passes={}),))
         for op in nested_modules:
             pipeline.apply(ctx, op)
 
