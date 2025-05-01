@@ -463,6 +463,19 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
+    )
+    def test_error_is_raised_if_too_many_wires_capture(self, func):
+        """Test that a QuanutmFunctionError is raised if too many wires are passed when using capture"""
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
+            func([0, 1])
+
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [0, 1, None])
     def test_measure_z_dispatches_to_measure(self, reset, postselect):
