@@ -65,8 +65,7 @@ def _create_parametrized_mid_measure_primitive():
 
     @measure_in_basis_p.def_abstract_eval
     def _(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
+        return jax.core.ShapedArray((), jax.numpy.bool)
 
     return measure_in_basis_p
 
