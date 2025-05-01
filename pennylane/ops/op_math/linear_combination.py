@@ -425,7 +425,7 @@ class LinearCombination(Sum):
         return NotImplemented
 
     def __sub__(self, H: Operator) -> Operator:
-        r"""The subtraction operation between a LinearCombination and a LinearCombination/Observable."""
+        r"""The subtraction operation between a LinearCombination and an Operator."""
         if isinstance(H, Operator):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented

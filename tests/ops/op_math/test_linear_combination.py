@@ -736,7 +736,7 @@ class TestLinearCombination:
         assert H1.compare(H3)
         assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
         assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compaure(H4)
+        assert not H2.compare(H4)
 
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
