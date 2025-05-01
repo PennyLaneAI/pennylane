@@ -103,7 +103,6 @@ class LinearCombination(Sum):
     using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
     """
 
-    num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
