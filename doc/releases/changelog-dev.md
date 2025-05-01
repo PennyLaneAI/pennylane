@@ -17,7 +17,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added decomposition to ``qml.QubitUnitary`` for any number of qubits.
+* A more resource efficient decomposition rule has been added to :class:`~.QubitUnitary` that works for 
+  any number of qubits.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
