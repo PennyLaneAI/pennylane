@@ -299,7 +299,7 @@ class TestPowDecomposition:
         )
 
 
-class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomMultiQubitOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
     """A custom op."""
 
     resource_param_keys = ("num_wires",)
@@ -362,7 +362,7 @@ class TestControlledDecomposition:
 
         # Single control wire controlled on 1
         op = qml.ctrl(
-            CustomOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]), control=[6], work_wires=[7]
+            CustomMultiQubitOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]), control=[6], work_wires=[7]
         )
         with qml.queuing.AnnotatedQueue() as q:
             rule(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -450,7 +450,7 @@ class TestControlledDecomposition:
 
         # Single control wire controlled on 1
         op = qml.ctrl(
-            CustomOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]),
+            CustomMultiQubitOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]),
             control=[6, 7],
             control_values=[False, True],
             work_wires=[8],
@@ -562,7 +562,7 @@ class TestControlledDecomposition:
 
         # Single control wire controlled on 1
         op = qml.ctrl(
-            CustomOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]),
+            CustomMultiQubitOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]),
             control=[6, 7, 9],
             control_values=[False, True, False],
             work_wires=[8],
