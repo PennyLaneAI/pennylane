@@ -909,8 +909,10 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
         return 1 / len(grid_points) * obj_func
 
     try:
+        from jax import jit
+
         obj_function = jit(obj_function)
-    except:
+    except ModuleNotFoundError:
         pass
 
     results = scipy.optimize.minimize(
