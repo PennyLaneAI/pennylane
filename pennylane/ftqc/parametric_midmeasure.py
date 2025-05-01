@@ -170,6 +170,10 @@ def measure_arbitrary_basis(
         result will return a binary sequence of samples.
         See :ref:`here <mid_circuit_measurements_statistics>` for more details.
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
@@ -217,6 +221,10 @@ def measure_x(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
@@ -262,6 +270,10 @@ def measure_y(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
     if capture.enabled():
         primitive = _create_parametrized_mid_measure_primitive()
@@ -310,10 +322,6 @@ def _measure_impl(
 ):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
-    if len(wires) > 1:
-        raise QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
