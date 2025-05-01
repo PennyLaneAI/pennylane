@@ -18,11 +18,11 @@ PennyLane can be directly imported.
 
 import warnings
 
+# pylint: disable=wrong-import-position, wrong-import-order, import-outside-toplevel
+
 
 def _warn_if_jax_incompatible():  # pragma: no cover
     """Warn the user if an incompatible JAX version is installed."""
-
-    # pylint: disable=import-outside-toplevel
 
     import importlib.metadata as importlib_metadata
 

@@ -17,7 +17,7 @@ with Keras and PyTorch.
 
 .. note::
 
-    Check out our :doc:`Keras <demos/tutorial_qnn_module_tf>` and
+    Check out our `Keras <https://pennylane.ai/qml/demos/qnn_module_tf>`__. and
     :doc:`Torch <demos/tutorial_qnn_module_torch>` tutorials for further details.
 
 
