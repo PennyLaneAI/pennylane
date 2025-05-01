@@ -21,13 +21,7 @@ from typing import Sequence
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import (
-    AllWires,
-    AnyWires,
-    CVObservable,
-    Operation,
-    SparseMatrixUndefinedError,
-)
+from pennylane.operation import CVObservable, Operation, SparseMatrixUndefinedError
 from pennylane.wires import WiresLike
 
 
@@ -52,8 +46,6 @@ class Identity(CVObservable, Operation):
     """
 
     num_params = 0
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -298,9 +290,6 @@ class GlobalPhase(Operation):
 
 
     """
-
-    num_wires = AllWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""

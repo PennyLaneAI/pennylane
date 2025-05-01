@@ -218,7 +218,7 @@ operator towards a target gate set.
     op = qml.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
     graph.solve()
 

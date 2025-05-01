@@ -25,6 +25,7 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
+from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -324,6 +325,11 @@ class QNode:
         autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
             convert Python control flow to native PennyLane control flow. For more information, refer to
             :doc:`Autograph </development/autograph>`. Defaults to ``True``.
+        executor_backend (Union[RemoteExec, str]): The backend executor for concurrent function execution. This argument
+            allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
+            environment. All supported options can be queried using
+            :func:`~qml.concurrency.executors.get_supported_backends.
+            The default value is :class:`qml.concurrency.executors.native.MP_PoolExec`.
 
     **Example**
 
@@ -543,6 +549,7 @@ class QNode:
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
+        executor_backend: Optional[Union[RemoteExec, str]] = None,
         **kwargs,
     ):
         self._init_args = locals()
@@ -623,6 +630,7 @@ class QNode:
             "device_vjp": device_vjp,
             "postselect_mode": postselect_mode,
             "mcm_method": mcm_method,
+            "executor_backend": executor_backend,
         }
 
         # internal data attributes
