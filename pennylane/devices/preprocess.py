@@ -592,7 +592,8 @@ def measurements_from_samples(tape):
     Executing the tape returns samples that can be post-processed to get the originally requested measurements:
 
     >>> dev = qml.device("default.qubit")
-    >>> dev.execute(new_tape)
+    >>> res = dev.execute(new_tape)
+    >>> res
     array([[1, 0],
            [0, 0],
            [0, 1],
@@ -685,7 +686,7 @@ def measurements_from_counts(tape):
 
     We can apply the transform to diagonalize and convert the two measurements to a single sample:
 
-    >>> (new_tape, ), fn = qml.devices.preprocess..measurements_from_counts(tape)
+    >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_counts(tape)
     >>> new_tape.measurements
     [CountsMP(wires=[0, 1], all_outcomes=False)]
 
@@ -698,7 +699,8 @@ def measurements_from_counts(tape):
     tape returns the raw counts:
 
     >>> dev = qml.device("default.qubit")
-    >>> dev.execute(new_tape)
+    >>> res = dev.execute(new_tape)
+    >>> res
     {'00': 4, '01': 2, '10': 2, '11': 2}
 
     And these can be post-processed to get the originally requested measurements:
