@@ -54,8 +54,6 @@ from .symbolic_decomposition import (
 )
 from .utils import DecompositionError, DecompositionNotApplicable, translate_op_alias
 
-NULL = "null"  # sentinel value for the start node in the graph
-
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     """A graph that models a decomposition problem.
@@ -151,7 +149,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._visitor = None
 
         # Construct the decomposition graph
-        self._start = self._graph.add_node(NULL)
+        self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
     def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
@@ -452,7 +450,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             return  # nothing is to be done for edges leading to an operator node
         if target_idx not in self.distances:
             self.distances[target_idx] = Resources()  # initialize with empty resource
-        if src_node == NULL:
+        if src_node is None:
             return  # special case for when the decomposition produces nothing
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
         if target_idx not in self._num_edges_examined:
@@ -469,7 +467,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         """Triggered when an edge is relaxed during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
-        if self._graph[src_idx] == NULL and not isinstance(target_node, _DecompositionNode):
+        if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
             self.distances[target_idx] = Resources({target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
