@@ -240,7 +240,6 @@
 
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
-  [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
 * A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
   [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
