@@ -126,6 +126,10 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
+  can now be captured when program capture is enabled.
+  [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
+
 * `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
   any number of wires.
   [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
@@ -199,6 +203,11 @@
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
+
+* The boolean functions provided in `pennylane.operation` are deprecated. See the :doc:`deprecations page </development/deprecations>` 
+  for equivalent code to use instead. These include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`,
+  `has_nopar`, `has_unitary_gen`, `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
   an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
