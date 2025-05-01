@@ -579,7 +579,7 @@ def measurements_from_samples(tape):
 
     We can apply the transform to diagonalize and convert the two measurements to a single sample:
 
-    >>> (new_tape, ), fn = qml.transforms.measurements_from_samples(tape)
+    >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_samples(tape)
     >>> new_tape.measurements
     [sample(wires=[0, 1])]
 
@@ -706,7 +706,6 @@ def measurements_from_counts(tape):
     (-0.19999999999999996, array([0.7, 0.3]))
     """
     if tape.shots.total_shots is None:
-        print("returning the tape, because shots is None")
         return (tape,), null_postprocessing
 
     for mp in tape.measurements:
