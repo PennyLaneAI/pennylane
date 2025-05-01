@@ -529,7 +529,7 @@ class TestMeasureFunctions:
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
         assert "cond" in conditional
-        assert captured_measurement[:7] == "a:i64[]"
+        assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
     @pytest.mark.jax
@@ -568,7 +568,7 @@ class TestMeasureFunctions:
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
         assert "cond" in conditional
-        assert captured_measurement[:7] == "a:i64[]"
+        assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
     @pytest.mark.jax
