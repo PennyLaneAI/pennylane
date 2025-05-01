@@ -735,11 +735,6 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-"""
-Implementation of the QSP (Quantum Signal Processing) algorithm proposed in https://arxiv.org/pdf/2002.11649 
-"""
-
-
 def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
@@ -829,6 +824,7 @@ def _qsp_iterates(phis, x, interface):
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
 
+    # pylint: disable=import-outside-toplevel
     try:
         from jax import vmap
 
@@ -843,14 +839,6 @@ def _qsp_iterates(phis, x, interface):
     matrix_iterate = qml.math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
 
     return qml.math.real(matrix_iterate[0, 0])
-
-
-try:
-    from jax import jit
-
-    _qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
-except ModuleNotFoundError:
-    pass
 
 
 def _grid_pts(degree, interface):
@@ -883,13 +871,14 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
     """
     parity = degree % 2
 
+    # pylint: disable=import-outside-toplevel
     try:
-        from jax import hessian, jacobian
+        from jax import jacobian
 
         interface = "jax"
 
     except ModuleNotFoundError:
-        from autograd import hessian, jacobian
+        from autograd import jacobian
 
     grid_points = _grid_pts(degree, interface=interface)
 
@@ -902,11 +891,15 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
     def obj_function(phi):
         # Equation (23)
 
+        # pylint: disable=import-outside-toplevel
         try:
             from jax import vmap
+            from jax import jit
+
+            qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
 
             obj_func = (
-                vmap(_qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
             )
         except ModuleNotFoundError:
             obj_func = (
@@ -919,14 +912,10 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
         return 1 / len(grid_points) * obj_func
 
     try:
-        from jax import jit
-
         obj_function = jit(obj_function)
-
-    except ModuleNotFoundError:
+    except:
         pass
 
-    #
     results = scipy.optimize.minimize(
         fun=obj_function,
         x0=initial_guess,
@@ -1215,7 +1204,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
-        elif angle_solver == "iterative":
+        if angle_solver == "iterative":
             return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
 
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
@@ -1223,7 +1212,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
-        elif angle_solver == "iterative":
+        if angle_solver == "iterative":
             return _compute_qsp_angles_iteratively(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 

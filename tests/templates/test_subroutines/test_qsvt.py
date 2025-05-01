@@ -681,9 +681,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "P",
         [
-            (generate_polynomial_coeffs(2, 0)),
-            (generate_polynomial_coeffs(4, 0)),
-            (generate_polynomial_coeffs(6, 0)),
+            ([0.1, 0, 0.3, 0, -0.1]),
+            ([0, 0.2, 0, 0.3]),
+            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
         ],
     )
     def test_complementary_polynomial(self, P):
