@@ -8,12 +8,19 @@ from xdsl.context import Context as xdslContext
 from xdsl.dialects import arith, builtin, func, scf, tensor, transform
 from xdsl.parser import Parser
 from xdsl.printer import Printer
+from xdsl.passes import PipelinePass
 
 from .quantum_dialect import QuantumDialect as Quantum
 
 class Compiler:
 
-    def __run__(self, jmod: jaxModule) -> jaxModule:
+    def run(self, jmod: jaxModule) -> jaxModule:
+        """Runs the apply-transform-sequence pass.
+
+        The apply-transform-sequence pass is a "meta-pass". In other words,
+        it is a pass that runs other passes.
+        """
+
         gentxtmod: str = jmod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
         ctx = xdslContext(allow_unregistered=True)
@@ -26,6 +33,9 @@ class Compiler:
         ctx.load_dialect(Quantum)
 
         xmod: builtin.ModuleOp = Parser(ctx, gentxtmod).parse_module()
+        pipeline = passes.PipelinePass((ApplyTransformSequence(),))
+        # xmod is modified in place
+        pipeline.apply(ctx, xmod)
 
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print(xmod)
