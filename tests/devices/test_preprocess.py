@@ -181,7 +181,7 @@ class TestValidateDeviceWires:
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
-        """Tests that if the wires are provided, measurements without wires take them gain them."""
+        """Tests that if the wires are provided, measurements without wires gain them."""
         tape1 = qml.tape.QuantumScript([qml.S("b")], [qml.state(), qml.probs()], shots=52)
 
         wires = qml.wires.Wires(["a", "b", "c"])
@@ -190,6 +190,24 @@ class TestValidateDeviceWires:
         assert batch[0][2].wires == wires
         assert batch[0].operations == tape1.operations
         assert batch[0].shots == tape1.shots
+
+    @pytest.mark.parametrize("trainable_params", [[0, 1, 2], [0], [1], [2], [0, 2], [1, 2]])
+    def test_modified_tape_retains_trainable_params(self, trainable_params):
+        """Tests that if the tape is modified by adding wires to previously wire-less measurements,
+        the trainable parameters are not modified."""
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(0.4, "b"), qml.RY(0.4, "a"), qml.RZ(0.7, "c")],
+            [qml.state(), qml.probs()],
+            shots=52,
+            trainable_params=trainable_params,
+        )
+
+        wires = qml.wires.Wires(["a", "b", "c"])
+        batch, _ = validate_device_wires(tape1, wires=wires)
+        new_tape = batch[0]
+        assert new_tape[3].wires == wires
+        assert new_tape[4].wires == wires
+        assert new_tape.trainable_params == trainable_params
 
     @pytest.mark.jax
     def test_error_abstract_wires_tape(self):

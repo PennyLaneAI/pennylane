@@ -243,6 +243,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `validate_device_wires` alters the trainable parameters of a tape.
+  [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
+
+* Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
+  some arguments are trainable and an intermediate transform does not preserve trainability information.
+  [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
+
 * A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
   [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
 
@@ -305,4 +312,5 @@ Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Lee J. O'Riordan,
-Andrija Paurevic
+Andrija Paurevic,
+David Wierichs,
