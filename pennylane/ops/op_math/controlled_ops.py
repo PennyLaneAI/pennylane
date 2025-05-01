@@ -24,10 +24,9 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -93,9 +92,6 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1318,9 +1314,6 @@ class MultiControlledX(ControlledOp):
 
     is_self_inverse = True
     """bool: Whether or not the operator is self-inverse."""
-
-    num_wires = AnyWires
-    """int: Number of wires the operation acts on."""
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""

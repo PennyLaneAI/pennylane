@@ -24,6 +24,7 @@ from typing import Optional, Type
 
 import pennylane as qml
 from pennylane import Snapshot, transform
+from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -278,13 +279,13 @@ def validate_adjoint_trainable_params(
     """
 
     for op in tape.operations[: tape.num_preps]:
-        if qml.operation.is_trainable(op):
+        if any(requires_grad(d) for d in op.data):
             raise qml.QuantumFunctionError(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
     for m in tape.measurements:
-        if m.obs and qml.operation.is_trainable(m.obs):
+        if m.obs and any(requires_grad(d) for d in m.obs.data):
             warnings.warn(
                 f"Differentiating with respect to the input parameters of {m.obs.name} "
                 "is not supported with the adjoint differentiation method. Gradients are computed "
@@ -579,7 +580,7 @@ def measurements_from_samples(tape):
 
     We can apply the transform to diagonalize and convert the two measurements to a single sample:
 
-    >>> (new_tape, ), fn = qml.transforms.measurements_from_samples(tape)
+    >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_samples(tape)
     >>> new_tape.measurements
     [sample(wires=[0, 1])]
 
@@ -684,7 +685,7 @@ def measurements_from_counts(tape):
 
     We can apply the transform to diagonalize and convert the two measurements to a single sample:
 
-    >>> (new_tape, ), fn = qml.transforms.measurements_from_counts(tape)
+    >>> (new_tape, ), fn = qml.devices.preprocess..measurements_from_counts(tape)
     >>> new_tape.measurements
     [CountsMP(wires=[0, 1], all_outcomes=False)]
 
@@ -706,7 +707,6 @@ def measurements_from_counts(tape):
     (-0.19999999999999996, array([0.7, 0.3]))
     """
     if tape.shots.total_shots is None:
-        print("returning the tape, because shots is None")
         return (tape,), null_postprocessing
 
     for mp in tape.measurements:
