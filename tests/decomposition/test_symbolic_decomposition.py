@@ -303,7 +303,7 @@ class TestPowDecomposition:
 class CustomMultiQubitOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
     """A custom op."""
 
-    resource_param_keys = ("num_wires",)
+    resource_keys = {"num_wires"}
 
     @property
     def resource_params(self):
@@ -684,11 +684,18 @@ class TestControlledDecomposition:
         with queuing.AnnotatedQueue() as q:
             flip_control_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
-        assert q.queue == [qml.adjoint(qml.pow(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
-        assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert q.queue == [qml.adjoint(qml.ctrl(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
+        assert flip_control_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
-                    qml.ops.Pow, {"base_class": CustomMultiQubitOp, "base_params": {}, "z": 2}
+                    qml.ops.Controlled,
+                    {
+                        "base_class": CustomMultiQubitOp,
+                        "base_params": {"num_wires": 2},
+                        "num_control_wires": 1,
+                        "num_zero_control_values": 0,
+                        "num_work_wires": 0,
+                    },
                 ): 1
             }
         )

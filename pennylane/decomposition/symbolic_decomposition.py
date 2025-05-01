@@ -318,10 +318,13 @@ def flip_control_adjoint(*params, wires, control_wires, control_values, work_wir
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     _, struct = base.base._flatten()
-    new_struct = (wires, *struct[1:])
+    new_struct = (wires[len(control_wires) :], *struct[1:])
     base_op = base.base._unflatten(params, new_struct)
     qml.adjoint(
         qml.ctrl(
-            base_op, control=control_wires, control_values=control_values, work_wires=work_wires
+            base_op,
+            control=wires[: len(control_wires)],
+            control_values=control_values,
+            work_wires=work_wires,
         )
     )
