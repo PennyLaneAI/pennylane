@@ -27,7 +27,7 @@ from pennylane.gradients.parameter_shift import (
     _put_zeros_in_pdA2_involutory,
 )
 from pennylane.measurements.shots import Shots
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import Observable
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values
@@ -2598,8 +2598,6 @@ class TestParameterShiftRule:
         # pylint: disable=too-few-public-methods
         class SpecialObservable(Observable):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
