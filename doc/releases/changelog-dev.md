@@ -126,6 +126,10 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
+  any number of wires.
+  [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
+
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
@@ -195,6 +199,11 @@
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
+
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
+  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
+  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+  [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
 
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
@@ -272,8 +281,19 @@
 * Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a bug that caused `CountsMP.process_counts` to return results in the computational basis, even if
+  an observable was specified.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
+* Fixed a bug that caused `SamplesMP.process_counts` used with an observable to return a list of eigenvalues 
+  for each individual operation in the observable, instead of the overall result.
+  [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
+
 * Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
+
+* Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
+  [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
 <h3>Contributors ✍️</h3>
 
