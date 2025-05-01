@@ -124,7 +124,7 @@
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
     ```python
-    @register_resources({qml.RY: 1})
+    @qml.register_resources({qml.RY: 1})
     def my_adjoint_ry(phi, wires, **_):
         qml.RY(-phi, wires=wires)
 
@@ -142,9 +142,9 @@
     )
     @qml.qnode(qml.device("default.qubit"))
     def circuit():
-        qml.adjoint(qml.RX(0.5), wires=[0])
+        qml.adjoint(qml.RX(0.5, wires=[0]))
         qml.CNOT(wires=[0, 1])
-        qml.adjoint(qml.RY(0.5), wires=[1])
+        qml.adjoint(qml.RY(0.5, wires=[1]))
         return qml.expval(qml.Z(0))
     ```
     ```pycon
