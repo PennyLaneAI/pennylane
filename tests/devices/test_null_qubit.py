@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
+import json
+import os
 from collections import defaultdict as dd
 
 import numpy as np
@@ -59,6 +61,73 @@ def test_debugger_attribute():
 
     assert hasattr(dev, "_debugger")
     assert dev._debugger is None
+
+
+def test_resource_tracking_attribute():
+    """Test NullQubit track_resources attribute"""
+    # pylint: disable=protected-access
+    assert NullQubit()._track_resources is False
+    assert NullQubit(track_resources=True)._track_resources is True
+
+    dev = NullQubit(track_resources=True)
+
+    def small_circ(params):
+        qml.X(0)
+        qml.H(0)
+
+        qml.Barrier()
+
+        # Add a more complex operation to check that the innermost operation is counted
+        op = qml.T(0)
+        op = qml.adjoint(op)
+        op = qml.ctrl(op, control=1, control_values=[1])
+
+        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+
+        qml.CNOT([0, 1])
+        qml.Barrier()
+
+        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
+        qml.adjoint(qml.S(0))
+
+        qml.RX(params[0], wires=0)
+        qml.RX(params[0] * 2, wires=1)
+
+        return qml.expval(qml.PauliZ(0))
+
+    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
+
+    inputs = qml.numpy.array([0.5])
+
+    qnode(inputs)
+
+    # Check that resource tracking doesn't interfere with backprop
+    assert qml.grad(qnode)(inputs) == 0
+
+    RESOURCES_FNAME = "__pennylane_resources_data.json"
+    assert os.path.exists(RESOURCES_FNAME)
+
+    with open(RESOURCES_FNAME, "r") as f:
+        stats = f.read()
+
+    os.remove(RESOURCES_FNAME)
+
+    assert stats == json.dumps(
+        {
+            "num_wires": 3,
+            "num_gates": 9,
+            "gate_types": {
+                "PauliX": 1,
+                "Hadamard": 1,
+                "C(Adj(T))": 1,
+                "2C(S)": 1,
+                "CNOT": 1,
+                "C(IsingXX)": 1,
+                "Adj(S)": 1,
+                "RX": 2,
+            },
+        }
+    )
 
 
 @pytest.mark.parametrize("shots", (None, 10))
