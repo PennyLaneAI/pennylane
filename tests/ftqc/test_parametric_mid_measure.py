@@ -463,6 +463,20 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
+    )
+    def test_error_is_raised_if_too_many_wires_capture(self, func):
+        """Test that a QuanutmFunctionError is raised if too many wires are passed when using capture"""
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
+            func([0, 1])
+
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [0, 1, None])
     def test_measure_z_dispatches_to_measure(self, reset, postselect):
@@ -479,6 +493,100 @@ class TestMeasureFunctions:
         assert mp.reset == reset
         assert mp.postselect == postselect
         assert isinstance(mp, MidMeasureMP)
+
+    # pylint: disable=too-many-positional-arguments, too-many-arguments
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, 1.5707, "XY")]
+    )
+    @pytest.mark.parametrize(
+        "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
+    )
+    def test_x_and_y_with_program_capture(self, meas_func, angle, plane, wire, reset, postselect):
+        """Test that the measure_ functions are captured as expected"""
+        import jax
+
+        def circ():
+            m = meas_func(wire, reset=reset, postselect=postselect)
+            qml.cond(m, qml.X, qml.Y)(0)
+            return qml.expval(qml.Z(2))
+
+        plxpr = jax.make_jaxpr(circ)()
+        captured_measurement = str(plxpr.eqns[0])
+
+        # measurement is captured as epxected
+        assert "measure_in_basis" in captured_measurement
+        assert f"plane={plane}" in captured_measurement
+        assert f"postselect={postselect}" in captured_measurement
+        assert f"reset={reset}" in captured_measurement
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
+
+        # measurement value is assigned and passed forward
+        conditional = str(plxpr.eqns[1])
+        assert "cond" in conditional
+        assert captured_measurement[:8] == "a:bool[]"
+        assert "lambda ; a:i64[]" in conditional
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
+    @pytest.mark.parametrize(
+        "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
+    )
+    def test_arbitrary_basis_with_program_capture(self, angle, plane, wire, reset, postselect):
+        """Test that the measure_ functions are captured as expected"""
+        import jax
+        import networkx as nx
+
+        def circ():
+            m = measure_arbitrary_basis(
+                wire, angle=angle, plane=plane, reset=reset, postselect=postselect
+            )
+            qml.cond(m, qml.X, qml.Y)(0)
+            qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
+            return qml.expval(qml.Z(2))
+
+        plxpr = jax.make_jaxpr(circ)()
+        captured_measurement = str(plxpr.eqns[0])
+
+        # measurement is captured as epxected
+        assert "measure_in_basis" in captured_measurement
+        assert f"plane={plane}" in captured_measurement
+        assert f"postselect={postselect}" in captured_measurement
+        assert f"reset={reset}" in captured_measurement
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
+
+        # measurement value is assigned and passed forward
+        conditional = str(plxpr.eqns[1])
+        assert "cond" in conditional
+        assert captured_measurement[:8] == "a:bool[]"
+        assert "lambda ; a:i64[]" in conditional
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "func, kwargs",
+        [
+            (measure_x, {"wires": 2}),
+            (measure_y, {"wires": 2}),
+            (measure_arbitrary_basis, {"wires": 2, "angle": 1.2, "plane": "XY"}),
+        ],
+    )
+    def test_calling_functions_with_capture_enabled(self, func, kwargs):
+        """Test that the functions can still be called and return a measurement value
+        with capture enabled."""
+
+        m = func(**kwargs)
+        assert isinstance(m, MeasurementValue)
 
 
 class TestDrawParametricMidMeasure:
