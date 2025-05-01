@@ -29,6 +29,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
     controlled_resource_rep,
+    flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
     make_controlled_decomp,
@@ -673,5 +674,21 @@ class TestControlledDecomposition:
                 qml.decomposition.controlled_resource_rep(
                     qml.Z, {}, num_control_wires=4, num_work_wires=1
                 ): 1,
+            }
+        )
+
+    def test_flip_control_adjoint(self):
+        """Tests the flip_control_adjoint decomposition."""
+
+        op = qml.ctrl(qml.adjoint(CustomMultiQubitOp(0.5, wires=[0, 1])), control=2)
+        with queuing.AnnotatedQueue() as q:
+            flip_control_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [qml.adjoint(qml.pow(CustomMultiQubitOp(0.5, wires=[0, 1, 2]), 2))]
+        assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
+            {
+                adjoint_resource_rep(
+                    qml.ops.Pow, {"base_class": CustomMultiQubitOp, "base_params": {}, "z": 2}
+                ): 1
             }
         )
