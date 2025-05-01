@@ -16,22 +16,26 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
-from typing import Literal
+from typing import Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
     if block_encoding not in ["prepselprep", "qubitization", None]:
         raise ValueError(
-            "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a Hamiltonian or has a Pauli decomposition, block_encoding should take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
+            f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
+            "When A is a Hamiltonian or has a Pauli decomposition, block_encoding should "
+            "take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the "
+            "matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
         )
 
     if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
@@ -57,7 +61,10 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
 def _tensorlike_process(A, poly, encoding_wires, block_encoding):
     if block_encoding not in ["embedding", "fable", None]:
         raise ValueError(
-            "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
+            f"block_encoding = {block_encoding} not supported for A of type {type(A)}."
+            "When A is a matrix block_encoding should take the value 'embedding' or 'fable'. "
+            "Otherwise, please provide an input with a Pauli decomposition. For more details, "
+            "see the 'qml.pauli_decompose' function."
         )
 
     A = qml.math.atleast_2d(A)
@@ -66,7 +73,8 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
     if block_encoding == "fable":
         if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
             raise ValueError(
-                "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
+                "The subnormalization factor should be lower than 1. Ensure that the product"
+                " of the maximum dimension of A and its square norm is less than 1."
             )
 
         # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
@@ -91,7 +99,12 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
     return encoding, projectors
 
 
-def qsvt(A, poly, encoding_wires=None, block_encoding=None):
+def qsvt(
+    A: Union[Operator, TensorLike],
+    poly: TensorLike,
+    encoding_wires: Optional[Sequence] = None,
+    block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,
+):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
     using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
