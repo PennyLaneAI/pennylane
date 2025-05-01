@@ -29,7 +29,6 @@
   [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
    0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
   ```
-  
 
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
@@ -220,6 +219,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
+  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
 
@@ -313,5 +315,6 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Andrija Paurevic,
 Lee J. O'Riordan,
-Andrija Paurevic
+Jake Zaia
