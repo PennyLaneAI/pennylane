@@ -99,7 +99,7 @@
 * Symbolic operator types (e.g., `Adjoint`, `Controlled`, and `Pow`) can now be specified as strings
   in various parts of the new graph-based decomposition system, specifically:
   * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding symbolic
-    operators to the target gate set.
+    operators in the target gate set.
     [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
     ```python
     from functools import partial
@@ -137,7 +137,7 @@
 
     @partial(
         qml.transforms.decompose,
-        gate_set={"RX", "CNOT"},
+        gate_set={"RX", "RY", "CNOT"},
         fixed_decomps={"Adjoint(RX)": my_adjoint_rx}
     )
     @qml.qnode(qml.device("default.qubit"))
