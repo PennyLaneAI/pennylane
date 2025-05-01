@@ -370,7 +370,11 @@ class QubitUnitary(Operation):
 
         p = 2 ** (len(wires) - 1)
         q = 2 ** (len(wires) - 1)
-        (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p, q)
+        res = cossin_decomposition(U, p, q)
+        print(res)
+        for k in res:
+            print(k)
+        (u1, u2), theta, (v1_dagg, v2_dagg) = res
 
         v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
         u11, diag_u, u12 = _compute_udv(u1, u2)
