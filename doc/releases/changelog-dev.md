@@ -247,7 +247,7 @@
   [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
 
 * Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
-  some arguments are trainable and there are wire-less measurements like `qml.probs()`.
+  some arguments are trainable and an intermediate transform does not preserve trainability information.
   [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
 
 * A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
