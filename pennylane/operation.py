@@ -156,6 +156,11 @@ Boolean Functions
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
 
+.. warning::
+
+    All of the boolean functions in this module are currently deprecated. See the individual functions
+    for alternative code.
+
 .. currentmodule:: pennylane.operation
 
 .. autosummary::
@@ -2405,13 +2410,30 @@ def operation_derivative(operation: Operation) -> TensorLike:
 
 @qml.BooleanFn
 def not_tape(obj):
-    """Returns ``True`` if the object is not a quantum tape"""
-    return isinstance(obj, qml.tape.QuantumScript)
+    """Returns ``True`` if the object is not a quantum tape.
+
+    .. warning::
+
+        **Deprecated**. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.
+    """
+    warnings.warn(
+        "not_tape is deprecated. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.",
+        PennyLaneDeprecationWarning,
+    )
+    return not isinstance(obj, qml.tape.QuantumScript)
 
 
 @qml.BooleanFn
 def has_gen(obj):
-    """Returns ``True`` if an operator has a generator defined."""
+    """Returns ``True`` if an operator has a generator defined.
+
+    .. warning::
+
+        **Deprecated**. Use ``obj.has_generator`` instead.
+    """
+    warnings.warn(
+        "has_gen is deprecated. Use Operator.has_generator instead.", PennyLaneDeprecationWarning
+    )
     if isinstance(obj, Operator):
         return obj.has_generator
     try:
@@ -2423,42 +2445,87 @@ def has_gen(obj):
 
 @qml.BooleanFn
 def has_grad_method(obj):
-    """Returns ``True`` if an operator has a grad_method defined."""
+    """Returns ``True`` if an operator has a grad_method defined.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.grad_method is not None`` instead.
+    """
+    warnings.warn(
+        "has_grad_method is deprecated. Use obj.grad_method is not None instead. ",
+        PennyLaneDeprecationWarning,
+    )
     return obj.grad_method is not None
 
 
 @qml.BooleanFn
 def has_multipar(obj):
     """Returns ``True`` if an operator has more than one parameter
-    according to ``num_params``."""
+    according to ``num_params``.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.num_params > 1`` instead.
+    """
+    warnings.warn(
+        "has_multipar is deprecated. Use obj.num_params > 1 instead.", PennyLaneDeprecationWarning
+    )
     return obj.num_params > 1
 
 
 @qml.BooleanFn
 def has_nopar(obj):
     """Returns ``True`` if an operator has no parameters
-    according to ``num_params``."""
+    according to ``num_params``.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.num_params == 0`` instead.
+    """
+    warnings.warn(
+        "has_nopar is deprecated. Use obj.num_params == 0 instead.", PennyLaneDeprecationWarning
+    )
     return obj.num_params == 0
 
 
 @qml.BooleanFn
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
-    according to the ``has_unitary_generator`` flag."""
+    according to the ``has_unitary_generator`` flag.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj in qml.ops.qubit.attributes.has_unitary_gen`` insteaed.
+
+    """
+    warnings.warn(
+        "has_unitary_gen is deprecated. Use `obj in qml.ops.qubit.attributes.has_unitary_generator` instead.",
+        PennyLaneDeprecationWarning,
+    )
     # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
     return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
 
 
 @qml.BooleanFn
 def is_measurement(obj):
-    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
+    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance.
+
+    .. warning::
+
+        **Deprecated**: Use ``isinstance(obj, qml.measurements.MeasurementProcess)`` instead.
+    """
+    warnings.warn(
+        "is_measurement is deprecated. Use isinstance(obj, qml.measurements.MeasurementProcess) instead.",
+        PennyLaneDeprecationWarning,
+    )
     return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
-    according to ``qml.math.requires_grad``."""
+    according to ``qml.math.requires_grad``.
+    """
     return any(qml.math.requires_grad(p) for p in obj.parameters)
 
 
@@ -2466,16 +2533,57 @@ def is_trainable(obj):
 def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing gates.
 
-    This helper function is useful if the property is to be checked in
-    a queuing context, but the resulting gates must not be queued.
+    .. warning::
+
+        **Deprecated:** Use ``obj.has_diagonalizing_gates`` instead.
+
     """
+    warnings.warn(
+        "defines_diagonalizing_gates is deprecated. Use obj.has_diagonalizing_gates instead.",
+        PennyLaneDeprecationWarning,
+    )
     return obj.has_diagonalizing_gates
+
+
+_gen_is_multi_term_hamiltonian_code = """
+if not isinstance(obj, Operator) or not obj.has_generator:
+    return False
+try:
+    generator = obj.generator()
+    _, ops = generator.terms() 
+    return len(ops) > 1
+except TermsUndefinedError:
+    return False
+"""
 
 
 @qml.BooleanFn
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
-    with more than one term."""
+    with more than one term.
+
+    .. warning::
+
+        **Deprecated**: Use the following code instead:
+
+        .. code-block:: python
+
+            def gen_is_multi_term_hamiltonian(obj):
+                if not isinstance(obj, Operator) or not obj.has_generator:
+                    return False
+                try:
+                    generator = obj.generator()
+                    _, ops = generator.terms()
+                    return len(ops) > 1
+                except TermsUndefinedError:
+                    return False
+
+
+    """
+    warnings.warn(
+        f"gen_is_multiterm_hamiltonian is deprecated. Use {_gen_is_multi_term_hamiltonian_code}",
+        PennyLaneDeprecationWarning,
+    )
     if not isinstance(obj, Operator) or not obj.has_generator:
         return False
     try:
