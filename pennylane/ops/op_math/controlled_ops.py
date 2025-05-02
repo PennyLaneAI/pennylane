@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+    flip_zero_control,
     pow_of_self_adjoint,
     pow_rotation,
     self_adjoint,
@@ -200,7 +201,7 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
-add_decomps(ControlledQubitUnitary, ctrl_decomp_bisect_rule)
+add_decomps(ControlledQubitUnitary, flip_zero_control(ctrl_decomp_bisect_rule))
 
 
 class CH(ControlledOp):
