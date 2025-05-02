@@ -726,19 +726,22 @@ def measurements_from_counts(tape):
 
     def postprocessing_fn(results):
         """A processing function to get measurement values from counts."""
-        samples = results[0]
-        results_processed = []
-        for m in tape.measurements:
-            if tape.shots.has_partitioned_shots:
-                res = tuple(m.process_counts(s, measured_wires) for s in samples)
-            else:
-                res = m.process_counts(samples, measured_wires)
-            results_processed.append(res)
+        counts = results[0]
 
-        if len(tape.measurements) == 1:
-            results_processed = results_processed[0]
+        if tape.shots.has_partitioned_shots:
+            results_processed = []
+            for c in counts:
+                res = [m.process_counts(c, measured_wires) for m in tape.measurements]
+                if len(tape.measurements) == 1:
+                    res = res[0]
+                results_processed.append(res)
         else:
-            results_processed = tuple(results_processed)
+            results_processed = [
+                m.process_counts(counts, measured_wires) for m in tape.measurements
+            ]
+            if len(tape.measurements) == 1:
+                results_processed = results_processed[0]
+
         return results_processed
 
     return [new_tape], postprocessing_fn
