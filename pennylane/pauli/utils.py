@@ -247,7 +247,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
     if check_is_pauli_word and not is_pauli_word(pauli_word):
-        raise TypeError(f"Expected a Pauli word operator instance, instead got {pauli_word}.")
+        raise TypeError(f"Expected a Pauli word Operator instance, instead got {pauli_word}.")
 
     pw = next(iter(pauli_word.pauli_rep))
 
