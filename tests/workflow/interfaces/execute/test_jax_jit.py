@@ -915,10 +915,7 @@ class TestJitAllCounts:
 
     @pytest.mark.parametrize(
         "device_name",
-        (
-            pytest.param("default.qubit", marks=pytest.mark.xfail),
-            pytest.param("reference.qubit", marks=pytest.mark.xfail),
-        ),
+        (pytest.param("default.qubit", marks=pytest.mark.xfail),),
     )
     def test_jit_allcounts_broadcasting(self, device_name):
         """Test jitting with counts with all_outcomes == True."""
