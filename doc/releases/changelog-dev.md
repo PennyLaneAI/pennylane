@@ -201,6 +201,8 @@
 
 <h3>Deprecations 👋</h3>
 
+Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
