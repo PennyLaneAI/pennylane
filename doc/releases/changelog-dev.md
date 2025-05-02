@@ -47,7 +47,7 @@
   and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
   The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-
+  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
   ```python
   from functools import partial
   import numpy as np
