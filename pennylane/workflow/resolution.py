@@ -44,6 +44,14 @@ SupportedDiffMethods = Literal[
 ]
 
 
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
+    abstract.
+    """
+    x = qml.math.asarray([0], like="jax")
+    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
+
+
 def _validate_jax_version():
     """Checks if the installed version of JAX is supported. If an unsupported version of
     JAX is installed, a ``RuntimeWarning`` is raised."""
@@ -65,14 +73,6 @@ def _validate_jax_version():
             f"You have version {jax_version} installed.",
             RuntimeWarning,
         )
-
-
-def _get_jax_interface_name() -> Interface:
-    """Check if we are in a jitting context by creating a dummy array and seeing if it's
-    abstract.
-    """
-    x = qml.math.asarray([0], like="jax")
-    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
 
 
 # pylint: disable=import-outside-toplevel
@@ -112,6 +112,9 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         except ValueError:
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
+
+    if interface in (Interface.JAX, Interface.JAX_JIT):
+        _validate_jax_version()
 
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH

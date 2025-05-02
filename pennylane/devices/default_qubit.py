@@ -1015,19 +1015,19 @@ class DefaultQubit(Device):
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
         import jax
 
+        def _make_zero(tan, arg):
+            return (
+                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, jax.interpreters.ad.Zero)
+                else tan
+            )
+
         def eval_wrapper(*inner_args):
             n_consts = len(jaxpr.constvars)
             consts = inner_args[:n_consts]
             non_const_args = inner_args[n_consts:]
             return self.eval_jaxpr(
                 jaxpr, consts, *non_const_args, execution_config=execution_config
-            )
-
-        def _make_zero(tan, arg):
-            return (
-                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
-                if isinstance(tan, jax.interpreters.ad.Zero)
-                else tan
             )
 
         tangents = tuple(map(_make_zero, tangents, args))
