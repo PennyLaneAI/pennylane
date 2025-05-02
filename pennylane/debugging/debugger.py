@@ -354,7 +354,7 @@ def debug_probs(wires=None, op=None):
 
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
-        op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
+        op (Union[Operator, MeasurementValue]): an observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
