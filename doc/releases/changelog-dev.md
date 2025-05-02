@@ -43,9 +43,6 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
-  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
-
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
   can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
   decompose into will be chosen based on the target gate set.
@@ -326,5 +323,4 @@ Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
 Lee J. O'Riordan,
-David Wierichs,
-Jake Zaia,
+Jake Zaia
