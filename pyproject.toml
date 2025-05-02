@@ -1,5 +1,5 @@
 [build-system]
-requires = ["cmake", "setuptools>=68", "tomli","numpy"]
+requires = ["cmake", "setuptools>=68", "tomli"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,7 +13,6 @@ maintainers = [
     { name = "Xanadu Inc.", email = "software@xanadu.ai" },
 ]
 dependencies = [
-    "numpy",
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
