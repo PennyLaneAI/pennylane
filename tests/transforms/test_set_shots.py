@@ -36,6 +36,7 @@ class TestSetShots:
         assert batch[0].operations == tape.operations
         assert batch[0].measurements == tape.measurements
         assert post_fn == null_postprocessing
+        assert post_fn(batch) == batch[0]
 
     def test_changes_shots(self):
         """Test that set_shots returns a new tape with updated shots."""
