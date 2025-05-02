@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from itertools import product
 from typing import Optional, Union
 
 import numpy as np
@@ -39,7 +38,7 @@ from pennylane.math import (
     transpose,
     zeros,
 )
-from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     rot_decomp_rule,
     two_qubit_decomp_rule,
@@ -134,9 +133,6 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -381,9 +377,6 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -507,7 +500,7 @@ class DiagonalQubitUnitary(Operation):
         diff = angles[..., ::2] - angles[..., 1::2]
         mean = (angles[..., ::2] + angles[..., 1::2]) / 2
         if len(wires) == 1:
-            return [  # Squeeze away non-broadcasting axis
+            return [  # Squeeze away non-broadcasting axis (there is just one angle for RZ/GPhase
                 qml.RZ(-qml.math.squeeze(diff, axis=-1), wires=wires),
                 qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires),
             ]
@@ -613,9 +606,6 @@ class BlockEncode(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
