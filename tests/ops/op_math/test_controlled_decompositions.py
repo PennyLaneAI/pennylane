@@ -22,21 +22,15 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
-from pennylane.ops import ctrl_decomp_zyz
+from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.op_math.controlled import Controlled, _is_single_qubit_special_unitary
 from pennylane.ops.op_math.controlled_decompositions import (
-    _bisect_compute_a,
-    _bisect_compute_b,
-    _ctrl_decomp_bisect_general,
-    _ctrl_decomp_bisect_md,
-    _ctrl_decomp_bisect_od,
     _decompose_mcx_with_many_workers,
     _decompose_mcx_with_one_worker_b95,
     _decompose_mcx_with_one_worker_kg24,
     _decompose_mcx_with_two_workers,
     _decompose_multicontrolled_unitary,
     _decompose_recursive,
-    ctrl_decomp_bisect,
     decompose_mcx,
 )
 from pennylane.wires import Wires

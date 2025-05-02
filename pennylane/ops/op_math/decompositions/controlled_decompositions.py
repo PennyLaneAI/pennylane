@@ -26,9 +26,7 @@ from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=
     _controlled_resource_rep,
 )
 from pennylane.operation import Operation, Operator
-from pennylane.ops.functions import matrix
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
-from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
@@ -172,11 +170,11 @@ def ctrl_decomp_zyz(
             )
         except NotImplementedError:
             rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-                matrix(target_operation), return_global_phase=True
+                ops.functions.matrix(target_operation), return_global_phase=True
             )
     else:
         rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-            matrix(target_operation), return_global_phase=True
+            ops.functions.matrix(target_operation), return_global_phase=True
         )
 
     with queuing.AnnotatedQueue() as q:
