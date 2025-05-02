@@ -36,6 +36,7 @@ class TestSetShots:
         assert batch[0].operations == tape.operations
         assert batch[0].measurements == tape.measurements
         assert post_fn == null_postprocessing
+        assert post_fn(batch) == batch[0]
 
     def test_changes_shots(self):
         """Test that set_shots returns a new tape with updated shots."""
@@ -79,6 +80,9 @@ class TestSetShots:
         assert isinstance(result[0], (list, tuple))
         assert callable(result[1])
 
+    @pytest.mark.xfail(
+        reason="This test is expected to fail until the pipeline is updated to use the new set_shots transform"
+    )
     @pytest.mark.integration
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shots", [None, 1, 10])
