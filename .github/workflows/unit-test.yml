@@ -189,7 +189,7 @@ jobs:
         id: pytest_args
         env:
           PYTEST_COVERAGE_ARGS: ${{ inputs.pytest_coverage_flags }}
-          PYTEST_PARALLELISE_ARGS: ''
+          PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}" --store-durations --clean-durations', inputs.pytest_durations_file_path) || '' }}
           PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}/{1}"', env.TEST_REPORTS_DIR, inputs.pytest_xml_file_path) || '' }}
@@ -202,7 +202,7 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} -vvv --timeout=500
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --timeout=500
 
       - name: Freeze dependencies
         shell: bash
