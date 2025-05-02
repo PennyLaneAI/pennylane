@@ -99,9 +99,9 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(operator_type.__name__)
+    primitive = QmlPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
 
     @primitive.def_impl

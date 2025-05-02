@@ -126,9 +126,9 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_obs")
+    primitive = QmlPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -166,9 +166,9 @@ def create_measurement_mcm_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_mcm")
+    primitive = QmlPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -204,9 +204,9 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_wires")
+    primitive = QmlPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl

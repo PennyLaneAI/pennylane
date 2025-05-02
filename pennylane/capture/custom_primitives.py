@@ -19,8 +19,6 @@ from typing import Union
 
 # import jax
 from jax.extend.core import Primitive
-from jax.interpreters.ad import JVPTrace
-from jax.interpreters.batching import BatchTrace
 
 
 class PrimitiveType(Enum):
@@ -50,18 +48,3 @@ class QmlPrimitive(Primitive):
     def prim_type(self, value: Union[str, PrimitiveType]):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
-
-
-# pylint: disable=too-few-public-methods,abstract-method
-class NonInterpPrimitive(QmlPrimitive):
-    """A subclass to JAX's Primitive that works like a Python function
-    when evaluating JVPTracers and BatchTracers."""
-
-    def bind_with_trace(self, trace, args, params):
-        """Bind the ``NonInterpPrimitive`` with a trace.
-
-        If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
-        Otherwise, the bind call of JAX's standard Primitive is used."""
-        # if isinstance(trace, (JVPTrace, BatchTrace)):
-        #     return self.impl(*args, **params)
-        return super().bind_with_trace(trace, args, params)

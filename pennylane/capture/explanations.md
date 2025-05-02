@@ -426,6 +426,9 @@ Now in our jaxpr, we can see thet `PrimitiveClass2` returns something of type `A
 
 # Non-interpreted primitives
 
+**WARNING:** THIS EXPLANATION IS SPECIFIC TO JAX 0.4.28 AND NO LONGER APPLIES
+
+
 Some of the primitives in the capture module have a somewhat non-standard requirement for the
 behaviour under differentiation or batching: they should ignore that an input is a differentiation
 or batching tracer and just execute the standard implementation on them.
