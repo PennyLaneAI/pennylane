@@ -16,34 +16,6 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
-import warnings
-
-# pylint: disable=wrong-import-position, wrong-import-order, import-outside-toplevel
-
-
-def _warn_if_jax_incompatible():  # pragma: no cover
-    """Warn the user if an incompatible JAX version is installed."""
-
-    import importlib.metadata as importlib_metadata
-
-    try:
-        jax_version = importlib_metadata.version("jax")
-    except importlib_metadata.PackageNotFoundError:
-        return
-
-    from packaging.version import Version
-
-    if Version(jax_version) > Version("0.4.28"):
-        warnings.warn(
-            f"PennyLane is not yet compatible with JAX versions > 0.4.28. "
-            f"You have JAX {jax_version} installed. "
-            f"Please downgrade JAX to <=0.4.28 to avoid runtime errors.",
-            RuntimeWarning,
-        )
-
-
-_warn_if_jax_incompatible()
-
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
