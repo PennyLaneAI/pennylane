@@ -31,7 +31,29 @@ def null_postprocessing(results):
 def set_shots(
     tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Sets the shot(s) of a given tape"""
+    r"""Transform function to set or override the shots execution configuration
+    for a quantum circuit.
+
+    Args:
+        tape (QuantumScript): The quantum circuit to be modified.
+        shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
+            number of shots or shot execution configuration to apply to the circuit.
+            This specification will override any shots value previously associated
+            with the circuit or QNode during execution.
+            Accepted values:
+            * ``None``: Analytic execution (exact results).
+            * ``int``: A single integer specifying the total number of shots.
+            * ``Sequence[int]``: A sequence of integers defining a shot vector.
+            * ``Sequence[tuple[int, int]]``: A sequence of tuples, each ``(shots, copies)``,
+              defining a shot vector with shot batching.
+            * ``pennylane.shots.Shots``: A pre-constructed ``Shots`` object.
+
+    Returns:
+        tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
+        post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
+        tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
+
+    """
     if tape.shots != Shots(shots):
         tape = tape.copy(shots=shots)
     return (tape,), null_postprocessing
