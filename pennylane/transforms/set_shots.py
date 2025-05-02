@@ -31,7 +31,7 @@ def null_postprocessing(results):
 def set_shots(
     tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Transform function to set or override the shots execution configuration
+    """Transform function to set or override the shots execution configuration
     for a quantum circuit.
 
     Args:
@@ -40,13 +40,13 @@ def set_shots(
             number of shots or shot execution configuration to apply to the circuit.
             This specification will override any shots value previously associated
             with the circuit or QNode during execution.
-            Accepted values:
-            * ``None``: Analytic execution (exact results).
-            * ``int``: A single integer specifying the total number of shots.
-            * ``Sequence[int]``: A sequence of integers defining a shot vector.
-            * ``Sequence[tuple[int, int]]``: A sequence of tuples, each ``(shots, copies)``,
-              defining a shot vector with shot batching.
-            * ``pennylane.shots.Shots``: A pre-constructed ``Shots`` object.
+
+    Defining shots enables users to specify circuit executions, and the :class:`~.measurements.Shots` class standardizes
+    the internal representation of shots. There are three ways to specify shot values:
+
+    * The value ``None``
+    * A positive integer
+    * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
 
     Returns:
         tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
