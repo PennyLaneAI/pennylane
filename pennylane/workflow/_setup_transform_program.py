@@ -85,24 +85,24 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    full_transform_program = qml.transforms.core.TransformProgram(
+    outer_transform_program = qml.transforms.core.TransformProgram(
         user_transform_program, cotransform_cache=user_transform_program.cotransform_cache
     )
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary
     if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
-        full_transform_program.add_transform(
+        outer_transform_program.add_transform(
             qml.transform(resolved_execution_config.gradient_method.expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
     if resolved_execution_config.use_device_gradient:
-        full_transform_program += device_transform_program
+        outer_transform_program += device_transform_program
     else:
         inner_transform_program += device_transform_program
 
     # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
-    _prune_dynamic_transform(full_transform_program, inner_transform_program)
+    _prune_dynamic_transform(outer_transform_program, inner_transform_program)
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
@@ -124,4 +124,4 @@ def _setup_transform_program(
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
-    return full_transform_program, inner_transform_program
+    return outer_transform_program, inner_transform_program

@@ -207,14 +207,14 @@ def execute(
     config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
 
     transform_program = transform_program or qml.transforms.core.TransformProgram()
-    transform_program, inner_transform = _setup_transform_program(
+    outer_transform, inner_transform = _setup_transform_program(
         transform_program, device, config, cache, cachesize
     )
 
     #### Executing the configured setup #####
-    tapes, post_processing = transform_program(tapes)
+    tapes, post_processing = outer_transform(tapes)
 
-    if transform_program.is_informative:
+    if outer_transform.is_informative:
         return post_processing(tapes)
 
     results = run(tapes, device, config, inner_transform)
