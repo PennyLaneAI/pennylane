@@ -120,6 +120,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of `DiagonalQubitUnitary` has been improved to contain fewer gates.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -257,6 +260,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `SelectPauliRot` does not allow parameter broadcasting, although it supports
+  broadcasting in its methods.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
@@ -323,4 +330,5 @@ Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
 Lee J. O'Riordan,
-Jake Zaia
+David Wierichs,
+Jake Zaia,
