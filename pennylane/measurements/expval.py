@@ -50,7 +50,7 @@ def expval(
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object. To
+        op (Union[Operator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
 
