@@ -55,20 +55,19 @@ def _cancel_adjoint_resource(*_, base_params, **__):
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
     _, struct = base.base._flatten()
-    new_struct = (wires, *struct[1:])
-    base.base._unflatten(params, new_struct)
+    base.base._unflatten(params, struct)
 
 
 def _adjoint_rotation(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_adjoint_rotation)
 def adjoint_rotation(phi, wires, base, **__):
     """Decompose the adjoint of a rotation operator by negating the angle."""
     _, struct = base._flatten()
-    new_struct = (wires, *struct[1:])
-    base._unflatten((-phi,), new_struct)
+    base._unflatten((-phi,), struct)
 
 
 def is_integer(x):
@@ -82,6 +81,7 @@ def _repeat_pow_base_resource(base_class, base_params, z):
     return {resource_rep(base_class, **base_params): z}
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_repeat_pow_base_resource)
 def repeat_pow_base(*params, wires, base, z, **__):
     """Decompose the power of an operator by repeating the base operator. Assumes z
@@ -90,8 +90,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
     @qml.for_loop(0, z)
     def _loop(i):
         _, struct = base._flatten()
-        new_struct = (wires, *struct[1:])
-        base._unflatten(params, new_struct)
+        base._unflatten(params, struct)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -106,12 +105,12 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
     }
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
     _, struct = base.base._flatten()
-    new_struct = (wires, *struct[1:])
-    base_op = base.base._unflatten(params, new_struct)
+    base_op = base.base._unflatten(params, struct)
     qml.pow(base_op, z * base.z)
 
 
@@ -125,13 +124,13 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
     }
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_flip_pow_adjoint_resource)
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     _, struct = base.base._flatten()
-    new_struct = (wires, *struct[1:])
-    base_op = base.base._unflatten(params, new_struct)
+    base_op = base.base._unflatten(params, struct)
     qml.adjoint(qml.pow(base_op, z))
 
 
@@ -141,14 +140,14 @@ def _pow_self_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
     return {resource_rep(base_class, **base_params): z % 2}
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_pow_self_adjoint_resource)
 def pow_of_self_adjoint(*params, wires, base, z, **__):
     """Decompose the power of a self-adjoint operator, assumes z is an integer."""
 
     def f():
         _, struct = base._flatten()
-        new_struct = (wires, *struct[1:])
-        base._unflatten(params, new_struct)
+        base._unflatten(params, struct)
 
     qml.cond(z % 2 == 1, f)()
 
@@ -157,25 +156,24 @@ def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unuse
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,unused-argument
 @register_resources(_pow_rotation_resource)
 def pow_rotation(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     _, struct = base._flatten()
-    new_struct = (wires, *struct[1:])
-    base._unflatten((phi * z,), new_struct)
+    base._unflatten((phi * z,), struct)
 
 
 def _decompose_to_base_resource(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
+# pylint: disable=protected-access,unused-argument
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     _, struct = base._flatten()
-    new_struct = (wires, *struct[1:])
-    base._unflatten(params, new_struct)
+    base._unflatten(params, struct)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
@@ -318,8 +316,7 @@ def flip_control_adjoint(*params, wires, control_wires, control_values, work_wir
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     _, struct = base.base._flatten()
-    new_struct = (wires[len(control_wires) :], *struct[1:])
-    base_op = base.base._unflatten(params, new_struct)
+    base_op = base.base._unflatten(params, struct)
     qml.adjoint(
         qml.ctrl(
             base_op,

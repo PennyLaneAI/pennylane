@@ -25,6 +25,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
+from pennylane._deprecated_observable import Observable
 from pennylane.decomposition import (
     DecompositionNotApplicable,
     add_decomps,
@@ -38,7 +39,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_of_self_adjoint,
     self_adjoint,
 )
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -62,6 +63,8 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -69,8 +72,6 @@ class Hadamard(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     resource_keys = set()
-
-    _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
@@ -312,6 +313,8 @@ class PauliX(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
+    is_hermitian = True
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -571,6 +574,8 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -815,6 +820,7 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -826,8 +832,6 @@ class PauliZ(Observable, Operation):
     batch_size = None
 
     resource_keys = set()
-
-    _queue_category = "_ops"
 
     @property
     def pauli_rep(self):

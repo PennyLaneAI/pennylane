@@ -109,7 +109,7 @@ New operators can be created by applying arithmetic functions to operators, such
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
 specific subclasses.
 
-* Operators inheriting from :class:`~.Observable` support addition and scalar multiplication:
+* Operators inheriting from :class:`~.Operator` support addition and scalar multiplication:
 
   >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
   >>> op.name
@@ -289,7 +289,7 @@ Defining special properties of an operator
 ##########################################
 
 Apart from the main :class:`~.Operator` class, operators with special methods or representations
-are implemented as subclasses :class:`~.Operation`, :class:`~.Observable`, :class:`~.Channel`,
+are implemented as subclasses :class:`~.Operation`, :class:`~.Channel`,
 :class:`~.CVOperation` and :class:`~.CVObservable`.
 
 However, unlike many other frameworks, PennyLane does not use class
