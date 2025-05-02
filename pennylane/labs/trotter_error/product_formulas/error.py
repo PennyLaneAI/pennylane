@@ -73,14 +73,8 @@ def effective_hamiltonian(
     bch = product_formula.bch_approx(order)
     eff = _AdditiveIdentity()
 
-    print(fragments.keys())
-
     for commutator_order in bch:
         for commutator, coeff in commutator_order.items():
-            print(
-                coeff * math.prod(frag_coeff for _, frag_coeff in commutator),
-                [label for label, _ in commutator],
-            )
             eff += coeff * nested_commutator(
                 [frag_coeff * fragments[label] for label, frag_coeff in commutator]
             )

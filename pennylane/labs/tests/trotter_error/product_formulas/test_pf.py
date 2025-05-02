@@ -87,9 +87,6 @@ def test_fourth_order_recursive(fragment_dict, t):
     eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
     eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
 
-    print(eff_1)
-    print(eff_2)
-
     assert np.allclose(eff_1, eff_2)
 
 

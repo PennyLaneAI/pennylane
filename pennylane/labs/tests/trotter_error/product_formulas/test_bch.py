@@ -130,9 +130,6 @@ def test_fourth_order_norm_two_fragments(fragments, t):
         mat = nested_commutator([fragments[frag] for frag in comm])
         upper_bound += coeff * np.linalg.norm(mat)
 
-    print(fourth_order_approx)
-    print(actual)
-
     assert np.linalg.norm(fourth_order_approx - actual) <= (t**5) * upper_bound
 
 
