@@ -497,6 +497,7 @@ class DiagonalQubitUnitary(Operation):
          IsingZZ(0.2, wires=[0, 1])]
 
         """
+        """
         n = len(wires)
 
         # Cast the diagonal into a complex dtype so that the logarithm works as expected
@@ -529,6 +530,21 @@ class DiagonalQubitUnitary(Operation):
             if sum(term) > 2
         )
         return ops
+        """
+        angles = qml.math.angle(D)
+        if len(wires) == 1:
+            diff = angles[..., 0] - angles[..., 1]
+            mean = (angles[..., 0] + angles[..., 1]) / 2
+            return [
+                qml.RZ(-diff, wires=wires),
+                qml.GlobalPhase(-mean, wires=wires),
+            ]
+        diff = angles[..., ::2] - angles[..., 1::2]
+        mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+        return [
+            qml.SelectPauliRot(-diff, control_wires=wires[:-1], target_wire=wires[-1]),
+            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+        ]
 
     def adjoint(self) -> "DiagonalQubitUnitary":
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
