@@ -160,10 +160,11 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
-    # If the transform program contains set_shots, we need to adjust the tape
+    ### Apply the user transforms ####
     if transform_program:
         tapes, _ = transform_program(tapes)
         transform_program = TransformProgram()
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -191,7 +192,6 @@ def execute(
         return ()
 
     ### Specifying and preprocessing variables ####
-
     interface = _resolve_interface(interface, tapes)
 
     config = qml.devices.ExecutionConfig(
