@@ -186,9 +186,6 @@ Other
     :toctree: api
 
     ~operation_derivative
-    ~WiresEnum
-    ~AllWires
-    ~AnyWires
 
 .. currentmodule:: pennylane
 

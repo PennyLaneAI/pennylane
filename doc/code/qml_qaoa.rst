@@ -4,6 +4,8 @@ qml.qaoa
 Overview
 --------
 
+.. currentmodule:: pennylane.qaoa
+
 This module provides a collection of methods that help in the construction of
 QAOA workflows.
 
