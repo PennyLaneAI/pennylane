@@ -32,6 +32,6 @@ def set_shots(
     tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Sets the shot(s) of a given tape"""
-    if tape.shots != shots:
+    if tape.shots != qml.meausrements.Shots(shots):
         tape = tape.copy(shots=shots)
     return (tape,), null_postprocessing
