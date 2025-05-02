@@ -29,7 +29,7 @@ try:
     import jax
 
     jax_version = importlib_metadata.version("jax")
-    if Version(jax_version) > Version("0.4.28"):
+    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
         warnings.warn(
             f"PennyLane is not yet compatible with JAX versions > 0.4.28. "
             f"You have version {jax_version} installed. "
