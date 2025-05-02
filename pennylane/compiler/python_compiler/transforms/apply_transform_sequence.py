@@ -6,6 +6,11 @@ from xdsl.passes import ModulePass, PipelinePass
 
 from .transform_interpreter import TransformInterpreterPass
 
+available_passes = {}
+
+def register_pass(name, _callable):
+    available_passes[name] = _callable
+
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
     name = "apply-transform-sequence"
@@ -18,7 +23,7 @@ class ApplyTransformSequence(ModulePass):
                     if isinstance(op, builtin.ModuleOp):
                         nested_modules.append(op)
 
-        pipeline = PipelinePass((TransformInterpreterPass(passes={}),))
+        pipeline = PipelinePass((TransformInterpreterPass(passes=available_passes),))
         for op in nested_modules:
             pipeline.apply(ctx, op)
 
