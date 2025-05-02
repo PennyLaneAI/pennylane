@@ -80,9 +80,6 @@ class TestSetShots:
         assert isinstance(result[0], (list, tuple))
         assert callable(result[1])
 
-    @pytest.mark.xfail(
-        reason="This test is expected to fail until the pipeline is updated to use the new set_shots transform"
-    )
     @pytest.mark.integration
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shots", [None, 1, 10])
