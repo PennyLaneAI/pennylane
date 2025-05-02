@@ -14,24 +14,25 @@
 """
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
-import networkx as nx
 from functools import partial
+
+import networkx as nx
 
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, GlobalPhase, H, Identity, Rot, RZ, S, X, Y, Z, cond
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import xzx_rotation_angles
+from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
-from pennylane.queuing import AnnotatedQueue
 
 from .conditional_measure import cond_measure
 from .graph_state_preparation import GraphStatePrep
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
-from .utils import QubitMgr
+from .utils import PauliFrameTracker, QubitMgr
 
-mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
+mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity}
 
 
 @register_resources({RotXZX: 1})
@@ -67,17 +68,28 @@ def convert_to_mbqc_formalism(tape):
     num_qubits = len(tape.wires) + 2 + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
+    pf_tracker = PauliFrameTracker(wires=len(tape.wires))
+
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
     with AnnotatedQueue() as q:
         for op in tape.operations:
-            if isinstance(op, (X, Y, Z, Identity, GlobalPhase)):
-                op.__class__(op.wires)
+            if isinstance(op, (X, Y, Z, Identity)):
+                # op.__class__(op.wires)
+                pf_tracker.append(op.__class__, op.wires[0])
             elif isinstance(op, CNOT):
                 (wire_map[op.wires[0]], wire_map[op.wires[1]]) = stencils[op.__class__](
                     q_mgr, wire_map[op.wires[0]], wire_map[op.wires[1]], *op.data
                 )
+                pf_tracker.apply_cnot(op.wires[0], op.wires[1])
+            elif isinstance(op, (H, S)):
+                wire_map[op.wires[0]] = stencils[op.__class__](
+                    q_mgr, wire_map[op.wires[0]], *op.data
+                )
+                pf_tracker.apply_one_qubit_clifford(op.__class__, op.wires[0])
             else:
+                pf_tracker.get_ops(wire_map=wire_map)
+                pf_tracker.reset()
                 wire_map[op.wires[0]] = stencils[op.__class__](
                     q_mgr, wire_map[op.wires[0]], *op.data
                 )
@@ -274,10 +286,5 @@ def _generate_cnot_graph():
     )
     return g
 
-stencils = {
-    RZ: rz_stencil,
-    RotXZX: rot_stencil,
-    S: s_stencil,
-    H: h_stencil,
-    CNOT: cnot_stencil
-}
+
+stencils = {RZ: rz_stencil, RotXZX: rot_stencil, S: s_stencil, H: h_stencil, CNOT: cnot_stencil}

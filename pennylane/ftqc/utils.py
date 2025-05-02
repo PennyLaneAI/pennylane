@@ -17,6 +17,12 @@ This module contains utility data-structures and algorithms supporting functiona
 ftqc module.
 """
 from threading import RLock
+from typing import Union
+
+import numpy as np
+
+import pennylane as qml
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 
 
 class QubitMgr:
@@ -227,3 +233,122 @@ class QubitMgr:
                 raise RuntimeError(
                     f"Qubit index {idx} not found in inactive set. Execution aborted."
                 )
+
+_PAULI_PHASE_MAP = {
+    Identity: 1 + 0j,
+    X: 1 + 0j,
+    Y: 0 + 1j,
+    Z: 1 + 0j,
+}
+
+_ENCODE_XZ = {
+    Identity: (0, 0),
+    X: (1, 0),
+    Y: (1, 1),
+    Z: (0, 1),
+}
+
+_DECODE_XZ_OPS = {
+    (0, 0): Identity,
+    (1, 0): X,
+    (1, 1): Y,
+    (0, 1): Z,
+}
+
+_CLIFFORD_TABLEAU = {
+    H: {"phase": [1, 1], "target": [Z, X]},
+    S: {"phase": [1j, 1], "target": [[X, Z], Z]},
+    CNOT: {
+        "phase": [1, 1, 1, 1],
+        "control": [X, Z, Identity, Z],
+        "target": [X, Identity, X, Z],
+    },
+}
+
+
+def _apply_commutative_rule(x: np.uint8, z: np.uint8, m: np.complex64, paulis: list):
+    for pauli in paulis:
+        if pauli not in [Identity, X, Y, Z]:
+            raise (f"{pauli} encoding is not supported.")
+        px, pz = _ENCODE_XZ[pauli]
+        pm = _PAULI_PHASE_MAP[pauli]
+        x ^= px
+        z ^= pz
+        m *= pm
+    return x, z, m
+
+
+class PauliFrameTracker:
+    r""" """
+
+    def __init__(self, wires: Union[int, list]):
+        self._num_wires = len(wires) if isinstance(wires, list) else wires
+        self._x = np.zeros(self._num_wires, dtype=np.uint8)
+        self._z = np.zeros(self._num_wires, dtype=np.uint8)
+        self._m = np.ones(self._num_wires, dtype=np.complex64)
+
+    def data(self, wire: int):
+        return (self._x[wire], self._z[wire])
+
+    def get_op(self, wire: int, wire_map: dict):
+        ops = _DECODE_XZ_OPS[self.data(wire)]
+        m = self._m[wire]
+        if isinstance(ops, Y):
+            if m == 1.0j:
+                return ops(wire_map[wire])
+            return (-1.0j) * m * qml.prod(ops(wire_map[wire]))
+        if m == 1:
+            return ops(wire_map[wire])
+        return m * qml.prod(ops(wire_map[wire]))
+
+    def get_ops(self, wire_map: dict):
+        for wire in range(self._num_wires):
+            self.get_op(wire, wire_map[wire])
+
+    @property
+    def state(self):
+        """Return the X and Z and phase information for each qubit. Note that we can do further processing later."""
+        return self._x, self._z, self._m
+
+    def append(self, paulis: Union[qml.operation.Operator, list], wire: int):
+        x, z, m = self._x[wire], self._z[wire], self._m[wire]
+        self._x[wire], self._z[wire], self._m[wire] = _apply_commutative_rule(x, z, m, paulis)
+
+    def reset(self):
+        """Reset all wires to Identity."""
+        self._x = np.zeros(self._num_wires, dtype=np.uint8)
+        self._z = np.zeros(self._num_wires, dtype=np.uint8)
+        self._m = np.ones(self._num_wires, dtype=np.complex64)
+
+    def _clifford_tableau_lookup(self, op: qml.operation.Operator, xz: tuple, lookup_keys: list):
+        res = {}
+        for key in lookup_keys:
+            res[key] = []
+        m = 1
+        for idx in range(len(xz)):
+            if xz[idx] == 1:
+                m *= _CLIFFORD_TABLEAU[op]["phase"][idx]
+                for key in lookup_keys:
+                    res[key].extend(_CLIFFORD_TABLEAU[op][key][idx])
+        return m, res
+
+    def apply_cnot(self, control: int, target: int):
+        xz = self.data(control) + self.data(target)
+        lookup_keys = ["control", "target"]
+
+        m, res = self._clifford_tableau_lookup(CNOT, xz, lookup_keys)
+
+        for pauli, wire in zip([res["control"], res["target"]], [control, target]):
+            x = z = 0
+            self._x[wire], self._z[wire], m = _apply_commutative_rule(x, z, m, pauli)
+            self._m[wire] *= m
+
+    def apply_one_qubit_clifford(self, op: qml.operation.Operator, wire: int):
+        xz = self.data(wire)
+        lookup_keys = ["target"]
+
+        m, res = self._clifford_tableau_lookup(op, xz, lookup_keys)
+
+        x = z = 0
+        self._x[wire], self._z[wire], m = _apply_commutative_rule(x, z, m, res["target"])
+        self._m[wire] *= m
