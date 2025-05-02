@@ -129,6 +129,7 @@
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
+  [(#7368)](https://github.com/PennyLaneAI/pennylane/pull/7368)
 
 * `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
   any number of wires.
@@ -205,6 +206,14 @@
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
 
 <h3>Deprecations 👋</h3>
+
+Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
+
+* `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
+  pennylane now depends on the more general `Operator` interface instead. The
+  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+  that the operator instance is Hermitian.
+  [(#7316)](https://github.com/PennyLaneAI/pennylane/pull/7316)
 
 * The boolean functions provided in `pennylane.operation` are deprecated. See the :doc:`deprecations page </development/deprecations>` 
   for equivalent code to use instead. These include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`,
