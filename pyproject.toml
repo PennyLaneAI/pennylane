@@ -48,7 +48,7 @@ classifiers = [
 ]
 
 [project.urls]
-repository = "https://github.com/PennyLaneAI/pennylane",
+repository = "https://github.com/PennyLaneAI/pennylane"
 
 [project.optional-dependencies]
 kernels = ["cvxpy", "cvxopt"]
