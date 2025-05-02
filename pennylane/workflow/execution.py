@@ -162,7 +162,7 @@ def execute(
 
     # If the transform program contains set_shots, we need to adjust the tape
     if transform_program:
-        tapes, user_postprocessing = transform_program(tapes)
+        tapes, _ = transform_program(tapes)
         transform_program = TransformProgram()
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
