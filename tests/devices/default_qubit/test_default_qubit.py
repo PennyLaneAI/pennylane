@@ -1490,10 +1490,8 @@ class TestPRNGKeySeed:
 
         # Executing with different calls to dev.execute should give the same results
         res = [dev.execute(tape, config) for tape in tapes]
-        print(res)
         shapes = [qml.math.shape(r) for r in res]
         assert len(shapes) == n_tapes
-        print(shapes)
         assert len(set(shapes)) == 1
         # The following iterator validates that the samples for each tape are the same
         iterator = iter(res)
