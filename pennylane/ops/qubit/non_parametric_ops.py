@@ -2056,10 +2056,12 @@ class ISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod2 = z % 2
-        if abs(z_mod2 - 0.5) < 1e-6:
+        z_mod4 = z % 4
+        if abs(z_mod4 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
-        return super().pow(z_mod2)
+        if abs(z_mod4 - 2) < 1e-6:
+            return [qml.Z(wires=self.wires[0]), qml.Z(wires=self.wires[1])]
+        return super().pow(z_mod4)
 
 
 def _iswap_decomp_resources():
@@ -2262,8 +2264,12 @@ class SISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod4 = z % 4
-        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
+        z_mod8 = z % 8
+        if abs(z_mod8 - 2) < 1e-6:
+            return [ISWAP(wires=self.wires)]
+        if abs(z_mod8 - 4) < 1e-6:
+            return [qml.Z(wires=self.wires[0]), qml.Z(wires=self.wires[1])]
+        return super().pow(z_mod8)
 
 
 def _siswap_decomp_resources():

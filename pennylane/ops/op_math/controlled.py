@@ -1006,10 +1006,8 @@ ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-acc
 @functools.lru_cache(maxsize=1)
 def base_to_custom_ctrl_op():
     """A dictionary mapping base op types to their custom controlled versions.
-
     This dictionary is used under the assumption that all custom controlled operations do not
     have resource params (which is why `ControlledQubitUnitary` is not included here).
-
     """
 
     ops_with_custom_ctrl_ops = {

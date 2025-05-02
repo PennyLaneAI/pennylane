@@ -681,8 +681,9 @@ def _decompose_3_cnots(U, wires, initial_phase):
     # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
     # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
 
-    RZd = ops.RZ.compute_matrix(math.cast_like(delta, 1j))
-    RYb = ops.RY.compute_matrix(beta)
+    EPS = math.finfo(delta.dtype).eps
+    RZd = ops.RZ.compute_matrix(math.cast_like(delta + 5 * EPS, 1j))
+    RYb = ops.RY.compute_matrix(beta + 5 * EPS)
     RYa = ops.RY.compute_matrix(alpha)
 
     V_mats = [

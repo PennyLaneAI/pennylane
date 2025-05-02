@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -62,7 +62,6 @@ class MultiRZ(Operation):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -284,7 +283,6 @@ class PauliRot(Operation):
     0.8775825618903724
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -666,7 +664,6 @@ class PCPhase(Operation):
      [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)

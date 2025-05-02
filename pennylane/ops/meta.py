@@ -22,7 +22,7 @@ from copy import copy
 from typing import Literal, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -42,9 +42,6 @@ class Barrier(Operation):
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
-
-    num_wires = AnyWires
-    par_domain = None
 
     def __init__(self, wires: WiresLike = (), only_visual=False, id=None):
         wires = Wires(wires)
@@ -117,7 +114,6 @@ class WireCut(Operation):
     """
 
     num_params = 0
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, wires: WiresLike = (), id=None):
@@ -211,7 +207,6 @@ class Snapshot(Operation):
     .. seealso:: :func:`~.snapshots`
     """
 
-    num_wires = AnyWires
     num_params = 0
     grad_method = None
 
