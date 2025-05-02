@@ -12,14 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the product formula representations"""
+
+from itertools import product
+
 import numpy as np
 import pytest
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 
+
+def _hermitian(mat):
+    return mat + np.conj(mat).T
+
+
 fragment_dicts = [
     {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3))},
+    {0: np.ones(shape=(3, 3)), 1: np.ones(shape=(3, 3))},
+    {0: np.diag([2, 2, 2]), 1: np.diag([3, 3, 3])},
+    {0: np.array([[0, 1], [1, 0]]), 1: np.array([[1, 0], [0, -1]])},
+    {0: _hermitian(np.random.random(size=(3, 3))), 1: _hermitian(np.random.random(size=(3, 3)))},
     {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
+    {0: np.random.random(size=(2, 2)), 1: np.random.random(size=(2, 2))},
 ]
 
 
@@ -36,11 +49,10 @@ def test_second_order_representations(fragment_dict):
     assert np.allclose(eff1, eff2)
 
 
-@pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_fourth_order_recursive(fragment_dict):
+@pytest.mark.parametrize("fragment_dict, t", product(fragment_dicts, [1, 0.1, 0.001]))
+def test_fourth_order_recursive(fragment_dict, t):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
-    t = 0.01
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
     frag_coeffs = [
@@ -75,6 +87,9 @@ def test_fourth_order_recursive(fragment_dict):
     eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
     eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
 
+    print(eff_1)
+    print(eff_2)
+
     assert np.allclose(eff_1, eff_2)
 
 
@@ -86,7 +101,7 @@ def test_fourth_order_mult(fragment_dict):
 
     second_order_labels = [0, 1, 1, 0]
     second_order_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
-    second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
+    second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2") ** 2
 
     pfs = [(second_order**2)(t * u), second_order(t * (1 - 4 * u)), (second_order**2)(t * u)]
 
@@ -126,7 +141,7 @@ def test_pow(fragment_dict):
 def test_mul(fragment_dict):
     """Test that three ways of multiplying product formulas return the same result"""
 
-    t = 0.01
+    t = 1
     frags = [0, 1, 0]
     coeffs = [1 / 2, 1, 1 / 2]
 

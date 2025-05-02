@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 from collections import defaultdict
 from collections.abc import Hashable
@@ -61,7 +62,12 @@ class ProductFormula:
                 self.fragments.add(term)
 
         self.terms = terms
-        self.coeffs = coeffs or [1] * len(self.terms)
+
+        if coeffs and not self.recursive:
+            self.coeffs = [1j * coeff for coeff in coeffs]
+        else:
+            self.coeffs = [1] * len(self.terms)
+
         self.exponent = exponent
         self.label = label
 
@@ -78,12 +84,13 @@ class ProductFormula:
                 [term(t) for term in self.terms], exponent=self.exponent, label=f"{self.label}({t})"
             )
 
-        return ProductFormula(
-            self.terms,
-            coeffs=[t * coeff for coeff in self.coeffs],
-            exponent=self.exponent,
-            label=f"{self.label}({t})",
-        )
+        ret = copy.copy(self)
+        ret.coeffs = [t * coeff for coeff in self.coeffs]
+
+        if self.label:
+            ret.label = f"{self.label}({t})"
+
+        return ret
 
     def __eq__(self, other: ProductFormula) -> bool:
         if self.terms != other.terms:
@@ -102,12 +109,11 @@ class ProductFormula:
         return ProductFormula([self, other], label=f"{self.label}@{other.label}")
 
     def __pow__(self, z: float) -> ProductFormula:
-        return ProductFormula(
-            self.terms,
-            coeffs=self.coeffs,
-            exponent=z * self.exponent,
-            label=f"{self.label}**{z * self.exponent}",
-        )
+        ret = copy.copy(self)
+        ret.exponent = z * self.exponent
+        ret.label = f"{self.label}**{z * self.exponent}"
+
+        return ret
 
     def __repr__(self) -> str:
         if self.label:
@@ -196,7 +202,7 @@ def _remove_redundancies(
         swap = []
 
         for commutator in terms.keys():
-            if commutator[-1] == commutator[-2]:
+            if commutator[-1][0] == commutator[-2][0]:
                 delete.append(commutator)
             if term_order[commutator[-1][0]] < term_order[commutator[-2][0]]:
                 swap.append(commutator)
@@ -227,14 +233,13 @@ def _remove_redundancies(
         new_commutator[1] = commutator[0]
         new_commutator = tuple(new_commutator)
 
-        term_dicts[3][new_commutator] -= term_dicts[3][commutator]
+        term_dicts[3][new_commutator] += term_dicts[3][commutator]
         del term_dicts[3][commutator]
 
     return _drop_zeros(term_dicts)
 
 
 def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
-
     for terms in term_dicts:
         delete = []
         for commutator, coeff in terms.items():

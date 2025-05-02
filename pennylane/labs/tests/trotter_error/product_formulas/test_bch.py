@@ -13,39 +13,60 @@
 # limitations under the License.
 """Tests for the BCH approximation"""
 
-import math
+from itertools import product
 
 import numpy as np
 import pytest
 from scipy.linalg import expm, logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
-from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.abstract import commutator, nested_commutator
+
+deltas = [1, 0.1, 0.01]
+
+fragment_list = [
+    {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
+    {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
+    {
+        0: np.random.random(size=(3, 3)),
+        1: np.random.random(size=(3, 3)),
+        2: np.random.random(size=(3, 3)),
+    },
+]
 
 
-@pytest.mark.parametrize(
-    "fragments",
-    [
-        {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
-        {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
-        {
-            0: np.random.random(size=(3, 3)),
-            1: np.random.random(size=(3, 3)),
-            2: np.random.random(size=(3, 3)),
-        },
-    ],
-)
-def test_second_order(fragments):
+@pytest.mark.parametrize("fragments, r, delta", product(fragment_list, range(1, 4), deltas))
+def test_first_order(fragments, r, delta):
+    """Test against first order Trotter"""
+
+    n_frags = len(fragments)
+    expected = np.zeros(shape=(3, 3), dtype=np.complex128)
+    ham = sum(fragments.values(), np.zeros(shape=(3, 3)))
+
+    for j in range(n_frags - 1):
+        for k in range(j + 1, n_frags):
+            expected += (1 / 2) * commutator(fragments[j], fragments[k])
+
+    expected *= 1j / r * delta
+
+    first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
+    actual = effective_hamiltonian(first_order, fragments, order=2)
+
+    assert np.allclose(1j * delta * (expected + ham), actual)
+
+
+@pytest.mark.parametrize("fragments, r, delta", product(fragment_list, range(1, 4), deltas))
+def test_second_order(fragments, r, delta):
     """Test against the second order Trotter error formula"""
 
     n_frags = len(fragments)
     frag_labels = list(range(n_frags)) + list(range(n_frags - 1, -1, -1))
-    coeffs = [1 / 2] * len(frag_labels)
+    coeffs = [delta / (2 * r)] * n_frags * 2
 
-    pf = ProductFormula(frag_labels, coeffs=coeffs)
-    actual = effective_hamiltonian(pf, fragments, 3)
+    pf = ProductFormula(frag_labels, coeffs=coeffs) ** r
+    actual = effective_hamiltonian(pf, fragments, order=3)
 
-    expected = np.zeros(shape=(3, 3))
+    expected = np.zeros(shape=(3, 3), dtype=np.complex128)
 
     for i in range(n_frags - 1):
         for j in range(i + 1, n_frags):
@@ -53,32 +74,45 @@ def test_second_order(fragments):
             for k in range(i + 1, n_frags):
                 expected += 2 * nested_commutator([fragments[k], fragments[i], fragments[j]])
 
-    expected = -(1 / 24) * expected
+    expected *= -1 / 24
+    expected *= (1j * delta / r) ** 2
 
-    for fragment in fragments.values():
-        expected += fragment
+    ham = sum(fragments.values(), np.zeros(shape=(3, 3)))
+    eff = 1j * delta * (expected + ham)
 
-    assert np.allclose(actual, expected)
+    assert np.allclose(eff, actual)
 
 
-@pytest.mark.parametrize(
-    "fragments",
-    [
-        {"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
-        {"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))},
-    ],
-)
-def test_fourth_order_two_fragments(fragments):
+fragments = [
+    {"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))},
+    {"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))},
+]
+
+
+@pytest.mark.parametrize("fragments, t", product(fragments, [1, 0.1, 0.01]))
+def test_fourth_order_norm_two_fragments(fragments, t):
     """Test against the fourth order Trotter error formula on two fragments"""
 
-    u = 1 / (4 - (4 ** (1 / 3)))
-    second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
-    fourth_order = ProductFormula(
-        [second_order(u) ** 2, second_order(1 - 4 * u), second_order(u) ** 2]
-    )
+    u = 1 / (4 - 4 ** (1 / 3))
+    frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
+    frag_coeffs = [
+        u / 2,
+        u,
+        u,
+        u,
+        (1 - (3 * u)) / 2,
+        (1 - (4 * u)),
+        (1 - (3 * u)) / 2,
+        u,
+        u,
+        u,
+        u / 2,
+    ]
 
-    eff = effective_hamiltonian(fourth_order, fragments, order=5)
-    error = np.linalg.norm(eff - sum(fragments.values()))
+    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
+
+    fourth_order_approx = _pf_to_matrix(fourth_order, fragments, np.eye(3, dtype=np.complex128))
+    actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
 
     commutator_coeffs = {
         ("X", "X", "X", "Y", "X"): 0.0047,
@@ -96,15 +130,15 @@ def test_fourth_order_two_fragments(fragments):
         mat = nested_commutator([fragments[frag] for frag in comm])
         upper_bound += coeff * np.linalg.norm(mat)
 
-    print(error)
-    print(upper_bound)
+    print(fourth_order_approx)
+    print(actual)
 
-    assert error <= upper_bound
+    assert np.linalg.norm(fourth_order_approx - actual) <= (t**5) * upper_bound
 
 
-X = ("X", 1)
-Y = ("Y", 1)
-Z = ("Z", 1)
+X = ("X", 1j)
+Y = ("Y", 1j)
+Z = ("Z", 1j)
 
 
 @pytest.mark.parametrize(
@@ -171,28 +205,28 @@ def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     [
         ({"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))}),
         ({"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))}),
+        ({"X": np.ones(shape=(3, 3)), "Y": np.ones(shape=(3, 3))}),
     ],
 )
 def test_second_order_against_matrix_log(fragments):
     """Test the BCH expansion against directly computing the matrix logarithm."""
-    t = 1
 
-    second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[t / 2, t, t / 2])
-    bch_expansion = effective_hamiltonian(second_order_pf, fragments, order=9)
+    t = 0.4
+    second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])(t)
+    bch_expansion = effective_hamiltonian(second_order_pf, fragments, order=8)
 
-    second_order_matrix = (
-        expm(-0.5j * t * fragments["X"])
-        @ expm(-1j * t * fragments["Y"])
-        @ expm(-1j * t * fragments["X"])
-    )
-    evals, evecs = np.linalg.eig(second_order_matrix)
-    theta = np.angle(evals)
-    matrix_log = evecs @ np.diag(theta) @ np.linalg.inv(evecs)
+    pf_matrix = _pf_to_matrix(second_order_pf, fragments, np.eye(3, dtype=np.complex128))
 
-    matrix_log2 = logm(second_order_matrix)
-
+    print(pf_matrix)
     print(expm(bch_expansion))
-    print(expm(matrix_log))
-    print(expm(matrix_log2))
 
-    assert np.allclose(bch_expansion, matrix_log)
+    assert np.allclose(pf_matrix, expm(bch_expansion))
+
+
+def _pf_to_matrix(product_formula, fragments, accumulator):
+
+    for frag, coeff in zip(product_formula.terms, product_formula.coeffs):
+        print(coeff, frag)
+        accumulator @= expm(coeff * fragments[frag])
+
+    return accumulator
