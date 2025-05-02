@@ -100,7 +100,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qml.operation.Observable):  # pylint: disable=too-few-public-methods
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])

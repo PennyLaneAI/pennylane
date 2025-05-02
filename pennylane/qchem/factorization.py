@@ -530,7 +530,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
             :func:`~.factorize` method for all the available options with ``compressed=True``.
 
     Returns:
-        tuple(list[array[float]], list[list[Observable]], list[array[float]]): Tuple containing
+        tuple(list[array[float]], list[list[Operator]], list[array[float]]): Tuple containing
         grouped coefficients, grouped observables and basis rotation transformation matrices.
 
     **Example**

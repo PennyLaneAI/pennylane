@@ -413,7 +413,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
             required for the covariance matrix
         callable: Post-processing function that computes the covariance matrix from the
             results of the tapes in the first return value
-        list[list[.Observable]]: Observables measured in each tape, one inner list
+        list[list[.Operator]]: Observables measured in each tape, one inner list
             corresponding to one tape in the first return value
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
