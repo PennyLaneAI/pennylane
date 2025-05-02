@@ -266,17 +266,9 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given observable must either be a pennylane.Observable class or a string.",
+            match="The given observable must either be a pennylane.operation.Operator class or a string.",
         ):
             dev.supports_observable(3)
-
-        operation = qml.CNOT
-
-        with pytest.raises(
-            ValueError,
-            match="The given observable must either be a pennylane.Observable class or a string.",
-        ):
-            dev.supports_observable(operation)
 
     @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
     @pytest.mark.parametrize("obs_type", [qml.ops.LinearCombination, qml.Hamiltonian])
