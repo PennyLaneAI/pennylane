@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from xdsl.dialects import builtin
-from xdsl.context import MLContext
+from xdsl.context import Context
 from xdsl.passes import ModulePass, PipelinePass
 
 from .transform_interpreter import TransformInterpreterPass
@@ -15,7 +15,7 @@ def register_pass(name, _callable):
 class ApplyTransformSequence(ModulePass):
     name = "apply-transform-sequence"
 
-    def apply(self, ctx: MLContext, module: builtin.ModuleOp) -> None:
+    def apply(self, ctx: Context, module: builtin.ModuleOp) -> None:
         nested_modules = []
         for region in module.regions:
             for block in region.blocks:
