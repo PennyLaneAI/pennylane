@@ -16,10 +16,10 @@
 
 from pennylane import math, ops, queuing
 from pennylane.decomposition import (
+    DecompositionNotApplicable,
     adjoint_resource_rep,
     register_resources,
     resource_rep,
-    DecompositionNotApplicable,
 )
 from pennylane.operation import Operator
 from pennylane.wires import Wires
