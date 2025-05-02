@@ -80,12 +80,14 @@ class TestSetShots:
         assert callable(result[1])
 
     @pytest.mark.integration
-    def test_error_finite_shots_with_backprop(self):
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", qml.math.SUPPORTED_INTERFACE_NAMES)
+    def test_error_finite_shots_with_backprop(self, interface):
         """Test that DeviceError is raised if finite shots are used with backprop + default.qubit."""
         dev = qml.device("default.qubit", wires=2)
 
         @partial(set_shots, shots=10)
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(x, wires=1)
