@@ -22,7 +22,7 @@ from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
-def null_postprocessing(results):  # pragma: no cover
+def null_postprocessing(results):
     """An empty post-processing function."""
     return results[0]
 
