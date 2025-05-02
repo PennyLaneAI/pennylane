@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This submodule defines functions to decompose controlled operations."""
+from typing import Optional
 
 from pennylane import math, ops, queuing
 from pennylane.decomposition import (
@@ -24,8 +25,10 @@ from pennylane.decomposition import (
 from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=protected-access
     _controlled_resource_rep,
 )
-from pennylane.operation import Operator
+from pennylane.operation import Operation, Operator
+from pennylane.ops.functions import matrix
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
@@ -88,6 +91,101 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
     with queuing.AnnotatedQueue() as q:
         ctrl_decomp_bisect_rule(target_operation.matrix(), control_wires + target_operation.wires)
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    current_queue = queuing.QueuingManager.active_context()
+    if current_queue is not None:
+        for op in q.queue:  # pragma: no cover
+            queuing.apply(op, context=current_queue)
+
+    return q.queue
+
+
+def ctrl_decomp_zyz(
+    target_operation: Operator, control_wires: Wires, work_wires: Optional[Wires] = None
+) -> list[Operation]:
+    """Decompose the controlled version of a target single-qubit operation
+
+    This function decomposes both single and multiple controlled single-qubit
+    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
+    for single `controlled_wires`, and Lemma 7.9 for multiple `controlled_wires`
+    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation or matrix to decompose
+        control_wires (~.wires.Wires): the control wires of the operation.
+        work_wires (~.wires.Wires): the work wires available for this decomposition
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+
+    **Example**
+
+    We can create a controlled operation using `qml.ctrl`, or by creating the
+    decomposed controlled version of using `qml.ctrl_decomp_zyz`.
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def expected_circuit(op):
+            qml.Hadamard(wires=0)
+            qml.ctrl(op, [0])
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def decomp_circuit(op):
+            qml.Hadamard(wires=0)
+            qml.ops.ctrl_decomp_zyz(op, [0])
+            return qml.probs()
+
+    Measurements on both circuits will give us the same results:
+
+    >>> op = qml.RX(0.123, wires=1)
+    >>> expected_circuit(op)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
+
+    >>> decomp_circuit(op)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
+
+    """
+    if len(target_operation.wires) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {target_operation.__class__.__name__}."
+        )
+
+    control_wires = Wires(control_wires)
+    target_wire = target_operation.wires
+
+    if isinstance(target_operation, Operation):
+        try:
+            rot_angles = target_operation.single_qubit_rot_angles()
+            _, global_phase = math.convert_to_su2(
+                matrix(target_operation), return_global_phase=True
+            )
+        except NotImplementedError:
+            rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
+                matrix(target_operation), return_global_phase=True
+            )
+    else:
+        rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
+            matrix(target_operation), return_global_phase=True
+        )
+
+    with queuing.AnnotatedQueue() as q:
+        all_wires = control_wires + target_wire
+        if len(control_wires) > 1:
+            _multi_control_zyz(*rot_angles, wires=all_wires, work_wires=work_wires)
+        else:
+            _single_control_zyz(*rot_angles, wires=all_wires)
+        ops.cond(~math.allclose(global_phase, 0), lambda: ops.GlobalPhase(-global_phase))
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
