@@ -21,7 +21,11 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=protected-access
+    _controlled_resource_rep,
+)
 from pennylane.operation import Operator
+from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 
 
@@ -94,6 +98,11 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     return q.queue
 
 
+#######################
+# Decomposition Rules #
+#######################
+
+
 def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
@@ -120,7 +129,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 
 @register_resources(_ctrl_decomp_bisect_resources)
 def ctrl_decomp_bisect_rule(U, wires, **__):
-    """The decomposition rule for ControlledQubitUnitary."""
+    """The decomposition rule for ControlledQubitUnitary from
+    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
     U, phase = math.convert_to_su2(U, return_global_phase=True)
     imag_U = math.imag(U)
     ops.cond(
@@ -138,6 +148,101 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
         ],
     )(U, wires)
     ops.cond(~math.allclose(phase, 0), lambda: ops.GlobalPhase(-phase))
+
+
+def _single_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, **__):
+
+    if num_target_wires > 1:
+        raise DecompositionNotApplicable
+
+    if num_control_wires > 1:
+        raise DecompositionNotApplicable
+
+    return {ops.RZ: 3, ops.RY: 2, ops.CNOT: 2}
+
+
+@register_resources(_single_ctrl_decomp_zyz_resources)
+def single_ctrl_decomp_zyz_rule(U, wires, **__):
+    """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
+    https://arxiv.org/pdf/quant-ph/9503016"""
+
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    _single_control_zyz(phi, theta, omega, wires=wires)
+    ops.cond(
+        ~math.allclose(phase, 0),
+        lambda: ops.ctrl(ops.GlobalPhase(-phase, wires=wires[-1]), control=wires[:-1]),
+    )
+
+
+def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_work_wires, **__):
+
+    if num_target_wires > 1:
+        raise DecompositionNotApplicable
+
+    if num_control_wires < 2:
+        raise DecompositionNotApplicable
+
+    return {
+        ops.CRZ: 3,
+        ops.CRY: 2,
+        resource_rep(
+            ops.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 2,
+    }
+
+
+@register_resources(_multi_ctrl_decomp_zyz_resources)
+def multi_control_decomp_zyz_rule(U, wires, work_wires, **__):
+    """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
+    https://arxiv.org/pdf/quant-ph/9503016"""
+
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    _multi_control_zyz(phi, theta, omega, wires=wires, work_wires=work_wires)
+    ops.cond(
+        ~math.allclose(phase, 0),
+        lambda: ops.ctrl(ops.GlobalPhase(-phase, wires=wires[-1]), control=wires[:-1]),
+    )
+
+
+def _controlled_two_qubit_unitary_resource(
+    num_target_wires, num_control_wires, num_zero_control_values, num_work_wires, **__
+):
+
+    if num_target_wires != 2:
+        raise DecompositionNotApplicable
+
+    base_resources = two_qubit_decomp_rule.compute_resources(num_wire=num_target_wires)
+
+    return {
+        ops.X: num_zero_control_values * 2,
+        **{
+            _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
+            for base_op_rep, count in base_resources.gate_counts.items()
+        },
+    }
+
+
+@register_resources(_controlled_two_qubit_unitary_resource)
+def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__):
+    """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
+    zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
+    for w in zero_control_wires:
+        ops.PauliX(w)
+    ops.ctrl(
+        two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
+        control=wires[:-2],
+        work_wires=work_wires,
+    )(U, wires=wires[-2:])
+    for w in zero_control_wires:
+        ops.PauliX(w)
+
+
+####################
+# Helper Functions #
+####################
 
 
 def _ctrl_decomp_bisect_general(U, wires):
@@ -341,3 +446,41 @@ def _bisect_compute_b(u):
     )
 
     return _param_su2(c, d, b, 0)
+
+
+def _single_control_zyz(phi, theta, omega, wires):
+    """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
+
+    # Operator A
+    ops.cond(~math.allclose(phi, 0), lambda: ops.RZ(phi, wires=wires[-1]))
+    ops.cond(~math.allclose(theta, 0)), lambda: ops.RY(theta / 2, wires=wires[-1])
+
+    ops.CNOT(wires)
+
+    # Operator B
+    ops.cond(~math.allclose(theta, 0), lambda: ops.RY(-theta / 2, wires=wires[-1]))
+    ops.cond(~math.allclose(phi + omega, 0), lambda: ops.RZ(-(phi + omega) / 2, wires=wires[-1]))
+
+    ops.CNOT(wires)
+
+    # Operator C
+    ops.cond(~math.allclose(omega - phi, 0), lambda: ops.RZ((omega - phi) / 2, wires=wires[-1]))
+
+
+def _multi_control_zyz(phi, theta, omega, wires, work_wires):
+    """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
+
+    # Operator A
+    ops.cond(~math.allclose(phi, 0), lambda: ops.CRZ(phi, wires=wires[-2:]))
+    ops.cond(~math.allclose(theta, 0), lambda: ops.CRY(theta / 2, wires=wires[-2:]))
+
+    ops.MultiControlledX(wires, work_wires=work_wires)
+
+    # Operator B
+    ops.cond(~math.allclose(theta, 0), lambda: ops.CRY(-theta / 2, wires=wires[-2:]))
+    ops.cond(~math.allclose(phi + omega, 0), lambda: ops.CRZ(-(phi + omega) / 2, wires=wires[-2:]))
+
+    ops.MultiControlledX(wires, work_wires=work_wires)
+
+    # Operator C
+    ops.cond(~math.allclose(omega - phi, 0), lambda: ops.CRZ((omega - phi) / 2, wires=wires[-2:]))
