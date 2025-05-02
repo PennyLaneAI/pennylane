@@ -19,6 +19,7 @@ from pennylane import math, ops, queuing
 from pennylane.decomposition import (
     DecompositionNotApplicable,
     adjoint_resource_rep,
+    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -166,14 +167,14 @@ def ctrl_decomp_zyz(
         try:
             rot_angles = target_operation.single_qubit_rot_angles()
             _, global_phase = math.convert_to_su2(
-                matrix(target_operation), return_global_phase=True
+                ops.functions.matrix(target_operation), return_global_phase=True
             )
         except NotImplementedError:
-            rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
+            *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
                 ops.functions.matrix(target_operation), return_global_phase=True
             )
     else:
-        rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
+        *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
             ops.functions.matrix(target_operation), return_global_phase=True
         )
 
@@ -183,7 +184,10 @@ def ctrl_decomp_zyz(
             _multi_control_zyz(*rot_angles, wires=all_wires, work_wires=work_wires)
         else:
             _single_control_zyz(*rot_angles, wires=all_wires)
-        ops.cond(~math.allclose(global_phase, 0), lambda: ops.GlobalPhase(-global_phase))
+        ops.cond(
+            _not_zero(global_phase),
+            lambda: ops.ctrl(ops.GlobalPhase(-global_phase), control=control_wires),
+        )()
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
@@ -219,7 +223,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         resource_rep(ops.MultiControlledX, num_control_wires=len_k1, num_work_wires=len_k2): 2,
         # we only need Hadamard for the md case, but it still needs to be accounted for.
         ops.Hadamard: 2,
-        ops.GlobalPhase: 1,
+        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
 
 
@@ -243,7 +247,7 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
             )
         ],
     )(U, wires)
-    ops.cond(~math.allclose(phase, 0), lambda: ops.GlobalPhase(-phase))
+    ops.cond(_not_zero(phase), lambda: ops.ctrl(ops.GlobalPhase(-phase), control=wires[:-1]))()
 
 
 def _single_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, **__):
@@ -254,7 +258,12 @@ def _single_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, **__)
     if num_control_wires > 1:
         raise DecompositionNotApplicable
 
-    return {ops.RZ: 3, ops.RY: 2, ops.CNOT: 2}
+    return {
+        ops.RZ: 3,
+        ops.RY: 2,
+        ops.CNOT: 2,
+        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+    }
 
 
 @register_resources(_single_ctrl_decomp_zyz_resources)
@@ -265,9 +274,9 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(
-        ~math.allclose(phase, 0),
-        lambda: ops.ctrl(ops.GlobalPhase(-phase, wires=wires[-1]), control=wires[:-1]),
-    )
+        _not_zero(phase),
+        lambda: ops.ctrl(ops.GlobalPhase(-phase), control=wires[:-1]),
+    )()
 
 
 def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_work_wires, **__):
@@ -287,6 +296,7 @@ def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_wo
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
         ): 2,
+        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
 
 
@@ -298,9 +308,9 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, **__):
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
     _multi_control_zyz(phi, theta, omega, wires=wires, work_wires=work_wires)
     ops.cond(
-        ~math.allclose(phase, 0),
-        lambda: ops.ctrl(ops.GlobalPhase(-phase, wires=wires[-1]), control=wires[:-1]),
-    )
+        _not_zero(phase),
+        lambda: ops.ctrl(ops.GlobalPhase(-phase), control=wires[:-1]),
+    )()
 
 
 def _controlled_two_qubit_unitary_resource(
@@ -339,6 +349,10 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__
 ####################
 # Helper Functions #
 ####################
+
+
+def _not_zero(x):
+    return math.logical_not(math.allclose(x, 0))
 
 
 def _ctrl_decomp_bisect_general(U, wires):
@@ -548,35 +562,35 @@ def _single_control_zyz(phi, theta, omega, wires):
     """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(~math.allclose(phi, 0), lambda: ops.RZ(phi, wires=wires[-1]))
-    ops.cond(~math.allclose(theta, 0)), lambda: ops.RY(theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi), lambda: ops.RZ(phi, wires=wires[-1]))()
+    ops.cond(_not_zero(theta), lambda: ops.RY(theta / 2, wires=wires[-1]))()
 
     ops.CNOT(wires)
 
     # Operator B
-    ops.cond(~math.allclose(theta, 0), lambda: ops.RY(-theta / 2, wires=wires[-1]))
-    ops.cond(~math.allclose(phi + omega, 0), lambda: ops.RZ(-(phi + omega) / 2, wires=wires[-1]))
+    ops.cond(_not_zero(theta), lambda: ops.RY(-theta / 2, wires=wires[-1]))()
+    ops.cond(_not_zero(phi + omega), lambda: ops.RZ(-(phi + omega) / 2, wires=wires[-1]))()
 
     ops.CNOT(wires)
 
     # Operator C
-    ops.cond(~math.allclose(omega - phi, 0), lambda: ops.RZ((omega - phi) / 2, wires=wires[-1]))
+    ops.cond(_not_zero(omega - phi), lambda: ops.RZ((omega - phi) / 2, wires=wires[-1]))()
 
 
 def _multi_control_zyz(phi, theta, omega, wires, work_wires):
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(~math.allclose(phi, 0), lambda: ops.CRZ(phi, wires=wires[-2:]))
-    ops.cond(~math.allclose(theta, 0), lambda: ops.CRY(theta / 2, wires=wires[-2:]))
+    ops.cond(_not_zero(phi), lambda: ops.CRZ(phi, wires=wires[-2:]))()
+    ops.cond(_not_zero(theta), lambda: ops.CRY(theta / 2, wires=wires[-2:]))()
 
     ops.MultiControlledX(wires, work_wires=work_wires)
 
     # Operator B
-    ops.cond(~math.allclose(theta, 0), lambda: ops.CRY(-theta / 2, wires=wires[-2:]))
-    ops.cond(~math.allclose(phi + omega, 0), lambda: ops.CRZ(-(phi + omega) / 2, wires=wires[-2:]))
+    ops.cond(_not_zero(theta), lambda: ops.CRY(-theta / 2, wires=wires[-2:]))()
+    ops.cond(_not_zero(phi + omega), lambda: ops.CRZ(-(phi + omega) / 2, wires=wires[-2:]))()
 
     ops.MultiControlledX(wires, work_wires=work_wires)
 
     # Operator C
-    ops.cond(~math.allclose(omega - phi, 0), lambda: ops.CRZ((omega - phi) / 2, wires=wires[-2:]))
+    ops.cond(_not_zero(omega - phi), lambda: ops.CRZ((omega - phi) / 2, wires=wires[-2:]))()

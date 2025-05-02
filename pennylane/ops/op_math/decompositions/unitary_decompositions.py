@@ -227,7 +227,9 @@ def two_qubit_decomposition(U, wires):
                 ],
             )(U, wires, global_phase)
 
-        ops.cond(~math.allclose(global_phase, 0), lambda: ops.GlobalPhase(-global_phase))
+        ops.cond(
+            math.logical_not(math.allclose(global_phase, 0)), lambda: ops.GlobalPhase(-global_phase)
+        )
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
@@ -262,7 +264,10 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
                 U = U.todense()
             U, global_phase = math.convert_to_su2(U, return_global_phase=True)
             self._naive_rule(U, wires=wires)
-            ops.cond(~math.allclose(global_phase, 0), lambda: ops.GlobalPhase(-global_phase))
+            ops.cond(
+                math.logical_not(math.allclose(global_phase, 0)),
+                lambda: ops.GlobalPhase(-global_phase),
+            )
 
         return _impl
 
@@ -761,4 +766,4 @@ def two_qubit_decomp_rule(U, wires, **__):
         ],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
-    ops.cond(~math.allclose(total_phase, 0), lambda: ops.GlobalPhase(-total_phase))
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), lambda: ops.GlobalPhase(-total_phase))
