@@ -111,12 +111,12 @@ def _compute_udv(a, b):
     u, _ = qml.math.linalg.qr(u)
 
     # complex square root of eigenvalues
-    d = qml.math.diag(qml.math.exp(1j * qml.math.angle(d_square) / 2))
+    d = qml.math.exp(1j * qml.math.angle(d_square) / 2)
 
     # Calculates v using Eq.40
-    v = qml.math.conj(d.T) @ qml.math.conj(u.T) @ a
+    v = qml.math.conj(qml.math.diag(d).T) @ qml.math.conj(u.T) @ a
 
-    return u, qml.math.diag(d), v
+    return u, d, v
 
 
 class QubitUnitary(Operation):
