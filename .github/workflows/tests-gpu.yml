@@ -102,7 +102,7 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          python setup.py bdist_wheel
+          python -m build --wheel
           pip install dist/pennylane*.whl
 
       - name: Install Lightning-master
