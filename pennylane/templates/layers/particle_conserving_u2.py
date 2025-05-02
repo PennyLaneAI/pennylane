@@ -16,7 +16,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def u2_ex_gate(phi, wires=None):
@@ -151,7 +151,6 @@ class ParticleConservingU2(Operation):
             params = np.random.random(size=shape)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, id=None):
