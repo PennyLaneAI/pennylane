@@ -951,11 +951,13 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
-            num_wires = 1
-            grad_method = None
+            class DummyObserv(qml.operation.Observable):
+                r"""Dummy custom observable"""
+
+                num_wires = 1
+                grad_method = None
 
         ob = DummyObserv([1])
         assert ob.wires == qml.wires.Wires(1)
@@ -963,20 +965,26 @@ class TestObservableConstruction:
     def test_observable_is_not_operation_but_operator(self):
         """Check that the Observable class inherits from an Operator, not from an Operation"""
 
-        assert issubclass(qml.operation.Observable, qml.operation.Operator)
-        assert not issubclass(qml.operation.Observable, qml.operation.Operation)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert issubclass(qml.operation.Observable, qml.operation.Operator)
+
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not issubclass(qml.operation.Observable, qml.operation.Operation)
 
     def test_observable_is_operation_as_well(self):
         """Check that the Observable class inherits from an Operator class as well"""
 
-        class DummyObserv(qml.operation.Observable, qml.operation.Operation):
-            r"""Dummy custom observable"""
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
-            num_wires = 1
-            grad_method = None
+            class DummyObserv(qml.operation.Observable, qml.operation.Operation):
+                r"""Dummy custom observable"""
+
+                num_wires = 1
+                grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
-        assert issubclass(DummyObserv, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert issubclass(DummyObserv, qml.operation.Observable)
         assert issubclass(DummyObserv, qml.operation.Operation)
 
     def test_tensor_n_multiple_modes(self):
@@ -1032,11 +1040,13 @@ class TestObservableConstruction:
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
-            num_wires = 1
-            grad_method = None
+            class DummyObserv(qml.operation.Observable):
+                r"""Dummy custom observable"""
+
+                num_wires = 1
+                grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
@@ -1044,8 +1054,10 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        class DummyObservable(qml.operation.Observable):
-            num_wires = 1
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+
+            class DummyObservable(qml.operation.Observable):
+                num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
@@ -1053,11 +1065,13 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
 
-            num_wires = 1
-            grad_method = None
+            class DummyObserv(qml.operation.Observable):
+                r"""Dummy custom observable"""
+
+                num_wires = 1
+                grad_method = None
 
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
