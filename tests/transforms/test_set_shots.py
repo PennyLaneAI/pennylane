@@ -81,12 +81,13 @@ class TestSetShots:
 
     @pytest.mark.integration
     @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("shots", [None, 1, 10])
     @pytest.mark.parametrize("interface", qml.math.SUPPORTED_INTERFACE_NAMES)
-    def test_error_finite_shots_with_backprop(self, interface):
-        """Test that DeviceError is raised if finite shots are used with backprop + default.qubit."""
+    def test_compatibility_finite_shots(self, interface, shots):
+        """Test that setting shots works with default.qubit with default setting up"""
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(set_shots, shots=10)
+        @partial(set_shots, shots=shots)
         @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -96,6 +97,25 @@ class TestSetShots:
 
         x = qml.numpy.array(0.5)
         assert len(circuit(x)) == 2
+
+    @pytest.mark.integration
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("shots", [(10, 10, 10), ((10, 3),)])
+    @pytest.mark.parametrize("interface", qml.math.SUPPORTED_INTERFACE_NAMES)
+    def test_shot_vector(self, interface, shots):
+        """Test that setting shots with shot vectors works with default setting up."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(set_shots, shots=shots)
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        x = qml.numpy.array(0.5)
+        assert len(circuit(x)) == 3
 
     @pytest.mark.integration
     def test_toplevel_accessible(self):
