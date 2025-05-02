@@ -15,14 +15,29 @@
 This submodule defines the abstract classes and primitives for capturing operators.
 """
 
+import importlib.metadata as importlib_metadata
+import warnings
 from functools import lru_cache
 from typing import Optional, Type
+
+from packaging.version import Version
 
 import pennylane as qml
 
 has_jax = True
 try:
     import jax
+
+    jax_version = importlib_metadata.version("jax")
+    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
+        warnings.warn(
+            f"PennyLane is not yet compatible with JAX versions > 0.4.28. "
+            f"You have version {jax_version} installed. "
+            f"Please downgrade JAX to <=0.4.28 to avoid runtime errors.",
+            RuntimeWarning,
+        )
+
+
 except ImportError:
     has_jax = False
 
