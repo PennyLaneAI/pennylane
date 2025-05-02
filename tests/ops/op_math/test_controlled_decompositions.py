@@ -55,6 +55,7 @@ def assert_equal_list(lhs, rhs):
 class TestControlledDecompositionZYZ:
     """tests for qml.ops.ctrl_decomp_zyz"""
 
+    @pytest.mark.unit
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(
@@ -63,13 +64,13 @@ class TestControlledDecompositionZYZ:
             _ = ctrl_decomp_zyz(qml.CNOT([0, 1]), [2])
 
     su2_ops = [
-        # qml.RX(0.123, wires=0),
-        # qml.RY(0.123, wires=0),
-        # qml.RZ(0.123, wires=0),
-        # qml.Rot(0.123, 0.456, 0.789, wires=0),
+        qml.RX(0.123, wires=0),
+        qml.RY(0.123, wires=0),
+        qml.RZ(0.123, wires=0),
+        qml.Rot(0.123, 0.456, 0.789, wires=0),
     ]
 
-    general_unitary_ops = [
+    non_su2_ops = [
         qml.QubitUnitary(
             np.array(
                 [
@@ -86,11 +87,11 @@ class TestControlledDecompositionZYZ:
         qml.PhaseShift(1.5, wires=0),
     ]
 
-    @pytest.mark.parametrize("op", su2_ops + general_unitary_ops)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("op", su2_ops + non_su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-    def test_decomposition_circuit_general_ops(self, op, control_wires, tol):
-        """Tests that the controlled decomposition of a single-qubit operation
-        behaves as expected in a quantum circuit for general_unitary_ops"""
+    def test_decomposition_zyz(self, op, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation is correct."""
 
         with qml.queuing.AnnotatedQueue() as q:
             decomp = ctrl_decomp_zyz(op, control_wires)
@@ -104,180 +105,94 @@ class TestControlledDecompositionZYZ:
 
         assert qml.math.allclose(decomp_matrix, expected_matrix)
 
+    @pytest.mark.system
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    def test_decomposition_circuit_gradient(self, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        behaves as expected in a quantum circuit"""
 
-#     @pytest.mark.parametrize("op", general_unitary_ops)
-#     @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
-#     def test_decomposition_circuit_general_ops_error(self, op, control_wires):
-#         """Tests that the controlled decomposition of a single-qubit operation
-#         with multiple controlled wires raises a ValueError for general_unitary_ops"""
-#         dev = qml.device("default.qubit", wires=4)
-#
-#         @qml.qnode(dev)
-#         def decomp_circuit():
-#             for wire in control_wires:
-#                 qml.Hadamard(wire)
-#             ctrl_decomp_zyz(op, Wires(control_wires))
-#             return qml.probs()
-#
-#         with pytest.raises(
-#             ValueError,
-#             match="The global_phase should be zero",
-#         ):
-#             decomp_circuit()
-#
-#     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-#     def test_decomposition_circuit_gradient(self, control_wires, tol, seed):
-#         """Tests that the controlled decomposition of a single-qubit operation
-#         behaves as expected in a quantum circuit"""
-#         n_qubits = 4
-#         rng = np.random.default_rng(seed)
-#
-#         dev = qml.device("default.qubit", wires=n_qubits)
-#         init_state = rng.random(2**n_qubits) + 1.0j * rng.random(2**n_qubits)
-#         init_state /= np.sqrt(np.dot(np.conj(init_state), init_state))
-#         init_state = np.array(init_state)
-#         target_wires = [0]
-#         control_values = [True] * len(control_wires)
-#
-#         def circuit(p):
-#             qml.StatePrep(init_state, wires=range(n_qubits))
-#             qml.ctrl(
-#                 qml.Rot(*p, wires=target_wires),
-#                 control_wires,
-#                 control_values=control_values,
-#             )
-#             return qml.probs(wires=target_wires)
-#
-#         circ_ad = qml.QNode(circuit, dev, diff_method="adjoint")
-#         circ_bp = qml.QNode(circuit, dev, diff_method="backprop")
-#         par = qml.numpy.array([0.1234, 0.235, 0.5678])
-#         jac_ad = qml.jacobian(circ_ad)(par)
-#         jac_bp = qml.jacobian(circ_bp)(par)
-#
-#         # different methods must agree
-#         assert jac_ad.size == 2 * 3
-#         assert np.allclose(jac_ad.shape, [2, 3])
-#         assert np.allclose(jac_ad.shape, jac_bp.shape)
-#         assert np.allclose(jac_ad, jac_bp, atol=tol, rtol=0)
-#
-#     @pytest.mark.parametrize("op", su2_ops)
-#     @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
-#     def test_decomposition_matrix(self, op, control_wires, tol):
-#         """Tests that the matrix representation of the controlled ZYZ decomposition
-#         of a single-qubit operation is correct"""
-#         expected_op = qml.ctrl(op, control_wires)
-#         res = qml.matrix(ctrl_decomp_zyz, wire_order=control_wires + [0])(op, control_wires)
-#         expected = expected_op.matrix()
-#
-#         assert np.allclose(expected, res, atol=tol, rtol=0)
-#
-#     def test_correct_decomp(self):
-#         """Test that the operations in the decomposition are correct."""
-#         phi, theta, omega = 0.123, 0.456, 0.789
-#         op = qml.Rot(phi, theta, omega, wires=0)
-#         control_wires = [1, 2, 3]
-#         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
-#
-#         expected_ops = [
-#             qml.CRZ(0.123, wires=[3, 0]),
-#             qml.CRY(0.456 / 2, wires=[3, 0]),
-#             qml.Toffoli(wires=control_wires[:-1] + [0]),
-#             qml.CRY(-0.456 / 2, wires=[3, 0]),
-#             qml.CRZ(-(0.123 + 0.789) / 2, wires=[3, 0]),
-#             qml.Toffoli(wires=control_wires[:-1] + [0]),
-#             qml.CRZ((0.789 - 0.123) / 2, wires=[3, 0]),
-#         ]
-#         for decomp_op, expected_op in zip(decomps, expected_ops):
-#             qml.assert_equal(decomp_op, expected_op)
-#         assert len(decomps) == 7
-#
-#     @pytest.mark.parametrize("op", su2_ops + general_unitary_ops)
-#     @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
-#     def test_decomp_queues_correctly(self, op, control_wires, tol):
-#         """Test that any incorrect operations aren't queued when using
-#         ``ctrl_decomp_zyz``."""
-#         decomp = ctrl_decomp_zyz(op, control_wires=Wires(control_wires))
-#         dev = qml.device("default.qubit", wires=4)
-#
-#         @qml.qnode(dev)
-#         def queue_from_list():
-#             for wire in control_wires:
-#                 qml.Hadamard(wire)
-#             for o in decomp:
-#                 qml.apply(o)
-#             return qml.state()
-#
-#         @qml.qnode(dev)
-#         def queue_from_qnode():
-#             for wire in control_wires:
-#                 qml.Hadamard(wire)
-#             ctrl_decomp_zyz(op, control_wires=Wires(control_wires))
-#             return qml.state()
-#
-#         res1 = queue_from_list()
-#         res2 = queue_from_qnode()
-#         assert np.allclose(res1, res2, atol=tol, rtol=0)
-#
-#     def test_trivial_ops_in_decomposition(self):
-#         """Test that an operator decomposition doesn't have trivial rotations."""
-#         op = qml.RZ(np.pi, wires=0)
-#         decomp = ctrl_decomp_zyz(op, [1])
-#         expected = [
-#             qml.RZ(np.pi, wires=0),
-#             qml.CNOT(wires=[1, 0]),
-#             qml.RZ(-np.pi / 2, wires=0),
-#             qml.CNOT(wires=[1, 0]),
-#             qml.RZ(-np.pi / 2, wires=0),
-#         ]
-#
-#         assert len(decomp) == 5
-#         assert decomp == expected
-#
-#     @pytest.mark.parametrize(
-#         "composite_op, want_decomp",
-#         [
-#             (
-#                 qml.ops.Prod(qml.PauliX(0), qml.PauliX(0)),  # type: ignore
-#                 [
-#                     qml.CNOT(wires=[1, 0]),
-#                     qml.CNOT(wires=[1, 0]),
-#                 ],
-#             ),
-#             (
-#                 qml.s_prod(1j, qml.PauliX(0)),
-#                 [
-#                     qml.RZ(7 * np.pi / 2, wires=0),
-#                     qml.RY(np.pi / 2, wires=0),
-#                     qml.CNOT(wires=[1, 0]),
-#                     qml.RY(-np.pi / 2, wires=0),
-#                     qml.RZ(-2 * np.pi, wires=0),
-#                     qml.CNOT(wires=[1, 0]),
-#                     qml.RZ(-3 * np.pi / 2, wires=0),
-#                 ],
-#             ),
-#             (
-#                 (
-#                     qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
-#                     + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
-#                 ),
-#                 [
-#                     qml.ctrl(qml.GlobalPhase(phi=-np.pi / 2, wires=0), control=1),
-#                     qml.RZ(np.pi / 2, wires=0),
-#                     qml.RY(np.pi / 2, wires=0),
-#                     qml.CNOT(wires=[1, 0]),
-#                     qml.RY(-np.pi / 2, wires=0),
-#                     qml.RZ(-2 * np.pi, wires=0),
-#                     qml.CNOT(wires=[1, 0]),
-#                     qml.RZ(3 * np.pi / 2, wires=0),
-#                 ],
-#             ),
-#         ],
-#     )
-#     def test_composite_ops(self, composite_op, want_decomp):
-#         """Test that ZYZ decomposition is used for composite operators."""
-#         have_decomp = ctrl_decomp_zyz(composite_op, 1)
-#         assert have_decomp == want_decomp
-#
+        dev = qml.device("default.qubit", wires=4)
+
+        def circuit(p):
+            U = qml.Rot.compute_matrix(*p)
+            ctrl_decomp_zyz(qml.QubitUnitary(U, wires=[0]), control_wires=control_wires)
+            return qml.probs(wires=0)
+
+        circ_ad = qml.QNode(circuit, dev, diff_method="adjoint")
+        circ_bp = qml.QNode(circuit, dev, diff_method="backprop")
+        par = qml.numpy.array([0.123, 0.234, 0.345])
+        jac_ad = qml.jacobian(circ_ad)(par)
+        jac_bp = qml.jacobian(circ_bp)(par)
+
+        # different methods must agree
+        assert math.allclose(jac_ad, jac_bp)
+
+    @pytest.mark.unit
+    def test_trivial_ops_in_decomposition(self):
+        """Test that an operator decomposition doesn't have trivial rotations."""
+
+        op = qml.RZ(np.pi, wires=0)
+        decomp = ctrl_decomp_zyz(op, [1])
+        expected = [
+            qml.RZ(np.pi, wires=0),
+            # an RY should be omitted here.
+            qml.CNOT(wires=[1, 0]),
+            # an RY should be omitted here.
+            qml.RZ(-np.pi / 2, wires=0),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(-np.pi / 2, wires=0),
+        ]
+        assert len(decomp) == 5
+        assert decomp == expected
+
+    @pytest.mark.parametrize(
+        "composite_op, want_decomp",
+        [
+            (
+                qml.ops.Prod(qml.PauliX(0), qml.PauliX(0)),  # type: ignore
+                [
+                    qml.CNOT(wires=[1, 0]),
+                    qml.CNOT(wires=[1, 0]),
+                ],
+            ),
+            (
+                qml.s_prod(1j, qml.PauliX(0)),
+                [
+                    qml.RZ(7 * np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(-3 * np.pi / 2, wires=0),
+                ],
+            ),
+            (
+                (
+                    qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                    + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
+                ),
+                [
+                    qml.RZ(np.pi / 2, wires=0),
+                    qml.RY(np.pi / 2, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RY(-np.pi / 2, wires=0),
+                    qml.RZ(-2 * np.pi, wires=0),
+                    qml.CNOT(wires=[1, 0]),
+                    qml.RZ(3 * np.pi / 2, wires=0),
+                    qml.ctrl(qml.GlobalPhase(phi=-np.pi / 2), control=1),
+                ],
+            ),
+        ],
+    )
+    def test_composite_ops(self, composite_op, want_decomp):
+        """Test that ZYZ decomposition is used for composite operators."""
+        have_decomp = ctrl_decomp_zyz(composite_op, 1)
+        assert len(have_decomp) == len(want_decomp)
+        for actual, expected in zip(have_decomp, want_decomp):
+            qml.assert_equal(actual, expected)
+
+
 #     @pytest.mark.parametrize("test_expand", [False, True])
 #     def test_zyz_decomp_no_control_values(self, test_expand):
 #         """Test that the ZYZ decomposition is used for single qubit target operations
