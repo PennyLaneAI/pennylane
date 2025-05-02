@@ -36,6 +36,7 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+from .decompositions.controlled_decompositions import ctrl_decomp_bisect_rule
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -197,6 +198,9 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=values,
             work_wires=self.work_wires,
         )
+
+
+add_decomps(ControlledQubitUnitary, ctrl_decomp_bisect_rule)
 
 
 class CH(ControlledOp):

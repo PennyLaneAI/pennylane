@@ -43,9 +43,9 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
-  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
-  decompose into will be chosen based on the target gate set.
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
+  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
+  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
   ```python
