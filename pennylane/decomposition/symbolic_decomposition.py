@@ -76,12 +76,12 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
+# pylint: disable=protected-access
 @register_resources(_adjoint_adjoint_resource)
 def cancel_adjoint(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    _, [_, metadata] = base.base._flatten()  # pylint: disable=protected-access
-    new_struct = wires, metadata
-    base.base._unflatten(params, new_struct)  # pylint: disable=protected-access
+    _, struct = base.base._flatten()
+    base.base._unflatten(params, struct)
 
 
 def _adjoint_controlled_resource(base_class, base_params):
