@@ -543,12 +543,12 @@ class TestMeasurementsFromCountsOrSamples:
         "input_measurement, expected_res",
         [
             (
-                lambda: qml.expval(qml.PauliY(wires=0) @ qml.PauliY(wires=1)),
+                qml.expval(qml.PauliY(wires=0) @ qml.PauliY(wires=1)),
                 lambda theta: np.sin(theta) * np.sin(theta / 2),
             ),
-            (lambda: qml.var(qml.Y(wires=1)), lambda theta: 1 - np.sin(theta / 2) ** 2),
+            (qml.var(qml.Y(wires=1)), lambda theta: 1 - np.sin(theta / 2) ** 2),
             (
-                lambda: qml.probs(),
+                qml.probs(),
                 lambda theta: np.outer(
                     np.outer(
                         [np.cos(theta / 2) ** 2, np.sin(theta / 2) ** 2],
@@ -558,7 +558,7 @@ class TestMeasurementsFromCountsOrSamples:
                 ).flatten(),
             ),
             (
-                lambda: qml.probs(wires=[1]),
+                qml.probs(wires=[1]),
                 lambda theta: [np.cos(theta / 4) ** 2, np.sin(theta / 4) ** 2],
             ),
         ],
@@ -575,18 +575,19 @@ class TestMeasurementsFromCountsOrSamples:
         single measurement, and compare outcome to the analytic result.
         """
 
+        theta = 2.5
         dev = qml.device("default.qubit", wires=4, shots=shots)
 
-        @meas_transform
-        @partial(validate_device_wires, wires=dev.wires)
-        @qml.qnode(dev)
-        def circuit(theta: float):
-            qml.RX(theta, 0)
-            qml.RX(theta / 2, 1)
-            return input_measurement()
+        tape = qml.tape.QuantumScript(
+            [qml.RX(theta, 0), qml.RX(theta / 2, 1)],
+            measurements=[input_measurement],
+            shots=shots,
+        )
+        (validated_tape,), _ = validate_device_wires(tape, dev.wires)
+        tapes, fn = meas_transform(validated_tape)
 
-        theta = 2.5
-        res = circuit(theta)
+        sample_output = qml.execute(tapes, device=dev)
+        res = fn(sample_output)
 
         if dev.shots.has_partitioned_shots:
             assert len(res) == dev.shots.num_copies
@@ -711,7 +712,6 @@ class TestMeasurementsFromCountsOrSamples:
 
         dev = qml.device("default.qubit", wires=4, shots=5000)
 
-        @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
             qml.RY(theta, 0)
@@ -726,10 +726,13 @@ class TestMeasurementsFromCountsOrSamples:
                 qml.probs(wires=[3]),
             )
 
-        transformed_circuit = meas_transform(basic_circuit)
-
         theta = 1.9
-        expval_res, var_res, counts_res, sample_res, probs_res = transformed_circuit(theta)
+        tape = qml.workflow.construct_tape(basic_circuit)(theta)
+        (validated_tape,), _ = validate_device_wires(tape, dev.wires)
+        tapes, fn = meas_transform(validated_tape)
+
+        sample_output = qml.execute(tapes, device=dev)
+        expval_res, var_res, counts_res, sample_res, probs_res = fn(sample_output)
 
         expval_expected = np.sin(theta) * np.sin(theta / 2)
         var_expected = 1 - np.sin(2 * theta) ** 2
