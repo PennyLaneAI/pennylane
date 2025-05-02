@@ -29,7 +29,7 @@ Description
 Qubit Operations
 ~~~~~~~~~~~~~~~~
 The :class:`Operator` class serves as a base class for operators,
-and is inherited by both the :class:`Observable` class and the
+and is inherited by the
 :class:`Operation` class. These classes are subclassed to implement quantum operations
 and measure observables in PennyLane.
 
@@ -47,10 +47,6 @@ and measure observables in PennyLane.
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
-* Each  :class:`~.Observable` subclass represents a type of physical observable.
-  Each instance of these subclasses represents an instruction to measure and
-  return the respective result for the given parameter values on a
-  sequence of wires (subsystems).
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -75,8 +71,7 @@ CV Operation base classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
-and :class:`~.Observable`.
+:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`.
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -124,7 +119,7 @@ Operator Types
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
 Errors
@@ -1995,81 +1990,6 @@ class Channel(Operation, abc.ABC):
 
 
 # =============================================================================
-# Base Observable class
-# =============================================================================
-
-
-class Observable(Operator):
-    """Base class representing observables.
-
-    Observables define a return type
-
-    Args:
-        params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
-    """
-
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-            * None
-
-        Non-pauli observables like Hermitian should not be processed into any queue.
-        The Pauli observables double as Operations, and should therefore be processed
-        into `_ops` if unowned.
-        """
-        return "_ops" if isinstance(self, Operation) else None
-
-    @property
-    def is_hermitian(self) -> bool:
-        """All observables must be hermitian"""
-        return True
-
-    def compare(
-        self,
-        other: Union["Observable", "qml.ops.LinearCombination"],
-    ) -> bool:
-        r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
-
-        Observables are equivalent if they represent the same operator
-        (their matrix representations are equal), and they are defined on the same wires.
-
-        .. Warning::
-
-            The compare method does **not** check if the matrix representation
-            of a :class:`~.Hermitian` observable is equal to an equivalent
-            observable expressed in terms of Pauli matrices.
-            To do so would require the matrix form to be calculated, which would
-            drastically increase runtime.
-
-        Returns:
-            (bool): True if equivalent.
-
-        **Examples**
-
-        >>> ob1 = qml.X(0) @ qml.Identity(1)
-        >>> ob2 = qml.Hamiltonian([1], [qml.X(0)])
-        >>> ob1.compare(ob2)
-        True
-        >>> ob1 = qml.X(0)
-        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
-        >>> ob1.compare(ob2)
-        False
-        """
-        return qml.equal(self, other)
-
-
-# =============================================================================
 # CV Operations and observables
 # =============================================================================
 
@@ -2128,7 +2048,7 @@ class CV:
             for k, w in enumerate(wire_indices):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            W = np.zeros((dim, dim)) if isinstance(self, Observable) else np.eye(dim)
+            W = np.zeros((dim, dim)) if isinstance(self, CVObservable) else np.eye(dim)
             W[0, 0] = U[0, 0]
 
             for k1, w1 in enumerate(wire_indices):
@@ -2299,7 +2219,7 @@ class CVOperation(CV, Operation):
         return self.heisenberg_expand(U, wire_order)
 
 
-class CVObservable(CV, Observable):
+class CVObservable(CV, Operator):
     r"""Base class representing continuous-variable observables.
 
     CV observables provide a special Heisenberg representation.
@@ -2325,6 +2245,12 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
+    is_hermitian = True
+
+    def queue(self, context=QueuingManager):
+        """Avoids queuing the observable."""
+        return self
 
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
@@ -2593,6 +2519,17 @@ def gen_is_multi_term_hamiltonian(obj):
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
+    if name == "Observable":
+        from ._deprecated_observable import Observable  # pylint: disable=import-outside-toplevel
+
+        warnings.warn(
+            "Observable is deprecated and will be removed in v0.43. "
+            "A generic Operator class should be used instead. "
+            "If defining an Operator, set the is_hermitian property to True. "
+            "If checking if an Operator is Hermitian, check the is_hermitian property. ",
+            PennyLaneDeprecationWarning,
+        )
+        return Observable
     if name == "AnyWires":
         warnings.warn(
             "AnyWires is deprecated and will be removed in v0.43. "
