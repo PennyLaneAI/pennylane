@@ -192,84 +192,23 @@ class TestControlledDecompositionZYZ:
         for actual, expected in zip(have_decomp, want_decomp):
             qml.assert_equal(actual, expected)
 
+    @pytest.mark.torch
+    def test_zyz_decomp_with_torch_params(self):
+        """Tests that the ZYZ decomposition runs when the target operation parameters
+        are of type torch.Tensor"""
 
-#     @pytest.mark.parametrize("test_expand", [False, True])
-#     def test_zyz_decomp_no_control_values(self, test_expand):
-#         """Test that the ZYZ decomposition is used for single qubit target operations
-#         when other decompositions aren't available."""
-#
-#         base = qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [1, 1],
-#                     [-1, 1],
-#                 ]
-#             )
-#             * 2**-0.5,
-#             wires="a",
-#         )
-#         op = Controlled(base, (0,))
-#
-#         assert op.has_decomposition
-#         decomp = (
-#             qml.tape.QuantumScript(op.decomposition()).expand().circuit
-#             if test_expand
-#             else op.decomposition()[0].decomposition()
-#         )
-#         expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
-#         assert assert_equal_list(decomp, expected)
-#
-#     @pytest.mark.parametrize("test_expand", [False, True])
-#     def test_zyz_decomp_control_values(self, test_expand):
-#         """Test that the ZYZ decomposition is used for single qubit target operations
-#         when other decompositions aren't available and control values are present."""
-#         # pylint:disable=no-member
-#         base = qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [1, 1],
-#                     [-1, 1],
-#                 ]
-#             )
-#             * 2**-0.5,
-#             wires="a",
-#         )
-#         op = Controlled(base, (0,), control_values=[False])
-#
-#         assert op.has_decomposition
-#         decomp = (
-#             qml.tape.QuantumScript(op.decomposition()).circuit
-#             if test_expand
-#             else op.decomposition()
-#         )
-#         assert len(decomp) == 3
-#         qml.assert_equal(qml.PauliX(0), decomp[0])
-#         qml.assert_equal(qml.PauliX(0), decomp[-1])
-#         decomp = decomp[1]
-#         decomp = (
-#             qml.tape.QuantumScript(decomp.decomposition()).circuit
-#             if test_expand
-#             else decomp.decomposition()
-#         )
-#         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
-#         assert assert_equal_list(decomp, expected)
-#
-#     @pytest.mark.torch
-#     def test_zyz_decomp_with_torch_params(self):
-#         """Tests that the ZYZ decomposition runs when the target operation parameters
-#         are of type torch.Tensor"""
-#         import torch
-#
-#         target_op1 = qml.RY(torch.Tensor([1.2]), 0)
-#         target_op2 = qml.RY(1.2, 0)
-#
-#         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
-#         decomp = ctrl_decomp_zyz(target_op2, 1)
-#
-#         for op1, op2 in zip(torch_decomp, decomp):
-#             qml.assert_equal(op1, op2, check_interface=False)
-#
-#
+        import torch
+
+        target_op1 = qml.RY(torch.Tensor([1.2]), 0)
+        target_op2 = qml.RY(1.2, 0)
+
+        torch_decomp = ctrl_decomp_zyz(target_op1, 1)
+        decomp = ctrl_decomp_zyz(target_op2, 1)
+
+        for op1, op2 in zip(torch_decomp, decomp):
+            qml.assert_equal(op1, op2, check_interface=False)
+
+
 # class TestControlledBisectOD:
 #     """tests for qml.ops._ctrl_decomp_bisect_od"""
 #
