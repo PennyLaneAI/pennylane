@@ -526,6 +526,7 @@ def validate_measurements(
 
     return (tape,), null_postprocessing
 
+
 def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
     for op in tape.operations:
         if isinstance(op, qml.Snapshot):
@@ -545,6 +546,7 @@ def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, n
                     raise qml.DeviceError(
                         f"Measurement {m} not accepted for analytic simulation on {name}."
                     )
+
 
 @transform
 def measurements_from_samples(tape):
@@ -635,18 +637,20 @@ def measurements_from_samples(tape):
     def postprocessing_fn(results):
         """A processing function to get measurement values from samples."""
         samples = results[0]
-        results_processed = []
-        for m in tape.measurements:
-            if tape.shots.has_partitioned_shots:
-                res = tuple(m.process_samples(unsqueezed(s), measured_wires) for s in samples)
-            else:
-                res = m.process_samples(unsqueezed(samples), measured_wires)
-            results_processed.append(res)
-
-        if len(tape.measurements) == 1:
-            results_processed = results_processed[0]
+        if tape.shots.has_partitioned_shots:
+            results_processed = []
+            for s in samples:
+                res = [m.process_samples(unsqueezed(s), measured_wires) for m in tape.measurements]
+                if len(tape.measurements) == 1:
+                    res = res[0]
+                results_processed.append(res)
         else:
-            results_processed = tuple(results_processed)
+            results_processed = [
+                m.process_samples(unsqueezed(samples), measured_wires) for m in tape.measurements
+            ]
+            if len(tape.measurements) == 1:
+                results_processed = results_processed[0]
+
         return results_processed
 
     return [new_tape], postprocessing_fn
@@ -725,7 +729,7 @@ def measurements_from_counts(tape):
         samples = results[0]
         results_processed = []
         for m in tape.measurements:
-            if len(tape.shots.shot_vector) > 1:
+            if tape.shots.has_partitioned_shots:
                 res = tuple(m.process_counts(s, measured_wires) for s in samples)
             else:
                 res = m.process_counts(samples, measured_wires)
