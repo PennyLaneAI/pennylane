@@ -40,7 +40,7 @@ def sample(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue): a quantum observable object. To get samples
+        op (Operator or MeasurementValue): a quantum observable object. To get samples
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
