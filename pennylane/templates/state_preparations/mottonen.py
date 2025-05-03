@@ -49,8 +49,10 @@ def gray_code(rank):
 
     return g
 
+
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 _cnot_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]).reshape((2,) * 4)
+
 
 def compute_theta(D: TensorLike, n: Optional[int] = None):
     r"""Maps the angles alpha of the multi-controlled rotations decomposition of a
@@ -102,7 +104,7 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
         # If there is more than one qubit, we need to reorder the angles, according to applying
         # the CNOT ladder [CNOT([i, i+1]) for i in range(n-1)]
         # The first CNOT thus targets the zeroth and first qubit, axes n-1 and n-2 (see above)
-        D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [n - 1, n-2]])
+        D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [n - 1, n - 2]])
         # The axes are now ordered as [qubit 0, qubit 1, qubit n, qubit n-1, ..., qubit 2, batch]
         # Following CNOTs use the same axes: the next control qubit (previous target qubit) always
         # is in position ``1`` and the next target qubit always is the last qubit axis (``n-1``).
@@ -111,7 +113,7 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
         # and the iteration after that moves them to
         # [qubit 2, qubit 3, qubit 1, qubit 0, qubit n, qubit n-1, ... ,qubit 4, batch]
         for i in range(broadcasted + 1, n + broadcasted - 1):
-            D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [1, n-1]])
+            D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [1, n - 1]])
 
         # In the end, we exchange the first two axes because we have the axes ordering
         # [qubit n-1, qubit n, qubit n-2, qubit n-3, ... qubit 1, qubit 0, batch]
@@ -122,6 +124,7 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
     D = qml.math.reshape(qml.math.transpose(D), orig_shape)
 
     return D
+
 
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.

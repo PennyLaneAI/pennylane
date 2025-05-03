@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, gray_code, compute_theta
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y, compute_theta, gray_code
 
 
 def test_standard_validity():
@@ -46,7 +46,6 @@ def compute_theta_reference(alpha):
         (tensor_like): rotation angles theta
     """
     ln = alpha.shape[-1]
-    n = int(np.round(np.log2(ln)))
 
     def _matrix_M_row(row):
         """Returns one row of entries for the matrix that maps alpha to theta.
@@ -62,16 +61,13 @@ def compute_theta_reference(alpha):
         # (row >> 1) ^ row is the Gray code of row
         COL = np.arange(ln)
         b_and_g = COL & ((row >> 1) ^ row)
-        sum_of_ones = 0
-        for i in range(n):
-            sum_of_ones += b_and_g & 1
-            b_and_g = b_and_g >> 1
-
+        sum_of_ones = np.array([val.bit_count() for val in b_and_g])
         return (-1) ** sum_of_ones
 
     alpha = qml.math.transpose(alpha)
     theta = qml.math.array([qml.math.dot(_matrix_M_row(i), alpha) for i in range(ln)])
     return qml.math.transpose(theta) / ln
+
 
 class TestHelpers:
     """Tests the helper functions for classical pre-processsing."""
@@ -108,7 +104,7 @@ class TestHelpers:
     @pytest.mark.parametrize("n", list(range(1, 11)))
     def test_compute_theta(self, n, batch_dim):
         """Test that the fast Walsh-Hadamard transform-based method reproduces the
-        matrix given in Eq. (3) in 
+        matrix given in Eq. (3) in
         `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_."""
         shape = (2**n,) if batch_dim is None else (batch_dim, 2**n)
         alpha = np.random.random(shape)
