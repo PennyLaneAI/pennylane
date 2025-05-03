@@ -301,6 +301,27 @@ class DefaultQubit(Device):
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
 
+    .. note::
+       Adjoint differentiation (``diff_method="adjoint"``) is not currently supported
+       by this device. Supported analytic methods include ``"parameter-shift"``.
+       Finite difference (``"finite-diff"``) is also available.
+
+    .. note::
+       Native mid-circuit measurements and conditional operations (using
+       :func:`~.pennylane.measure` and :func:`~.pennylane.cond`) are not
+       supported by ``default.qubit`` in simulation workflows that require
+       gradients or specific state preparations dependent on measurement outcomes.
+       For simple sampling workflows, measurement may return values, but
+       dynamic circuit execution is limited. Consider devices explicitly
+       supporting dynamic circuits if required.
+
+
+    **Example:** # This existing section follows the notes
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        [...]            
+
+
     **Example:**
 
     .. code-block:: python
