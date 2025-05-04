@@ -256,12 +256,12 @@ _DECODE_XZ_OPS = {
 }
 
 _CLIFFORD_TABLEAU = {
-    H: {"phase": [1, 1], "target": [Z, X]},
-    S: {"phase": [1j, 1], "target": [[X, Z], Z]},
+    H: {"phase": [1, 1], "target": [[Z], [X]]},
+    S: {"phase": [1j, 1], "target": [[X, Z], [Z]]},
     CNOT: {
         "phase": [1, 1, 1, 1],
-        "control": [X, Z, Identity, Z],
-        "target": [X, Identity, X, Z],
+        "control": [[X], [Z], [Identity], [Z]],
+        "target": [[X], [Identity], [X], [Z]],
     },
 }
 
@@ -279,7 +279,24 @@ def _apply_commutative_rule(x: np.uint8, z: np.uint8, m: np.complex64, paulis: l
 
 
 class PauliFrameTracker:
-    r""" """
+    r"""
+        A ``PauliFrameTracker`` object records ``Pauli`` operations (i.e. :class:`~.pennylane.X`, :class:`~.pennylane.Y`, :class:`~.pennylane.Z`, :class:`~.pennylane.I`) in a given circuit. The recorded ``Pauli`` operations
+        are updated by new ``Pauli`` or ``Clifford`` operations following a set of commute or conjugation rules (:math:`P_new = P_0P_1` or :math:`P_1C = CP_0`, where :math:`C` is a ``Clifford`` operation and :math:`P` is a ``Pauli`` operation). 
+        The recorded ``Pauli`` operations would be reset to ``Identity``s when a ``non-Clifford`` operation is applied.
+
+        Following the ``xz_encode`` defined by the eq.(1) in `arxiv.org/abs/2103.02202<https://arxiv.org/abs/2103.02202>`_, a ``Pauli`` :math:`P` can be encoded as :math:`encode_{xz}(P) = (x,z) = encode_{xz}(X^xZ^z)`. Basically, only 2 bits are 
+        required to store the `xz_encode` information.
+
+        Args:
+            wires(Union[int, list]): The number of wires to initialize the PauliTracker with.
+        
+        **Example:**
+            The following example uses ``PauliTracker`` to track Pauli operations in a circuit
+
+            .. code-block:: python3
+
+
+    """
 
     def __init__(self, wires: Union[int, list]):
         self._num_wires = len(wires) if isinstance(wires, list) else wires
@@ -290,20 +307,20 @@ class PauliFrameTracker:
     def data(self, wire: int):
         return (self._x[wire], self._z[wire])
 
-    def get_op(self, wire: int, wire_map: dict):
+    def get_op(self, wire: int, wire_map: int):
         ops = _DECODE_XZ_OPS[self.data(wire)]
         m = self._m[wire]
         if isinstance(ops, Y):
             if m == 1.0j:
-                return ops(wire_map[wire])
-            return (-1.0j) * m * qml.prod(ops(wire_map[wire]))
+                return ops(wire_map)
+            return (-1.0j) * m * qml.prod(ops(wire_map))
         if m == 1:
-            return ops(wire_map[wire])
-        return m * qml.prod(ops(wire_map[wire]))
+            return ops(wire_map)
+        return m * qml.prod(ops(wire_map))
 
-    def get_ops(self, wire_map: dict):
+    def get_ops(self, wire_map: dict = None):
         for wire in range(self._num_wires):
-            self.get_op(wire, wire_map[wire])
+            self.get_op(wire, wire) if wire_map is None else self.get_op(wire, wire_map[wire])
 
     @property
     def state(self):
@@ -312,7 +329,9 @@ class PauliFrameTracker:
 
     def append(self, paulis: Union[qml.operation.Operator, list], wire: int):
         x, z, m = self._x[wire], self._z[wire], self._m[wire]
-        self._x[wire], self._z[wire], self._m[wire] = _apply_commutative_rule(x, z, m, paulis)
+        pauli_list = []
+        pauli_list.extend(paulis) if isinstance(paulis, list) else pauli_list.append(paulis)
+        self._x[wire], self._z[wire], self._m[wire] = _apply_commutative_rule(x, z, m, pauli_list)
 
     def reset(self):
         """Reset all wires to Identity."""
@@ -329,7 +348,9 @@ class PauliFrameTracker:
             if xz[idx] == 1:
                 m *= _CLIFFORD_TABLEAU[op]["phase"][idx]
                 for key in lookup_keys:
-                    res[key].extend(_CLIFFORD_TABLEAU[op][key][idx])
+                    paulis = res[key]
+                    paulis.extend(_CLIFFORD_TABLEAU[op][key][idx])
+                    res[key] = paulis
         return m, res
 
     def apply_cnot(self, control: int, target: int):
