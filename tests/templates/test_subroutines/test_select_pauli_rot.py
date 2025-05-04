@@ -41,13 +41,15 @@ def get_tape(angles, wires):
 
 class TestSelectPauliRot:
 
-    def test_standard_validity(self):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 23])
+    def test_standard_validity(self, batch_dim):
         """Check the operation using the assert_valid function."""
 
         wires = qml.registers({"control_wires": 3, "target_wire": 1})
 
+        shape = (8,) if batch_dim is None else (batch_dim, 8)
         op = qml.SelectPauliRot(
-            angles=qml.math.ones(8),
+            angles=qml.math.ones(shape),
             control_wires=wires["control_wires"],
             target_wire=wires["target_wire"],
             rot_axis="X",
