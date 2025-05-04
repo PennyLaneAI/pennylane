@@ -120,6 +120,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Computing the angles for uniformly controlled rotations, used in `MottonenStatePreparation`
+  and `SelectPauliRot`, now takes much less computational effort and memory.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -265,6 +269,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in the validation of `SelectPauliRot` that prevents broadcasting.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
@@ -331,4 +338,5 @@ Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
 Lee J. O'Riordan,
+David Wierichs,
 Jake Zaia
