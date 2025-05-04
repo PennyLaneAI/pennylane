@@ -530,16 +530,61 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
 def _equal_conditional(op1: Conditional, op2: Conditional, **kwargs):
     """Determine whether two Conditional objects are equal"""
     # first line of top-level equal function already confirms both are Conditionaly - only need to compare bases and meas_val
-    return qml.equal(op1.base, op2.base, **kwargs) and qml.equal(
-        op1.meas_val, op2.meas_val, **kwargs
-    )
+    res_base = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(res_base, str):
+        return f"base observables are not equal because {res_base}"
+    if not res_base:
+        return "base observables are not equal"
+
+    res_mv = _equal(op1.meas_val, op2.meas_val, **kwargs)
+    if isinstance(res_mv, str):
+        return f"measurement values are not equal because {res_mv}"
+    if not res_mv:
+        return "measurement values are not equal"
+
+    return True
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
-def _equal_measurement_value(op1: MeasurementValue, op2: MeasurementValue, **kwargs):
+def _equal_measurement_value(op1: MeasurementValue, op2: MeasurementValue, **kwargs) -> Union[bool, str]:
     """Determine whether two MeasurementValue objects are equal"""
-    return op1.measurements == op2.measurements
+    # This is a simplified check assuming MeasurementValue primarily wraps MidMeasureMP
+    # A more robust version would need to handle arithmetic compositions, different processing_fn etc.
+    try:
+        # Basic structural check first
+        if len(op1.measurements) != len(op2.measurements):
+            return f"MeasurementValue objects wrap a different number of base measurements: {len(op1.measurements)} vs {len(op2.measurements)}"
+
+        # Compare underlying measurements recursively
+        for m1, m2 in zip(op1.measurements, op2.measurements):
+            res = _equal(m1, m2, **kwargs)
+            if isinstance(res, str):
+                return f"underlying measurements are not equal because {res}"
+            if not res:
+                # Fallback if _equal didn't return a string
+                return f"underlying measurements {m1} and {m2} are not equal for an unspecified reason"
+
+        # Compare processing functions (basic check by name, could be more robust)
+        # If functions are the same object or have the same qualified name, consider them equal
+        proc1_fn = getattr(op1, 'processing_fn', None)
+        proc2_fn = getattr(op2, 'processing_fn', None)
+        if proc1_fn is not proc2_fn:
+            try:
+                name1 = getattr(proc1_fn, '__qualname__', repr(proc1_fn))
+                name2 = getattr(proc2_fn, '__qualname__', repr(proc2_fn))
+                if name1 != name2:
+                     return f"processing functions may be different: {name1} vs {name2}"
+            except Exception:
+                 # defensive check if accessing attributes fails
+                 if repr(proc1_fn) != repr(proc2_fn):
+                      return f"processing functions may be different (repr check): {repr(proc1_fn)} vs {repr(proc2_fn)}"
+
+
+        return True # If all checks passed
+
+    except Exception as e:
+        # Catch unexpected errors during comparison
+        return f"comparison failed with error: {e}"
 
 
 @_equal_dispatch.register
@@ -650,7 +695,6 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_measurements(
     op1: MeasurementProcess,
     op2: MeasurementProcess,
@@ -658,11 +702,14 @@ def _equal_measurements(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-):
-    """Determine whether two MeasurementProcess objects are equal"""
+) -> Union[bool, str]:
+    """Determine whether two MeasurementProcess objects are equal, returning a reason string if not."""
 
-    if op1.obs is not None and op2.obs is not None:
-        return equal(
+    # 1. Observable comparison
+    obs1_exists = op1.obs is not None
+    obs2_exists = op2.obs is not None
+    if obs1_exists and obs2_exists:
+        obs_equal_res = _equal(
             op1.obs,
             op2.obs,
             check_interface=check_interface,
@@ -670,84 +717,215 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+        if isinstance(obs_equal_res, str):
+            return f"their observables are not equal because {obs_equal_res}"
+        if not obs_equal_res: # Defensive (shouldn't happen often if _equal returns strings)
+            return f"their observables are not equal for an unspecified reason. Got {op1.obs} and {op2.obs}"
+        # If observables are equal, continue
 
-    if op1.mv is not None and op2.mv is not None:
-        if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
-            return qml.equal(op1.mv, op2.mv)
+    # 2. MeasurementValue comparison
+    mv1_exists = hasattr(op1, 'mv') and op1.mv is not None
+    mv2_exists = hasattr(op2, 'mv') and op2.mv is not None
+    if mv1_exists and mv2_exists:
+        mv1, mv2 = op1.mv, op2.mv
+        if qml.math.is_abstract(mv1) or qml.math.is_abstract(mv2):
+            if mv1 is not mv2: # Abstract values only equal if identical
+                return f"their measurement values are different abstract tracers. Got {mv1} and {mv2}"
+        elif isinstance(mv1, MeasurementValue) and isinstance(mv2, MeasurementValue):
+            # Use _equal recursively for MeasurementValue instances
+            # This will dispatch to _equal_measurement_value if defined, which returns strings
+            mv_equal_res = _equal(mv1, mv2, check_interface=check_interface, check_trainability=check_trainability, rtol=rtol, atol=atol)
+            if isinstance(mv_equal_res, str):
+                # Prefix the reason from _equal_measurement_value
+                return f"their measurement values are not equal because {mv_equal_res}"
+            if not mv_equal_res: # Defensive
+                return f"their measurement values are not equal for an unspecified reason. Got {mv1} and {mv2}"
+        elif isinstance(mv1, Iterable) and isinstance(mv2, Iterable):
+            try:
+                # Eagerly convert to list to compare length and elements safely
+                mv1_list = list(mv1)
+                mv2_list = list(mv2)
+            except Exception as e:
+                # Handle potential errors during iteration (e.g., if mv1/mv2 are strange iterables)
+                return f"failed to convert measurement values to lists for comparison. Got types {type(mv1)} and {type(mv2)}. Error: {e}"
 
-        if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
-            return op1.mv is op2.mv
+            if len(mv1_list) != len(mv2_list):
+                return f"their measurement value lists have different lengths. Got {len(mv1_list)} and {len(mv2_list)}"
+            for i, (elem1, elem2) in enumerate(zip(mv1_list, mv2_list)):
+                # Use _equal recursively for elements in the list
+                elem_equal_res = _equal(elem1, elem2, check_interface=check_interface, check_trainability=check_trainability, rtol=rtol, atol=atol)
+                if isinstance(elem_equal_res, str):
+                    return f"their measurement value lists differ at index {i} because {elem_equal_res}"
+                if not elem_equal_res: # Defensive
+                    # Provide more context if possible
+                    try:
+                        rep1 = repr(getattr(elem1, 'measurements', elem1))
+                        rep2 = repr(getattr(elem2, 'measurements', elem2))
+                    except Exception:
+                        rep1 = repr(elem1)
+                        rep2 = repr(elem2)
+                    return f"their measurement value lists differ at index {i} for an unspecified reason. Got {rep1} and {rep2}"
+        else: # Type mismatch (e.g., list vs single MeasurementValue)
+            return f"their measurement values have incompatible types. Got {type(mv1)} and {type(mv2)}"
+        # If measurement values are equal, continue
 
-        if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
-            if len(op1.mv) == len(op2.mv):
-                return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
+    # 3. Presence/Absence Mismatch
+    if obs1_exists != obs2_exists:
+        return f"one has an observable while the other does not. Got obs1={op1.obs}, obs2={op2.obs}"
+    if mv1_exists != mv2_exists:
+        # If execution reaches here, obs must match (or both be None), so mv mismatch is the primary difference
+        return f"one has a measurement value while the other does not. Got mv1={getattr(op1, 'mv', 'None')}, mv2={getattr(op2, 'mv', 'None')}" # Use getattr for safe access
 
-        return False
+    # 4. Wire comparison (Only if obs and mv are BOTH None/non-existent)
+    if not obs1_exists and not mv1_exists: # implies obs2/mv2 also None/non-existent
+        op1_wires = getattr(op1, "wires", qml.wires.Wires([]))
+        op2_wires = getattr(op2, "wires", qml.wires.Wires([]))
+        if op1_wires != op2_wires:
+            return f"their wires are different. Got {op1_wires} and {op2_wires}"
 
+        # 5. Eigenvalue Comparison (Only if obs and mv are None/non-existent AND wires match)
+        try:
+            eigvals1 = op1.eigvals()
+        except Exception:
+            eigvals1 = "Error" # Use a sentinel string for errors
+        try:
+            eigvals2 = op2.eigvals()
+        except Exception:
+            eigvals2 = "Error"
+
+        eig1_failed = isinstance(eigvals1, str) and eigvals1 == "Error"
+        eig2_failed = isinstance(eigvals2, str) and eigvals2 == "Error"
+
+        if eigvals1 is None and eigvals2 is None:
+            pass # Both None is OK
+        elif eigvals1 is None or eigvals2 is None or eig1_failed or eig2_failed:
+            # If one is None/Error, the other isn't (or they failed differently)
+            eig1_repr = "Error" if eig1_failed else repr(eigvals1)
+            eig2_repr = "Error" if eig2_failed else repr(eigvals2)
+            return f"one has eigenvalues while the other does not (or failed computation). Got {eig1_repr} and {eig2_repr}"
+        else: # Neither is None or Error, compare them
+            if not qml.math.allclose(eigvals1, eigvals2, rtol=rtol, atol=atol):
+                # Limit length of displayed eigvals for readability
+                try:
+                    # Use unwrap for potentially wrapped arrays (like Autograd)
+                    eig1_str = repr(qml.math.unwrap(eigvals1))
+                    eig2_str = repr(qml.math.unwrap(eigvals2))
+                except Exception: # Fallback if unwrap fails
+                     eig1_str = repr(eigvals1)
+                     eig2_str = repr(eigvals2)
+
+                max_len = 50 # Limit displayed length
+                if len(eig1_str) > max_len: eig1_str = eig1_str[:max_len] + "...'"
+                if len(eig2_str) > max_len: eig2_str = eig2_str[:max_len] + "...'"
+                return f"their eigenvalues are different. Got {eig1_str} and {eig2_str}"
+            # If eigvals are close, continue
+
+    # 6. Default Case: If all checks passed without returning a string, they are equal
+    return True
+
+
+@_equal_dispatch.register
+def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_) -> Union[bool, str]:
     if op1.wires != op2.wires:
-        return False
-
-    if op1.obs is None and op2.obs is None:
-        # only compare eigvals if both observables are None.
-        # Can be expensive to compute for large observables
-        if op1.eigvals() is not None and op2.eigvals() is not None:
-            return qml.math.allclose(op1.eigvals(), op2.eigvals(), rtol=rtol, atol=atol)
-
-        return op1.eigvals() is None and op2.eigvals() is None
-
-    return False
+        return f"wires are different. Got {op1.wires} and {op2.wires}"
+    if op1.id != op2.id:
+        # Note: id is typically None or can be user-defined
+        return f"ids are different. Got {op1.id} and {op2.id}"
+    if op1.reset != op2.reset:
+        return f"reset flags are different. Got {op1.reset} and {op2.reset}"
+    if op1.postselect != op2.postselect:
+        return f"postselect values are different. Got {op1.postselect} and {op2.postselect}"
+    return True
 
 
 @_equal_dispatch.register
-def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
-    return (
-        op1.wires == op2.wires
-        and op1.id == op2.id
-        and op1.reset == op2.reset
-        and op1.postselect == op2.postselect
-    )
-
-
-@_equal_dispatch.register
-# pylint: disable=unused-argument
-def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
-    """Determine whether two MeasurementProcess objects are equal"""
+def _equal_vn_entropy(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs) -> Union[bool, str]: # Renamed from _ for clarity
+    """Determine whether two VnEntropyMP objects are equal"""
     eq_m = _equal_measurements(op1, op2, **kwargs)
-    log_base_match = op1.log_base == op2.log_base
-    return eq_m and log_base_match
+    if isinstance(eq_m, str): # Check if _equal_measurements returned an error string
+        return eq_m
+    if not eq_m: # Defensive check if _equal_measurements somehow returned False
+        return f"{type(op1).__name__} measurements are not equal for an unspecified reason based on _equal_measurements"
+
+    if op1.log_base != op2.log_base:
+        return f"log bases are different. Got {op1.log_base} and {op2.log_base}"
+
+    return True # Both base checks passed and log_base matches
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
-def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
-    """Determine whether two MeasurementProcess objects are equal"""
+def _equal_mutual_info(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs) -> Union[bool, str]: # Renamed from _ for clarity
+    """Determine whether two MutualInfoMP objects are equal"""
     eq_m = _equal_measurements(op1, op2, **kwargs)
-    log_base_match = op1.log_base == op2.log_base
-    return eq_m and log_base_match
+    if isinstance(eq_m, str): # Check if _equal_measurements returned an error string
+        return eq_m
+    if not eq_m: # Defensive check if _equal_measurements somehow returned False
+        return f"{type(op1).__name__} measurements are not equal for an unspecified reason based on _equal_measurements"
+
+    if op1.log_base != op2.log_base:
+        return f"log bases are different. Got {op1.log_base} and {op2.log_base}"
+
+    return True # Both base checks passed and log_base matches
 
 
 @_equal_dispatch.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
+def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwargs) -> Union[bool, str]:
     """Determine whether two ShadowExpvalMP objects are equal"""
 
-    wires_match = op1.wires == op2.wires
+    if op1.wires != op2.wires:
+        return f"wires are different. Got {op1.wires} and {op2.wires}"
 
-    if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
-        H_match = equal(op1.H, op2.H)
-    elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
-        H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H))
-    else:
-        return False
+    # Compare the Hamiltonian(s) H
+    h1_is_op = isinstance(op1.H, Operator)
+    h2_is_op = isinstance(op2.H, Operator)
+    h1_is_iter = isinstance(op1.H, Iterable) and not h1_is_op # Exclude single Operator (which can be iterable)
+    h2_is_iter = isinstance(op2.H, Iterable) and not h2_is_op
 
-    k_match = op1.k == op2.k
+    if h1_is_op and h2_is_op:
+        h_equal_res = _equal(op1.H, op2.H, **kwargs)
+        if isinstance(h_equal_res, str):
+            return f"Hamiltonians are not equal because {h_equal_res}"
+        if not h_equal_res:
+            return f"Hamiltonians are not equal for an unspecified reason. Got {op1.H} and {op2.H}"
+    elif h1_is_iter and h2_is_iter:
+        # Convert generators/iterators to lists to compare lengths and elements safely
+        try:
+            h1_list = list(op1.H)
+            h2_list = list(op2.H)
+        except Exception as e:
+            return f"failed to convert Hamiltonians to lists for comparison. Got types {type(op1.H)} and {type(op2.H)}. Error: {e}"
 
-    return wires_match and H_match and k_match
+        if len(h1_list) != len(h2_list):
+            return f"Hamiltonian lists have different lengths. Got {len(h1_list)} and {len(h2_list)}"
+        for i, (o1, o2) in enumerate(zip(h1_list, h2_list)):
+            h_equal_res = _equal(o1, o2, **kwargs)
+            if isinstance(h_equal_res, str):
+                return f"Hamiltonian lists differ at index {i} because {h_equal_res}"
+            if not h_equal_res:
+                return f"Hamiltonian lists differ at index {i} for an unspecified reason. Got {o1} and {o2}"
+    else: # Mismatched types for H (e.g., Operator vs list, or one is neither)
+        return f"Hamiltonian types are incompatible. Got {type(op1.H)} and {type(op2.H)}"
+
+    # Compare k
+    if op1.k != op2.k:
+        return f"k values are different. Got {op1.k} and {op2.k}"
+
+    return True # All checks passed
 
 
 @_equal_dispatch.register
-def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
-    return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
+def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs) -> Union[bool, str]:
+    eq_m = _equal_measurements(op1, op2, **kwargs)
+    if isinstance(eq_m, str): # Check if _equal_measurements returned an error string
+        return eq_m
+    if not eq_m: # Defensive check if _equal_measurements somehow returned False
+        return f"{type(op1).__name__} measurements are not equal for an unspecified reason based on _equal_measurements"
+
+    if op1.all_outcomes != op2.all_outcomes:
+        return f"all_outcomes flags are different. Got {op1.all_outcomes} and {op2.all_outcomes}"
+
+    return True # Both base checks passed and all_outcomes matches
 
 
 @_equal_dispatch.register
@@ -802,6 +980,9 @@ def _equal_prep_sel_prep(
         return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if not qml.equal(op1.lcu, op2.lcu):
+    lcu_equal = _equal(op1.lcu, op2.lcu, **kwargs)
+    if isinstance(lcu_equal, str):
+        return f"op1 and op2 have different lcu because {lcu_equal}"
+    if not lcu_equal:
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
     return True
