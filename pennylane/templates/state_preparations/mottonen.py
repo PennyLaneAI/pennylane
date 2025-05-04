@@ -90,6 +90,9 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
     """
     orig_shape = qml.math.shape(D)
     n = n or int(qml.math.log2(orig_shape[-1]))
+    if n == 0:
+        # No processing occurs for n=0
+        return D
     # Reshape the array so that we may apply the Hadamard transform to each axis individually
     if broadcasted := len(orig_shape) > 1:
         new_shape = (orig_shape[0],) + (2,) * n
