@@ -278,11 +278,10 @@ class QubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        A decomposition is only defined for matrices that act on either one or two wires. For more
-        than two wires, this method raises a ``DecompositionUndefined``.
-
         See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
-        for more information on how the decompositions are computed.
+        for more information on how the decompositions are computed when the number of qubits is one or two.
+        For arbitrary number of qubits see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100)
+        for more details of the decomposition.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
