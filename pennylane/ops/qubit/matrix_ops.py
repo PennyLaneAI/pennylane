@@ -280,8 +280,8 @@ class QubitUnitary(Operation):
 
         See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
         for more information on how the decompositions are computed when the number of qubits is one or two.
-        For arbitrary number of qubits see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100)
-        for more details of the decomposition.
+        For arbitrary numbers of qubits, see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100) 
+        for more details.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
