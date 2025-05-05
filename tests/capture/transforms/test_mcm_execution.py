@@ -268,7 +268,6 @@ class TestExecutionFiniteShots:
         res = tuple(
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)[0] for _ in range(10)
         )
-        print(res)
         assert all(qml.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
         assert qml.math.allclose(

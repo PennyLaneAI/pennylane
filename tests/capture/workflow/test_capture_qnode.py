@@ -1883,7 +1883,7 @@ class TestQNodeCaptureCaching:
         assert spy.call_count > 1
 
     # pylint: disable=unused-argument
-    @pytest.mark.xfail  # think v0.5.3 broke dynamic shapes and static argnums
+    @pytest.mark.xfail  # think JAX 0.5.3 broke dynamic shapes and static argnums
     def test_caching_dynamic_shapes_and_static_argnums(self, mocker, enable_disable_dynamic_shapes):
         """Test that caching works correctly when a QNode has arguments with
         dynamic shapes as well as static arguments."""
@@ -1926,7 +1926,7 @@ class TestQNodeCaptureCaching:
         assert spy.call_count > 1
 
     # pylint: disable=unused-argument
-    @pytest.mark.xfail  # think v0.5.3 broke dynamic shapes and static argnums
+    @pytest.mark.xfail  # think JAX 0.5.3 broke dynamic shapes and static argnums
     def test_caching_dynamic_shapes_and_static_argnums_pytree(
         self, mocker, enable_disable_dynamic_shapes
     ):
