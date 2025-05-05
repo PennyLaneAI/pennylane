@@ -235,6 +235,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
+  [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
+
 * `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
   [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
   [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
