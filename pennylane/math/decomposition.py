@@ -17,16 +17,15 @@
 import numpy as np
 
 from pennylane import math
-from pennylane.typing import TensorLike
 
 
-def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
+def zyz_rotation_angles(U, return_global_phase=False):
     r"""Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`
 
     Args:
-        U (TensorLike): 2x2 unitary matrix
+        U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
@@ -55,13 +54,13 @@ def zyz_rotation_angles(U: TensorLike, return_global_phase=False):
     return (phi, theta, omega, alpha) if return_global_phase else (phi, theta, omega)
 
 
-def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
+def xyx_rotation_angles(U, return_global_phase=False):
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Y rotations in the form
     :math:`e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     Args:
-        U (TensorLike): 2x2 unitary matrix
+        U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
@@ -91,13 +90,13 @@ def xyx_rotation_angles(U: TensorLike, return_global_phase=False):
     return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
 
 
-def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
+def xzx_rotation_angles(U, return_global_phase=False):
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Z rotations in the form
     :math:`e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     Args:
-        U (TensorLike): 2x2 unitary matrix
+        U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
@@ -140,13 +139,13 @@ def xzx_rotation_angles(U: TensorLike, return_global_phase=False):
     return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
 
 
-def zxz_rotation_angles(U: TensorLike, return_global_phase=False):
+def zxz_rotation_angles(U, return_global_phase=False):
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and X rotations in the form
     :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
     Args:
-        U (TensorLike): 2x2 unitary matrix
+        U (array): 2x2 unitary matrix
         return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
