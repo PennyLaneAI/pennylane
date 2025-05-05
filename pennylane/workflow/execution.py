@@ -185,9 +185,9 @@ def execute(
 
     ### Apply the user transforms ####
     if transform_program:
-        tapes, post_processing = transform_program(tapes)
+        tapes, user_post_processing = transform_program(tapes)
         if transform_program.is_informative:
-            return post_processing(tapes)
+            return user_post_processing(tapes)
         transform_program = TransformProgram()
 
     if not tapes:
@@ -214,10 +214,10 @@ def execute(
     )
 
     #### Executing the configured setup #####
-    tapes, post_processing = outer_transform(tapes)
+    tapes, outer_post_processing = outer_transform(tapes)
 
     if outer_transform.is_informative:
-        return post_processing(tapes)
+        return user_post_processing(outer_post_processing(tapes))
 
     results = run(tapes, device, config, inner_transform)
-    return post_processing(results)
+    return user_post_processing(outer_post_processing(results))
