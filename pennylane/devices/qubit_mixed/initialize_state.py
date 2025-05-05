@@ -59,10 +59,9 @@ def create_initial_state(
         )  # don't assume the expected shape to be fixed
         if batch_size is None:
             is_state_batched = False
-            pure_state = math.flatten(pure_state)
-            density_matrix = math.outer(pure_state, math.conj(pure_state))
+            density_matrix = _flatten_outer(pure_state)
         else:
-            density_matrix = math.stack([math.outer(s, math.conj(s)) for s in pure_state])
+            density_matrix = math.stack([_flatten_outer(s) for s in pure_state])
     return _post_process(density_matrix, num_axes, like, is_state_batched)
 
 
@@ -81,3 +80,9 @@ def _post_process(density_matrix, num_axes, like, is_state_batched=True):
     if not is_state_batched:
         density_matrix = math.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)
+
+
+def _flatten_outer(s):
+    r"""Flattens the outer product of a vector."""
+    s_flatten = math.flatten(s)
+    return math.outer(s_flatten, math.conj(s_flatten))
