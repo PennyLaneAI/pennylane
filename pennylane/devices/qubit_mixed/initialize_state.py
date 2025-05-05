@@ -59,6 +59,7 @@ def create_initial_state(
         )  # don't assume the expected shape to be fixed
         if batch_size is None:
             is_state_batched = False
+            pure_state = math.flatten(pure_state)
             density_matrix = math.outer(pure_state, math.conj(pure_state))
         else:
             density_matrix = math.stack([math.outer(s, math.conj(s)) for s in pure_state])
