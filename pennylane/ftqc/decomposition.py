@@ -87,7 +87,7 @@ def convert_to_mbqc_formalism(tape):
     temp_tape = QuantumScript.from_queue(q)
 
     new_wires = [wire_map[w] for w in meas_wires]
-    new_tape = temp_tape.copy(measurements=[sample(wires=new_wires)])
+    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
 
     return (new_tape,), lambda x: x[0]
 
