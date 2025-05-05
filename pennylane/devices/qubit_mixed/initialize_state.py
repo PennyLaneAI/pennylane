@@ -17,7 +17,6 @@ from collections.abc import Iterable
 from typing import Union
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane import math
 
 
@@ -44,7 +43,7 @@ def create_initial_state(
         2 * num_wires
     )  # we initialize the density matrix as the tensor form to keep compatibility with the rest of the module
     if not prep_operation:
-        state = np.zeros((2,) * num_axes, dtype=complex)
+        state = math.zeros((2,) * num_axes, dtype=complex)
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
@@ -60,9 +59,9 @@ def create_initial_state(
         )  # don't assume the expected shape to be fixed
         if batch_size is None:
             is_state_batched = False
-            density_matrix = np.outer(pure_state, np.conj(pure_state))
+            density_matrix = math.outer(pure_state, math.conj(pure_state))
         else:
-            density_matrix = math.stack([np.outer(s, np.conj(s)) for s in pure_state])
+            density_matrix = math.stack([math.outer(s, math.conj(s)) for s in pure_state])
     return _post_process(density_matrix, num_axes, like, is_state_batched)
 
 
@@ -73,11 +72,11 @@ def _post_process(density_matrix, num_axes, like, is_state_batched=True):
     matrix form, as requested by all the other more fundamental chore functions
     in the module (again from some legacy code).
     """
-    density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
+    density_matrix = math.reshape(density_matrix, (-1,) + (2,) * num_axes)
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
     if not is_state_batched:
-        density_matrix = np.reshape(density_matrix, (2,) * num_axes)
+        density_matrix = math.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)
