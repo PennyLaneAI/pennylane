@@ -184,6 +184,7 @@ def execute(
         )
 
     ### Apply the user transforms ####
+    user_post_processing = lambda x: x  # null basically
     if transform_program:
         tapes, user_post_processing = transform_program(tapes)
         if transform_program.is_informative:
