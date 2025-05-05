@@ -16,6 +16,8 @@
 
 import pytest
 
+# pylint: disable=wrong-import-position
+
 xdsl = pytest.importorskip("xdsl")
 
 pytestmark = pytest.mark.external
