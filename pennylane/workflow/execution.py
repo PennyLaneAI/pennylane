@@ -161,7 +161,7 @@ def execute(
         device = qml.devices.LegacyDeviceFacade(device)
 
     ### Apply the user transforms ####
-    if transform_program:
+    if transform_program and getattr(transform_program, "is_user_transform", False):
         tapes, _ = transform_program(tapes)
         transform_program = TransformProgram()
 
