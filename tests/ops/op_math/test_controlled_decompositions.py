@@ -54,6 +54,7 @@ def record_from_list(func):
     - not record any operators instantiated during the function
     - record the operators returned by the function, in order
     - not return the return value
+
     Not returning the return value is intentional, as the contexts where this is used
     (qnode, matrix) only care about recorded operators and not the return value.
     """
