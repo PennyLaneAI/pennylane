@@ -28,6 +28,10 @@ class Deallocate(Operator):
         super().__init__(wires=wires)
 
 
+class DeallocateAll(Operator):
+    pass
+
+
 class DynamicWire:
 
     def __init__(self):
@@ -76,6 +80,10 @@ class WireManager:
             raise NotImplementedError
         return
 
+    def return_all(self):
+        self._zeroed += list(self.loaned)
+        self.loaned = {}
+
 
 @transform
 def allocate_wires(tape, zeroed):
@@ -86,12 +94,15 @@ def allocate_wires(tape, zeroed):
 
     new_ops = []
     for op in tape.operations:
+        print(op)
         if isinstance(op, Allocate):
             for w in op.wires:
                 wire_map[w] = manager.get_wire(**op.hyperparameters)
         elif isinstance(op, Deallocate):
             for w in op.wires:
                 manager.return_wire(wire_map.pop(w))
+        elif isinstance(op, DeallocateAll):
+            manager.return_all()
         else:
             new_ops.append(op.map_wires(wire_map))
     return (tape.copy(ops=new_ops),), lambda res: res[0]
