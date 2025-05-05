@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This submodule defines functions to decompose controlled operations."""
+
 from typing import Optional
 
 from pennylane import math, ops, queuing
