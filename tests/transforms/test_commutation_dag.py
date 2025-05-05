@@ -50,13 +50,13 @@ class TestCommutationDAG:
         nodes = [a, b]
         edges = [(0, 1, {"commute": False})]
 
-        assert dag.get_node(0).op.compare(a)
-        assert dag.get_node(1).op.compare(b)
+        assert dag.get_node(0).op == a
+        assert dag.get_node(1).op == b
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
         assert dag.observables == []
         for i, node in enumerate(dag.get_nodes()):
-            assert node[1].op.compare(nodes[i])
+            assert node[1].op == nodes[i]
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
@@ -75,13 +75,13 @@ class TestCommutationDAG:
         nodes = [a, b]
         edges = [(0, 1, {"commute": False})]
 
-        assert dag.get_node(0).op.compare(a)
-        assert dag.get_node(1).op.compare(b)
+        assert dag.get_node(0).op == (a)
+        assert dag.get_node(1).op == (b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
         assert dag.observables == []
         for i, node in enumerate(dag.get_nodes()):
-            assert node[1].op.compare(nodes[i])
+            assert node[1].op == (nodes[i])
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
@@ -100,13 +100,13 @@ class TestCommutationDAG:
         nodes = [a, b]
         edges = [(0, 1, {"commute": False})]
 
-        assert dag.get_node(0).op.compare(a)
-        assert dag.get_node(1).op.compare(b)
+        assert dag.get_node(0).op == (a)
+        assert dag.get_node(1).op == (b)
         assert dag.get_edge(0, 1) is None
         assert dag.get_edge(0, 2) is None
         assert dag.observables == []
         for i, node in enumerate(dag.get_nodes()):
-            assert node[1].op.compare(nodes[i])
+            assert node[1].op == (nodes[i])
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
@@ -129,14 +129,14 @@ class TestCommutationDAG:
         nodes = [a, b]
         edges = [(0, 1, {"commute": False})]
 
-        assert dag.get_node(0).op.compare(a)
-        assert dag.get_node(1).op.compare(b)
+        assert dag.get_node(0).op == (a)
+        assert dag.get_node(1).op == (b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
         assert dag.observables[0].name == "PauliX"
         assert dag.observables[0].wires.tolist() == [0]
         for i, node in enumerate(dag.get_nodes()):
-            assert node[1].op.compare(nodes[i])
+            assert node[1].op == (nodes[i])
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 

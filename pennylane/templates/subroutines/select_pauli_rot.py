@@ -16,7 +16,7 @@ Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
 
@@ -79,7 +79,6 @@ class SelectPauliRot(Operation):
          0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 

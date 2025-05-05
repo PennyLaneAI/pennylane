@@ -16,7 +16,7 @@ Contains the ``DisplacementEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class DisplacementEmbedding(Operation):
@@ -97,7 +97,6 @@ class DisplacementEmbedding(Operation):
         2: ─╰DisplacementEmbedding(M0)──────────┤
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @classmethod
