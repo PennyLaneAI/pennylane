@@ -120,10 +120,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* The quantum dialect for the Python compiler has been introduced.
-  The Python compiler project will allow users to write Python transformations that work with the PennyLane compiler using abstractions they are familiar with, extract information from their compiled program, and apply transformations in any order, without caring about where they live in the stack
+* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
-
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
