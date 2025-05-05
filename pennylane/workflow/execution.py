@@ -184,8 +184,10 @@ def execute(
         )
 
     ### Apply the user transforms ####
-    if transform_program and getattr(transform_program, "is_user_transform", False):
-        tapes, _ = transform_program(tapes)
+    if transform_program:
+        tapes, post_processing = transform_program(tapes)
+        if transform_program.is_informative:
+            return post_processing(tapes)
         transform_program = TransformProgram()
 
     if not tapes:
