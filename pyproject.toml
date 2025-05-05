@@ -6,12 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "Pennylane"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
-license = {text = "Apache License 2.0"}
 requires-python = ">=3.10"
 dynamic = ["version"]
-maintainers = [
-    { name = "Xanadu Inc.", email = "software@xanadu.ai" },
-]
 dependencies = [
     "scipy",
     "networkx",
@@ -26,6 +22,7 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
+    "numpy"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -45,6 +42,9 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]
+[[project.maintainers]]
+name = "Xanadu Quantum Technologies Inc."
+email = "software@xanadu.ai"
 
 [project.urls]
 repository = "https://github.com/PennyLaneAI/pennylane"
@@ -68,6 +68,9 @@ pl-device-test = "pennylane.devices.tests:cli"
 
 [tool.setuptools]
 include-package-data = true
+
+[project.license]
+text = "Apache License 2.0"
 
 [tool.setuptools.packages.find]
 where = ["pennylane"]
