@@ -18,21 +18,13 @@ import contextlib
 import warnings
 
 import pennylane as qml
-from pennylane.operation import (
-    gen_is_multi_term_hamiltonian,
-    has_gen,
-    has_grad_method,
-    has_nopar,
-    has_unitary_gen,
-    is_measurement,
-    is_trainable,
-    not_tape,
-)
+from pennylane import math
+from pennylane.measurements import MeasurementProcess
 
 
 def _update_trainable_params(tape):
     params = tape.get_parameters(trainable_only=False)
-    tape.trainable_params = qml.math.get_trainable_indices(params)
+    tape.trainable_params = math.get_trainable_indices(params)
 
 
 def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
@@ -65,7 +57,8 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
+    >>> def stop_at(obj):
+    ...     return not (len(op.data) > 1 and any(qml.math.requires_grad(d) for d in obj.data))
 
     Then the expansion function can be obtained via
 
@@ -97,7 +90,10 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         if stop_at is None:
             stop_at = device.stopping_condition
         else:
-            stop_at &= device.stopping_condition
+            orig_stop_at = stop_at
+
+            def stop_at(obj):
+                return orig_stop_at(obj) and device.stopping_condition(obj)
 
     def expand_fn(tape, depth=depth, **kwargs):
         with qml.QueuingManager.stop_recording():
@@ -133,9 +129,21 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _multipar_stopping_fn(obj):
+    try:
+        return (
+            isinstance(obj, MeasurementProcess)
+            or len(obj.data) == 0
+            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+        )
+    except qml.operation.TermsUndefinedError:
+        return True
+
+
 expand_multipar = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_multi_term_hamiltonian),
+    stop_at=_multipar_stopping_fn,
     docstring=_expand_multipar_doc,
 )
 
@@ -156,13 +164,14 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _trainable_multipar_stopping_fn(obj):
+    return _multipar_stopping_fn(obj) or not any(math.requires_grad(d) for d in obj.data)
+
+
 expand_trainable_multipar = create_expand_fn(
     depth=None,
-    stop_at=not_tape
-    | is_measurement
-    | has_nopar
-    | (~is_trainable)
-    | (has_gen & ~gen_is_multi_term_hamiltonian),
+    stop_at=_trainable_multipar_stopping_fn,
     docstring=_expand_trainable_multipar_doc,
 )
 
@@ -177,17 +186,12 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 
-    @qml.BooleanFn
-    def _is_trainable(obj):
-        return obj in trainable_ops
+    def _argnum_trainable_multipar(obj):
+        return _multipar_stopping_fn(obj) or obj not in trainable_ops
 
     return create_expand_fn(
         depth=None,
-        stop_at=not_tape
-        | is_measurement
-        | has_nopar
-        | (~_is_trainable)
-        | (has_gen & ~gen_is_multi_term_hamiltonian),
+        stop_at=_argnum_trainable_multipar,
         docstring=_expand_trainable_multipar_doc,
     )
 
@@ -209,9 +213,18 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _expand_nonunitary_gen_stop_at(obj):
+    return (
+        isinstance(obj, MeasurementProcess)
+        or len(obj.data) == 0
+        or (obj.has_generator and obj in qml.ops.qubit.attributes.has_unitary_generator)
+    )
+
+
 expand_nonunitary_gen = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & has_unitary_gen),
+    stop_at=_expand_nonunitary_gen_stop_at,
     docstring=_expand_nonunitary_gen_doc,
 )
 
@@ -232,9 +245,18 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _stop_at_expand_invalid_trainable(obj):
+    return (
+        isinstance(obj, MeasurementProcess)
+        or not any(math.requires_grad(d) for d in obj.data)
+        or obj.grad_method is not None
+    )
+
+
 expand_invalid_trainable = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
+    stop_at=_stop_at_expand_invalid_trainable,
     docstring=_expand_invalid_trainable_doc,
 )
 

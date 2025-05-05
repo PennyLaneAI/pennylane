@@ -29,7 +29,7 @@ Description
 Qubit Operations
 ~~~~~~~~~~~~~~~~
 The :class:`Operator` class serves as a base class for operators,
-and is inherited by both the :class:`Observable` class and the
+and is inherited by the
 :class:`Operation` class. These classes are subclassed to implement quantum operations
 and measure observables in PennyLane.
 
@@ -47,10 +47,6 @@ and measure observables in PennyLane.
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
-* Each  :class:`~.Observable` subclass represents a type of physical observable.
-  Each instance of these subclasses represents an instruction to measure and
-  return the respective result for the given parameter values on a
-  sequence of wires (subsystems).
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -75,8 +71,7 @@ CV Operation base classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
-and :class:`~.Observable`.
+:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`.
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -124,7 +119,7 @@ Operator Types
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
 Errors
@@ -156,6 +151,11 @@ Boolean Functions
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
 
+.. warning::
+
+    All of the boolean functions in this module are currently deprecated. See the individual functions
+    for alternative code.
+
 .. currentmodule:: pennylane.operation
 
 .. autosummary::
@@ -181,9 +181,6 @@ Other
     :toctree: api
 
     ~operation_derivative
-    ~WiresEnum
-    ~AllWires
-    ~AnyWires
 
 .. currentmodule:: pennylane
 
@@ -1992,81 +1989,6 @@ class Channel(Operation, abc.ABC):
 
 
 # =============================================================================
-# Base Observable class
-# =============================================================================
-
-
-class Observable(Operator):
-    """Base class representing observables.
-
-    Observables define a return type
-
-    Args:
-        params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
-    """
-
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-            * None
-
-        Non-pauli observables like Hermitian should not be processed into any queue.
-        The Pauli observables double as Operations, and should therefore be processed
-        into `_ops` if unowned.
-        """
-        return "_ops" if isinstance(self, Operation) else None
-
-    @property
-    def is_hermitian(self) -> bool:
-        """All observables must be hermitian"""
-        return True
-
-    def compare(
-        self,
-        other: Union["Observable", "qml.ops.LinearCombination"],
-    ) -> bool:
-        r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
-
-        Observables are equivalent if they represent the same operator
-        (their matrix representations are equal), and they are defined on the same wires.
-
-        .. Warning::
-
-            The compare method does **not** check if the matrix representation
-            of a :class:`~.Hermitian` observable is equal to an equivalent
-            observable expressed in terms of Pauli matrices.
-            To do so would require the matrix form to be calculated, which would
-            drastically increase runtime.
-
-        Returns:
-            (bool): True if equivalent.
-
-        **Examples**
-
-        >>> ob1 = qml.X(0) @ qml.Identity(1)
-        >>> ob2 = qml.Hamiltonian([1], [qml.X(0)])
-        >>> ob1.compare(ob2)
-        True
-        >>> ob1 = qml.X(0)
-        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
-        >>> ob1.compare(ob2)
-        False
-        """
-        return qml.equal(self, other)
-
-
-# =============================================================================
 # CV Operations and observables
 # =============================================================================
 
@@ -2125,7 +2047,7 @@ class CV:
             for k, w in enumerate(wire_indices):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            W = np.zeros((dim, dim)) if isinstance(self, Observable) else np.eye(dim)
+            W = np.zeros((dim, dim)) if isinstance(self, CVObservable) else np.eye(dim)
             W[0, 0] = U[0, 0]
 
             for k1, w1 in enumerate(wire_indices):
@@ -2296,7 +2218,7 @@ class CVOperation(CV, Operation):
         return self.heisenberg_expand(U, wire_order)
 
 
-class CVObservable(CV, Observable):
+class CVObservable(CV, Operator):
     r"""Base class representing continuous-variable observables.
 
     CV observables provide a special Heisenberg representation.
@@ -2322,6 +2244,12 @@ class CVObservable(CV, Observable):
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
+
+    is_hermitian = True
+
+    def queue(self, context=QueuingManager):
+        """Avoids queuing the observable."""
+        return self
 
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
@@ -2404,13 +2332,30 @@ def operation_derivative(operation: Operation) -> TensorLike:
 
 @qml.BooleanFn
 def not_tape(obj):
-    """Returns ``True`` if the object is not a quantum tape"""
-    return isinstance(obj, qml.tape.QuantumScript)
+    """Returns ``True`` if the object is not a quantum tape.
+
+    .. warning::
+
+        **Deprecated**. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.
+    """
+    warnings.warn(
+        "not_tape is deprecated. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.",
+        PennyLaneDeprecationWarning,
+    )
+    return not isinstance(obj, qml.tape.QuantumScript)
 
 
 @qml.BooleanFn
 def has_gen(obj):
-    """Returns ``True`` if an operator has a generator defined."""
+    """Returns ``True`` if an operator has a generator defined.
+
+    .. warning::
+
+        **Deprecated**. Use ``obj.has_generator`` instead.
+    """
+    warnings.warn(
+        "has_gen is deprecated. Use Operator.has_generator instead.", PennyLaneDeprecationWarning
+    )
     if isinstance(obj, Operator):
         return obj.has_generator
     try:
@@ -2422,42 +2367,87 @@ def has_gen(obj):
 
 @qml.BooleanFn
 def has_grad_method(obj):
-    """Returns ``True`` if an operator has a grad_method defined."""
+    """Returns ``True`` if an operator has a grad_method defined.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.grad_method is not None`` instead.
+    """
+    warnings.warn(
+        "has_grad_method is deprecated. Use obj.grad_method is not None instead. ",
+        PennyLaneDeprecationWarning,
+    )
     return obj.grad_method is not None
 
 
 @qml.BooleanFn
 def has_multipar(obj):
     """Returns ``True`` if an operator has more than one parameter
-    according to ``num_params``."""
+    according to ``num_params``.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.num_params > 1`` instead.
+    """
+    warnings.warn(
+        "has_multipar is deprecated. Use obj.num_params > 1 instead.", PennyLaneDeprecationWarning
+    )
     return obj.num_params > 1
 
 
 @qml.BooleanFn
 def has_nopar(obj):
     """Returns ``True`` if an operator has no parameters
-    according to ``num_params``."""
+    according to ``num_params``.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj.num_params == 0`` instead.
+    """
+    warnings.warn(
+        "has_nopar is deprecated. Use obj.num_params == 0 instead.", PennyLaneDeprecationWarning
+    )
     return obj.num_params == 0
 
 
 @qml.BooleanFn
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
-    according to the ``has_unitary_generator`` flag."""
+    according to the ``has_unitary_generator`` flag.
+
+    .. warning::
+
+        **Deprecated**: Use ``obj in qml.ops.qubit.attributes.has_unitary_gen`` insteaed.
+
+    """
+    warnings.warn(
+        "has_unitary_gen is deprecated. Use `obj in qml.ops.qubit.attributes.has_unitary_generator` instead.",
+        PennyLaneDeprecationWarning,
+    )
     # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
     return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
 
 
 @qml.BooleanFn
 def is_measurement(obj):
-    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
+    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance.
+
+    .. warning::
+
+        **Deprecated**: Use ``isinstance(obj, qml.measurements.MeasurementProcess)`` instead.
+    """
+    warnings.warn(
+        "is_measurement is deprecated. Use isinstance(obj, qml.measurements.MeasurementProcess) instead.",
+        PennyLaneDeprecationWarning,
+    )
     return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
-    according to ``qml.math.requires_grad``."""
+    according to ``qml.math.requires_grad``.
+    """
     return any(qml.math.requires_grad(p) for p in obj.parameters)
 
 
@@ -2465,16 +2455,57 @@ def is_trainable(obj):
 def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing gates.
 
-    This helper function is useful if the property is to be checked in
-    a queuing context, but the resulting gates must not be queued.
+    .. warning::
+
+        **Deprecated:** Use ``obj.has_diagonalizing_gates`` instead.
+
     """
+    warnings.warn(
+        "defines_diagonalizing_gates is deprecated. Use obj.has_diagonalizing_gates instead.",
+        PennyLaneDeprecationWarning,
+    )
     return obj.has_diagonalizing_gates
+
+
+_gen_is_multi_term_hamiltonian_code = """
+if not isinstance(obj, Operator) or not obj.has_generator:
+    return False
+try:
+    generator = obj.generator()
+    _, ops = generator.terms() 
+    return len(ops) > 1
+except TermsUndefinedError:
+    return False
+"""
 
 
 @qml.BooleanFn
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
-    with more than one term."""
+    with more than one term.
+
+    .. warning::
+
+        **Deprecated**: Use the following code instead:
+
+        .. code-block:: python
+
+            def gen_is_multi_term_hamiltonian(obj):
+                if not isinstance(obj, Operator) or not obj.has_generator:
+                    return False
+                try:
+                    generator = obj.generator()
+                    _, ops = generator.terms()
+                    return len(ops) > 1
+                except TermsUndefinedError:
+                    return False
+
+
+    """
+    warnings.warn(
+        f"gen_is_multiterm_hamiltonian is deprecated. Use {_gen_is_multi_term_hamiltonian_code}",
+        PennyLaneDeprecationWarning,
+    )
     if not isinstance(obj, Operator) or not obj.has_generator:
         return False
     try:
@@ -2487,6 +2518,17 @@ def gen_is_multi_term_hamiltonian(obj):
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
+    if name == "Observable":
+        from ._deprecated_observable import Observable  # pylint: disable=import-outside-toplevel
+
+        warnings.warn(
+            "Observable is deprecated and will be removed in v0.43. "
+            "A generic Operator class should be used instead. "
+            "If defining an Operator, set the is_hermitian property to True. "
+            "If checking if an Operator is Hermitian, check the is_hermitian property. ",
+            PennyLaneDeprecationWarning,
+        )
+        return Observable
     if name == "AnyWires":
         warnings.warn(
             "AnyWires is deprecated and will be removed in v0.43. "

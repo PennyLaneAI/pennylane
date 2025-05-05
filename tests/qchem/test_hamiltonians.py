@@ -268,7 +268,7 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
     h_ref_data = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref_data.terms()[0]))
-    assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
+    assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]) == (
         qml.Hamiltonian(np.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
     )
 
