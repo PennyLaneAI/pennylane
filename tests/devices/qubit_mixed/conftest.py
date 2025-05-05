@@ -16,8 +16,6 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-from pennylane import math
-
 
 def get_random_mixed_state(num_qubits: int) -> np.ndarray:
     """
@@ -31,12 +29,12 @@ def get_random_mixed_state(num_qubits: int) -> np.ndarray:
     """
     dim = 2**num_qubits
 
-    rng = math.random.default_rng(seed=4774)
+    rng = np.random.default_rng(seed=4774)
     basis = unitary_group(dim=dim, seed=584545).rvs()
-    schmidt_weights = rng.dirichlet(math.ones(dim), size=1).astype(complex)[0]
-    mixed_state = math.zeros((dim, dim)).astype(complex)
+    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
+    mixed_state = np.zeros((dim, dim)).astype(complex)
     for i in range(dim):
-        mixed_state += schmidt_weights[i] * math.outer(math.conj(basis[i]), basis[i])
+        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
 
     return mixed_state.reshape([2] * (2 * num_qubits))
 
@@ -53,4 +51,4 @@ def two_qubit_state():
 
 @pytest.fixture(scope="package")
 def two_qubit_batched_state():
-    return math.array([get_random_mixed_state(2) for _ in range(2)])
+    return np.array([get_random_mixed_state(2) for _ in range(2)])
