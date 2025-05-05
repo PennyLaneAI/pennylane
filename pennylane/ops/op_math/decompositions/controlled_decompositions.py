@@ -220,8 +220,18 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-        resource_rep(ops.MultiControlledX, num_control_wires=len_k2, num_work_wires=len_k1): 4,
-        resource_rep(ops.MultiControlledX, num_control_wires=len_k1, num_work_wires=len_k2): 2,
+        resource_rep(
+            ops.MultiControlledX,
+            num_control_wires=len_k2,
+            num_work_wires=len_k1,
+            num_zero_control_values=0,
+        ): 4,
+        resource_rep(
+            ops.MultiControlledX,
+            num_control_wires=len_k1,
+            num_work_wires=len_k2,
+            num_zero_control_values=0,
+        ): 2,
         # we only need Hadamard for the md case, but it still needs to be accounted for.
         ops.Hadamard: 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
@@ -293,7 +303,7 @@ def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_wo
         ops.CRY: 2,
         resource_rep(
             ops.MultiControlledX,
-            num_control_wires=num_control_wires,
+            num_control_wires=num_control_wires - 1,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
         ): 2,
@@ -585,13 +595,13 @@ def _multi_control_zyz(phi, theta, omega, wires, work_wires):
     ops.cond(_not_zero(phi), lambda: ops.CRZ(phi, wires=wires[-2:]))()
     ops.cond(_not_zero(theta), lambda: ops.CRY(theta / 2, wires=wires[-2:]))()
 
-    ops.MultiControlledX(wires, work_wires=work_wires)
+    ops.MultiControlledX(wires[:-2] + wires[-1:], work_wires=work_wires)
 
     # Operator B
     ops.cond(_not_zero(theta), lambda: ops.CRY(-theta / 2, wires=wires[-2:]))()
     ops.cond(_not_zero(phi + omega), lambda: ops.CRZ(-(phi + omega) / 2, wires=wires[-2:]))()
 
-    ops.MultiControlledX(wires, work_wires=work_wires)
+    ops.MultiControlledX(wires[:-2] + wires[-1:], work_wires=work_wires)
 
     # Operator C
     ops.cond(_not_zero(omega - phi), lambda: ops.CRZ((omega - phi) / 2, wires=wires[-2:]))()

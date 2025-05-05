@@ -267,7 +267,7 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
             ops.cond(
                 math.logical_not(math.allclose(global_phase, 0)),
                 lambda: ops.GlobalPhase(-global_phase),
-            )
+            )()
 
         return _impl
 
