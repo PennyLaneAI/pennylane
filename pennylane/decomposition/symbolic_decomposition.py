@@ -242,6 +242,15 @@ def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
             num_work_wires=rep.params["num_work_wires"],
         )
 
+    if base_op_rep.op_type == qml.QubitUnitary:
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_op_rep.params["num_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        )
+
     return controlled_resource_rep(
         base_class=base_op_rep.op_type,
         base_params=base_op_rep.params,

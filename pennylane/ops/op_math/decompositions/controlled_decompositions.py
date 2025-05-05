@@ -319,7 +319,7 @@ def _controlled_two_qubit_unitary_resource(
     if num_target_wires != 2:
         raise DecompositionNotApplicable
 
-    base_resources = two_qubit_decomp_rule.compute_resources(num_wire=num_target_wires)
+    base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
 
     return {
         ops.X: num_zero_control_values * 2,
