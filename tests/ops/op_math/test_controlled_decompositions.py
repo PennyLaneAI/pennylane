@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
-from pennylane.ops.op_math.controlled import Controlled, _is_single_qubit_special_unitary
+from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
 from pennylane.ops.op_math.controlled_decompositions import (
     _decompose_mcx_with_many_workers,
     _decompose_mcx_with_one_worker_b95,
@@ -118,7 +118,7 @@ class TestControlledDecompositionZYZ:
     @pytest.mark.unit
     @pytest.mark.parametrize("op", su2_ops + non_su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-    def test_decomposition_zyz(self, op, control_wires, tol):
+    def test_decomposition_zyz(self, op, control_wires):
         """Tests that the controlled decomposition of a single-qubit operation is correct."""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -135,7 +135,7 @@ class TestControlledDecompositionZYZ:
 
     @pytest.mark.system
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-    def test_decomposition_circuit_gradient(self, control_wires, tol):
+    def test_decomposition_circuit_gradient(self, control_wires):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
 
@@ -292,7 +292,7 @@ class TestControlledDecompBisect:
     @pytest.mark.unit
     @pytest.mark.parametrize("op", su2_od_ops)
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_decomposition_matrix(self, op, control_wires, tol):
+    def test_decomposition_matrix_od(self, op, control_wires):
         """Tests that the controlled decomposition produces an equivalent matrix."""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -394,7 +394,7 @@ class TestControlledDecompBisect:
     @pytest.mark.unit
     @pytest.mark.parametrize("op", su2_md_ops)
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_decomposition_matrix(self, op, control_wires, tol):
+    def test_decomposition_matrix_md(self, op, control_wires):
         """Tests that the controlled decomposition produces an equivalent matrix."""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -495,7 +495,7 @@ class TestControlledDecompBisect:
     @pytest.mark.unit
     @pytest.mark.parametrize("op", su2_gen_ops + gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_decomposition_matrix(self, op, control_wires):
+    def test_decomposition_matrix_general(self, op, control_wires):
         """Tests that the controlled decomposition produces an equivalent matrix."""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -686,7 +686,7 @@ class TestMultiControlledUnitary:
 
     @pytest.mark.parametrize("op", gen_ops + su2_gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_decomposition_matrix(self, op, control_wires, tol):
+    def test_decomposition_matrix_multicontrolled(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
 
@@ -740,7 +740,7 @@ class TestControlledUnitaryRecursive:
 
     @pytest.mark.parametrize("op", gen_ops)
     @pytest.mark.parametrize("control_wires", controlled_wires)
-    def test_decomposition_matrix(self, op, control_wires, tol):
+    def test_decomposition_matrix_recursive(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
 
