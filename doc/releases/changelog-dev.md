@@ -274,6 +274,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Changed `np` used in `default.mixed` source code to `qml.math` to avoid
+  unnecessary dependency on `numpy` that might fail CUDA devices.
+
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
