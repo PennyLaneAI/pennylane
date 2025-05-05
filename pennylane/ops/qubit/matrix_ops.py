@@ -395,7 +395,7 @@ class QubitUnitary(Operation):
             )
         )
 
-        ops += QubitUnitary(u12, wires=wires[1:])
+        ops += [QubitUnitary(u12, wires=wires[1:])]
         ops.append(
             qml.SelectPauliRot(
                 -2 * qml.math.angle(diag_u),
@@ -404,7 +404,7 @@ class QubitUnitary(Operation):
                 rot_axis="Z",
             )
         )
-        ops += QubitUnitary(u11, wires=wires[1:])
+        ops += [QubitUnitary(u11, wires=wires[1:])]
         return ops
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
