@@ -20,6 +20,7 @@ import networkx as nx
 
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
+from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
@@ -32,7 +33,7 @@ from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr
 
-mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
+mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
 
 
 @register_resources({RotXZX: 1})
@@ -58,6 +59,7 @@ def convert_to_mbqc_gateset(tape):
 @transform
 def convert_to_mbqc_formalism(tape):
     """docstring goes here"""
+
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], SampleMP):
         raise NotImplementedError(
             "Transforming to the MBQC formalism is not implemented for circuits where "
@@ -89,7 +91,7 @@ def convert_to_mbqc_formalism(tape):
     new_wires = [wire_map[w] for w in meas_wires]
     new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
 
-    return (new_tape,), lambda x: x[0]
+    return (new_tape,), null_postprocessing
 
 
 def rot_stencil(q_mgr, in_wire, phi, theta, omega):
