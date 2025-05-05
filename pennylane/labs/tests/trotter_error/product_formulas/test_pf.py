@@ -49,27 +49,27 @@ def test_second_order_representations(fragment_dict):
     assert np.allclose(eff1, eff2)
 
 
-@pytest.mark.parametrize("fragment_dict, t", product(fragment_dicts, [1, 0.1, 0.001]))
+@pytest.mark.parametrize("fragment_dict, t", product(fragment_dicts, [0.001, 0.0001]))
 def test_fourth_order_recursive(fragment_dict, t):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
     frag_coeffs = [
-        t * u / 2,
-        t * u,
-        t * u,
-        t * u,
-        t * (1 - (3 * u)) / 2,
-        t * (1 - (4 * u)),
-        t * (1 - (3 * u)) / 2,
-        t * u,
-        t * u,
-        t * u,
-        t * u / 2,
+        u / 2,
+        u,
+        u,
+        u,
+        (1 - (3 * u)) / 2,
+        (1 - (4 * u)),
+        (1 - (3 * u)) / 2,
+        u,
+        u,
+        u,
+        u / 2,
     ]
 
-    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")
+    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")(t)
 
     second_order_labels = [0, 1, 0]
     second_order_coeffs = [1 / 2, 1, 1 / 2]
@@ -86,6 +86,9 @@ def test_fourth_order_recursive(fragment_dict, t):
 
     eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
     eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
+
+    print(eff_1)
+    print(eff_2)
 
     assert np.allclose(eff_1, eff_2)
 

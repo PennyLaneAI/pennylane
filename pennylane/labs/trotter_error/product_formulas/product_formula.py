@@ -23,6 +23,9 @@ from itertools import permutations
 from typing import Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
+from scipy.linalg import expm
+
+from pennylane.labs.trotter_error.abstract import Fragment
 
 
 class ProductFormula:
@@ -34,6 +37,7 @@ class ProductFormula:
         coeffs: Sequence[float] = None,
         exponent: float = 1.0,
         label: str = None,
+        include_i: bool = True,
     ):
 
         if any(not isinstance(term, type(terms[0])) for term in terms):
@@ -63,8 +67,10 @@ class ProductFormula:
 
         self.terms = terms
 
-        if coeffs and not self.recursive:
+        if coeffs and include_i:
             self.coeffs = [1j * coeff for coeff in coeffs]
+        elif coeffs:
+            self.coeffs = coeffs
         else:
             self.coeffs = [1] * len(self.terms)
 
@@ -134,6 +140,17 @@ class ProductFormula:
             self._ordered_terms,
         )
 
+    def to_matrix(self, fragments: Dict[Hashable, Fragment], accumulator: Fragment) -> np.ndarray:
+        """Returns a numpy representation of the product formula"""
+        acc = copy.copy(accumulator)
+        for term, coeff in zip(self.terms, self.coeffs):
+            if isinstance(term, ProductFormula):
+                accumulator @= term.to_matrix(fragments, copy.copy(acc))
+            else:
+                accumulator @= expm(coeff * fragments[term])
+
+        return accumulator
+
 
 def _kth_order_terms(
     fragments: Sequence[int], coeffs: Sequence[float], k: int
@@ -147,7 +164,8 @@ def _kth_order_terms(
         coeff = 1 / math.prod(math.factorial(i) for i in partition)
 
         for i, j in enumerate(partition):
-            args += ((fragments[i], coeffs[i]),) * j
+            args += (fragments[i],) * j
+            coeff *= coeffs[i] ** j
 
         for key, value in _phi(args).items():
             terms[key] += coeff * value
@@ -202,9 +220,9 @@ def _remove_redundancies(
         swap = []
 
         for commutator in terms.keys():
-            if commutator[-1][0] == commutator[-2][0]:
+            if commutator[-1] == commutator[-2]:
                 delete.append(commutator)
-            if term_order[commutator[-1][0]] < term_order[commutator[-2][0]]:
+            if term_order[commutator[-1]] < term_order[commutator[-2]]:
                 swap.append(commutator)
 
         for commutator in delete:
@@ -224,7 +242,7 @@ def _remove_redundancies(
 
     swap = []
     for commutator in term_dicts[3].keys():
-        if term_order[commutator[1][0]] < term_order[commutator[0][0]]:
+        if term_order[commutator[1]] < term_order[commutator[0]]:
             swap.append(commutator)
 
     for commutator in swap:

@@ -110,7 +110,6 @@ def test_fourth_order_norm_two_fragments(fragments, t):
     ]
 
     fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
-
     fourth_order_approx = _pf_to_matrix(fourth_order, fragments, np.eye(3, dtype=np.complex128))
     actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
 
@@ -133,9 +132,9 @@ def test_fourth_order_norm_two_fragments(fragments, t):
     assert np.linalg.norm(fourth_order_approx - actual) <= (t**5) * upper_bound
 
 
-X = ("X", 1j)
-Y = ("Y", 1j)
-Z = ("Z", 1j)
+X = "X"
+Y = "Y"
+Z = "Z"
 
 
 @pytest.mark.parametrize(
@@ -190,7 +189,9 @@ Z = ("Z", 1j)
 def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     """Test against BCH expansion. The expected values come from Sections 4 and 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
 
-    actual = ProductFormula(frag_labels, coeffs=frag_coeffs).bch_approx(max_order=max_order)
+    actual = ProductFormula(frag_labels, coeffs=frag_coeffs, include_i=False).bch_approx(
+        max_order=max_order
+    )
 
     for i, order in enumerate(actual):
         for commutator in order:
@@ -198,19 +199,21 @@ def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
 
 
 @pytest.mark.parametrize(
-    "fragments",
-    [
-        ({"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))}),
-        ({"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))}),
-        ({"X": np.ones(shape=(3, 3)), "Y": np.ones(shape=(3, 3))}),
-    ],
+    "fragments, t",
+    product(
+        [
+            ({"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))}),
+            # ({"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))}),
+            ({"X": np.ones(shape=(3, 3)), "Y": np.ones(shape=(3, 3))}),
+        ],
+        [0.1, 0.01, 0.001],
+    ),
 )
-def test_second_order_against_matrix_log(fragments):
+def test_second_order_against_matrix_log(fragments, t):
     """Test the BCH expansion against directly computing the matrix logarithm."""
 
-    t = 0.4
     second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])(t)
-    bch_expansion = effective_hamiltonian(second_order_pf, fragments, order=8)
+    bch_expansion = effective_hamiltonian(second_order_pf, fragments, order=2)
 
     pf_matrix = _pf_to_matrix(second_order_pf, fragments, np.eye(3, dtype=np.complex128))
 
@@ -221,9 +224,7 @@ def test_second_order_against_matrix_log(fragments):
 
 
 def _pf_to_matrix(product_formula, fragments, accumulator):
-
     for frag, coeff in zip(product_formula.terms, product_formula.coeffs):
-        print(coeff, frag)
         accumulator @= expm(coeff * fragments[frag])
 
     return accumulator

@@ -75,9 +75,7 @@ def effective_hamiltonian(
 
     for commutator_order in bch:
         for commutator, coeff in commutator_order.items():
-            eff += coeff * nested_commutator(
-                [frag_coeff * fragments[label] for label, frag_coeff in commutator]
-            )
+            eff += coeff * nested_commutator([fragments[label] for label in commutator])
 
     return product_formula.exponent * eff
 
