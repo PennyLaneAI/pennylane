@@ -14,16 +14,17 @@
 """
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
-import networkx as nx
 from functools import partial
 
+import networkx as nx
+
+from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, GlobalPhase, H, Identity, Rot, RZ, S, X, Y, Z, cond
-from pennylane.ops.op_math.decompositions.single_qubit_unitary import xzx_rotation_angles
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
+from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
-from pennylane.queuing import AnnotatedQueue
 
 from .conditional_measure import cond_measure
 from .graph_state_preparation import GraphStatePrep
@@ -37,7 +38,7 @@ mbqc_gate_set = {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
-    lam, theta, phi, _ = xzx_rotation_angles(mat)
+    lam, theta, phi = math.decomposition.xzx_rotation_angles(mat)
     RotXZX(lam, theta, phi, wires)
 
 
@@ -56,6 +57,7 @@ def convert_to_mbqc_gateset(tape):
 
 @transform
 def convert_to_mbqc_formalism(tape):
+    """docstring goes here"""
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], SampleMP):
         raise NotImplementedError(
             "Transforming to the MBQC formalism is not implemented for circuits where "
@@ -91,6 +93,8 @@ def convert_to_mbqc_formalism(tape):
 
 
 def rot_stencil(q_mgr, in_wire, phi, theta, omega):
+    """A stencil for the rotation gate RotXZX, expressed in the MBQC formalism. This
+    stencil includes byproduct corrections in addition to the measurements."""
 
     graph_wires = q_mgr.acquire_qubits(4)
     out_wire = graph_wires[-1]
@@ -127,6 +131,8 @@ def rot_stencil(q_mgr, in_wire, phi, theta, omega):
 
 
 def rz_stencil(q_mgr, target_idx, angles):
+    """A stencil for the RZ gate, expressed in the MBQC formalism. This
+    stencil includes byproduct corrections in addition to the measurements."""
 
     graph_wires = q_mgr.acquire_qubits(4)
     output_idx = graph_wires[-1]
@@ -160,6 +166,9 @@ def rz_stencil(q_mgr, target_idx, angles):
 
 
 def h_stencil(q_mgr, in_wire):
+    """A stencil for the Hadamard gate, expressed in the MBQC formalism. This
+    stencil includes byproduct corrections in addition to the measurements."""
+
     graph_wires = q_mgr.acquire_qubits(4)
     out_wire = graph_wires[-1]
 
@@ -182,6 +191,9 @@ def h_stencil(q_mgr, in_wire):
 
 
 def s_stencil(q_mgr, in_wire):
+    """A stencil for the S gate, expressed in the MBQC formalism. This
+    stencil includes byproduct corrections in addition to the measurements."""
+
     graph_wires = q_mgr.acquire_qubits(4)
     out_wire = graph_wires[-1]
 
@@ -204,6 +216,9 @@ def s_stencil(q_mgr, in_wire):
 
 
 def cnot_stencil(q_mgr, ctrl_idx, target_idx):
+    """A stencil for the CNOT gate, expressed in the MBQC formalism. This
+    stencil includes byproduct corrections in addition to the measurements."""
+
     graph_wires = q_mgr.acquire_qubits(13)
 
     # Denote the index for the final output state
@@ -274,10 +289,5 @@ def _generate_cnot_graph():
     )
     return g
 
-stencils = {
-    RZ: rz_stencil,
-    RotXZX: rot_stencil,
-    S: s_stencil,
-    H: h_stencil,
-    CNOT: cnot_stencil
-}
+
+stencils = {RZ: rz_stencil, RotXZX: rot_stencil, S: s_stencil, H: h_stencil, CNOT: cnot_stencil}

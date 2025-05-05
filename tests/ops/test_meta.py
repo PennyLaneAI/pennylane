@@ -205,7 +205,8 @@ class TestWireCut:
     def test_wires_empty_list_raises_error(self):
         """Test that the WireCut operator raises an error when instantiated with an empty list."""
         with pytest.raises(
-            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
+            ValueError,
+            match="WireCut: wrong number of wires. At least one wire has to be provided.",
         ):
             qml.WireCut(wires=[])
 
@@ -250,6 +251,12 @@ class TestSnapshot:
         snapshot = qml.Snapshot()
         assert isinstance(snapshot, qml.Snapshot)
 
+    def test_shots_none_for_no_measurement(self):
+        """Test that the shots become None if no measurement is provided."""
+
+        op = qml.Snapshot()
+        assert op.hyperparameters["shots"] == qml.measurements.Shots(None)
+
     @pytest.mark.parametrize(
         "mp", (qml.expval(qml.Z(0)), qml.measurements.StateMP(wires=(2, 1, 0)))
     )
@@ -261,3 +268,26 @@ class TestSnapshot:
         target_mp = mp.map_wires(wire_map)
         qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
+
+    # pylint: disable=unused-argument
+    @pytest.mark.jax
+    @pytest.mark.parametrize("measurement", (None, "state"))
+    def test_capture_measurement(self, measurement, enable_disable_plxpr):
+        """Test that a snapshot can be captured into plxpr."""
+
+        import jax
+
+        def f():
+            if measurement is None:
+                qml.Snapshot()
+            else:
+                qml.Snapshot(measurement=qml.state())
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        if measurement is None:
+            assert jaxpr.eqns[0].primitive == qml.Snapshot._primitive
+        else:
+            assert jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
+            assert jaxpr.eqns[1].primitive == qml.Snapshot._primitive
+            assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]

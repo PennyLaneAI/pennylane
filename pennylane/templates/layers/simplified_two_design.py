@@ -16,7 +16,7 @@ Contains the SimplifiedTwoDesign template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class SimplifiedTwoDesign(Operation):
@@ -99,7 +99,6 @@ class SimplifiedTwoDesign(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, initial_layer_weights, weights, wires, id=None):

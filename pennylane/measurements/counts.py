@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -182,9 +182,9 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
-    _shortname = Counts  #! Note: deprecated. Change the value to "counts" in v0.42
+    _shortname = "counts"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
@@ -194,7 +194,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
-        self._shortname = AllCounts if all_outcomes else Counts
+        self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
@@ -381,6 +381,17 @@ class CountsMP(SampleMeasurement):
             self._include_all_outcomes(mapped_counts)
         else:
             _remove_unobserved_outcomes(mapped_counts)
+
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            for outcome, count in mapped_counts.items():
+                val = eigvals[int(outcome, 2)]
+                eigvals_dict[val] += count
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
+            return eigvals_dict
+
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:

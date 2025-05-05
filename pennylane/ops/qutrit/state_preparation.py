@@ -19,7 +19,7 @@ with preparing a certain state on the qutrit device.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, StatePrepBase
+from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import WireError, Wires
 
@@ -64,7 +64,6 @@ class QutritBasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 

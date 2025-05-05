@@ -26,7 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -61,7 +61,6 @@ class MultiRZ(Operation):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -80,6 +79,10 @@ class MultiRZ(Operation):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
 
     @staticmethod
     def compute_matrix(
@@ -277,7 +280,6 @@ class PauliRot(Operation):
     0.8775825618903724
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -312,8 +314,13 @@ class PauliRot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
-        self.hyperparameters["pauli_word"] = pauli_word
 
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
+
+        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
@@ -652,7 +659,6 @@ class PCPhase(Operation):
      [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
