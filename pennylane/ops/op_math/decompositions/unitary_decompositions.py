@@ -20,7 +20,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from pennylane import capture, compiler, math, ops, queuing
-from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
 from pennylane.math.decomposition import (
