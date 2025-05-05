@@ -45,7 +45,7 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="ro
         raise ValueError(
             f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
         )
-    
+
     # compute angles
     angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
 
@@ -70,7 +70,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
             "Otherwise, please provide an input with a Pauli decomposition. For more details, "
             "see the 'qml.pauli_decompose' function."
         )
-    
+
     # compute angles
     angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
 
@@ -102,6 +102,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
         encoding = qml.BlockEncode(A, wires=encoding_wires)
 
     return encoding, projectors
+
 
 def qsvt(
     A: Union[Operator, TensorLike],
@@ -280,11 +281,16 @@ def qsvt(
 
     # If the input A is a Hamiltonian
     if hasattr(A, "pauli_rep"):
-        encoding, projectors = _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver=angle_solver)
+        encoding, projectors = _pauli_rep_process(
+            A, poly, encoding_wires, block_encoding, angle_solver=angle_solver
+        )
     else:
-        encoding, projectors = _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver=angle_solver)
+        encoding, projectors = _tensorlike_process(
+            A, poly, encoding_wires, block_encoding, angle_solver=angle_solver
+        )
 
     return QSVT(encoding, projectors)
+
 
 class QSVT(Operation):
     r"""QSVT(UA,projectors)

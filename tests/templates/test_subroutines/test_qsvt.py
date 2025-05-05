@@ -68,7 +68,7 @@ def generate_polynomial_coeffs(degree, parity=None):
     if parity == 1:
         assert degree % 2 == 1.0
         polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
-        polynomial_coeffs_in_canonical_basis[0::2] = rng.uniform(size=degree // 2 + 1)
+        polynomial_coeffs_in_canonical_basis[1::2] = rng.uniform(size=degree // 2 + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)
         )
@@ -729,7 +729,7 @@ class TestRootFindingSolver:
         [
             (generate_polynomial_coeffs(4, 0)),
             (generate_polynomial_coeffs(3, 1)),
-            (generate_polynomial_coeffs(6, 0)),
+            (generate_polynomial_coeffs(11, 1)),
             (generate_polynomial_coeffs(100, 0)),
         ],
     )
@@ -896,6 +896,7 @@ class TestIterativeSolver:
         ],
     )
     def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
+        """Test that _qsp_optimization returns correct angles"""
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
         parity = degree % 2
         if parity:
@@ -946,6 +947,7 @@ class TestIterativeSolver:
         ],
     )
     def test_cheby_pol(self, x, degree):
+        """Test internal function _cheby_pol"""
         coeffs = [0.0] * (degree) + [1.0]
         assert np.isclose(_cheby_pol(x, degree), Chebyshev(coeffs)(x))
 
@@ -958,20 +960,19 @@ class TestIterativeSolver:
         ],
     )
     def test_poly_func(self, coeffs, parity, x):
-        val = _poly_func(coeffs=coeffs[::2], parity=parity, x=x)
-        temp = np.copy(coeffs[1::2])
-        coeffs[parity::2] = coeffs[::2]
-        coeffs[(parity + 1) % 2 :: 2] = temp
+        """Test internal function _poly_func"""
+        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     def test_z_rotation(self, angle):
-
+        """Test internal function _z_rotation"""
         assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     def test_qsp_iterate(self, phi):
+        """Test internal function _qsp_iterate"""
         mtx = _qsp_iterate(0.0, phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
@@ -983,7 +984,7 @@ class TestIterativeSolver:
     )
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterates(self, x, degree):
-
+        """Test internal function _qsp_iterates"""
         from jax import numpy as jnp
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
@@ -993,6 +994,7 @@ class TestIterativeSolver:
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     def test_W_of_x(self, x):
+        """Test internal function _W_of_x"""
         mtx = _W_of_x(x, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
