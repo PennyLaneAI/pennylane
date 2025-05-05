@@ -27,12 +27,20 @@ from pennylane.ftqc import (
     GraphStatePrep,
     RotXZX,
     cond_measure,
+    convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
 )
-from pennylane.ftqc.decomposition import _rot_to_xzx
+from pennylane.ftqc.decomposition import (
+    _rot_to_xzx,
+    cnot_stencil,
+    h_stencil,
+    rot_stencil,
+    rz_stencil,
+    s_stencil,
+)
 
 
 class TestGateSetDecomposition:
@@ -192,3 +200,90 @@ class TestGateSetDecomposition:
         xzx_op = q.queue[0]
 
         assert np.allclose(rot_ref(angles), rot_mbqc(xzx_op))
+
+
+class TestMBQCFormalismConversion:
+    """Test the transform convert_to_mbqc_formalism, converting to the MBQC formalism with
+    online corrections immediately after each gate"""
+
+    @pytest.mark.parametrize(
+        "gate, stencil",
+        [
+            (qml.H(0), h_stencil),
+            (qml.S(0), s_stencil),
+            (qml.RZ(1.23, 0), rz_stencil),
+            (RotXZX(0.12, 0.34, 0.56, 0), rot_stencil),
+            (qml.CNOT([0, 1]), cnot_stencil),
+        ],
+    )
+    def test_gate_stencils(self, gate, stencil):
+        # check stencil is called
+        # check that applying and getting density state works as expected
+        raise RuntimeError
+
+    def test_conversion_of_mbqc_gates_samples(self):
+
+        dev = qml.device("lightning.qubit", shots=1000)
+
+        theta = 2.5
+        with qml.queuing.AnnotatedQueue() as q:
+            RotXZX(theta, 0, theta / 2, 0)
+            RotXZX(theta / 2, 0, theta / 4, 1)
+            qml.RZ(theta / 3, 0)
+            qml.H(1)
+            qml.S(1)
+            qml.CNOT([0, 1])
+
+        base_tape = qml.tape.QuantumScript.from_queue(q, shots=1000)
+        reference_tape = base_tape.copy(
+            measurements=[
+                qml.expval(qml.X(0)),
+                qml.expval(qml.X(1)),
+                qml.expval(qml.Y(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.Z(1)),
+            ]
+        )
+
+        # after transform, only state prep and MCMs are present on the tape
+        (transformed_tape,), _ = convert_to_mbqc_formalism(
+            base_tape.copy(measurements=[qml.sample(wires=[0, 1])])
+        )
+        expected_gates = (GraphStatePrep, qml.CZ, qml.measurements.MidMeasureMP)
+        for op in transformed_tape.operations:
+            if isinstance(op, qml.ops.Conditional):
+                assert isinstance(op.base, (qml.X, qml.Z, qml.measurements.MidMeasureMP))
+            else:
+                assert isinstance(op, expected_gates)
+
+        # diagonalize final measurements, convert to the mbqc formalism, and execute
+        res = []
+        for obs in (qml.X, qml.Y, qml.Z):
+            ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
+            tape = base_tape.copy(operations=ops, measurements=[qml.sample(wires=[0, 1])])
+            (mbqc_tape,), _ = convert_to_mbqc_formalism(tape)
+            (diagonalized_tape,), _ = diagonalize_mcms(mbqc_tape)
+
+            samples = qml.execute([diagonalized_tape], dev)[0]
+            for wire in (0, 1):
+                mp = qml.expval(obs(wire))
+                res.append(mp.process_samples(samples, wire_order=[0, 1]))
+
+        reference_result = qml.execute([reference_tape], dev)[0]
+        assert np.allclose(res, reference_result)
+
+    def test_conversion_of_mbqc_gates_counts(self):
+        raise RuntimeError
+
+    @pytest.mark.parametrize(
+        "gate", [qml.X(2), qml.Y(1), qml.Z(0), qml.Identity(7), qml.GlobalPhase(1.23)]
+    )
+    def test_pauli_gates_are_skipped(self, gate):
+        raise RuntimeError
+
+    @pytest.mark.parametrize(
+        "measurements", ([qml.expval(qml.X(0))], [qml.sample(wires=0), qml.counts(wires=1)])
+    )
+    def test_error_raised_for_bad_measurements(self, measurements):
+        raise RuntimeError
