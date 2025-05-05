@@ -363,18 +363,17 @@ class QubitUnitary(Operation):
                 return (u1, u2), theta, (v1_dagg, v2_dagg)
 
         except ImportError:
-            cossin_decomposition = sp.linalg.cossin
+
+            def cossin_decomposition(U, p, q):
+                return sp.linalg.cossin(U, p=p, q=q, separate=True)
 
         # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
         # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
 
         p = 2 ** (len(wires) - 1)
         q = 2 ** (len(wires) - 1)
-        res = cossin_decomposition(U, p, q)
-        print(res)
-        for k in res:
-            print(k)
-        (u1, u2), theta, (v1_dagg, v2_dagg) = res
+
+        (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p, q)
 
         v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
         u11, diag_u, u12 = _compute_udv(u1, u2)
