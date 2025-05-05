@@ -54,8 +54,7 @@ def _cancel_adjoint_resource(*_, base_params, **__):
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    _, struct = base.base._flatten()
-    base.base._unflatten(params, struct)
+    base.base._unflatten(*base.base._flatten())
 
 
 def _adjoint_rotation(base_class, base_params, **__):
@@ -89,8 +88,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qml.for_loop(0, z)
     def _loop(i):
-        _, struct = base._flatten()
-        base._unflatten(params, struct)
+        base._unflatten(*base._flatten())
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -109,8 +107,7 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    _, struct = base.base._flatten()
-    base_op = base.base._unflatten(params, struct)
+    base_op = base.base._unflatten(*base.base._flatten())
     qml.pow(base_op, z * base.z)
 
 
@@ -129,8 +126,7 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    _, struct = base.base._flatten()
-    base_op = base.base._unflatten(params, struct)
+    base_op = base.base._unflatten(*base.base._flatten())
     qml.adjoint(qml.pow(base_op, z))
 
 
@@ -146,8 +142,7 @@ def pow_of_self_adjoint(*params, wires, base, z, **__):
     """Decompose the power of a self-adjoint operator, assumes z is an integer."""
 
     def f():
-        _, struct = base._flatten()
-        base._unflatten(params, struct)
+        base._unflatten(*base._flatten())
 
     qml.cond(z % 2 == 1, f)()
 
@@ -172,8 +167,7 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    _, struct = base._flatten()
-    base._unflatten(params, struct)
+    base._unflatten(*base._flatten())
 
 
 self_adjoint: DecompositionRule = decompose_to_base
