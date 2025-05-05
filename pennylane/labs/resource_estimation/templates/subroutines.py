@@ -363,6 +363,44 @@ class ResourceControlledSequence(qml.ControlledSequence, ResourceOperator):
         return f"ControlledSequence({base_name}, {num_ctrl_wires})"
 
 
+class ResourceOutMultiplier(ResourceOperator):
+
+    def __init__(self, a_num_qubits, b_num_qubits, wires=None) -> None:
+        self.num_wires = a_num_qubits + b_num_qubits + 2*max((a_num_qubits, b_num_qubits))
+        self.a_num_qubits = a_num_qubits
+        self.b_num_qubits = b_num_qubits
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
+    
+    @classmethod
+    def resource_rep(cls, a_num_qubits, b_num_qubits) -> CompressedResourceOp:
+        return CompressedResourceOp(cls, {"a_num_qubits":a_num_qubits, "b_num_qubits":b_num_qubits})
+
+    @staticmethod
+    def _resource_decomp(a_num_qubits, b_num_qubits, **kwargs) -> Dict[CompressedResourceOp, int]:
+        l = max(a_num_qubits, b_num_qubits)
+
+        toff = re.ResourceToffoli.resource_rep()
+        l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
+        r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
+
+        toff_count = (2*a_num_qubits*b_num_qubits - l)
+        elbow_count = toff_count // 2
+        toff_count = toff_count - (elbow_count * 2)
+
+        gate_lst = [
+            GateCount(l_elbow, elbow_count),
+            GateCount(r_elbow, elbow_count),
+        ]
+        
+        if toff_count:
+            gate_lst.append(GateCount(toff))
+        return gate_lst
+
+
 class ResourceSemiAdder(ResourceOperator):
 
     def __init__(self, max_register_size, wires=None):

@@ -31,7 +31,8 @@ from .subroutines import (
     ResourceQubitUnitary,
     ResourceSemiAdder,
     ResourcePhaseGradient,
-    ResourceMultiplexer
+    ResourceMultiplexer,
+    ResourceOutMultiplier,
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize

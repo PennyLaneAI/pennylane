@@ -267,6 +267,7 @@ from .templates import (
     ResourceSemiAdder,
     ResourceMultiplexer,
     ResourceQROMStatePreparation,
+    ResourceOutMultiplier,
 )
 
 from .compact import CompactState
