@@ -160,11 +160,6 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
-    ### Apply the user transforms ####
-    if transform_program and getattr(transform_program, "is_user_transform", False):
-        tapes, _ = transform_program(tapes)
-        transform_program = TransformProgram()
-
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -187,6 +182,11 @@ def execute(
             max_diff,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
+
+    ### Apply the user transforms ####
+    if transform_program and getattr(transform_program, "is_user_transform", False):
+        tapes, _ = transform_program(tapes)
+        transform_program = TransformProgram()
 
     if not tapes:
         return ()
