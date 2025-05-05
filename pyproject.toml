@@ -72,9 +72,6 @@ include-package-data = true
 [project.license]
 text = "Apache License 2.0"
 
-[tool.setuptools.packages.find]
-where = ["pennylane"]
-
 [tool.setuptools.package-data]
 pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
 
