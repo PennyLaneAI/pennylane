@@ -18,7 +18,6 @@ computing the sum of operations.
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
 import itertools
-import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
@@ -281,12 +280,16 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def __str__(self):
         """String representation of the Sum."""
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
     @handle_recursion_error
     def __repr__(self):
         """Terminal representation for Sum"""
+        if len(self) == 0:
+            return "Sum()"
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
@@ -529,36 +532,6 @@ class Sum(CompositeOp):
             self._grouping_indices = qml.pauli.compute_partition_indices(
                 ops, grouping_type=grouping_type, method=method
             )
-
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.coeffs is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms(). Also consider using op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
-
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.ops is deprecated and will be removed in Pennylane v0.42. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
