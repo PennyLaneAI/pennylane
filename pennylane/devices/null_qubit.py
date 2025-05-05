@@ -277,6 +277,9 @@ class NullQubit(Device):
         self._debugger = None
         self._track_resources = track_resources
 
+        # this is required by Catalyst to toggle the tracker at runtime
+        self.device_kwargs = {"track_resources": track_resources}
+
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
