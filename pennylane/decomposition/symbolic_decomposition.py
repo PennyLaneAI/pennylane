@@ -315,3 +315,42 @@ def flip_control_adjoint(*params, wires, control_wires, control_values, work_wir
             work_wires=work_wires,
         )
     )
+
+
+def _controlled_decomp_with_work_wire_resource(
+    base_class, base_params, num_control_wires, num_work_wires, **__
+):
+    if num_work_wires < 1:
+        raise DecompositionNotApplicable
+    if num_control_wires < 2:
+        # This Lemma isn't helpful for the single control wire case
+        raise DecompositionNotApplicable
+    return {
+        _controlled_resource_rep(resource_rep(qml.X), num_control_wires, num_work_wires - 1): 2,
+        _controlled_resource_rep(resource_rep(base_class, **base_params), 1, 0): 1,
+    }
+
+
+# pylint: disable=protected-access,unused-argument
+@register_resources(_controlled_decomp_with_work_wire_resource)
+def _controlled_decomp_with_work_wire(
+    *params, wires, control_wires, control_values, work_wires, base, **__
+):
+    """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
+    base_op = base._unflatten(*base._flatten())
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+    qml.ctrl(base_op, control=work_wires[0])
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+
+
+controlled_decomp_with_work_wire = flip_zero_control(_controlled_decomp_with_work_wire)
