@@ -183,6 +183,9 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
+    if not tapes:
+        return ()
+
     ### Apply the user transforms ####
     user_post_processing = lambda x: x  # null basically
     if transform_program:
@@ -190,9 +193,6 @@ def execute(
         if transform_program.is_informative:
             return user_post_processing(tapes)
         transform_program = TransformProgram()
-
-    if not tapes:
-        return ()
 
     ### Specifying and preprocessing variables ####
     interface = _resolve_interface(interface, tapes)
