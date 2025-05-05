@@ -586,7 +586,11 @@ class TestMeasurementsFromCountsOrSamples:
         (validated_tape,), _ = validate_device_wires(tape, dev.wires)
         tapes, fn = meas_transform(validated_tape)
         assert len(tapes) == 1
-        expected_m = qml.sample(wires=input_measurement.wires) if meas_transform == measurements_from_samples else qml.counts(wires=input_measurement.wires, all_outcomes=False)
+        expected_m = (
+            qml.sample(wires=input_measurement.wires)
+            if meas_transform == measurements_from_samples
+            else qml.counts(wires=input_measurement.wires, all_outcomes=False)
+        )
         assert len(tapes[0].measurements) == 1
         qml.assert_equal(tapes[0].measurements[0], expected_m)
 
