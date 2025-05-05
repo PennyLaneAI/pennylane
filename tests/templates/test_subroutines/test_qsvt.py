@@ -744,7 +744,8 @@ class TestRootFindingSolver:
         """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
-        x = np.random.uniform(low=-1.0, high=1.0)
+        rng = np.random.default_rng(123)
+        x = rng.uniform(low=-1.0, high=1.0)
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit_qsp():
@@ -780,7 +781,8 @@ class TestRootFindingSolver:
         """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
-        x = np.random.uniform(low=-1.0, high=1.0)
+        rng = np.random.default_rng(123)
+        x = rng.uniform(low=-1.0, high=1.0)
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit_qsp():
@@ -815,7 +817,8 @@ class TestRootFindingSolver:
         """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
-        x = np.random.uniform(low=-1.0, high=1.0)
+        rng = np.random.default_rng(123)
+        x = rng.uniform(low=-1.0, high=1.0)
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
         projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
@@ -900,7 +903,10 @@ class TestIterativeSolver:
         else:
             target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
-        x_point = np.random.uniform(size=1, high=1, low=-1)
+
+        rng = np.random.default_rng(123)
+        x_point = rng.uniform(size=1, low=-1.0, high=1.0)
+
         x_point = x_point.item()
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
         # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
@@ -932,7 +938,12 @@ class TestIterativeSolver:
 
     @pytest.mark.parametrize(
         "x, degree",
-        [(np.random.uniform(low=-1.0, high=1.0), np.random.randint(1, 100)) for _ in range(4)],
+        [
+            (0.27885, 4),
+            (0.4831, 32),
+            (-0.5535, 13),
+            (-0.79500, 11),
+        ],
     )
     def test_cheby_pol(self, x, degree):
         coeffs = [0.0] * (degree) + [1.0]
@@ -941,9 +952,9 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "coeffs, parity, x",
         [
-            (generate_polynomial_coeffs(100, 0), 0, np.random.uniform(-1.0, 1.0)),
-            (generate_polynomial_coeffs(7, 1), 1, np.random.uniform(-1.0, 1.0)),
-            (generate_polynomial_coeffs(12, 0), 0, np.random.uniform(-1.0, 1.0)),
+            (generate_polynomial_coeffs(100, 0), 0, 0.1),
+            (generate_polynomial_coeffs(7, 1), 1, 0.2),
+            (generate_polynomial_coeffs(12, 0), 0, 0.3),
         ],
     )
     def test_poly_func(self, coeffs, parity, x):
@@ -954,12 +965,12 @@ class TestIterativeSolver:
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
-    @pytest.mark.parametrize("angle", list(np.random.rand(4)))
+    @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     def test_z_rotation(self, angle):
 
         assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
-    @pytest.mark.parametrize("phi", list(np.random.uniform(low=-1.0, high=1.0, size=4)))
+    @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     def test_qsp_iterate(self, phi):
         mtx = _qsp_iterate(0.0, phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
@@ -968,7 +979,7 @@ class TestIterativeSolver:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "x",
-        list(np.random.uniform(low=-1.0, high=1.0, size=4)),
+        list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterates(self, x, degree):
@@ -980,7 +991,7 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
-    @pytest.mark.parametrize("x", list(np.random.uniform(low=-1.0, high=1.0, size=4)))
+    @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     def test_W_of_x(self, x):
         mtx = _W_of_x(x, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
