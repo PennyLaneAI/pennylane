@@ -35,6 +35,8 @@ from pennylane.ops.op_math.controlled_decompositions import (
 )
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_a,
+    _bisect_compute_b,
+    _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
 )
 from pennylane.wires import Wires
@@ -213,8 +215,8 @@ class TestControlledDecompositionZYZ:
             qml.assert_equal(op1, op2, check_interface=False)
 
 
-class TestControlledBisectOD:
-    """tests for _ctrl_decomp_bisect_od"""
+class TestControlledBisect:
+    """tests for ctrl_decomp_bisect"""
 
     su2_od_ops = [
         qml.QubitUnitary(
@@ -327,132 +329,73 @@ class TestControlledBisectOD:
         at = _matrix_adjoint(a)
         assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, su, atol=tol, rtol=tol)
 
+    su2_md_ops = [
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [0, 1j],
+                    [1j, 0],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [0, 1],
+                    [-1, 0],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [1, 1],
+                    [-1, 1],
+                ]
+            )
+            * 2**-0.5,
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [-1, 0],
+                    [0, -1],
+                ]
+            ),
+            wires=0,
+        ),
+    ]
 
-# class TestControlledBisectMD:
-#     """tests for qml.ops._ctrl_decomp_bisect_md"""
-#
-#     def test_invalid_op_error(self):
-#         """Tests that an error is raised when an invalid operation is passed"""
-#         with pytest.raises(ValueError, match="Target operation's matrix must have real"):
-#             _ = _ctrl_decomp_bisect_md(
-#                 math.convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2]
-#             )
-#
-#     su2_md_ops = [
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [0, 1j],
-#                     [1j, 0],
-#                 ]
-#             ),
-#             wires=0,
-#         ),
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [0, 1],
-#                     [-1, 0],
-#                 ]
-#             ),
-#             wires=0,
-#         ),
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [1, 1],
-#                     [-1, 1],
-#                 ]
-#             )
-#             * 2**-0.5,
-#             wires=0,
-#         ),
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [-1, 0],
-#                     [0, -1],
-#                 ]
-#             ),
-#             wires=0,
-#         ),
-#     ]
-#
-#     md_ops = [
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [0, 1],
-#                     [1, 0],
-#                 ]
-#             ),
-#             wires=0,
-#         ),
-#         qml.QubitUnitary(
-#             np.array(
-#                 [
-#                     [1j, 1j],
-#                     [-1j, 1j],
-#                 ]
-#             )
-#             * 2**-0.5,
-#             wires=0,
-#         ),
-#     ]
-#
-#     @pytest.mark.parametrize("op", su2_md_ops + md_ops)
-#     @pytest.mark.parametrize("control_wires", cw5)
-#     def test_decomposition_circuit(self, op, control_wires, tol):
-#         """Tests that the controlled decomposition of a single-qubit operation
-#         behaves as expected in a quantum circuit"""
-#         dev = qml.device("default.qubit", wires=max(control_wires) + 1)
-#
-#         @qml.qnode(dev)
-#         def decomp_circuit():
-#             for wire in control_wires:
-#                 qml.Hadamard(wire)
-#             record_from_list(_ctrl_decomp_bisect_md)(
-#                 math.convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
-#             )
-#             return qml.probs()
-#
-#         @qml.qnode(dev)
-#         def expected_circuit():
-#             for wire in control_wires:
-#                 qml.Hadamard(wire)
-#             qml.ctrl(op, control_wires)
-#             return qml.probs()
-#
-#         res = decomp_circuit()
-#         expected = expected_circuit()
-#         assert np.allclose(res, expected, atol=tol, rtol=tol)
-#
-#     @pytest.mark.parametrize("op", su2_md_ops)
-#     @pytest.mark.parametrize("control_wires", cw5)
-#     def test_decomposition_matrix(self, op, control_wires, tol):
-#         """Tests that the matrix representation of the controlled decomposition
-#         of a single-qubit operation is correct"""
-#         assert np.allclose(op.matrix(), math.convert_to_su2(op.matrix()), atol=tol, rtol=tol)
-#
-#         expected_op = qml.ctrl(op, control_wires)
-#         res = qml.matrix(record_from_list(_ctrl_decomp_bisect_md), wire_order=control_wires + [0])(
-#             op.matrix(), op.wires, control_wires
-#         )
-#         expected = expected_op.matrix()
-#
-#         assert np.allclose(res, expected, atol=tol, rtol=tol)
-#
-#     @pytest.mark.parametrize("op", su2_md_ops)
-#     def test_b_matrix(self, op, tol):
-#         """Tests that the B matrix subroutine returns a correct A matrix."""
-#         su = op.matrix()
-#         sx = qml.PauliX.compute_matrix()
-#         sh = qml.Hadamard.compute_matrix()
-#         b = _bisect_compute_b(su)
-#         bt = _matrix_adjoint(b)
-#         assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, su, atol=tol, rtol=tol)
-#
-#
+    @pytest.mark.unit
+    @pytest.mark.parametrize("op", su2_md_ops)
+    @pytest.mark.parametrize("control_wires", cw5)
+    def test_decomposition_matrix(self, op, control_wires, tol):
+        """Tests that the controlled decomposition produces an equivalent matrix."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _ctrl_decomp_bisect_md(op.matrix(), control_wires + op.wires)
+
+        all_wires = control_wires + op.wires
+        decomp_matrix = qml.matrix(qml.tape.QuantumScript.from_queue(q), wire_order=all_wires)
+        expected_matrix = qml.matrix(qml.ctrl(op, control=control_wires), wire_order=all_wires)
+
+        assert qml.math.allclose(decomp_matrix, expected_matrix)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("op", su2_md_ops)
+    def test_b_matrix(self, op, tol):
+        """Tests that the B matrix subroutine returns a correct A matrix."""
+        su = op.matrix()
+        sx = qml.PauliX.compute_matrix()
+        sh = qml.Hadamard.compute_matrix()
+        b = _bisect_compute_b(su)
+        bt = _matrix_adjoint(b)
+        assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, su, atol=tol, rtol=tol)
+
+
 # class TestControlledBisectGeneral:
 #     """tests for qml.ops._ctrl_decomp_bisect_general"""
 #
