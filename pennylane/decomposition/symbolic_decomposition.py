@@ -80,8 +80,7 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 @register_resources(_adjoint_adjoint_resource)
 def cancel_adjoint(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of a gate."""
-    _, struct = base.base._flatten()
-    base.base._unflatten(params, struct)
+    base.base._unflatten(*base.base._flatten())
 
 
 def _adjoint_controlled_resource(base_class, base_params):
