@@ -16,7 +16,7 @@ def scientific_notation(num):
     return f"${coef:.2f} \\times 10^{{{exp}}}$"
 
 
-def CDF_terms(N): return N
+def CDF_terms(N): return N//2
 
 def basis_rotation(N, spin_breaking = False):
     r"""
@@ -61,25 +61,40 @@ def CZZ(N, one_body = False):
     }
     return rotations
 
-def Trotter_cost(N, order):
+def Trotter_cost(N, order, steps):
     r"""
     This function computes the cost of implementing a Trotter step for a given number of spatial orbitals.
     N is the number of spin orbitals.
     Each CDF term contains a basis rotation and a set of CZZ gates.
     """
-    if order == 1:
-        first_order_uses = 1
-    elif order == 2:
-        first_order_uses = 2
-    elif order == 4:
-        first_order_uses = 10
-    elif order == 6:
-        first_order_uses = 26
+    #todo: check CDF_terms(N)
+
     rotations = {'RZ': 0, 'RX': 0, 'RY': 0, 'Hadamard': 0, 'S': 0, 'Adjoint(S)': 0, 'CNOT': 0, 'Toffoli': 0, 'SWAP': 0, 'T': 0, 'Adjoint(T)': 0}
-    for rot in ['RX', 'RY', 'RZ', 'Hadamard', 'S', 'Adjoint(S)', 'CNOT']:
-        rotations[rot] += basis_rotation(N)[rot] * CDF_terms(N) * first_order_uses
-        rotations[rot] += CZZ(N)[rot] * (CDF_terms(N)-1) * first_order_uses
-        rotations[rot] += CZZ(N, one_body = True)[rot] * first_order_uses
+
+    if type(order) == int:
+        if order == 1: first_order_uses = 1
+        elif order == 2: first_order_uses = 2
+        elif order == 4: first_order_uses = 10
+        elif order == 6: first_order_uses = 26
+        else: raise ValueError('Order must be 1, 2, 4 or 6')
+
+        for rot in ['RX', 'RY', 'RZ', 'Hadamard', 'S', 'Adjoint(S)', 'CNOT']:
+            rotations[rot] += basis_rotation(N)[rot] * CDF_terms(N) * first_order_uses
+            rotations[rot] += CZZ(N)[rot] * (CDF_terms(N)-1) * first_order_uses
+            rotations[rot] += CZZ(N, one_body = True)[rot] * first_order_uses
+            rotations[rot] *= steps
+
+    elif order == 'NI4':
+        for rot in ['RX', 'RY', 'RZ', 'Hadamard', 'S', 'Adjoint(S)', 'CNOT']:
+            second_order = (basis_rotation(N)[rot] + CZZ(N)[rot]) * (CDF_terms(N)-2) * 2
+            fourth_order = (2*basis_rotation(N)[rot] + CZZ(N)[rot] + CZZ(N, one_body = True)[rot]) * 10
+
+            processor = 2*second_order + 2*fourth_order
+
+            rotations[rot] += (second_order + fourth_order)*steps + processor + fourth_order
+    
+    else: raise ValueError('Order not recognized.')
+
     return rotations
 
 def active_volume(rotations: dict) -> float:
@@ -109,9 +124,9 @@ def active_volume(rotations: dict) -> float:
 
     return av
 
-alg_t = Tgates_per_rot * np.sum([Trotter_cost(N, order)[k] for k in ['RZ', 'RX', 'RY']])
+alg_t = Tgates_per_rot * np.sum([Trotter_cost(N, order, 1)[k] for k in ['RZ', 'RX', 'RY']])
 print(f'Number of T gates per step = {scientific_notation(alg_t)}')
-rotations = {k: v for k, v in Trotter_cost(N, order).items()}
+rotations = {k: v for k, v in Trotter_cost(N, order, 1).items()}
 alg_av = active_volume(rotations)
 print(f'Active volume of per step = {scientific_notation(alg_av)}')
 
@@ -123,9 +138,10 @@ def QPE_cost(N, order, Y2kp1dN2 = 1, epsilon = 1e-3):
     Each CDF term contains a basis rotation and a set of CZZ gates.
     """
     Y2kp1 = Y2kp1dN2 * N**2
-    rotations = Trotter_cost(N, order)
+    steps = (Y2kp1/epsilon)**(1/order) * 1/epsilon * np.pi/2
+    rotations = Trotter_cost(N, order, steps)
     for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/order) * 1/epsilon * np.pi/2
+        rotations[key] = value 
     return rotations
 
 
@@ -146,14 +162,18 @@ def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
     Each CDF term contains a basis rotation and a set of CZZ gates.
     """
     Y2kp1 = Y2kp1dN2 * (N/20)**2
-    rotations = Trotter_cost(N, order)
-    for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/(order)) * time
+    if type(order) == int: 
+        o = order
+        steps = (Y2kp1/epsilon)**(1/o) * time
+    elif order == 'NI4': 
+        step_size = Y2kp1/epsilon
+        steps = (0.01 * (Y2kp1/epsilon)**(1/2) + (Y2kp1/epsilon)**(1/o)) * time #The second order takes over but starts being 1%
+    rotations = Trotter_cost(N, order, steps)
     return rotations
 
 print('Spectroscopy simulation time')
 order = 6
-Tgates_per_rot = np.ceil(9.2 + 1.15*np.log2(1/1e-4))
+Tgates_per_rot = np.ceil(5.3 + 0.56*np.log2(1/1e-4))
 Y2kp1dN2 = 0.1
 time = 1e3
 epsilon = 1e-3
@@ -173,10 +193,8 @@ def simulation_time(N, order, time, Y2kp1dN2 = 1, epsilon = 1e-3):
     time is the time to simulate.
     """
     Y2kp1 = Y2kp1dN2 * N**2
-    rotations = Trotter_cost(N, order)
-
-    for key, value in rotations.items():
-        rotations[key] = value * (Y2kp1/epsilon)**(1/order) * time**(1+1/order)
+    steps = (Y2kp1/epsilon)**(1/order) * time**(1+1/order)
+    rotations = Trotter_cost(N, order, steps)
     return rotations
 
 print('Simulation')
@@ -282,19 +300,22 @@ def trotter_formulas():
     plt.style.use('science')
     
     # Range of precision values to evaluate
-    epsilons = np.logspace(-4, 0, 20)  # Precision from 10^-6 to 10^-1
+    epsilons = np.logspace(-3, 0, 20)  # Precision from 10^-6 to 10^-1
     
     # Dictionary to store results
     results = {
         '2nd order': {'T_gates': [], 'active_volume': []},
         '4th order': {'T_gates': [], 'active_volume': []},
-        '6th order': {'T_gates': [], 'active_volume': []}
+        '6th order': {'T_gates': [], 'active_volume': []},
+        'NI4 order': {'T_gates': [], 'active_volume': []}
     }
     # Calculate costs of spectroscopy for each precision
     # time is -np.log(epsilon*eta)/eta, eta = epsilon, because N_trot = tau * jmax/Delta = 1/(2*eta) * 1/Delta
 
     for eps in epsilons:
         eta = eps
+        #print(f'2jmax for eta {eta} =', -np.log(epsilon*eta)/eta)
+
         # 2nd order costs
         spec_rotations = spectroscopy_longest(N, 2, eps, -np.log(epsilon*eta)/eta, 1)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
@@ -303,27 +324,34 @@ def trotter_formulas():
         results['2nd order']['active_volume'].append(spec_av)
 
         # 4th order costs
-        spec_rotations = spectroscopy_longest(N, 4, eps, -np.log(epsilon*eta)/eta, 0.1)
+        spec_rotations = spectroscopy_longest(N, 4, eps, -np.log(epsilon*eta)/eta, 1)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
         spec_av = active_volume(spec_rotations)
         results['4th order']['T_gates'].append(spec_t)
         results['4th order']['active_volume'].append(spec_av)
 
         # 6th order costs
-        spec_rotations = spectroscopy_longest(N, 6, eps, -np.log(epsilon*eta)/eta, 0.01)
+        spec_rotations = spectroscopy_longest(N, 6, eps, -np.log(epsilon*eta)/eta, 1)
         spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
         spec_av = active_volume(spec_rotations)
         results['6th order']['T_gates'].append(spec_t)
         results['6th order']['active_volume'].append(spec_av)
 
+        # Near integrable costs
+        spec_rotations = spectroscopy_longest(N, 'NI4', eps, -np.log(epsilon*eta)/eta, 1)
+        spec_t = Tgates_per_rot * np.sum([spec_rotations[k] for k in ['RZ', 'RX', 'RY']])
+        spec_av = active_volume(spec_rotations)
+        results['NI4 order']['T_gates'].append(spec_t)
+        results['NI4 order']['active_volume'].append(spec_av)
+
     # Create plots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     # T-gates plot
     for alg in results.keys():
-        ax1.plot(epsilons, results[alg]['T_gates'], marker='o', linestyle='-', label=alg)
+        ax1.plot(epsilons, results[alg]['T_gates'], marker='o', linestyle='-', label=alg, markersize=2)
     ax1.set_xlabel('Precision ($\\epsilon$, Ha)')
     ax1.set_ylabel('T-gate count')
-    ax1.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}" + r"$\times 0.1^{(k/2-1)}$")
+    ax1.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}")# + r"$\times 0.1^{(k/2-1)}$")
     ax1.grid(True, which="both", ls="-", alpha=0.2)
     ax1.legend()
     ax1.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
@@ -333,10 +361,10 @@ def trotter_formulas():
 
     # Active volume plot
     for alg in results.keys():
-        ax2.plot(epsilons, results[alg]['active_volume'], marker='o', linestyle='-', label=alg)
+        ax2.plot(epsilons, results[alg]['active_volume'], marker='o', linestyle='-', label=alg, markersize=2)
     ax2.set_xlabel('Precision ($\\epsilon$, Ha)')
     ax2.set_ylabel('Active Volume')
-    ax2.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}" + r"$\times 0.1^{(k/2-1)}$")
+    ax2.set_title(r"$|\langle Y_{k+1}\rangle | =$" + f"{(N/20)**2}")# + r"$\times 0.1^{(k/2-1)}$")
     ax2.grid(True, which="both", ls="-", alpha=0.2)
     ax2.legend()
     ax2.invert_xaxis()  # Show smaller epsilon (higher precision) on the right
