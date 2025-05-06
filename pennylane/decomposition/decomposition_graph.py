@@ -127,15 +127,25 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[str],
+        gate_set: set[str] | dict[type | str, float],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
-        # The names of the gates in the target gate set.
-        self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
+        if isinstance(gate_set, set):
+            # The names of the gates in the target gate set.
+            self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
+        else:
+            # the gate_set is a dict
+            self._gate_set = {
+                translate_op_alias(gate) if isinstance(gate, str) else gate.__name__
+                for gate in gate_set.keys()
+            }
+            self._weights = gate_set
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
+        self._op_indices: dict[int, str] = {}
+        self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
@@ -196,7 +206,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            self._graph.add_edge(self._start, op_node_idx, 1)
+            if hasattr(self, "_weights"):
+                self._graph.add_edge(
+                    self._start, op_node_idx,
+                    self._weights[self._op_indices[op_node_idx]]
+                    if self._op_indices[op_node_idx] in self._weights.keys()
+                    else 1
+                )
+            else:
+                self._graph.add_edge(self._start, op_node_idx, 1)
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
@@ -306,7 +324,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 entire graph will be explored.
 
         """
-        self._visitor = _DecompositionSearchVisitor(self._graph, self._original_ops_indices, lazy)
+        self._visitor = _DecompositionSearchVisitor(
+            self._graph,
+            self._original_ops_indices,
+            self._op_indices,
+            lazy,
+            self._weights if isinstance(self._weights, dict) else None,
+        )
         rx.dijkstra_search(
             self._graph,
             source=[self._start],
@@ -418,7 +442,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 class _DecompositionSearchVisitor(DijkstraVisitor):
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
-    def __init__(self, graph: rx.PyDiGraph, original_op_indices: set[int], lazy: bool = True):
+    def __init__(
+        self,
+        graph: rx.PyDiGraph,
+        original_op_indices: set[int],
+        op_indices: dict[int, str],
+        lazy: bool = True,
+        gate_set: dict = None,
+    ):
         self._graph = graph
         self._lazy = lazy
         # maps node indices to the optimal resource estimates
@@ -426,14 +457,19 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         # maps operator nodes to the optimal decomposition nodes
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
+        self._op_indices = op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
+        self._gate_set = gate_set
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        return self.distances[d_node_idx].num_gates - self.distances[op_node_idx].num_gates
+        weight = self.distances[d_node_idx].num_gates - self.distances[op_node_idx].num_gates
+        if self._gate_set is not None and self._op_indices[op_node_idx] in self._gate_set.keys():
+            weight += self._gate_set[self._op_indices[op_node_idx]]
+        return weight
 
     def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
