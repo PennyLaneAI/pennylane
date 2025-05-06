@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Dict, List
 import numpy as np
 
 import pennylane.ops as qops
+import pennylane.templates as qtemps
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
@@ -51,18 +52,18 @@ def _get_op_call_graph():
         return None
 
     @_op_call_graph.register
-    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
         return {
             ToBloq(op.hyperparameters["unitary"]): 1,
             ToBloq(op.hyperparameters["unitary"]).controlled(): (
                 2 ** len(op.estimation_wires)
             )
             - 1,
-            ToBloq(qml.adjoint(qml.templates.QFT(wires=op.estimation_wires))): 1,
+            ToBloq(qops.adjoint(qtemps.QFT(wires=op.estimation_wires))): 1,
         }
     
     @_op_call_graph.register
-    def _(op: qml.templates.subroutines.qubitization.Qubitization):
+    def _(op: qtemps.subroutines.qubitization.Qubitization):
         return None
 
     return _get_op_call_graph
@@ -75,7 +76,7 @@ def _map_to_bloq():
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qml.templates.subroutines.qpe.QuantumPhaseEstimation, mapping: dict):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, mapping: dict):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -85,109 +86,109 @@ def _map_to_bloq():
         )
 
     @_to_qt_bloq.register
-    def _(op: qml.GlobalPhase):
+    def _(op: qops.GlobalPhase):
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
 
     @_to_qt_bloq.register
-    def _(op: qml.CNOT):
+    def _(op: qops.CNOT):
         from qualtran.bloqs.basic_gates import CNOT
 
         return CNOT()
 
     @_to_qt_bloq.register
-    def _(op: qml.Hadamard):
+    def _(op: qops.Hadamard):
         from qualtran.bloqs.basic_gates import Hadamard
 
         return Hadamard()
 
     @_to_qt_bloq.register
-    def _(op: qml.Identity):
+    def _(op: qops.Identity):
         from qualtran.bloqs.basic_gates import Identity
 
         return Identity()
 
     @_to_qt_bloq.register
-    def _(op: qml.RX):
+    def _(op: qops.RX):
         from qualtran.bloqs.basic_gates import Rx
 
         return Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qml.RY):
+    def _(op: qops.RY):
         from qualtran.bloqs.basic_gates import Ry
 
         return Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qml.RZ):
+    def _(op: qops.RZ):
         from qualtran.bloqs.basic_gates import Rz
 
         return Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qml.S):
+    def _(op: qops.S):
         from qualtran.bloqs.basic_gates import SGate
 
         return SGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.SWAP):
+    def _(op: qops.SWAP):
         from qualtran.bloqs.basic_gates import TwoBitSwap
 
         return TwoBitSwap()
 
     @_to_qt_bloq.register
-    def _(op: qml.CSWAP):
+    def _(op: qops.CSWAP):
         from qualtran.bloqs.basic_gates import TwoBitCSwap
 
         return TwoBitCSwap()
 
     @_to_qt_bloq.register
-    def _(op: qml.T):
+    def _(op: qops.T):
         from qualtran.bloqs.basic_gates import TGate
 
         return TGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.Toffoli):
+    def _(op: qops.Toffoli):
         from qualtran.bloqs.basic_gates import Toffoli
 
         return Toffoli()
 
     @_to_qt_bloq.register
-    def _(op: qml.Toffoli):
+    def _(op: qops.Toffoli):
         from qualtran.bloqs.basic_gates import Toffoli
 
         return Toffoli()
 
     @_to_qt_bloq.register
-    def _(op: qml.X):
+    def _(op: qops.X):
         from qualtran.bloqs.basic_gates import XGate
 
         return XGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.Y):
+    def _(op: qops.Y):
         from qualtran.bloqs.basic_gates import YGate
 
         return YGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.CY):
+    def _(op: qops.CY):
         from qualtran.bloqs.basic_gates import CYGate
 
         return CYGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.Z):
+    def _(op: qops.Z):
         from qualtran.bloqs.basic_gates import ZGate
 
         return ZGate()
 
     @_to_qt_bloq.register
-    def _(op: qml.CZ):
+    def _(op: qops.CZ):
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
@@ -798,14 +799,14 @@ def _inherit_from_bloq(cls):
 
             def build_call_graph(self, ssa):
                 # ToDo: implement build_call_graphs for each high level operation
-                if isinstance(self.op, qml.QuantumPhaseEstimation):
+                if isinstance(self.op, qops.QuantumPhaseEstimation):
                     return {
                         ToBloq(self.op.hyperparameters["unitary"]): 1,
                         ToBloq(self.op.hyperparameters["unitary"]).controlled(): (
                             2 ** len(self.op.estimation_wires)
                         )
                         - 1,
-                        ToBloq(qml.adjoint(qml.templates.QFT(wires=self.op.estimation_wires))): 1,
+                        ToBloq(qops.adjoint(qtemps.QFT(wires=self.op.estimation_wires))): 1,
                     }
                 return self.decompose_bloq().build_call_graph(ssa)
 

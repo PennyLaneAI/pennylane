@@ -25,4 +25,4 @@ from .io import (
     from_quil_file,
     plugin_converters,
 )
-from .qualtran_io import FromBloq, bloq_registers, ToBloq
+from .qualtran_io import FromBloq, bloq_registers, ToBloq, to_bloq
