@@ -278,8 +278,6 @@ def _resolve_execution_config(
     ):
         updated_values["grad_on_execution"] = False
 
-    if "lightning" in device.name and execution_config.gradient_method == "best":
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
