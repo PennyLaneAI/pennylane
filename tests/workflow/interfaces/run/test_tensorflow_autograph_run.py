@@ -42,9 +42,7 @@ class TestTFAutographRun:
 
         device = get_device(device, seed=seed)
         config = replace(config, interface="tf-autograph")
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -53,9 +51,7 @@ class TestTFAutographRun:
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            resolved_config = _resolve_execution_config(
-                config, device, [tape1, tape2], TransformProgram()
-            )
+            resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
             inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
@@ -86,14 +82,12 @@ class TestTFAutographRun:
             pytest.xfail(reason="Partitioned shots are not supported yet.")
         device = get_device(device, seed=seed)
         config = replace(config, interface="tf-autograph")
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
         device_vjp = resolved_config.use_device_jacobian_product
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
+            resolved_config = _resolve_execution_config(config, device, [tape])
             inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
@@ -118,16 +112,14 @@ class TestTFAutographRun:
 
         config = replace(config, interface="tf-autograph")
         device = get_device(device, seed=seed)
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
         device_vjp = resolved_config.use_device_jacobian_product
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
+            resolved_config = _resolve_execution_config(config, device, [tape])
             inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
             return qml.math.hstack(
                 run([tape], device, resolved_config, inner_tp)[0], like="tensorflow"

@@ -260,7 +260,6 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -268,7 +267,6 @@ def _resolve_execution_config(
         execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
         device (qml.devices.Device): a Pennylane device
         tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
 
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
@@ -280,10 +278,7 @@ def _resolve_execution_config(
     ):
         updated_values["grad_on_execution"] = False
 
-    if (
-        "lightning" in device.name
-        and execution_config.gradient_method == "best"
-    ):
+    if "lightning" in device.name and execution_config.gradient_method == "best":
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 

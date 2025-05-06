@@ -106,9 +106,7 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         if resolve:
             tape = construct_tape(qnode, level=0)(*args, **kwargs)
             # pylint:disable=protected-access
-            config = _resolve_execution_config(
-                config, qnode.device, (tape,), qnode._transform_program
-            )
+            config = _resolve_execution_config(config, qnode.device, (tape,))
 
         return config
 

@@ -209,7 +209,7 @@ def execute(
         derivative_order=max_diff,
         executor_backend=executor_backend,
     )
-    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
+    config = _resolve_execution_config(config, device, tapes)
 
     transform_program = transform_program or qml.transforms.core.TransformProgram()
     outer_transform, inner_transform = _setup_transform_program(
