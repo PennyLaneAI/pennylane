@@ -49,6 +49,26 @@ def test_second_order_representations(fragment_dict):
     assert np.allclose(eff1, eff2)
 
 
+@pytest.mark.parametrize("fragment_dict", fragment_dicts)
+def test_second_order_recursive(fragment_dict):
+    """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
+
+    t = 0.1
+    first_order_1 = ProductFormula([0, 1], coeffs=[1 / 2, 1 / 2])
+    first_order_2 = ProductFormula([1, 0], coeffs=[1 / 2, 1 / 2])
+
+    explicit = ProductFormula([0, 1, 1, 0], coeffs=[1 / 2, 1 / 2, 1 / 2, 1 / 2])(t)
+    constructed = first_order_1(t) @ first_order_2(t)
+
+    eff1 = effective_hamiltonian(explicit, fragment_dict, order=3)
+    eff2 = effective_hamiltonian(constructed, fragment_dict, order=3)
+
+    print(eff1)
+    print(eff2)
+
+    assert np.allclose(eff1, eff2)
+
+
 @pytest.mark.parametrize("fragment_dict, t", product(fragment_dicts, [0.001, 0.0001]))
 def test_fourth_order_recursive(fragment_dict, t):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
