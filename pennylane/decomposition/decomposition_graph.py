@@ -203,6 +203,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             return self._all_op_indices[op_node]
 
         op_node_idx = self._graph.add_node(op_node)
+        self._op_indices[op_node_idx] = op_node.name
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
@@ -461,15 +462,34 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
         self._gate_set = gate_set
 
+    def _get_node_weight(self, gates, node_idx):
+        """Calculates the weight of a node."""
+        node_weight = 0
+        if self._gate_set is not None:
+            for gate, count in gates.items():
+                gate_weight = 1.0
+                if self._op_indices[node_idx] in self._gate_set.keys():
+                    gate_weight = self._gate_set[self._op_indices[node_idx]] * count
+                node_weight += gate_weight
+        else:
+            for gate, count in gates.items():
+                node_weight += count
+
+        return node_weight
+
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
+
         op_node_idx, d_node_idx = edge_obj
-        weight = self.distances[d_node_idx].num_gates - self.distances[op_node_idx].num_gates
-        if self._gate_set is not None and self._op_indices[op_node_idx] in self._gate_set.keys():
-            weight += self._gate_set[self._op_indices[op_node_idx]]
-        return weight
+        d_node_gates = self.distances[d_node_idx].gate_counts
+        op_node_gates = self.distances[op_node_idx].gate_counts
+
+        d_node_weight = self._get_node_weight(d_node_gates, d_node_idx)
+        op_node_weight = self._get_node_weight(op_node_gates, op_node_idx)
+
+        return d_node_weight - op_node_weight
 
     def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
