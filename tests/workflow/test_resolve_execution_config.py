@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow.resolution import _resolve_execution_config
 
 

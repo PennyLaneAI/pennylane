@@ -17,7 +17,7 @@ from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import Literal, Optional, Union, get_args
+from typing import Literal, Union, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
     None,
