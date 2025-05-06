@@ -1,5 +1,5 @@
 [build-system]
-requires = ["cmake", "setuptools>=68", "tomli"]
+requires = ["cmake", "setuptools>=75", "tomli"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -68,6 +68,9 @@ pl-device-test = "pennylane.devices.tests:cli"
 
 [tool.setuptools]
 include-package-data = true
+py-modules = []
+
+[tool.setuptools_scm]
 
 [project.license]
 text = "Apache License 2.0"
