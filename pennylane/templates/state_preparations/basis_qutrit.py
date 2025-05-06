@@ -18,7 +18,7 @@ Contains the QutritBasisStatePreparation template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class QutritBasisStatePreparation(Operation):
@@ -54,7 +54,6 @@ class QutritBasisStatePreparation(Operation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, basis_state, wires, id=None):
