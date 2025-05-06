@@ -28,6 +28,7 @@ from typing import Callable, Optional, Sequence, Type
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.utils import translate_op_alias
+from pennylane.exceptions import GraphFeaturesUsedButNotEnabled
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 
@@ -102,12 +103,20 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if isinstance(gate_set, (str, type)):
                 gate_set: set[Type[Operator] | str] = {gate_set}
 
+            if isinstance(gate_set, dict):
+                target_gate_types = tuple(gate for gate in gate_set.keys() if isinstance(gate, type))
+                target_gate_names = set(
+                    translate_op_alias(gate) for gate in gate_set.keys() if isinstance(gate, str)
+                )
+
             if isinstance(gate_set, Iterable):
 
                 target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
                 target_gate_names = set(
                     translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
                 )
+
+            if isinstance(gate_set, Iterable) or isinstance(gate_set, dict):
 
                 def _in_gate_set(op: Operator) -> bool:
                     return (op.name in target_gate_names) or isinstance(op, target_gate_types)
@@ -118,6 +127,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
                     type_to_names = {op_type.__name__ for op_type in target_gate_types}
                     self._target_gate_names = target_gate_names | type_to_names
+                    self._gate_set = gate_set
 
             else:  # isinstance(gate_set, Callable)
 
@@ -271,7 +281,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
                         operations,
-                        self._target_gate_names,
+                        self._target_gate_names if not isinstance(self._gate_set, dict) else self._gate_set,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
@@ -404,9 +414,10 @@ def decompose(
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
-            either (1) a sequence of operator types and/or names or (2) a function that returns
-            ``True`` if the operator belongs to the target gate set. Defaults to ``None``, in which
-            case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
+            either (1) a sequence of operator types and/or names, (2) a function that returns
+            ``True`` if the operator belongs to the target gate set or (3) a dictionary of operator
+            types and/or names with weights. Defaults to ``None``, in which case the gate set is
+            considered to be all available :doc:`quantum operators </introduction/operations>`.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
@@ -655,6 +666,18 @@ def decompose(
             translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
         )
 
+    if isinstance(gate_set, dict):
+        target_gate_types = tuple(gate for gate in gate_set.keys() if isinstance(gate, type))
+        target_gate_names = set(
+            translate_op_alias(gate) for gate in gate_set.keys() if isinstance(gate, str)
+        )
+        if not qml.decomposition.enabled_graph():
+            # note this is a warning and not an exception.
+            raise GraphFeaturesUsedButNotEnabled(
+                "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored."
+            )
+
+    if isinstance(gate_set, Iterable) or isinstance(gate_set, dict):
         def gate_set_contains(op):
             return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
@@ -710,7 +733,7 @@ def decompose(
 
         decomp_graph = _construct_and_solve_decomp_graph(
             tape.operations,
-            target_gate_names,
+            target_gate_names if not isinstance(gate_set, dict) else gate_set,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
         )
@@ -783,13 +806,13 @@ def _decomp_graph_kwargs_checks(fixed_decomps, alt_decomps):
         )
 
 
-def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
+def _construct_and_solve_decomp_graph(operations, target_gates, fixed_decomps, alt_decomps):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
     decomp_graph = DecompositionGraph(
         operations,
-        target_gate_names,
+        target_gates,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
     )

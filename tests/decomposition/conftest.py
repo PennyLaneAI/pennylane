@@ -23,12 +23,33 @@ from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
-
+weighted_decompositions = defaultdict(list)
 
 def to_resources(gate_count: dict) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
     return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
 
+def _weighted_hadamard_decomposition_resources(num_wires):
+    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}  # TODO: replace with correct decomposition
+
+
+@qml.register_resources(_weighted_hadamard_decomposition_resources)
+def _weighted_hadamard_decomposition(*_, **__):
+    raise NotImplementedError
+
+
+weighted_decompositions[qml.Hadamard] = [_weighted_hadamard_decomposition]
+
+def _weighted_toffoli_decomposition_resources(num_wires):
+    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}  # TODO: replace with correct decomposition
+
+
+@qml.register_resources(_weighted_toffoli_decomposition_resources)
+def _weighted_toffoli_decomposition(*_, **__):
+    raise NotImplementedError
+
+
+weighted_decompositions[qml.Toffoli] = [_weighted_toffoli_decomposition]
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
 def _cz_to_cnot(*_, **__):
