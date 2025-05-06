@@ -219,8 +219,7 @@ def execute(
     #### Executing the configured setup #####
     tapes, outer_post_processing = outer_transform(tapes)
 
-    if outer_transform.is_informative:
-        return user_post_processing(outer_post_processing(tapes))
+    assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
     return user_post_processing(outer_post_processing(results))
