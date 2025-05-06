@@ -45,7 +45,7 @@ _INSTANCES_TO_TEST = [
         {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (
-        qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[1, 0]),
+        qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
         {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (
