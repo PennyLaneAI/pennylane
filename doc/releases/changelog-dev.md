@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Support for weighted gates in target gatesets added which reflects the 
+  relative costs of executing different gates on a hardware backend i.e. T is more expensive
+  than a Pauli gate.
+
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
@@ -334,6 +338,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,

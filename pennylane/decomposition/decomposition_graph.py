@@ -136,7 +136,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
         else:
             # the gate_set is a dict
-            self._gate_set = {translate_op_alias(gate) if isinstance(gate, str) else gate.__name__  for gate in gate_set.keys()}
+            self._gate_set = {
+                translate_op_alias(gate) if isinstance(gate, str) else gate.__name__
+                for gate in gate_set.keys()
+            }
             self._weights = gate_set
 
         # Tracks the node indices of various operators.
@@ -329,19 +332,28 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._original_ops_indices,
             self._op_indices,
             lazy,
-            self._weights if isinstance(self._weights, dict) else None
+            self._weights if isinstance(self._weights, dict) else None,
         )
         start = self._graph.add_node("dummy")
         if hasattr(self, "_weights"):
             self._graph.add_edges_from(
                 [
-                    (start, op_node_idx, self._weights[self._op_indices[op_node_idx]]
-                    if self._op_indices[op_node_idx] in self._weights.keys() else 1)
+                    (
+                        start,
+                        op_node_idx,
+                        (
+                            self._weights[self._op_indices[op_node_idx]]
+                            if self._op_indices[op_node_idx] in self._weights.keys()
+                            else 1
+                        ),
+                    )
                     for op_node_idx in self._target_ops_indices
                 ]
             )
         else:
-            self._graph.add_edges_from([(start, op_node_idx, 1) for op_node_idx in self._target_ops_indices])
+            self._graph.add_edges_from(
+                [(start, op_node_idx, 1) for op_node_idx in self._target_ops_indices]
+            )
         rx.dijkstra_search(
             self._graph,
             source=[start],
@@ -455,12 +467,12 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
     def __init__(
-            self,
-            graph: rx.PyDiGraph,
-            original_op_indices: set[int],
-            op_indices: dict[int, str],
-            lazy: bool = True,
-            gate_set: dict = None
+        self,
+        graph: rx.PyDiGraph,
+        original_op_indices: set[int],
+        op_indices: dict[int, str],
+        lazy: bool = True,
+        gate_set: dict = None,
     ):
         self._graph = graph
         self._lazy = lazy
