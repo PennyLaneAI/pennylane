@@ -72,7 +72,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
-        control_values (List[int, bool]): a list providing the state of the control qubits to
+        control_values (List[int or bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
