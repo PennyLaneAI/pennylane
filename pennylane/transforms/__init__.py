@@ -115,6 +115,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.add_noise
     ~defer_measurements
     ~transforms.diagonalize_measurements
+    ~transforms.set_shots
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
