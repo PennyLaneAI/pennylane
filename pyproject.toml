@@ -70,6 +70,9 @@ pl-device-test = "pennylane.devices.tests:cli"
 include-package-data = true
 py-modules = []
 
+[tool.setuptools.dynamic]
+version = {attr = "pennylane._version.__version__"} 
+
 [tool.setuptools_scm]
 
 [project.license]
