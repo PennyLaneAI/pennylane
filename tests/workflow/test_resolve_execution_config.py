@@ -44,7 +44,7 @@ def test_metric_tensor_lightning_edge_case():
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
-    assert resolved_config.gradient_method is qml.gradients.param_shift
+    assert resolved_config.gradient_method == "adjoint"
 
 
 def test_param_shift_cv_kwargs():
