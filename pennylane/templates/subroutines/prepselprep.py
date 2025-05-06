@@ -71,6 +71,14 @@ class PrepSelPrep(Operation):
      [ 0.75  0.25]]
     """
 
+    resource_keys = frozenset({"num_control", "op_reps"})
+
+    @property
+    def resource_params(self):
+        ops = self.lcu.terms()[1]
+        op_reps = tuple(qml.resource_rep(type(op), **op.resource_params) for op in ops)
+        return {"op_reps": op_reps, "num_control": len(self.control)}
+
     grad_method = None
 
     def __init__(self, lcu, control=None, id=None):
@@ -203,3 +211,26 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _prepselprep_resources(op_reps, num_control):
+    return {
+        qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=num_control): 1,
+        qml.resource_rep(qml.StatePrep, num_wires=num_control): 1,
+        qml.resource_rep(
+            qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": num_control}
+        ): 1,
+    }
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_prepselprep_resources)
+def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+    coeffs, ops = _get_new_terms(lcu)
+    sqrt_coeffs = qml.math.sqrt(coeffs)
+    qml.StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    qml.Select(ops, control)
+    qml.adjoint(qml.StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+
+
+qml.add_decomps(PrepSelPrep, _prepselprep_decomp)

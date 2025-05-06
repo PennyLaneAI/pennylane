@@ -16,6 +16,7 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
+from collections import Counter
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
@@ -229,6 +230,13 @@ class Prod(CompositeOp):
         ([1j, 1.0], [Z(0), Z(1) @ X(0)])
 
     """
+
+    resource_keys = frozenset({"resources"})
+
+    @property
+    def resource_params(self):
+        resources = Counter(qml.resource_rep(type(op), **op.resource_params) for op in self)
+        return {"resources": resources}
 
     _op_symbol = "@"
     _math_op = math.prod
@@ -465,6 +473,20 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
+
+
+def _prod_resources(resources):
+    return resources
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_prod_resources)
+def _prod_decomp(*_, wires=None, operands):
+    for op in operands:
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+
+
+qml.add_decomps(Prod, _prod_decomp)
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:

@@ -286,6 +286,12 @@ class MottonenStatePreparation(Operation):
 
     """
 
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
     grad_method = None
     ndim_params = (1,)
 
@@ -390,3 +396,16 @@ class MottonenStatePreparation(Operation):
             op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
 
         return op_list
+
+
+def _mottonen_resources(num_wires):
+    n = sum(2**i for i in range(num_wires))
+
+    return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
+
+
+mottonen_decomp = qml.register_resources(
+    _mottonen_resources, MottonenStatePreparation.compute_decomposition
+)
+
+qml.add_decomps(MottonenStatePreparation, mottonen_decomp)
