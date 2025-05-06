@@ -21,7 +21,7 @@ import networkx as nx
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
-from pennylane.measurements import SampleMP, sample
+from pennylane.measurements import CountsMP, SampleMP, counts, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -60,38 +60,115 @@ def convert_to_mbqc_gateset(tape):
 def convert_to_mbqc_formalism(tape):
     """docstring goes here"""
 
-    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], SampleMP):
+    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP, CountsMP)):
         raise NotImplementedError(
-            "Transforming to the MBQC formalism is not implemented for circuits where "
-            "the final measurements have not been converted to samples"
+            "Transforming to the MBQC formalism is not implemented for circuits where the "
+            "final measurements have not been converted to a single samples or counts measurement"
         )
 
-    meas_wires = tape.measurements[0].wires if tape.measurements[0].wires else tape.wires
+    mp = tape.measurements[0]
+    meas_wires = mp.wires if mp.wires else tape.wires
 
-    num_qubits = len(tape.wires) + 2 + 13
+    num_qubits = len(tape.wires) + 2 + 13  # actually is 13 fine?
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
     with AnnotatedQueue() as q:
         for op in tape.operations:
-            if isinstance(op, (X, Y, Z, Identity, GlobalPhase)):
-                op.__class__(op.wires)
-            elif isinstance(op, CNOT):
-                (wire_map[op.wires[0]], wire_map[op.wires[1]]) = stencils[op.__class__](
-                    q_mgr, wire_map[op.wires[0]], wire_map[op.wires[1]], *op.data
+            if isinstance(op, GlobalPhase):  # no wires
+                GlobalPhase(*op.data)
+            elif isinstance(op, CNOT):  # two wires
+                ctrl, tgt = op.wires[0], op.wires[1]
+                (wire_map[ctrl], wire_map[tgt]) = stencils[CNOT](
+                    q_mgr, wire_map[ctrl], wire_map[tgt], *op.data
                 )
-            else:
-                wire_map[op.wires[0]] = stencils[op.__class__](
-                    q_mgr, wire_map[op.wires[0]], *op.data
-                )
+            else:  # one wire
+                w = op.wires[0]
+                if isinstance(op, (X, Y, Z, Identity)):
+                    wire = wire_map[w] if op.wires else ()
+                    op.__class__(wire)
+                else:
+                    w = op.wires[0]
+                    wire_map[w] = stencils[op.__class__](q_mgr, wire_map[w], *op.data)
 
     temp_tape = QuantumScript.from_queue(q)
 
     new_wires = [wire_map[w] for w in meas_wires]
-    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
+    if isinstance(mp, SampleMP):
+        new_tape = tape.copy(
+            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
+        )
+    else:
+        new_tape = tape.copy(
+            operations=temp_tape.operations,
+            measurements=[counts(wires=new_wires, all_outcomes=mp.all_outcomes)],
+        )
 
     return (new_tape,), null_postprocessing
+
+
+from functools import singledispatch
+
+
+def convert_single_qubit_gate(q_mgr, op, in_wire):
+
+    graph_wires = q_mgr.acquire_qubits(4)
+    wires = [in_wire] + graph_wires
+
+    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
+    CZ([wires[0], wires[1]])
+
+    measurements = _measurement_stencil(op, wires, *op.data)
+    _corrections(op, measurements)(wires[-1])
+
+    # release input qubit and intermediate graph qubits
+    q_mgr.release_qubits(wires[0:-1])
+    return wires[-1]
+
+
+@singledispatch
+def _measurement_stencil(op, wires, *params):
+    raise ValueError(f"Received unsupported gate of type {op}")
+
+
+@_measurement_stencil.register
+def _rot_measurements(op: RotXZX, wires, phi, theta, omega):
+
+    m1 = measure_x(wires[0], reset=True)
+    m2 = cond_measure(
+        m1,
+        partial(measure_arbitrary_basis, angle=phi),
+        partial(measure_arbitrary_basis, angle=-phi),
+    )(plane="XY", wires=wires[1], reset=True)
+    m3 = cond_measure(
+        m2,
+        partial(measure_arbitrary_basis, angle=theta),
+        partial(measure_arbitrary_basis, angle=-theta),
+    )(plane="XY", wires=wires[2], reset=True)
+    m4 = cond_measure(
+        (m1 + m3) % 2,
+        partial(measure_arbitrary_basis, angle=omega),
+        partial(measure_arbitrary_basis, angle=-omega),
+    )(plane="XY", wires=wires[3], reset=True)
+
+    return [m1, m2, m3, m4]
+
+
+@singledispatch
+def _corrections(op, measurements):
+    raise NotImplementedError(f"Received unsupported gate of type {op}")
+
+
+@_corrections.register
+def _rot_corrections(op: RotXZX, measurements):
+    m1, m2, m3, m4 = measurements
+
+    def correction_func(wire):
+        cond((m1 + m3) % 2, Z)(wire)
+        cond((m2 + m4) % 2, X)(wire)
+
+    return correction_func
 
 
 def rot_stencil(q_mgr, in_wire, phi, theta, omega):
