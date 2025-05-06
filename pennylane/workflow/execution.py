@@ -194,6 +194,9 @@ def execute(
             return user_post_processing(tapes)
         transform_program = TransformProgram()
 
+    if not tapes:
+        return user_post_processing(())
+
     ### Specifying and preprocessing variables ####
     interface = _resolve_interface(interface, tapes)
 
