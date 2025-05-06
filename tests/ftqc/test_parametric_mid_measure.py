@@ -919,6 +919,8 @@ class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_diagonalize_mcms_returns_parametrized_mcms(self, mcm_method, shots):
+        """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
+        by the QNode"""
 
         dev = qml.device("default.qubit", shots=shots)
 
@@ -935,6 +937,8 @@ class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_diagonalize_mcms_returns_cond_measure_result(self, mcm_method, shots):
+        """Test that when diagonalizing, the MeasurementValue output by cond_measure can be returned
+        by the QNode"""
 
         if mcm_method == "one-shot":
             pytest.xfail(reason="not implemented yet")  # sc-90607
