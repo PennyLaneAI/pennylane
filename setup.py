@@ -75,7 +75,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Operating System :: MacOS :: MacOS X",
