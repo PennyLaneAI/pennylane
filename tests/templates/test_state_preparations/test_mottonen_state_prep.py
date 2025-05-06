@@ -73,17 +73,16 @@ class TestHelpers:
     """Tests the helper functions for classical pre-processsing."""
 
     # fmt: off
-    @pytest.mark.parametrize("rank,expected_gray_code", [
-        (1, ['0', '1']),
-        (2, ['00', '01', '11', '10']),
-        (3, ['000', '001', '011', '010', '110', '111', '101', '100']),
+    @pytest.mark.parametrize("rank, expected_gray_code", [
+        (1, [0, 1]), (2, [0, 1, 3, 2]), (3, [0, 1, 3, 2, 6, 7, 5, 4])
     ])
     # fmt: on
     def test_gray_code(self, rank, expected_gray_code):
-        """Tests that the function gray_code generates the proper
-        Gray code of given rank."""
+        """Tests that the function gray_code generates the correct Gray code of given rank."""
 
-        assert gray_code(rank) == expected_gray_code
+        code = gray_code(rank)
+        assert code.dtype == np.int64
+        assert np.allclose(code, expected_gray_code)
 
     @pytest.mark.parametrize(
         "current_qubit, expected",

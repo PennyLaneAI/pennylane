@@ -23,30 +23,18 @@ from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 
 
-# pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
 def gray_code(rank):
-    """Generates the Gray code of given rank.
+    """Generates the Gray code of given rank, as numeric output.
 
     Args:
         rank (int): rank of the Gray code (i.e. number of bits)
+
+    Returns:
+        np.ndarray[int]: Array of ``2**rank`` integers that make up the Gray code.
     """
-
-    def gray_code_recurse(g, rank):
-        k = len(g)
-        if rank <= 0:
-            return
-
-        for i in range(k - 1, -1, -1):
-            char = "1" + g[i]
-            g.append(char)
-        for i in range(k - 1, -1, -1):
-            g[i] = "0" + g[i]
-
-        gray_code_recurse(g, rank - 1)
-
-    g = ["0", "1"]
-    gray_code_recurse(g, rank - 1)
-
+    g = np.array([0, 1])
+    for i in range(1, rank):
+        g = np.concatenate([g, g[::-1] + 2**i])
     return g
 
 
@@ -168,19 +156,17 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         return op_list
 
     code = gray_code(gray_code_rank)
-    num_selections = len(code)
+    control_indices = np.log2(code ^ np.roll(code, -1)).astype(int)
 
-    control_indices = [
-        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
-        for i in range(num_selections)
-    ]
-
+    # For abstract or differentiated theta we will never skip a rotation. Likewise if there is at
+    # least one non-zero angle (per batch if batched) for all rotations.
+    nonzero = (theta != 0.0) if qml.math.ndim(theta) == 1 else qml.math.any(theta != 0.0, axis=0)
+    skip_none = (
+        qml.math.is_abstract(theta) or qml.math.requires_grad(theta) or qml.math.all(nonzero)
+    )
     for i, control_index in enumerate(control_indices):
-        if (
-            qml.math.is_abstract(theta)
-            or qml.math.requires_grad(theta)
-            or qml.math.all(theta[..., i] != 0.0)
-        ):
+        # If we do not _never_ skip, we might skip _some_ rotation
+        if skip_none or qml.math.all(theta[..., i] != 0.0):
             op_list.append(gate(theta[..., i], wires=[target_wire]))
         op_list.append(qml.CNOT(wires=[control_wires[control_index], target_wire]))
     return op_list
