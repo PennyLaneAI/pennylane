@@ -870,7 +870,7 @@ class TestHadamardGrad:
         (cost4, [4, 3], np.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
-        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
+        (cost10, [8, 3], np.ndarray),  # Note that the shape here depends on the device
         (cost11, [2, 32, 3], tuple),
         (cost12, [8, 3], np.ndarray),
     ]
