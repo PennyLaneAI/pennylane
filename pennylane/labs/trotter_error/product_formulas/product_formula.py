@@ -212,6 +212,12 @@ def _remove_redundancies(
     term_dicts: List[Dict[Tuple[int], float]],
     term_order: Dict[Hashable, int],
 ) -> List[Dict[Tuple[int], float]]:
+    """Applies the following identites to the dictionary of commutators:
+
+    1. [A, A] = 0
+    2. [A, [C, B]] = -[A, [B, C]]
+    3. [B, [A, [C, D]]] = [A, [B, [C, D]]]
+    """
 
     max_order = len(term_dicts)
 
@@ -258,6 +264,7 @@ def _remove_redundancies(
 
 
 def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
+    """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:
         delete = []
         for commutator, coeff in terms.items():

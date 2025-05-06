@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions for retreiving effective error from fragments"""
-import math
+
 from collections.abc import Hashable
 from typing import Dict, List, Sequence
 
