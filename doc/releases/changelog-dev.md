@@ -123,6 +123,10 @@
 * The decomposition of `DiagonalQubitUnitary` has been improved to contain fewer gates.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
 
+* Computing the angles for uniformly controlled rotations, used in `MottonenStatePreparation`
+  and `SelectPauliRot`, now takes much less computational effort and memory.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
 * An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
@@ -277,9 +281,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug where `SelectPauliRot` does not allow parameter broadcasting, although it supports
-  broadcasting in its methods.
-  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+* Fixes a bug in the validation of `SelectPauliRot` that prevents broadcasting.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
@@ -348,4 +351,4 @@ Christina Lee,
 Andrija Paurevic,
 Lee J. O'Riordan,
 David Wierichs,
-Jake Zaia,
+Jake Zaia
