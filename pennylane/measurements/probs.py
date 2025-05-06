@@ -260,7 +260,10 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             prob = qml.math.diagonal(density_matrix)
         else:
             prob = qml.math.stack(
-                [qml.math.diagonal(density_matrix[i]) for i in range(qml.math.shape(density_matrix)[0])]
+                [
+                    qml.math.diagonal(density_matrix[i])
+                    for i in range(qml.math.shape(density_matrix)[0])
+                ]
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
