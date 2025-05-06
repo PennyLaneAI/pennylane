@@ -31,13 +31,12 @@ def null_postprocessing(results):
 def set_shots(
     tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Transform function to set or override the shots execution configuration
-    for a quantum circuit.
+    """Transform used to set or update a circuit's shots.
 
     Args:
         tape (QuantumScript): The quantum circuit to be modified.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
-            number of shots or shot execution configuration to apply to the circuit.
+            number of shots (or a shots vector) that the transformed circuit will execute.
             This specification will override any shots value previously associated
             with the circuit or QNode during execution.
 

@@ -4,20 +4,30 @@
 
 <h3>New features since last release</h3>
 
-* A new transfomer :func:`~.transforms.set_shots` has been added to set the number of shots for all QNodes in a pipeline.
-  This transform can be used to set the number of shots for all QNodes in a pipeline.
+* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
 
-  ```python
-  device = qml.device("default.qubit", wires=2)
+  The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
-  @partial(set_shots, shots=1000)
-  @qml.qnode(device)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.RY(x, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+  ```python
+  @partial(qml.set_shots, shots=2)
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      return qml.sample(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  [1. 1.]
+  ```
+  
+  Additionally, it can be used in-line to update a circuit's `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+  >>> new_circ()
+  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
   ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
