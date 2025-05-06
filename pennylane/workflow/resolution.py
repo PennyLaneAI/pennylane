@@ -282,8 +282,6 @@ def _resolve_execution_config(
 
     if (
         "lightning" in device.name
-        and transform_program
-        and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
