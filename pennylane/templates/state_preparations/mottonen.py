@@ -42,7 +42,7 @@ _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 _cnot_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]).reshape((2,) * 4)
 
 
-def compute_theta(D: TensorLike, n: Optional[int] = None):
+def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
     r"""Maps the angles alpha of the multi-controlled rotations decomposition of a
     uniformly controlled rotation to the rotation angles used in the Gray code implementation.
     This function uses the fact that the transformation given by Eq. (3) in
@@ -51,23 +51,23 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
     applied to the angles, when interpreting them as a quantum state.
 
     Args:
-        D (tensor_like): The array or tensor to be transformed. Must have a length that
+        alpha (tensor_like): The array or tensor to be transformed. Must have a length that
             is a power of two.
-        n (int): Number of qubits. If not given, it will be computed from ``D``. If given,
-            it should match the trailing dimension of ``D``.
+        num_qubits (int): Number of qubits. If not given, it will be computed from ``alpha``.
+            If given, it should match the trailing dimension of ``alpha``.
 
     Returns:
-        tensor_like: The transformed tensor with the same shape as the input ``D``.
+        tensor_like: The transformed tensor with the same shape as the input ``alpha``.
 
     Due to the execution of the transform as a sequence of tensor multiplications
     with shapes ``(2, 2), (2, 2,... 2)->(2, 2,... 2)``, the theoretical scaling of this
     method is the same as the one for the
     `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__:
-    On ``n`` qubits, there are ``n`` calls to ``tensordot``, each multiplying a
-    ``(2, 2)`` matrix to a ``(2,)*n`` vector, with a single axis being contracted. This means
-    that there are ``n`` operations with a FLOP count of ``4 * 2**(n-1)``, where ``4`` is the cost
-    of a single ``(2, 2) @ (2,)`` contraction and ``2**(n-1)`` is the number of copies due to the
-    non-contracted ``n-1`` axes.
+    On :math:`n` qubits, there are :math:`n` calls to ``tensordot``, each multiplying a ``(2, 2)``
+    matrix to a ``(2,)*num_qubits`` vector, with a single axis being contracted. This means
+    that there are :math:`n` operations with a FLOP count of ``4 * 2**(num_qubits-1)``, where ``4``
+    is the cost of a single ``(2, 2) @ (2,)`` contraction and ``2**(n-1)`` is the number of copies
+    due to the non-contracted :math:`n-1` axes.
     Due to the large internal speedups of compiled matrix multiplication and compatibility
     with autodifferentiation frameworks, the approach taken here is favourable over a manual
     realization of the FWHT unless memory limitations restrict the creation of intermediate
@@ -76,45 +76,45 @@ def compute_theta(D: TensorLike, n: Optional[int] = None):
     Similarly, the permutation can be applied by contracting the angles with the reshaped CNOT
     matrix.
     """
-    orig_shape = qml.math.shape(D)
-    n = n or int(qml.math.log2(orig_shape[-1]))
-    if n == 0:
-        # No processing occurs for n=0
-        return D
+    orig_shape = qml.math.shape(alpha)
+    num_qubits = num_qubits or int(qml.math.log2(orig_shape[-1]))
+    if num_qubits == 0:
+        # No processing occurs for num_qubits=0
+        return alpha
     # Reshape the array so that we may apply the Hadamard transform to each axis individually
     if broadcasted := len(orig_shape) > 1:
-        new_shape = (orig_shape[0],) + (2,) * n
+        new_shape = (orig_shape[0],) + (2,) * num_qubits
     else:
-        new_shape = (2,) * n
-    D = qml.math.reshape(D, new_shape)
+        new_shape = (2,) * num_qubits
+    alpha = qml.math.reshape(alpha, new_shape)
     # Apply Hadamard transform to each axis, shifted by one for broadcasting
-    for i in range(broadcasted, n + broadcasted):
-        D = qml.math.tensordot(_walsh_hadamard_matrix, D, axes=[[1], [i]])
-    # The axes are now in the ordering [qubit n, qubit n-1, ..., qubit 1, qubit 0, batch]
-    if n > 1:
+    for i in range(broadcasted, num_qubits + broadcasted):
+        alpha = qml.math.tensordot(_walsh_hadamard_matrix, alpha, axes=[[1], [i]])
+    # The axes are now in the ordering [qubit n-1, qubit n-2, ..., qubit 1, qubit 0, batch]
+    if num_qubits > 1:
         # If there is more than one qubit, we need to reorder the angles, according to applying
-        # the CNOT ladder [CNOT([i, i+1]) for i in range(n-1)]
+        # the CNOT ladder [CNOT([i, i+1]) for i in range(num_qubits-1)]
         # The first CNOT thus targets the zeroth and first qubit, axes n-1 and n-2 (see above)
-        D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [n - 1, n - 2]])
-        # The axes are now ordered as [qubit 0, qubit 1, qubit n, qubit n-1, ..., qubit 2, batch]
+        alpha = qml.math.tensordot(
+            _cnot_matrix, alpha, axes=[[2, 3], [num_qubits - 1, num_qubits - 2]]
+        )
+        # The axes are now ordered as [qubit 0, qubit 1, qubit n-1, qubit n-2, ..., qubit 2, batch]
         # Following CNOTs use the same axes: the next control qubit (previous target qubit) always
-        # is in position ``1`` and the next target qubit always is the last qubit axis (``n-1``).
-        # For example, the first loop iteration moves the axes into positions
-        # [qubit 1, qubit 2, qubit 0, qubit n, qubit n-1, ... ,qubit 3, batch]
+        # is in position ``1`` and the next target qubit always is the last qubit axis
+        # (``num_qubits-1``). For example, the first loop iteration moves the axes into positions
+        # [qubit 1, qubit 2, qubit 0, qubit n-1, qubit n-2, ... ,qubit 3, batch]
         # and the iteration after that moves them to
-        # [qubit 2, qubit 3, qubit 1, qubit 0, qubit n, qubit n-1, ... ,qubit 4, batch]
-        for i in range(broadcasted + 1, n + broadcasted - 1):
-            D = qml.math.tensordot(_cnot_matrix, D, axes=[[2, 3], [1, n - 1]])
+        # [qubit 2, qubit 3, qubit 1, qubit 0, qubit n-1, qubit n-2, ... ,qubit 4, batch]
+        for i in range(broadcasted + 1, num_qubits + broadcasted - 1):
+            alpha = qml.math.tensordot(_cnot_matrix, alpha, axes=[[2, 3], [1, num_qubits - 1]])
 
         # In the end, we exchange the first two axes because we have the axes ordering
-        # [qubit n-1, qubit n, qubit n-2, qubit n-3, ... qubit 1, qubit 0, batch]
-        D = qml.math.moveaxis(D, 0, 1)
+        # [qubit n-2, qubit n-1, qubit n-3, qubit n-4, ... qubit 1, qubit 0, batch]
+        alpha = qml.math.moveaxis(alpha, 0, 1)
     # Finally, the axis ordering has to be flipped entirely, moving the batch to the front
-    # and the qubits into the right ordering, [batch, qubit 0, qubit 1, ..., qubit n]
-    # For n=1 we just exchange the single qubit axis and the batching axis
-    D = qml.math.reshape(qml.math.transpose(D), orig_shape)
-
-    return D
+    # and the qubits into the right ordering, [batch, qubit 0, qubit 1, ..., qubit n-1]
+    # For num_qubits=1 we just exchange the single qubit axis and the batching axis
+    return qml.math.reshape(qml.math.transpose(alpha), orig_shape)
 
 
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
@@ -142,9 +142,9 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
           list[.Operator]: sequence of operators defined by this function
     """
     op_list = []
-    theta = compute_theta(alpha)
-
     gray_code_rank = len(control_wires)
+
+    theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
     if gray_code_rank == 0:
         if (
@@ -160,10 +160,12 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     # For abstract or differentiated theta we will never skip a rotation. Likewise if there is at
     # least one non-zero angle (per batch if batched) for all rotations.
-    nonzero = (theta != 0.0) if qml.math.ndim(theta) == 1 else qml.math.any(theta != 0.0, axis=0)
-    skip_none = (
-        qml.math.is_abstract(theta) or qml.math.requires_grad(theta) or qml.math.all(nonzero)
-    )
+    skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
+    if not skip_none:
+        nonzero = (
+            (theta != 0.0) if qml.math.ndim(theta) == 1 else qml.math.any(theta != 0.0, axis=0)
+        )
+        skip_none = qml.math.all(nonzero)
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
         if skip_none or qml.math.all(theta[..., i] != 0.0):
