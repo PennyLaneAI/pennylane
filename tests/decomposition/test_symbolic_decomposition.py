@@ -715,3 +715,17 @@ class TestControlledDecomposition:
         mat = qml.matrix(qml.tape.QuantumScript.from_queue(q), wire_order=[0, 1, 2, 3])
         expected_mat = qml.matrix(op @ qml.Projector([0], wires=3), wire_order=[0, 1, 2, 3])
         assert qml.math.allclose(mat, expected_mat)
+
+    @pytest.mark.unit
+    def test_controlled_decomp_with_work_wire_not_applicable(self):
+        """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
+
+        op = qml.ctrl(qml.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
+        with pytest.raises(DecompositionNotApplicable):
+            # single control wire
+            controlled_decomp_with_work_wire.compute_resources(**op.resource_params)
+
+        op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
+        with pytest.raises(DecompositionNotApplicable):
+            # no work wire available
+            controlled_decomp_with_work_wire.compute_resources(**op.resource_params)
