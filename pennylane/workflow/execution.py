@@ -187,12 +187,11 @@ def execute(
         return ()
 
     ### Apply the user transforms ####
-    transform_program = transform_program or TransformProgram:
+    transform_program = transform_program or TransformProgram()
     tapes, user_post_processing = transform_program(tapes)
     if transform_program.is_informative:
         return user_post_processing(tapes)
     transform_program = TransformProgram()
-
 
     if not tapes:
         return user_post_processing(())
