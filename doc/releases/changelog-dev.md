@@ -8,6 +8,18 @@
   This transform can be used to set the number of shots for all QNodes in a pipeline.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
 
+  ```python
+  device = qml.device("default.qubit", wires=2)
+
+  @partial(set_shots, shots=1000)
+  @qml.qnode(device)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+  ```
+
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
