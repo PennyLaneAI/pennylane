@@ -24,7 +24,9 @@ from pennylane.typing import TensorLike
 
 
 def gray_code(rank):
-    """Generates the Gray code of given rank, as numeric output.
+    """Generates the
+    `Gray code <https://en.wikipedia.org/wiki/Gray_code>`__
+    of given rank, as numeric output.
 
     Args:
         rank (int): rank of the Gray code (i.e. number of bits)
@@ -44,7 +46,8 @@ _cnot_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
 
 def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
     r"""Maps the angles alpha of the multi-controlled rotations decomposition of a
-    uniformly controlled rotation to the rotation angles used in the Gray code implementation.
+    uniformly controlled rotation to the rotation angles used in the
+    `Gray code <https://en.wikipedia.org/wiki/Gray_code>`__ implementation.
     This function uses the fact that the transformation given by Eq. (3) in
     `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_ is equal to a Walsh-Hadamard
     transform followed by some permutations, which can be expressed as a ladder of CNOT gates
@@ -65,9 +68,9 @@ def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
     `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__:
     On :math:`n` qubits, there are :math:`n` calls to ``tensordot``, each multiplying a ``(2, 2)``
     matrix to a ``(2,)*num_qubits`` vector, with a single axis being contracted. This means
-    that there are :math:`n` operations with a FLOP count of ``4 * 2**(num_qubits-1)``, where ``4``
-    is the cost of a single ``(2, 2) @ (2,)`` contraction and ``2**(n-1)`` is the number of copies
-    due to the non-contracted :math:`n-1` axes.
+    that there are :math:`n` operations with a floating point operation count of
+    ``4 * 2**(num_qubits-1)``, where ``4`` is the cost of a single ``(2, 2) @ (2,)`` contraction
+    and ``2**(n-1)`` is the number of copies due to the non-contracted :math:`n-1` axes.
     Due to the large internal speedups of compiled matrix multiplication and compatibility
     with autodifferentiation frameworks, the approach taken here is favourable over a manual
     realization of the FWHT unless memory limitations restrict the creation of intermediate

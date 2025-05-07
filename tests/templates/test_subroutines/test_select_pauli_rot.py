@@ -133,9 +133,10 @@ class TestSelectPauliRot:
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
-    def test_decomposition(self, n, axis, batch_dim):
+    def test_decomposition(self, n, axis, batch_dim, seed):
         """Test that the correct gates are added in the decomposition"""
 
+        np.random.seed(seed)
         shape = (2**n,) if batch_dim is None else (batch_dim, 2**n)
         x = np.random.random(shape)
         decomposition = qml.SelectPauliRot.compute_decomposition(
