@@ -45,7 +45,7 @@ def set_shots(
         post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
         tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
 
-    There are three ways to specify shot values (see :class:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
+    There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
     * The value ``None``: analytic mode, no shots
     * A positive integer: a fixed number of shots
