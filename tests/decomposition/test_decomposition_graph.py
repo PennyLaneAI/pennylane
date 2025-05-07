@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
-from functools import partial
 # pylint: disable=protected-access,no-name-in-module
 
 from unittest.mock import patch
@@ -42,6 +41,32 @@ from pennylane.decomposition.decomposition_graph import _to_name
 )
 class TestDecompositionGraph:
 
+    def test_weighted_graph_handles_negative_weight(self, _):
+        """Tests a DecompositionGraph raises a ValueError when given negative weights."""
+
+        op = qml.CRX(2.5, wires=[0, 1])
+
+        # edge case: negative gate weight
+        with pytest.raises(ValueError, match="Negative weights not supported."):
+            graph = DecompositionGraph(
+                operations=[op],
+                gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": -10.0},
+            )
+            graph.solve()
+
+    def test_weighted_graph_handles_string_input(self, _):
+        """Tests a DecompositionGraph raises a TypeError when given string weights."""
+
+        op = qml.CRX(2.5, wires=[0, 1])
+
+        # bad input: string
+        with pytest.raises(TypeError):
+            graph = DecompositionGraph(
+                operations=[op],
+                gate_set={"RX": "1.0", "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
+            )
+            graph.solve()
+
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
@@ -65,32 +90,6 @@ class TestDecompositionGraph:
         graph.solve()
 
         expected_resource = to_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
-        assert graph.resource_estimate(op) == expected_resource
-
-        # bad input: string
-        with pytest.raises(TypeError):
-            graph = DecompositionGraph(
-                operations=[op],
-                gate_set={"RX": "1.0", "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
-            )
-            graph.solve()
-
-        # edge case: negative gate weight
-        with pytest.raises(ValueError, match="Negative weights not supported."):
-            graph = DecompositionGraph(
-                operations=[op],
-                gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": -10.0},
-            )
-            graph.solve()
-
-        # still works with gate_set provided as a set
-        graph = DecompositionGraph(
-            operations=[op],
-            gate_set={"RX", "RY", "RZ", "GlobalPhase", "CNOT", "CZ"},
-        )
-        graph.solve()
-
-        expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
         assert graph.resource_estimate(op) == expected_resource
 
     def test_get_decomp_rule(self, _):
@@ -128,7 +127,7 @@ class TestDecompositionGraph:
 
         graph = DecompositionGraph(
             operations=[qml.Hadamard(0)],
-            gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0},
+            gate_set={"RX", "RY", "RZ"},
             alt_decomps={qml.Hadamard: alt_dec},
             fixed_decomps={qml.Hadamard: custom_hadamard},
         )
@@ -147,7 +146,7 @@ class TestDecompositionGraph:
         assert len(graph._graph.edges()) == 14
 
         # Check that graph construction stops at gates in the target gate set.
-        graph2 = DecompositionGraph(operations=[op], gate_set={"RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0})
+        graph2 = DecompositionGraph(operations=[op], gate_set={"RY", "RZ", "GlobalPhase"})
         # 5 ops and 2 decompositions (RY is in the target gate set now), and the dummy starting node
         assert len(graph2._graph.nodes()) == 8
         # 6 edges from ops to decompositions and 2 from decompositions to ops,

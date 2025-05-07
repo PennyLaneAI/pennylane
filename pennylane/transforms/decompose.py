@@ -102,20 +102,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if isinstance(gate_set, (str, type)):
                 gate_set: set[Type[Operator] | str] = {gate_set}
 
-            if isinstance(gate_set, dict):
-                target_gate_types = tuple(gate for gate in gate_set.keys() if isinstance(gate, type))
-                target_gate_names = set(
-                    translate_op_alias(gate) for gate in gate_set.keys() if isinstance(gate, str)
-                )
-
             if isinstance(gate_set, Iterable):
 
                 target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
                 target_gate_names = set(
                     translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
                 )
-
-            if isinstance(gate_set, Iterable) or isinstance(gate_set, dict):
 
                 def _in_gate_set(op: Operator) -> bool:
                     return (op.name in target_gate_names) or isinstance(op, target_gate_types)
