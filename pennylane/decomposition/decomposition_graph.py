@@ -147,7 +147,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             # the gate_set is a dict
             self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
 
-
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
@@ -476,7 +475,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
         if target_idx not in self.distances:
-            self.distances[target_idx] = Resources(gate_weights=self._gate_weights)  # initialize with empty resource
+            self.distances[target_idx] = Resources(
+                gate_weights=self._gate_weights
+            )  # initialize with empty resource
         if src_node is None:
             return  # special case for when the decomposition produces nothing
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)

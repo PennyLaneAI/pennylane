@@ -51,8 +51,10 @@ class Resources:
     @cached_property
     def weighted_cost(self) -> float:
         """The total weighted cost of the gates."""
-        return sum(self.gate_weights[gate.name] * count if gate.name in self.gate_weights else count
-                   for gate, count in self.gate_counts.items())
+        return sum(
+            self.gate_weights[gate.name] * count if gate.name in self.gate_weights else count
+            for gate, count in self.gate_counts.items()
+        )
 
     @cached_property
     def num_gates(self) -> int:
@@ -63,21 +65,16 @@ class Resources:
         if not self.gate_weights == other.gate_weights:
             raise ValueError("Attempt to combine Resources defined over different gatesets.")
         else:
-            return Resources(
-                _combine_dict(self.gate_counts, other.gate_counts),
-                self.gate_weights
-            )
+            return Resources(_combine_dict(self.gate_counts, other.gate_counts), self.gate_weights)
 
     def __mul__(self, scalar: int):
-        return Resources(
-            _scale_dict(self.gate_counts, scalar),
-            self.gate_weights
-        )
+        return Resources(_scale_dict(self.gate_counts, scalar), self.gate_weights)
 
     __rmul__ = __mul__
 
     def __repr__(self):
         return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, gate_weights={self.gate_weights}>"
+
 
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
