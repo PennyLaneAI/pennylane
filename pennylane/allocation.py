@@ -158,12 +158,8 @@ class WireManager:
         return
 
     def return_all(self):
-        for w, reg_type in self._loaned.items():
-            if reg_type in {ZEROED, GARBAGE, BORROWABLE}:
-                self._registers[reg_type].append(w)
-            elif reg_type in {BURNABLE}:
-                self._registers[GARBAGE].append(w)
-        self._loaned = {}
+        for w in self._loaned:
+            self.return_wire(w)
 
 
 def null_postprocessing(results):
