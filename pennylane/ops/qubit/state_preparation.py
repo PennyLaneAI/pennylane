@@ -337,6 +337,12 @@ class StatePrep(StatePrepBase):
 
     """
 
+    resource_keys = frozenset({"num_wires"})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": len(self.wires)}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -572,6 +578,18 @@ class StatePrep(StatePrepBase):
                 "Use 'normalize=True' to automatically normalize."
             )
         return state
+
+
+def _stateprep_resources(num_wires):
+    return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
+
+
+@register_resources(_stateprep_resources)
+def _state_prep_decomp(state, wires, **_):
+    qml.MottonenStatePreparation(state, wires)
+
+
+add_decomps(StatePrep, _state_prep_decomp)
 
 
 class QubitDensityMatrix(Operation):

@@ -160,7 +160,7 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if not isinstance(op_type.resource_keys, set):
+    if not isinstance(op_type.resource_keys, (set, frozenset)):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
