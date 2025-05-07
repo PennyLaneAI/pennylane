@@ -17,7 +17,7 @@ Contains the MottonenStatePreparation template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
@@ -286,7 +286,6 @@ class MottonenStatePreparation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 

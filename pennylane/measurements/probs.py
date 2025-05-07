@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -46,7 +46,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = Probability  #! Note: deprecated. Change the value to "probs" in v0.42
+    _shortname = "probs"
 
     @classmethod
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):

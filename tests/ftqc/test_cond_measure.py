@@ -178,16 +178,26 @@ class TestValidation:
             cond_measure(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 
     @pytest.mark.jax
-    def test_program_capture_raises_error(self):
-        """Test that a clear error is raised when executing with program capture"""
-        try:
-            qml.capture.enable()
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_program_capture(self):
+        """Test that program capture works as expected with cond_measure"""
+        import jax
 
-            with pytest.raises(NotImplementedError, match="not compatible with program capture"):
-                m = qml.measure(0)
-                cond_measure(m, measure_x, measure_y)(0)
-        finally:
-            qml.capture.disable()
+        def func():
+            m = qml.measure(0)
+            cond_measure(m, measure_x, measure_y)(0)
+
+        plxpr = jax.make_jaxpr(func)()
+
+        cond_eq = plxpr.eqns[1]
+        assert "cond" in str(cond_eq)
+        cond_branches = cond_eq.params["jaxpr_branches"]
+        assert len(cond_branches) == 2
+        for branch, angle in zip(cond_branches, [0, 1.57]):
+            branch_str = str(branch)
+            assert "measure_in_basis" in branch_str
+            assert "plane=XY" in branch_str
+            assert str(angle) in branch_str
 
 
 class TestWorkflows:
