@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "Pennylane"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
+license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = [
@@ -74,9 +75,6 @@ py-modules = []
 version = {attr = "pennylane._version.__version__"} 
 
 [tool.setuptools_scm]
-
-[project.license]
-text = "Apache License 2.0"
 
 [tool.setuptools.package-data]
 pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
