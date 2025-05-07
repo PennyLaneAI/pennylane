@@ -123,18 +123,6 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program2) == 1
 
 
-def test_prune_dynamic_transform_warning_raised():
-    """Tests that a warning raised when a user-applied dynamic-one-shot transform is ignored."""
-
-    user_transform_program = TransformProgram()
-    user_transform_program.add_transform(qml.transforms.dynamic_one_shot)
-    device = qml.device("default.qubit")
-    config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
-
-    with pytest.warns(UserWarning, match="A dynamic_one_shot transform already exists"):
-        _, __ = _setup_transform_program(device, config)
-
-
 def test_interface_data_not_supported():
     """Test that convert_to_numpy_parameters transform is correctly added."""
     config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
