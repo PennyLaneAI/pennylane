@@ -37,7 +37,7 @@ class TestResources:
         resources = Resources()
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
-        assert resources.gate_weights == {}
+        assert resources.weighted_cost == 0.0
 
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
@@ -49,40 +49,16 @@ class TestResources:
                 }
             )
 
-    def test_negative_gate_weights(self):
-        """Tests that an error is raised if the gate weights are negative."""
-        with pytest.raises(ValueError):
-            Resources(
-                gate_counts={
-                    CompressedResourceOp(qml.RX, {}): 2,
-                },
-                gate_weights={
-                    "RX": -1.0
-                }
-            )
-
-    def test_string_gate_weights(self):
-        """Tests that an error is raised if the gate weights are negative."""
-        with pytest.raises(TypeError):
-            Resources(
-                gate_counts={
-                    CompressedResourceOp(qml.RX, {}): 2,
-                },
-                gate_weights={
-                    "RX": "1.0"
-                }
-            )
-
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            gate_weights={"RX": 1.0, "RZ": 2.0}
+            weighted_cost=6.0
         )
         resources2 = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1},
-            gate_weights={"RX": 1.0, "RZ": 2.0}
+            weighted_cost=2.0
         )
 
         resources = resources1 + resources2
@@ -92,14 +68,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 1,
             CompressedResourceOp(qml.RY, {}): 1,
         }
-        assert resources.gate_weights == resources1.gate_weights
+        assert resources.weighted_cost == 8.0
 
     def test_mul_resource_with_scalar(self):
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            gate_weights={"RX": 1.0, "RZ": 2.0}
+            weighted_cost=2.0
         )
 
         resources = resources * 2
@@ -108,17 +84,16 @@ class TestResources:
             CompressedResourceOp(qml.RX, {}): 4,
             CompressedResourceOp(qml.RZ, {}): 2,
         }
-        assert resources.gate_weights == resources.gate_weights
-        assert resources.weighted_cost == 4 * 1.0 + 2 * 2.0
+        assert resources.weighted_cost == 4
 
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
         resources = Resources(
             {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            {"RX": 1.0, "RZ": 2.0}
+            5.0
         )
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, gate_weights={'RX': 1.0, 'RZ': 2.0}>"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods

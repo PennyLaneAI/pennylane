@@ -63,7 +63,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}, weighted_cost=5.0
         )
 
     def test_decomposition_decorator(self):
@@ -97,7 +97,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}, weighted_cost=5.0
         )
 
     def test_inspect_decomposition_rule(self):
@@ -203,7 +203,7 @@ class TestDecompositionRule:
             raise NotImplementedError
 
         assert custom_decomp.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
+            gate_counts={CompressedResourceOp(DummyOp): 1}, weighted_cost=1.0
         )
 
         def custom_decomp_2(*_, **__):
@@ -214,7 +214,7 @@ class TestDecompositionRule:
         )
 
         assert custom_decomp_2.compute_resources() == Resources(
-            gate_counts={CompressedResourceOp(DummyOp): 1}
+            gate_counts={CompressedResourceOp(DummyOp): 1}, weighted_cost=1.0
         )
 
     def test_auto_wrap_fails(self):

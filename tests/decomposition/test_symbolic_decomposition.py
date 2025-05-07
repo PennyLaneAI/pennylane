@@ -82,10 +82,12 @@ class TestAdjointDecompositionRules:
                 qml.decomposition.controlled_resource_rep(
                     qml.U1, {}, num_control_wires=1, num_zero_control_values=0, num_work_wires=0
                 ): 1,
-            }
+            },
+            1.0
         )
         assert adjoint_controlled_decomp.compute_resources(**op2.resource_params) == Resources(
-            {qml.resource_rep(qml.CRX): 1}
+            {qml.resource_rep(qml.CRX): 1},
+            1.0
         )
 
     def test_adjoint_controlled_x(self):
@@ -107,10 +109,12 @@ class TestAdjointDecompositionRules:
         ]
 
         assert adjoint_controlled_decomp.compute_resources(**op1.resource_params) == Resources(
-            {qml.resource_rep(qml.CNOT): 1}
+            {qml.resource_rep(qml.CNOT): 1},
+            1.0
         )
         assert adjoint_controlled_decomp.compute_resources(**op2.resource_params) == Resources(
-            {qml.resource_rep(qml.Toffoli): 1}
+            {qml.resource_rep(qml.Toffoli): 1},
+            1.0
         )
         assert adjoint_controlled_decomp.compute_resources(**op3.resource_params) == Resources(
             {
@@ -120,7 +124,8 @@ class TestAdjointDecompositionRules:
                     num_zero_control_values=0,
                     num_work_wires=0,
                 ): 1
-            }
+            },
+            1.0
         )
 
     def test_same_type_adjoint(self):
@@ -181,7 +186,8 @@ class TestAdjointDecompositionRules:
                 qml.decomposition.adjoint_resource_rep(qml.CNOT): 2,
                 qml.decomposition.adjoint_resource_rep(qml.RX): 1,
                 qml.decomposition.adjoint_resource_rep(qml.H): 1,
-            }
+            },
+            5.0
         )
 
     def test_adjoint_pow(self):

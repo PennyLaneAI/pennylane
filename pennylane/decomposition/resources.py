@@ -33,28 +33,15 @@ class Resources:
 
     Args:
         gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-        gate_weights (dict): the gates in the target gateset and their weights.
+        weighted_cost (float): the cumulative weight of the gates.
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    gate_weights: dict[type | str, float] = field(default_factory=dict)
+    weighted_cost: float = field(default_factory=float)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
-        if self.gate_weights:
-            if not all(isinstance(w, float) for w in self.gate_weights.values()):
-                raise TypeError("Gate weights should be floats.")
-            if not all(w > 0.0 for w in self.gate_weights.values()):
-                raise ValueError("Negative weights not supported.")
-
-    @cached_property
-    def weighted_cost(self) -> float:
-        """The total weighted cost of the gates."""
-        return sum(
-            self.gate_weights[gate.name] * count if gate.name in self.gate_weights else count
-            for gate, count in self.gate_counts.items()
-        )
 
     @cached_property
     def num_gates(self) -> int:
@@ -62,18 +49,18 @@ class Resources:
         return sum(self.gate_counts.values())
 
     def __add__(self, other: Resources):
-        if not self.gate_weights == other.gate_weights:
-            raise ValueError("Attempt to combine Resources defined over different gatesets.")
-        else:
-            return Resources(_combine_dict(self.gate_counts, other.gate_counts), self.gate_weights)
+        return Resources(
+            _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost
+        )
 
     def __mul__(self, scalar: int):
-        return Resources(_scale_dict(self.gate_counts, scalar), self.gate_weights)
+        return Resources(_scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar)
 
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, gate_weights={self.gate_weights}>"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
