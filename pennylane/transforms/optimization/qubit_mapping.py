@@ -11,25 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Transform for hybrid CNOT routing and logical-to-physical qubit mapping on arbitrary connectivity graphs."""
-
 import networkx as nx
-
 import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 
 
 @transform
-def qubit_mapping(tape, graph, init_mapping=None):
-    """Qubit mapping transform.
-
-    Implements a qubit‐mapping scheme that connects nonadjacent logical qubits using SWAP
-    operations and long-range CNOTs. Each qubit’s placement is dynamically chosen based on
-    the location of its next scheduled gate.
-
-    Supports cases with more physical qubits than logical wires by mapping
-    extra physical qubits arbitrarily if no init_mapping is provided.
+def qubit_mapping(tape, graph, init_mapping=None, window_size=10):
+    """Qubit mapping transform with sliding window for dependency lookahead.
 
     Args:
         tape (QNode or QuantumTape or Callable): The input quantum circuit to transform.
@@ -37,6 +27,7 @@ def qubit_mapping(tape, graph, init_mapping=None):
             the physical qubits.
         init_mapping (dict or None): Optional initial mapping from logical
             wires to physical qubits. If None, a default mapping is chosen.
+        window_size (int): Number of upcoming operations to inspect for dependencies.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -48,7 +39,6 @@ def qubit_mapping(tape, graph, init_mapping=None):
         dev = qml.device('default.qubit')
 
         graph = {"a": ["b"], "b": ["a", "c"], "c": ["b"]}
-        initial_map = {0: "a", 1: "b", 2: "c"}
 
         @partial(qml.transforms.qubit_mapping, graph = graph)
         @qml.qnode(dev)
@@ -61,9 +51,8 @@ def qubit_mapping(tape, graph, init_mapping=None):
     a: ──H────╭●─┤
     b: ─╭SWAP─╰X─┤  <Z>
     c: ─╰SWAP────┤
-
     """
-    # Build physical graph
+    # Build physical connectivity graph
     phys_graph = nx.Graph()
     for q, nbrs in graph.items():
         phys_graph.add_edges_from((q, nbr) for nbr in nbrs)
@@ -73,51 +62,45 @@ def qubit_mapping(tape, graph, init_mapping=None):
     num_logical = len(logical_qubits)
     phys_qubits = list(graph.keys())
     num_phys = len(phys_qubits)
-
     if init_mapping is None:
         if all(w in phys_qubits for w in logical_qubits):
             mapping = {w: w for w in logical_qubits}
         elif num_logical <= num_phys:
             mapping = {logical_qubits[i]: phys_qubits[i] for i in range(num_logical)}
         else:
-            raise ValueError(
-                f"Insufficient physical qubits: {num_phys} < {num_logical} logical wires."
-            )
+            raise ValueError(f"Insufficient physical qubits: {num_phys} < {num_logical}.")
     else:
         mapping = init_mapping.copy()
 
-    # Precompute shortest paths and distances in the graph
-    shortest_paths = dict(nx.all_pairs_shortest_path(phys_graph))
-    dist = {u: {v: len(p) - 1 for v, p in targets.items()} for u, targets in shortest_paths.items()}
-    path = {(u, v): p for u, targets in shortest_paths.items() for v, p in targets.items()}
+    # Lazy path & distance caches
+    path_cache, dist_cache = {}, {}
 
+    def get_path(u, v):
+        if (u, v) not in path_cache:
+            p = nx.shortest_path(phys_graph, source=u, target=v)
+            path_cache[(u, v)] = p
+            path_cache[(v, u)] = list(reversed(p))
+            dist_cache[(u, v)] = len(p) - 1
+            dist_cache[(v, u)] = len(p) - 1
+        return path_cache[(u, v)]
 
-    # Create a dependency graph of operators (``next_partner``)
-
-    future = {w: [] for w in logical_qubits}
-    # future[<qubit1>] --> List[(<ind>, <qubit2>)]
-    # This means: the operators where <qubit1> is involved are
-    # the <ind>th operators, that whose second action qubit is <qubit2>
+    def get_dist(u, v):
+        if (u, v) not in dist_cache:
+            get_path(u, v)
+        return dist_cache[(u, v)]
 
     ops_list = list(tape.operations)
-    for idx, op in enumerate(ops_list):
-        if len(op.wires) == 2:
-            wire0, wire1 = op.wires
-            future[wire0].append((idx, wire1))
-            future[wire1].append((idx, wire0))
 
-    next_partner = [{} for _ in ops_list]
-    # next_partner[<ind>][<qubit1>] --> <qubit2>
-    # This means: After apply the <ind>th-operator, the next operation
-    # that need to be linked with <qubit1> is located in <qubit2>
-    for idx in range(len(ops_list)):
-        for q in logical_qubits:
-            part = None
-            for j, p in future[q]:
-                if j > idx:
-                    part = p
-                    break
-            next_partner[idx][q] = part
+    # Sliding-window lookup for next 2-qubit partner
+    def find_next_partner(idx, qubit):
+        end = min(idx + 1 + window_size, len(ops_list))
+        for j in range(idx + 1, end):
+            op_j = ops_list[j]
+            if len(op_j.wires) == 2 and qubit in op_j.wires:
+                w0, w1 = op_j.wires
+                return w1 if w0 == qubit else w0
+        return None
+
     new_ops = []
 
     def longe_range_cnot(phys_path):
@@ -127,8 +110,6 @@ def qubit_mapping(tape, graph, init_mapping=None):
         if L == 1:
             new_ops.append(qml.CNOT(wires=phys_path))
             return
-
-        # We implement the long range CNOT (Fig 4c [https://arxiv.org/pdf/2305.18128])
         mid = L // 2
         for i in range(mid):
             new_ops.append(qml.CNOT(wires=[phys_path[i], phys_path[i + 1]]))
@@ -140,149 +121,88 @@ def qubit_mapping(tape, graph, init_mapping=None):
         for i in range(mid - 1, -1, -1):
             new_ops.append(qml.CNOT(wires=[phys_path[i], phys_path[i + 1]]))
 
-    # Process operations
+    # Process each operation
     for idx, op in enumerate(ops_list):
-        w = list(op.wires)
-        # A: CNOT routing
-        if len(w) == 2 and op.name == "CNOT":
-            logical_control, logical_target = w
-            phys_control, phys_target = mapping[logical_control], mapping[logical_target]
-            phys_path = path[(phys_control, phys_target)]
+        wires = list(op.wires)
+        if len(wires) == 2:
+            l0, l1 = wires
+            p0, p1 = mapping[l0], mapping[l1]
+            phys_path = get_path(p0, p1)
             d = len(phys_path) - 1
-            if d == 1:
-                new_ops.append(qml.CNOT(wires=[phys_control, phys_target]))
-            else:
-                mid = d // 2
-                partner_control = next_partner[idx][logical_control]
-                partner_target = next_partner[idx][logical_target]
-                best_score = float("inf")
-                best_k1, best_k2 = 0, d
-                for k1 in range(mid + 1):
-                    pos1 = phys_path[k1]
-                    for k2 in range(mid, d + 1):
-                        if k2 <= k1:
-                            continue
-                        pos2 = phys_path[k2]
-                        score = 0
-
-                        # The score is the distance from the current positions to the next connection.
-                        if partner_control is not None:
-                            score += dist[pos1][mapping[partner_control]]
-                        if partner_target is not None:
-                            score += dist[pos2][mapping[partner_target]]
-                        if score < best_score or (
-                            score == best_score and (k2 - k1) < (best_k2 - best_k1)
-                        ):
-                            best_score = score
-                            best_k1, best_k2 = k1, k2
-
-                # swaps to the best positions (control qubit)
-                for i in range(best_k1):
-                    phys_u, phys_v = phys_path[i], phys_path[i + 1]
-                    new_ops.append(qml.SWAP(wires=[phys_u, phys_v]))
-                    inv_map = {pos: logical for logical, pos in mapping.items()}
-                    logical_u = inv_map.get(phys_u)
-                    logical_v = inv_map.get(phys_v)
-                    if logical_u is not None:
-                        mapping[logical_u] = phys_v
-                    if logical_v is not None:
-                        mapping[logical_v] = phys_u
-
-                # swaps to the best positions (target qubit)
-                for i in range(d, best_k2, -1):
-                    phys_u, phys_v = phys_path[i], phys_path[i - 1]
-                    new_ops.append(qml.SWAP(wires=[phys_u, phys_v]))
-                    inv_map = {pos: logical for logical, pos in mapping.items()}
-                    logical_u = inv_map.get(phys_u)
-                    logical_v = inv_map.get(phys_v)
-                    if logical_u is not None:
-                        mapping[logical_u] = phys_v
-                    if logical_v is not None:
-                        mapping[logical_v] = phys_u
-
-                # long range cnot to connect the operations
-                subpath = phys_path[best_k1 : best_k2 + 1]
-                longe_range_cnot(subpath)
-
-        # B: other 2-qubit gates (long range handled via optimized adjacent swaps)
-        elif len(w) == 2:
-            logical_0, logical_1 = w
-            phys_0, phys_1 = mapping[logical_0], mapping[logical_1]
-            phys_path = path[(phys_0, phys_1)]
-            d = len(phys_path) - 1
-
-            if d == 1:
-                # Adjacent already: apply gate directly
-                new_ops.append(op.map_wires({logical_0: phys_0, logical_1: phys_1}))
-            else:
-                # Compute next partners and find best meeting edge
-                npc = next_partner[idx][logical_0]
-                npt = next_partner[idx][logical_1]
-
-                best_score = float("inf")
-                best_edge = 0
-                for b in range(d):
-                    u, v = phys_path[b], phys_path[b + 1]
-                    score = 0
-                    if npc is not None:
-                        score += dist[u][mapping[npc]]
-                    if npt is not None:
-                        score += dist[v][mapping[npt]]
-                    if score < best_score:
-                        best_score = score
-                        best_edge = b
-
-                # Determine the target adjacent positions
-                left_target = phys_path[best_edge]
-                right_target = phys_path[best_edge + 1]
-
-                # Move each qubit by adjacent swaps until they occupy the target edge
-                while (mapping[logical_0], mapping[logical_1]) != (left_target, right_target):
-                    current_0 = mapping[logical_0]
-                    current_1 = mapping[logical_1]
-
-                    if current_0 != left_target:
-                        # Swap logical_0 one step toward left_target
-                        idx0 = phys_path.index(current_0)
-                        next_pos = phys_path[idx0 + 1]
-                        new_ops.append(qml.SWAP(wires=[current_0, next_pos]))
-                        inv_map = {pos: log for log, pos in mapping.items()}
-                        lu = inv_map.get(current_0)
-                        lv = inv_map.get(next_pos)
-                        if lu is not None:
-                            mapping[lu] = next_pos
-                        if lv is not None:
-                            mapping[lv] = current_0
-
-                    else:
-                        # Swap logical_1 one step toward right_target
-                        idx1 = phys_path.index(current_1)
-                        next_pos = phys_path[idx1 - 1]
-                        new_ops.append(qml.SWAP(wires=[current_1, next_pos]))
-                        inv_map = {pos: log for log, pos in mapping.items()}
-                        lu = inv_map.get(current_1)
-                        lv = inv_map.get(next_pos)
-                        if lu is not None:
-                            mapping[lu] = next_pos
-                        if lv is not None:
-                            mapping[lv] = current_1
-
-                # 4. Now adjacent at optimal edge: apply the two-qubit gate
-                new_ops.append(
-                    op.map_wires(
-                        {
-                            logical_0: mapping[logical_0],
-                            logical_1: mapping[logical_1],
-                        }
+            # Handle CNOT specifically
+            if op.name == "CNOT":
+                if d == 1:
+                    new_ops.append(qml.CNOT(wires=[p0, p1]))
+                else:
+                    mid = d // 2
+                    pc = find_next_partner(idx, l0)
+                    pt = find_next_partner(idx, l1)
+                    # independent optimal positions
+                    best_k1 = min(
+                        range(mid + 1),
+                        key=lambda k: get_dist(phys_path[k], mapping[pc]) if pc else 0,
                     )
-                )
-
-        elif len(w) > 2:
-            raise ValueError(f"All operations should act in less than 3 wires.")
-
-        # C: single-qubit
+                    best_k2 = min(
+                        range(mid, d + 1),
+                        key=lambda k: get_dist(phys_path[k], mapping[pt]) if pt else 0,
+                    )
+                    # swaps control
+                    for i in range(best_k1):
+                        u, v = phys_path[i], phys_path[i + 1]
+                        new_ops.append(qml.SWAP(wires=[u, v]))
+                        inv = {pos: lg for lg, pos in mapping.items()}
+                        if inv.get(u):
+                            mapping[inv[u]] = v
+                        if inv.get(v):
+                            mapping[inv[v]] = u
+                    # swaps target
+                    for i in range(d, best_k2, -1):
+                        u, v = phys_path[i], phys_path[i - 1]
+                        new_ops.append(qml.SWAP(wires=[u, v]))
+                        inv = {pos: lg for lg, pos in mapping.items()}
+                        if inv.get(u):
+                            mapping[inv[u]] = v
+                        if inv.get(v):
+                            mapping[inv[v]] = u
+                    longe_range_cnot(phys_path[best_k1 : best_k2 + 1])
+            else:
+                # generic 2-qubit gate via adjacent swaps
+                if d == 1:
+                    new_ops.append(op.map_wires({l0: p0, l1: p1}))
+                else:
+                    npc = find_next_partner(idx, l0)
+                    npt = find_next_partner(idx, l1)
+                    best_edge = min(
+                        range(d),
+                        key=lambda b: (get_dist(phys_path[b], mapping[npc]) if npc else 0)
+                        + (get_dist(phys_path[b + 1], mapping[npt]) if npt else 0),
+                    )
+                    left, right = phys_path[best_edge], phys_path[best_edge + 1]
+                    while (mapping[l0], mapping[l1]) != (left, right):
+                        if mapping[l0] != left:
+                            cur = mapping[l0]
+                            nxt = phys_path[phys_path.index(cur) + 1]
+                            new_ops.append(qml.SWAP(wires=[cur, nxt]))
+                            inv = {pos: lg for lg, pos in mapping.items()}
+                            if inv.get(cur):
+                                mapping[inv[cur]] = nxt
+                            if inv.get(nxt):
+                                mapping[inv[nxt]] = cur
+                        else:
+                            cur = mapping[l1]
+                            nxt = phys_path[phys_path.index(cur) - 1]
+                            new_ops.append(qml.SWAP(wires=[cur, nxt]))
+                            inv = {pos: lg for lg, pos in mapping.items()}
+                            if inv.get(cur):
+                                mapping[inv[cur]] = nxt
+                            if inv.get(nxt):
+                                mapping[inv[nxt]] = cur
+                    new_ops.append(op.map_wires({l0: mapping[l0], l1: mapping[l1]}))
+        elif len(wires) > 2:
+            raise ValueError("All operations should act in less than 3 wires.")
         else:
-            new_ops.append(op.map_wires({q: mapping[q] for q in w}))
+            new_ops.append(op.map_wires({q: mapping[q] for q in wires}))
 
+    # Remap measurements
     new_meas = [m.map_wires({q: mapping[q] for q in m.wires}) for m in tape.measurements]
-    return [QuantumScript(new_ops, new_meas)], lambda results: results[0]
+    return [QuantumScript(new_ops, new_meas)], lambda res: res[0]
