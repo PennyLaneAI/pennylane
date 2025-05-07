@@ -1,5 +1,5 @@
 from enum import Enum
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Sequence
 
 try:
@@ -166,7 +166,51 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@lru_cache
+def _get_plxpr_resolve_dynamic_wires():  # pylint: disable=missing-docstring
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
+
+        from pennylane.capture.base_interpreter import PlxprInterpreter
+    except ImportError:  # pragma: no cover
+        return None
+
+    class ResolveDynamicWires(PlxprInterpreter):
+
+        def __init__(self, manager) -> None:
+            """Initialize the interpreter."""
+            super().__init__()
+            self.manager = manager
+
+    @ResolveDynamicWires.register_primitive(_get_allocate_prim())
+    def _(self, num_wires, **kwargs):
+        return [self.manager.get_wire(**kwargs) for _ in range(num_wires)]
+
+    @ResolveDynamicWires.register_primitive(_get_deallocate_prim())
+    def _(self, *wires):
+        _ = [self.manager.return_wire(w) for w in wires]
+        return []
+
+    def resolve_dynamic_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for applying the ``map_wires`` transform on plxpr."""
+
+        manager = WireManager(**tkwargs)
+
+        interpreter = ResolveDynamicWires(manager)
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return resolve_dynamic_wires_plxpr_to_plxpr
+
+
+resolve_dynamic_wires_plxpr_to_plxpr = _get_plxpr_resolve_dynamic_wires()
+
+
+@partial(transform, plxpr_transform=resolve_dynamic_wires_plxpr_to_plxpr)
 def resolve_dynamic_wires(tape, zeroed=(), burnable=(), borrowable=(), garbage=()):
 
     manager = WireManager(zeroed=zeroed, burnable=burnable, borrowable=borrowable, garbage=garbage)
