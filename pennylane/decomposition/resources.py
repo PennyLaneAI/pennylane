@@ -33,7 +33,7 @@ class Resources:
 
     Args:
         gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-        gate_set (dict): the gates in teh target gateset and their weights.
+        gate_weights (dict): the gates in the target gateset and their weights.
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
