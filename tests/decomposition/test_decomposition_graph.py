@@ -67,6 +67,32 @@ class TestDecompositionGraph:
         expected_resource = to_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
         assert graph.resource_estimate(op) == expected_resource
 
+        # bad input: string
+        with pytest.raises(TypeError):
+            graph = DecompositionGraph(
+                operations=[op],
+                gate_set={"RX": "1.0", "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
+            )
+            graph.solve()
+
+        # edge case: negative gate weight
+        with pytest.raises(ValueError, match="Negative weights not supported."):
+            graph = DecompositionGraph(
+                operations=[op],
+                gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": -10.0},
+            )
+            graph.solve()
+
+        # still works with gate_set provided as a set
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"RX", "RY", "RZ", "GlobalPhase", "CNOT", "CZ"},
+        )
+        graph.solve()
+
+        expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
+        assert graph.resource_estimate(op) == expected_resource
+
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
 
