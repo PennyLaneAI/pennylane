@@ -454,23 +454,13 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
         self._gate_weights = gate_set
 
-    def _get_node_weight(self, gates):
-        """Calculates the weight of a node."""
-        return sum(self._gate_weights[gate.name] * count for gate, count in gates.items())
-
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
 
         op_node_idx, d_node_idx = edge_obj
-        d_node_gates = self.distances[d_node_idx].gate_counts
-        op_node_gates = self.distances[op_node_idx].gate_counts
-
-        d_node_weight = self._get_node_weight(d_node_gates)
-        op_node_weight = self._get_node_weight(op_node_gates)
-
-        return d_node_weight - op_node_weight
+        return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
 
     def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
@@ -486,7 +476,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
         if target_idx not in self.distances:
-            self.distances[target_idx] = Resources()  # initialize with empty resource
+            self.distances[target_idx] = Resources(gate_weights=self._gate_weights)  # initialize with empty resource
         if src_node is None:
             return  # special case for when the decomposition produces nothing
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
@@ -505,7 +495,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
-            self.distances[target_idx] = Resources({target_node: 1})
+            self.distances[target_idx] = Resources({target_node: 1}, self._gate_weights)
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]

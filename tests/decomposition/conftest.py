@@ -25,9 +25,12 @@ from pennylane.decomposition.decomposition_rule import _auto_wrap
 decompositions = defaultdict(list)
 weighted_decompositions = defaultdict(list)
 
-def to_resources(gate_count: dict) -> Resources:
+def to_resources(gate_count: dict, gate_weights: dict = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
+    return Resources(
+        {_auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
+        gate_weights if gate_weights else {}
+    )
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})

@@ -73,23 +73,30 @@ class TestDecompositionGraph:
         op = qml.CRX(2.5, wires=[0, 1])
 
         # the RZ CZ RX CZ decomp is chosen when the RZ and CNOT weights are large.
+        gate_weights = {"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0}
+
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0},
+            gate_set=gate_weights,
         )
         graph.solve()
 
-        expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
+        expected_resource = to_resources({qml.CZ: 2, qml.RX: 2}, gate_weights)
         assert graph.resource_estimate(op) == expected_resource
 
         # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
+        gate_weights = {"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0}
+
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
+            gate_set=gate_weights,
         )
         graph.solve()
 
-        expected_resource = to_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
+        expected_resource = to_resources(
+            {qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4},
+            gate_weights
+        )
         assert graph.resource_estimate(op) == expected_resource
 
     def test_get_decomp_rule(self, _):
@@ -248,9 +255,13 @@ class TestDecompositionGraph:
         graph.solve()
 
         # verify that the better decomposition rule is chosen when both are valid.
-        expected_resource = to_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
-        assert graph.resource_estimate(op) == expected_resource
-        assert graph.decomposition(op).compute_resources() == expected_resource
+        assert graph.resource_estimate(op) == to_resources(
+            {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
+            {'GlobalPhase': 1.0, 'RX': 1.0, 'RY': 1.0, 'RZ': 1.0}
+        )
+        assert graph.decomposition(op).compute_resources() == to_resources(
+            {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
+        )
 
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
@@ -351,16 +362,17 @@ class TestDecompositionGraph:
 
         graph.solve()
         assert graph.resource_estimate(op) == to_resources(
-            {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28}
+            {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28},
+            {'CZ': 1.0, 'GlobalPhase': 1.0, 'RX': 1.0, 'RZ': 1.0}
         )
         assert graph.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
                 qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
                 qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
-            }
+            },
         )
         assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
-            {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+            {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1},
         )
 
 
@@ -516,7 +528,7 @@ class TestSymbolicDecompositions:
             graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(0.5, wires=[0])]
-        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+        assert graph.resource_estimate(op) == to_resources({qml.RX: 1}, {"RX": 1.0})
 
     def test_adjoint_pow(self, _):
         """tests that an adjoint of a power of am operator that has adjoint is decomposed."""
@@ -536,7 +548,7 @@ class TestSymbolicDecompositions:
             graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.pow(qml.H(0), z=3)]
-        assert graph.resource_estimate(op) == to_resources({qml.H: 1})
+        assert graph.resource_estimate(op) == to_resources({qml.H: 1}, {"Hadamard": 1.0})
 
     def test_adjoint_custom(self, _):
         """Tests adjoint of an operator that defines its own adjoint."""
@@ -553,7 +565,7 @@ class TestSymbolicDecompositions:
             graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(-0.5, wires=[0])]
-        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+        assert graph.resource_estimate(op) == to_resources({qml.RX: 1}, {"RX": 1.0})
 
     def test_adjoint_controlled(self, _):
         """Tests that the adjoint of a controlled operator is decomposed properly."""
@@ -582,7 +594,10 @@ class TestSymbolicDecompositions:
             graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert q.queue == [qml.ControlledPhaseShift(-0.5, wires=[1, 0])]
-        assert graph.resource_estimate(op2) == to_resources({qml.ControlledPhaseShift: 1})
+        assert graph.resource_estimate(op2) == to_resources(
+            {qml.ControlledPhaseShift: 1},
+            {"ControlledPhaseShift": 1.0, "CRX": 1.0}
+        )
 
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
@@ -631,7 +646,8 @@ class TestSymbolicDecompositions:
             qml.adjoint(qml.H(wires=0)),
         ]
         assert graph.resource_estimate(op) == to_resources(
-            {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1}
+            {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1},
+            {"Hadamard": 1.0, "CNOT": 1.0, "RX": 1.0, "PhaseShift": 1.0}
         )
 
     def test_nested_powers(self, _):
@@ -652,14 +668,14 @@ class TestSymbolicDecompositions:
             graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
-        assert graph.resource_estimate(op) == to_resources({})
+        assert graph.resource_estimate(op) == to_resources({}, {"Hadamard": 1.0})
 
         op2 = qml.pow(qml.H(0), 6)
         with qml.queuing.AnnotatedQueue() as q:
             graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == []
-        assert graph.resource_estimate(op2) == to_resources({})
+        assert graph.resource_estimate(op2) == to_resources({}, {"Hadamard": 1.0})
 
     def test_custom_symbolic_decompositions(self, _):
         """Tests that custom symbolic decompositions are used."""
@@ -692,7 +708,19 @@ class TestSymbolicDecompositions:
             graph.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
 
         assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0]), qml.RX(-0.5, wires=0)]
-        assert graph.resource_estimate(op1) == to_resources({qml.H: 1})
-        assert graph.resource_estimate(op2) == to_resources({qml.H: 1})
-        assert graph.resource_estimate(op3) == to_resources({qml.CH: 1})
-        assert graph.resource_estimate(op4) == to_resources({qml.RX: 1})
+        assert graph.resource_estimate(op1) == to_resources(
+            {qml.H: 1},
+            {"Hadamard": 1.0, "CH": 1.0, "RX": 1.0}
+        )
+        assert graph.resource_estimate(op2) == to_resources(
+            {qml.H: 1},
+            {"Hadamard": 1.0, "CH": 1.0, "RX": 1.0}
+        )
+        assert graph.resource_estimate(op3) == to_resources(
+            {qml.CH: 1},
+            {"Hadamard": 1.0, "CH": 1.0, "RX": 1.0}
+        )
+        assert graph.resource_estimate(op4) == to_resources(
+            {qml.RX: 1},
+            {"Hadamard": 1.0, "CH": 1.0, "RX": 1.0}
+        )
