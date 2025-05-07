@@ -137,13 +137,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._weights = {gate: 1.0 for gate in self._gate_set}
         else:
             # the gate_set is a dict
-            self._gate_set = {
-                translate_op_alias(gate) if isinstance(gate, str) else gate.__name__
-                for gate in gate_set.keys()
-            }
-            self._weights = dict()
-            for gate, weight in gate_set.items():
-                self._weights[translate_op_alias(gate) if isinstance(gate, str) else gate.__name__] = weight
+            self._gate_set = {_to_name(gate) for gate in gate_set}
+            self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
 
 
         # Tracks the node indices of various operators.
