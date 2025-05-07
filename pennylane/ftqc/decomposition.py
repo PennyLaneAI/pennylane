@@ -14,14 +14,14 @@
 """
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
-from functools import partial
+from functools import partial, singledispatch
 
 import networkx as nx
 
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
-from pennylane.measurements import CountsMP, SampleMP, counts, sample
+from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -60,16 +60,16 @@ def convert_to_mbqc_gateset(tape):
 def convert_to_mbqc_formalism(tape):
     """docstring goes here"""
 
-    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP, CountsMP)):
+    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
         raise NotImplementedError(
             "Transforming to the MBQC formalism is not implemented for circuits where the "
-            "final measurements have not been converted to a single samples or counts measurement"
+            "final measurements have not been converted to a single samples measurement"
         )
 
     mp = tape.measurements[0]
     meas_wires = mp.wires if mp.wires else tape.wires
 
-    num_qubits = len(tape.wires) + 2 + 13  # actually is 13 fine?
+    num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
@@ -80,9 +80,7 @@ def convert_to_mbqc_formalism(tape):
                 GlobalPhase(*op.data)
             elif isinstance(op, CNOT):  # two wires
                 ctrl, tgt = op.wires[0], op.wires[1]
-                (wire_map[ctrl], wire_map[tgt]) = stencils[CNOT](
-                    q_mgr, wire_map[ctrl], wire_map[tgt], *op.data
-                )
+                (wire_map[ctrl], wire_map[tgt]) = queue_cnot(q_mgr, wire_map[ctrl], wire_map[tgt])
             else:  # one wire
                 w = op.wires[0]
                 if isinstance(op, (X, Y, Z, Identity)):
@@ -90,28 +88,20 @@ def convert_to_mbqc_formalism(tape):
                     op.__class__(wire)
                 else:
                     w = op.wires[0]
-                    wire_map[w] = stencils[op.__class__](q_mgr, wire_map[w], *op.data)
+                    wire_map[w] = queue_single_qubit_gate(q_mgr, op, in_wire=wire_map[w])
 
     temp_tape = QuantumScript.from_queue(q)
 
     new_wires = [wire_map[w] for w in meas_wires]
-    if isinstance(mp, SampleMP):
-        new_tape = tape.copy(
-            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
-        )
-    else:
-        new_tape = tape.copy(
-            operations=temp_tape.operations,
-            measurements=[counts(wires=new_wires, all_outcomes=mp.all_outcomes)],
-        )
+
+    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
 
     return (new_tape,), null_postprocessing
 
 
-from functools import singledispatch
-
-
-def convert_single_qubit_gate(q_mgr, op, in_wire):
+def queue_single_qubit_gate(q_mgr, op, in_wire):
+    """Queue the resource state preparation, measurements and byproducts
+    to execute the operation in the MBQC formalism."""
 
     graph_wires = q_mgr.acquire_qubits(4)
     wires = [in_wire] + graph_wires
@@ -119,8 +109,8 @@ def convert_single_qubit_gate(q_mgr, op, in_wire):
     GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
-    measurements = _measurement_stencil(op, wires, *op.data)
-    _corrections(op, measurements)(wires[-1])
+    measurements = queue_measurements(op, wires)
+    queue_corrections(op, measurements)(wires[-1])
 
     # release input qubit and intermediate graph qubits
     q_mgr.release_qubits(wires[0:-1])
@@ -128,12 +118,16 @@ def convert_single_qubit_gate(q_mgr, op, in_wire):
 
 
 @singledispatch
-def _measurement_stencil(op, wires, *params):
-    raise ValueError(f"Received unsupported gate of type {op}")
+def queue_measurements(op, wires):
+    """Queue the measurements needed to execute the operation in the MBQC formalism"""
+    raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
-@_measurement_stencil.register
-def _rot_measurements(op: RotXZX, wires, phi, theta, omega):
+@queue_measurements.register(RotXZX)
+def _rot_measurements(op: RotXZX, wires):
+    """Queue the measurements needed to execute RotXZX in the MBQC formalism"""
+
+    phi, theta, omega = op.data
 
     m1 = measure_x(wires[0], reset=True)
     m2 = cond_measure(
@@ -155,13 +149,61 @@ def _rot_measurements(op: RotXZX, wires, phi, theta, omega):
     return [m1, m2, m3, m4]
 
 
+@queue_measurements.register(RZ)
+def _rz_measurements(op: RZ, wires):
+    """Queue the measurements needed to execute RZ in the MBQC formalism"""
+
+    angle = op.parameters[0]
+
+    m1 = measure_x(wires[0], reset=True)
+    m2 = measure_x(wires[1], reset=True)
+    m3 = cond_measure(
+        m2,
+        partial(measure_arbitrary_basis, angle=angle, reset=True),
+        partial(measure_arbitrary_basis, angle=-angle, reset=True),
+    )(plane="XY", wires=wires[2])
+    m4 = measure_x(wires[3], reset=True)
+
+    return [m1, m2, m3, m4]
+
+
+@queue_measurements.register(H)
+def _hadamard_measurements(op: H, wires):
+    """Queue the measurements needed to execute Hadamard in the MBQC formalism"""
+    m1 = measure_x(wires[0], reset=True)
+    m2 = measure_y(wires[1], reset=True)
+    m3 = measure_y(wires[2], reset=True)
+    m4 = measure_y(wires[3], reset=True)
+
+    return [m1, m2, m3, m4]
+
+
+@queue_measurements.register(S)
+def _s_measurements(op: S, wires):
+    """Queue the measurements needed to execute S in the MBQC formalism"""
+    m1 = measure_x(wires[0], reset=True)
+    m2 = measure_x(wires[1], reset=True)
+    m3 = measure_y(wires[2], reset=True)
+    m4 = measure_x(wires[3], reset=True)
+
+    return [m1, m2, m3, m4]
+
+
 @singledispatch
-def _corrections(op, measurements):
+def queue_corrections(op, measurements):
+    """Queue the byproduct corrections associated with the operation in the
+    MBQC formalism, based on the operation and the measurement results"""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
-@_corrections.register
-def _rot_corrections(op: RotXZX, measurements):
+@queue_corrections.register(RotXZX)
+@queue_corrections.register(RZ)
+def _rotation_corrections(op, measurements):
+    """Queue the byproduct corrections associated with the rotation
+    gate RotXZX in the MBQC formalism, based on the operation and the
+    measurement results. Note that these corrections also apply in the
+    more specific rotation case, RZ = RotXZX(0, Z, 0)"""
+
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
@@ -171,132 +213,36 @@ def _rot_corrections(op: RotXZX, measurements):
     return correction_func
 
 
-def rot_stencil(q_mgr, in_wire, phi, theta, omega):
-    """A stencil for the rotation gate RotXZX, expressed in the MBQC formalism. This
-    stencil includes byproduct corrections in addition to the measurements."""
+@queue_corrections.register(H)
+def _hadamard_corrections(op, measurements):
+    """Queue the byproduct corrections associated with the Hadamard gate in
+    the MBQC formalism, based on the operation and the measurement results"""
+    m1, m2, m3, m4 = measurements
 
-    graph_wires = q_mgr.acquire_qubits(4)
-    out_wire = graph_wires[-1]
+    def correction_func(wire):
+        cond((m2 + m3) % 2, Z)(wire)
+        cond((m1 + m3 + m4) % 2, X)(wire)
 
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
-    CZ([in_wire, graph_wires[0]])
-
-    m1 = measure_x(in_wire, reset=True)
-    m2 = cond_measure(
-        m1,
-        partial(measure_arbitrary_basis, angle=phi),
-        partial(measure_arbitrary_basis, angle=-phi),
-    )(plane="XY", wires=graph_wires[0], reset=True)
-    m3 = cond_measure(
-        m2,
-        partial(measure_arbitrary_basis, angle=theta),
-        partial(measure_arbitrary_basis, angle=-theta),
-    )(plane="XY", wires=graph_wires[1], reset=True)
-    m4 = cond_measure(
-        (m1 + m3) % 2,
-        partial(measure_arbitrary_basis, angle=omega),
-        partial(measure_arbitrary_basis, angle=-omega),
-    )(plane="XY", wires=graph_wires[2], reset=True)
-
-    # corrections based on measurement outcomes
-    cond((m1 + m3) % 2, Z)(out_wire)
-    cond((m2 + m4) % 2, X)(out_wire)
-
-    # release input qubit and intermediate graph qubits
-    q_mgr.release_qubit(in_wire)
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return out_wire
+    return correction_func
 
 
-def rz_stencil(q_mgr, target_idx, angles):
-    """A stencil for the RZ gate, expressed in the MBQC formalism. This
-    stencil includes byproduct corrections in addition to the measurements."""
+@queue_corrections.register(S)
+def _s_corrections(op, measurements):
+    """Queue the byproduct corrections associated with the S gate in
+    the MBQC formalism, based on the operation and the measurement results"""
 
-    graph_wires = q_mgr.acquire_qubits(4)
-    output_idx = graph_wires[-1]
+    m1, m2, m3, m4 = measurements
 
-    # Prepare the state
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
+    def correction_func(wire):
+        cond((m1 + m2 + m3 + 1) % 2, Z)(wire)
+        cond((m2 + m4) % 2, X)(wire)
 
-    # entangle input and graph using first qubit
-    CZ([target_idx, graph_wires[0]])
-
-    # MBQC Z rotation: X, X, +/- angle, X
-    # Reset operations allow qubits to be returned to the pool
-    m0 = measure_x(target_idx, reset=True)
-    m1 = measure_x(graph_wires[0], reset=True)
-    m2 = cond_measure(
-        m1,
-        partial(measure_arbitrary_basis, angle=angles, reset=True),
-        partial(measure_arbitrary_basis, angle=-angles, reset=True),
-    )(plane="XY", wires=graph_wires[1])
-    m3 = measure_x(graph_wires[2], reset=True)
-
-    # corrections based on measurement outcomes
-    cond((m0 + m2) % 2, Z)(graph_wires[3])
-    cond((m1 + m3) % 2, X)(graph_wires[3])
-
-    # release input qubit and intermediate graph qubits
-    q_mgr.release_qubit(target_idx)
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return output_idx
+    return correction_func
 
 
-def h_stencil(q_mgr, in_wire):
-    """A stencil for the Hadamard gate, expressed in the MBQC formalism. This
-    stencil includes byproduct corrections in addition to the measurements."""
-
-    graph_wires = q_mgr.acquire_qubits(4)
-    out_wire = graph_wires[-1]
-
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
-    CZ([in_wire, graph_wires[0]])
-
-    m1 = measure_x(in_wire, reset=True)
-    m2 = measure_y(graph_wires[0], reset=True)
-    m3 = measure_y(graph_wires[1], reset=True)
-    m4 = measure_y(graph_wires[2], reset=True)
-
-    cond((m2 + m3) % 2, Z)(out_wire)
-    cond((m1 + m3 + m4) % 2, X)(out_wire)
-
-    # release input qubit and intermediate graph qubits
-    q_mgr.release_qubit(in_wire)
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return out_wire
-
-
-def s_stencil(q_mgr, in_wire):
-    """A stencil for the S gate, expressed in the MBQC formalism. This
-    stencil includes byproduct corrections in addition to the measurements."""
-
-    graph_wires = q_mgr.acquire_qubits(4)
-    out_wire = graph_wires[-1]
-
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
-    CZ([in_wire, graph_wires[0]])
-
-    m1 = measure_x(in_wire, reset=True)
-    m2 = measure_x(graph_wires[0], reset=True)
-    m3 = measure_y(graph_wires[1], reset=True)
-    m4 = measure_x(graph_wires[2], reset=True)
-
-    cond((m1 + m2 + m3 + 1) % 2, Z)(out_wire)
-    cond((m2 + m4) % 2, X)(out_wire)
-
-    # release input qubit and intermediate graph qubits
-    q_mgr.release_qubit(in_wire)
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return out_wire
-
-
-def cnot_stencil(q_mgr, ctrl_idx, target_idx):
-    """A stencil for the CNOT gate, expressed in the MBQC formalism. This
-    stencil includes byproduct corrections in addition to the measurements."""
+def queue_cnot(q_mgr, ctrl_idx, target_idx):
+    """Queue the resource state preparation, measurements and byproducts
+    to execute the operation in the MBQC formalism."""
 
     graph_wires = q_mgr.acquire_qubits(13)
 
@@ -310,6 +256,21 @@ def cnot_stencil(q_mgr, ctrl_idx, target_idx):
     # entangle input and graph using first qubit
     CZ([ctrl_idx, graph_wires[0]])
     CZ([target_idx, graph_wires[7]])
+
+    measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires))
+    cnot_corrections(measurements)(output_ctrl_idx, output_target_idx)
+
+    q_mgr.release_qubit(ctrl_idx)
+    q_mgr.release_qubit(target_idx)
+
+    # We can now free all but the last qubit, which has become the new input_idx
+    q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
+    return output_ctrl_idx, output_target_idx
+
+
+def cnot_measurements(wires):
+    """Queue the measurements needed to execute CNOT in the MBQC formalism"""
+    ctrl_idx, target_idx, graph_wires = wires
 
     m1 = measure_x(ctrl_idx, reset=True)
     m2 = measure_y(graph_wires[0], reset=True)
@@ -327,26 +288,35 @@ def cnot_stencil(q_mgr, ctrl_idx, target_idx):
     m13 = measure_x(graph_wires[10], reset=True)
     m14 = measure_x(graph_wires[11], reset=True)
 
-    x_cor = m2 + m3 + m5 + m6
-    z_cor = m1 + m3 + m4 + m5 + m8 + m9 + m11 + 1
-    cond(z_cor % 2, Z)(output_ctrl_idx)
-    cond(x_cor % 2, X)(output_ctrl_idx)
+    return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14]
+
+
+def cnot_corrections(measurements):
+    """Queue the byproduct corrections associated with the CNOT gate in
+    the MBQC formalism, based on measurement results"""
+
+    m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
+
+    # corrections on control
+    x_cor_ctrl = m2 + m3 + m5 + m6
+    z_cor_ctrl = m1 + m3 + m4 + m5 + m8 + m9 + m11 + 1
 
     # corrections on target
-    x_cor = m2 + m3 + m8 + m10 + m12 + m14
-    z_cor = m9 + m11 + m13
-    cond(z_cor % 2, Z)(output_target_idx)
-    cond(x_cor % 2, X)(output_target_idx)
+    x_cor_tgt = m2 + m3 + m8 + m10 + m12 + m14
+    z_cor_tgt = m9 + m11 + m13
 
-    q_mgr.release_qubit(ctrl_idx)
-    q_mgr.release_qubit(target_idx)
+    def correction_func(ctrl_wire, target_wire):
+        cond(z_cor_ctrl % 2, Z)(ctrl_wire)
+        cond(x_cor_ctrl % 2, X)(ctrl_wire)
+        cond(z_cor_tgt % 2, Z)(target_wire)
+        cond(x_cor_tgt % 2, X)(target_wire)
 
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
-    return output_ctrl_idx, output_target_idx
+    return correction_func
 
 
 def _generate_cnot_graph():
+    """Generate a graph for creating the resource state for a
+    CNOT gate"""
     wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     g = nx.Graph()
     g.add_nodes_from(wires)
@@ -367,6 +337,3 @@ def _generate_cnot_graph():
         ]
     )
     return g
-
-
-stencils = {RZ: rz_stencil, RotXZX: rot_stencil, S: s_stencil, H: h_stencil, CNOT: cnot_stencil}
