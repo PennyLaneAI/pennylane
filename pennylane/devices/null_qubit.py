@@ -51,6 +51,8 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+
 
 @singledispatch
 def zero_measurement(
@@ -132,7 +134,7 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
-def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.json"):
+def _simulate_resource_use(circuit):
     num_wires = len(circuit.wires)
     gate_types = defaultdict(int)
 
@@ -165,15 +167,17 @@ def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.
         gate_types[name] += 1
     # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
     #  In the future it may be better to return this information in a more structured way.
-    with open(resources_fname, "w") as f:
-        json.dump(
+    print(RESOURCE_PRINT_DELIMETER)
+    print(
+        json.dumps(
             {
                 "num_wires": num_wires,
                 "num_gates": sum(gate_types.values()),
                 "gate_types": gate_types,
-            },
-            f,
+            }
         )
+    )
+    print(RESOURCE_PRINT_DELIMETER)
 
 
 @simulator_tracking

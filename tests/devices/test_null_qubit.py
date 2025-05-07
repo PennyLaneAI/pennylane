@@ -63,7 +63,7 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_resource_tracking_attribute():
+def test_resource_tracking_attribute(capsys):
     """Test NullQubit track_resources attribute"""
     # pylint: disable=protected-access
     assert NullQubit()._track_resources is False
@@ -101,18 +101,7 @@ def test_resource_tracking_attribute():
 
     qnode(inputs)
 
-    # Check that resource tracking doesn't interfere with backprop
-    assert qml.grad(qnode)(inputs) == 0
-
-    RESOURCES_FNAME = "__pennylane_resources_data.json"
-    assert os.path.exists(RESOURCES_FNAME)
-
-    with open(RESOURCES_FNAME, "r") as f:
-        stats = f.read()
-
-    os.remove(RESOURCES_FNAME)
-
-    assert stats == json.dumps(
+    expected = json.dumps(
         {
             "num_wires": 3,
             "num_gates": 9,
@@ -128,6 +117,28 @@ def test_resource_tracking_attribute():
             },
         }
     )
+
+    captured = capsys.readouterr()
+    captured = captured.out.splitlines()
+
+    RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+    assert len(captured) == 3
+    assert captured[0] == RESOURCE_PRINT_DELIMETER
+    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+
+    assert captured[1] == expected
+
+    # Check that resource tracking doesn't interfere with backprop
+    assert qml.grad(qnode)(inputs) == 0
+
+    captured = capsys.readouterr()
+    captured = captured.out.splitlines()
+
+    # Running grad prints resource information again
+    assert len(captured) == 3
+    assert captured[0] == RESOURCE_PRINT_DELIMETER
+    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+    assert captured[1] == expected
 
 
 @pytest.mark.parametrize("shots", (None, 10))
