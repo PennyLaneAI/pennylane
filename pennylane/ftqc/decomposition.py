@@ -82,9 +82,8 @@ def convert_to_mbqc_formalism(tape):
                 ctrl, tgt = op.wires[0], op.wires[1]
                 (wire_map[ctrl], wire_map[tgt]) = queue_cnot(q_mgr, wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                w = op.wires[0]
                 if isinstance(op, (X, Y, Z, Identity)):
-                    wire = wire_map[w] if op.wires else ()
+                    wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
                     w = op.wires[0]

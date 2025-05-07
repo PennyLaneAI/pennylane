@@ -33,7 +33,7 @@ from pennylane.ftqc import (
     measure_arbitrary_basis,
     measure_x,
 )
-from pennylane.ftqc.decomposition import _rot_to_xzx, queue_single_qubit_gate
+from pennylane.ftqc.decomposition import _rot_to_xzx, queue_cnot, queue_single_qubit_gate
 from pennylane.ftqc.utils import QubitMgr
 
 
@@ -230,9 +230,42 @@ class TestMBQCFormalismConversion:
 
     def test_convert_cnot(self):
 
-        # check stencil is called
-        # check that applying and getting density state works as expected
-        raise RuntimeError
+        dev = qml.device("lightning.qubit", wires=15)
+        q_mgr = QubitMgr(num_qubits=15, start_idx=0)
+
+        op = qml.CNOT([2, 3])
+        ctrl = op.wires[0]
+        target = op.wires[1]
+        wire_map = {w: q_mgr.acquire_qubit() for w in op.wires}
+
+        ref_tape = qml.tape.QuantumScript(
+            [qml.Rot(1.2, 0.34, 0.7, ctrl), qml.Rot(0.65, 0.43, 0.21, target), op],
+            measurements=[
+                qml.expval(qml.X(ctrl)),
+                qml.expval(qml.Y(ctrl)),
+                qml.expval(qml.Z(ctrl)),
+                qml.expval(qml.X(target)),
+                qml.expval(qml.Y(target)),
+                qml.expval(qml.Z(target)),
+            ],
+        )
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Rot(1.2, 0.34, 0.7, wire_map[ctrl])
+            qml.Rot(0.65, 0.43, 0.21, wire_map[target])
+            wire_map[ctrl], wire_map[target] = queue_cnot(q_mgr, wire_map[ctrl], wire_map[target])
+            qml.expval(qml.X(wire_map[ctrl]))
+            qml.expval(qml.Y(wire_map[ctrl]))
+            qml.expval(qml.Z(wire_map[ctrl]))
+            qml.expval(qml.X(wire_map[target]))
+            qml.expval(qml.Y(wire_map[target]))
+            qml.expval(qml.Z(wire_map[target]))
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=2000)
+        (diagonalized_tape,), _ = diagonalize_mcms(tape)
+
+        res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
+        assert np.allclose(res, res_ref, atol=0.05)
 
     @pytest.mark.parametrize(
         "gate, wire",
@@ -253,8 +286,6 @@ class TestMBQCFormalismConversion:
         measurements = transformed_tape.operations[2:6]
         byproducts = transformed_tape.operations[6:8]
         final_op = transformed_tape.operations[8]
-
-        print(transformed_tape.operations)
 
         # tape consists of converted Hadamard, and the pauli gate
         assert isinstance(graph_op, GraphStatePrep)
