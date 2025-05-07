@@ -63,7 +63,6 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
 
 
 def _setup_transform_program(
-    user_transform_program: TransformProgram,
     device: "qml.devices.Device",
     resolved_execution_config: "qml.devices.ExecutionConfig",
     cache=None,
@@ -85,9 +84,7 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    outer_transform_program = qml.transforms.core.TransformProgram(
-        user_transform_program, cotransform_cache=user_transform_program.cotransform_cache
-    )
+    outer_transform_program = qml.transforms.core.TransformProgram()
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary

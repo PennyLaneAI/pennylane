@@ -52,7 +52,7 @@ class TestTorchRun:
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
         a = torch.tensor(0.1, requires_grad=True)
@@ -90,7 +90,7 @@ class TestTorchRun:
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             resolved_config = _resolve_execution_config(config, device, [tape])
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
+            _, inner_tp = _setup_transform_program(device, resolved_config)
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = torch.tensor(0.1, requires_grad=True)
@@ -121,7 +121,7 @@ class TestTorchRun:
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape])
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
+            _, inner_tp = _setup_transform_program(device, resolved_config)
             res = run([tape], device, resolved_config, inner_tp)[0]
 
             if shots.has_partitioned_shots:

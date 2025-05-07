@@ -211,9 +211,8 @@ def execute(
     )
     config = _resolve_execution_config(config, device, tapes)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
     outer_transform, inner_transform = _setup_transform_program(
-        transform_program, device, config, cache, cachesize
+        device, config, cache, cachesize
     )
 
     #### Executing the configured setup #####
