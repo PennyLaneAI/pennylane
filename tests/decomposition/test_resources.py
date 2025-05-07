@@ -118,7 +118,7 @@ class TestResources:
             {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
             {"RX": 1.0, "RZ": 2.0}
         )
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}>"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, gate_weights={'RX': 1.0, 'RZ': 2.0}>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods

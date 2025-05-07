@@ -77,7 +77,7 @@ class Resources:
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}>"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, gate_weights={self.gate_weights}>"
 
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
