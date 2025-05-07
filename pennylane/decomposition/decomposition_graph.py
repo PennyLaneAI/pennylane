@@ -67,35 +67,44 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     There are also two types of directed edges: edges that connect operators to the decomposition
     rules that contain them, and edges that connect decomposition rules to the operators that they
-    decompose. The edge weights represent the difference in the gate count between the two states.
-    Edges that connect decomposition rules to operators have a weight of 0 because an operator can
-    be replaced with its decomposition at no additional cost.
+    decompose. The edge weights represent the difference in the total weights of the gates between
+    the two states. Edges that connect decomposition rules to operators have a weight of 0 because
+    an operator can be replaced with its decomposition at no additional cost.
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
     will have a weight that is the total resource estimate of the decomposition minus the resource
-    estimate of the operator. For example, the edge that connects a ``CNOT`` to the following
+    estimate of the operator. Edges that connect an operator node to a decomposition node have a weight
+    calculated by the difference of the sum of the gate counts multiplied by their respective gate
+    weights in the decomposition, minus the weight of the operator of the operator node.
+
+    For example, the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python
 
         import pennylane as qml
 
+        @partial(qml.transforms.decompose, gate_set={qml.CNOT: 10.0, qml.H: 1.0})
         @qml.register_resources({qml.H: 2, qml.CNOT: 1})
         def my_cz(wires):
             qml.H(wires=wires[1])
             qml.CNOT(wires=wires)
             qml.H(wires=wires[1])
 
-    will have a weight of 2, because the decomposition rule contains 2 additional ``H`` gates.
-    Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't supported
-    and is in turn decomposed to two ``RZ`` gates and one ``RX`` gate, the weight of this edge
-    becomes 2 * 3 = 6. This way, the total distance from the basis gate set to a high-level gate is
-    conveniently the total number of basis gates required to decompose this high-level gate, which
-    allows us to use Dijkstra's algorithm to find the most efficient decomposition.
+    will have a weight of (10.0 + 2 * 1.0) - 10.0 = 2, because the decomposition rule contains 2 additional
+    ``H`` gates. Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't
+    supported and is in turn decomposed to two ``RZ`` gates and one ``RX`` gate, the weight of this edge
+    becomes 2 * 3 = 6, if ``RZ`` and ``RX`` have weights of 1.0 (the default). This way, the total distance
+    from the basis gate set to a high-level gate is by default the total number of basis gates required to
+    decompose this high-level gate, which allows us to use Dijkstra's algorithm to find the most efficient
+    decomposition. By specifying weights in the target gate set, the total distance calculation involves
+    a sum of weighted gate counts, which can represent the relative cost of executing a particular element
+    of the target gate set on the target hardware i.e. a T gate.
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str]): The names of the gates in the target gate set.
+        gate_set (set[str] | dict[type | str, float]): The names and (optionally) weights of the gates in the target
+            gate set.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
