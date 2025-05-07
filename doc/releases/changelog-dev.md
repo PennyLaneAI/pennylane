@@ -19,7 +19,7 @@
 
   ```pycon
   >>> circuit()
-  [1. 1.]
+  array([1., -1.])
   ```
   
   Additionally, it can be used in-line to update a circuit's `shots`:
