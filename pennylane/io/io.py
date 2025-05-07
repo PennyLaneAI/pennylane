@@ -16,11 +16,12 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 from collections import defaultdict
+from collections.abc import Callable
+from functools import wraps
 from importlib import metadata
 from sys import version_info
-from functools import wraps
-from collections.abc import Callable
 from typing import Any, Optional
+
 from pennylane.wires import WiresLike
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
@@ -631,10 +632,9 @@ def to_openqasm(
     @wraps(qnode)
     def wrapper(*args, **kwargs) -> str:
         tape = construct_tape(qnode)(*args, **kwargs)
-        return tape.to_openqasm(wires=wires,
-                                rotations=rotations,
-                                measure_all=measure_all,
-                                precision=precision)
+        return tape.to_openqasm(
+            wires=wires, rotations=rotations, measure_all=measure_all, precision=precision
+        )
 
     return wrapper
 
