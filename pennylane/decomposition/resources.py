@@ -24,7 +24,6 @@ from typing import Optional, Type
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
 
 
