@@ -18,6 +18,10 @@ PennyLane templates.
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+from functools import wraps
+from collections.abc import Callable
+from typing import Any, Optional
+from pennylane.wires import WiresLike
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -613,13 +617,26 @@ def from_qasm(quantum_circuit: str, measurements=None):
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 
-def to_qasm(qnode, *args, **kwargs) -> str:
+def to_openqasm(
+    qnode,
+    wires: Optional[WiresLike] = None,
+    rotations: bool = True,
+    measure_all: bool = True,
+    precision: Optional[int] = None,
+) -> Callable[[Any], str]:
     """TODO"""
+    # pylint: disable=import-outside-toplevel
     from pennylane.workflow import construct_tape
 
-    tape = construct_tape(qnode)(*args, **kwargs)
-    qasm = tape.to_openqasm(*args, **kwargs)
-    return qasm
+    @wraps(qnode)
+    def wrapper(*args, **kwargs) -> str:
+        tape = construct_tape(qnode)(*args, **kwargs)
+        return tape.to_openqasm(wires=wires,
+                                rotations=rotations,
+                                measure_all=measure_all,
+                                precision=precision)
+
+    return wrapper
 
 
 def from_pyquil(pyquil_program):
