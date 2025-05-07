@@ -464,8 +464,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if self._gate_set is not None:
             for gate, count in gates.items():
                 gate_weight = 1.0
-                if gate in self._gate_set.keys():
-                    gate_weight = self._gate_set[gate]
+                if gate.name in self._gate_set.keys():
+                    gate_weight = self._gate_set[gate.name]
                 node_weight += gate_weight * count
         else:
             for gate, count in gates.items():
