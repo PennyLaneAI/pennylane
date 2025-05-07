@@ -203,10 +203,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            self._graph.add_edge(
-                self._start, op_node_idx,
-                self._weights[op_node.name],
-            )
+            self._graph.add_edge(self._start, op_node_idx, self._weights[op_node.name])
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
