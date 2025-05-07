@@ -53,31 +53,190 @@ class TestQubitMapping:
         [
             (
                 [
-                    qml.RY(2, wires=0),
+                    qml.Hadamard(0),
                     qml.CNOT(wires=[0, 1]),
-                    qml.CNOT(wires=[0, 2]),
-                    qml.RX(3, wires=1),
-                    qml.CZ(wires=[0, 3]),
-                    qml.CZ(wires=[0, 1]),
-                    qml.RY(4, wires=2),
-                    qml.SWAP(wires=[0, 2]),
+                    qml.RY(0.5, wires=2),
+                    qml.CZ(wires=[1, 3]),
+                    qml.SWAP(wires=[3, 4]),
+                    qml.RX(1.0, wires=5),
+                    qml.CNOT(wires=[4, 6]),
+                    qml.RZ(0.3, wires=7),
+                    qml.CRY(0.9, wires=[6, 8]),
+                ],
+                [qml.expval(qml.Z(9))],
+            ),
+            (
+                [
+                    qml.PauliX(1),
+                    qml.RY(1.4, wires=3),
+                    qml.CNOT(wires=[3, 5]),
+                    qml.CRY(1.2, wires=[5, 2]),
+                    qml.SWAP(wires=[2, 6]),
+                    qml.RZ(2.1, wires=4),
+                    qml.CNOT(wires=[4, 7]),
+                    qml.Hadamard(8),
+                    qml.RX(1.8, wires=9),
                 ],
                 [qml.expval(qml.X(0))],
             ),
             (
                 [
+                    qml.Hadamard(5),
+                    qml.CNOT(wires=[5, 1]),
+                    qml.RY(0.9, wires=1),
+                    qml.RZ(1.0, wires=2),
+                    qml.CZ(wires=[2, 3]),
+                    qml.CRY(1.7, wires=[3, 6]),
+                    qml.SWAP(wires=[6, 0]),
+                    qml.RX(2.2, wires=9),
+                ],
+                [qml.expval(qml.Y(4))],
+            ),
+            (
+                [
+                    qml.RX(1.1, wires=6),
+                    qml.CNOT(wires=[6, 0]),
                     qml.Hadamard(0),
+                    qml.RZ(2.3, wires=8),
+                    qml.CRY(0.6, wires=[8, 7]),
+                    qml.SWAP(wires=[7, 3]),
+                    qml.CZ(wires=[3, 5]),
+                    qml.RY(1.9, wires=4),
+                ],
+                [qml.expval(qml.Z(2))],
+            ),
+            (
+                [
+                    qml.PauliZ(9),
+                    qml.CNOT(wires=[9, 8]),
+                    qml.CRY(1.3, wires=[8, 7]),
+                    qml.SWAP(wires=[7, 6]),
+                    qml.RX(0.7, wires=5),
+                    qml.CZ(wires=[5, 4]),
+                    qml.RY(0.4, wires=3),
+                    qml.RZ(1.5, wires=2),
+                ],
+                [qml.expval(qml.Y(1))],
+            ),
+            (
+                [
                     qml.Hadamard(2),
-                    qml.CRY(2, wires=[0, 3]),
-                    qml.CNOT(wires=[2, 0]),
-                    qml.SWAP(wires=[0, 2]),
-                    qml.RX(3, wires=3),
-                    qml.CZ(wires=[0, 3]),
-                    qml.CZ(wires=[0, 2]),
-                    qml.RY(4, wires=2),
-                    qml.SWAP(wires=[0, 2]),
+                    qml.CRY(0.8, wires=[2, 6]),
+                    qml.CNOT(wires=[6, 4]),
+                    qml.SWAP(wires=[4, 1]),
+                    qml.RZ(1.2, wires=1),
+                    qml.RY(0.9, wires=5),
+                    qml.CZ(wires=[5, 9]),
+                ],
+                [qml.expval(qml.X(3))],
+            ),
+            (
+                [
+                    qml.RY(1.1, wires=7),
+                    qml.CNOT(wires=[7, 6]),
+                    qml.PauliY(6),
+                    qml.CRY(1.5, wires=[6, 3]),
+                    qml.SWAP(wires=[3, 2]),
+                    qml.RX(0.2, wires=2),
+                    qml.Hadamard(0),
+                ],
+                [qml.expval(qml.Z(4))],
+            ),
+            (
+                [
+                    qml.PauliX(5),
+                    qml.CNOT(wires=[5, 7]),
+                    qml.RZ(2.0, wires=7),
+                    qml.CZ(wires=[7, 9]),
+                    qml.RX(1.6, wires=9),
+                    qml.CRY(1.9, wires=[9, 1]),
+                    qml.RY(1.3, wires=0),
                 ],
                 [qml.expval(qml.Y(3))],
+            ),
+            (
+                [
+                    qml.Hadamard(4),
+                    qml.CNOT(wires=[4, 8]),
+                    qml.RX(1.0, wires=8),
+                    qml.CRY(0.7, wires=[8, 6]),
+                    qml.SWAP(wires=[6, 0]),
+                    qml.RY(2.4, wires=1),
+                    qml.RZ(0.5, wires=2),
+                ],
+                [qml.expval(qml.Z(3))],
+            ),
+            (
+                [
+                    qml.PauliY(2),
+                    qml.CZ(wires=[2, 5]),
+                    qml.RY(1.0, wires=5),
+                    qml.SWAP(wires=[5, 7]),
+                    qml.CNOT(wires=[7, 9]),
+                    qml.RX(0.9, wires=3),
+                    qml.RZ(1.6, wires=6),
+                ],
+                [qml.expval(qml.X(0))],
+            ),
+            (
+                [
+                    qml.RX(0.3, wires=1),
+                    qml.CNOT(wires=[1, 3]),
+                    qml.CRY(2.1, wires=[3, 2]),
+                    qml.SWAP(wires=[2, 4]),
+                    qml.Hadamard(4),
+                    qml.RY(1.4, wires=6),
+                    qml.CZ(wires=[6, 8]),
+                ],
+                [qml.expval(qml.Z(9))],
+            ),
+            (
+                [
+                    qml.RY(1.5, wires=0),
+                    qml.CNOT(wires=[0, 2]),
+                    qml.CZ(wires=[2, 3]),
+                    qml.PauliX(3),
+                    qml.SWAP(wires=[3, 5]),
+                    qml.CRY(0.6, wires=[5, 7]),
+                    qml.RZ(2.2, wires=9),
+                ],
+                [qml.expval(qml.Y(8))],
+            ),
+            (
+                [
+                    qml.Hadamard(6),
+                    qml.RX(1.9, wires=6),
+                    qml.CNOT(wires=[6, 0]),
+                    qml.SWAP(wires=[0, 1]),
+                    qml.RZ(1.0, wires=1),
+                    qml.CRY(1.1, wires=[1, 4]),
+                    qml.RY(0.8, wires=3),
+                ],
+                [qml.expval(qml.X(2))],
+            ),
+            (
+                [
+                    qml.RZ(1.3, wires=8),
+                    qml.CRY(1.8, wires=[8, 7]),
+                    qml.CNOT(wires=[7, 6]),
+                    qml.SWAP(wires=[6, 5]),
+                    qml.PauliZ(5),
+                    qml.RX(1.6, wires=4),
+                    qml.Hadamard(3),
+                ],
+                [qml.expval(qml.Z(2))],
+            ),
+            (
+                [
+                    qml.RY(2.0, wires=9),
+                    qml.CNOT(wires=[9, 8]),
+                    qml.RZ(1.7, wires=8),
+                    qml.CRY(0.4, wires=[8, 6]),
+                    qml.SWAP(wires=[6, 2]),
+                    qml.Hadamard(0),
+                    qml.RX(1.5, wires=1),
+                ],
+                [qml.expval(qml.X(3))],
             ),
         ],
     )
@@ -89,9 +248,31 @@ class TestQubitMapping:
             meas,
         )
 
-        graph = {"a": ["b", "d"], "b": ["a", "c"], "c": ["b"], "d": ["a"]}
+        graph = {
+            "a": ["b", "d", "e", "f"],
+            "b": ["a", "c"],
+            "c": ["b"],
+            "d": ["a"],
+            "e": ["a"],
+            "f": ["a"],
+            "g": ["a"],
+            "h": ["a"],
+            "i": ["a"],
+            "j": ["a"],
+        }
 
-        initial_map = {0: "a", 1: "b", 2: "c", 3: "d"}
+        initial_map = {
+            0: "a",
+            1: "b",
+            2: "c",
+            3: "d",
+            4: "e",
+            5: "f",
+            6: "g",
+            7: "h",
+            8: "i",
+            9: "j",
+        }
         transformed_qs = qubit_mapping(qs, graph, initial_map)
 
         dev = qml.device("default.qubit")
@@ -146,16 +327,9 @@ class TestQubitMapping:
             ops,
             meas,
         )
-        graph = {
-            "a": ["b", "d"],
-            "b": ["a", "c"],
-            "c": ["b"],
-            "d": ["a"],
-        }
+        graph = {"a": ["b", "d", "e"], "b": ["a", "c"], "c": ["b"], "d": ["a"], "e": ["a"]}
 
-        initial_map = {0: "a", 1: "b", 2: "c", 3: "d"}
-
-        transformed_qs = qubit_mapping(qs, graph, initial_map)
+        transformed_qs = qubit_mapping(qs, graph)
         new_tape = transformed_qs[0][0]
 
         for op in new_tape.operations:
@@ -245,3 +419,28 @@ class TestQubitMapping:
         with pytest.raises(ValueError, match="Insufficient physical qubits"):
             transformed_qfunc = qubit_mapping(qfunc, graph)
             _ = qml.tape.make_qscript(transformed_qfunc)()
+
+    def test_mapping_logical_physical_same(self):
+        """Test that if the name of all the logical and physical wires match, the initial mapping respects the positions"""
+
+        def qfunc():
+            qml.CNOT(wires=["d", "b"])
+            qml.CNOT(wires=["a", "c"])
+            qml.CZ(wires=["b", "d"])
+
+        graph = {
+            "a": ["b", "c", "d"],
+            "b": ["a", "c", "d"],
+            "c": ["a", "b", "d"],
+            "d": ["a", "b", "c"],
+        }
+
+        transformed_qfunc = qubit_mapping(qfunc, graph)
+
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
+
+        assert new_tape.operations == [
+            qml.CNOT(wires=["d", "b"]),
+            qml.CNOT(wires=["a", "c"]),
+            qml.CZ(wires=["b", "d"]),
+        ]

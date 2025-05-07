@@ -23,6 +23,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 
 
+# pylint: disable=too-many-statements
 @transform
 def qubit_mapping(tape, graph, init_mapping=None):
     """Qubit mapping transform with sliding window for dependency lookahead.
@@ -134,7 +135,7 @@ def qubit_mapping(tape, graph, init_mapping=None):
             new_ops.append(qml.CNOT(wires=[phys_path[i], phys_path[i + 1]]))
 
     # Process each operation
-    for idx, op in enumerate(ops_list):
+    for idx, op in enumerate(ops_list):  # pylint:disable=too-many-nested-blocks
         wires = list(op.wires)
         # Error on operators > 2 wires
         if len(wires) > 2:
