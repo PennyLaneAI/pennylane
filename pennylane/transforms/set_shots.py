@@ -62,8 +62,11 @@ def set_shots(
     ...     qml.RX(1.23, wires=0)
     ...     return qml.sample(qml.Z(0))
     ...
+
+    Run the circuit:
+
     >>> circuit()
-    [1., 1.]
+    array([ 1., -1.])
 
     Update the shots in-line for an existing circuit:
 
