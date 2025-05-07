@@ -143,7 +143,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
-        self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
