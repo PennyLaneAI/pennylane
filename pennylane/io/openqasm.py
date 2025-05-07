@@ -19,8 +19,4 @@ Provides a transform to get the OpenQASM 2.0 program corresponding to a given QN
 from pennylane import workflow
 
 
-def to_openqasm(qnode, *args, **kwargs) -> str:
-    """TODO"""
-    tape = workflow.construct_tape(qnode)(*args, **kwargs)
-    qasm = tape.to_openqasm(*args, **kwargs)
-    return qasm
+

@@ -613,6 +613,15 @@ def from_qasm(quantum_circuit: str, measurements=None):
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 
+def to_qasm(qnode, *args, **kwargs) -> str:
+    """TODO"""
+    from pennylane.workflow import construct_tape
+
+    tape = construct_tape(qnode)(*args, **kwargs)
+    qasm = tape.to_openqasm(*args, **kwargs)
+    return qasm
+
+
 def from_pyquil(pyquil_program):
     """Loads pyQuil Program objects by using the converter in the
     PennyLane-Rigetti plugin.
