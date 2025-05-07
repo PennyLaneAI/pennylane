@@ -28,7 +28,6 @@ from typing import Callable, Optional, Sequence, Type
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import GraphFeaturesUsedButNotEnabled
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 
@@ -673,7 +672,7 @@ def decompose(
         )
         if not qml.decomposition.enabled_graph():
             # note this is a warning and not an exception.
-            raise GraphFeaturesUsedButNotEnabled(
+            raise TypeError(
                 "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored."
             )
 

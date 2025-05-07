@@ -134,17 +134,22 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         if isinstance(gate_set, set):
             # The names of the gates in the target gate set.
             self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
+            self._weights = dict()
+            for gate in self._gate_set:
+                self._weights[gate] = 1.0
         else:
             # the gate_set is a dict
             self._gate_set = {
                 translate_op_alias(gate) if isinstance(gate, str) else gate.__name__
                 for gate in gate_set.keys()
             }
-            self._weights = gate_set
+            self._weights = dict()
+            for gate, weight in gate_set.items():
+                self._weights[translate_op_alias(gate) if isinstance(gate, str) else gate.__name__] = weight
+
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
-        self._op_indices: dict[int, str] = {}
         self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
@@ -203,19 +208,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             return self._all_op_indices[op_node]
 
         op_node_idx = self._graph.add_node(op_node)
-        self._op_indices[op_node_idx] = op_node.name
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            if hasattr(self, "_weights"):
-                self._graph.add_edge(
-                    self._start, op_node_idx,
-                    self._weights[self._op_indices[op_node_idx]]
-                    if self._op_indices[op_node_idx] in self._weights.keys()
-                    else 1
-                )
-            else:
-                self._graph.add_edge(self._start, op_node_idx, 1)
+            self._graph.add_edge(
+                self._start, op_node_idx,
+                self._weights[op_node.name],
+            )
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
@@ -328,9 +327,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._visitor = _DecompositionSearchVisitor(
             self._graph,
             self._original_ops_indices,
-            self._op_indices,
             lazy,
-            self._weights if isinstance(self._weights, dict) else None,
+            self._weights,
         )
         rx.dijkstra_search(
             self._graph,
@@ -447,7 +445,6 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self,
         graph: rx.PyDiGraph,
         original_op_indices: set[int],
-        op_indices: dict[int, str],
         lazy: bool = True,
         gate_set: dict = None,
     ):
@@ -458,18 +455,17 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         # maps operator nodes to the optimal decomposition nodes
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
-        self._op_indices = op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
         self._gate_set = gate_set
 
-    def _get_node_weight(self, gates, node_idx):
+    def _get_node_weight(self, gates):
         """Calculates the weight of a node."""
         node_weight = 0
         if self._gate_set is not None:
             for gate, count in gates.items():
                 gate_weight = 1.0
-                if self._op_indices[node_idx] in self._gate_set.keys():
-                    gate_weight = self._gate_set[self._op_indices[node_idx]]
+                if gate in self._gate_set.keys():
+                    gate_weight = self._gate_set[gate]
                 node_weight += gate_weight * count
         else:
             for gate, count in gates.items():
@@ -486,8 +482,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         d_node_gates = self.distances[d_node_idx].gate_counts
         op_node_gates = self.distances[op_node_idx].gate_counts
 
-        d_node_weight = self._get_node_weight(d_node_gates, d_node_idx)
-        op_node_weight = self._get_node_weight(op_node_gates, op_node_idx)
+        d_node_weight = self._get_node_weight(d_node_gates)
+        op_node_weight = self._get_node_weight(op_node_gates)
 
         return d_node_weight - op_node_weight
 
