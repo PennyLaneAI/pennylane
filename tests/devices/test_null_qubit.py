@@ -120,10 +120,9 @@ def test_resource_tracking_attribute(capsys):
     captured = capsys.readouterr()
     captured = captured.out.splitlines()
 
-    RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
     assert len(captured) == 3
-    assert captured[0] == RESOURCE_PRINT_DELIMETER
-    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+    assert captured[0] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
+    assert captured[-1] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
 
     assert captured[1] == expected
 
@@ -135,8 +134,8 @@ def test_resource_tracking_attribute(capsys):
 
     # Running grad prints resource information again
     assert len(captured) == 3
-    assert captured[0] == RESOURCE_PRINT_DELIMETER
-    assert captured[-1] == RESOURCE_PRINT_DELIMETER
+    assert captured[0] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
+    assert captured[-1] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
     assert captured[1] == expected
 
 

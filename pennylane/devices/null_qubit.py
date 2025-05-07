@@ -51,7 +51,8 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-RESOURCE_PRINT_DELIMETER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+# The delimiter to print before and after each resource JSON to make parsing easier
+RESOURCE_PRINT_DELIMITER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 
 
 @singledispatch
@@ -167,7 +168,7 @@ def _simulate_resource_use(circuit):
         gate_types[name] += 1
     # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
     #  In the future it may be better to return this information in a more structured way.
-    print(RESOURCE_PRINT_DELIMETER)
+    print(RESOURCE_PRINT_DELIMITER)
     print(
         json.dumps(
             {
@@ -177,7 +178,7 @@ def _simulate_resource_use(circuit):
             }
         )
     )
-    print(RESOURCE_PRINT_DELIMETER)
+    print(RESOURCE_PRINT_DELIMITER)
 
 
 @simulator_tracking
