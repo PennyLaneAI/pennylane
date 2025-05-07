@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from conftest import decompositions, weighted_decompositions, to_resources
+from conftest import decompositions, to_resources
 
 import pennylane as qml
 from pennylane.decomposition import (
@@ -57,7 +57,15 @@ class TestDecompositionGraph:
         expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
         assert graph.resource_estimate(op) == expected_resource
 
-        # TODO: write more tests
+        # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0},
+        )
+        graph.solve()
+
+        expected_resource = to_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
+        assert graph.resource_estimate(op) == expected_resource
 
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
