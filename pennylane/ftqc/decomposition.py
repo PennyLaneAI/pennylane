@@ -58,7 +58,13 @@ def convert_to_mbqc_gateset(tape):
 
 @transform
 def convert_to_mbqc_formalism(tape):
-    """docstring goes here"""
+    """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
+    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
+    be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
+    before applying the transform.
+
+    Note that this transform leaves all Paulis and Identities as physical gates, and applies
+    all byproduct operations online immediately after their respective measurement procedures."""
 
     if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
         raise NotImplementedError(
@@ -100,7 +106,9 @@ def convert_to_mbqc_formalism(tape):
 
 def queue_single_qubit_gate(q_mgr, op, in_wire):
     """Queue the resource state preparation, measurements and byproducts
-    to execute the operation in the MBQC formalism."""
+    to execute the operation in the MBQC formalism. This implementation
+    follows the procedures defined in Raussendorf et. al. 2003,
+    https://doi.org/10.1103/PhysRevA.68.022312"""
 
     graph_wires = q_mgr.acquire_qubits(4)
     wires = [in_wire] + graph_wires
@@ -240,8 +248,9 @@ def _s_corrections(op, measurements):
 
 
 def queue_cnot(q_mgr, ctrl_idx, target_idx):
-    """Queue the resource state preparation, measurements and byproducts
-    to execute the operation in the MBQC formalism."""
+    """Queue the resource state preparation, measurements and byproducts to execute
+    the operation in the MBQC formalism. This is the 15-qubit procedure from
+    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312"""
 
     graph_wires = q_mgr.acquire_qubits(13)
 
@@ -268,7 +277,9 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
 
 
 def cnot_measurements(wires):
-    """Queue the measurements needed to execute CNOT in the MBQC formalism"""
+    """Queue the measurements needed to execute CNOT in the MBQC formalism.
+    Numbering convention follows the procedure in Raussendorf et. al. 2003,
+    https://doi.org/10.1103/PhysRevA.68.022312"""
     ctrl_idx, target_idx, graph_wires = wires
 
     m1 = measure_x(ctrl_idx, reset=True)
@@ -294,6 +305,8 @@ def cnot_corrections(measurements):
     """Queue the byproduct corrections associated with the CNOT gate in
     the MBQC formalism, based on measurement results"""
 
+    # Numbering convention follows the procedure in Raussendorf et. al. 2003,
+    # https://doi.org/10.1103/PhysRevA.68.022312
     m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
 
     # corrections on control
