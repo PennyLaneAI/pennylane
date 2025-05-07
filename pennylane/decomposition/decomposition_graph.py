@@ -133,11 +133,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     ):
         if isinstance(gate_set, set):
             # The names of the gates in the target gate set.
-            self._gate_set: set[str] = {_to_name(op) for op in gate_set}
-            self._weights = {gate: 1.0 for gate in self._gate_set}
+            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
         else:
             # the gate_set is a dict
-            self._gate_set = {_to_name(gate) for gate in gate_set}
             self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
 
 
@@ -202,7 +200,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._graph.add_node(op_node)
         self._all_op_indices[op_node] = op_node_idx
 
-        if op_node.name in self._gate_set:
+        if op_node.name in self._weights:
             self._graph.add_edge(self._start, op_node_idx, self._weights[op_node.name])
             return op_node_idx
 
@@ -315,9 +313,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         """
         self._visitor = _DecompositionSearchVisitor(
             self._graph,
+            self._weights,
             self._original_ops_indices,
             lazy,
-            self._weights,
         )
         rx.dijkstra_search(
             self._graph,
@@ -329,7 +327,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
             op_names = set(op.name for op in unsolved_ops)
             raise DecompositionError(
-                f"Decomposition not found for {op_names} to the gate set {self._gate_set}"
+                f"Decomposition not found for {op_names} to the gate set {self._weights}"
             )
 
     def is_solved_for(self, op):
@@ -433,9 +431,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
     def __init__(
         self,
         graph: rx.PyDiGraph,
+        gate_set: dict,
         original_op_indices: set[int],
         lazy: bool = True,
-        gate_set: dict = None,
     ):
         self._graph = graph
         self._lazy = lazy
@@ -445,11 +443,11 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
-        self._gate_set = gate_set
+        self._gate_weights = gate_set
 
     def _get_node_weight(self, gates):
         """Calculates the weight of a node."""
-        return sum(self._gate_set[gate.name] * count for gate, count in gates.items())
+        return sum(self._gate_weights[gate.name] * count for gate, count in gates.items())
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
