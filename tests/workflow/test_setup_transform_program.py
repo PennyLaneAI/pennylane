@@ -196,9 +196,7 @@ def test_cache_handling():
     assert repr(inner_tp) == "TransformProgram(_cache_transform)"
     assert full_tp.is_empty()
 
-    full_tp, inner_tp = _setup_transform_program(
-        device, config, cache=False
-    )
+    full_tp, inner_tp = _setup_transform_program(device, config, cache=False)
 
     assert full_tp.is_empty()
     assert inner_tp.is_empty()

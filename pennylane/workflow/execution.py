@@ -211,9 +211,7 @@ def execute(
     )
     config = _resolve_execution_config(config, device, tapes)
 
-    outer_transform, inner_transform = _setup_transform_program(
-        device, config, cache, cachesize
-    )
+    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
     tapes, outer_post_processing = outer_transform(tapes)
