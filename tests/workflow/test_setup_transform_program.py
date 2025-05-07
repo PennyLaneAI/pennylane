@@ -15,10 +15,8 @@
 
 from unittest.mock import MagicMock
 
-import pytest
-
 import pennylane as qml
-from pennylane.devices import ExecutionConfig, MCMConfig
+from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow._setup_transform_program import (
     _prune_dynamic_transform,
