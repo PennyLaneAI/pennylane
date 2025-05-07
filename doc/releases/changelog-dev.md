@@ -120,8 +120,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Computing the angles for uniformly controlled rotations, used in `MottonenStatePreparation`
-  and `SelectPauliRot`, now takes much less computational effort and memory.
+* Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
+  and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
 * An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
@@ -278,7 +278,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in the validation of `SelectPauliRot` that prevents broadcasting.
+* Fixed a bug in the validation of :class:`~.SelectPauliRot` that prevents parameter broadcasting.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
