@@ -87,6 +87,7 @@ Other transforms that may be relevant to device preprocessing include:
 
     defer_measurements
     transforms.broadcast_expand
+    transforms.set_shots
     transforms.split_non_commuting
 
 Modifiers

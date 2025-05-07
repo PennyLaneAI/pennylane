@@ -4,10 +4,32 @@
 
 <h3>New features since last release</h3>
 
-* A new transfomer :func:`~.transforms.set_shots` has been added to set the number of shots for all QNodes in a pipeline.
-  This transform can be used to set the number of shots for all QNodes in a pipeline.
+* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+
+  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+
+  ```python
+  @partial(qml.set_shots, shots=2)
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      return qml.sample(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  [1. 1.]
+  ```
+  
+  Additionally, it can be used in-line to update a circuit's `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+  >>> new_circ()
+  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+  ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
@@ -125,6 +147,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
+  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
+  
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -238,8 +265,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Ajusted execution pipeline to be compatible with the new `set_shots` transform.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
+* Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
+  [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
+
 * `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
   [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)

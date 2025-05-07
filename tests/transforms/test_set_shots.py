@@ -122,3 +122,15 @@ class TestSetShots:
     def test_toplevel_accessible(self):
         """Test that qml.set_shots is available at top-level."""
         assert hasattr(qml, "set_shots")
+
+    @pytest.mark.integration
+    def test_circuit_specification(self):
+        """Test that a handy shot specification works."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.sample(qml.Z(0))
+
+        res = circuit(shots=10)
+        assert len(res) == 10
