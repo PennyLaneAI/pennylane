@@ -42,6 +42,7 @@ class Resources:
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
+        assert self.weighted_cost >= 0.0
 
     @cached_property
     def num_gates(self) -> int:

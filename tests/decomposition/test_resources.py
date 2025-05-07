@@ -49,6 +49,16 @@ class TestResources:
                 }
             )
 
+    def test_negative_weighted_cost(self):
+        """Tests that an error is raised if the cost is negative."""
+        with pytest.raises(AssertionError):
+            Resources(
+                gate_counts={
+                    CompressedResourceOp(qml.RX, {}): 2,
+                },
+                weighted_cost=-2.0
+            )
+
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
