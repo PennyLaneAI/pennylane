@@ -175,6 +175,8 @@
 
 * Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
 
+* Migrated `setup.py` package build and install to `pyproject.toml` [(#7375)](https://github.com/PennyLaneAI/pennylane/pull/7375)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
