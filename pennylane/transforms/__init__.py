@@ -307,6 +307,7 @@ from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 from .combine_global_phases import combine_global_phases
+from .openqasm import to_openqasm
 
 from .mitigate import (
     mitigate_with_zne,
