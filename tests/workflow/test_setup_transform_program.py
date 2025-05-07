@@ -52,7 +52,7 @@ def test_gradient_expand_transform():
 
     full_tp, _ = _setup_transform_program(device, config)
 
-    assert repr(full_tp) == "TransformProgram(mock_user_transform, _expand_transform_param_shift)"
+    assert repr(full_tp) == "TransformProgram(_expand_transform_param_shift)"
 
 
 def test_device_transform_program():
@@ -180,7 +180,7 @@ def test_interface_data_supported():
         convert_to_numpy=False, interface="jax", gradient_method=qml.gradients.param_shift
     )
 
-    _, inner_tp = _setup_transform_program(TransformProgram(), device, config)
+    _, inner_tp = _setup_transform_program(device, config)
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
 
