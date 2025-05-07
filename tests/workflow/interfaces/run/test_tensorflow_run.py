@@ -24,7 +24,6 @@ from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 tf = pytest.importorskip("tensorflow")

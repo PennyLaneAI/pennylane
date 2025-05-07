@@ -140,7 +140,6 @@ def test_interface_data_not_supported():
     config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
     device = qml.device("default.qubit")
 
-    user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(device, config)
 
     assert full_tp.is_empty()
@@ -153,7 +152,6 @@ def test_interface_data_supported():
 
     device = qml.device("default.mixed", wires=1)
 
-    user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
@@ -162,7 +160,6 @@ def test_interface_data_supported():
 
     device = qml.device("default.qubit")
 
-    user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
@@ -171,7 +168,6 @@ def test_interface_data_supported():
 
     device = qml.device("default.qubit")
 
-    user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(device, config)
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
@@ -190,7 +186,6 @@ def test_cache_handling():
     device = qml.device("default.qubit")
     device.preprocess_transforms = MagicMock(return_value=TransformProgram())
 
-    user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
 
     assert repr(inner_tp) == "TransformProgram(_cache_transform)"

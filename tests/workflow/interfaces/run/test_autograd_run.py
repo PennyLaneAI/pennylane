@@ -25,7 +25,6 @@ from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 
