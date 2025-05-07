@@ -40,8 +40,7 @@ def set_shots(
             This specification will override any shots value previously associated
             with the circuit or QNode during execution.
 
-    Defining shots enables users to specify circuit executions, and the :class:`~.measurements.Shots` class standardizes
-    the internal representation of shots. There are three ways to specify shot values:
+    There are three ways to specify shot values:
 
     * The value ``None``
     * A positive integer
