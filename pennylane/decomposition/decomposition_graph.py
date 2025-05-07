@@ -133,24 +133,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     ):
         if isinstance(gate_set, set):
             # The names of the gates in the target gate set.
-            self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
-            self._weights = dict()
-            for gate in self._gate_set:
-                self._weights[gate] = 1.0
+            self._gate_set: set[str] = {_to_name(op) for op in gate_set}
+            self._weights = {gate: 1.0 for gate in self._gate_set}
         else:
             # the gate_set is a dict
-            self._gate_set = {
-                translate_op_alias(gate) if isinstance(gate, str) else gate.__name__
-                for gate in gate_set.keys()
-            }
-            self._weights = dict()
-            for gate, weight in gate_set.items():
-                self._weights[translate_op_alias(gate) if isinstance(gate, str) else gate.__name__] = weight
+            self._gate_set = {_to_name(gate) for gate in gate_set}
+            self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
 
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
-        self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
@@ -211,10 +203,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            self._graph.add_edge(
-                self._start, op_node_idx,
-                self._weights[op_node.name],
-            )
+            self._graph.add_edge(self._start, op_node_idx, self._weights[op_node.name])
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
