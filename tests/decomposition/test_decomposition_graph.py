@@ -60,7 +60,7 @@ class TestDecompositionGraph:
         # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0},
+            gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
         )
         graph.solve()
 

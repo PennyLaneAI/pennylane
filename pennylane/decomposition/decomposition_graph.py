@@ -460,18 +460,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def _get_node_weight(self, gates):
         """Calculates the weight of a node."""
-        node_weight = 0
-        if self._gate_set is not None:
-            for gate, count in gates.items():
-                gate_weight = 1.0
-                if gate.name in self._gate_set.keys():
-                    gate_weight = self._gate_set[gate.name]
-                node_weight += gate_weight * count
-        else:
-            for gate, count in gates.items():
-                node_weight += count
-
-        return node_weight
+        return sum(self._gate_set[gate.name] * count for gate, count in gates.items())
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
