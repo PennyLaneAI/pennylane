@@ -199,7 +199,7 @@ class TestResourceControlled:
             "base_params": {"num_wires": 2},
             "num_ctrl_wires": 1,
             "num_ctrl_values": 0,
-            "num_work_wires": 0,
+            "ctrl_num_work_wires": 0,
         },
         {
             "base_class": re.ResourceControlled,
@@ -208,25 +208,25 @@ class TestResourceControlled:
                 "base_params": {"num_wires": 2},
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
-                "num_work_wires": 0,
+                "ctrl_num_work_wires": 0,
             },
             "num_ctrl_wires": 1,
             "num_ctrl_values": 0,
-            "num_work_wires": 0,
+            "ctrl_num_work_wires": 0,
         },
         {
             "base_class": re.ResourceQFT,
             "base_params": {"num_wires": 2},
             "num_ctrl_wires": 2,
             "num_ctrl_values": 1,
-            "num_work_wires": 0,
+            "ctrl_num_work_wires": 0,
         },
         {
             "base_class": re.ResourceAdjoint,
             "base_params": {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}},
             "num_ctrl_wires": 2,
             "num_ctrl_values": 1,
-            "num_work_wires": 1,
+            "ctrl_num_work_wires": 1,
         },
     ]
 

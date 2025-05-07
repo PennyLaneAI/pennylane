@@ -864,7 +864,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         for cmp_rep in cmpr_ops:
             ctrl_op = re.ResourceControlled.resource_rep(
-                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0, 0
+                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0, 1,
             )
             gate_types[ctrl_op] += 1
 
@@ -1367,12 +1367,20 @@ class ResourceQROM(qml.QROM, ResourceOperator):
 
         cnot = re.ResourceCNOT.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
-
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
-        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+        # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        square_fact = math.floor(
+            math.sqrt(num_bitstrings)
+        )  # use a square scheme for rows and cloumns
+        num_parallel_computations = min(num_parallel_computations, square_fact)
 
         num_swap_wires = math.floor(math.log2(num_parallel_computations))
         num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+        assert num_swap_wires + num_select_wires <= num_control_wires
+
+        swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
+        free_work_wires = num_work_wires - swap_work_wires
 
         swap_clean_prefactor = 1
         select_clean_prefactor = 1
@@ -1385,7 +1393,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         # SELECT cost:
         gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
 
-        multi_x = re.ResourceMultiControlledX.resource_rep(num_select_wires, 0, 0)
+        multi_x = re.ResourceMultiControlledX.resource_rep(num_select_wires, 0, free_work_wires)
         num_total_ctrl_possibilities = 2**num_select_wires
         gate_types[multi_x] = select_clean_prefactor * (
             2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
@@ -1394,6 +1402,71 @@ class ResourceQROM(qml.QROM, ResourceOperator):
         gate_types[x] = select_clean_prefactor * (
             num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
         )
+        # SWAP cost:
+        ctrl_swap = re.ResourceCSWAP.resource_rep()
+        gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+
+        return gate_types
+
+    @staticmethod
+    def resources_via_ui(
+        num_bitstrings,
+        num_bit_flips,
+        num_control_wires,
+        num_work_wires,
+        size_bitstring,
+        clean,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""The resources for QROM are taken from the following two papers:
+        (https://arxiv.org/pdf/1812.00954, figure 1.c) and
+        (https://arxiv.org/pdf/1902.02134, figure 4).
+
+        Note: we use the unary iterator trick to implement the Select. This
+        implementation assumes we have access to :math:`S + 1` additional
+        work qubits, where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is
+        the number of batches of unitaries to select.
+        """
+        gate_types = {}
+        
+        x = re.ResourceX.resource_rep()
+
+        if num_control_wires == 0:
+            gate_types[x] = num_bit_flips
+            return gate_types
+
+        cnot = re.ResourceCNOT.resource_rep()
+        t = re.ResourceT.resource_rep()
+        toffoli = re.ResourceToffoli.resource_rep()
+        hadamard = re.ResourceHadamard.resource_rep()
+
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            gate_types[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        num_groups = math.ceil(num_bitstrings / (2**num_swap_wires))
+
+        gate_types[x] = (
+            select_clean_prefactor * 2 * (num_groups - 1)
+        )  # conjugate 0 controlled toffolis
+        gate_types[cnot] = select_clean_prefactor * (num_groups - 1)
+        gate_types[toffoli] = select_clean_prefactor * 2 * (num_groups - 1)
+        # gate_types[t] = select_clean_prefactor * 4 * (num_groups - 1)
+
+        gate_types[cnot] += (
+            select_clean_prefactor * num_bit_flips
+        )  # each unitary in the select is just a CNOT
+
         # SWAP cost:
         ctrl_swap = re.ResourceCSWAP.resource_rep()
         gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
@@ -1539,7 +1612,7 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             base_params=O_params,
             num_ctrl_wires=1,
             num_ctrl_values=0,
-            num_work_wires=0,
+            ctrl_num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
@@ -1633,3 +1706,64 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             "fixed_point": fixed_point,
         }
         return CompressedResourceOp(cls, params)
+
+
+class ResourceQubitUnitary(qml.QubitUnitary, ResourceOperator):
+    r"""Resource class for the QubitUnitary template.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+
+    Resources:
+        The resources are not defined. Requesting the resources of this
+        gate raises a :code:`ResourcesNotDefined` error.
+
+    .. seealso:: :class:`~.QubitUnitary`
+
+    """
+
+    @staticmethod
+    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources are not defined. Requesting the resources of this
+            gate raises a :code:`ResourcesNotDefined` error.
+
+        """
+        raise re.ResourcesNotDefined
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Resource parameters:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            dict: dictionary containing the resource parameters
+        """
+        return {"num_wires": len(self.wires)}
+
+    @classmethod
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"num_wires": num_wires}
+        return CompressedResourceOp(cls, params)
+
+    @staticmethod
+    def tracking_name(num_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"QubitUnitary({num_wires})"
