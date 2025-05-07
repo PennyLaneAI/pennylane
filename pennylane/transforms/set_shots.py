@@ -40,16 +40,36 @@ def set_shots(
             This specification will override any shots value previously associated
             with the circuit or QNode during execution.
 
-    There are three ways to specify shot values:
-
-    * The value ``None``
-    * A positive integer
-    * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
-
     Returns:
         tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
         post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
         tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
+
+    There are three ways to specify shot values (see :class:`~pennylane.measurements.Shots` for more details):
+
+    * The value ``None``: analytic mode, no shots
+    * A positive integer: a fixed number of shots
+    * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
+
+    **Examples**
+
+    Set the number of shots as a decorator:
+
+    >>> from functools import partial
+    >>> @partial(qml.set_shots, shots=2)
+    ... @qml.qnode(qml.device("default.qubit", wires=1))
+    ... def circuit():
+    ...     qml.RX(1.23, wires=0)
+    ...     return qml.sample(qml.Z(0))
+    ...
+    >>> circuit()
+    [1., 1.]
+
+    Update the shots in-line for an existing circuit:
+
+    >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+    >>> new_circ()
+    (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
     if tape.shots != Shots(shots):
