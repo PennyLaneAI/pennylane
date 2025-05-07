@@ -57,6 +57,3 @@ def set_shots(
     if tape.shots != Shots(shots):
         tape = tape.copy(shots=shots)
     return (tape,), null_postprocessing
-
-
-set_shots.is_user_transform = True
