@@ -76,11 +76,13 @@ class TestDecompose:
             {qml.RX, qml.RZ},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
             None,
+            None,
         ),
         (
             [qml.SWAP(wires=[0, 1])],
             {qml.CNOT},
             [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.CNOT([0, 1])],
+            None,
             None,
         ),
         (
@@ -88,12 +90,21 @@ class TestDecompose:
             {qml.Toffoli},
             [qml.Toffoli([0, 1, 2])],
             None,
+            None
         ),
         (
             [qml.measurements.MidMeasureMP(0)],
             {},
             [qml.measurements.MidMeasureMP(0)],
+            None,
+            "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored.",
+        ),
+        (
+            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
+            {qml.Toffoli},
+            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
             "MidMeasureMP",
+            None,
         ),
     ]
 
@@ -147,20 +158,23 @@ class TestDecompose:
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
             decompose(tape, lambda obj: obj.has_matrix)
 
-    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", iterables_test)
-    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
+    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern, error_pattern", iterables_test)
+    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern, error_pattern):
         """Tests that gate sets defined with iterables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 
-        if warning_pattern is not None:
+        if error_pattern is not None:
+            with pytest.raises(TypeError, match=error_pattern):
+                decompose(tape, gate_set=gate_set)
+        elif warning_pattern is not None:
             with pytest.warns(UserWarning, match=warning_pattern):
                 (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                expected_tape = qml.tape.QuantumScript(expected_ops)
+                qml.assert_equal(decomposed_tape, expected_tape)
         else:
             (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-
-        expected_tape = qml.tape.QuantumScript(expected_ops)
-
-        qml.assert_equal(decomposed_tape, expected_tape)
+            expected_tape = qml.tape.QuantumScript(expected_ops)
+            qml.assert_equal(decomposed_tape, expected_tape)
 
     @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
     def test_callable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):

@@ -42,6 +42,8 @@ from pennylane.decomposition.decomposition_graph import _to_name
 )
 class TestDecompositionGraph:
 
+    def test_
+
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
