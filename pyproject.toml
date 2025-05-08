@@ -1,5 +1,5 @@
 [build-system]
-requires = ["cmake", "setuptools>=75", "tomli"]
+requires = ["setuptools>=75", "tomli"]
 build-backend = "setuptools.build_meta"
 
 [project]
