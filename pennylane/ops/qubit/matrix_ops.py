@@ -495,17 +495,65 @@ class DiagonalQubitUnitary(Operation):
         [SelectPauliRot(array([1.7, 1.3]), wires=[0, 1]),
          DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0])]
 
+        **Finding the parameters:**
+
+        Theorem 7 referenced above only tells us the structure of the circuit, but not the
+        parameters for the ``SelectPauliRot`` and ``DiagonalQubitUnitary`` in the decomposition.
+        In the following, we will only write out the diagonals of all gates.
+        Consider a ``DiagonalQubitUnitary`` on :math:`n` qubits that we want to decompose:
+
+        .. math::
+
+            D(\theta) = (\exp(i\theta_0), \exp(i\theta_1), \dots,
+            \exp(i\theta_{N-2}), \exp(i\theta_{N-1})).
+
+        Here, :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits, which is
+        the same as the number of parameters in :math:`D`.
+
+        A ``SelectPauliRot`` gate using ``RZ`` rotations, or multiplexed ``RZ`` rotation, using the
+        first :math:`n-1` qubits as controls and the last qubit as target, takes the form
+
+        .. math::
+
+            UCR_Z(\phi) = (\exp(-\frac{i}{2}\phi_0), \exp(\frac{i}{2}\phi_0), \dots,
+            \exp(-\frac{i}{2}\phi_{N/2-1}), \exp(\frac{i}{2}\phi_{N/2-1})),
+
+        i.e., it moves the phase of neighbouring pairs of computational basis states by
+        the same amount, but in opposite direction. There are :math:`N/2` parameters
+        in this gate.
+        Similarly, a ``DiagonalQubitUnitary`` acting on the first :math:`n-1` qubits only (the
+        ones that were controls for ``SelectPauliRot``) takes the form
+
+        .. math::
+
+            D'(\theta') = (\exp(i\theta'_0), \exp(i\theta'_0), \dots,
+            \exp(i\theta'_{N/2-1}), \exp(i\theta'_{N/2-1})).
+
+        That is, :math:`D'` moves the phase of neighbouring pairs of basis states by the same
+        amount and in the same direction. It, too, has :math:`N/2` parameters.
+        Now, we see that we can compute the rotation angles,
+        or phases, :math:`\phi` and :math:`\theta'` quite easily from the original :math:`\theta`:
+
+        .. math::
+
+            (\exp(i\theta_{2i}), \exp(i\theta_{2i+1})) &\overset{!}{=}
+            (\exp(-\frac{i}{2}\phi_i)\exp(i\theta'_i), \exp(\frac{i}{2}\phi_i)\exp(i\theta'_i))\\
+            \Rightarrow \qquad \theta'_i &=\frac{1}{2}(\theta_{2i}+\theta_{2i+1})\\
+            \phi_i &=\theta_{2i+1}-\theta_{2i}.
+
+        So the phases for the new gates arise simply as difference and average of the odd-indexed
+        and even-indexed phases.
         """
         angles = qml.math.angle(D)
-        diff = angles[..., ::2] - angles[..., 1::2]
+        diff = angles[..., 1::2] - angles[..., ::2]
         mean = (angles[..., ::2] + angles[..., 1::2]) / 2
         if len(wires) == 1:
             return [  # Squeeze away non-broadcasting axis (there is just one angle for RZ/GPhase
-                qml.RZ(-qml.math.squeeze(diff, axis=-1), wires=wires),
+                qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
                 qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires),
             ]
         return [
-            qml.SelectPauliRot(-diff, control_wires=wires[:-1], target_wire=wires[-1]),
+            qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
             qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
         ]
 
