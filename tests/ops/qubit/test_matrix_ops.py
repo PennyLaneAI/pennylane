@@ -27,11 +27,11 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.qubit.matrix_ops import (
-    _compute_udv,
     _walsh_hadamard_transform,
     fractional_matrix_power,
 )
 from pennylane.wires import Wires
+from pennylane.ops.op_math.decompositions.unitary_decompositions import compute_udv
 
 
 class TestQubitUnitaryCSR:
@@ -589,26 +589,34 @@ class TestQubitUnitary:
             U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
         )
 
-    def test_compute_udv(self):
-        """Test the helper function `_compute_udv` used in the QubitUnitary decomposition."""
+    @pytest.mark.parametrize(
+        "a, b, size",
+        [
+            (qml.matrix(qml.RY(1, 0) @ qml.RY(2, 1)), qml.matrix(qml.RX(2, 0) @ qml.RZ(4, 1)), 4),
+            (qml.matrix(qml.RY(1, 0)), qml.matrix(qml.RX(2, 0)), 2),
+            (qml.matrix(qml.GroverOperator([0, 1, 2])), qml.matrix(qml.QFT([0, 1, 2])), 8),
+        ],
+    )
+    def test_compute_udv(self, a, b, size):
+        """Test the helper function `compute_udv` used in the QubitUnitary decomposition."""
 
-        a = qml.matrix(qml.RY(1, 0))
-        b = qml.matrix(qml.RX(2, 0))
-
-        u, d, v = _compute_udv(a, b)
+        u, d, v = compute_udv(a, b)
         d = np.diag(d)
 
         initial = np.block(
-            [[a, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), b]]
+            [[a, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), b]]
         )
         u_block = np.block(
-            [[u, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), u]]
+            [[u, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), u]]
         )
         v_block = np.block(
-            [[v, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), v]]
+            [[v, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), v]]
         )
         d_block = np.block(
-            [[d, np.zeros((2, 2), dtype=complex)], [np.zeros((2, 2), dtype=complex), np.conj(d)]]
+            [
+                [d, np.zeros((size, size), dtype=complex)],
+                [np.zeros((size, size), dtype=complex), np.conj(d)],
+            ]
         )
 
         assert np.allclose(initial, u_block @ d_block @ v_block)

@@ -95,30 +95,6 @@ def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
     return qml.math.reshape(qml.math.transpose(D), orig_shape)
 
 
-def _compute_udv(a, b):
-    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
-    of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
-
-    .. math::
-
-        a = u d v \\
-        b = u d^{\dagger} v.
-    """
-
-    # Calculates u and d diagonalizing ab^dagger (Eq.39)
-    ab_dagger = a @ qml.math.conj(b.T)
-    d_square, u = qml.math.linalg.eig(ab_dagger)
-    u, _ = qml.math.linalg.qr(u)
-
-    # complex square root of eigenvalues
-    d = qml.math.exp(1j * qml.math.angle(d_square) / 2)
-
-    # Calculates v using Eq.40
-    v = qml.math.conj(qml.math.diag(d).T) @ qml.math.conj(u.T) @ a
-
-    return u, d, v
-
-
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
@@ -280,7 +256,7 @@ class QubitUnitary(Operation):
 
         See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
         for more information on how the decompositions are computed when the number of qubits is one or two.
-        For arbitrary numbers of qubits, see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100) 
+        For arbitrary numbers of qubits, see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100)
         for more details.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -322,89 +298,7 @@ class QubitUnitary(Operation):
 
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
-        ops = []
-
-        # pylint: disable=import-outside-toplevel
-        try:
-            # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
-
-            import jax
-
-            def scipy_cossin_callback(U_flat, p, q):
-                dim = int(np.sqrt(U_flat.size))
-                U_np = U_flat.reshape((dim, dim))
-                (u1, u2), theta, (v1_dagg, v2_dagg) = sp.linalg.cossin(
-                    U_np, p=p, q=q, separate=True
-                )
-                return u1, u2, theta, v1_dagg, v2_dagg
-
-            def cossin_decomposition(U, p, q):
-                dtype = U.dtype
-                U_flat = U.reshape(-1)
-
-                def callback(U_flat):
-                    return tuple(
-                        arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p, q)
-                    )
-
-                u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
-                    callback,
-                    result_shape_dtypes=(
-                        jax.ShapeDtypeStruct((p, p), dtype),
-                        jax.ShapeDtypeStruct((p, p), dtype),
-                        jax.ShapeDtypeStruct((p,), dtype),
-                        jax.ShapeDtypeStruct((q, q), dtype),
-                        jax.ShapeDtypeStruct((q, q), dtype),
-                    ),
-                    U_flat=U_flat,
-                )
-
-                return (u1, u2), theta, (v1_dagg, v2_dagg)
-
-        except ImportError:
-
-            def cossin_decomposition(U, p, q):
-                return sp.linalg.cossin(U, p=p, q=q, separate=True)
-
-        # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
-        # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
-
-        p = 2 ** (len(wires) - 1)
-        q = 2 ** (len(wires) - 1)
-
-        (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p, q)
-
-        v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
-        u11, diag_u, u12 = _compute_udv(u1, u2)
-
-        ops += [QubitUnitary(v12_dagg, wires=wires[1:])]
-        ops.append(
-            qml.SelectPauliRot(
-                -2 * qml.math.angle(diag_v),
-                target_wire=wires[0],
-                control_wires=wires[1:],
-                rot_axis="Z",
-            )
-        )
-        ops += [QubitUnitary(v11_dagg, wires=wires[1:])]
-
-        ops.append(
-            qml.SelectPauliRot(
-                2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
-            )
-        )
-
-        ops += [QubitUnitary(u12, wires=wires[1:])]
-        ops.append(
-            qml.SelectPauliRot(
-                -2 * qml.math.angle(diag_u),
-                target_wire=wires[0],
-                control_wires=wires[1:],
-                rot_axis="Z",
-            )
-        )
-        ops += [QubitUnitary(u11, wires=wires[1:])]
-        return ops
+        return qml.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
