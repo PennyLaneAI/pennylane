@@ -455,7 +455,7 @@ def decompose(
             ``True`` if the operator belongs to the target gate set or (3) a dictionary of operator
             types and/or names with weights. Defaults to ``None``, in which case the gate set is
             considered to be all available :doc:`quantum operators </introduction/operations>`.
-        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
+        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
