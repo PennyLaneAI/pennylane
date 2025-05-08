@@ -284,7 +284,7 @@ def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:  
     
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
-    new_budget = first.tight_budget
+    new_budget = qm.tight_budget
     new_logic = qm.algo_qubits
 
     new_qubit_manager = QubitManager(
@@ -313,7 +313,7 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
     
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
-    new_budget = first.tight_budget
+    new_budget = qm.tight_budget
     new_logic = scalar * qm.algo_qubits
 
     new_qubit_manager = QubitManager(
