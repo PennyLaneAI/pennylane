@@ -27,7 +27,6 @@ from pennylane.gradients.parameter_shift import (
     _put_zeros_in_pdA2_involutory,
 )
 from pennylane.measurements.shots import Shots
-from pennylane.operation import Observable
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values
@@ -2596,7 +2595,7 @@ class TestParameterShiftRule:
                 return SpecialObject(new)
 
         # pylint: disable=too-few-public-methods
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
