@@ -634,7 +634,10 @@ def decompose(
 
         .. code-block:: python
 
-            @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+            @partial(
+                qml.transforms.decompose, 
+                gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420}
+            )
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 qml.H(wires=[0])
