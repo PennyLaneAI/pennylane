@@ -157,8 +157,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if qml.decomposition.enabled_graph():
 
                     type_to_names = {op_type.__name__ for op_type in target_gate_types}
-                    self._target_gate_names = target_gate_names | type_to_names
-                    self._gate_set = gate_set
+                    self._gate_set = gate_set if isinstance(gate_set, dict) else target_gate_names | type_to_names
 
             else:  # isinstance(gate_set, Callable)
 
@@ -306,7 +305,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
                         operations,
-                        self._target_gate_names if not isinstance(self._gate_set, dict) else self._gate_set,
+                        self._gate_set,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )

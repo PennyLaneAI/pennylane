@@ -77,14 +77,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     calculated by the difference of the sum of the gate counts multiplied by their respective gate
     weights in the decomposition, minus the weight of the operator of the operator node.
 
-    For example, the edge that connects a ``CNOT`` to the following
+    For example, if the graph was initialized with ``{qml.CNOT: 10.0, qml.H: 1.0}`` as the gate set, the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python
 
         import pennylane as qml
 
-        @partial(qml.transforms.decompose, gate_set={qml.CNOT: 10.0, qml.H: 1.0})
         @qml.register_resources({qml.H: 2, qml.CNOT: 1})
         def my_cz(wires):
             qml.H(wires=wires[1])
@@ -103,8 +102,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str] | dict[type | str, float]): The names and (optionally) weights of the gates in the target
-            gate set.
+        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
@@ -136,7 +134,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[str] | dict[type | str, float],
+        gate_set: set[type | str] | dict[type | str, float],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
