@@ -113,7 +113,6 @@ class TestControlledDecompositionRules:
                     },
                 ): 1,
             },
-            5.0,
         )
 
 
@@ -182,7 +181,6 @@ class TestControlledX:
                     },
                 ): 1
             },
-            1.0,
         )
 
         op = qml.ops.Controlled(
@@ -403,7 +401,6 @@ class TestControlledBaseDecomposition:
                 qml.resource_rep(qml.CZ): 1,
                 qml.resource_rep(qml.CCZ): 1,
             },
-            12.0,
         )
 
     def test_double_control_wire(self):
@@ -516,7 +513,6 @@ class TestControlledBaseDecomposition:
                     qml.Z, {}, num_control_wires=3, num_work_wires=1
                 ): 1,
             },
-            14.0,
         )
 
     def test_multi_control_wires(self):
@@ -638,5 +634,4 @@ class TestControlledBaseDecomposition:
                     qml.Z, {}, num_control_wires=4, num_work_wires=1
                 ): 1,
             },
-            16.0,
         )

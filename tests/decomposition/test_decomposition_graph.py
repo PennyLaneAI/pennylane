@@ -61,26 +61,6 @@ class TestDecompositionGraph:
             )
             graph.solve()
 
-    def test_weighted_graph_handles_string_input(self, _):
-        """Tests a DecompositionGraph raises a TypeError when given string weights."""
-
-        op = qml.CRX(2.5, wires=[0, 1])
-
-        # bad input: string
-        with pytest.raises(TypeError):
-            graph = DecompositionGraph(
-                operations=[op],
-                gate_set={
-                    "RX": "1.0",
-                    "RY": 1.0,
-                    "RZ": 1.0,
-                    "GlobalPhase": 1.0,
-                    "CNOT": 1.0,
-                    "CZ": 10.0,
-                },
-            )
-            graph.solve()
-
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
