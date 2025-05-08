@@ -67,7 +67,7 @@ according to $s_i$ and $e_i$.
 
 To begin, initialize empty lists of control wires and control values, corresponding
 to $s_0=0$. Then, starting at $i=0$, which also marks the current wire,
-go through the integer decomposition $\{c_i\}_i$ from above and perform the
+go through the integer decomposition $\{c_i\}$ from above and perform the
 following steps:
 
 1. If $c_i=0$, go to step 2 immediately. Else, we want to

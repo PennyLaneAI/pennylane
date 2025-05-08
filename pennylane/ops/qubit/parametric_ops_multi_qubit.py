@@ -678,8 +678,8 @@ def _ctrl_phase_shift(phi, wire, subspace, control_data):
     The second is to conjugate a phase shift by Pauli-X operators on the same qubit, decomposing
     the gate matrix as
 
-    / e^(i\phi)   0 \ _ / 0   1 \/ 1     0     \/ 0   1 \
-    \     0       1 / ¯ \ 1   0 /\ 0 e^(i\phi) /\ 1   0 /.
+    / e^(i\phi)   0 \ -- / 0   1 \/ 1     0     \/ 0   1 \
+    \     0       1 / -- \ 1   0 /\ 0 e^(i\phi) /\ 1   0 /.
 
     Without controls, the first approach is nicer, because global phases usually are free
     operations. With controls, however, this approach would lead to a controlled global
