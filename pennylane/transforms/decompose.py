@@ -60,8 +60,10 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
     if isinstance(gate_set, dict):
         for v in gate_set.values():
             if v < 0.0:
-                raise ValueError("Gate weights provided in a `dict` type `gate_set` parameter to `decompose`"
-                                 "must not be negative, as negative gate weights are not supported.")
+                raise ValueError(
+                    "Gate weights provided in a `dict` type `gate_set` parameter to `decompose`"
+                    "must not be negative, as negative gate weights are not supported."
+                )
 
         if not qml.decomposition.enabled_graph():
             raise TypeError(
