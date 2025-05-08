@@ -87,15 +87,12 @@ def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRX"] = [_crx_to_rx_cz]
-
-
 @qml.register_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
 def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRX"] += [_crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
+decompositions["CRX"] = [_crx_to_rx_cz, _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
 
 
 @qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})
