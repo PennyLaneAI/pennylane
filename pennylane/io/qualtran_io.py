@@ -25,7 +25,7 @@ import pennylane.templates as qtemps
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
-# from pennylane.workflow.qnode import QNode
+from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -696,7 +696,7 @@ def _inherit_from_bloq(cls):
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
-            op: Operation | QNode
+            op: Operation | Any
 
             @cached_property
             def signature(self) -> "qt.Signature":
