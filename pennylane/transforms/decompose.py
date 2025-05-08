@@ -628,7 +628,7 @@ def decompose(
             >>> new_tape.operations
             [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
-        **Weighted Gate SSets**
+        **Weighted Gate Sets**
 
         With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. For example:
 
