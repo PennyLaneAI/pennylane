@@ -6,8 +6,47 @@
 
 * Support for weighted gates in target gatesets added which reflects the 
   relative costs of executing different gates on a hardware backend i.e. T is more expensive
-  than a Pauli gate.
+  than a Pauli gate. The decompose transform now supports that the `gate_set` parameter be of `dict[type | str, float]` 
+  type, which is a mapping of gate types (or gate names) to weights. The decomposition rules are then chosen such that 
+  the overall weighted cost is minimized. This therefore now accounts not only for the number of gates in a 
+  decomposition, but also their relative weights.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
+
+  ```python
+    op = qml.CRX(2.5, wires=[0, 1])
+  
+    # i.e. a RZ CZ RX CZ decomp (that does not involve RZ, CNOT) is chosen when the RZ and CNOT weights are large.
+    gate_weights = {"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0}
+  
+    graph = DecompositionGraph(
+        operations=[op],
+        gate_set=gate_weights,
+    )
+    graph.solve()
+  ```
+
+  ```pycon
+    >>> print(graph.resource_estimate(op).__repr__())
+    '<num_gates=4, gate_counts={RX: 2, CZ: 2}, weighted_cost=4.0>'
+  ```
+
+  ```python  
+    op = qml.CRX(2.5, wires=[0, 1])
+    
+    # alternatively, the RZ CZ RX CZ decomp is *avoided* when the CZ weight is large.
+    gate_weights = {"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0}
+  
+    graph = DecompositionGraph(
+        operations=[op],
+        gate_set=gate_weights,
+    )
+    graph.solve()
+  ```
+  
+  ```pycon
+    >>> print(graph.resource_estimate(op).__repr__())
+    '<num_gates=16, gate_counts={RZ: 4, RY: 4, RX: 2, GlobalPhase: 4, CNOT: 2}, weighted_cost=16.0>'
+  ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
