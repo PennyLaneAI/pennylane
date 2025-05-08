@@ -271,7 +271,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
                         operations,
-                        self._target_gate_names if not isinstance(self._gate_set, dict) else self._gate_set,
+                        self._gate_set,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
