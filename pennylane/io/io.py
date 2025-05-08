@@ -628,7 +628,7 @@ def to_openqasm(
     """Serialize the circuit as an OpenQASM 2.0 program.
 
     Measurements are assumed to be performed on all qubits in the computational basis.
-    An optional ``rotations`` argument can be provided so that output of the OpenQASM circuit
+    An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
     is diagonal in the eigenbasis of the quantum script's observables.
     The measurement outputs can be restricted to only those specified in the script by setting ``measure_all=False``.
 
@@ -636,17 +636,17 @@ def to_openqasm(
         wires (Wires or None): the wires to use when serializing the circuit.
             Defaults to ``None``, such that all the wires are used for serialization
         rotations (bool): in addition to serializing user-specified gates, also include the gates that
-            diagonalize the measured wires such that they are in the eigenbasis of the circuit observables.
+            diagonalize the measured wires such that they are in the eigenbasis of the circuit observables
         measure_all (bool): whether to perform a computational basis measurement on all
             qubits or just those specified in the script
         precision (int): number of decimal digits to display for the parameters
 
     Returns:
-        str: OpenQASM 2.0 program correspoding to the circuit
+        str: OpenQASM 2.0 program corresponding to the circuit
 
     **Example**
 
-    The following QNode can be serialized to an OpenQASM 2.0 program:
+    The following ``QNode`` can be serialized to an OpenQASM 2.0 program:
 
     .. code-block:: python
 
@@ -674,7 +674,7 @@ def to_openqasm(
         :title: Usage Details
 
         By default, all the qubits are measured and all the measurements are performed in the computational basis.
-        However, if the measurement operation in the QNode is acting only on a subset of the qubits and ``measure_all=False``,
+        However, if the measurement operation in the ``QNode`` is acting only on a subset of the qubits and ``measure_all=False``,
         the OpenQASM code will include measures on those specific qubits only.
 
         .. code-block:: python
@@ -696,7 +696,7 @@ def to_openqasm(
         cx q[0],q[1];
         measure q[1] -> c[1];
 
-        If the QNode returns an expectation value of a given observable and ``rotations=True``, the OpenQASM program will also
+        If the ``QNode`` returns an expectation value of a given observable and ``rotations=True``, the OpenQASM program will also
         include the gates that diagonalize the measured wires such that they are in the eigenbasis of the measured observable.
 
         .. code-block:: python
