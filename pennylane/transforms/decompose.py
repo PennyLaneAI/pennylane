@@ -630,7 +630,7 @@ def decompose(
 
         **Weighted Gate SSets**
 
-        With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
+        With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. For example:
 
         .. code-block:: python
 
