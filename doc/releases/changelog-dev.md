@@ -43,15 +43,16 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
-* Support for weighted gates in target gatesets added which reflects the 
-  relative costs of executing different gates on a hardware backend i.e. T is more expensive
-  than a Pauli gate. The decompose transform now supports that the `gate_set` parameter be of `dict[type | str, float]` 
-  type, which is a mapping of gate types (or gate names) to weights. The decomposition rules are then chosen such that 
-  the overall weighted cost is minimized. This therefore now accounts not only for the number of gates in a 
-  decomposition, but also their relative weights.
+* The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
+  preferential treatment of certain gates in a target `gate_set` over others.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
 
-  With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
+  Gates specified in `gate_set` can be given a numerical weight associated with their effective cost to have in a circuit:
+  
+  * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
+  * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
+
+  i.e.
 
   ```python
       @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
