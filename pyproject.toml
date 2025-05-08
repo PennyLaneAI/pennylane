@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75", "tomli"]
+requires = ["setuptools>=75.8.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
