@@ -611,7 +611,6 @@ class QNode:
         self._interface = get_canonical_interface_name(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
-
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache

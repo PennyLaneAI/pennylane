@@ -124,6 +124,13 @@
   any number of qubits.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
 
+* PennyLane supports `JAX` version 0.5.3.
+  [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
+
+* Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
+  and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
 * An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
@@ -177,7 +184,11 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
-* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
+  [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
 <h3>Breaking changes 💔</h3>
 
@@ -278,6 +289,16 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
+  [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
+
+* Fixed a bug in the validation of :class:`~.SelectPauliRot` that prevents parameter broadcasting.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
+* Usage of NumPy in `default.mixed` source code has been converted to `qml.math` to avoid
+  unnecessary dependency on NumPy and to fix a bug that caused an error when using `default.mixed` with PyTorch and GPUs.
+  [(#7384)](https://github.com/PennyLaneAI/pennylane/pull/7384)
+
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
@@ -331,6 +352,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
   [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
+* Returning `MeasurementValue`s from the `ftqc` module's parametric mid-circuit measurements
+  (`measure_arbitrary_basis`, `measure_x` and `measure_y`) no longer raises an error in circuits 
+  using `diagonalize_mcms`.
+  [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -342,6 +368,9 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
-Andrija Paurevic,
 Lee J. O'Riordan,
+Mudit Pandey,
+Andrija Paurevic,
+Kalman Szenes,
+David Wierichs,
 Jake Zaia
