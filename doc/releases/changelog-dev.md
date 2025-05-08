@@ -64,10 +64,10 @@
   ```
   
   ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
+  >>> print(qml.draw(circuit)())
+  0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+  1: ───────────────────────────────├●─┤
+  2: ───────────────────────────────╰X─┤
   ```
   Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
   as determined by the provided weights.
