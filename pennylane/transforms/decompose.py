@@ -60,7 +60,7 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
     if isinstance(gate_set, dict):
         if not qml.decomposition.enabled_graph():
             raise TypeError(
-                "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored."
+                "Specifying the gate_set with a dictionary of operator types and their weights is only supported with the new experimental graph-based decomposition system. Enable the new system using qml.decomposition.enable_graph()"
             )
 
     if isinstance(gate_set, Iterable):
