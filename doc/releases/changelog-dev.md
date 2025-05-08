@@ -283,6 +283,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* The code blocks for :class:`~.Controlled` have been updated to execute properly.
+  [(#7400)](https://github.com/PennyLaneAI/pennylane/pull/7400)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
@@ -362,6 +365,7 @@ Astral Cai,
 Yushao Chen,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Lee J. O'Riordan,
