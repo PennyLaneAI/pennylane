@@ -183,10 +183,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A `parity_matrix` function is now available in `pennylane.labs.phase_polynomials`.
-  It allows to compute the parity matrix of a CNOT circuit, which is an efficient intermediate representation.
-  It is important for CNOT routing algorithms and other quantum compilation routines.
+* The functions `parity_matrix` and `phase_polynomial` are now available in `pennylane.labs.phase_polynomials`.
+  They allow to compute efficient intermediate representations for CNOT circuits (`parity_matrix`) and (CNOT, RZ) circuits (`phase_polynomial`).
+  These efficient intermediate representations are important for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+  [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
 <h3>Breaking changes 💔</h3>
 
