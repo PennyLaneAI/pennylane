@@ -381,9 +381,10 @@ class Controlled(SymbolicOp):
     **Example**
 
     >>> base = qml.RX(1.234, 1)
-    >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
+    >>> qml.ops.Controlled(base, (0, 2, 3), control_values=[True, False, True])
     Controlled(RX(1.234, wires=[1]), control_wires=[0, 2, 3], control_values=[True, False, True])
-    >>> op = Controlled(base, 0, control_values=[0])
+
+    >>> op = qml.ops.Controlled(base, 0, control_values=[0])
     >>> op
     Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[0])
 
@@ -392,12 +393,16 @@ class Controlled(SymbolicOp):
 
     >>> op.base
     RX(1.234, wires=[1])
+
     >>> op.data
     (1.234,)
+
     >>> op.wires
     Wires([0, 1])
+
     >>> op.control_wires
     Wires([0])
+
     >>> op.target_wires
     Wires([1])
 
@@ -405,7 +410,7 @@ class Controlled(SymbolicOp):
     ``0==False`` value or the ``1==True`` wire.
 
     >>> op.control_values
-    [0]
+    [False]
 
     Provided control values are converted to booleans internally, so
     any "truthy" or "falsy" objects work.
@@ -423,20 +428,24 @@ class Controlled(SymbolicOp):
            [0.    -0.5786j, 0.8156+0.j    , 0.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 1.    +0.j    , 0.    +0.j    ],
            [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
+
     >>> qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
+
     >>> print(qml.generator(op, format='observable'))
-    (-0.5) [Projector0 X1]
+    Projector(array([0]), wires=[0]) @ (-0.5 * X(1))
+
     >>> op.sparse_matrix()
-    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-                with 6 stored elements in Compressed Sparse Row format>
+    <Compressed Sparse Row sparse matrix of dtype 'complex128'
+            with 6 stored elements and shape (4, 4)>
 
     If the provided base matrix is an :class:`~.operation.Operation`, then the created
     object will be of type :class:`~.ops.op_math.ControlledOp`. This class adds some additional
     methods and properties to the basic :class:`~.ops.op_math.Controlled` class.
 
     >>> type(op)
-    <class 'pennylane.ops.op_math.controlled_class.ControlledOp'>
+    pennylane.ops.op_math.controlled.ControlledOp
+
     >>> op.parameter_frequencies
     [(0.5, 1.0)]
 
