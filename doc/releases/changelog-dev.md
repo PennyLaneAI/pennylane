@@ -55,12 +55,12 @@
   i.e.
 
   ```python
-      @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
-      @qml.qnode(qml.device("default.qubit"))
-      def circuit():
-          qml.H(wires=[0])
-          qml.Toffoli(wires=[0,1,2])
-          return qml.expval(qml.Z(0))
+  @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.H(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
   ```
   
   ```pycon
