@@ -790,7 +790,7 @@ def multi_qubit_decomposition(U, wires):
     r"""Decompose a n-qubit unitary :math:`U` into four (n-1)-qubit unitaries and
     three multiplexers using the cosine-sine decomposition."""
 
-    ops = []
+    ops_list = []
 
     # pylint: disable=import-outside-toplevel
     try:
@@ -842,8 +842,8 @@ def multi_qubit_decomposition(U, wires):
     v11_dagg, diag_v, v12_dagg = compute_udv(v1_dagg, v2_dagg)
     u11, diag_u, u12 = compute_udv(u1, u2)
 
-    ops += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
-    ops.append(
+    ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
+    ops_list.append(
         ops.SelectPauliRot(
             -2 * math.angle(diag_v),
             target_wire=wires[0],
@@ -851,14 +851,14 @@ def multi_qubit_decomposition(U, wires):
             rot_axis="Z",
         )
     )
-    ops += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
+    ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
 
-    ops.append(
+    ops_list.append(
         ops.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
     )
 
-    ops += [ops(u12, wires=wires[1:])]
-    ops.append(
+    ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
+    ops_list.append(
         ops.SelectPauliRot(
             -2 * math.angle(diag_u),
             target_wire=wires[0],
@@ -866,4 +866,5 @@ def multi_qubit_decomposition(U, wires):
             rot_axis="Z",
         )
     )
-    ops += [ops.QubitUnitary(u11, wires=wires[1:])]
+    ops_list += [ops.QubitUnitary(u11, wires=wires[1:])]
+    return ops_list
