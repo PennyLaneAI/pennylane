@@ -52,7 +52,7 @@
   * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
   * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
 
-  i.e.
+  Consider the following toy example.
 
   ```python
   @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
