@@ -60,8 +60,7 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
         for v in gate_set.values():
             if v < 0.0:
                 raise ValueError(
-                    "Gate weights provided in a `dict` type `gate_set` parameter to `decompose`"
-                    "must not be negative, as negative gate weights are not supported."
+                    "Negative gate weights provided to gate_set in decompose" "are not supported."
                 )
 
         if not qml.decomposition.enabled_graph():
@@ -591,6 +590,25 @@ def decompose(
     ──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
     ───H†─│────────────╰●───────────────┤
     ──────╰●────────────────────────────┤
+
+    With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
+
+    .. code-block:: python
+
+        @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.H(wires=[0])
+            qml.Toffoli(wires=[0,1,2])
+            return qml.expval(qml.Z(0))
+
+    >>> print(qml.draw(circuit)())
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├●─┤
+    2: ───────────────────────────────╰X─┤
+
+    Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
+    as determined by the provided weights.
 
     .. details::
         :title: Integration with the Graph-Based Decomposition System

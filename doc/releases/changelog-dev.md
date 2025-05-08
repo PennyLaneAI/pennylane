@@ -51,41 +51,25 @@
   decomposition, but also their relative weights.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
 
+  With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
+
   ```python
-    op = qml.CRX(2.5, wires=[0, 1])
-  
-    # i.e. a RZ CZ RX CZ decomp (that does not involve RZ, CNOT) is chosen when the RZ and CNOT weights are large.
-    gate_weights = {"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0}
-  
-    graph = DecompositionGraph(
-        operations=[op],
-        gate_set=gate_weights,
-    )
-    graph.solve()
-  ```
-
-  ```pycon
-    >>> print(graph.resource_estimate(op).__repr__())
-    '<num_gates=4, gate_counts={RX: 2, CZ: 2}, weighted_cost=4.0>'
-  ```
-
-  ```python  
-    op = qml.CRX(2.5, wires=[0, 1])
-    
-    # alternatively, the RZ CZ RX CZ decomp is *avoided* when the CZ weight is large.
-    gate_weights = {"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0}
-  
-    graph = DecompositionGraph(
-        operations=[op],
-        gate_set=gate_weights,
-    )
-    graph.solve()
+      @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+      @qml.qnode(qml.device("default.qubit"))
+      def circuit():
+          qml.H(wires=[0])
+          qml.Toffoli(wires=[0,1,2])
+          return qml.expval(qml.Z(0))
   ```
   
   ```pycon
-    >>> print(graph.resource_estimate(op).__repr__())
-    '<num_gates=16, gate_counts={RZ: 4, RY: 4, RX: 2, GlobalPhase: 4, CNOT: 2}, weighted_cost=16.0>'
+    >>> print(qml.draw(circuit)())
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├●─┤
+    2: ───────────────────────────────╰X─┤
   ```
+  Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
+  as determined by the provided weights.
 
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
   can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
