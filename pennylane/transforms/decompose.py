@@ -78,10 +78,10 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
             translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
         )
 
-        def gate_set_contains(op):
+        def gate_set_contains(op):  # fmt: skip
             return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
-    elif isinstance(gate_set, Callable):
+    else:  # if isinstance(gate_set, Callable):
         if qml.decomposition.enabled_graph():
             raise TypeError(
                 "Specifying gate_set as a function is not supported with the new "

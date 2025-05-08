@@ -76,31 +76,33 @@ class TestDecompose:
             {qml.RX, qml.RZ},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
             None,
-            None,
         ),
         (
             [qml.SWAP(wires=[0, 1])],
             {qml.CNOT},
             [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.CNOT([0, 1])],
             None,
-            None,
         ),
-        ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None, None),
+        ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
             [qml.measurements.MidMeasureMP(0)],
             {},
             [qml.measurements.MidMeasureMP(0)],
-            None,
-            "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
-            "with the new experimental graph-based decomposition system. Enable the new system "
-            "using qml.decomposition.enable_graph()",
+            {
+                "type": TypeError,
+                "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
+                "with the new experimental graph-based decomposition system. Enable the new system "
+                "using qml.decomposition.enable_graph()",
+            },
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
             {qml.Toffoli},
             [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
-            "MidMeasureMP",
-            None,
+            {
+                "type": UserWarning,
+                "msg": "MidMeasureMP",
+            },
         ),
     ]
 
@@ -155,19 +157,16 @@ class TestDecompose:
             decompose(tape, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
-        "initial_ops, gate_set, expected_ops, warning_pattern, error_pattern", iterables_test
+        "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
     )
-    def test_iterable_gate_set(
-        self, initial_ops, gate_set, expected_ops, warning_pattern, error_pattern
-    ):
+    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_or_error_pattern):
         """Tests that gate sets defined with iterables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 
-        if error_pattern is not None:
-            with pytest.raises(TypeError, match=error_pattern):
-                decompose(tape, gate_set=gate_set)
-        elif warning_pattern is not None:
-            with pytest.warns(UserWarning, match=warning_pattern):
+        if warning_or_error_pattern is not None:
+            with pytest.raises(
+                warning_or_error_pattern["type"], match=warning_or_error_pattern["msg"]
+            ):
                 (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
                 expected_tape = qml.tape.QuantumScript(expected_ops)
                 qml.assert_equal(decomposed_tape, expected_tape)
