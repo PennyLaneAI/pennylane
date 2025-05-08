@@ -118,21 +118,21 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """
     import jax  # pylint: disable=import-outside-toplevel
 
-    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-        trace = jax.interpreters.ad.JVPTrace(main, 0)
+    tag = jax.core.TraceTag()
+    with jax.core.take_current_trace() as parent_trace:
+        trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
+        args_jvp = [
+            (
+                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                if i in argnums
+                else arg
+            )
+            for i, arg in enumerate(args)
+        ]
+        with jax.core.set_current_trace(trace):
+            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tapes, _ = program((tape,))
 
-    args_jvp = [
-        (
-            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-            if i in argnums
-            else arg
-        )
-        for i, arg in enumerate(args)
-    ]
-
-    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
-    tapes, _ = program((tape,))
-    del trace
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 
@@ -616,12 +616,12 @@ class TransformProgram:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr":
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr":
         # pylint: disable=import-outside-toplevel
         import jax
 
-        cur_jaxpr = jax.core.ClosedJaxpr(jaxpr, consts)
+        cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
@@ -630,8 +630,8 @@ class TransformProgram:
 
     @overload
     def __call__(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr": ...
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr": ...
 
     @overload
     def __call__(
