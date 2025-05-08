@@ -366,12 +366,12 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
     assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
@@ -594,12 +594,12 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
     assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
@@ -748,7 +748,7 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
     f_name = "h2.xyz"
     filename = tmpdir.join(f_name)
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf8") as f:
         f.write(file_content)
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
@@ -763,7 +763,7 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
     f_name = "h2.xyz"
     filename = tmpdir.join(f_name)
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf8") as f:
         f.write(file_content)
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
@@ -1234,7 +1234,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
         h_coeffs, h_ops = h.terms()
 
         assert np.allclose(np.sort(h_coeffs), np.sort(h_ref_coeffs))
-        assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops).compare(
+        assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops) == (
             qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
         )
 

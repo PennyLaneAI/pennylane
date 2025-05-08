@@ -18,7 +18,7 @@ Contains the quantum-number-preserving GateFabric template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class GateFabric(Operation):
@@ -172,7 +172,6 @@ class GateFabric(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, init_state, include_pi=False, id=None):
