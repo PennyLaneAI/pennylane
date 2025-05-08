@@ -91,7 +91,9 @@ class TestDecompose:
             {},
             [qml.measurements.MidMeasureMP(0)],
             None,
-            "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored.",
+            "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
+            "with the new experimental graph-based decomposition system. Enable the new system "
+            "using qml.decomposition.enable_graph()",
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],

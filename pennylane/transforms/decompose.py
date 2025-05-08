@@ -58,9 +58,16 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
         gate_set = {gate_set}
 
     if isinstance(gate_set, dict):
+        for v in gate_set.values():
+            if v < 0.0:
+                raise ValueError("Gate weights provided in a `dict` type `gate_set` parameter to `decompose`"
+                                 "must not be negative, as negative gate weights are not supported.")
+
         if not qml.decomposition.enabled_graph():
             raise TypeError(
-                "Specifying the gate_set with a dictionary of operator types and their weights is only supported with the new experimental graph-based decomposition system. Enable the new system using qml.decomposition.enable_graph()"
+                "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
+                "with the new experimental graph-based decomposition system. Enable the new system "
+                "using qml.decomposition.enable_graph()"
             )
 
     if isinstance(gate_set, Iterable):
@@ -441,8 +448,8 @@ def decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
-            either (1) a sequence of operator types and/or names, (2) a function that returns
+        gate_set (Iterable[str or type], Dict[type or str, float], or Callable, optional): The target gate
+            set specified as either (1) a sequence of operator types and/or names, (2) a function that returns
             ``True`` if the operator belongs to the target gate set or (3) a dictionary of operator
             types and/or names with weights. Defaults to ``None``, in which case the gate set is
             considered to be all available :doc:`quantum operators </introduction/operations>`.

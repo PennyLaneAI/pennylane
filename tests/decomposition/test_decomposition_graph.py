@@ -41,26 +41,6 @@ from pennylane.decomposition.decomposition_graph import _to_name
 )
 class TestDecompositionGraph:
 
-    def test_weighted_graph_handles_negative_weight(self, _):
-        """Tests a DecompositionGraph raises a ValueError when given negative weights."""
-
-        op = qml.CRX(2.5, wires=[0, 1])
-
-        # edge case: negative gate weight
-        with pytest.raises(ValueError, match="Negative weights not supported."):
-            graph = DecompositionGraph(
-                operations=[op],
-                gate_set={
-                    "RX": 1.0,
-                    "RY": 1.0,
-                    "RZ": 1.0,
-                    "GlobalPhase": 1.0,
-                    "CNOT": 1.0,
-                    "CZ": -10.0,
-                },
-            )
-            graph.solve()
-
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
