@@ -77,7 +77,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     calculated by the difference of the sum of the gate counts multiplied by their respective gate
     weights in the decomposition, minus the weight of the operator of the operator node.
 
-    For example, the edge that connects a ``CNOT`` to the following
+    For example, if the graph was initialized with ``{qml.CNOT: 10.0, qml.H: 1.0}`` as the gate set, the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python
