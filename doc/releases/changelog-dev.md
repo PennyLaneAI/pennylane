@@ -173,9 +173,11 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
-* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
+  [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
 
-* Upgrade Actions runners for `rtd.yml` and `.readthedocs.yml` to use `ubuntu-24.04`. `docs.yml` has been pinned to `ubuntu-24.04` [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
 <h3>Breaking changes 💔</h3>
 
