@@ -696,7 +696,7 @@ def _inherit_from_bloq(cls):
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
-            op: Operation | Any
+            op: Operation
 
             @cached_property
             def signature(self) -> "qt.Signature":
