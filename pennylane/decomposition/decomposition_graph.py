@@ -84,7 +84,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         import pennylane as qml
 
-        @partial(qml.transforms.decompose, gate_set={qml.CNOT: 10.0, qml.H: 1.0})
         @qml.register_resources({qml.H: 2, qml.CNOT: 1})
         def my_cz(wires):
             qml.H(wires=wires[1])
