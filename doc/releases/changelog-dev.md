@@ -69,7 +69,7 @@
   1: ───────────────────────────────├●─┤
   2: ───────────────────────────────╰X─┤
   ```
-  Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
+  Here, even though the Hadamard is in the target gate set, its decomposition down to rotations is considered more efficient,
   as determined by the provided weights.
 
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
