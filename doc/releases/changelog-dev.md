@@ -278,6 +278,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
+  [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
+
 * Fixed a bug in the validation of :class:`~.SelectPauliRot` that prevents parameter broadcasting.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
@@ -354,7 +357,8 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
-Andrija Paurevic,
 Lee J. O'Riordan,
+Andrija Paurevic,
+Kalman Szenes,
 David Wierichs,
 Jake Zaia
