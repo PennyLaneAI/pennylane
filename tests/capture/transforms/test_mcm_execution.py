@@ -253,7 +253,7 @@ class TestExecutionFiniteShots:
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
         dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(5432)
         )
         config = create_execution_config(postselect_mode="hw-like")
 
@@ -339,7 +339,7 @@ class TestExecutionFiniteShots:
         """Test that sampling is performed using the correct pipeline with postselection."""
         num_wires = 4
         dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(5432)
         )
         config = create_execution_config(postselect_mode=postselect_mode)
 
