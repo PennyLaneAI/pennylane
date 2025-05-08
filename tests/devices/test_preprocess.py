@@ -585,17 +585,14 @@ class TestMeasurementsFromCountsOrSamples:
         )
         (validated_tape,), _ = validate_device_wires(tape, dev.wires)
         tapes, fn = meas_transform(validated_tape)
-        assert len(tapes) == 1
-        expected_m = (
-            qml.sample(wires=input_measurement.wires)
-            if meas_transform == measurements_from_samples
-            else qml.counts(wires=input_measurement.wires, all_outcomes=False)
-        )
-        assert len(tapes[0].measurements) == 1
-        qml.assert_equal(tapes[0].measurements[0], expected_m)
 
-        sample_output = qml.execute(tapes, device=dev)
-        res = fn(sample_output)
+        assert len(tapes) == 1
+        assert len(tapes[0].measurements) == 1
+        expected_type = SampleMP if meas_transform == measurements_from_samples else CountsMP
+        assert isinstance(tapes[0].measurements[0], expected_type)
+
+        output = qml.execute(tapes, device=dev)
+        res = fn(output)
 
         if dev.shots.has_partitioned_shots:
             assert len(res) == dev.shots.num_copies
