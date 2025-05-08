@@ -39,7 +39,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly access the applied :class:`~.Operation` and :class:`~.Observable`
+    to directly access the applied :class:`~.Operation` and :class:`~.Operator`
     objects.
     """
 

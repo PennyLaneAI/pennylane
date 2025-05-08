@@ -18,7 +18,7 @@ Contains the ArbitraryStatePreparation template.
 import functools
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 @functools.lru_cache()
@@ -80,7 +80,6 @@ class ArbitraryStatePreparation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, id=None):

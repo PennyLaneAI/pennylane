@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
@@ -152,7 +151,7 @@ class TestInitialization:
         assert qml.math.allequal(ev.t, [0, 2])
 
         assert ev.wires == H.wires
-        assert ev.num_wires == AnyWires
+        assert ev.num_wires is None
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
 

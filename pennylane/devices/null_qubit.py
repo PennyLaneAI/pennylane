@@ -18,7 +18,9 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 # pylint:disable=unused-argument
 
 import inspect
+import json
 import logging
+from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
@@ -37,6 +39,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     StateMP,
 )
+from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -129,6 +132,50 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
+def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.json"):
+    num_wires = len(circuit.wires)
+    gate_types = defaultdict(int)
+
+    for op in circuit.operations:
+        controls = 0
+        adj = False
+
+        while hasattr(op, "base"):
+            if type(op) in (Controlled, ControlledOp):
+                # Don't check this with `isinstance` to avoid unrolling ops like CNOT
+                controls += len(op.control_wires)
+            elif isinstance(op, Adjoint):
+                adj = not adj
+            else:
+                break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
+            # NOTE: Pow, Exp, Add, etc. intentionally not handled to be compatible with Catalyst
+            op = op.base
+
+        # Barrier is not a gate and takes no resources, so we skip it
+        if op.name == "Barrier":
+            # (this confuses codecov, despite being tested)
+            continue  # pragma: no cover
+
+        name = op.name
+        if adj:
+            name = f"Adj({name})"
+        if controls:
+            name = f"{controls if controls > 1 else ''}C({name})"
+
+        gate_types[name] += 1
+    # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+    #  In the future it may be better to return this information in a more structured way.
+    with open(resources_fname, "w") as f:
+        json.dump(
+            {
+                "num_wires": num_wires,
+                "num_gates": sum(gate_types.values()),
+                "gate_types": gate_types,
+            },
+            f,
+        )
+
+
 @simulator_tracking
 @single_tape_support
 class NullQubit(Device):
@@ -141,7 +188,7 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-
+        track_resources (bool): If ``True``, track the number of resources used by the device. This argument is experimental and subject to change.
     **Example:**
 
     .. code-block:: python
@@ -225,13 +272,21 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        self._track_resources = track_resources
+
+        # this is required by Catalyst to toggle the tracker at runtime
+        self.device_kwargs = {"track_resources": track_resources}
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
+
+        if self._track_resources:
+            _simulate_resource_use(circuit)
+
         for s in circuit.shots or [None]:
             r = tuple(
                 zero_measurement(mp, num_device_wires, s, circuit.batch_size, interface)

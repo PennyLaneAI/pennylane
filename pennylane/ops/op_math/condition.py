@@ -23,7 +23,7 @@ from pennylane import QueuingManager
 from pennylane.capture import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
@@ -87,8 +87,6 @@ class Conditional(SymbolicOp, Operation):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
-
-    num_wires = AnyWires
 
     def __init__(self, expr, then_op: Type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr

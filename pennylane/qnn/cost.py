@@ -35,7 +35,7 @@ class SquaredErrorLoss:
             where ``params`` are the trainable weights of the variational circuit, and
             ``kwargs`` are any additional keyword arguments that need to be passed
             to the template.
-        observables (Iterable[.Observable]): observables to measure during the
+        observables (Iterable[.Operator]): observables to measure during the
             final step of each circuit
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             function should be executed. This can either be a single device, or a list
@@ -87,6 +87,7 @@ class SquaredErrorLoss:
     :doc:`optimizer </introduction/interfaces>`.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         ansatz,

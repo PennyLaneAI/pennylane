@@ -2215,6 +2215,22 @@ class TestIntegration:
 
         assert qml.math.allclose(grad, grad_jit)
 
+    def test_snapshot_with_defer_measurement(self):
+        """Test that snapshots can be taken with defer_measurements."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            qml.measure(0)
+            qml.Snapshot("label")
+            return qml.probs(wires=0)
+
+        snapshots = qml.snapshots(func)()
+        assert snapshots["label"].shape == (4,)
+        assert qml.math.allclose(snapshots["execution_results"], np.array([0.5, 0.5]))
+
 
 @pytest.mark.parametrize("max_workers", max_workers_list)
 def test_broadcasted_parameter(max_workers):

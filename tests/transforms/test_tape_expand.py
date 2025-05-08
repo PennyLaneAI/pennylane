@@ -25,10 +25,15 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
+def crit_0(op: qml.operation.Operator):
+    return not any(qml.math.requires_grad(d) for d in op.data) or (
+        op.has_generator and any(qml.math.requires_grad(d) for d in op.data)
+    )
+
+
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
-    crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.2, wires=0)
@@ -41,14 +46,14 @@ class TestCreateExpandFn:
         """Test creation of expand_fn."""
         expand_fn = qml.transforms.create_expand_fn(
             depth=10,
-            stop_at=self.crit_0,
+            stop_at=crit_0,
             docstring=self.doc_0,
         )
         assert expand_fn.__doc__ == "Test docstring."
 
     def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""
-        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=crit_0)
         new_tape = expand_fn(self.tape)
         assert new_tape.operations[0] == self.tape.operations[0]
         assert new_tape.operations[1] == self.tape.operations[1]
@@ -58,7 +63,7 @@ class TestCreateExpandFn:
 
     def test_create_expand_fn_dont_expand(self):
         """Test expansion is skipped with depth=0."""
-        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=crit_0)
 
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
@@ -68,7 +73,7 @@ class TestCreateExpandFn:
         that all operations are expanded to match the devices default gate
         set"""
         dev = DefaultQubitLegacy(wires=1)
-        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)
@@ -249,6 +254,7 @@ class TestExpandNonunitaryGen:
             "SingleExcitationPlus",
             "DoubleExcitationMinus",
             "DoubleExcitationPlus",
+            "GlobalPhase",
         ]
 
         with qml.queuing.AnnotatedQueue() as q:

@@ -16,7 +16,7 @@ Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
@@ -72,7 +72,6 @@ class AngleEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):

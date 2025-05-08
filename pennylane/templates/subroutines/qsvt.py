@@ -16,20 +16,95 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
-from typing import Literal
+from typing import Literal, Sequence, Union
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-branches, unused-argument
-def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
+def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
+    if block_encoding not in ["prepselprep", "qubitization", None]:
+        raise ValueError(
+            f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
+            "When A is a Hamiltonian or has a Pauli decomposition, block_encoding should "
+            "take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the "
+            "matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
+        )
+
+    if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
+        raise ValueError(
+            f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
+        )
+
+    encoding = (
+        qml.Qubitization(A, control=encoding_wires)
+        if block_encoding == "qubitization"
+        else qml.PrepSelPrep(A, control=encoding_wires)
+    )
+
+    angles = qml.poly_to_angles(poly, "QSVT")
+
+    projectors = [
+        qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
+        for angle in angles
+    ]
+    return encoding, projectors
+
+
+def _tensorlike_process(A, poly, encoding_wires, block_encoding):
+    if block_encoding not in ["embedding", "fable", None]:
+        raise ValueError(
+            f"block_encoding = {block_encoding} not supported for A of type {type(A)}."
+            "When A is a matrix block_encoding should take the value 'embedding' or 'fable'. "
+            "Otherwise, please provide an input with a Pauli decomposition. For more details, "
+            "see the 'qml.pauli_decompose' function."
+        )
+
+    A = qml.math.atleast_2d(A)
+    max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
+
+    if block_encoding == "fable":
+        if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
+            raise ValueError(
+                "The subnormalization factor should be lower than 1. Ensure that the product"
+                " of the maximum dimension of A and its square norm is less than 1."
+            )
+
+        # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+
+        fable_norm = int(np.ceil(np.log2(max_dimension)))
+        encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
+
+    else:
+        c, r = qml.math.shape(A)
+
+        angles = qml.poly_to_angles(poly, "QSVT")
+        projectors = []
+        for idx, phi in enumerate(angles):
+            dim = c if idx % 2 else r
+            projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
+
+        encoding = qml.BlockEncode(A, wires=encoding_wires)
+
+    return encoding, projectors
+
+
+def qsvt(
+    A: Union[Operator, TensorLike],
+    poly: TensorLike,
+    encoding_wires: Sequence,
+    block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,
+):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
     using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
@@ -193,67 +268,11 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
     """
 
-    projectors = []
-
     # If the input A is a Hamiltonian
     if hasattr(A, "pauli_rep"):
-
-        if block_encoding not in ["prepselprep", "qubitization", None]:
-            raise ValueError(
-                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a Hamiltonian or has a Pauli decomposition, block_encoding should take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
-            )
-
-        if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
-            raise ValueError(
-                f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
-            )
-
-        encoding = (
-            qml.Qubitization(A, control=encoding_wires)
-            if block_encoding == "qubitization"
-            else qml.PrepSelPrep(A, control=encoding_wires)
-        )
-
-        angles = qml.poly_to_angles(poly, "QSVT")
-
-        projectors = [
-            qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
-            for angle in angles
-        ]
-
+        encoding, projectors = _pauli_rep_process(A, poly, encoding_wires, block_encoding)
     else:
-
-        if block_encoding not in ["embedding", "fable", None]:
-            raise ValueError(
-                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
-            )
-
-        A = qml.math.atleast_2d(A)
-        max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
-
-        if block_encoding == "fable":
-            if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
-                raise ValueError(
-                    "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
-                )
-
-            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
-
-            fable_norm = int(np.ceil(np.log2(max_dimension)))
-            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
-            angles = qml.poly_to_angles(poly, "QSVT")
-
-            projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
-
-        else:
-            c, r = qml.math.shape(A)
-
-            angles = qml.poly_to_angles(poly, "QSVT")
-            for idx, phi in enumerate(angles):
-                dim = c if idx % 2 else r
-                projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
-
-            encoding = qml.BlockEncode(A, wires=encoding_wires)
+        encoding, projectors = _tensorlike_process(A, poly, encoding_wires, block_encoding)
 
     return QSVT(encoding, projectors)
 
@@ -429,9 +448,6 @@ class QSVT(Operation):
                    -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     grad_method = None
     """Gradient computation method."""
 
@@ -439,9 +455,10 @@ class QSVT(Operation):
         data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
         return data, tuple()
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
+        return cls._primitive.bind(UA, *projectors, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, _) -> "QSVT":
@@ -622,6 +639,14 @@ class QSVT(Operation):
             mat = qml.matrix(qml.prod(*tuple(op_list[::-1])))
 
         return mat
+
+
+# pylint: disable=protected-access
+if QSVT._primitive is not None:
+
+    @QSVT._primitive.def_impl
+    def _(UA, *projectors, **kwargs):  # kwarg might be id
+        return type.__call__(QSVT, UA, projectors, **kwargs)
 
 
 def _complementary_poly(poly_coeffs):

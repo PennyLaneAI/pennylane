@@ -21,10 +21,10 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
+from pennylane._deprecated_observable import Observable
 from pennylane.operation import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
-    Observable,
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,

@@ -18,7 +18,7 @@ Contains the MPS template.
 import warnings
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):
@@ -159,9 +159,6 @@ class MPS(Operation):
         7: ─────────────╰X─┤  State
 
     """
-
-    num_wires = AnyWires
-    par_domain = "A"
 
     @classmethod
     def _primitive_bind_call(

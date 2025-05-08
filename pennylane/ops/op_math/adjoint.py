@@ -18,9 +18,10 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
+from pennylane._deprecated_observable import Observable
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
 
 from .symbolicop import SymbolicOp

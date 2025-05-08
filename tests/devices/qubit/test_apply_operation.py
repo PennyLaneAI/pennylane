@@ -770,6 +770,17 @@ class TestSnapshot:
         assert debugger.snapshots[0].shape == ()
         assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
 
+    def test_override_shots(self, ml_framework):
+        """Test that shots can be overridden for one measurement."""
+
+        initial_state = qml.math.asarray(np.array([1.0, 0.0]), like=ml_framework)
+
+        debugger = Debugger()
+        op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
+        _ = apply_operation(op, initial_state, debugger=debugger)
+
+        assert debugger.snapshots["tag"].shape == (50,)
+
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)

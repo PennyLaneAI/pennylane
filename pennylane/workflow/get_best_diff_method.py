@@ -39,7 +39,7 @@ def get_best_diff_method(qnode: QNode):
     .. seealso::
 
         For a detailed comparison of the backpropagation and parameter-shift methods,
-        refer to the :doc:`quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`.
+        refer to the `quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`__.
 
     Args:
         qnode (.QNode): the qnode to get the 'best' differentiation method for.

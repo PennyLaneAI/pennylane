@@ -116,7 +116,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -136,7 +137,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
@@ -146,9 +148,11 @@ class TestInheritanceMixins:
     def test_observable(self, power_method):
         """Test that when the base is an Observable, Pow will also inherit from Observable."""
 
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+
+            class CustomObs(qml.operation.Observable):
+                num_wires = 1
+                num_params = 0
 
         base = CustomObs(wires=0)
         ob: Pow = power_method(base=base, z=-1.2)
@@ -159,7 +163,8 @@ class TestInheritanceMixins:
         assert not isinstance(ob, PowOperation)
 
         # Check some basic observable functionality
-        assert ob.compare(ob)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert ob.compare(ob)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)

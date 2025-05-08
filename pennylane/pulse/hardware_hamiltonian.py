@@ -285,7 +285,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
     Keyword Args:
@@ -303,7 +303,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         coeffs,

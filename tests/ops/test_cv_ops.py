@@ -20,7 +20,6 @@ import numpy.testing as np_testing
 import pytest
 
 from pennylane import numpy as np
-from pennylane.operation import AnyWires
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
@@ -217,10 +216,10 @@ state_prep_data = [
     (cv.SqueezedState(0.1, 0.2, wires=0), 2, 1, "F"),
     (cv.DisplacedSqueezedState(0.1, 0.2, 0.3, 0.4, wires=0), 4, 1, "F"),
     (cv.ThermalState(0.1, wires=0), 1, 1, "F"),
-    (cv.GaussianState(0.1, 0.2, wires=(0, 1, 2, 3, 4)), 2, AnyWires, "F"),
+    (cv.GaussianState(0.1, 0.2, wires=(0, 1, 2, 3, 4)), 2, None, "F"),
     (cv.FockState(1, wires=0), 1, 1, None),
-    (cv.FockStateVector([0, 0, 1, 0], wires=0), 1, AnyWires, "F"),
-    (cv.FockDensityMatrix(np.eye(2), wires=0), 1, AnyWires, "F"),
+    (cv.FockStateVector([0, 0, 1, 0], wires=0), 1, None, "F"),
+    (cv.FockDensityMatrix(np.eye(2), wires=0), 1, None, "F"),
     (cv.CatState(0.1, 0.2, 0.3, wires=0), 3, 1, "F"),
 ]
 

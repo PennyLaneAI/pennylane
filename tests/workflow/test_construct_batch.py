@@ -114,7 +114,7 @@ class TestTransformProgramGetter:
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
+        assert p_sliced[1].transform == qml.devices.preprocess.mid_circuit_measurements.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
 
     def test_diff_method_device_gradient(self):

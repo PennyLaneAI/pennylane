@@ -19,7 +19,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 import warnings
 
 from pennylane import math as np
-from pennylane.operation import AnyWires, Channel
+from pennylane.operation import Channel
 from pennylane.wires import Wires, WiresLike
 
 
@@ -559,9 +559,6 @@ class PauliError(Channel):
                [0.70710678, 0.        ]])
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -713,7 +710,6 @@ class QubitChannel(Channel):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, K_list, wires: WiresLike, id=None):

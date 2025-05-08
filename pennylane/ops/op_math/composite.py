@@ -100,6 +100,8 @@ class CompositeOp(Operator):
         self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )

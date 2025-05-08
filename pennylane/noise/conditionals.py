@@ -21,7 +21,6 @@ from inspect import isclass, signature
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.operation import AnyWires
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
@@ -747,7 +746,7 @@ def partial_wires(operation, *args, **kwargs):
                 op_args[key] = val
 
         if issubclass(op_class, qml.operation.Operation):
-            num_wires = getattr(op_class, "num_wires", AnyWires)
+            num_wires = getattr(op_class, "num_wires", None)
             if "wires" in op_args and isinstance(num_wires, int):
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")

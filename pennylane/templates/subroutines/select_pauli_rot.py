@@ -16,7 +16,7 @@ Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
 
@@ -79,7 +79,6 @@ class SelectPauliRot(Operation):
          0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 
@@ -91,7 +90,7 @@ class SelectPauliRot(Operation):
         self.hyperparameters["target_wire"] = qml.wires.Wires(target_wire)
         self.hyperparameters["rot_axis"] = rot_axis
 
-        if qml.math.shape(angles)[0] != 2 ** len(control_wires):
+        if qml.math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
 
         if rot_axis not in ["X", "Y", "Z"]:

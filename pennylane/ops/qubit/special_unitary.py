@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import FlatPytree, Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -232,7 +232,7 @@ class SpecialUnitary(Operation):
     .. seealso::
 
         For more details on using this operator in applications, see the
-        :doc:`SU(N) gate demo <demos/tutorial_here_comes_the_sun>`.
+        `SU(N) gate demo <demos/tutorial_here_comes_the_sun>`__.
 
     .. warning::
 
@@ -400,9 +400,6 @@ class SpecialUnitary(Operation):
         the number of qubits to which we can apply a ``SpecialUnitary`` gate in practice.
 
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""

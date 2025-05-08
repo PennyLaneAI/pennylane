@@ -120,7 +120,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Operator or tuple[.Observable, float]: The returned generator, with format/type
+        .Operator or tuple[.Operator, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing

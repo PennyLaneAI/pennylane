@@ -16,7 +16,7 @@ The main function for measurement reduction, ``optimize_measurements`` returns t
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.pauli.utils import diagonalize_qwc_groupings
 from pennylane.typing import Sequence
 
@@ -24,7 +24,7 @@ from .group_observables import compute_partition_indices
 
 
 def optimize_measurements(
-    observables: Sequence[Observable],
+    observables: Sequence[Operator],
     coefficients: Sequence[float] = None,
     grouping: str = "qwc",
     colouring_method: str = "lf",
@@ -41,7 +41,7 @@ def optimize_measurements(
     fully-commuting measurement-partitioning approaches respectively.
 
     Args:
-        observables (list[Observable]): a list of Pauli words (Pauli operation instances and tensors
+        observables (list[Operator]): a list of Pauli words (Pauli operation instances and tensors
             instances thereof)
         coefficients (list[float]): a list of float coefficients, for instance the weights of
             the Pauli words comprising a Hamiltonian
@@ -55,7 +55,7 @@ def optimize_measurements(
 
             * list[callable]: a list of the post-rotation templates, one
               for each partition
-            * list[list[Observable]]: A list of the obtained groupings. Each
+            * list[list[Operator]]: A list of the obtained groupings. Each
               grouping is itself a list of Pauli words diagonal in the
               measurement basis.
             * list[list[float]]: A list of coefficient groupings. Each

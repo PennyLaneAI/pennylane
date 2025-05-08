@@ -27,7 +27,7 @@ from typing import Any, Optional, TypeVar, Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
-from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
@@ -270,11 +270,11 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> list[Union[MeasurementProcess, Observable]]:
+    def observables(self) -> list[Union[MeasurementProcess, Operator]]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.MeasurementProcess, .Observable]]: list of observables
+            list[.MeasurementProcess, .Operator]]: list of observables
 
         **Example**
 
@@ -491,7 +491,7 @@ class QuantumScript:
         i.e., that do not have their own unique set of wires.
 
         Returns:
-            list[~.Observable]: list of observables with shared wires.
+            list[~.Operator]: list of observables with shared wires.
 
         """
         if self._obs_sharing_wires is None:
@@ -516,7 +516,7 @@ class QuantumScript:
         identifying any observables that share wires.
 
         Sets:
-            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
+            _obs_sharing_wires (list[~.Operator]): Observables that share wires with
                 any other observable
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires

@@ -18,7 +18,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operator
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
@@ -141,7 +141,6 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     # pylint: disable=no-member

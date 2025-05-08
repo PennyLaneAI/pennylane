@@ -434,9 +434,8 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 2]])
 
-        class SomeObservable(qml.operation.Observable):
+        class SomeObservable(qml.operation.Operator):
             num_wires = 1
-            return_type = "Sample"
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
@@ -705,7 +704,7 @@ class TestExpval:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -766,7 +765,7 @@ class TestVar:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):

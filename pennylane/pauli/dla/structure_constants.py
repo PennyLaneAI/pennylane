@@ -59,7 +59,7 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`__
 
     **Example**
 

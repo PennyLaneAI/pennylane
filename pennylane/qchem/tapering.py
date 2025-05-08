@@ -186,7 +186,7 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Return:
-        list[Observable]: list of single-qubit Pauli-X operators which will be used to build the
+        list[Operator]: list of single-qubit Pauli-X operators which will be used to build the
         Clifford operators :math:`U`.
 
     **Example**

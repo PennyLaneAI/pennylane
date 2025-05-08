@@ -130,15 +130,38 @@ class TestSelectPauliRot:
 
         assert np.isclose(1.0, output[0])
 
-    def test_decomposition(self):
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    @pytest.mark.parametrize("axis", "XYZ")
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_decomposition(self, n, axis, batch_dim, seed):
         """Test that the correct gates are added in the decomposition"""
 
+        np.random.seed(seed)
+        shape = (2**n,) if batch_dim is None else (batch_dim, 2**n)
+        x = np.random.random(shape)
         decomposition = qml.SelectPauliRot.compute_decomposition(
-            np.array([1, 2, 3, 4, 5, 6, 7, 8]), control_wires=range(3), target_wire=3, rot_axis="Z"
+            x, control_wires=range(n), target_wire=n, rot_axis=axis
         )
+        decomposition_2 = qml.SelectPauliRot(
+            x, control_wires=range(n), target_wire=n, rot_axis=axis
+        ).decomposition()
 
-        for gate in decomposition:
-            assert gate.name in ["CNOT", "RZ"]
+        for dec in [decomposition, decomposition_2]:
+            if axis == "Y":
+                assert dec[0].name == "Adjoint(S)"
+                assert dec[-1].name == "S"
+                dec = dec[1:-1]
+            if axis in "XY":
+                assert dec[0].name == "Hadamard"
+                assert dec[-1].name == "Hadamard"
+                dec = dec[1:-1]
+            # Remaining decomposition is the same for all axis types
+            assert len(dec) == 2 * 2**n
+            for gate in dec[::2]:
+                assert gate.name == "RZ"
+                assert gate.batch_size == batch_dim
+            for gate in dec[1::2]:
+                assert gate.name == "CNOT"
 
     @pytest.mark.jax
     def test_interface_jax(self):

@@ -577,7 +577,7 @@ class TestPyTreeStructure:
     )
     def test_tensor_measurement(self, measurement):
         """Tests that measurements of tensor type are handled correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit():

@@ -22,7 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Channel, Observable, Operation, Operator, StatePrepBase
+from pennylane._deprecated_observable import Observable
+from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc

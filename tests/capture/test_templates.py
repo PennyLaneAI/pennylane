@@ -544,28 +544,27 @@ class TestModifiedTemplates:
     def test_qsvt(self):
         """Test the primitive bind call of QSVT."""
 
-        A = np.array([[0.1]])
-        block_encode = qml.BlockEncode(A, wires=[0, 1])
-        shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-
-        def qfunc(block_encode):
+        def qfunc(A):
+            block_encode = qml.BlockEncode(A, wires=[0, 1])
+            shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
             qml.QSVT(block_encode, projectors=shifts)
 
+        A = np.array([[0.1]])
         # Validate inputs
-        qfunc(block_encode)
+        qfunc(A)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(block_encode)
+        jaxpr = jax.make_jaxpr(qfunc)(A)
 
-        assert len(jaxpr.eqns) == 2
+        assert len(jaxpr.eqns) == 5
 
-        # due to flattening and unflattening BlockEncode
         assert jaxpr.eqns[0].primitive == qml.BlockEncode._primitive
 
-        eqn = jaxpr.eqns[1]
+        eqn = jaxpr.eqns[-1]
         assert eqn.primitive == qml.QSVT._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars
-        assert eqn.params == {"projectors": shifts}
+        for i in range(4):
+            assert eqn.invars[i] == jaxpr.eqns[i].outvars[0]
+        assert eqn.params == {}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -573,6 +572,8 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
 
         assert len(q) == 1
+        block_encode = qml.BlockEncode(A, wires=[0, 1])
+        shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
         assert q.queue[0] == qml.QSVT(block_encode, shifts)
 
     def test_mps_prep(self):

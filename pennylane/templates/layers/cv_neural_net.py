@@ -16,7 +16,7 @@ Contains the CVNeuralNetLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class CVNeuralNetLayers(Operation):
@@ -81,7 +81,6 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(

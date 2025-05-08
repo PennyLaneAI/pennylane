@@ -19,7 +19,7 @@ import copy
 from itertools import combinations
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -165,7 +165,6 @@ class IQPEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):

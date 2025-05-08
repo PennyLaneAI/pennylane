@@ -26,7 +26,7 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
+from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
@@ -337,7 +337,6 @@ class StatePrep(StatePrepBase):
 
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -626,7 +625,6 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
