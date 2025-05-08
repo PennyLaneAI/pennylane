@@ -292,9 +292,9 @@ class NullQubit(Device):
         results = []
 
         if self._track_resources:
-            if isinstance(self._track_resources, str) :
+            if isinstance(self._track_resources, str):
                 # if a string is passed, we assume it is a file name
-                with open(self._track_resources, "w") as f:
+                with open(self._track_resources, "w", encoding="utf-8") as f:
                     _simulate_resource_use(circuit, f)
             else:
                 # NOTE: This will work even if `_track_resources` was originally passed a file-like object
