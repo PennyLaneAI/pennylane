@@ -18,7 +18,7 @@ Contains the ApproxTimeEvolution template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.wires import Wires
 
@@ -116,7 +116,6 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):

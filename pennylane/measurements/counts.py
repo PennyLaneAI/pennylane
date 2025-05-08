@@ -41,7 +41,7 @@ def counts(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
@@ -184,7 +184,7 @@ class CountsMP(SampleMeasurement):
 
     _shortname = "counts"
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
@@ -381,6 +381,17 @@ class CountsMP(SampleMeasurement):
             self._include_all_outcomes(mapped_counts)
         else:
             _remove_unobserved_outcomes(mapped_counts)
+
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            for outcome, count in mapped_counts.items():
+                val = eigvals[int(outcome, 2)]
+                eigvals_dict[val] += count
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
+            return eigvals_dict
+
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
