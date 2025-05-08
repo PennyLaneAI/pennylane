@@ -18,7 +18,7 @@ method.
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
 import numpy as np
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.qchem import factorize
 
 
@@ -87,7 +87,6 @@ class DoubleFactorization(Operation):
         of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(
