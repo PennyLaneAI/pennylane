@@ -22,14 +22,4 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation Base Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceOperator
-
 """
-
-from .resource_operator import ResourceOperator, ResourcesNotDefined
