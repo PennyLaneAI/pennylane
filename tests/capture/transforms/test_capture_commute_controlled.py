@@ -740,7 +740,7 @@ class TestCommuteControlledPLXPR:
 
         jaxpr = jax.make_jaxpr(circuit)()
         transformed_jaxpr = commute_controlled_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 14
 
         expected_ops = [
