@@ -110,7 +110,7 @@ def test_fourth_order_norm_two_fragments(fragments, t):
     ]
 
     fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
-    fourth_order_approx = _pf_to_matrix(fourth_order, fragments, np.eye(3, dtype=np.complex128))
+    fourth_order_approx = fourth_order.to_matrix(fragments, np.eye(3, dtype=np.complex128))
     actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
 
     commutator_coeffs = {
@@ -224,7 +224,7 @@ def test_second_order_against_matrix_log(fragments):
 
 @pytest.mark.parametrize("fragments", fragments)
 def test_fourth_order_against_matrix_log(fragments):
-    t = 0.0001
+    t = 0.007
     u = 1 / (4 - 4 ** (1 / 3))
     second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
     fourth_order = (
@@ -245,7 +245,7 @@ def test_fourth_order_against_matrix_log(fragments):
 
 @pytest.mark.parametrize("fragments", fragments)
 def test_fourth_order_against_matrix_log_2(fragments):
-    t = 0.01
+    t = 0.007
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
     frag_coeffs = [
@@ -274,10 +274,3 @@ def test_fourth_order_against_matrix_log_2(fragments):
     log_error = log - (1j * t * ham) / t**5
 
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
-
-
-def _pf_to_matrix(product_formula, fragments, accumulator):
-    for frag, coeff in zip(product_formula.terms, product_formula.coeffs):
-        accumulator @= expm(coeff * fragments[frag])
-
-    return accumulator

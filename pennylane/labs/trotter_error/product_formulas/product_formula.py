@@ -23,7 +23,7 @@ from itertools import permutations
 from typing import Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.linalg import expm
+from scipy.linalg import expm, fractional_matrix_power
 
 from pennylane.labs.trotter_error.abstract import Fragment
 
@@ -149,7 +149,7 @@ class ProductFormula:
             else:
                 accumulator @= expm(coeff * fragments[term])
 
-        return accumulator
+        return fractional_matrix_power(accumulator, self.exponent)
 
 
 def _kth_order_terms(

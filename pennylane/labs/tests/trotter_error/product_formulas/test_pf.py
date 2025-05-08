@@ -63,14 +63,11 @@ def test_second_order_recursive(fragment_dict):
     eff1 = effective_hamiltonian(explicit, fragment_dict, order=3)
     eff2 = effective_hamiltonian(constructed, fragment_dict, order=3)
 
-    print(eff1)
-    print(eff2)
-
     assert np.allclose(eff1, eff2)
 
 
-@pytest.mark.parametrize("fragment_dict, t", product(fragment_dicts, [0.001, 0.0001]))
-def test_fourth_order_recursive(fragment_dict, t):
+@pytest.mark.parametrize("fragment_dict", fragment_dicts)
+def test_fourth_order_recursive(fragment_dict):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
     u = 1 / (4 - 4 ** (1 / 3))
@@ -89,7 +86,7 @@ def test_fourth_order_recursive(fragment_dict, t):
         u / 2,
     ]
 
-    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")(t)
+    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")
 
     second_order_labels = [0, 1, 0]
     second_order_coeffs = [1 / 2, 1, 1 / 2]
@@ -97,18 +94,15 @@ def test_fourth_order_recursive(fragment_dict, t):
     second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
 
     pfs = [
-        second_order(t * u) ** 2,
-        second_order(t * (1 - (4 * u))),
-        second_order(t * u) ** 2,
+        second_order(u) ** 2,
+        second_order((1 - (4 * u))),
+        second_order(u) ** 2,
     ]
 
     fourth_order_2 = ProductFormula(pfs, label="U4")
 
     eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
     eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
-
-    print(eff_1)
-    print(eff_2)
 
     assert np.allclose(eff_1, eff_2)
 
@@ -152,6 +146,9 @@ def test_pow(fragment_dict):
     eff2 = effective_hamiltonian(pf2, fragment_dict, order=5)
     eff3 = effective_hamiltonian(pf3, fragment_dict, order=5)
 
+    print(eff1)
+    print(eff2)
+
     assert np.allclose(eff1, eff2)
     assert np.allclose(eff1, eff3)
     assert np.allclose(eff2, eff3)
@@ -178,3 +175,45 @@ def test_mul(fragment_dict):
     assert np.allclose(eff1, eff2)
     assert np.allclose(eff1, eff3)
     assert np.allclose(eff2, eff3)
+
+
+@pytest.mark.parametrize("fragment_dict", fragment_dicts)
+def test_matrix(fragment_dict):
+
+    u = 1 / (4 - 4 ** (1 / 3))
+    frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+    frag_coeffs = [
+        u / 2,
+        u,
+        u,
+        u,
+        (1 - (3 * u)) / 2,
+        (1 - (4 * u)),
+        (1 - (3 * u)) / 2,
+        u,
+        u,
+        u,
+        u / 2,
+    ]
+
+    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")
+
+    second_order_labels = [0, 1, 0]
+    second_order_coeffs = [1 / 2, 1, 1 / 2]
+
+    second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
+
+    pfs = [
+        second_order(u) ** 2,
+        second_order((1 - (4 * u))),
+        second_order(u) ** 2,
+    ]
+
+    fourth_order_2 = ProductFormula(pfs, label="U4")
+
+    acc = np.eye(fragment_dict[0].shape[0], dtype=np.complex128)
+
+    mat1 = fourth_order_1.to_matrix(fragment_dict, acc)
+    mat2 = fourth_order_2.to_matrix(fragment_dict, acc)
+
+    assert np.allclose(mat1, mat2)
