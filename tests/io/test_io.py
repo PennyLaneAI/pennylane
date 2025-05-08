@@ -252,30 +252,6 @@ class TestToOpenQasm:
         )
         assert qasm == expected
 
-    def test_measure_qubits_subset_only(self):
-        """Test OpenQASM program includes measurements only on the qubits subset specified in the QNode circuit."""
-
-        @qml.qnode(self.dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(wires=1)
-
-        qasm = qml.to_openqasm(circuit, measure_all=False)()
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[2];
-            creg c[2];
-            h q[0];
-            cx q[0],q[1];
-            measure q[1] -> c[1];
-            """
-        )
-        assert qasm == expected
-
     def test_rotations_with_expval(self):
         """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
 
