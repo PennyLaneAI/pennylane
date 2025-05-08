@@ -14,6 +14,8 @@
 """Tests for null.qubit."""
 
 import json
+import os
+import sys
 from collections import defaultdict as dd
 
 import numpy as np
@@ -62,13 +64,15 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_resource_tracking_attribute(capsys):
+def test_resource_tracking_attribute():
     """Test NullQubit track_resources attribute"""
     # pylint: disable=protected-access
-    assert NullQubit()._track_resources is False
-    assert NullQubit(track_resources=True)._track_resources is True
+    RESOURCES_FNAME = "__pennylane_resources_data.json"
+    assert NullQubit()._track_resources is None
+    assert NullQubit(track_resources=True)._track_resources == sys.stdout
+    assert NullQubit(track_resources=RESOURCES_FNAME)._track_resources == RESOURCES_FNAME
 
-    dev = NullQubit(track_resources=True)
+    dev = NullQubit(track_resources=RESOURCES_FNAME)
 
     def small_circ(params):
         qml.X(0)
@@ -100,7 +104,17 @@ def test_resource_tracking_attribute(capsys):
 
     qnode(inputs)
 
-    expected = json.dumps(
+    # Check that resource tracking doesn't interfere with backprop
+    assert qml.grad(qnode)(inputs) == 0
+
+    assert os.path.exists(RESOURCES_FNAME)
+
+    with open(RESOURCES_FNAME, "r") as f:
+        stats = f.read()
+
+    os.remove(RESOURCES_FNAME)
+
+    assert stats == json.dumps(
         {
             "num_wires": 3,
             "num_gates": 9,
@@ -116,27 +130,6 @@ def test_resource_tracking_attribute(capsys):
             },
         }
     )
-
-    captured = capsys.readouterr()
-    captured = captured.out.splitlines()
-
-    assert len(captured) == 3
-    assert captured[0] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
-    assert captured[-1] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
-
-    assert captured[1] == expected
-
-    # Check that resource tracking doesn't interfere with backprop
-    assert qml.grad(qnode)(inputs) == 0
-
-    captured = capsys.readouterr()
-    captured = captured.out.splitlines()
-
-    # Running grad prints resource information again
-    assert len(captured) == 3
-    assert captured[0] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
-    assert captured[-1] == qml.devices.null_qubit.RESOURCE_PRINT_DELIMITER
-    assert captured[1] == expected
 
 
 @pytest.mark.parametrize("shots", (None, 10))

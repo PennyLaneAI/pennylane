@@ -20,6 +20,7 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 import inspect
 import json
 import logging
+import sys
 from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
@@ -50,9 +51,6 @@ from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-# The delimiter to print before and after each resource JSON to make parsing easier
-RESOURCE_PRINT_DELIMITER = "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 
 
 @singledispatch
@@ -135,7 +133,7 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
-def _simulate_resource_use(circuit):
+def _simulate_resource_use(circuit, outfile):
     num_wires = len(circuit.wires)
     gate_types = defaultdict(int)
 
@@ -166,19 +164,16 @@ def _simulate_resource_use(circuit):
             name = f"{controls if controls > 1 else ''}C({name})"
 
         gate_types[name] += 1
-    # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+    # NOTE: For now, this information is being printed to match the behaviour of catalyst resource tracking.
     #  In the future it may be better to return this information in a more structured way.
-    print(RESOURCE_PRINT_DELIMITER)
-    print(
-        json.dumps(
-            {
-                "num_wires": num_wires,
-                "num_gates": sum(gate_types.values()),
-                "gate_types": gate_types,
-            }
-        )
+    json.dump(
+        {
+            "num_wires": num_wires,
+            "num_gates": sum(gate_types.values()),
+            "gate_types": gate_types,
+        },
+        outfile,
     )
-    print(RESOURCE_PRINT_DELIMITER)
 
 
 @simulator_tracking
@@ -193,7 +188,7 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        track_resources (bool): If ``True``, track the number of resources used by the device. This argument is experimental and subject to change.
+        track_resources (bool | str | None): If truthy, track the number of resources used by the device. If a str is provided, use it as a filename in which to write the results. Else print to stdout. This argument is experimental and subject to change.
     **Example:**
 
     .. code-block:: python
@@ -277,20 +272,33 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=None) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
-        self._track_resources = track_resources
+        if track_resources is True:
+            self._track_resources = sys.stdout
+        else:
+            self._track_resources = track_resources
 
         # this is required by Catalyst to toggle the tracker at runtime
-        self.device_kwargs = {"track_resources": track_resources}
+        self.device_kwargs = {
+            "track_resources": bool(track_resources),
+            "track_resources_fname": track_resources if type(track_resources) is str else None,
+            "track_resources_stdout": track_resources is True,
+        }
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
 
         if self._track_resources:
-            _simulate_resource_use(circuit)
+            if type(self._track_resources) is str:
+                # if a string is passed, we assume it is a file name
+                with open(self._track_resources, "w") as f:
+                    _simulate_resource_use(circuit, f)
+            else:
+                # NOTE: This will work even if `_track_resources` was originally passed a file-like object
+                _simulate_resource_use(circuit, self._track_resources)
 
         for s in circuit.shots or [None]:
             r = tuple(
