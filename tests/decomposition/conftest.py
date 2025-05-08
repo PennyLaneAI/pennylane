@@ -23,7 +23,6 @@ from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
-weighted_decompositions = defaultdict(list)
 
 def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""

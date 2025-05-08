@@ -212,7 +212,7 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         gate_counts = self._compute_resources(*args, **kwargs)
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
         gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
-        return Resources(gate_counts, sum(count for gate, count in gate_counts.items()))
+        return Resources(gate_counts)
 
 
 def _auto_wrap(op_type):

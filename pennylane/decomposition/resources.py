@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Resources:
     r"""Stores resource estimates.
 
@@ -37,11 +37,13 @@ class Resources:
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float = field(default_factory=float)
+    weighted_cost: Optional[float] = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for gate, count in self.gate_counts.items())
         assert self.weighted_cost >= 0.0
 
     @cached_property

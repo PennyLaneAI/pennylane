@@ -32,6 +32,56 @@ from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 
 
+def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None):
+    """
+    From the provided gate_set dict, set (or None) resolves a standardized form for the gate_set,
+    as well as a tuple target_gate_types and set target_gate_names, and a function that
+    returns whether the gate set contains a given operator.
+
+    Args:
+        gate_set (set[type | str] | dict[type | str, float]): The gate_set to be resolved.
+
+    Returns:
+        gate_set (set[type | str] | dict[type | str, float]): The standardized gate_set.
+        target_gate_types tuple[type]: The types of the gates in the gate_set.
+        target_gate_names set[str]: The names of the gates in the gate_set.
+        gate_set_contains (Callable): A function that checks for the membership of a gate in the gate_set.
+    """
+    target_gate_types = tuple()
+    target_gate_names = set()
+    gate_set_contains = lambda g: g
+
+    if gate_set is None:
+        gate_set: set[Type[Operator] | str] = set(qml.ops.__all__)
+
+    if isinstance(gate_set, (str, type)):
+        gate_set = {gate_set}
+
+    if isinstance(gate_set, dict):
+        if not qml.decomposition.enabled_graph():
+            raise TypeError(
+                "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored."
+            )
+
+    if isinstance(gate_set, Iterable):
+        target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+        target_gate_names = set(
+            translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
+        )
+
+        def gate_set_contains(op):
+            return (op.name in target_gate_names) or isinstance(op, target_gate_types)
+
+    elif isinstance(gate_set, Callable):
+        if qml.decomposition.enabled_graph():
+            raise TypeError(
+                "Specifying gate_set as a function is not supported with the new "
+                "graph-based decomposition system enabled."
+            )
+
+    return gate_set, target_gate_types, target_gate_names, gate_set_contains
+
+
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
@@ -96,21 +146,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
             self._env_map = ChainMap()
 
-            if gate_set is None:
-                gate_set: set[Type[Operator] | str] = set(qml.ops.__all__)
-
-            if isinstance(gate_set, (str, type)):
-                gate_set: set[Type[Operator] | str] = {gate_set}
+            gate_set, target_gate_types, target_gate_names, _in_gate_set = _resolve_gate_set(gate_set)
 
             if isinstance(gate_set, Iterable):
-
-                target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                target_gate_names = set(
-                    translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
-                )
-
-                def _in_gate_set(op: Operator) -> bool:
-                    return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
                 self.gate_set_contains = _in_gate_set
 
@@ -123,12 +161,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             else:  # isinstance(gate_set, Callable)
 
                 self.gate_set_contains: Callable[[Operator], bool] = gate_set
-
-                if qml.decomposition.enabled_graph():
-                    raise TypeError(
-                        "Specifying gate_set as a function is not supported with the new "
-                        "graph-based decomposition system enabled."
-                    )
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -648,48 +680,7 @@ def decompose(
 
     _decomp_graph_kwargs_checks(fixed_decomps, alt_decomps)
 
-    if isinstance(gate_set, (str, type)):
-        gate_set = {gate_set}
-
-    if isinstance(gate_set, Iterable):
-        target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        target_gate_names = set(
-            translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
-        )
-
-    if isinstance(gate_set, dict):
-        target_gate_types = tuple(gate for gate in gate_set.keys() if isinstance(gate, type))
-        target_gate_names = set(
-            translate_op_alias(gate) for gate in gate_set.keys() if isinstance(gate, str)
-        )
-        if not qml.decomposition.enabled_graph():
-            # note this is a warning and not an exception.
-            raise TypeError(
-                "Weights were provided with a gateset but graph decomposition is not enabled! They will be ignored."
-            )
-
-    if isinstance(gate_set, Iterable) or isinstance(gate_set, dict):
-        def gate_set_contains(op):
-            return (op.name in target_gate_names) or isinstance(op, target_gate_types)
-
-    # If the gate_set is None, we don't need to iterate over
-    # all the ops to construct `target_gate_types` or `target_gate_names`
-    elif gate_set is None:
-
-        target_gate_types = tuple()
-        target_gate_names = set(qml.ops.__all__)
-
-        def gate_set_contains(op):
-            return op.name in target_gate_names
-
-    else:
-        gate_set_contains = gate_set
-
-        if qml.decomposition.enabled_graph():
-            raise TypeError(
-                "Specifying gate_set as a function is not supported with the new "
-                "graph-based decomposition system enabled."
-            )
+    gate_set, target_gate_types, target_gate_names, gate_set_contains = _resolve_gate_set(gate_set)
 
     def stopping_condition(op):
 
