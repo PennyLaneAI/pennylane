@@ -42,7 +42,6 @@ TWO_QUTRITS = 2
 THREE_QUTRITS = 3
 
 MISMATCH_ERROR = "a and p must have same size"
-MISMATCH_ERROR_JAX = "p must be None or match the shape of a"
 
 ml_frameworks_list = [
     "numpy",
@@ -848,7 +847,7 @@ class TestSampleProbsJax:
         is_state_batched = False
         state_len = 1
 
-        with pytest.raises(ValueError, match=MISMATCH_ERROR_JAX):
+        with pytest.raises(ValueError):  # error msg determined by jax, not us
             _sample_probs_jax(
                 probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
             )
