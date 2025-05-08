@@ -120,6 +120,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane supports `JAX` version 0.5.3.
+  [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
+
 * Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
@@ -358,6 +361,7 @@ Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Lee J. O'Riordan,
+Mudit Pandey,
 Andrija Paurevic,
 Kalman Szenes,
 David Wierichs,
