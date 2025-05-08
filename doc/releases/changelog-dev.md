@@ -180,7 +180,16 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
+* Two new device-developer transforms have been added to `devices.preprocess`: 
+  :func:`~.devices.preprocess.measurements_from_counts` and :func:`~.devices.preprocess.measurements_from_samples`.
+  These transforms modify the tape to instead contain a `counts` or `sample` measurement process, 
+  deriving the original measurements from the raw counts/samples in post-processing. This allows 
+  expanded measurement support for devices that only 
+  support counts/samples at execution, like real hardware devices.
+  [(#7317)](https://github.com/PennyLaneAI/pennylane/pull/7317)
+
 * Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
 
 <h3>Breaking changes 💔</h3>
 

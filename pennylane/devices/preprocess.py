@@ -546,3 +546,218 @@ def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, n
                     raise qml.DeviceError(
                         f"Measurement {m} not accepted for analytic simulation on {name}."
                     )
+
+
+@transform
+def measurements_from_samples(tape):
+    """Quantum function transform that replaces all terminal measurements from a tape with a single
+    :func:`pennylane.sample` measurement, and adds postprocessing functions for each original measurement.
+
+    This transform can be used to make tapes compatible with device backends that only return
+    :func:`pennylane.sample`. The final output will return the initial requested measurements, calculated instead from
+    the raw samples returned immediately after execution.
+
+    The transform is only applied if the tape is being executed with shots.
+
+    .. note::
+        This transform diagonalizes all the operations on the tape. An error will
+        be raised if non-commuting terms are encountered. To avoid non-commuting
+        terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
+        transform can be applied.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Example**
+
+    Consider the tape:
+
+    >>> ops = [qml.X(0), qml.RY(1.23, 1)]
+    >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
+    >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
+
+    We can apply the transform to diagonalize and convert the two measurements to a single `sample` measurement:
+
+    >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_samples(tape)
+    >>> new_tape.measurements
+    [sample(wires=[0, 1])]
+
+    The tape operations now include diagonalizing gates.
+
+    >>> new_tape.operations
+    [X(0), RY(1.23, wires=[1]), RX(1.5707963267948966, wires=[0])]
+
+    Executing the tape returns samples that can be post-processed to get the originally requested measurements:
+
+    >>> dev = qml.device("default.qubit")
+    >>> res = dev.execute(new_tape)
+    >>> res
+    array([[1, 0],
+           [0, 0],
+           [0, 1],
+           [1, 1],
+           [0, 1],
+           [1, 0],
+           [0, 1],
+           [1, 0],
+           [1, 0],
+           [1, 0]])
+
+    >>> fn((res,))
+    (-0.2, array([0.6, 0.4]))
+    """
+    if not tape.shots:
+        return (tape,), null_postprocessing
+
+    for mp in tape.measurements:
+        if not mp.obs and not mp.wires:
+            raise RuntimeError(
+                "Please apply validate_device_wires transform before measurements_from_samples"
+            )
+
+    diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
+    new_tape = diagonalized_tape.copy(measurements=[qml.sample(wires=measured_wires)])
+
+    def unsqueezed(samples):
+        """If the samples have been squeezed to remove the 'extra' dimension in the case where
+        shots=1 or wires=1, unsqueeze to restore the raw samples format expected by mp.process_samples
+        """
+
+        # if we stop squeezing out the extra dimension for shots=1 or wires=1 when sampling (as is
+        # already the case in Catalyst), this problem goes away
+
+        if len(samples.shape) == 1:
+            samples = qml.math.array([[s] for s in samples], like=samples)
+        return samples
+
+    def postprocessing_fn(results):
+        """A processing function to get measurement values from samples."""
+        samples = results[0]
+        if tape.shots.has_partitioned_shots:
+            results_processed = []
+            for s in samples:
+                res = [m.process_samples(unsqueezed(s), measured_wires) for m in tape.measurements]
+                if len(tape.measurements) == 1:
+                    res = res[0]
+                results_processed.append(res)
+        else:
+            results_processed = [
+                m.process_samples(unsqueezed(samples), measured_wires) for m in tape.measurements
+            ]
+            if len(tape.measurements) == 1:
+                results_processed = results_processed[0]
+
+        return results_processed
+
+    return [new_tape], postprocessing_fn
+
+
+@transform
+def measurements_from_counts(tape):
+    r"""Quantum function transform that replaces all terminal measurements from a tape with a single
+    :func:`pennylane.counts` measurement, and adds postprocessing functions for each original measurement.
+
+    This transform can be used to make tapes compatible with device backends that only return
+    :func:`pennylane.counts`. The final output will return the initial requested measurements, calculated instead from
+    the raw counts returned immediately after execution.
+
+    The transform is only applied if the tape is being executed with shots.
+
+    .. note::
+        This transform diagonalizes all the operations on the tape. An error will
+        be raised if non-commuting terms are encountered. To avoid non-commuting
+        terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
+        transform can be applied.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Example**
+
+    Consider the tape:
+
+    >>> ops = [qml.X(0), qml.RY(1.23, 1)]
+    >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
+    >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
+
+    We can apply the transform to diagonalize and convert the two measurements to a single sample:
+
+    >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_counts(tape)
+    >>> new_tape.measurements
+    [CountsMP(wires=[0, 1], all_outcomes=False)]
+
+    The tape operations now include diagonalizing gates.
+
+    >>> new_tape.operations
+    [X(0), RY(1.23, wires=[1]), RX(1.5707963267948966, wires=[0])]
+
+    The tape is now compatible with a device backend that only supports counts. Executing the
+    tape returns the raw counts:
+
+    >>> dev = qml.device("default.qubit")
+    >>> res = dev.execute(new_tape)
+    >>> res
+    {'00': 4, '01': 2, '10': 2, '11': 2}
+
+    And these can be post-processed to get the originally requested measurements:
+
+    >>> fn((res,))
+    (-0.19999999999999996, array([0.7, 0.3]))
+    """
+    if tape.shots.total_shots is None:
+        return (tape,), null_postprocessing
+
+    for mp in tape.measurements:
+        if not mp.obs and not mp.wires:
+            raise RuntimeError(
+                "Please apply validate_device_wires transform before measurements_from_counts"
+            )
+
+    diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
+    new_tape = diagonalized_tape.copy(measurements=[qml.counts(wires=measured_wires)])
+
+    def postprocessing_fn(results):
+        """A processing function to get measurement values from counts."""
+        counts = results[0]
+
+        if tape.shots.has_partitioned_shots:
+            results_processed = []
+            for c in counts:
+                res = [m.process_counts(c, measured_wires) for m in tape.measurements]
+                if len(tape.measurements) == 1:
+                    res = res[0]
+                results_processed.append(res)
+        else:
+            results_processed = [
+                m.process_counts(counts, measured_wires) for m in tape.measurements
+            ]
+            if len(tape.measurements) == 1:
+                results_processed = results_processed[0]
+
+        return results_processed
+
+    return [new_tape], postprocessing_fn
+
+
+def _get_diagonalized_tape_and_wires(tape):
+    """Apply the diagonalize_measurements transform to the tape and extract a list of
+    all the wires present in the measurements"""
+
+    (diagonalized_tape,), _ = qml.transforms.diagonalize_measurements(tape)
+
+    measured_wires = set()
+    for m in diagonalized_tape.measurements:
+        measured_wires.update(
+            m.wires.tolist()
+        )  # ToDo: add test confirming that the wire order can be weird and this still works
+    measured_wires = list(measured_wires)
+
+    return diagonalized_tape, measured_wires
