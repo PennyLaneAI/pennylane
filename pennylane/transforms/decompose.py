@@ -49,7 +49,7 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
     """
     target_gate_types = tuple()
     target_gate_names = set()
-    gate_set_contains = lambda g: g
+    gate_set_contains = gate_set
 
     if gate_set is None:
         gate_set: set[Type[Operator] | str] = set(qml.ops.__all__)
@@ -73,8 +73,6 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
             return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
     elif isinstance(gate_set, Callable):
-        gate_set_contains = gate_set
-
         if qml.decomposition.enabled_graph():
             raise TypeError(
                 "Specifying gate_set as a function is not supported with the new "
