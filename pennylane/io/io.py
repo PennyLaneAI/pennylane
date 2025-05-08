@@ -629,16 +629,16 @@ def to_openqasm(
 
     Measurements are assumed to be performed on all qubits in the computational basis.
     An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
-    is diagonal in the eigenbasis of the quantum script's observables.
-    The measurement outputs can be restricted to only those specified in the script by setting ``measure_all=False``.
+    is diagonal in the eigenbasis of the quantum circuit's observables.
+    The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
 
     Args:
         wires (Wires or None): the wires to use when serializing the circuit.
             Defaults to ``None``, such that all the wires are used for serialization
         rotations (bool): in addition to serializing user-specified gates, also include the gates that
-            diagonalize the measured wires such that they are in the eigenbasis of the circuit observables
+            diagonalize the measured wires such that they are in the eigenbasis of the circuit's observables
         measure_all (bool): whether to perform a computational basis measurement on all
-            qubits or just those specified in the script
+            qubits or just those specified in the circuit
         precision (int): number of decimal digits to display for the parameters
 
     Returns:
