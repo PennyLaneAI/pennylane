@@ -160,7 +160,7 @@ class TestRowCol:
         P = np.eye(n, dtype=int)
         connectivity = conn(n)
         new_P, cnots = rowcol(P, connectivity)
-        assert cnots == []
+        assert not cnots
         assert np.allclose(new_P, P)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
@@ -176,7 +176,7 @@ class TestRowCol:
 
         connectivity = conn(n)
         new_P, cnots = rowcol(P, connectivity)
-        exp = sum([[(i, i + 1), (i + 2, i + 1)] for i in range(0, n - 2, 2)], start=[])
+        exp = sum(([(i, i + 1), (i + 2, i + 1)] for i in range(0, n - 2, 2)), start=[])
         if n % 2 == 0:
             exp.append((n - 2, n - 1))
         assert set(cnots) == set(exp)
