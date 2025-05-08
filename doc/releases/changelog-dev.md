@@ -186,6 +186,9 @@
 * Migrated `setup.py` package build and install to `pyproject.toml`
   [(#7375)](https://github.com/PennyLaneAI/pennylane/pull/7375)
 
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
