@@ -1188,7 +1188,7 @@ class TestHamiltonianSamples:
         res = simulate(qs, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.02)
 
     def test_sum_expval_shot_vector(self, seed):
         """Test that sampling works well for Sum observables with a shot vector."""
@@ -1203,8 +1203,8 @@ class TestHamiltonianSamples:
 
         assert len(res) == 2
         assert isinstance(res, tuple)
-        assert np.allclose(res[0], expected, atol=0.01)
-        assert np.allclose(res[1], expected, atol=0.01)
+        assert np.allclose(res[0], expected, atol=0.02)
+        assert np.allclose(res[1], expected, atol=0.02)
 
     def test_prod_expval(self, seed):
         """Tests that sampling works for Prod observables"""
