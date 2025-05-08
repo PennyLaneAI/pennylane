@@ -591,25 +591,6 @@ def decompose(
     ───H†─│────────────╰●───────────────┤
     ──────╰●────────────────────────────┤
 
-    With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
-
-    .. code-block:: python
-
-        @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.H(wires=[0])
-            qml.Toffoli(wires=[0,1,2])
-            return qml.expval(qml.Z(0))
-
-    >>> print(qml.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
-
-    Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
-    as determined by the provided weights.
-
     .. details::
         :title: Integration with the Graph-Based Decomposition System
 
@@ -647,6 +628,26 @@ def decompose(
             >>> new_tape.operations
             [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
+        **Weighted Gate SSets**
+
+        With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. i.e.
+
+        .. code-block:: python
+
+            @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit():
+                qml.H(wires=[0])
+                qml.Toffoli(wires=[0,1,2])
+                return qml.expval(qml.Z(0))
+
+        >>> print(qml.draw(circuit)())
+        0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+        1: ───────────────────────────────├●─┤
+        2: ───────────────────────────────╰X─┤
+
+        Here, even though the Hadamard is in the target gate set, its decomposition down to rotations is considered more
+        efficient, as determined by the provided weights.
 
         **Customizing Decompositions**
 
