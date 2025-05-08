@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
+from textwrap import dedent
 from unittest.mock import Mock
 
 import pytest
@@ -193,3 +194,113 @@ class TestLoad:
 
             if mock_plugin_converters[plugin_converter].called:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
+
+
+class TestToOpenQasm:
+    """Test the qml.to_openqasm function."""
+
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    def test_basic_example(self):
+        """Test basic usage on simple circuit with parameters."""
+
+        @qml.qnode(self.dev)
+        def circuit(theta, phi):
+            qml.RX(theta, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(phi, wires=1)
+            return qml.sample()
+
+        qasm = qml.to_openqasm(circuit)(1.2, 0.9)
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            rx(1.2) q[0];
+            cx q[0],q[1];
+            rz(0.9) q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_measure_qubits_subset_only(self):
+        """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=1)
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            h q[0];
+            cx q[0],q[1];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_measure_qubits_subset_only(self):
+        """Test OpenQASM program includes measurements only on the qubits subset specified in the QNode circuit."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=1)
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            h q[0];
+            cx q[0],q[1];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_rotations_with_expval(self):
+        """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        qasm = qml.to_openqasm(circuit, rotations=True)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            h q[0];
+            cx q[0],q[1];
+            h q[0];
+            z q[1];
+            s q[1];
+            h q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
