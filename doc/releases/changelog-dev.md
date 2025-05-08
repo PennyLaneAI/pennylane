@@ -41,7 +41,7 @@
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* The transform `to_openqasm` is added to the `io` module to convert a `QNode` circuit to his representation as an OpenQASM 2.0 program.
+* The `qml.to_openqasm` function has been implemented in the `io` module to convert a quantum circuit to its representation as an OpenQASM 2.0 program.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
