@@ -274,6 +274,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Usage of NumPy in `default.mixed` source code has been converted to `qml.math` to avoid
+  unnecessary dependency on NumPy and to fix a bug that caused an error when using `default.mixed` with PyTorch and GPUs.
+  [(#7384)](https://github.com/PennyLaneAI/pennylane/pull/7384)
+
 * With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
@@ -326,6 +330,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
   [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
+
+* Returning `MeasurementValue`s from the `ftqc` module's parametric mid-circuit measurements
+  (`measure_arbitrary_basis`, `measure_x` and `measure_y`) no longer raises an error in circuits 
+  using `diagonalize_mcms`.
+  [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
 <h3>Contributors ✍️</h3>
 
