@@ -86,7 +86,7 @@ from pennylane.io import (
     FromBloq,
     bloq_registers,
     ToBloq,
-    to_bloq
+    to_bloq,
 )
 from pennylane.measurements import (
     counts,

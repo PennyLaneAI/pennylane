@@ -16,7 +16,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 """
 from collections import defaultdict
 from functools import cached_property, lru_cache, singledispatch
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
@@ -25,7 +25,6 @@ import pennylane.templates as qtemps
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
-from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -34,11 +33,6 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
 
-try:
-    from attrs import frozen
-except (ModuleNotFoundError, ImportError) as import_error:
-    pass
-
 if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
@@ -46,7 +40,7 @@ if TYPE_CHECKING:
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
 def _get_op_call_graph():
-    
+
     @singledispatch
     def _op_call_graph(op):
         return None
@@ -55,18 +49,16 @@ def _get_op_call_graph():
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
         return {
             ToBloq(op.hyperparameters["unitary"]): 1,
-            ToBloq(op.hyperparameters["unitary"]).controlled(): (
-                2 ** len(op.estimation_wires)
-            )
-            - 1,
+            ToBloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires)) - 1,
             ToBloq(qops.adjoint(qtemps.QFT(wires=op.estimation_wires))): 1,
         }
-    
+
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qubitization.Qubitization):
         return None
 
     return _get_op_call_graph
+
 
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
@@ -76,7 +68,7 @@ def _map_to_bloq():
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, mapping: dict, **kwargs):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -84,16 +76,16 @@ def _map_to_bloq():
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
             ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
         )
-    
-    @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
-        from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
-        dt = op.data[0]
-        
-        # return TrotterizedUnitary(
-        #     bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
-        # )
+    # @_to_qt_bloq.register
+    # def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
+    #     from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+
+    #     dt = op.data[0]
+
+    # return TrotterizedUnitary(
+    #     bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+    # )
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
@@ -691,26 +683,41 @@ def _gather_input_soqs(
 def _inherit_from_bloq(cls):
     if qualtran:
 
-        @frozen
         class ToBloq(qt.Bloq):
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
-            op: Operation
+
+            def __init__(self, op, **kwargs):
+                self.op = op
+                self._kwargs = kwargs
+                super().__init__()
 
             @cached_property
             def signature(self) -> "qt.Signature":
-                num_wires = len(self.op.wires)
+                from pennylane.workflow.qnode import QNode
+                from pennylane.workflow import construct_tape
+
+                if isinstance(self.op, QNode):
+                    num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
+                else:
+                    num_wires = len(self.op.wires)
                 return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-            def decompose_bloq(self, **kwargs):
+            def decompose_bloq(self):
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
+                from pennylane.workflow.qnode import QNode
+                from pennylane.workflow import construct_tape
 
                 try:
-                    ops = self.op.decomposition()
-
+                    if isinstance(self.op, QNode):
+                        tape = construct_tape(self.op)(**self._kwargs)
+                        ops = tape.circuit
+                        all_wires = list(tape.wires)
+                    else:
+                        ops = self.op.decomposition()
+                        all_wires = list(self.op.wires)
                     signature = self.signature
-                    all_wires = list(self.op.wires)
                     in_quregs = out_quregs = {
                         "qubits": np.array(all_wires).reshape(len(all_wires), 1)
                     }
@@ -808,17 +815,53 @@ def _inherit_from_bloq(cls):
 
             def build_call_graph(self, ssa):
                 # ToDo: implement build_call_graphs for each high level operation
-                if isinstance(self.op, qops.QuantumPhaseEstimation):
+                if isinstance(self.op, qtemps.subroutines.QuantumPhaseEstimation):
+                    from qualtran.bloqs.basic_gates import Hadamard
+
                     return {
-                        ToBloq(self.op.hyperparameters["unitary"]): 1,
+                        Hadamard(): len(self.op.estimation_wires),
                         ToBloq(self.op.hyperparameters["unitary"]).controlled(): (
                             2 ** len(self.op.estimation_wires)
                         )
                         - 1,
                         ToBloq(qops.adjoint(qtemps.QFT(wires=self.op.estimation_wires))): 1,
                     }
+                
+                if isinstance(self.op, qtemps.subroutines.TrotterizedQfunc):
+                    import pennylane as qml
+
+                    n = self.op.hyperparameters["n"]
+                    order = self.op.hyperparameters["order"]
+                    k = order // 2
+                    qfunc = self.op.hyperparameters["qfunc"]
+                    qfunc_args = self.op.parameters[1:]
+
+                    with qml.QueuingManager.stop_recording():
+                        with qml.queuing.AnnotatedQueue() as q:
+                            base_hyper_params = ("n", "order", "qfunc", "reverse")
+
+                            qfunc_args = self.op.parameters
+                            qfunc_kwargs = {
+                                k: v for k, v in self.op.hyperparameters.items() if not k in base_hyper_params
+                            }
+
+                            qfunc = self.op.hyperparameters["qfunc"]
+                            qfunc(*qfunc_args, wires=self.op.wires, **qfunc_kwargs)
+                    
+                    call_graph = defaultdict(int, {})
+                    num_gates = 2 * n * (5 ** (k - 1))
+                    for op in q.queue:
+                        call_graph[_map_to_bloq()(op)] += num_gates
+
+                    return call_graph
+
                 return self.decompose_bloq().build_call_graph(ssa)
 
+            def __repr__(self):
+                if isinstance(self.op, Operation):
+                    return f"ToBloq({self.op.name})"
+                return "ToBloq(QNode)"
+            
             def __str__(self):
                 return "PL" + self.op.name
 
@@ -829,7 +872,7 @@ def _inherit_from_bloq(cls):
 @_inherit_from_bloq
 class ToBloq:
     r"""
-    An adapter for using a PennyLane :class:`~.Operation as a 
+    An adapter for using a PennyLane :class:`~.Operation as a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
@@ -888,7 +931,7 @@ class ToBloq:
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
     Converts the given circuit or :class:`~.Operation and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
-    
+
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the main
         branch via ``pip``:
@@ -922,6 +965,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     """
 
     if map_ops:
-        return _map_to_bloq()(circuit, custom_mapping, **kwargs)
-    
-    return ToBloq(circuit)
+        print("Hello")
+        print(**kwargs)
+        return _map_to_bloq()(circuit, **kwargs)
+
+    return ToBloq(circuit, **kwargs)
