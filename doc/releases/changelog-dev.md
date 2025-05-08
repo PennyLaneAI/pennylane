@@ -4,6 +4,45 @@
 
 <h3>New features since last release</h3>
 
+* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
+  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+
+  ```python
+  angles = np.array([1.0, 2.0, 3.0, 4.0])
+
+  wires = qml.registers({"control": 2, "target": 1})
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.SelectPauliRot(
+        angles,
+        control_wires=wires["control"],
+        target_wire=wires["target"],
+        rot_axis="Y")
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+  ```
+
+* The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
+  circuits to a limited gate-set that can be translated to the MBQC formalism.
+  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
+  gate-set that can be translated to the MBQC formalism.
+  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+<h4>Resource-efficient Decompositions 🔎</h4>
+
 * Support for weighted gates in target gatesets added which reflects the 
   relative costs of executing different gates on a hardware backend i.e. T is more expensive
   than a Pauli gate. The decompose transform now supports that the `gate_set` parameter be of `dict[type | str, float]` 
@@ -47,45 +86,6 @@
     >>> print(graph.resource_estimate(op).__repr__())
     '<num_gates=16, gate_counts={RZ: 4, RY: 4, RX: 2, GlobalPhase: 4, CNOT: 2}, weighted_cost=16.0>'
   ```
-
-* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
-  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
-  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
-
-  ```python
-  angles = np.array([1.0, 2.0, 3.0, 4.0])
-
-  wires = qml.registers({"control": 2, "target": 1})
-  dev = qml.device("default.qubit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.SelectPauliRot(
-        angles,
-        control_wires=wires["control"],
-        target_wire=wires["target"],
-        rot_axis="Y")
-      return qml.state()
-  ```
-  
-  ```pycon
-  >>> print(circuit())
-  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
-  ```
-
-* The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
-  circuits to a limited gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
-
-* The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
-  gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
-
-* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-
-<h4>Resource-efficient Decompositions 🔎</h4>
 
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
   can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
