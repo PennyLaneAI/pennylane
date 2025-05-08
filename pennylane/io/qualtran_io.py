@@ -25,7 +25,7 @@ import pennylane.templates as qtemps
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
-from pennylane.workflow.qnode import QNode
+# from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -76,7 +76,7 @@ def _map_to_bloq():
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, mapping: dict):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, mapping: dict, **kwargs):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -84,6 +84,16 @@ def _map_to_bloq():
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
             ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
         )
+    
+    @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
+        from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+
+        dt = op.data[0]
+        
+        # return TrotterizedUnitary(
+        #     bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+        # )
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
@@ -686,8 +696,7 @@ def _inherit_from_bloq(cls):
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
-
-            op: Operation
+            op: Operation | QNode
 
             @cached_property
             def signature(self) -> "qt.Signature":
@@ -876,7 +885,7 @@ class ToBloq:
     def __call__(self, *args, **kwargs):
         raise ImportError(self._error_message)
 
-def to_bloq(circuit: QNode | Operation, map_ops: bool = True, custom_mapping: dict = None):
+def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
     Converts the given circuit or :class:`~.Operation and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
     
@@ -913,6 +922,6 @@ def to_bloq(circuit: QNode | Operation, map_ops: bool = True, custom_mapping: di
     """
 
     if map_ops:
-        return _map_to_bloq()(circuit, custom_mapping)
+        return _map_to_bloq()(circuit, custom_mapping, **kwargs)
     
     return ToBloq(circuit)
