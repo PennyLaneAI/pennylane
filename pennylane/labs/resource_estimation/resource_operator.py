@@ -15,8 +15,7 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, Dict, List
+from typing import TYPE_CHECKING, Callable, List
 
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
