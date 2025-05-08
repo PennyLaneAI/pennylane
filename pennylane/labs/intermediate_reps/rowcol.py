@@ -100,11 +100,11 @@ def _get_S(P: np.ndarray, idx: int, node_set: Iterable[int], mode: str):
     # Find S (S') either by simply extracting a column or by solving a linear system for the row
     if mode == "column":
         b = P[:, idx]
-    elif mode == "row":
+    else:
         P = F_2(P)
         e_i = F_2.Zeros(len(P))
         e_i[idx] = 1
-        b = np.linalg.solve(P.T, e_i)
+        b = np.linalg.solve(P.T, e_i)  # This solve step is over F_2!
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)
@@ -154,7 +154,7 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
         # ... and no constraints for second pass (i.1.3)
         _ = [_update(P, cnots, parent, child) for child, parent in visit_nodes]
 
-    elif mode == "row":
+    else:
         # For row mode use pre-order and constraints from S' in first pass (i.2.2)...
         previsit_nodes = preorder_traverse(T, source=idx)
         _ = [_update(P, cnots, child, parent) for child, parent in previsit_nodes if child not in S]
@@ -198,7 +198,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
         # Pick a vertex that is not a cut vertex of the (remaining) connectivity graph
         i = next(v for v in connectivity.nodes() if v not in cut_vertices)
         # Eliminate column and row of parity matrix with index v (Steps i.1 and i.2 in compilation hub)
-        for mode in ["column", "row"]:
+        for mode in ("column", "row"):
             P, new_cnots = _eliminate(P, connectivity, i, mode, verbose)
             # Memorize CNOTs required to eliminate column/row
             cnots.extend(new_cnots)
