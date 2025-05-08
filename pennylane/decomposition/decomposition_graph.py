@@ -134,7 +134,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[str] | dict[type | str, float],
+        gate_set: set[type | str] | dict[type | str, float],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
