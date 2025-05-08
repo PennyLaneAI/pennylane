@@ -6,7 +6,8 @@
 
 * Support for weighted gates in target gatesets added which reflects the 
   relative costs of executing different gates on a hardware backend i.e. T is more expensive
-  than a Pauli gate. [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
+  than a Pauli gate.
+  [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
