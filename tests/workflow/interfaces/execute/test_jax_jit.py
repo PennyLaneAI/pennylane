@@ -913,12 +913,13 @@ class TestJitAllCounts:
         for val in ["01", "10", "11"]:
             assert qml.math.allclose(res[val], 0)
 
-    @pytest.mark.parametrize(
-        "device_name",
-        (pytest.param("default.qubit", marks=pytest.mark.xfail),),
-    )
+    @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     def test_jit_allcounts_broadcasting(self, device_name):
         """Test jitting with counts with all_outcomes == True."""
+
+        if device_name == "default.qubit":
+            print("hello")
+            pytest.xfail(reason="not supported")
 
         tape = qml.tape.QuantumScript(
             [qml.RX(np.array([0.0, 0.0]), 0)],
