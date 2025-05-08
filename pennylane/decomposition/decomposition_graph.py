@@ -98,7 +98,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     decompose this high-level gate, which allows us to use Dijkstra's algorithm to find the most efficient
     decomposition. By specifying weights in the target gate set, the total distance calculation involves
     a sum of weighted gate counts, which can represent the relative cost of executing a particular element
-    of the target gate set on the target hardware i.e. a T gate.
+    of the target gate set on the target hardware i.e. a ``T`` gate.
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
