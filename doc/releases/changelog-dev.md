@@ -52,24 +52,24 @@
   * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
   * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
 
-  i.e.
+  Consider the following toy example.
 
   ```python
-      @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
-      @qml.qnode(qml.device("default.qubit"))
-      def circuit():
-          qml.H(wires=[0])
-          qml.Toffoli(wires=[0,1,2])
-          return qml.expval(qml.Z(0))
+  @partial(qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.RZ: 0.01, qml.H: 420})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.H(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
   ```
   
   ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
+  >>> print(qml.draw(circuit)())
+  0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+  1: ───────────────────────────────├●─┤
+  2: ───────────────────────────────╰X─┤
   ```
-  Here, even though H is in the target gate set, its decomposition down to rotations is considered more efficient,
+  Here, even though the Hadamard is in the target gate set, its decomposition down to rotations is considered more efficient,
   as determined by the provided weights.
 
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
