@@ -102,8 +102,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str] | dict[type | str, float]): The names and (optionally) weights of the gates in the target
-            gate set.
+        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
