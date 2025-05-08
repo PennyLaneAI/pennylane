@@ -492,7 +492,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
-            self.distances[target_idx] = Resources({target_node: 1}, self._gate_weights[_to_name(target_node)])
+            self.distances[target_idx] = Resources(
+                {target_node: 1}, self._gate_weights[_to_name(target_node)]
+            )
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]

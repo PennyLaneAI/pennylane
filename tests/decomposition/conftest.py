@@ -24,11 +24,16 @@ from pennylane.decomposition.decomposition_rule import _auto_wrap
 
 decompositions = defaultdict(list)
 
+
 def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
     return Resources(
         {_auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
-        sum(count for gate, count in gate_count.items()) if weighted_cost is None else weighted_cost
+        (
+            sum(count for gate, count in gate_count.items())
+            if weighted_cost is None
+            else weighted_cost
+        ),
     )
 
 

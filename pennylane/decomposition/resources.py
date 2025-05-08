@@ -54,11 +54,13 @@ class Resources:
     def __add__(self, other: Resources):
         return Resources(
             _combine_dict(self.gate_counts, other.gate_counts),
-            weighted_cost=self.weighted_cost + other.weighted_cost
+            weighted_cost=self.weighted_cost + other.weighted_cost,
         )
 
     def __mul__(self, scalar: int):
-        return Resources(_scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar)
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
 
     __rmul__ = __mul__
 

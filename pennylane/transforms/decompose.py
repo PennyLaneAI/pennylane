@@ -146,7 +146,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
             self._env_map = ChainMap()
 
-            gate_set, target_gate_types, target_gate_names, _in_gate_set = _resolve_gate_set(gate_set)
+            gate_set, target_gate_types, target_gate_names, _in_gate_set = _resolve_gate_set(
+                gate_set
+            )
 
             if isinstance(gate_set, Iterable):
 
@@ -155,7 +157,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if qml.decomposition.enabled_graph():
 
                     type_to_names = {op_type.__name__ for op_type in target_gate_types}
-                    self._gate_set = gate_set if isinstance(gate_set, dict) else target_gate_names | type_to_names
+                    self._gate_set = (
+                        gate_set
+                        if isinstance(gate_set, dict)
+                        else target_gate_names | type_to_names
+                    )
 
             else:  # isinstance(gate_set, Callable)
 

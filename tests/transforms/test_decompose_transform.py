@@ -85,13 +85,7 @@ class TestDecompose:
             None,
             None,
         ),
-        (
-            [qml.Toffoli([0, 1, 2])],
-            {qml.Toffoli},
-            [qml.Toffoli([0, 1, 2])],
-            None,
-            None
-        ),
+        ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None, None),
         (
             [qml.measurements.MidMeasureMP(0)],
             {},
@@ -158,8 +152,12 @@ class TestDecompose:
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
             decompose(tape, lambda obj: obj.has_matrix)
 
-    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern, error_pattern", iterables_test)
-    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern, error_pattern):
+    @pytest.mark.parametrize(
+        "initial_ops, gate_set, expected_ops, warning_pattern, error_pattern", iterables_test
+    )
+    def test_iterable_gate_set(
+        self, initial_ops, gate_set, expected_ops, warning_pattern, error_pattern
+    ):
         """Tests that gate sets defined with iterables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 

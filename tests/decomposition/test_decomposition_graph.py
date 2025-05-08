@@ -50,7 +50,14 @@ class TestDecompositionGraph:
         with pytest.raises(ValueError, match="Negative weights not supported."):
             graph = DecompositionGraph(
                 operations=[op],
-                gate_set={"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": -10.0},
+                gate_set={
+                    "RX": 1.0,
+                    "RY": 1.0,
+                    "RZ": 1.0,
+                    "GlobalPhase": 1.0,
+                    "CNOT": 1.0,
+                    "CZ": -10.0,
+                },
             )
             graph.solve()
 
@@ -63,7 +70,14 @@ class TestDecompositionGraph:
         with pytest.raises(TypeError):
             graph = DecompositionGraph(
                 operations=[op],
-                gate_set={"RX": "1.0", "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 10.0},
+                gate_set={
+                    "RX": "1.0",
+                    "RY": 1.0,
+                    "RZ": 1.0,
+                    "GlobalPhase": 1.0,
+                    "CNOT": 1.0,
+                    "CZ": 10.0,
+                },
             )
             graph.solve()
 
@@ -73,7 +87,14 @@ class TestDecompositionGraph:
         op = qml.CRX(2.5, wires=[0, 1])
 
         # the RZ CZ RX CZ decomp is chosen when the RZ and CNOT weights are large.
-        gate_weights = {"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0}
+        gate_weights = {
+            "RX": 1.0,
+            "RY": 3.0,
+            "RZ": 10.0,
+            "GlobalPhase": 1.0,
+            "CNOT": 20.0,
+            "CZ": 1.0,
+        }
 
         graph = DecompositionGraph(
             operations=[op],
@@ -85,7 +106,14 @@ class TestDecompositionGraph:
         assert graph.resource_estimate(op) == expected_resource
 
         # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
-        gate_weights = {"RX": 1.0, "RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0, "CNOT": 1.0, "CZ": 100.0}
+        gate_weights = {
+            "RX": 1.0,
+            "RY": 1.0,
+            "RZ": 1.0,
+            "GlobalPhase": 1.0,
+            "CNOT": 1.0,
+            "CZ": 100.0,
+        }
 
         graph = DecompositionGraph(
             operations=[op],
@@ -144,7 +172,9 @@ class TestDecompositionGraph:
 
         op = qml.Hadamard(wires=[0])
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0})
+        graph = DecompositionGraph(
+            operations=[op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0}
+        )
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY) and 1 dummy starting node
         assert len(graph._graph.nodes()) == 9
         # 8 edges from ops to decompositions, 3 from decompositions to ops, and 3 from the

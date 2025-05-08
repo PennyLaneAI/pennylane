@@ -56,7 +56,7 @@ class TestResources:
                 gate_counts={
                     CompressedResourceOp(qml.RX, {}): 2,
                 },
-                weighted_cost=-2.0
+                weighted_cost=-2.0,
             )
 
     def test_add_resources(self):
@@ -64,11 +64,11 @@ class TestResources:
 
         resources1 = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            weighted_cost=6.0
+            weighted_cost=6.0,
         )
         resources2 = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1},
-            weighted_cost=2.0
+            weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
@@ -85,7 +85,7 @@ class TestResources:
 
         resources = Resources(
             gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            weighted_cost=2.0
+            weighted_cost=2.0,
         )
 
         resources = resources * 2
@@ -100,8 +100,7 @@ class TestResources:
         """Tests the __repr__ of a Resources object."""
 
         resources = Resources(
-            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
-            5.0
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}, 5.0
         )
         assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
 
