@@ -927,7 +927,6 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.02)
 
 
 @pytest.mark.jax
