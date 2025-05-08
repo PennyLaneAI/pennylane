@@ -283,7 +283,7 @@ class NullQubit(Device):
         # this is required by Catalyst to toggle the tracker at runtime
         self.device_kwargs = {
             "track_resources": bool(track_resources),
-            "track_resources_fname": track_resources if type(track_resources) is str else None,
+            "track_resources_fname": track_resources if isinstance(track_resources, str) else None,
             "track_resources_stdout": track_resources is True,
         }
 
@@ -292,7 +292,7 @@ class NullQubit(Device):
         results = []
 
         if self._track_resources:
-            if type(self._track_resources) is str:
+            if isinstance(self._track_resources, str) :
                 # if a string is passed, we assume it is a file name
                 with open(self._track_resources, "w") as f:
                     _simulate_resource_use(circuit, f)
