@@ -13,10 +13,15 @@
 # limitations under the License.
 """Functions for retreiving effective error from fragments"""
 
-from typing import List, Sequence
+import math
+from collections import defaultdict
+from collections.abc import Hashable
+from itertools import product
+from typing import Dict, List, Sequence
 
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
 class _AdditiveIdentity:
@@ -29,31 +34,17 @@ class _AdditiveIdentity:
         return other
 
 
-def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
-    r"""Compute the second-order Trotter error operator.
-
-    For a Hamiltonian :math:`H` expressed as a sum of
-    fragments :math:`\sum_{m=1}^L H_m`, the second order Trotter formula is given by
-
-    .. math:: e^{iH\Delta t} \approx \prod_{m=1}^L e^{iH_m\Delta t / 2} \prod_{m=L}^1 e^{iH_m \Delta t / 2} = e^{i \tilde{H} \Delta t},
-
-    where :math:`\tilde{H} = H + \hat{\epsilon}`. The leading term of the error operator :math:`\hat{\epsilon}` is given by
-
-    .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
-
-    Args:
-        fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
-            objects to compute Trotter error from
-        delta (float): time step for the trotter formula.
-
-    Returns:
-        Fragment: the Trotter error operator
+def effective_hamiltonian(
+    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int = 3
+):
+    """Compute the effective Hamiltonian according to the product formula
 
     **Example**
 
     >>> import numpy as np
     >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
-    >>> from pennylane.labs.trotter_error.product_formulas import trotter_error
+    >>> from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
+
     >>> n_modes = 4
     >>> r_state = np.random.RandomState(42)
     >>> freqs = r_state.random(4)
@@ -63,32 +54,113 @@ def trotter_error(fragments: Sequence[Fragment], delta: float) -> Fragment:
     >>>     r_state.random(size=(n_modes, n_modes)),
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    >>>
     >>> delta = 0.001
-    >>> type(trotter_error(frags, delta))
-    <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
+    >>> frag_labels = [0, 1, 1, 0]
+    >>> frag_coeffs = [delta/2, delta/2, delta/2, delta/2]
 
+    >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+    >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    >>> type(effective_hamiltonian(pf, frags, order=5))
+    <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
-    if len(fragments) == 0:
-        return fragments
+    if not product_formula.fragments.issubset(fragments.keys()):
+        raise ValueError("Fragments do not match product formula")
 
+    bch = _recursive_bch(product_formula, order)
     eff = _AdditiveIdentity()
-    n_frags = len(fragments)
-    scalar = -(delta**2) / 24
 
-    for i in range(n_frags - 1):
-        for j in range(i + 1, n_frags):
-            eff += nested_commutator([fragments[i], fragments[i], fragments[j]])
-            for k in range(i + 1, n_frags):
-                eff += 2 * nested_commutator([fragments[k], fragments[i], fragments[j]])
+    for commutator, coeff in bch.items():
+        eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
 
-    eff = scalar * eff
     return eff
 
 
+def _insert_fragments(commutator, fragments):
+    ret = tuple()
+    for term in commutator:
+        if isinstance(term, tuple):
+            ret += (_insert_fragments(term, fragments),)
+        else:
+            ret += (fragments[term],)
+
+    return ret
+
+
+def _recursive_bch(product_formula: ProductFormula, order: int = 3):
+
+    bch = {}
+    for commutator_order in product_formula.bch_approx(order):
+        for commutator, coeff in commutator_order.items():
+            bch[commutator] = product_formula.exponent * coeff
+
+    if not product_formula.recursive:
+        return bch
+
+    terms = {pf: _recursive_bch(pf, order) for pf in product_formula.terms}
+
+    merged_bch = defaultdict(complex)
+    for commutator, coeff in bch.items():
+        merged_bch = _add_dicts(merged_bch, _merge_commutators(commutator, terms, order, coeff))
+
+    return merged_bch
+
+
+def _merge_commutators(commutator, terms, order, bch_coeff):
+    commutator_terms = [terms[term].items() for term in commutator]
+
+    merged = defaultdict(complex)
+
+    if len(commutator_terms) > order:
+        return merged
+
+    for x in product(*commutator_terms):
+        if len(x) > 1 and x[-1][0] == x[-2][0]:
+            continue
+
+        new_commutator = x[0][0] if len(x) == 1 else tuple(_flatten_commutator(y[0]) for y in x)
+
+        if _commutator_order(new_commutator) > order:
+            continue
+        term_coeff = math.prod(y[1] for y in x)
+
+        merged[new_commutator] += bch_coeff * term_coeff
+
+    return merged
+
+
+def _flatten_commutator(commutator):
+    if isinstance(commutator, tuple) and len(commutator) == 1:
+        return commutator[0]
+
+    return commutator
+
+
+def _commutator_order(commutator):
+    order = 0
+
+    for term in commutator:
+        if isinstance(term, tuple):
+            order += _commutator_order(term)
+        else:
+            order += 1
+
+    return order
+
+
+def _add_dicts(d1, d2):
+    for key, value in d2.items():
+        d1[key] += value
+
+    return d1
+
+
 def perturbation_error(
-    fragments: Sequence[Fragment], states: Sequence[AbstractState], delta: float = 1
+    product_formula: ProductFormula,
+    fragments: Sequence[Fragment],
+    states: Sequence[AbstractState],
+    order: int = 3,
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
@@ -109,8 +181,13 @@ def perturbation_error(
 
     **Example**
 
-    >>> from pennylane.labs.trotter_error import HOState, vibrational_fragments, perturbation_error
     >>> import numpy as np
+    >>> from pennylane.labs.trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
+
+    >>> frag_labels = [0, 1, 1, 0]
+    >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
+    >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
     >>> n_modes = 2
     >>> r_state = np.random.RandomState(42)
     >>> freqs = r_state.random(n_modes)
@@ -120,14 +197,17 @@ def perturbation_error(
     >>>     r_state.random(size=(n_modes, n_modes)),
     >>>     r_state.random(size=(n_modes, n_modes, n_modes))
     >>> ]
-    >>> frags = vibrational_fragments(n_modes, freqs, taylor_coeffs)
+    >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
     >>> gridpoints = 5
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
-    >>> perturbation_error(frags, [state1, state2])
+
+    >>> errors = perturbation_error(pf, frags, [state1, state2])
     [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
-    error = trotter_error(fragments, delta)
+    eff = effective_hamiltonian(product_formula, fragments, order=order)
+    error = eff - sum(fragments.values(), _AdditiveIdentity())
 
     return [error.expectation(state, state) for state in states]
