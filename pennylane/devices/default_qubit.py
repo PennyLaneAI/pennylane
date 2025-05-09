@@ -25,6 +25,7 @@ from typing import Optional, Sequence, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane import math
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -63,7 +64,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
     if op.name == "FromBloq" and len(op.wires) > 3:
         return False
@@ -220,7 +221,7 @@ def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
-        or not qml.operation.is_trainable(op)
+        or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)
     )
 
@@ -988,7 +989,7 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel, unused-argument
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -1016,10 +1017,10 @@ class DefaultQubit(Device):
 
         def _make_zero(tan, arg):
             return (
-                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, jax.interpreters.ad.Zero)
+                else tan
             )
-
-        tangents = tuple(map(_make_zero, tangents, args))
 
         def eval_wrapper(*inner_args):
             n_consts = len(jaxpr.constvars)
@@ -1028,6 +1029,8 @@ class DefaultQubit(Device):
             return self.eval_jaxpr(
                 jaxpr, consts, *non_const_args, execution_config=execution_config
             )
+
+        tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
 

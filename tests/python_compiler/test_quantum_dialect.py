@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit test module for pennylane.compiler.python_compiler.quantum_dialect.py."""
+"""Unit test module for pennylane/compiler/python_compiler/quantum_dialect.py."""
 
 import pytest
-from xdsl.dialects.builtin import IntegerType
+
+# pylint: disable=wrong-import-position
+
+xdsl = pytest.importorskip("xdsl")
+
+pytestmark = pytest.mark.external
+
 from xdsl.dialects.test import TestOp
 from xdsl.ir import AttributeCovT, OpResult
 
-from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, QuantumDialect, QuregType
+from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
-name = QuantumDialect.name
 all_ops = list(QuantumDialect.operations)
 all_attrs = list(QuantumDialect.attributes)
 
@@ -74,7 +79,7 @@ def create_ssa_value(t: AttributeCovT) -> OpResult[AttributeCovT]:
 
 def test_quantum_dialect_name():
     """Test that the QuantumDialect name is correct."""
-    assert name == "quantum"
+    assert QuantumDialect.name == "quantum"
 
 
 @pytest.mark.parametrize("op", all_ops)
@@ -97,26 +102,3 @@ def test_all_attributes_names(attr):
         expected_name is not None
     ), f"Unexpected attribute {attr_class_name} found in QuantumDialect"
     assert attr.name == expected_name
-
-
-def test_alloc_op_empty():
-    """Test the AllocOp class with no arguments."""
-
-    op = AllocOp(
-        operands=[None],
-        result_types=[QuregType()],
-    )
-
-    assert op.nqubits is None
-    assert op.nqubits_attr is None
-    assert isinstance(op.qreg.type, QuregType)
-
-
-def test_alloc_op_with_nqubits():
-    """Test the AllocOp class with nqubits argument."""
-
-    dummy_value = create_ssa_value(IntegerType(64))
-
-    op = AllocOp(operands=[dummy_value], result_types=[QuregType()])
-    assert op.nqubits is not None
-    assert isinstance(op.qreg.type, QuregType)

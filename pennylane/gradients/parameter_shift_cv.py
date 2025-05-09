@@ -152,13 +152,13 @@ def _transform_observable(obs, Z, device_wires):
     """Apply a Gaussian linear transformation to an observable.
 
     Args:
-        obs (.Observable): observable to transform
+        obs (.Operator): observable to transform
         Z (array[float]): Heisenberg picture representation of the linear transformation
         device_wires (.Wires): wires on the device the transformed observable is to be
             measured on
 
     Returns:
-        .Observable: the transformed observable
+        .Operator: the transformed observable
     """
     # Get the Heisenberg representation of the observable
     # in the position/momentum basis. The returned matrix/vector

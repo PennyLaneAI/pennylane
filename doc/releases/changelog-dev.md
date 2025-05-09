@@ -29,7 +29,6 @@
   [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
    0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
   ```
-  
 
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
@@ -121,11 +120,32 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane supports `JAX` version 0.5.3.
+  [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
+
+* Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
+  and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
+* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
+  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
+  
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
+* The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
+  can now be captured when program capture is enabled.
+  [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
+  [(#7368)](https://github.com/PennyLaneAI/pennylane/pull/7368)
+
+* `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
+  any number of wires.
+  [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
 
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
@@ -160,13 +180,19 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
+  [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`__ or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
@@ -197,10 +223,35 @@
 
 <h3>Deprecations 👋</h3>
 
+Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
+
+* `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
+  pennylane now depends on the more general `Operator` interface instead. The
+  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+  that the operator instance is Hermitian.
+  [(#7316)](https://github.com/PennyLaneAI/pennylane/pull/7316)
+
+* The boolean functions provided in `pennylane.operation` are deprecated. See the :doc:`deprecations page </development/deprecations>` 
+  for equivalent code to use instead. These include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`,
+  `has_nopar`, `has_unitary_gen`, `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
+
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
+  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
+  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+  [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
+
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
+  [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
+
+* `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
+  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
@@ -226,13 +277,26 @@
 
 <h3>Documentation 📝</h3>
 
-* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
-  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and 
+  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
+  [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
+
+* Fixed a bug in the validation of :class:`~.SelectPauliRot` that prevents parameter broadcasting.
+  [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
+
+* Usage of NumPy in `default.mixed` source code has been converted to `qml.math` to avoid
+  unnecessary dependency on NumPy and to fix a bug that caused an error when using `default.mixed` with PyTorch and GPUs.
+  [(#7384)](https://github.com/PennyLaneAI/pennylane/pull/7384)
+
+* With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
+  [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
 * A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
   [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
@@ -281,6 +345,13 @@
 * Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
 
+* Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
+  [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
+
+* Returning `MeasurementValue`s from the `ftqc` module's parametric mid-circuit measurements
+  (`measure_arbitrary_basis`, `measure_x` and `measure_y`) no longer raises an error in circuits 
+  using `diagonalize_mcms`.
+  [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
 <h3>Contributors ✍️</h3>
 
@@ -294,4 +365,8 @@ Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
 Lee J. O'Riordan,
-Andrija Paurevic
+Mudit Pandey,
+Andrija Paurevic,
+Kalman Szenes,
+David Wierichs,
+Jake Zaia

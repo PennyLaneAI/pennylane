@@ -245,7 +245,7 @@ class TestParameterFrequencies:
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        if not qml.operation.has_gen(op):
+        if not op.has_generator:
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
         gen = op.generator()
@@ -3660,7 +3660,7 @@ class TestSimplify:
         if op == qml.U2:
             pytest.skip("U2 gate does not simplify to Identity")
 
-        num_wires = op.num_wires if op.num_wires is not qml.operation.AnyWires else 2
+        num_wires = op.num_wires if op.num_wires is not None else 2
 
         if op == qml.PCPhase:
             unsimplified_op = op(*([0] * op.num_params), dim=2, wires=range(num_wires))

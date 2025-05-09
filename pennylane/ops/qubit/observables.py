@@ -25,7 +25,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane._deprecated_observable import Observable
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -58,7 +59,9 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
+    _queue_category = None
+
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -297,7 +300,8 @@ class SparseHamiltonian(Observable):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
-    num_wires = AnyWires
+    _queue_category = None
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -445,8 +449,8 @@ class Projector(Observable):
 
     """
 
+    is_hermitian = True
     name = "Projector"
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -692,6 +696,7 @@ class StateVectorProjector(Projector):
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
+    # pylint: disable=unused-argument
     def label(
         self,
         decimals: Optional[int] = None,
