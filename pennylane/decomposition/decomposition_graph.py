@@ -149,10 +149,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
-    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_decompositions(self, op_node: CompressedResourceOp) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = _to_name(op)
+        op_name = _to_name(op_node)
 
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
@@ -160,27 +160,27 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
 
         if (
-            issubclass(op.op_type, qml.ops.Adjoint)
+            issubclass(op_node.op_type, qml.ops.Adjoint)
             and self_adjoint not in decomps
             and adjoint_rotation not in decomps
         ):
             # Only when the base op is not self-adjoint or a rotation with a single rotation
             # angle that could be trivially negated do we need to apply adjoint to each of
             # the base op's decomposition rules.
-            decomps.extend(self._get_adjoint_decompositions(op))
+            decomps.extend(self._get_adjoint_decompositions(op_node))
 
         elif (
-            issubclass(op.op_type, qml.ops.Pow)
+            issubclass(op_node.op_type, qml.ops.Pow)
             and pow_rotation not in decomps
             and pow_of_self_adjoint not in decomps
         ):
             # Only when the operator is not self-adjoint or a rotation with a single rotation
             # angle that could be trivially multiplied with the power do we need to apply the
             # power to each of the base op's decomposition rules.
-            decomps.extend(self._get_pow_decompositions(op))
+            decomps.extend(self._get_pow_decompositions(op_node))
 
-        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            decomps.extend(self._get_controlled_decompositions(op))
+        elif op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+            decomps.extend(self._get_controlled_decompositions(op_node))
 
         return decomps
 
@@ -233,10 +233,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         except DecompositionNotApplicable:
             pass  # ignore decompositions that are not applicable to the given op params.
 
-    def _get_adjoint_decompositions(self, op) -> list[DecompositionRule]:
+    def _get_adjoint_decompositions(self, op_node: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
-        base_class, base_params = op.params["base_class"], op.params["base_params"]
+        base_class, base_params = (op_node.params["base_class"], op_node.params["base_params"])
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qml.ops.Adjoint):
@@ -247,16 +247,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         return [make_adjoint_decomp(base_decomp) for base_decomp in self._get_decompositions(base)]
 
     @staticmethod
-    def _get_pow_decompositions(op) -> list[DecompositionRule]:
+    def _get_pow_decompositions(op_node: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
-        base_class = op.params["base_class"]
+        base_class = op_node.params["base_class"]
 
         # Special case: power of zero
-        if op.params["z"] == 0:
+        if op_node.params["z"] == 0:
             return [null_decomp]
 
-        if op.params["z"] == 1:
+        if op_node.params["z"] == 1:
             return [decompose_to_base]
 
         # Special case: power of a power
@@ -270,10 +270,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # General case: repeat the operator z times
         return [repeat_pow_base]
 
-    def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+    def _get_controlled_decompositions(
+        self, op_node: CompressedResourceOp
+    ) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
-        base_class, base_params = op.params["base_class"], op.params["base_params"]
+        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
 
         # Special case: control of an adjoint
         if issubclass(base_class, qml.ops.Adjoint):
