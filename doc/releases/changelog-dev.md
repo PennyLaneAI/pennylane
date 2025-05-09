@@ -6,6 +6,7 @@
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -260,6 +261,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Ajusted execution pipeline to be compatible with the new `set_shots` transform.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)

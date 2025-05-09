@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow.resolution import _resolve_execution_config
 
 
@@ -28,9 +27,8 @@ def test_resolve_execution_config_with_gradient_method():
     device = qml.device("default.qubit")
 
     empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
-    empty_tp = TransformProgram()
 
-    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape], empty_tp)
+    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
     assert resolved_config.gradient_method == "backprop"
 
@@ -43,13 +41,10 @@ def test_metric_tensor_lightning_edge_case():
     device = qml.device("lightning.qubit", wires=2)
 
     empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
-    metric_tensor_tp = TransformProgram([qml.metric_tensor])
 
-    resolved_config = _resolve_execution_config(
-        execution_config, device, [empty_tape], metric_tensor_tp
-    )
+    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
-    assert resolved_config.gradient_method is qml.gradients.param_shift
+    assert resolved_config.gradient_method == "adjoint"
 
 
 def test_param_shift_cv_kwargs():
@@ -57,9 +52,8 @@ def test_param_shift_cv_kwargs():
     dev = qml.device("default.gaussian", wires=1)
     tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
     execution_config = ExecutionConfig(gradient_method="parameter-shift")
-    empty_tp = TransformProgram()
 
-    resolved_config = _resolve_execution_config(execution_config, dev, [tape], empty_tp)
+    resolved_config = _resolve_execution_config(execution_config, dev, [tape])
 
     assert resolved_config.gradient_keyword_arguments["dev"] == dev
 
@@ -71,9 +65,8 @@ def test_mcm_config_validation():
     device = qml.device("default.qubit")
 
     empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
-    empty_tp = TransformProgram()
 
-    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape], empty_tp)
+    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
     expected_mcm_config = MCMConfig(postselect_mode=None)
 
@@ -90,11 +83,8 @@ def test_jax_interface(mcm_method, postselect_mode):
     device = qml.device("default.qubit")
 
     tape_with_finite_shots = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
-    empty_tp = TransformProgram()
 
-    resolved_config = _resolve_execution_config(
-        execution_config, device, [tape_with_finite_shots], empty_tp
-    )
+    resolved_config = _resolve_execution_config(execution_config, device, [tape_with_finite_shots])
 
     expected_mcm_config = MCMConfig(mcm_method, postselect_mode="pad-invalid-samples")
 
@@ -109,9 +99,8 @@ def test_jax_jit_interface():
     device = qml.device("default.qubit")
 
     empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
-    empty_tp = TransformProgram()
 
-    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape], empty_tp)
+    resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
     expected_mcm_config = MCMConfig(mcm_method="deferred", postselect_mode="fill-shots")
 
