@@ -242,6 +242,15 @@ def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
             num_work_wires=rep.params["num_work_wires"],
         )
 
+    if base_op_rep.op_type == qml.QubitUnitary:
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_op_rep.params["num_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        )
+
     return controlled_resource_rep(
         base_class=base_op_rep.op_type,
         base_params=base_op_rep.params,
@@ -255,13 +264,9 @@ def flip_zero_control(inner_decomp):
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _resource_fn(**resource_params):
-        inner_resource = inner_decomp.compute_resources(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        inner_resource = inner_decomp.compute_resources(**new_params)
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count

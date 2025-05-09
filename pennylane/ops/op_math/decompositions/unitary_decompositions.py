@@ -20,7 +20,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from pennylane import capture, compiler, math, ops, queuing
-from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
 from pennylane.math.decomposition import (
@@ -210,7 +210,7 @@ def two_qubit_decomposition(U, wires):
 
         U, global_phase = math.convert_to_su4(U, return_global_phase=True)
 
-        if math.is_abstract(U) and not (capture.enabled() or compiler.active()):
+        if _is_jax_jit(U):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
@@ -227,7 +227,8 @@ def two_qubit_decomposition(U, wires):
                 ],
             )(U, wires, global_phase)
 
-        ops.GlobalPhase(-global_phase)
+        if _is_jax_jit(U) or not math.allclose(global_phase, 0):
+            ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
@@ -238,43 +239,23 @@ def two_qubit_decomposition(U, wires):
     return q.queue
 
 
-class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-few-public-methods
-    """Wrapper around naive one-qubit decomposition rules that adds a global phase.
+def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
+    """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    Args:
-        su2_rule (callable): A function that implements the naive decomposition rule which
-            assumes that the unitary is SU(2)
-        su2_resource (callable): A function that returns the resources required by the naive
-            decomposition rule, without the GlobalPhase.
+    def _resource_fn(num_wires):
+        if num_wires != 1:
+            raise DecompositionNotApplicable
+        return su2_resource() | {ops.GlobalPhase: 1}
 
-    """
+    @register_resources(_resource_fn)
+    def _impl(U, wires, **__):
+        if sp.issparse(U):
+            U = U.todense()
+        U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+        su2_rule(U, wires=wires)
+        ops.cond(math.logical_not(math.allclose(global_phase, 0)), _global_phase)(global_phase)
 
-    def __init__(self, su2_rule, su2_resource):
-        self._naive_rule = su2_rule
-        self._naive_resources = su2_resource
-        super().__init__(self._get_impl(), self._get_resource_fn())
-
-    def _get_impl(self):
-        """The implementation of the decomposition rule."""
-
-        def _impl(U, wires, **__):
-            if sp.issparse(U):
-                U = U.todense()
-            U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-            self._naive_rule(U, wires=wires)
-            ops.GlobalPhase(-global_phase)
-
-        return _impl
-
-    def _get_resource_fn(self):
-        """The resource function of the decomposition rule."""
-
-        def _resource_fn(num_wires):
-            if num_wires != 1:
-                raise DecompositionNotApplicable
-            return self._naive_resources() | {ops.GlobalPhase: 1}
-
-        return _resource_fn
+    return _impl
 
 
 def _su2_rot_resource():
@@ -338,11 +319,11 @@ def _su2_zxz_decomp(U, wires, **__):
     ops.RZ(omega, wires=wires[0])
 
 
-rot_decomp_rule = OneQubitUnitaryDecomposition(_su2_rot_decomp, _su2_rot_resource)
-zyz_decomp_rule = OneQubitUnitaryDecomposition(_su2_zyz_decomp, _su2_zyz_resource)
-xyx_decomp_rule = OneQubitUnitaryDecomposition(_su2_xyx_decomp, _su2_xyx_resource)
-xzx_decomp_rule = OneQubitUnitaryDecomposition(_su2_xzx_decomp, _su2_xzx_resource)
-zxz_decomp_rule = OneQubitUnitaryDecomposition(_su2_zxz_decomp, _su2_zxz_resource)
+rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource)
+zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource)
+xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource)
+xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource)
+zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource)
 
 ###################################################################################
 # Developer notes:
@@ -761,4 +742,13 @@ def two_qubit_decomp_rule(U, wires, **__):
         ],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
-    ops.GlobalPhase(-total_phase)
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
+
+
+def _global_phase(phase):
+    ops.GlobalPhase(-phase)
+
+
+def _is_jax_jit(U):
+    """Assume jax-jit if U is abstract and not in a capture or qjit context."""
+    return math.is_abstract(U) and not (capture.enabled() or compiler.active())
