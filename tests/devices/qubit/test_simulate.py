@@ -1591,7 +1591,7 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @pytest.skip
+    @pytest.mark.skip
     @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
