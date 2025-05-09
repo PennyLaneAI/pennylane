@@ -634,15 +634,15 @@ def to_openqasm(
 
     Args:
         wires (Wires or None): the wires to use when serializing the circuit.
-            Defaults to ``None``, such that all the wires are used for serialization
-        rotations (bool): If ``True``, add gates that diagonalize the measured wires to the eigenbasis 
+            Default is ``None``, such that all the wires are used for serialization.
+        rotations (bool): if ``True``, add gates that diagonalize the measured wires to the eigenbasis
             of the circuit's observables. Default is ``True``.
-        measure_all (bool): whether to perform a computational basis measurement on all
-            qubits or just those specified in the circuit
-        precision (int): number of decimal digits to display for the parameters
+        measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
+            Default is ``True``.
+        precision (int or None): number of decimal digits to display for the parameters.
 
     Returns:
-        str: OpenQASM 2.0 program corresponding to the circuit
+        str: OpenQASM 2.0 program corresponding to the circuit.
 
     **Example**
 
