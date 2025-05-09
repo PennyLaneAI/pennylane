@@ -380,6 +380,7 @@ class Controlled(SymbolicOp):
 
     **Example**
 
+    >>> import pennylane as qml
     >>> base = qml.RX(1.234, 1)
     >>> qml.ops.Controlled(base, (0, 2, 3), control_values=[True, False, True])
     Controlled(RX(1.234, wires=[1]), control_wires=[0, 2, 3], control_values=[True, False, True])
