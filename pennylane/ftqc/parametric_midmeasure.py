@@ -49,9 +49,9 @@ def _create_parametrized_mid_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    measure_in_basis_p = NonInterpPrimitive("measure_in_basis")
+    measure_in_basis_p = QmlPrimitive("measure_in_basis")
 
     @measure_in_basis_p.def_impl
     def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
