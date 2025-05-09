@@ -643,11 +643,12 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        .. code-block:: pycon
 
-        0: ───────────╭●────────────╭●─╭●─┤  <Z>
-        1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
-        2: ────────────────────────────╰X─┤
+            >>> print(qml.draw(circuit)())
+            0: ───────────╭●────────────╭●─╭●─┤  <Z>
+            1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
+            2: ────────────────────────────╰X─┤
 
         .. code-block:: python
 
@@ -660,11 +661,12 @@ def decompose(
                 qml.Toffoli(wires=[0, 1, 2])
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        .. code-block:: pycon
 
-        0: ────╭●───────────╭●─┤  <Z>
-        1: ──H─╰RZ(0.10)──H─├●─┤
-        2: ─────────────────╰X─┤
+            >>> print(qml.draw(circuit)())
+            0: ────╭●───────────╭●─┤  <Z>
+            1: ──H─╰RZ(0.10)──H─├●─┤
+            2: ─────────────────╰X─┤
 
 
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
