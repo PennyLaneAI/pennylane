@@ -965,8 +965,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     """
 
     if map_ops:
-        print("Hello")
-        print(**kwargs)
         return _map_to_bloq()(circuit, **kwargs)
 
     return ToBloq(circuit, **kwargs)
