@@ -55,13 +55,15 @@ def set_shots(
 
     Set the number of shots as a decorator:
 
-    >>> from functools import partial
-    >>> @partial(qml.set_shots, shots=2)
-    ... @qml.qnode(qml.device("default.qubit", wires=1))
-    ... def circuit():
-    ...     qml.RX(1.23, wires=0)
-    ...     return qml.sample(qml.Z(0))
-    ...
+    .. code-block:: python
+
+        from functools import partial
+
+        @partial(qml.set_shots, shots=2)
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.sample(qml.Z(0))
 
     Run the circuit:
 
