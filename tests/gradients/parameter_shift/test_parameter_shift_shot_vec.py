@@ -1188,7 +1188,7 @@ class TestParameterShiftRule:
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
-    @pytest.mark.skip
+    @pytest.mark.skip("Temporarily disabled until we can fix the test")
     def test_involutory_variance_single_param(self, broadcast):
         """Tests qubit observables that are involutory with a single trainable param"""
         shot_vec = many_shots_shot_vector
@@ -1227,7 +1227,7 @@ class TestParameterShiftRule:
         for _gA in gradA:
             assert _gA == pytest.approx(expected, abs=shot_vec_tol)
 
-    @pytest.skip
+    @pytest.mark.skip("Temporarily disabled until we can fix the test")
     def test_involutory_variance_multi_param(self, broadcast):
         """Tests qubit observables that are involutory with multiple trainable params"""
         shot_vec = many_shots_shot_vector
@@ -1316,7 +1316,7 @@ class TestParameterShiftRule:
             assert gradF.shape == ()
             assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
-    @pytest.skip
+    @pytest.mark.skip("Temporarily disabled until we can fix the test")
     def test_non_involutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
