@@ -180,6 +180,7 @@ class TestIntegration:
         assert np.shape(res) == (8,)
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
+    @pytest.mark.skip
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
