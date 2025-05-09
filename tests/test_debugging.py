@@ -722,7 +722,7 @@ class TestSnapshotUnsupportedQNode:
         assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
             finite_shot_result,
             analytic_result,
-            atol=0,
+            atol=np.finfo(np.float64).eps,
             rtol=0,
         )
 
