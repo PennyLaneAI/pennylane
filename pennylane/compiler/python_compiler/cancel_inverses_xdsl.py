@@ -18,16 +18,33 @@ from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
+from xdsl.ir import Operation
+
+from pennylane.ops.qubit.attributes import self_inverses
 
 from .quantum_dialect import CustomOp
 
-self_inverses = ("PauliZ", "PauliX", "PauliY", "Hadamard", "Identity")
+
+def _can_cancel(op: CustomOp, next_op: Operation) -> bool:
+    if isinstance(next_op, CustomOp):
+        if op.gate_name.data == next_op.gate_name.data:
+            if op.out_qubits == next_op.in_qubits and op.out_ctrl_qubits == next_op.in_ctrl_qubits:
+                return True
+
+    return False
 
 
-class DeepCancelInversesSingleQubitPattern(pattern_rewriter.RewritePattern):
+class IterativeCancelInversesPattern(
+    pattern_rewriter.RewritePattern
+):  # pylint: disable=too-few-public-methods
+    """RewritePattern for iteratively cancelling consecutive self-inverse gates."""
+
     @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-        """Deep Cancel for Self Inverses"""
+    def match_and_rewrite(
+        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+    ):  # pylint: disable=arguments-differ
+        """Implementation of rewriting FuncOps that may contain operations corresponding to
+        self-inverse gates."""
         for op in funcOp.body.walk():
 
             while isinstance(op, CustomOp) and op.gate_name.data in self_inverses:
@@ -35,24 +52,31 @@ class DeepCancelInversesSingleQubitPattern(pattern_rewriter.RewritePattern):
                 next_user = None
                 for use in op.results[0].uses:
                     user = use.operation
-                    if isinstance(user, CustomOp) and user.gate_name.data == op.gate_name.data:
-                        next_user = user
+                    if _can_cancel(op, user):
+                        next_user: CustomOp = user
                         break
 
                 if next_user is None:
                     break
 
-                rewriter._replace_all_uses_with(next_user.results[0], op.in_qubits[0])
+                for q1, q2 in zip(op.in_qubits, next_user.out_qubits, strict=True):
+                    rewriter.replace_all_uses_with(q2, q1)
+                for cq1, cq2 in zip(op.in_ctrl_qubits, next_user.out_ctrl_qubits, strict=True):
+                    rewriter.replace_all_uses_with(cq2, cq1)
                 rewriter.erase_op(next_user)
                 rewriter.erase_op(op)
                 op = op.in_qubits[0].owner
 
 
 @dataclass(frozen=True)
-class DeepCancelInversesSingleQubitPass(passes.ModulePass):
-    name = "deep-cancel-inverses-single-qubit"
+class IterativeCancelInversesPass(passes.ModulePass):
+    """Pass for iteratively cancelling consecutive self-inverse gates."""
 
+    name = "iterative-cancel-inverses"
+
+    # pylint: disable=arguments-renamed
     def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+        """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([DeepCancelInversesSingleQubitPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier([IterativeCancelInversesPattern()])
         ).rewrite_module(module)
