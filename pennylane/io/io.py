@@ -625,12 +625,13 @@ def to_openqasm(
     measure_all: bool = True,
     precision: Optional[int] = None,
 ) -> Callable[[Any], str]:
-    """Serialize the circuit as an OpenQASM 2.0 program.
+    """Convert a circuit to an OpenQASM 2.0 program.
 
-    Measurements are assumed to be performed on all qubits in the computational basis.
-    An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
-    is diagonal in the eigenbasis of the quantum circuit's observables.
-    The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
+    .. note::
+      Terminal measurements are assumed to be performed on all qubits in the computational basis.
+      An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
+      is diagonal in the eigenbasis of the quantum circuit's observables.
+      The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
 
     Args:
         wires (Wires or None): the wires to use when serializing the circuit.
@@ -646,7 +647,7 @@ def to_openqasm(
 
     **Example**
 
-    The following ``QNode`` can be serialized to an OpenQASM 2.0 program:
+    The following QNode can be serialized to an OpenQASM 2.0 program:
 
     .. code-block:: python
 
@@ -673,9 +674,9 @@ def to_openqasm(
     .. details::
         :title: Usage Details
 
-        By default, all the qubits are measured and all the measurements are performed in the computational basis.
-        However, if the measurement operation in the ``QNode`` is acting only on a subset of the qubits and ``measure_all=False``,
-        the OpenQASM code will include measures on those specific qubits only.
+        By default, the resulting OpenQASM code will have terminal measurements on all qubits, where all the measurements are performed in the computational basis.
+        However, if terminal measurements in the QNode act only on a subset of the qubits and ``measure_all=False``,
+        the OpenQASM code will include measurements on those specific qubits only.
 
         .. code-block:: python
 
