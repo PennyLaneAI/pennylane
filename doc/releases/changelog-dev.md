@@ -120,6 +120,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.QubitUnitary` now uses a more resource-efficient decomposition routine that works for 
+  any number of qubits.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
 * PennyLane supports `JAX` version 0.5.3.
   [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
 

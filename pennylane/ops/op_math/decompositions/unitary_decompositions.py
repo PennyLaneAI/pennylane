@@ -18,8 +18,9 @@ import warnings
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, queuing
+from pennylane import capture, compiler, math, ops, queuing, templates
 from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
@@ -760,3 +761,123 @@ def two_qubit_decomp_rule(U, wires, **__):
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.GlobalPhase(-total_phase)
+
+
+def _compute_udv(a, b):
+    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
+    of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
+
+    .. math::
+
+        a = u d v \\
+        b = u d^{\dagger} v.
+    """
+
+    # Calculates u and d diagonalizing ab^dagger (Eq.39)
+    ab_dagger = a @ math.conj(b.T)
+    d_square, u = math.linalg.eig(ab_dagger)
+    u, _ = math.linalg.qr(u)
+
+    # complex square root of eigenvalues
+    d = math.exp(1j * math.angle(d_square) / 2)
+
+    # Calculates v using Eq.40
+    v = math.conj(math.diag(d).T) @ math.conj(u.T) @ a
+
+    return u, d, v
+
+
+def multi_qubit_decomposition(U, wires):
+    r"""Decompose an n-qubit unitary :math:`U` (with n > 1) into four (n-1)-qubit unitaries and
+    three multiplexers using the cosine–sine decomposition.
+    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
+
+    Args:
+        U (tensor): A :math:`2^n \times 2^n` unitary matrix.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
+    """
+
+    ops_list = []
+
+    # pylint: disable=import-outside-toplevel
+    if math.get_interface(U) == "jax":
+        # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
+
+        import jax
+
+        def scipy_cossin_callback(U_flat, p):
+            dim = int(np.sqrt(U_flat.size))
+            U_np = U_flat.reshape((dim, dim))
+            (u1, u2), theta, (v1_dagg, v2_dagg) = cossin(U_np, p=p, q=p, separate=True)
+            return u1, u2, theta, v1_dagg, v2_dagg
+
+        def cossin_decomposition(U, p):
+            dtype = U.dtype
+            U_flat = U.reshape(-1)
+
+            def callback(U_flat):
+                return tuple(
+                    arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
+                )
+
+            u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
+                callback,
+                result_shape_dtypes=(
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p,), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                ),
+                U_flat=U_flat,
+            )
+
+            return (u1, u2), theta, (v1_dagg, v2_dagg)
+
+    else:
+
+        def cossin_decomposition(U, p):
+            return cossin(U, p=p, q=p, separate=True)
+
+    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+
+    p = 2 ** (len(wires) - 1)
+
+    (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p)
+
+    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+    u11, diag_u, u12 = _compute_udv(u1, u2)
+
+    ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
+    ops_list.append(
+        templates.SelectPauliRot(
+            -2 * math.angle(diag_v),
+            target_wire=wires[0],
+            control_wires=wires[1:],
+            rot_axis="Z",
+        )
+    )
+    ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
+
+    ops_list.append(
+        templates.SelectPauliRot(
+            2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
+        )
+    )
+
+    ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
+    ops_list.append(
+        templates.SelectPauliRot(
+            -2 * math.angle(diag_u),
+            target_wire=wires[0],
+            control_wires=wires[1:],
+            rot_axis="Z",
+        )
+    )
+    ops_list += [ops.QubitUnitary(u11, wires=wires[1:])]
+    return ops_list
