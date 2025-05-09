@@ -174,13 +174,10 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         qml.transforms.broadcast_expand not in device.preprocess_transforms()
     )
 
-    vmap_method = "sequential" if device_supports_vectorization else "broadcast_all"
+    vmap_method = "broadcast_all" if device_supports_vectorization else "sequential"
 
     out = jax.pure_callback(
-        pure_callback_wrapper,
-        shape_dtype_structs,
-        params,
-        vmap_method=vmap_method,
+        pure_callback_wrapper, shape_dtype_structs, params, vmap_method=vmap_method
     )
     return out
 
@@ -234,7 +231,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return _to_jax(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="broadcast_all"),)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="legacy_vectorized"),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
