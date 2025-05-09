@@ -703,8 +703,9 @@ class TestSnapshotUnsupportedQNode:
             circuit = qml.snapshots(circuit)
 
         result = circuit()
+        analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
         expected = {
-            0: np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
+            0: analytic_result,
             "execution_results": np.array([1 / 3, 1 / 3, 1 / 3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         }
 
@@ -717,10 +718,11 @@ class TestSnapshotUnsupportedQNode:
 
         # Make sure shots are overridden correctly
         result = circuit(shots=200)
-        assert np.allclose(
-            result[0],
-            np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
-            atol=0.1,
+        finite_shot_result = result[0]
+        assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
+            finite_shot_result,
+            analytic_result,
+            atol=np.finfo(np.float64).eps,
             rtol=0,
         )
 
