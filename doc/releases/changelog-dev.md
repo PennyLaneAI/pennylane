@@ -278,6 +278,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* When using JAX interface, `jax.jit` the function `_givens_matrix`.
+  [(#7013)](https://github.com/PennyLaneAI/pennylane/pull/7013)
+
 <h3>Documentation 📝</h3>
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
