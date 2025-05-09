@@ -207,17 +207,17 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
     # seed the random measurement generation so that recipes
     # are the same for different executions with the same seed
     seed = mp.seed
-    recipe_rng = np.random.RandomState(seed)
+    recipe_rng = math.random.RandomState(seed)
     recipes = recipe_rng.randint(0, 3, size=(n_snapshots, n_qubits))
 
-    outcomes = np.zeros((n_snapshots, n_qubits))
+    outcomes = math.zeros((n_snapshots, n_qubits))
     # Single-qubit diagonalizing ops for X, Y, Z
     diag_list = [
         qml.Hadamard.compute_matrix(),  # X
         qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),  # Y
         qml.Identity.compute_matrix(),  # Z
     ]
-    bit_rng = np.random.default_rng(rng)
+    bit_rng = math.random.default_rng(rng)
 
     for t in range(n_snapshots):
         for q_idx, q_wire in enumerate(mapped_wires):
@@ -235,13 +235,13 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
             rotated = math.dot(U, math.dot(rho_q, U_dag))
 
             # (C) probability of outcome 0 => rotated[0,0].real
-            p0 = np.clip(math.real(rotated[0, 0]), 0.0, 1.0)
+            p0 = math.clip(math.real(rotated[0, 0]), 0.0, 1.0)
             if bit_rng.random() < p0:
                 outcomes[t, q_idx] = 0
             else:
                 outcomes[t, q_idx] = 1
 
-    res = np.stack([outcomes, recipes]).astype(np.int8)
+    res = math.stack([outcomes, recipes]).astype(np.int8)
     return res
 
 
