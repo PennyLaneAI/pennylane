@@ -258,6 +258,8 @@ class OneQubitUnitaryDecomposition(DecompositionRule):  # pylint: disable=too-fe
         """The implementation of the decomposition rule."""
 
         def _impl(U, wires, **__):
+            if sp.issparse(U):
+                U = U.todense()
             U, global_phase = math.convert_to_su2(U, return_global_phase=True)
             self._naive_rule(U, wires=wires)
             ops.GlobalPhase(-global_phase)
