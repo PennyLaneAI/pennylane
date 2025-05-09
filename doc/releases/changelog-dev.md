@@ -249,6 +249,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
+  [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
+
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
 
