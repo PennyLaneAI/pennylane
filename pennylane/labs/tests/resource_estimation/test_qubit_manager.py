@@ -1,0 +1,107 @@
+import pytest
+from pennylane.labs.resource_estimation import QubitManager, GrabWires, FreeWires
+
+class TestQubitManager():
+    """Test the methods and attributes of the QubitManager class"""
+    qm_quantities = (
+        QubitManager(work_wires=2),
+        QubitManager(work_wires = {"clean": 4, "dirty": 2}),
+        QubitManager({"clean": 2, "dirty": 2}, True),
+    )
+
+    qm_parameters = (
+        (2, 0, 0, False),
+        (4, 2, 0, False),
+        (2, 2, 0, True),
+    )
+
+    @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
+    def test_init(self, qm, attribute_tup):
+        """Test that the QubitManager class is instantiated as expected."""
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        assert qm.clean_qubits == clean_qubits
+        assert qm.dirty_qubits == dirty_qubits
+        assert qm.algo_qubits == logic_qubits
+        assert qm.tight_budget == tight_budget
+
+
+
+    extra_qubits = (0, 2, 4)
+
+    @pytest.mark.parametrize("qm, attribute_tup, alloc_q", zip(qm_quantities, qm_parameters, extra_qubits))
+    def test_allocate_qubits(self, qm, attribute_tup, alloc_q):
+        """Test that the extra qubits are allocated correctly."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        qm.allocate_qubits(alloc_q)
+        assert qm.clean_qubits == clean_qubits + alloc_q
+        
+    qm_parameters_algo = (
+        (2, 0, 0, False),
+        (4, 2, 2, False),
+        (2, 2, 4, True),
+    )
+
+    @pytest.mark.parametrize("qm, attribute_tup, algo_q", zip(qm_quantities, qm_parameters_algo, extra_qubits))
+    def test_algo_qubits(self, qm, attribute_tup, algo_q):
+        """Test that the logic qubits are set correctly."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        qm.algo_qubits = algo_q
+        assert qm.algo_qubits == logic_qubits
+
+    def test_grab_clean_qubits(self):
+        """Test that the clean qubits are grabbed properly."""
+
+        qm = QubitManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=False)
+        qm.grab_clean_qubits(6)
+        assert qm.clean_qubits == 0
+        assert qm.dirty_qubits == 8
+        
+    def test_error_grab_clean_qubits(self):
+        """Test that an error is raised when the number of clean qubits required is greater
+        than the available qubits."""
+
+        qm = QubitManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
+        with pytest.raises(ValueError, match="Grabbing more qubits than available clean qubits."):
+            qm.grab_clean_qubits(6)
+
+
+    def test_free_qubits(self):
+        """Test that the dirty qubits are freed properly."""
+
+        qm = QubitManager(work_wires={"clean": 4, "dirty": 2})
+        qm.free_qubits(2)
+        assert qm.clean_qubits == 6
+        assert qm.dirty_qubits == 0
+
+    def test_error_free_qubits(self):
+        """Test that an error is raised when the number of qubits being freed is greater
+        than the available dirty qubits."""
+
+        qm = QubitManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
+        with pytest.raises(ValueError, match="Freeing more qubits than available dirty qubits."):
+            qm.free_qubits(6)
+
+        
+class TestGrabWires():
+    """Test the methods and attributes of the GrabWires class"""
+
+    def test_init(self):
+        """Test that the GrabWires class is instantiated as expected."""
+
+        for i in range(3):
+            assert GrabWires(i).num_wires == i
+
+class TestFreeWires():
+    """Test the methods and attributes of the GrabWires class"""
+
+    def test_init(self):
+        """Test that the FreeWires class is instantiated as expected."""
+
+        wires = 4
+        for i in range(3):
+            assert FreeWires(i).num_wires == i
