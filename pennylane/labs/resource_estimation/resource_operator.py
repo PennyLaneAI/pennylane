@@ -15,7 +15,7 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Type
 
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -184,3 +184,19 @@ class ResourceOperator(ABC):
 
 class ResourcesNotDefined(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+
+
+def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+    cls.set_resources(decomp_func, override_type="base")
+
+
+def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+    cls.set_resources(decomp_func, override_type="ctrl")
+
+    
+def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+    cls.set_resources(decomp_func, override_type="adj")
+
+
+def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+    cls.set_resources(decomp_func, override_type="pow")

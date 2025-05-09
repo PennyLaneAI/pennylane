@@ -32,4 +32,11 @@ Resource Estimation Base Classes:
 
 """
 
-from .resource_operator import ResourceOperator, ResourcesNotDefined
+from .resource_operator import (
+    ResourcesNotDefined,
+    ResourceOperator,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+)
