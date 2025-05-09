@@ -256,11 +256,14 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return prob_vector
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        if len(np.shape(density_matrix)) == 2:
+        if len(qml.math.shape(density_matrix)) == 2:
             prob = qml.math.diagonal(density_matrix)
         else:
-            prob = qml.math.array(
-                [qml.math.diagonal(density_matrix[i]) for i in range(np.shape(density_matrix)[0])]
+            prob = qml.math.stack(
+                [
+                    qml.math.diagonal(density_matrix[i])
+                    for i in range(qml.math.shape(density_matrix)[0])
+                ]
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
