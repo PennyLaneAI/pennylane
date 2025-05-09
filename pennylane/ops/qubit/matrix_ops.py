@@ -536,7 +536,7 @@ class DiagonalQubitUnitary(Operation):
 
         .. math::
 
-            (\exp(i\theta_{2i}), \exp(i\theta_{2i+1})) &\overset{!}{=}
+            (\exp(i\theta_{2i}), \exp(i\theta_{2i+1})) &=
             (\exp(-\frac{i}{2}\phi_i)\exp(i\theta'_i), \exp(\frac{i}{2}\phi_i)\exp(i\theta'_i))\\
             \Rightarrow \qquad \theta'_i &=\frac{1}{2}(\theta_{2i}+\theta_{2i+1})\\
             \phi_i &=\theta_{2i+1}-\theta_{2i}.
@@ -549,12 +549,12 @@ class DiagonalQubitUnitary(Operation):
         mean = (angles[..., ::2] + angles[..., 1::2]) / 2
         if len(wires) == 1:
             return [  # Squeeze away non-broadcasting axis (there is just one angle for RZ/GPhase
-                qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
                 qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires),
+                qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
             ]
-        return [
-            qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
+        return [  # Note that we use the first qubits as control, the reference uses the last qubits
             qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
         ]
 
     def adjoint(self) -> "DiagonalQubitUnitary":
