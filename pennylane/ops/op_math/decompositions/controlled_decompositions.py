@@ -16,7 +16,7 @@
 
 from typing import Optional
 
-from pennylane import math, ops, queuing
+from pennylane import control_flow, math, ops, queuing
 from pennylane.decomposition import (
     DecompositionNotApplicable,
     adjoint_resource_rep,
@@ -26,6 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=protected-access
     _controlled_resource_rep,
+    flip_zero_control,
 )
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -345,6 +346,131 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__
         ops.PauliX(w)
 
 
+def _decompose_mcx_with_many_workers_resource(num_control_wires, num_work_wires, **__):
+    if num_control_wires < 3:
+        raise DecompositionNotApplicable
+    if num_work_wires < num_control_wires - 2:
+        raise DecompositionNotApplicable
+    return {ops.Toffoli: 4 * (num_control_wires - 2)}
+
+
+@register_resources(_decompose_mcx_with_many_workers_resource)
+def decompose_mcx_with_many_workers(wires, work_wires, **__):
+    """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
+    https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
+    work wires"""
+
+    target_wire, control_wires = wires[-1], wires[:-1]
+    work_wires = work_wires[: len(control_wires) - 2]
+
+    @control_flow.for_loop(1, len(work_wires), 1)
+    def loop_up(i):
+        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+
+    @control_flow.for_loop(len(work_wires) - 1, 0, -1)
+    def loop_down(i):
+        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+
+    ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
+    loop_up()
+    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    loop_down()
+    ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
+    loop_up()
+    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    loop_down()
+
+
+def _two_workers_resource(num_control_wires, num_work_wires, work_wire_type, **__):
+    if num_control_wires < 3:
+        raise DecompositionNotApplicable
+    if num_work_wires < 2:
+        raise DecompositionNotApplicable
+    if work_wire_type == "clean":
+        n_ccx = 2 * num_control_wires - 3
+        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
+    # Otherwise, we assume the work wires are dirty
+    n_ccx = 4 * num_control_wires - 8
+    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
+
+
+def decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
+    r"""
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+    It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
+    clean ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
+    ancillae as described in Sec. 5 of [1].
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+
+    """
+
+    # First use the work wire to prepare the first two control wires as conditionally clean.
+    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
+
+    # Apply the MCX in the middle
+    _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
+
+    # Uncompute the first ladder
+    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+
+    if work_wire_type == "dirty":
+        # Perform toggle-detection of the work wire is dirty
+        middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
+        _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
+        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+
+
+def _decompose_mcx_one_worker_resource(num_control_wires, num_work_wires, work_wire_type, **__):
+    if num_control_wires < 3:
+        raise DecompositionNotApplicable
+    if num_work_wires != 1:
+        raise DecompositionNotApplicable
+    if work_wire_type == "clean":
+        n_ccx = 2 * num_control_wires - 3
+        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
+    # Otherwise, we assume the work wire is dirty
+    n_ccx = 4 * num_control_wires - 8
+    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
+
+
+@register_resources(_decompose_mcx_one_worker_resource)
+def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **__):
+    r"""
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is clean
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is dirty as described in
+    Sec. 5.1 of [1].
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+
+    """
+
+    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+
+    if len(wires) == 3:
+        return
+
+    final_ctrl = _build_linear_depth_ladder(wires[:-1])
+    ops.Toffoli([work_wires[0], wires[final_ctrl], wires[-1]])
+    ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+    ops.Toffoli([wires[0], wires[1], work_wires[0]])
+
+    if work_wire_type == "dirty":
+        # Perform toggle-detection of the work wire is dirty
+        _build_linear_depth_ladder(wires[:-1])
+        ops.Toffoli([work_wires[0], wires[final_ctrl], wires[-1]])
+        ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+
+
+decompose_mcx_with_one_worker = flip_zero_control(_decompose_mcx_with_one_worker)
+
 ####################
 # Helper Functions #
 ####################
@@ -611,5 +737,135 @@ def _CRY(phi, wires):
     ops.CRY(phi, wires=wires)
 
 
+def _Toffoli(control_wires_x, control_wires_y, target_wires):
+    ops.Toffoli(wires=[control_wires_x[0], control_wires_y[0], target_wires[0]])
+
+
 def _ctrl_global_phase(phase, control_wires):
     ops.ctrl(ops.GlobalPhase(-phase), control=control_wires)
+
+
+def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
+    r"""
+    Construct a quantum circuit for creating n-condionally clean ancillae using 3n qubits. This
+    implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
+
+    Args:
+        control_wires_x: The control wires for register 1.
+        control_wires_y: The control wires for register 2.
+        target_wires: The wires for target register.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    @control_flow.for_loop(0, len(control_wires_x), 1)
+    def loop(i):
+        ops.X(target_wires[i])
+        ops.Toffoli([control_wires_x[i], control_wires_y[i], target_wires[i]])
+
+    loop()
+
+
+def _build_linear_depth_ladder(wires) -> int:
+    r"""
+    Helper function to create linear-depth ladder operations used in Khattar and Gidney's MCX synthesis.
+    In particular, this implements Step-1 and Step-2 on Fig. 3 of [1] except for the first and last
+    CCX gates.
+
+    Preconditions:
+        - The number of wires must be greater than 2.
+
+    Args:
+        wires: the list of wires.
+
+    Returns:
+        int: the index of the last unmarked wire.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+
+    """
+
+    if len(wires) == 3:
+        return 2
+
+    if len(wires) == 4:
+        ops.Toffoli([wires[2], wires[3], wires[1]])
+        ops.X(wires[1])
+        return 1
+
+    i = -1
+    while i + 2 < len(wires) - 2:
+        i += 2
+        ops.Toffoli([wires[i + 1], wires[i + 2], wires[i]])
+        ops.X(wires[i])
+
+    x, y = (i - 2, i) if i + 2 == len(wires) - 1 else (i, i + 3)
+    k = x - 1
+
+    ops.Toffoli([wires[x], wires[y], wires[k]])
+    ops.X(wires[k])
+
+    for i in range(k, 1, -2):
+        ops.Toffoli([wires[i - 1], wires[i], wires[i - 2]])
+        ops.X(wires[i - 2])
+
+    return 0
+
+
+def _build_log_n_depth_ccx_ladder(control_wires) -> list:
+    r"""
+    Helper function to build a log-depth ladder compose of CCX and X gates as shown in Fig. 4b of [1].
+
+    Args:
+        control_wires: The control wires.
+
+    Returns:
+        list: The list of unmarked wires to use as control wires.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+    """
+
+    final_control_wires = []
+
+    # See Section 5.2 of [1] for what the following variables mean
+    rightmost_marked = 1
+    timestep = 1
+
+    while rightmost_marked < len(control_wires) - 1:
+
+        # At every time step, we aim to flip the next 2^i + 1 unmarked wires, but if
+        # there are not enough wires available, we just flip all the remaining wires.
+        n_to_flip = min(2**timestep + 1, len(control_wires) - rightmost_marked - 1)
+        rightmost_ctrl = rightmost_marked + n_to_flip
+        new_rightmost_marked = rightmost_ctrl
+        leftmost_unmarked = rightmost_marked + 1
+
+        while n_to_flip > 1:
+
+            ccx_n = n_to_flip // 2
+            ccx_t = control_wires[rightmost_marked + 1 - ccx_n : rightmost_marked + 1]
+            ccx_y = control_wires[rightmost_ctrl + 1 - ccx_n : rightmost_ctrl + 1]
+            ccx_x = control_wires[rightmost_ctrl + 1 - ccx_n * 2 : rightmost_ctrl + 1 - ccx_n]
+
+            leftmost_unmarked = rightmost_marked + 1 - ccx_n
+            _n_parallel_ccx_x(ccx_x, ccx_y, ccx_t)
+
+            # The primitive used ccx_n target wires to flip the 2 * ccx_n control wires. The
+            # total number of remaining wires to flip in this timestep is given by the original
+            # number of wires minus the 2 * ccx_n wires that were flipped, plus the ccx_n
+            # target wires that were unmarked as a result of this primitive.
+            n_to_flip = n_to_flip - ccx_n
+            rightmost_marked -= ccx_n
+            rightmost_ctrl -= ccx_n * 2
+
+        final_control_wires.append(leftmost_unmarked)
+        rightmost_marked = new_rightmost_marked
+        timestep += 1
+
+    return final_control_wires

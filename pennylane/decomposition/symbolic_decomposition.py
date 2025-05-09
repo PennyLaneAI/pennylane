@@ -260,7 +260,7 @@ def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
     )
 
 
-def flip_zero_control(inner_decomp):
+def flip_zero_control(inner_decomp: DecompositionRule):
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _resource_fn(**resource_params):
