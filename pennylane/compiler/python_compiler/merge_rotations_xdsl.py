@@ -18,23 +18,87 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import builtin, func
+from xdsl.dialects import arith, builtin, func
+from xdsl.ir import Operation
+from xdsl.rewriter import InsertPoint
+
+from pennylane.ops.qubit.attributes import composable_rotations
 
 from .quantum_dialect import CustomOp
 
 
-class MergeRotationsSingleQubitPattern(pattern_rewriter.RewritePattern):
-    @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+def _can_merge(op: CustomOp, next_op: Operation) -> bool:
+    if isinstance(next_op, CustomOp):
+        if op.gate_name.data == next_op.gate_name.data:
+            if op.out_qubits == next_op.in_qubits and op.out_ctrl_qubits == next_op.in_ctrl_qubits:
+                return True
 
-        pass
+    return False
+
+
+class MergeRotationsPattern(
+    pattern_rewriter.RewritePattern
+):  # pylint: disable=too-few-public-methods
+    """RewritePattern for merging consecutive composable rotations."""
+
+    @pattern_rewriter.op_type_rewrite_pattern
+    def match_and_rewrite(
+        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+    ):  # pylint: disable=arguments-differ
+        """Implementation of rewriting FuncOps that may contain operations corresponding to
+        consecutive composable rotations."""
+        for op in funcOp.body.walk():
+            if not isinstance(op, CustomOp):
+                continue
+
+            gate_name = op.gate_name.data
+            if gate_name not in composable_rotations or gate_name == "Rot":
+                # Can handle all composible rotations except Rot... for now
+                continue
+
+            param = op.operands[0]
+            while True:
+                next_user = None
+                for use in op.results[0].uses:
+                    user = use.operation
+                    if _can_merge(op, user):
+                        next_user = user
+                        break
+
+                if next_user is None:
+                    break
+
+                for q1, q2 in zip(op.in_qubits, op.out_qubits, strict=True):
+                    rewriter.replace_all_uses_with(q2, q1)
+                for cq1, cq2 in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
+                    rewriter.replace_all_uses_with(cq2, cq1)
+
+                rewriter.erase_op(op)
+                next_param = next_user.operands[0]
+                addOp = arith.AddfOp(param, next_param)
+                rewriter.insert_op(addOp, InsertPoint.before(next_user))
+                param = addOp.result
+                new_op = CustomOp(
+                    operands=(param, next_user.in_qubits[0], None, None),
+                    properties=next_user.properties,
+                    attributes=next_user.attributes,
+                    successors=next_user.successors,
+                    regions=next_user.regions,
+                    result_types=(next_user.result_types, []),
+                )
+                rewriter.replace_op(next_user, new_op)
+                op = new_op
 
 
 @dataclass(frozen=True)
-class MergeRotationsSingleQubitPass(passes.ModulePass):
-    name = "merge-rotations-single-qubit"
+class MergeRotationsPass(passes.ModulePass):
+    """Pass for merging consecutive composable rotation gates."""
 
+    name = "merge-rotations"
+
+    # pylint: disable=arguments-renamed
     def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+        """Apply the merge rotations pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([MergeRotationsSingleQubitPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier([MergeRotationsPattern()])
         ).rewrite_module(module)
