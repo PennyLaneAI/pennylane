@@ -717,11 +717,12 @@ class TestSnapshotUnsupportedQNode:
 
         # Make sure shots are overridden correctly
         result = circuit(shots=200)
-
-        # Note: We do not need to check the accuracy of the output,
-        # but only that multiple snapshots are returned and shots are
-        # correctly overridden.
-        assert result[0].shape[0] == 9
+        assert not np.allclose(
+            result[0],
+            np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
+            atol=0,
+            rtol=0,
+        )
 
 
 # pylint: disable=protected-access
