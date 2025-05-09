@@ -87,6 +87,7 @@ Decompositions
 
     ~one_qubit_decomposition
     ~two_qubit_decomposition
+    ~multi_qubit_decomposition
     ~sk_decomposition
 
 Control Decompositions
@@ -124,7 +125,12 @@ from .controlled_ops import (
     MultiControlledX,
     Toffoli,
 )
-from .decompositions import one_qubit_decomposition, sk_decomposition, two_qubit_decomposition
+from .decompositions import (
+    one_qubit_decomposition,
+    sk_decomposition,
+    two_qubit_decomposition,
+    multi_qubit_decomposition,
+)
 from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination

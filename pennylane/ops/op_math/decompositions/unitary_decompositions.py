@@ -763,7 +763,7 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.GlobalPhase(-total_phase)
 
 
-def compute_udv(a, b):
+def _compute_udv(a, b):
     r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
     of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
 
@@ -788,15 +788,15 @@ def compute_udv(a, b):
 
 
 def multi_qubit_decomposition(U, wires):
-    r"""Decompose a n-qubit unitary :math:`U` into four (n-1)-qubit unitaries and
-    three multiplexers using the cosine-sine decomposition.
+    r"""Decompose an \(n\)-qubit unitary :math:`U` (with \(n > 1\)) into four \((n-1)\)-qubit unitaries and
+    three multiplexers using the cosine–sine decomposition.
     This implementation is based on [`arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__].
     """
 
     ops_list = []
 
     # pylint: disable=import-outside-toplevel
-    try:
+    if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
 
         import jax
@@ -830,7 +830,7 @@ def multi_qubit_decomposition(U, wires):
 
             return (u1, u2), theta, (v1_dagg, v2_dagg)
 
-    except ImportError:
+    else:
 
         def cossin_decomposition(U, p):
             return cossin(U, p=p, q=p, separate=True)
@@ -842,8 +842,8 @@ def multi_qubit_decomposition(U, wires):
 
     (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p)
 
-    v11_dagg, diag_v, v12_dagg = compute_udv(v1_dagg, v2_dagg)
-    u11, diag_u, u12 = compute_udv(u1, u2)
+    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+    u11, diag_u, u12 = _compute_udv(u1, u2)
 
     ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
     ops_list.append(

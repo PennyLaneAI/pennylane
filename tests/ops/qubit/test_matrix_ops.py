@@ -26,7 +26,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math.decompositions.unitary_decompositions import compute_udv
+from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.wires import Wires
 
@@ -595,9 +595,9 @@ class TestQubitUnitary:
         ],
     )
     def test_compute_udv(self, a, b, size):
-        """Test the helper function `compute_udv` used in the QubitUnitary decomposition."""
+        """Test the helper function `_compute_udv` used in the QubitUnitary decomposition."""
 
-        u, d, v = compute_udv(a, b)
+        u, d, v = _compute_udv(a, b)
         d = np.diag(d)
 
         initial = np.block(
