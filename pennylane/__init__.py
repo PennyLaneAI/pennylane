@@ -78,6 +78,7 @@ from pennylane.registers import registers
 from pennylane.io import (
     from_pyquil,
     from_qasm,
+    to_openqasm,
     from_qiskit,
     from_qiskit_noise,
     from_qiskit_op,
