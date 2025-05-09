@@ -108,7 +108,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.compiler"
-depends_on = ["pennylane.ops"]
+depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 

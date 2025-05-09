@@ -20,9 +20,22 @@ from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
-from pennylane.ops.qubit.attributes import self_inverses
-
 from .quantum_dialect import CustomOp
+
+self_inverses = [
+    "Identity",
+    "Hadamard",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "CNOT",
+    "CZ",
+    "CY",
+    "CH",
+    "SWAP",
+    "Toffoli",
+    "CCZ",
+]
 
 
 def _can_cancel(op: CustomOp, next_op: Operation) -> bool:
@@ -75,7 +88,7 @@ class IterativeCancelInversesPass(passes.ModulePass):
     name = "iterative-cancel-inverses"
 
     # pylint: disable=arguments-renamed
-    def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+    def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
         """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([IterativeCancelInversesPattern()])
