@@ -254,10 +254,8 @@ class QubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
-        for more information on how the decompositions are computed when the number of qubits is one or two.
-        For arbitrary numbers of qubits, see [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100)
-        for more details.
+        See :func:`~.ops.one_qubit_decomposition`, :func:`~.ops.two_qubit_decomposition`
+        and :func:`~.ops.multi_qubit_decomposition` for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 

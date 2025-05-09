@@ -789,7 +789,9 @@ def compute_udv(a, b):
 
 def multi_qubit_decomposition(U, wires):
     r"""Decompose a n-qubit unitary :math:`U` into four (n-1)-qubit unitaries and
-    three multiplexers using the cosine-sine decomposition."""
+    three multiplexers using the cosine-sine decomposition.
+    This implementation is based on [`arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__].
+    """
 
     ops_list = []
 
