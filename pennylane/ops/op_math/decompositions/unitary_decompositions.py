@@ -18,8 +18,9 @@ import warnings
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, queuing
+from pennylane import capture, compiler, math, ops, queuing, templates
 from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.utils import DecompositionNotApplicable
@@ -801,7 +802,7 @@ def multi_qubit_decomposition(U, wires):
         def scipy_cossin_callback(U_flat, p):
             dim = int(np.sqrt(U_flat.size))
             U_np = U_flat.reshape((dim, dim))
-            (u1, u2), theta, (v1_dagg, v2_dagg) = sp.linalg.cossin(U_np, p=p, q=p, separate=True)
+            (u1, u2), theta, (v1_dagg, v2_dagg) = cossin(U_np, p=p, q=p, separate=True)
             return u1, u2, theta, v1_dagg, v2_dagg
 
         def cossin_decomposition(U, p):
@@ -830,7 +831,7 @@ def multi_qubit_decomposition(U, wires):
     except ImportError:
 
         def cossin_decomposition(U, p):
-            return sp.linalg.cossin(U, p=p, q=p, separate=True)
+            return cossin(U, p=p, q=p, separate=True)
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
     # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
@@ -844,7 +845,7 @@ def multi_qubit_decomposition(U, wires):
 
     ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
     ops_list.append(
-        ops.SelectPauliRot(
+        templates.SelectPauliRot(
             -2 * math.angle(diag_v),
             target_wire=wires[0],
             control_wires=wires[1:],
@@ -854,12 +855,14 @@ def multi_qubit_decomposition(U, wires):
     ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
 
     ops_list.append(
-        ops.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
+        templates.SelectPauliRot(
+            2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
+        )
     )
 
     ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
     ops_list.append(
-        ops.SelectPauliRot(
+        templates.SelectPauliRot(
             -2 * math.angle(diag_u),
             target_wire=wires[0],
             control_wires=wires[1:],

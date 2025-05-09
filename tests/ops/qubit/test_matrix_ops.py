@@ -26,12 +26,9 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.qubit.matrix_ops import (
-    _walsh_hadamard_transform,
-    fractional_matrix_power,
-)
-from pennylane.wires import Wires
 from pennylane.ops.op_math.decompositions.unitary_decompositions import compute_udv
+from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.wires import Wires
 
 
 class TestQubitUnitaryCSR:
