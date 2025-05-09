@@ -788,9 +788,17 @@ def _compute_udv(a, b):
 
 
 def multi_qubit_decomposition(U, wires):
-    r"""Decompose an \(n\)-qubit unitary :math:`U` (with \(n > 1\)) into four \((n-1)\)-qubit unitaries and
+    r"""Decompose an n-qubit unitary :math:`U` (with n > 1) into four (n-1)-qubit unitaries and
     three multiplexers using the cosine–sine decomposition.
-    This implementation is based on [`arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__].
+    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
+
+    Args:
+        U (tensor): A :math:`2^n \times 2^n` unitary matrix.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
     """
 
     ops_list = []
