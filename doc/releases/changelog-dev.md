@@ -120,6 +120,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of `DiagonalQubitUnitary` has been improved to contain fewer gates.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
 * PennyLane supports `JAX` version 0.5.3.
   [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
 
