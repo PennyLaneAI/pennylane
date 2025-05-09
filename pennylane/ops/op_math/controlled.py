@@ -416,7 +416,7 @@ class Controlled(SymbolicOp):
     Provided control values are converted to booleans internally, so
     any "truthy" or "falsy" objects work.
 
-    >>> Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
+    >>> qml.ops.Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
     [False, False, True]
 
     Representations for an operator are available if the base class defines them.
