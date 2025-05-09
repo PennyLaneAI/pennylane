@@ -174,7 +174,8 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         qml.transforms.broadcast_expand not in device.preprocess_transforms()
     )
 
-    vmap_method = "broadcast_all" if device_supports_vectorization else "sequential"
+    vmap_method = "legacy_vectorized" if device_supports_vectorization else "sequential"
+
 
     out = jax.pure_callback(
         pure_callback_wrapper, shape_dtype_structs, params, vmap_method=vmap_method
