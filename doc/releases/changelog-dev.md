@@ -138,6 +138,9 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* Improved readability of `ExecutionConfig` with a custom `__str__`. 
+  [(#7308)](https://github.com/PennyLaneAI/pennylane/pull/7308)
+
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
@@ -146,6 +149,7 @@
 * `Operator.num_wires` now defaults to `None` to indicate that the operator can be on
   any number of wires.
   [(#7312)](https://github.com/PennyLaneAI/pennylane/pull/7312)
+
 
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
@@ -164,6 +168,7 @@
   {'sample': array([-1., -1., -1., -1., -1.]),
    'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
   ```
+
 
 * Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
   decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
@@ -363,6 +368,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Po-Ying Chiu,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
