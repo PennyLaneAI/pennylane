@@ -17,8 +17,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, List, Type
 
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+from pennylane.queuing import QueuingManager
+from pennylane.operation import classproperty
 
 # if TYPE_CHECKING:
 #     from pennylane.labs.resource_estimation import CompressedResourceOp
@@ -27,8 +28,11 @@ from pennylane.wires import Wires
 
 
 class ResourceOperator(ABC):
-    r"""Abstract class that defines the methods a PennyLane Operator
-    must implement in order to be used for resource estimation.
+    r"""Abstract base class to represent quantum operators according to the 
+    information required for resource estimation.
+
+    
+
     """
 
     num_wires = 0
@@ -48,11 +52,50 @@ class ResourceOperator(ABC):
         context.append(self)
         return self
 
+    @classproperty
+    def resource_keys(self) -> set:  # pylint: disable=no-self-use
+        """The set of parameters that affects the resource requirement of the operator.
+
+        All resource decomposition functions for this operator class are expected to accept the
+        keyword arguments that match these keys exactly. The :func:`~pennylane.resource_rep`
+        function will also expect keyword arguments that match these keys when called with this
+        operator type.
+
+        The default implementation is an empty set, which is suitable for most operators.
+        """
+        return set()
+
     @property
     @abstractmethod
     def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to
-        compute a compressed representation"""
+        """A dictionary containing the minimal information needed to compute a
+        resource estimate of the operator's decomposition.
+
+        The keys of this dictionary should match the ``resource_keys`` attribute of the operator
+        class. Two instances of the same operator type should have identical ``resource_params`` if
+        their decompositions exhibit the same counts for each gate type, even if the individual
+        gate parameters differ.
+
+        **Examples**
+
+        The ``MultiRZ`` operator has non-empty ``resource_keys``:
+
+        >>> re.ResourceMultiRZ.resource_keys
+        {"num_wires"}
+
+        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
+
+        >>> op = re.ResourceMultiRZ(0.5, wires=[0, 1])
+        >>> op.resource_params
+        {"num_wires": 2}
+
+        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
+
+        >>> op2 = qml.ResourceMultiRZ(0.7, wires=[1, 2])
+        >>> op2.resource_params
+        {"num_wires": 2}
+
+        """
 
     @classmethod
     @abstractmethod
