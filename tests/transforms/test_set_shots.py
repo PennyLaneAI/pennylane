@@ -72,9 +72,6 @@ class TestSetShots:
         assert new_tape.operations == ops
         assert new_tape.measurements == measurements
 
-    @pytest.mark.xfail(
-        reason="This test is expected to fail until the pipeline is updated to use the new set_shots transform"
-    )
     @pytest.mark.integration
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shots", [None, 1, 10])
