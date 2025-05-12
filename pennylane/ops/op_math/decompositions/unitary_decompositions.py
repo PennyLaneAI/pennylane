@@ -800,13 +800,29 @@ def multi_qubit_decomposition(U, wires):
     Returns:
         list[Operation]: A list of operations that represent the decomposition
         of the matrix U.
+
+    **Example**
+
+    .. code-block::
+
+        matrix_target = qml.matrix(qml.QFT([0,1,2]))
+        ops = multi_qubit_decomposition(matrix_target, [0,1,2])
+        matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
+
+    .. code-block:: pycon
+
+        >>> print([op.name for op in ops])
+        ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
+
+        >>> print(np.allclose(matrix_decomposition, matrix_target))
+        True
     """
 
     ops_list = []
 
     # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
-        # Wrap scipy's cossin function with pure_callback to make the jit decomposition compatible
+        # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
 
         import jax
 
