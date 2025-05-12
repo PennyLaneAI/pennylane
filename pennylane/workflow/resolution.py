@@ -52,6 +52,29 @@ def _get_jax_interface_name() -> Interface:
     return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
 
 
+def _validate_jax_version():
+    """Checks if the installed version of JAX is supported. If an unsupported version of
+    JAX is installed, a ``RuntimeWarning`` is raised."""
+    if not find_spec("jax"):
+        return
+
+    jax_version = version("jax")
+    min_jax_version = "0.0.0"  # place holders than can be updated as needed
+    max_jax_version = "1.0.0"
+    if Version(jax_version) < Version(min_jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of less than {min_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+    if Version(max_jax_version) < Version(jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of greater than {max_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+
+
 # pylint: disable=import-outside-toplevel
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
@@ -65,21 +88,6 @@ def _use_tensorflow_autograph():
         ) from e  # pragma: no cover
 
     return not tf.executing_eagerly()
-
-
-def _validate_jax_version():
-    """Checks if the installed version of JAX is supported. If an unsupported version of
-    JAX is installed, a ``RuntimeWarning`` is raised."""
-    if not find_spec("jax"):
-        return
-
-    jax_version = version("jax")
-    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
-        warn(
-            "PennyLane is currently not compatible with versions of JAX > 0.4.28. "
-            f"You have version {jax_version} installed.",
-            RuntimeWarning,
-        )
 
 
 def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
