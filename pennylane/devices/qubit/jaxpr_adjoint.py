@@ -28,7 +28,7 @@ from .initialize_state import create_initial_state
 
 def _read(env, var):
     """Return the value and tangent for a variable."""
-    return (var.val, ad.Zero(var.aval)) if isinstance(var, jax.core.Literal) else env[var]
+    return (var.val, ad.Zero(var.aval)) if isinstance(var, jax.extend.core.Literal) else env[var]
 
 
 def _operator_forward_pass(eqn, env, ket):
@@ -68,7 +68,7 @@ def _measurement_forward_pass(eqn, env, ket):
     return bra
 
 
-def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
+def _other_prim_forward_pass(eqn: jax.extend.core.JaxprEqn, env: dict) -> None:
     """Handle any equation that is not an operator or measurement eqn.
 
     Maps outputs back to the environment
@@ -86,7 +86,7 @@ def _other_prim_forward_pass(eqn: jax.core.JaxprEqn, env: dict) -> None:
         env[var] = (v, dv)
 
 
-def _forward_pass(jaxpr: jax.core.Jaxpr, env: dict, num_wires: int):
+def _forward_pass(jaxpr: jax.extend.core.Jaxpr, env: dict, num_wires: int):
     """Calculate the forward pass of an adjoint jvp calculation."""
     bras = []
     ket = create_initial_state(range(num_wires))
@@ -134,11 +134,11 @@ def _backward_pass(jaxpr, bras, ket, results, env):
 
 
 @pause()  # need to be able to temporarily create instances, but still have it jittable
-def execute_and_jvp(jaxpr: jax.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
+def execute_and_jvp(jaxpr: jax.extend.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
     """Execute and calculate the jvp for a jaxpr using the adjoint method.
 
     Args:
-        jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+        jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
         args : an iterable of tensorlikes.  Should include the consts followed by the inputs
         tangents: an iterable of tensorlikes and ``jax.interpreter.ad.Zero`` objects.  Should
             include the consts followed by the inputs.
