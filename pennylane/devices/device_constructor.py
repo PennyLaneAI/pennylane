@@ -148,8 +148,11 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        from functools import partial
 
+        dev = qml.device('default.qubit', wires=1)
+
+        @partial(qml.qnode, shots=10)
         @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
