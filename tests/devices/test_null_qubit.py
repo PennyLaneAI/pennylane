@@ -68,58 +68,55 @@ def test_debugger_attribute():
 def test_resource_tracking_attribute():
     """Test NullQubit track_resources attribute"""
     # pylint: disable=protected-access
-    RESOURCES_FNAME = "__pennylane_resources_data.json"
-    assert NullQubit()._track_resources is None
-    assert NullQubit(track_resources=True)._track_resources == sys.stdout
-    assert NullQubit(track_resources=RESOURCES_FNAME)._track_resources == RESOURCES_FNAME
+    assert NullQubit()._track_resources is False
+    dev = NullQubit(track_resources=True)
+    assert dev._track_resources is True
 
-    for pre_opened in (False, True):
-        if pre_opened:
-            in_arg = io.StringIO()
-        else:
-            in_arg = RESOURCES_FNAME
+    def small_circ(params):
+        qml.X(0)
+        qml.H(0)
 
-        dev = NullQubit(track_resources=in_arg)
+        qml.Barrier()
 
-        def small_circ(params):
-            qml.X(0)
-            qml.H(0)
+        # Add a more complex operation to check that the innermost operation is counted
+        op = qml.T(0)
+        op = qml.adjoint(op)
+        op = qml.ctrl(op, control=1, control_values=[1])
 
-            qml.Barrier()
+        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
 
-            # Add a more complex operation to check that the innermost operation is counted
-            op = qml.T(0)
-            op = qml.adjoint(op)
-            op = qml.ctrl(op, control=1, control_values=[1])
+        qml.CNOT([0, 1])
+        qml.Barrier()
 
-            qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
+        qml.adjoint(qml.S(0))
 
-            qml.CNOT([0, 1])
-            qml.Barrier()
+        qml.RX(params[0], wires=0)
+        qml.RX(params[0] * 2, wires=1)
 
-            qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
-            qml.adjoint(qml.S(0))
+        return qml.expval(qml.PauliZ(0))
 
-            qml.RX(params[0], wires=0)
-            qml.RX(params[0] * 2, wires=1)
+    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
 
-            return qml.expval(qml.PauliZ(0))
+    inputs = qml.numpy.array([0.5])
 
-        qnode = qml.QNode(small_circ, dev, diff_method="backprop")
+    def check_outputs():
+        written_files = list(
+            filter(
+                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FNAME_PREFIX),
+                os.listdir(os.getcwd()),
+            )
+        )
 
-        inputs = qml.numpy.array([0.5])
+        assert len(written_files) == 1
+        resources_fname = written_files[0]
 
-        qnode(inputs)
+        assert os.path.exists(resources_fname)
 
-        if pre_opened:
-            stats = in_arg.getvalue()
-        else:
-            assert os.path.exists(RESOURCES_FNAME)
+        with open(resources_fname, "r", encoding="utf-8") as f:
+            stats = f.read()
 
-            with open(RESOURCES_FNAME, "r", encoding="utf-8") as f:
-                stats = f.read()
-
-            os.remove(RESOURCES_FNAME)
+        os.remove(resources_fname)
 
         assert stats == json.dumps(
             {
@@ -138,11 +135,13 @@ def test_resource_tracking_attribute():
             }
         )
 
-        # Check that resource tracking doesn't interfere with backprop
-        assert qml.grad(qnode)(inputs) == 0
+    # Check ordinary forward computation
+    qnode(inputs)
+    check_outputs()
 
-        if pre_opened:
-            in_arg.close()
+    # Check backpropagation
+    assert qml.grad(qnode)(inputs) == 0
+    check_outputs()
 
 
 @pytest.mark.parametrize("shots", (None, 10))

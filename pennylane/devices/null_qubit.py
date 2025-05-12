@@ -21,6 +21,7 @@ import inspect
 import json
 import logging
 import sys
+import time
 from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
@@ -51,6 +52,8 @@ from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
 
 
 @singledispatch
@@ -188,7 +191,7 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        track_resources (bool | str | None): If truthy, track the number of resources used by the device. If a str is provided, use it as a filename in which to write the results. Else print to stdout. This argument is experimental and subject to change.
+        track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file. This argument is experimental and subject to change.
     **Example:**
 
     .. code-block:: python
@@ -272,33 +275,23 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None, track_resources=None) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
-        if track_resources is True:
-            self._track_resources = sys.stdout
-        else:
-            self._track_resources = track_resources
+        self._track_resources = track_resources
 
         # this is required by Catalyst to toggle the tracker at runtime
-        self.device_kwargs = {
-            "track_resources": bool(track_resources),
-            "track_resources_fname": track_resources if isinstance(track_resources, str) else None,
-            "track_resources_stdout": track_resources is True,
-        }
+        self.device_kwargs = {"track_resources": track_resources}
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
 
         if self._track_resources:
-            if isinstance(self._track_resources, str):
-                # if a string is passed, we assume it is a file name
-                with open(self._track_resources, "w", encoding="utf-8") as f:
-                    _simulate_resource_use(circuit, f)
-            else:
-                # NOTE: This will work even if `_track_resources` was originally passed a file-like object
-                _simulate_resource_use(circuit, self._track_resources)
+            timestamp = int(time.time() * 1e9)  # nanoseconds since epoch
+            resources_fname = f"{RESOURCES_FNAME_PREFIX}{timestamp}.json"
+            with open(resources_fname, "x", encoding="utf-8") as f:
+                _simulate_resource_use(circuit, f)
 
         for s in circuit.shots or [None]:
             r = tuple(
