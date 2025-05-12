@@ -13,10 +13,8 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
-import io
 import json
 import os
-import sys
 from collections import defaultdict as dd
 
 import numpy as np
@@ -94,6 +92,9 @@ def test_resource_tracking_attribute():
         qml.RX(params[0], wires=0)
         qml.RX(params[0] * 2, wires=1)
 
+        qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
+        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1,1])
+
         return qml.expval(qml.PauliZ(0))
 
     qnode = qml.QNode(small_circ, dev, diff_method="backprop")
@@ -121,7 +122,7 @@ def test_resource_tracking_attribute():
         assert stats == json.dumps(
             {
                 "num_wires": 3,
-                "num_gates": 9,
+                "num_gates": 11,
                 "gate_types": {
                     "PauliX": 1,
                     "Hadamard": 1,
@@ -131,6 +132,8 @@ def test_resource_tracking_attribute():
                     "C(IsingXX)": 1,
                     "Adj(S)": 1,
                     "RX": 2,
+                    "QubitUnitary": 1,
+                    "ControlledQubitUnitary": 1,
                 },
             }
         )

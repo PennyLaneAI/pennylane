@@ -20,7 +20,6 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 import inspect
 import json
 import logging
-import sys
 import time
 from collections import defaultdict
 from dataclasses import replace
