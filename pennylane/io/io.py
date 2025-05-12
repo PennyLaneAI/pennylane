@@ -702,3 +702,8 @@ def from_quil_file(quil_filename: str):
     """
     plugin_converter = plugin_converters["quil_file"].load()
     return plugin_converter(quil_filename)
+
+
+def from_qasm_three(quantum_circuit: str, measurements=None):
+    pass
+
