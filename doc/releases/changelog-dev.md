@@ -150,6 +150,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane supports `JAX` version 0.6.0.
+  [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
+
 * PennyLane supports `JAX` version 0.5.3.
   [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
 
@@ -210,11 +213,23 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
-* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1.
   [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
+* Migrated `setup.py` package build and install to `pyproject.toml`
+  [(#7375)](https://github.com/PennyLaneAI/pennylane/pull/7375)
 
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+
+
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* A :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` function is now available
+  in :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`.
+  It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
+  It is important for CNOT routing algorithms and other quantum compilation routines.
+  [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
 
 <h3>Breaking changes 💔</h3>
 
