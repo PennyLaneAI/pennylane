@@ -16,4 +16,6 @@ requests~=2.31.0
 typing_extensions>=4.6.0
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
 tach~=0.28.5
+openqasm3~=1.0.1
+antlr4_python3_runtime~=4.13.2
 diastatic-malt
