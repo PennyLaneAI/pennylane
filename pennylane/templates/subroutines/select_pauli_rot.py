@@ -90,7 +90,7 @@ class SelectPauliRot(Operation):
         self.hyperparameters["target_wire"] = qml.wires.Wires(target_wire)
         self.hyperparameters["rot_axis"] = rot_axis
 
-        if qml.math.shape(angles)[0] != 2 ** len(control_wires):
+        if qml.math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
 
         if rot_axis not in ["X", "Y", "Z"]:
