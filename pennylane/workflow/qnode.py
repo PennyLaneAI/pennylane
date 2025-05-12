@@ -135,9 +135,9 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
                     "argument 'shots' or if you want to set the number of shots with which the "
                     "QNode is executed, pass it to the QNode call, not its definition."
                 )
-            case qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-                continue
             case _:
+                if kwarg in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                    continue
                 warnings.warn(
                     f"Received gradient_kwarg {kwarg}, which is not included in the list of "
                     "standard qnode gradient kwargs. Please specify all gradient kwargs through "
