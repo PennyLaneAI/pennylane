@@ -56,9 +56,140 @@ def _import_mpi4py():
         ) from Error
 
     return mpi4py
+def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
+    r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
+
+    Args:
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole or ``None``
+           if dipole is set to ``False``
+
+    """
+    _import_mpi4py()
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
+    local_pes_onebody, local_dipole_onebody = _local_pes_onemode(
+        comm,
+        molecule,
+        scf_result,
+        freqs,
+        vectors,
+        grid,
+        method=method,
+        dipole=dipole,
+    )
+
+    filename = f"v1data_{rank}.hdf5"
+    with h5py.File(filename, "w") as f:
+        f.create_dataset("V1_PES", data=local_pes_onebody)
+        if dipole:
+            f.create_dataset("D1_DMS", data=local_dipole_onebody)
+        f.close()
+
+    comm.Barrier()
+    pes_onebody = None
+    dipole_onebody = None
+    if rank == 0:
+        pes_onebody, dipole_onebody = _load_pes_onemode(
+            comm.Get_size(), len(freqs), len(grid), dipole=dipole
+        )
+        current_directory = Path.cwd()
+        for file_path in current_directory.glob("v1data*"):
+            file_path.unlink(missing_ok=False)
+
+    comm.Barrier()
+    pes_onebody = comm.bcast(pes_onebody, root=0)
+
+    if dipole:
+        dipole_onebody = comm.bcast(dipole_onebody, root=0)
+        return pes_onebody, dipole_onebody
+
+    return pes_onebody, None
 
 
-def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"):
+def _local_pes_onemode(
+    comm, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False
+):
+    r"""Computes the one-mode potential energy surface on a grid along directions defined by
+    displacement vectors for each thread.
+
+    Args:
+        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of normal mode frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
+
+    """
+
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    quad_order = len(grid)
+    nmodes = len(freqs)
+    init_geom = molecule.coordinates * BOHR_TO_ANG
+
+    jobs_on_rank = np.array_split(range(quad_order), size)[rank]
+    local_pes_onebody = np.zeros((nmodes, len(jobs_on_rank)), dtype=float)
+
+    if dipole:
+        local_dipole_onebody = np.zeros((nmodes, len(jobs_on_rank), 3), dtype=float)
+        ref_dipole = _get_dipole(scf_result, method)
+    for mode in range(nmodes):
+        vec = vectors[mode]
+        if (freqs[mode].imag) > 1e-6:
+            continue  # pragma: no cover
+
+        for job_idx, job in enumerate(jobs_on_rank):
+            gridpoint = grid[job]
+            scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * sp.constants.c))
+            positions = np.array(init_geom + scaling * gridpoint * vec)
+
+            displ_mol = qml.qchem.Molecule(
+                molecule.symbols,
+                positions,
+                basis_name=molecule.basis_name,
+                charge=molecule.charge,
+                mult=molecule.mult,
+                unit="angstrom",
+                load_data=True,
+            )
+
+            displ_scf = _single_point(displ_mol, method=method)
+
+            local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
+            if dipole:
+                local_dipole_onebody[mode, job_idx, :] = _get_dipole(displ_scf, method) - ref_dipole
+
+    if dipole:
+        return local_pes_onebody, local_dipole_onebody
+    return local_pes_onebody, None
+
+
+def _pes_onemode_test(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"):
     
     num_proc = 2 # needs detail
     quad_order = len(grid)
@@ -72,7 +203,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
     
     executor_class = concurrency.backends.get_executor(hardware)
     executor = executor_class()
-    executor.starmap(_local_pes_onemode, arguments)
+    executor.starmap(_local_pes_onemode_t, arguments)
 
     pes_onebody = None
     dipole_onebody = None
@@ -87,33 +218,9 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
 
     return pes_onebody, None
 
-def _pes_onemode_mpi(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
-    num_proc = 2 # needs detail
-    quad_order = len(grid)
-    all_jobs = range(quad_order)
-    jobs_on_rank = np.array_split(all_jobs, num_proc)
-
-    arguments = [(j, i, molecule, scf_result, freqs, vectors, grid, method, dipole)
-                 for j, i in enumerate(jobs_on_rank)]
-    
-    with MPIPoolExecutor() as executor:
-        executor.starmap(_local_pes_onemode, arguments)
-    
-    pes_onebody = None
-    dipole_onebody = None
-    pes_onebody, dipole_onebody = _load_pes_onemode(
-        num_proc, len(freqs), len(grid), dipole=dipole)
-    current_directory = Path.cwd()
-    for file_path in current_directory.glob("v1data*"):
-        file_path.unlink(missing_ok=False)
-
-    if dipole:
-        return pes_onebody, dipole_onebody
-
-    return pes_onebody, None
 
 
-def _local_pes_onemode(rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
+def _local_pes_onemode_t(rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
     
     
     nmodes = len(freqs)
