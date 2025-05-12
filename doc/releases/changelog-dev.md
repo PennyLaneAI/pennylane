@@ -183,7 +183,15 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
-* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1.
+* Two new device-developer transforms have been added to `devices.preprocess`: 
+  :func:`~.devices.preprocess.measurements_from_counts` and :func:`~.devices.preprocess.measurements_from_samples`.
+  These transforms modify the tape to instead contain a `counts` or `sample` measurement process, 
+  deriving the original measurements from the raw counts/samples in post-processing. This allows 
+  expanded measurement support for devices that only 
+  support counts/samples at execution, like real hardware devices.
+  [(#7317)](https://github.com/PennyLaneAI/pennylane/pull/7317)
+
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
   [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
 
 * Migrated `setup.py` package build and install to `pyproject.toml`
@@ -200,6 +208,7 @@
   It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
   It is important for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+
 
 <h3>Breaking changes 💔</h3>
 
