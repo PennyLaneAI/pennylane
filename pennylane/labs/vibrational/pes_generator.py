@@ -202,7 +202,10 @@ def _pes_onemode_test(molecule, scf_result, freqs, vectors, grid, method="rhf", 
     
     
     executor_class = concurrency.backends.get_executor(hardware)
-    executor = executor_class(max_workers=num_proc)
+    if (hardware == "serial"):
+        executor = executor_class(max_workers=1)
+    else : 
+        executor = executor_class(max_workers=num_proc)
     executor.starmap(_local_pes_onemode_t, arguments)
 
     pes_onebody = None
@@ -440,7 +443,10 @@ def _pes_twomode_test(
     #with MPIPoolExecutor() as executor:
        # executor.starmap(_local_pes_twomode, arguments)
     executor_class = concurrency.backends.get_executor(hardware)
-    executor = executor_class(max_workers=num_proc)
+    if (hardware == "serial"):
+        executor = executor_class(max_workers=1)
+    else : 
+        executor = executor_class(max_workers=num_proc)
     executor.starmap(_local_pes_twomode_t, arguments)
 
     pes_twobody = None
@@ -908,7 +914,10 @@ def _pes_threemode_test(
                  for j, i in enumerate(jobs_on_rank)]
     
     executor_class = concurrency.backends.get_executor(hardware)
-    executor = executor_class(max_workers=num_proc)
+    if (hardware == "serial"):
+        executor = executor_class(max_workers=1)
+    else : 
+        executor = executor_class(max_workers=num_proc)
     executor.starmap(_local_pes_threemode_test, arguments)
     
 
