@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.io` module.
 from textwrap import dedent
 from unittest.mock import Mock
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -279,4 +280,30 @@ class TestToOpenQasm:
             measure q[1] -> c[1];
             """
         )
+        assert qasm == expected
+
+    def test_precision(self):
+        """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.RX(np.pi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        qasm = qml.to_openqasm(circuit, precision=4)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            rx(3.142) q[0];
+            cx q[0],q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+
         assert qasm == expected
