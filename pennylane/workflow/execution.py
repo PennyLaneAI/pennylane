@@ -191,7 +191,6 @@ def execute(
     tapes, user_post_processing = transform_program(tapes)
     if transform_program.is_informative:
         return user_post_processing(tapes)
-    transform_program = TransformProgram()
 
     if not tapes:
         return user_post_processing(())
