@@ -25,16 +25,16 @@ jobs:
     runs-on:
       - single-gpu-x64
     
-    # if: >-
-    #   ${{
-    #     github.event_name == 'push' ||
-    #     (
-    #       github.event_name == 'pull_request' &&
-    #       github.event.pull_request.draft == false &&
-    #       contains(github.event.pull_request.labels.*.name, 'gpu') &&
-    #       github.event.pull_request.state == 'open'
-    #     )
-    #   }}
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false &&
+          contains(github.event.pull_request.labels.*.name, 'gpu') &&
+          github.event.pull_request.state == 'open'
+        )
+      }}
 
     strategy:
       max-parallel: 2
