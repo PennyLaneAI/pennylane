@@ -111,8 +111,8 @@ class TestSetShots:
         assert not "shots" in tracker.history
 
     @pytest.mark.integration
-     def test_override_none_with_finite_shots(self):
-         """Test that we can override an analytic device with finite shots."""
+    def test_override_none_with_finite_shots(self):
+        """Test that we can override an analytic device with finite shots."""
 
         # 2. Device originally is analytic, override with finite shots
         dev = qml.device("default.qubit", wires=1, shots=None)
