@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+* A new function called :func:`~.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
   Consider this simple circuit in PennyLane:
@@ -19,7 +19,7 @@
       return qml.sample()
   ```
 
-  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
+  This can be easily converted to OpenQASM 2.0 with :func:`~.to_openqasm`:
   ```pycon
   >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
   >>> print(openqasm_circ)
