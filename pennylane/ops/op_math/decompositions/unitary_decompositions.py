@@ -789,9 +789,9 @@ def _compute_udv(a, b):
 
 def multi_qubit_decomposition(U, wires):
     r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
-    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit unitaries and
-    three multiplexers using the cosine-sine decomposition.
-    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
+    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
+    unitaries (:class:`~.QubitUnitary`) and three multiplexers (:class:`~.SelectPauliRot`)  using the cosine-sine
+    decomposition. This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
 
     Args:
         U (tensor): A :math:`2^n \times 2^n` unitary matrix with :math:`n > 1`.
