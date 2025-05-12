@@ -575,11 +575,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
-        from pennylane.capture.custom_primitives import NonInterpPrimitive
+        from pennylane.capture.custom_primitives import QmlPrimitive
     except ImportError:
         return None
 
-    transform_prim = NonInterpPrimitive(name + "_transform")
+    transform_prim = QmlPrimitive(name + "_transform")
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 

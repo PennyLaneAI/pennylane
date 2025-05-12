@@ -16,7 +16,7 @@ Contains the SqueezingEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class SqueezingEmbedding(Operation):
@@ -99,7 +99,6 @@ class SqueezingEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @classmethod
