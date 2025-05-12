@@ -303,7 +303,7 @@ from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
-from .set_shots import set_shots
+from .set_shots import set_shots, singleshot, with_shots
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
