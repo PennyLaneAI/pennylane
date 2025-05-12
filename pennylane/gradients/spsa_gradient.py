@@ -29,10 +29,10 @@ from .finite_difference import _processing_fn, finite_diff_coeffs
 from .general_shift_rules import generate_multishifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
-    contract_qjac_with_cjac,
     _no_trainable_grad,
     assert_no_trainable_tape_batching,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
 )
 
