@@ -93,7 +93,7 @@ def test_resource_tracking_attribute():
         qml.RX(params[0] * 2, wires=1)
 
         qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
-        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1,1])
+        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1, 1])
 
         return qml.expval(qml.PauliZ(0))
 
