@@ -147,6 +147,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Setting up the configuration of a workflow, including the determination of the best diff
+  method, is now done *after* user transforms have been applied. This allows transforms to
+  update the shots and change measurement processes with fewer issues.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+
 * An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
@@ -261,11 +266,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
-
-* Setting up the configuration of a workflow, including the determination of the best diff
-  method, is now done *after* user transforms have been applied. This allows transforms to
-  update the shots and change measurement processes with fewer issues.
-  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
