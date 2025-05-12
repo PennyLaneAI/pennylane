@@ -91,3 +91,48 @@ class TestSetShots:
 
         res = circuit(shots=10)
         assert len(res) == 10
+
+    @pytest.mark.integration
+    def test_circuit_shots_overridden_correctly(self):
+        """Test using a tracker to ensure that the shots in a circuit are overridden correctly.
+
+        We should have situations where:
+
+        1. device originally has finite shots and we override it with None
+        2. device originally is analytic and we override with finite shots.
+
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        # 1. Device originally has finite shots, override with None
+        with qml.Tracker(dev) as tracker:
+            circuit()
+        assert tracker.history["shots"][-1] == 10
+
+        new_circuit = set_shots(circuit, shots=None)
+        with qml.Tracker(dev) as tracker:
+            new_circuit()
+        assert not ("shots" in tracker.history)
+
+        # 2. Device originally is analytic, override with finite shots
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        with qml.Tracker(dev) as tracker:
+            circuit()
+        assert not ("shots" in tracker.history)
+
+        new_circuit = set_shots(circuit, shots=20)
+        with qml.Tracker(dev) as tracker:
+            new_circuit()
+        assert tracker.history["shots"][-1] == 20
