@@ -277,6 +277,9 @@ class NullQubit(Device):
         self._debugger = None
         self._track_resources = track_resources
 
+        # this is required by Catalyst to toggle the tracker at runtime
+        self.device_kwargs = {"track_resources": track_resources}
+
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
@@ -465,7 +468,7 @@ class NullQubit(Device):
 
     # pylint: disable= unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list, *args, execution_config=None
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
     ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,

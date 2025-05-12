@@ -334,7 +334,7 @@ class TestMixerHamiltonians:
             [1, 1, 1, 1],
             [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
         )
-        assert mixer_hamiltonian.compare(expected_hamiltonian)
+        assert mixer_hamiltonian == expected_hamiltonian
 
     def test_x_mixer_grouping(self):
         """Tests that the grouping information is set and correct"""
@@ -362,7 +362,7 @@ class TestMixerHamiltonians:
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
         hamiltonian = qaoa.xy_mixer(graph)
-        assert hamiltonian.compare(target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
     def test_bit_flip_mixer_errors(self):
         """Tests that the bit-flip mixer throws the correct errors"""
@@ -384,7 +384,7 @@ class TestMixerHamiltonians:
     def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
         """Tests that the output of the bit-flip mixer is correct"""
         hamiltonian = qaoa.bit_flip_mixer(graph, n)
-        assert hamiltonian.compare(target_hamiltonian)
+        assert hamiltonian == target_hamiltonian
 
 
 GRAPHS = [
@@ -923,7 +923,7 @@ class TestCostHamiltonians:
 
         H = qaoa.bit_driver(range(3), 1)
         hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)])
-        assert hamiltonian.compare(H)
+        assert hamiltonian == H
 
     def test_edge_driver_errors(self):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
@@ -946,7 +946,7 @@ class TestCostHamiltonians:
     def test_edge_driver_output(self, graph, reward, hamiltonian):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
         H = qaoa.edge_driver(graph, reward)
-        assert hamiltonian.compare(H)
+        assert hamiltonian == H
 
     def test_max_weight_cycle_errors(self):
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
@@ -976,8 +976,8 @@ class TestCostHamiltonians:
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
         cost_h, mixer_h = qaoa.maxcut(graph)
-        assert cost_h.compare(cost_hamiltonian)
-        assert mixer_h.compare(mixer_hamiltonian)
+        assert cost_h == cost_hamiltonian
+        assert mixer_h == mixer_hamiltonian
 
     def test_maxcut_grouping(self):
         """Tests that the grouping information is set and correct"""
@@ -999,8 +999,8 @@ class TestCostHamiltonians:
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Max Indepenent Set method is correct"""
         cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
-        assert cost_h.compare(cost_hamiltonian)
-        assert mixer_h.compare(mixer_hamiltonian)
+        assert cost_h == cost_hamiltonian
+        assert mixer_h == mixer_hamiltonian
 
     def test_mis_grouping(self):
         """Tests that the grouping information is set and correct"""
@@ -1022,8 +1022,8 @@ class TestCostHamiltonians:
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Min Vertex Cover method is correct"""
         cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
-        assert cost_h.compare(cost_hamiltonian)
-        assert mixer_h.compare(mixer_hamiltonian)
+        assert cost_h == cost_hamiltonian
+        assert mixer_h == mixer_hamiltonian
 
     def test_mvc_grouping(self):
         """Tests that the grouping information is set and correct"""
@@ -1045,8 +1045,8 @@ class TestCostHamiltonians:
     def test_max_clique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Maximum Clique method is correct"""
         cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
-        assert cost_h.compare(cost_hamiltonian)
-        assert mixer_h.compare(mixer_hamiltonian)
+        assert cost_h == cost_hamiltonian
+        assert mixer_h == mixer_hamiltonian
 
     def test_max_clique_grouping(self):
         """Tests that the grouping information is set and correct"""
@@ -1071,8 +1071,8 @@ class TestCostHamiltonians:
     ):
         """Tests that the output of the maximum weighted cycle method is correct"""
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
-        assert cost_h.compare(cost_hamiltonian)
-        assert mixer_h.compare(mixer_hamiltonian)
+        assert cost_h == cost_hamiltonian
+        assert mixer_h == mixer_hamiltonian
         assert mapping == m
 
     def test_max_weight_cycle_grouping(self):
@@ -1818,7 +1818,7 @@ class TestCycles:
         expected_coeffs = [2, 2, -2, -2]
 
         expected_hamiltonian = qml.Hamiltonian(expected_coeffs, expected_ops)
-        assert h.compare(expected_hamiltonian)
+        assert h == expected_hamiltonian
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_inner_out_flow_constraint_hamiltonian_error(self, g):
