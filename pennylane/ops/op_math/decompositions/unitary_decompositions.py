@@ -788,12 +788,13 @@ def _compute_udv(a, b):
 
 
 def multi_qubit_decomposition(U, wires):
-    r"""Decompose an n-qubit unitary :math:`U` (with n > 1) into four (n-1)-qubit unitaries and
-    three multiplexers using the cosine–sine decomposition.
+    r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
+    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit unitaries and
+    three multiplexers using the cosine-sine decomposition.
     This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
 
     Args:
-        U (tensor): A :math:`2^n \times 2^n` unitary matrix.
+        U (tensor): A :math:`2^n \times 2^n` unitary matrix with :math:`n > 1`.
         wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
 
     Returns:
@@ -845,7 +846,6 @@ def multi_qubit_decomposition(U, wires):
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
     # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
-
     p = 2 ** (len(wires) - 1)
 
     (u1, u2), theta, (v1_dagg, v2_dagg) = cossin_decomposition(U, p)
