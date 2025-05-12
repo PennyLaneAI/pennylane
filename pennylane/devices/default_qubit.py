@@ -26,6 +26,7 @@ from typing import Optional, Sequence, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.allocation import device_resolve_dynamic_wires
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -561,6 +562,7 @@ class DefaultQubit(Device):
 
         if config.interface == qml.math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
+        transform_program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config

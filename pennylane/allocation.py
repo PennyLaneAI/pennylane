@@ -230,3 +230,11 @@ def resolve_dynamic_wires(tape, zeroed=(), burnable=(), borrowable=(), garbage=(
         else:
             new_ops.append(op.map_wires(wire_map))
     return (tape.copy(ops=new_ops),), null_postprocessing
+
+
+@transform
+def device_resolve_dynamic_wires(tape, device_wires):
+    if not device_wires:
+        raise NotImplementedError("need wires for now")
+    burnable = set(device_wires) - set(tape.wires)
+    return resolve_dynamic_wires(tape, burnable=burnable)

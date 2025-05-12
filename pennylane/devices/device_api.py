@@ -22,6 +22,7 @@ from numbers import Number
 from typing import Optional, Union, overload
 
 import pennylane as qml
+from pennylane.allocation import device_resolve_dynamic_wires
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -560,6 +561,7 @@ class Device(abc.ABC):
         program.add_transform(qml.transforms.broadcast_expand)
 
         # Handle validations
+        program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
         program.add_transform(validate_device_wires, self.wires, name=self.name)
         program.add_transform(
             validate_measurements,
