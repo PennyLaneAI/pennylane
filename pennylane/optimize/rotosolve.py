@@ -19,7 +19,8 @@ from inspect import signature
 import numpy as np
 import scipy as sp
 
-from pennylane import fourier, math
+from pennylane import fourier  # tach-ignore
+from pennylane import math
 from pennylane.workflow import QNode
 
 
