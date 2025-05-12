@@ -189,6 +189,15 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
+
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* A :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` function is now available
+  in :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`.
+  It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
+  It is important for CNOT routing algorithms and other quantum compilation routines.
+  [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
@@ -248,6 +257,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
+  [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
