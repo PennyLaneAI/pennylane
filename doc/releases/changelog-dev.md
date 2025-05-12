@@ -120,8 +120,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* :class:`~.QubitUnitary` now uses a more resource-efficient decomposition routine that works for 
-  any number of qubits.
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
 
 * PennyLane supports `JAX` version 0.5.3.
