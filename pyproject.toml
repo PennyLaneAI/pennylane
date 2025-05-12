@@ -19,7 +19,7 @@ dependencies = [
     "cachetools",
     "pennylane-lightning>=0.41",
     "requests",
-    "tomli",
+    "tomlkit",
     "typing_extensions",
     "packaging",
     "diastatic-malt",

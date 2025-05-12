@@ -30,6 +30,7 @@ jobs:
 
     - name: Build wheels
       run: |
+        python -m pip install build 
         python -m pip install build
         python -m build --wheel --outdir dist
   

@@ -102,6 +102,7 @@ jobs:
 
       - name: Install PennyLane
         run: |
+          python -m pip install build 
           python -m build --wheel
           pip install dist/pennylane*.whl
 
