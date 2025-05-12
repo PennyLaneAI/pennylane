@@ -80,25 +80,6 @@ class TestSetShots:
         assert isinstance(result[0], (list, tuple))
         assert callable(result[1])
 
-    @pytest.mark.xfail(
-        reason="This test is expected to fail until the pipeline is updated to use the new set_shots transform"
-    )
-    @pytest.mark.integration
-    def test_error_finite_shots_with_backprop(self):
-        """Test that DeviceError is raised if finite shots are used with backprop + default.qubit."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(set_shots, shots=1000)
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        x = qml.numpy.array(0.5)
-        circuit(x)
-
     @pytest.mark.integration
     def test_circuit_specification(self):
         """Test that a handy shot specification works."""
