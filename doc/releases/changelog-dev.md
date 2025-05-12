@@ -120,6 +120,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane supports `JAX` version 0.5.3.
+  [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
+
 * Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
@@ -180,6 +183,13 @@
 * Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx
   (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
   [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+  
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
+  [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
+
+* Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
+ [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
+
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -249,6 +259,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
+  [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
+
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
 
@@ -287,6 +300,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
+  [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
 
 * Fixed a bug in the validation of :class:`~.SelectPauliRot` that prevents parameter broadcasting.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
@@ -364,7 +380,9 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
-Andrija Paurevic,
 Lee J. O'Riordan,
+Mudit Pandey,
+Andrija Paurevic,
+Kalman Szenes,
 David Wierichs,
 Jake Zaia
