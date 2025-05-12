@@ -74,7 +74,8 @@ def _get_deallocate_prim():
 
 class Allocate(Operator):
 
-    def __init__(self, wires, require_zeros=True, reset_to_original=False):
+    def __init__(self, num_wires, require_zeros=True, reset_to_original=False):
+        wires = tuple(DynamicWire() for _ in range(num_wires))
         super().__init__(wires=wires)
         self._hyperparameters = {
             "require_zeros": require_zeros,
@@ -105,9 +106,8 @@ def allocate(num_wires, require_zeros=True, reset_to_original=False):
         return _get_allocate_prim().bind(
             num_wires=num_wires, require_zeros=require_zeros, reset_to_original=reset_to_original
         )
-    wires = tuple(DynamicWire() for _ in range(num_wires))
-    Allocate(wires=wires, require_zeros=require_zeros, reset_to_original=reset_to_original)
-    return wires
+    op = Allocate(num_wires, require_zeros=require_zeros, reset_to_original=reset_to_original)
+    return op.wires
 
 
 def deallocate(obj):
@@ -139,7 +139,7 @@ class allocate_ctx:
 
 class WireManager:
 
-    def __init__(self, zeroed=(), burnable=(), borrowable=(), garbage=()):
+    def __init__(self, zeroed=(), burnable=(), borrowable=(), garbage=(), min_integer=None):
         self._registers = {
             ZEROED: list(zeroed),
             BURNABLE: list(burnable),
@@ -147,6 +147,7 @@ class WireManager:
             GARBAGE: list(garbage),
         }
         self._loaned = {}  # wire to register type
+        self.min_integer = min_integer
 
     def _get_burnable(self):
         if self._registers[BURNABLE]:
@@ -162,6 +163,11 @@ class WireManager:
             wire = self._registers[ZEROED].pop()
             self._loaned[wire] = RegisterTypes.REQUIRES_RESET
             return [], wire
+        if self.min_integer is not None:
+            wire = self.min_integer
+            self._loaned[wire] = GARBAGE
+            self.min_integer += 1
+            return [], wire
         raise ValueError("no available burnable, garbage, or zeroed wires.")
 
     def _get_zeroed(self):
@@ -175,6 +181,11 @@ class WireManager:
             m = measure(wire, reset=True)
             self._loaned[wire] = BURNABLE
             return m.measurements, wire
+        if self.min_integer is not None:
+            wire = self.min_integer
+            self._loaned[wire] = ZEROED
+            self.min_integer += 1
+            return [], wire
         raise ValueError("no available burnable, garbage, or zeroed wires.")
 
     def _get_garbage(self):
@@ -187,6 +198,11 @@ class WireManager:
             wire = self._registers[ZEROED].pop()
             self._loaned[wire] = RegisterTypes.REQUIRES_RESET
             return [], wire
+        if self.min_integer is not None:
+            wire = self.min_integer
+            self._loaned[wire] = GARBAGE
+            self.min_integer += 1
+            return [], wire
         raise ValueError("no available burnable, garbage, or zeroed wires.")
 
     def _get_borrowable(self):
@@ -195,6 +211,11 @@ class WireManager:
                 wire = self._registers[reg].pop()
                 self._loaned[wire] = reg
                 return [], wire
+        if self.min_integer is not None:
+            wire = self.min_integer
+            self._loaned[wire] = ZEROED
+            self.min_integer += 1
+            return [], wire
         raise ValueError("no available burnable, garbage, borrowable, or zeroed wires.")
 
     def get_wire(self, require_zeros, reset_to_original):
@@ -246,7 +267,7 @@ def _get_plxpr_resolve_dynamic_wires():  # pylint: disable=missing-docstring
 
     @ResolveDynamicWires.register_primitive(_get_allocate_prim())
     def _(self, num_wires, **kwargs):
-        return [self.manager.get_wire(**kwargs) for _ in range(num_wires)]
+        return [self.manager.get_wire(**kwargs)[1] for _ in range(num_wires)]
 
     @ResolveDynamicWires.register_primitive(_get_deallocate_prim())
     def _(self, *wires):
@@ -272,9 +293,17 @@ resolve_dynamic_wires_plxpr_to_plxpr = _get_plxpr_resolve_dynamic_wires()
 
 
 @partial(transform, plxpr_transform=resolve_dynamic_wires_plxpr_to_plxpr)
-def resolve_dynamic_wires(tape, zeroed=(), burnable=(), borrowable=(), garbage=()):
+def resolve_dynamic_wires(
+    tape, zeroed=(), burnable=(), borrowable=(), garbage=(), min_integer=None
+):
 
-    manager = WireManager(zeroed=zeroed, burnable=burnable, borrowable=borrowable, garbage=garbage)
+    manager = WireManager(
+        zeroed=zeroed,
+        burnable=burnable,
+        borrowable=borrowable,
+        garbage=garbage,
+        min_integer=min_integer,
+    )
 
     wire_map = {}
 
@@ -300,6 +329,7 @@ def resolve_dynamic_wires(tape, zeroed=(), burnable=(), borrowable=(), garbage=(
 @transform
 def device_resolve_dynamic_wires(tape, device_wires):
     if not device_wires:
-        raise NotImplementedError("need wires for now")
+        max_wire_int = max([0, *(w for w in tape.wires if isinstance(w, int))]) + 1
+        return resolve_dynamic_wires(tape, min_integer=max_wire_int)
     burnable = set(device_wires) - set(tape.wires)
     return resolve_dynamic_wires(tape, burnable=burnable)
