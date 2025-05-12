@@ -42,6 +42,3 @@ from .resource_operator import (
     set_decomp,
     set_pow_decomp,
 )
-#from .resource_container import (
-#    CompressedResourceOp,
-#)

@@ -15,16 +15,12 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, List, Hashable, Optional, Type
+from typing import Callable, List, Hashable, Optional, Type
 
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# if TYPE_CHECKING:
-#     from pennylane.labs.resource_estimation import CompressedResourceOp
-
 # pylint: disable=unused-argument
-
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
@@ -65,8 +61,9 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
             and self.op_type == other.op_type
             and self.params == other.params
         )
+
     def __repr__(self) -> str:
-         return self._name
+        return self._name
 
 
 def _make_hashable(d) -> tuple:
@@ -78,7 +75,7 @@ def _make_hashable(d) -> tuple:
 
     Returns:
         A hashable tuple representation of the input.
- 
+
     """
 
     if isinstance(d, Hashable):
@@ -152,32 +149,32 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-		cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-	) -> List:
+        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+    ) -> List:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-		)
-    
+        )
+
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -187,7 +184,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -220,7 +217,7 @@ class ResourceOperator(ABC):
 
     #     from pennylane.labs.resource_estimation.resource_container import Resources
     #     return Resources(qubit_manager, gate_types)
-    
+
     # def __matmul__(self, scalar: int):
     #     assert isinstance(scalar, int)
     #     gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
@@ -254,7 +251,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="ctrl")
 
-    
+
 def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="adj")
 

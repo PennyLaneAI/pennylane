@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.labs.resource_estimation import ResourceOperator, CompressedResourceOp
+
+# pylint: disable=protected-access
 
 class ResourceDummyX(Operator, ResourceOperator):
     """Dummy testing class representing X gate"""
@@ -118,3 +120,8 @@ class TestCompressedResourceOp:
         cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
 
         assert str(cr_op) == repr
+
+    def test_type_error(self):
+        """Test that an error is raised if wrong type is provided for op_type."""
+        with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
+            CompressedResourceOp(type(1))
