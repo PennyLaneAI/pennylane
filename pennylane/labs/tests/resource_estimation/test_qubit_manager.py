@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane.labs.resource_estimation import QubitManager, GrabWires, FreeWires
 
 
+# pylint: disable= no-self-use
 class TestQubitManager:
     """Test the methods and attributes of the QubitManager class"""
 
@@ -44,6 +45,15 @@ class TestQubitManager:
         assert qm.dirty_qubits == dirty_qubits
         assert qm.algo_qubits == logic_qubits
         assert qm.tight_budget == tight_budget
+
+    @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
+    def test_equality(self, qm, attribute_tup):
+        """Test that the equality methods behaves as expected"""
+        clean_qubits, dirty_qubits, _, tight_budget = attribute_tup
+        qm2 = QubitManager(
+            work_wires={"clean": clean_qubits, "dirty": dirty_qubits}, tight_budget=tight_budget
+        )
+        assert qm == qm2
 
     extra_qubits = (0, 2, 4)
 
