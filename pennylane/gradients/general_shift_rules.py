@@ -22,7 +22,7 @@ import warnings
 import numpy as np
 from scipy.linalg import solve as linalg_solve
 
-import pennylane as qml
+from pennylane import math
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
@@ -142,7 +142,7 @@ def frequencies_to_period(frequencies, decimals=5):
 @functools.lru_cache(maxsize=None)
 def _get_shift_rule(frequencies, shifts=None):
     n_freqs = len(frequencies)
-    frequencies = qml.math.sort(qml.math.stack(frequencies))
+    frequencies = math.sort(math.stack(frequencies))
     freq_min = frequencies[0]
 
     if len(set(frequencies)) != n_freqs or freq_min <= 0:
@@ -156,7 +156,7 @@ def _get_shift_rule(frequencies, shifts=None):
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
         equ_shifts = True
     else:
-        shifts = qml.math.sort(qml.math.stack(shifts))
+        shifts = math.sort(math.stack(shifts))
         if len(shifts) != n_freqs:
             raise ValueError(
                 f"Expected number of shifts to equal the number of frequencies ({n_freqs}), instead got {shifts}."
@@ -206,7 +206,7 @@ def _iterate_shift_rule_with_multipliers(rule, order, period):
 
     # combine all terms in the linear combination into a single
     # array, with column order (coefficients, multipliers, shifts)
-    return qml.math.stack(combined_rules)
+    return math.stack(combined_rules)
 
 
 def _iterate_shift_rule(rule, order, period=None):
@@ -226,7 +226,7 @@ def _iterate_shift_rule(rule, order, period=None):
     if period is not None:
         # if a period is provided, make sure the shift value is within [-period/2, period/2)
         shifts = np.mod(shifts + 0.5 * period, period) - 0.5 * period
-    return qml.math.stack([coeffs, shifts]).T
+    return math.stack([coeffs, shifts]).T
 
 
 def _combine_shift_rules(rules):
@@ -405,15 +405,15 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
         # Shift copied parameter
         new_params = list(op.data)
         if not isinstance(new_params[p_idx], numbers.Integral):
-            multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
-            multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
-            shift = qml.math.convert_like(shift, new_params[p_idx])
-            shift = qml.math.cast_like(shift, new_params[p_idx])
+            multiplier = math.convert_like(multiplier, new_params[p_idx])
+            multiplier = math.cast_like(multiplier, new_params[p_idx])
+            shift = math.convert_like(shift, new_params[p_idx])
+            shift = math.cast_like(shift, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] * multiplier
         new_params[p_idx] = new_params[p_idx] + shift
         if cast:
             dtype = getattr(new_params[p_idx], "dtype", float)
-            new_params[p_idx] = qml.math.cast(new_params[p_idx], dtype)
+            new_params[p_idx] = math.cast(new_params[p_idx], dtype)
 
         # Create operator with shifted parameter and put into shifted tape
         shifted_op = bind_new_parameters(op, new_params)
