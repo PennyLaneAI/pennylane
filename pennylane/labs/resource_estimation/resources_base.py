@@ -17,7 +17,6 @@ from __future__ import annotations
 import copy
 from decimal import Decimal
 from collections import defaultdict
-from typing import Hashable, Optional, Type
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
@@ -61,12 +60,12 @@ class Resources:
 
     def __add__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
-        assert isinstance(other, (self.__class__, ResourceOperator))
+        assert isinstance(other, self.__class__)
         return add_in_series(self, other)
 
     def __and__(self, other: "Resources") -> "Resources":
         """Add two resources objects in parallel"""
-        assert isinstance(other, (self.__class__, ResourceOperator))
+        assert isinstance(other, self.__class__)
         return add_in_parallel(self, other)
 
     def __eq__(self, other: "Resources") -> bool:
@@ -129,99 +128,66 @@ class Resources:
         print(str(self))
 
 
-def add_in_series(first: Resources, other, in_place=False) -> Resources:  # + 
+def add_in_series(first: Resources, other) -> Resources:  # + 
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
         first (Resources): first resource object to combine
         other (Resources): other resource object to combine with
-        in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
     """
-    if isinstance(other, Resources):
-        qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-        
-        new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
-        new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
-        new_budget = qm1.tight_budget or qm2.tight_budget
-        new_logic = max(qm1.algo_qubits, qm2.algo_qubits)
-
-        new_qubit_manager = QubitManager(
-            work_wires={"clean": new_clean, "dirty": new_dirty}, 
-            tight_budget=new_budget
-        )
-
-        new_qubit_manager._logic_qubit_counts = new_logic
-        new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=False)
-
-    else: 
-        qm = first.qubit_manager
-        new_logic = max(qm.algo_qubits, other.num_wires)
-
-        new_qubit_manager = QubitManager(
-            work_wires={"clean": qm.clean_qubits, "dirty": qm.dirty_qubits}, 
-            tight_budget=qm.tight_budget
-        )
-
-        new_qubit_manager._logic_qubit_counts = new_logic
-        new_gate_types = copy.copy(first.gate_types)
-        new_gate_types[other.resource_rep_from_op()] += 1
+    qm1, qm2 = (first.qubit_manager, other.qubit_manager)
     
+    new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
+    new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
+    new_budget = qm1.tight_budget or qm2.tight_budget
+    new_logic = max(qm1.algo_qubits, qm2.algo_qubits)
+
+    new_qubit_manager = QubitManager(
+        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        tight_budget=new_budget
+    )
+
+    new_qubit_manager._logic_qubit_counts = new_logic
+    new_gate_types = _combine_dict(first.gate_types, other.gate_types)
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def add_in_parallel(first: Resources, other, in_place=False) -> Resources:  # & 
+def add_in_parallel(first: Resources, other) -> Resources:  # & 
     r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
         first (Resources): first resource object to combine
         other (Resources): other resource object to combine with
-        in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
     """
-    if isinstance(other, Resources):
-        qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-        
-        new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
-        new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
-        new_budget = qm1.tight_budget or qm2.tight_budget
-        new_logic = qm1.algo_qubits + qm2.algo_qubits
-
-        new_qubit_manager = QubitManager(
-            work_wires={"clean": new_clean, "dirty": new_dirty}, 
-            tight_budget=new_budget,
-        )
-
-        new_qubit_manager._logic_qubit_counts = new_logic
-        new_gate_types = _combine_dict(first.gate_types, other.gate_types, in_place=False)
+    qm1, qm2 = (first.qubit_manager, other.qubit_manager)
     
-    else: 
-        qm = first.qubit_manager
-        new_logic = qm.algo_qubits + other.num_wires
+    new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
+    new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
+    new_budget = qm1.tight_budget or qm2.tight_budget
+    new_logic = qm1.algo_qubits + qm2.algo_qubits
 
-        new_qubit_manager = QubitManager(
-            work_wires={"clean": qm.clean_qubits, "dirty": qm.dirty_qubits}, 
-            tight_budget=qm.tight_budget
-        )
+    new_qubit_manager = QubitManager(
+        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        tight_budget=new_budget,
+    )
 
-        new_qubit_manager._logic_qubit_counts = new_logic
-        new_gate_types = copy.copy(first.gate_types)
-        new_gate_types[other.resource_rep_from_op()] += 1
-    
+    new_qubit_manager._logic_qubit_counts = new_logic
+    new_gate_types = _combine_dict(first.gate_types, other.gate_types)
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:  # * 
+def mul_in_series(first: Resources, scalar: int) -> Resources:  # * 
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
         first (Resources): first resource object to combine
         scalar (int): integer value to scale the resources by
-        in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
@@ -239,18 +205,17 @@ def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:  
     )
 
     new_qubit_manager._logic_qubit_counts = new_logic
-    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=False)
+    new_gate_types = _scale_dict(first.gate_types, scalar)
 
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:  # @ 
+def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @ 
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
         first (Resources): first resource object to combine
         scalar (int): integer value to scale the resources by
-        in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
@@ -268,14 +233,14 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
     )
 
     new_qubit_manager._logic_qubit_counts = new_logic
-    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=False)
+    new_gate_types = _scale_dict(first.gate_types, scalar)
 
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
+def _combine_dict(dict1: defaultdict, dict2: defaultdict):
     r"""Private function which combines two dictionaries together."""
-    combined_dict = dict1 if in_place else copy.copy(dict1)
+    combined_dict = copy.copy(dict1)
 
     for k, v in dict2.items():
         combined_dict[k] += v
@@ -283,10 +248,9 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
     return combined_dict
 
 
-def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
+def _scale_dict(dict1: defaultdict, scalar: int):
     r"""Private function which scales the values in a dictionary."""
-
-    combined_dict = dict1 if in_place else copy.copy(dict1)
+    combined_dict = copy.copy(dict1)
 
     for k in combined_dict:
         combined_dict[k] *= scalar

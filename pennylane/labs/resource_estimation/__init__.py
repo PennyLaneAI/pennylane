@@ -33,11 +33,4 @@ Resource Estimation Base Classes:
 """
 
 from .qubit_manager import QubitManager, GrabWires, FreeWires
-from .resource_operator import (
-    ResourcesNotDefined,
-    ResourceOperator,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
-)
+from .resources_base import Resources
