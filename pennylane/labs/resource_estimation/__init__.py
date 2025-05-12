@@ -34,6 +34,7 @@ Resource Estimation Base Classes:
 
 from .qubit_manager import QubitManager, GrabWires, FreeWires
 from .resource_operator import (
+    CompressedResourceOp,
     ResourcesNotDefined,
     ResourceOperator,
     set_adj_decomp,
@@ -41,6 +42,6 @@ from .resource_operator import (
     set_decomp,
     set_pow_decomp,
 )
-from .resource_container import (
-    CompressedResourceOp,
-)
+#from .resource_container import (
+#    CompressedResourceOp,
+#)
