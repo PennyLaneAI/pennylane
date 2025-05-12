@@ -5,7 +5,7 @@ from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ,
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 SINGLE_QUBIT_GATES = {
-    "Identity": Identity,
+    "Identity": Identity,  # TODO: make all keys according to qasm std lib
     "Hadamard": Hadamard,
     "X": PauliX,
     "Y": PauliY,
@@ -29,7 +29,7 @@ PARAMETERIZED_SIGNLE_QUBIT_GATES = {
 }
 
 TWO_QUBIT_GATES = {
-    "CNOT": CNOT,
+    "CX": CNOT,
     "CY": CY,
     "CZ": CZ,
     "CH": CH,
@@ -124,7 +124,7 @@ class QasmInterpreter(QASMVisitor):
 
     def quantum_gate(self, node: QASMNode, context: dict):
         """
-        Registers a quantum gate application.
+        Registers a quantum gate application. TODO: support modifiers
         """
         if "gates" not in context:
             context["gates"] = []
@@ -138,7 +138,7 @@ class QasmInterpreter(QASMVisitor):
             gate = self.multi_qubit_gate(node, context)
         else:
             print(f"Unsupported gate encountered in QASM: {node.name}")
-        context["gates"].append(gate)  # TODO: pull out props we need only
+        context["gates"].append(gate)
 
     def single_qubit_gate(self, node: QASMNode, context: dict):
         """
@@ -166,7 +166,13 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a two qubit gate application.
         """
-        pass
+        return partial(
+            TWO_QUBIT_GATES[node.name.name.upper()],
+            wires=[
+                context["wires"].index(node.qubits[0].name),
+                context["wires"].index(node.qubits[1].name),
+            ]
+        )
 
     def multi_qubit_gate(self, node: QASMNode, context: dict):
         """
