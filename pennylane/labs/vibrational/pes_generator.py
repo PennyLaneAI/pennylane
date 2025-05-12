@@ -15,10 +15,9 @@
 per normal modes on a grid."""
 
 import itertools
+import os
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor 
-import mpi4py
-from mpi4py.futures import MPIPoolExecutor
 import numpy as np
 import scipy as sp
 from typing import Union
@@ -191,7 +190,7 @@ def _local_pes_onemode(
 
 def _pes_onemode_test(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"):
     
-    num_proc = 2 # needs detail
+    num_proc = os.cpu_count()
     quad_order = len(grid)
     all_jobs = range(quad_order)
     jobs_on_rank = np.array_split(all_jobs, num_proc)
@@ -423,7 +422,7 @@ def _pes_twomode_test(
 
     """
    
-    num_proc = 2 # needs detail
+    num_proc = os.cpu_count()
 
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2]
@@ -445,7 +444,7 @@ def _pes_twomode_test(
     pes_twobody = None
     dipole_twobody = None
     
-    pes_twobody, dipole_twobody = _load_pes_twomode_t(
+    pes_twobody, dipole_twobody = _load_pes_twomode(
         num_proc, len(freqs), len(grid), dipole=dipole
     )
     current_directory = Path.cwd()
@@ -719,65 +718,6 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
     return pes_twobody, None  # pragma: no cover
 
 
-def _load_pes_twomode_t(num_proc, nmodes, quad_order, dipole=False):
-    """
-    Loader to combine pes_twobody and dipole_twobody from multiple processors.
-
-    Args:
-        num_proc (int): number of processors
-        nmodes (int): number of normal modes
-        quad_order (int): order for Gauss-Hermite quadratures
-        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-
-    Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: two-mode potential energy surface
-         - TensorLike[float] or None: two-mode dipole, returns ``None``
-           if dipole is set to ``False``
-
-    """
-
-    final_shape = (nmodes, nmodes, quad_order, quad_order)
-    nmode_combos = int(nmodes * (nmodes - 1) / 2)
-    pes_twobody = np.zeros((final_shape))
-    if dipole:
-        dipole_twobody = np.zeros((final_shape + (3,)))
-
-    mode_combo = 0
-    for mode_a in range(nmodes):
-        for mode_b in range(mode_a):
-            local_pes = np.zeros(quad_order**2)
-            if dipole:
-                local_dipole = np.zeros((quad_order**2, 3))
-
-            init_idx = 0
-            end_idx = 0
-            for proc in range(num_proc):
-                f = h5py.File("v2data" + f"_{proc}" + ".hdf5", "r+")
-                local_pes_twobody = f["V2_PES"][()]
-                pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
-
-                end_idx += len(pes_chunk)
-                local_pes[init_idx:end_idx] = pes_chunk
-                if dipole:
-                    local_dipole_twobody = f["D2_DMS"][()]
-                    dipole_chunk = np.array_split(local_dipole_twobody, nmode_combos, axis=0)[
-                        mode_combo
-                    ]
-                    local_dipole[init_idx:end_idx, :] = dipole_chunk
-                init_idx += len(pes_chunk)
-
-            pes_twobody[mode_a, mode_b, :, :] = local_pes.reshape(quad_order, quad_order)
-            if dipole:
-                dipole_twobody[mode_a, mode_b, :, :, :] = local_dipole.reshape(
-                    quad_order, quad_order, 3
-                )
-            mode_combo += 1
-
-    if dipole:
-        return pes_twobody, dipole_twobody
-    return pes_twobody, None  # pragma: no cover
-
 
 def _local_pes_threemode_test(
     rank,
@@ -953,7 +893,7 @@ def _pes_threemode_test(
            if dipole is set to ``False``
 
     """
-    num_proc = 4 # needs detail
+    num_proc = os.cpu_count()
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
         for (i, gridpoint_1), (j, gridpoint_2), (k, gridpoint_3) in itertools.product(
