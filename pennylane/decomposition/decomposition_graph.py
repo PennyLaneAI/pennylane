@@ -49,7 +49,7 @@ from .symbolic_decomposition import (
     flip_pow_adjoint,
     make_adjoint_decomp,
     merge_powers,
-    pow_of_self_adjoint,
+    pow_involutory,
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
@@ -177,7 +177,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         elif (
             issubclass(op_node.op_type, qml.ops.Pow)
             and pow_rotation not in decomps
-            and pow_of_self_adjoint not in decomps
+            and pow_involutory not in decomps
         ):
             # Only when the operator is not self-adjoint or a rotation with a single rotation
             # angle that could be trivially multiplied with the power do we need to apply the

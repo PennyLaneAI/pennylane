@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     register_resources,
 )
-from pennylane.decomposition.symbolic_decomposition import pow_of_self_adjoint, self_adjoint
+from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -238,7 +238,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
-add_decomps("Pow(Hadamard)", pow_of_self_adjoint)
+add_decomps("Pow(Hadamard)", pow_involutory)
 
 
 H = Hadamard
@@ -473,7 +473,7 @@ def _paulix_to_rx(wires: WiresLike, **__):
 
 add_decomps(PauliX, _paulix_to_rx)
 add_decomps("Adjoint(PauliX)", self_adjoint)
-add_decomps("Pow(PauliX)", pow_of_self_adjoint)
+add_decomps("Pow(PauliX)", pow_involutory)
 
 
 class PauliY(Observable, Operation):
@@ -689,7 +689,7 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
 add_decomps("Adjoint(PauliY)", self_adjoint)
-add_decomps("Pow(PauliY)", pow_of_self_adjoint)
+add_decomps("Pow(PauliY)", pow_involutory)
 
 
 class PauliZ(Observable, Operation):
@@ -910,7 +910,7 @@ def _pauliz_to_ps(wires: WiresLike, **__):
 
 add_decomps(PauliZ, _pauliz_to_ps)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
-add_decomps("Pow(PauliZ)", pow_of_self_adjoint)
+add_decomps("Pow(PauliZ)", pow_involutory)
 
 
 class S(Operation):
@@ -1588,7 +1588,7 @@ def _swap_to_cnot(wires, **__):
 
 add_decomps(SWAP, _swap_to_cnot)
 add_decomps("Adjoint(SWAP)", self_adjoint)
-add_decomps("Pow(SWAP)", pow_of_self_adjoint)
+add_decomps("Pow(SWAP)", pow_involutory)
 
 
 class ECR(Operation):
@@ -1753,7 +1753,7 @@ def _ecr_decomp(wires, **__):
 
 add_decomps(ECR, _ecr_decomp)
 add_decomps("Adjoint(ECR)", self_adjoint)
-add_decomps("Pow(ECR)", pow_of_self_adjoint)
+add_decomps("Pow(ECR)", pow_involutory)
 
 
 class ISWAP(Operation):
