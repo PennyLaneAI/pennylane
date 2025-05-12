@@ -22,14 +22,6 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation Base Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceOperator
-
 """
 
 from .qubit_manager import QubitManager, GrabWires, FreeWires
