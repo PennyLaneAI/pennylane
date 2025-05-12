@@ -108,6 +108,30 @@ def no_sampling(
 
 
 @transform
+def no_analytic(
+    tape: QuantumScript, name: str = "device"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Raises an error if the tape does not have finite shots.
+
+    Args:
+        tape (QuantumTape or .QNode or Callable): a quantum circuit
+        name (str): name to use in error message.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
+
+    This transform can be added to forbid analytic results. This is relevant for devices
+    that can only return samples/counts based results.
+    """
+    if not tape.shots:
+        raise qml.DeviceError(f"Analytic execution is not supported with {name}")
+    return (tape,), null_postprocessing
+
+
+@transform
 def validate_device_wires(
     tape: QuantumScript, wires: Optional[qml.wires.Wires] = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
