@@ -262,7 +262,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Ajusted execution pipeline to be compatible with the new `set_shots` transform.
+* Setting up the configuration of a workflow, including the determination of the best diff
+  method, is now done *after* user transforms have been applied. This allows transforms to
+  update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
