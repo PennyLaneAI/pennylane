@@ -55,6 +55,8 @@ kernels = ["cvxpy", "cvxopt"]
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"
 
+# TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+# This requires a rename in the setup file of all devices, and is best done during another refactor
 [project.entry-points."pennylane.plugins"]
 "default.qubit" = "pennylane.devices:DefaultQubit"
 "default.gaussian" = "pennylane.devices:DefaultGaussian"
