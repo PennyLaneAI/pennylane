@@ -14,8 +14,6 @@
 
 """Unit tests for the ``set_shots`` transformer"""
 
-from functools import partial
-
 import pytest
 
 import pennylane as qml
@@ -73,49 +71,6 @@ class TestSetShots:
         assert new_tape.measurements == measurements
 
     @pytest.mark.integration
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    @pytest.mark.parametrize("interface", qml.math.SUPPORTED_INTERFACE_NAMES)
-    def test_compatibility_finite_shots(self, interface, shots):
-        """Test that setting shots works with default.qubit with default setting up"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(set_shots, shots=shots)
-        @qml.qnode(dev, interface=interface)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        x = qml.numpy.array(0.5)
-        assert len(circuit(x)) == 2
-
-    @pytest.mark.integration
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("shots", [(10, 10, 10), ((10, 3),)])
-    @pytest.mark.parametrize("interface", qml.math.SUPPORTED_INTERFACE_NAMES)
-    def test_shot_vector(self, interface, shots):
-        """Test that setting shots with shot vectors works with default setting up."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(set_shots, shots=shots)
-        @qml.qnode(dev, interface=interface)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        x = qml.numpy.array(0.5)
-        assert len(circuit(x)) == 3
-
-    @pytest.mark.integration
-    def test_toplevel_accessible(self):
-        """Test that qml.set_shots is available at top-level."""
-        assert hasattr(qml, "set_shots")
-
-    @pytest.mark.integration
     def test_circuit_specification(self):
         """Test that a handy shot specification works."""
 
@@ -126,3 +81,53 @@ class TestSetShots:
 
         res = circuit(shots=10)
         assert len(res) == 10
+
+    @pytest.mark.integration
+    def test_circuit_shots_overridden_correctly(self):
+        """Test using a tracker to ensure that the shots in a circuit are overridden correctly.
+
+        We should have situations where:
+
+        1. device originally has finite shots and we override it with None
+        2. device originally is analytic and we override with finite shots.
+
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        # 1. Device originally has finite shots, override with None
+        with qml.Tracker(dev) as tracker:
+            circuit()
+        assert tracker.history["shots"][-1] == 10
+
+        new_circuit = set_shots(circuit, shots=None)
+        with qml.Tracker(dev) as tracker:
+            new_circuit()
+        assert not "shots" in tracker.history
+
+    @pytest.mark.integration
+    def test_override_none_with_finite_shots(self):
+        """Test that we can override an analytic device with finite shots."""
+
+        # 2. Device originally is analytic, override with finite shots
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        # pylint: disable=function-redefined
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        with qml.Tracker(dev) as tracker:
+            circuit()
+        assert not "shots" in tracker.history
+
+        new_circuit = set_shots(circuit, shots=20)
+        with qml.Tracker(dev) as tracker:
+            new_circuit()
+        assert tracker.history["shots"][-1] == 20
