@@ -1,12 +1,12 @@
 from functools import partial
-from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ, S, T, SX, Rot, RX, RY, RZ, PauliRot, \
-    PhaseShift, U1, U2, U3, GlobalPhase, CNOT, CY, CZ, CRot, CH, SWAP, ISWAP, CSWAP, CPhase, CRX, CRY, CRZ, \
-    IsingXX, IsingYY, IsingZZ, Toffoli, MultiControlledX, Barrier
+from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ, S, T, SX, RX, RY, RZ, \
+    PhaseShift, U1, U2, U3, CNOT, CY, CZ, CH, SWAP, CSWAP, CPhase, CRX, CRY, CRZ, \
+    Toffoli, MultiControlledX, Barrier
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 SINGLE_QUBIT_GATES = {
-    "Identity": Identity,  # TODO: make all keys according to qasm std lib
-    "Hadamard": Hadamard,
+    "ID": Identity,  # TODO: translate all other QASM std lib gates to equivalent series of pennylane gates
+    "H": Hadamard,
     "X": PauliX,
     "Y": PauliY,
     "Z": PauliZ,
@@ -16,16 +16,14 @@ SINGLE_QUBIT_GATES = {
 }
 
 PARAMETERIZED_SIGNLE_QUBIT_GATES = {
-    "Rot": Rot,
     "RX": RX,
     "RY": RY,
     "RZ": RZ,
-    "PauliRot": PauliRot,
-    "PhaseShift": PhaseShift,
+    "P": PhaseShift,
+    "PHASE": PhaseShift,
     "U1": U1,
     "U2": U2,
     "U3": U3,
-    "GlobalPhase": GlobalPhase
 }
 
 TWO_QUBIT_GATES = {
@@ -34,16 +32,12 @@ TWO_QUBIT_GATES = {
     "CZ": CZ,
     "CH": CH,
     "SWAP": SWAP,
-    "ISWAP": ISWAP,
     "CSWAP": CSWAP,
-    "CPhase": CPhase,
+    "CP": CPhase,
+    "CPHASE": CPhase,
     "CRX": CRX,
     "CRY": CRY,
     "CRZ": CRZ,
-    "CRot": CRot,
-    "IsingXX": IsingXX,
-    "IsingYY": IsingYY,
-    "IsingZZ": IsingZZ
 }
 
 MULTI_QUBIT_GATES = {
