@@ -123,6 +123,7 @@
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+
     ```python
     @qml.register_resources({qml.RY: 1})
     def my_adjoint_ry(phi, wires, **_):
