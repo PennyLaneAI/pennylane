@@ -19,8 +19,8 @@ from inspect import signature
 import numpy as np
 import scipy as sp
 
-from pennylane import fourier  # tach-ignore
 from pennylane import math
+from pennylane.fourier import reconstruct  # tach-ignore
 from pennylane.workflow import QNode
 
 
@@ -475,9 +475,7 @@ class RotosolveOptimizer:
                     _spectra = {arg_name: {par_idx: spectrum}} if spectrum is not None else None
 
                     # Set up the reconstruction function
-                    recon_fn = fourier.reconstruct(
-                        objective_fn, ids, _nums_frequency, _spectra, shifts
-                    )
+                    recon_fn = reconstruct(objective_fn, ids, _nums_frequency, _spectra, shifts)
                     # Perform the reconstruction
                     recon = recon_fn(*before_args, arg, *after_args, f0=_fun_at_zero, **kwargs)[
                         arg_name
