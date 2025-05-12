@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import lru_cache, partial
+from itertools import chain
 from typing import Sequence
 
 try:
@@ -8,6 +9,7 @@ except ImportError:
     pass
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.measurements import measure
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 from pennylane.wires import Wires
@@ -19,6 +21,7 @@ class RegisterTypes(Enum):
     BURNABLE = (True, False)
     BORROWABLE = (False, True)
     GARBAGE = (False, False)
+    REQUIRES_RESET = "requires_reset"
 
 
 ZEROED = RegisterTypes.ZEROED
@@ -145,21 +148,79 @@ class WireManager:
         }
         self._loaned = {}  # wire to register type
 
+    def _get_burnable(self):
+        if self._registers[BURNABLE]:
+            wire = self._registers[BURNABLE].pop()
+            self._loaned[wire] = GARBAGE
+            return [], wire
+        if self._registers[GARBAGE]:
+            wire = self._registers[GARBAGE].pop()
+            m = measure(wire, reset=True)
+            self._loaned[wire] = GARBAGE
+            return m.measurements, wire
+        if self._registers[ZEROED]:
+            wire = self._registers[ZEROED].pop()
+            self._loaned[wire] = RegisterTypes.REQUIRES_RESET
+            return [], wire
+        raise ValueError("no available burnable, garbage, or zeroed wires.")
+
+    def _get_zeroed(self):
+        for reg in [ZEROED, BURNABLE]:
+            if self._registers[reg]:
+                wire = self._registers[reg].pop()
+                self._loaned[wire] = reg
+                return [], wire
+        if self._registers[GARBAGE]:
+            wire = self._registers[GARBAGE].pop()
+            m = measure(wire, reset=True)
+            self._loaned[wire] = BURNABLE
+            return m.measurements, wire
+        raise ValueError("no available burnable, garbage, or zeroed wires.")
+
+    def _get_garbage(self):
+        for reg in [GARBAGE, BURNABLE]:
+            if self._registers[reg]:
+                wire = self._registers[reg].pop()
+                self._loaned[wire] = GARBAGE
+                return [], wire
+        if self._registers[ZEROED]:
+            wire = self._registers[ZEROED].pop()
+            self._loaned[wire] = RegisterTypes.REQUIRES_RESET
+            return [], wire
+        raise ValueError("no available burnable, garbage, or zeroed wires.")
+
+    def _get_borrowable(self):
+        for reg in [GARBAGE, BORROWABLE, BURNABLE, ZEROED]:
+            if self._registers[reg]:
+                wire = self._registers[reg].pop()
+                self._loaned[wire] = reg
+                return [], wire
+        raise ValueError("no available burnable, garbage, borrowable, or zeroed wires.")
+
     def get_wire(self, require_zeros, reset_to_original):
         reg_type = RegisterTypes((require_zeros, reset_to_original))
-
-        wire = self._registers[reg_type].pop()
-        self._loaned[wire] = reg_type
-        return wire
+        match reg_type:
+            case RegisterTypes.BURNABLE:
+                return self._get_burnable()
+            case RegisterTypes.ZEROED:
+                return self._get_zeroed()
+            case RegisterTypes.GARBAGE:
+                return self._get_garbage()
+            case RegisterTypes.BORROWABLE:
+                return self._get_borrowable()
+            case _:
+                raise ValueError("something went wrong")
 
     def return_wire(self, wire):
         reg_type = self._loaned.pop(wire)
+        if reg_type == RegisterTypes.REQUIRES_RESET:
+            self._registers[ZEROED].append(wire)
+            return [measure(wire, reset=True)]
         self._registers[reg_type].append(wire)
-        return
+        return []
 
     def return_all(self):
-        for w in self._loaned:
-            self.return_wire(w)
+        return list(chain(self.return_wire(w) for w in self._loaned))
 
 
 def null_postprocessing(results):
@@ -221,15 +282,19 @@ def resolve_dynamic_wires(tape, zeroed=(), burnable=(), borrowable=(), garbage=(
     for op in tape.operations:
         if isinstance(op, Allocate):
             for w in op.wires:
-                wire_map[w] = manager.get_wire(**op.hyperparameters)
+                ops, wire = manager.get_wire(**op.hyperparameters)
+                new_ops += ops
+                wire_map[w] = wire
         elif isinstance(op, Deallocate):
             for w in op.wires:
-                manager.return_wire(wire_map.pop(w))
+                new_ops += manager.return_wire(wire_map.pop(w))
         elif isinstance(op, DeallocateAll):
-            manager.return_all()
+            new_ops += manager.return_all()
         else:
             new_ops.append(op.map_wires(wire_map))
-    return (tape.copy(ops=new_ops),), null_postprocessing
+
+    mps = [mp.map_wires(wire_map) for mp in tape.measurements]
+    return (tape.copy(ops=new_ops, measurements=mps),), null_postprocessing
 
 
 @transform
