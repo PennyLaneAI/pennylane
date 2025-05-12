@@ -68,7 +68,7 @@ class QasmInterpreter(QASMVisitor):
                 self.identifier(node, context)
             case "QubitDeclaration":
                 self.qubit_declaration(node, context)
-            case "ClassicalDeclaraion":
+            case "ClassicalDeclaration":
                 self.classical_declaration(node, context)
             case "QuantumGate":
                 self.quantum_gate(node, context)
@@ -102,7 +102,8 @@ class QasmInterpreter(QASMVisitor):
     @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):
         """
-        Registers a qubit declaration.
+        Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
+        in context["wires"].
         """
         if "wires" not in context:
             context["wires"] = []
@@ -114,8 +115,12 @@ class QasmInterpreter(QASMVisitor):
         Registers a classical declaration.
         """
         if "vars" not in context:
-            context["vars"] = []
-        context["vars"].append(node)  # TODO: pull out props we need only
+            context["vars"] = {}
+        context["vars"][node.identifier.name] = {
+            'ty': node.type.__class__.__name__,
+            'val': node.init_expression.value,
+            'line': node.init_expression.span.start_line
+        }
 
     def quantum_gate(self, node: QASMNode, context: dict):
         """
@@ -145,9 +150,17 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a parameterized single qubit gate application.
         """
+        keyword_args = {}
         for arg in node.arguments:
-            pass # TODO
-        pass
+            if arg.name in context["vars"]:
+                # the context at this point should reflect the states of the
+                # variables as evaluated in the correct (current) scope.
+                keyword_args[arg.name] = context["vars"][arg.name]["val"]
+        return partial(
+            PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
+            **keyword_args,
+            wires=[context["wires"].index(node.qubits[0].name)]
+        )
 
     def two_qubit_gate(self, node: QASMNode, context: dict):
         """
