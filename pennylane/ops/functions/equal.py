@@ -821,3 +821,10 @@ def _equal_prep_sel_prep(
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
     return True
+
+
+@_equal_dispatch.register(MeasurementProcess, MeasurementProcess)
+def _equal_measurement_measurement(m1, m2):
+    if m1.obs != m2.obs:
+        return f"{m1} and {m2} are not equal because their observables differ."
+    return True
