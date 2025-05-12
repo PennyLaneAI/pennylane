@@ -22,6 +22,7 @@ from pennylane.devices.preprocess import (
     decompose,
     mid_circuit_measurements,
     no_sampling,
+    null_postprocessing,
     validate_adjoint_trainable_params,
     validate_device_wires,
     validate_measurements,
@@ -63,17 +64,6 @@ class InfiniteOp(qml.operation.Operation):
 
     def decomposition(self):
         return [InfiniteOp(*self.parameters, self.wires)]
-
-
-def test_max_expansion_is_deprecated():
-    """Test that max_expansion argument is deprecated."""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-    ):
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
-        )
-        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
 
 
 class TestPrivateHelpers:
@@ -494,6 +484,20 @@ class TestMidCircuitMeasurements:
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
         spy.assert_called_once()
 
+    @pytest.mark.parametrize("mcm_method", ["device", "tree-traversal"])
+    @pytest.mark.parametrize("shots", [10, None])
+    def test_device_mcm_method(self, mcm_method, shots):
+        """Test that no transform is applied by mid_circuit_measurements when the
+        mcm method is handled by the device"""
+        dev = qml.device("default.qubit")
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        (new_tape,), post_processing_fn = mid_circuit_measurements(tape, dev, mcm_config)
+
+        assert qml.equal(tape, new_tape)
+        assert post_processing_fn == null_postprocessing
+
     def test_error_incompatible_mcm_method(self):
         """Test that an error is raised if requesting the one-shot transform without shots"""
         dev = qml.device("default.qubit")
@@ -502,7 +506,8 @@ class TestMidCircuitMeasurements:
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+            qml.QuantumFunctionError,
+            match="dynamic_one_shot is only supported with finite shots.",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 

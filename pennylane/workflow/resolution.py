@@ -11,12 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the necessary helper functions for setting up the workflow for execution.
-
-"""
-
+"""This module contains the necessary helper functions for setting up the workflow for execution."""
+from collections.abc import Callable
+from copy import copy
 from dataclasses import replace
-from typing import Literal, Union, get_args
+from importlib.metadata import version
+from importlib.util import find_spec
+from typing import Literal, Optional, Union, get_args
+from warnings import warn
+
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -32,43 +36,43 @@ SupportedDiffMethods = Literal[
     "adjoint",
     "parameter-shift",
     "hadamard",
+    "reversed-hadamard",
+    "direct-hadamard",
+    "reversed-direct-hadamard",
     "finite-diff",
     "spsa",
 ]
 
 
-def _get_jax_interface_name(tapes):
-    """Check all parameters in each tape and output the name of the suitable
-    JAX interface.
-
-    This function checks each tape and determines if any of the gate parameters
-    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
-    the name of the JAX interface with jit support.
-
-    Note that determining if jit support should be turned on is done by
-    checking if parameters are abstract. Parameters can be abstract not just
-    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
-    reason is that JAX doesn't have a public API for checking whether or not
-    the execution is within the jit transform.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-
-    Returns:
-        str: name of JAX interface that fits the tape parameters, "jax" or
-        "jax-jit"
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
+    abstract.
     """
-    for t in tapes:
-        for op in t:
-            # Unwrap the observable from a MeasurementProcess
-            if not isinstance(op, qml.ops.Prod):
-                op = getattr(op, "obs", op)
-            if op is not None:
-                # Some MeasurementProcess objects have op.obs=None
-                if any(qml.math.is_abstract(param) for param in op.data):
-                    return Interface.JAX_JIT
+    x = qml.math.asarray([0], like="jax")
+    return Interface.JAX_JIT if qml.math.is_abstract(x) else Interface.JAX
 
-    return Interface.JAX
+
+def _validate_jax_version():
+    """Checks if the installed version of JAX is supported. If an unsupported version of
+    JAX is installed, a ``RuntimeWarning`` is raised."""
+    if not find_spec("jax"):
+        return
+
+    jax_version = version("jax")
+    min_jax_version = "0.0.0"  # place holders than can be updated as needed
+    max_jax_version = "1.0.0"
+    if Version(jax_version) < Version(min_jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of less than {min_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
+    if Version(max_jax_version) < Version(jax_version):  # pragma: no cover
+        warn(
+            f"PennyLane is currently not compatible with versions of greater than {max_jax_version}. "
+            f"You have version {jax_version} installed.",
+            RuntimeWarning,
+        )
 
 
 # pylint: disable=import-outside-toplevel
@@ -96,7 +100,6 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
     Returns:
         Interface: resolved interface
     """
-
     interface = get_canonical_interface_name(interface)
 
     if interface == Interface.AUTO:
@@ -104,11 +107,15 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
-        if interface != Interface.NUMPY:
-            try:
-                interface = get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.NUMPY
+        try:
+            interface = get_canonical_interface_name(interface)
+        except ValueError:
+            # If the interface is not recognized, default to numpy, like networkx
+            interface = Interface.NUMPY
+
+    if interface in (Interface.JAX, Interface.JAX_JIT):
+        _validate_jax_version()
+
     if interface == Interface.TF and _use_tensorflow_autograph():
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
@@ -121,7 +128,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
 
-        interface = _get_jax_interface_name(tapes)
+        interface = _get_jax_interface_name()
 
     return interface
 
@@ -141,7 +148,9 @@ def _resolve_mcm_config(
             )
 
     if mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+        raise ValueError(
+            "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."
+        )
 
     if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
@@ -162,6 +171,33 @@ def _resolve_mcm_config(
         updated_values["postselect_mode"] = "pad-invalid-samples"
 
     return replace(mcm_config, **updated_values)
+
+
+def _resolve_hadamard(
+    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
+) -> "qml.devices.ExecutionConfig":
+    diff_method = initial_config.gradient_method
+    updated_values = {"gradient_method": diff_method}
+    if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
+        raise ValueError(
+            f"diff_method={diff_method} cannot be provided with a 'mode' in the gradient_kwargs."
+        )
+
+    hadamard_mode_map = {
+        "hadamard": "standard",
+        "reversed-hadamard": "reversed",
+        "direct-hadamard": "direct",
+        "reversed-direct-hadamard": "reversed-direct",
+    }
+    gradient_kwargs = copy(initial_config.gradient_keyword_arguments)
+    if "mode" not in gradient_kwargs:
+        gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
+
+    if "device_wires" not in gradient_kwargs and "aux_wire" not in gradient_kwargs:
+        gradient_kwargs["device_wires"] = device.wires
+    updated_values["gradient_keyword_arguments"] = gradient_kwargs
+    updated_values["gradient_method"] = qml.gradients.hadamard_grad
+    return replace(initial_config, **updated_values)
 
 
 @debug_logger
@@ -196,9 +232,16 @@ def _resolve_diff_method(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
 
+    if "hadamard" in str(diff_method):
+        return _resolve_hadamard(initial_config, device)
+
     if diff_method in {"best", "parameter-shift"}:
         if tape and any(isinstance(op, qml.operation.CV) and op.name != "Identity" for op in tape):
             updated_values["gradient_method"] = qml.gradients.param_shift_cv
+            updated_values["gradient_keyword_arguments"] = dict(
+                initial_config.gradient_keyword_arguments
+            )
+            updated_values["gradient_keyword_arguments"]["dev"] = device
         else:
             updated_values["gradient_method"] = qml.gradients.param_shift
 
@@ -206,7 +249,6 @@ def _resolve_diff_method(
         gradient_transform_map = {
             "finite-diff": qml.gradients.finite_diff,
             "spsa": qml.gradients.spsa_grad,
-            "hadamard": qml.gradients.hadamard_grad,
         }
 
         if diff_method in gradient_transform_map:
@@ -226,7 +268,7 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
+    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -240,19 +282,29 @@ def _resolve_execution_config(
         qml.devices.ExecutionConfig: resolved execution configuration
     """
     updated_values = {}
-    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
+
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
+        execution_config.gradient_method, Callable
+    ):
+        updated_values["grad_on_execution"] = False
 
     if (
         "lightning" in device.name
+        and transform_program
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
+    if execution_config.use_device_jacobian_product and not device.supports_vjp(
+        execution_config, tapes[0]
+    ):
+        raise qml.QuantumFunctionError(
+            f"device_vjp=True is not supported for device {device},"
+            f" diff_method {execution_config.gradient_method},"
+            " and the provided circuit."
+        )
 
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
@@ -266,9 +318,8 @@ def _resolve_execution_config(
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
+    updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
-
     execution_config = replace(execution_config, **updated_values)
     execution_config = device.setup_execution_config(execution_config)
-
     return execution_config

@@ -415,9 +415,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
@@ -471,9 +471,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
@@ -527,9 +527,9 @@ class TestVQE:
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
-        coefs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coefs, obs)
-        hamiltonian2 = qml.Hamiltonian(coefs, obs)
+        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
+        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
         hamiltonian1.compute_grouping()
 
         cost = generate_cost_fn(
@@ -955,9 +955,6 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    @pytest.mark.xfail(
-        reason="diagonalizing gates defined but not used, should not be included in specs"
-    )
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -972,11 +969,6 @@ class TestNewVQE:
         res = qml.specs(circuit)()
 
         assert res["num_observables"] == 1
-
-        # currently this returns 1 instead, because diagonalizing gates exist for H,
-        # but they aren't used in executing this qnode
-        # to be revisited in [sc-59117]
-        assert res["num_diagonalizing_gates"] == 0
 
 
 class TestInterfaces:

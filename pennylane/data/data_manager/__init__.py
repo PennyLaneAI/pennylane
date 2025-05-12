@@ -185,7 +185,9 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
     if pbar is not None:
         if attributes is None:
-            file_sizes = [int(head(url).headers["Content-Length"]) for url in dataset_urls]
+            file_sizes = [
+                int(head(url, timeout=5).headers["Content-Length"]) for url in dataset_urls
+            ]
         else:
             # Can't get file sizes for partial downloads
             file_sizes = (None for _ in dataset_urls)
@@ -329,14 +331,14 @@ def load(  # pylint: disable=too-many-arguments
     """
     params = format_params(**params)
 
+    if data_name == "other":
+        data_name = params[0]["values"][0]
+        params = []
+
     if attributes:
         _validate_attributes(data_name, attributes)
 
     folder_path = Path(folder_path)
-
-    if data_name == "other":
-        data_name = params[0]["values"][0]
-        params = []
 
     params = provide_defaults(data_name, params)
     params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]

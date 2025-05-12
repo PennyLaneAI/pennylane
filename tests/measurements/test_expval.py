@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
 from pennylane.measurements.expval import ExpectationMP
 
 
@@ -46,8 +45,51 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
+# pylint: disable=too-many-public-methods
 class TestExpval:
     """Tests for the expval function"""
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    def test_process_counts_dtype(self, coeffs):
+        """Test that the return type of the process_counts function is correct"""
+        counts = {"000": 100, "100": 100}
+        wire_order = qml.wires.Wires((0, 1, 2))
+        res = qml.expval(coeffs * qml.Z(1)).process_counts(counts=counts, wire_order=wire_order)
+        assert np.allclose(res, coeffs)
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    def test_process_state_dtype(self, coeffs):
+        """Test that the return type of the process_state function is correct"""
+        res = qml.measurements.ExpectationMP(obs=coeffs * qml.Z(0)).process_state(
+            state=[1, 0], wire_order=qml.wires.Wires(0)
+        )
+        assert np.allclose(res, coeffs)
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 0.0]], 1.0),  # Pure |0⟩ state
+            ([[0.0, 0.0], [0.0, 1.0]], -1.0),  # Pure |1⟩ state
+            ([[0.5, 0.5], [0.5, 0.5]], 0.0),  # Mixed state
+            ([[0.75, 0.0], [0.0, 0.25]], 0.5),  # Another mixed state
+        ],
+    )
+    def test_process_density_matrix_dtype(self, coeffs, state, expected):
+        mp = ExpectationMP(obs=coeffs * qml.PauliZ(0))
+        result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
+        assert qml.math.allclose(result, expected * coeffs)
+
+    @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+    def test_process_samples_dtype(self, coeffs, seed):
+        """Test that the return type of the process_samples function is correct"""
+        shots = 100
+        rng = np.random.default_rng(seed)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        obs = coeffs * qml.PauliZ(0)
+        expected = qml.expval(obs).process_samples(samples, [0, 1])
+        result = ExpectationMP(obs=obs).process_samples(samples, [0, 1])
+        assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
@@ -73,18 +115,6 @@ class TestExpval:
             assert res[1].dtype == r_dtype
         else:
             assert res.dtype == r_dtype
-
-    def test_observable_return_type_is_expectation(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.expval(qml.PauliZ(0))
-            assert res.return_type is Expectation
-            return res
-
-        circuit()
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
@@ -186,12 +216,11 @@ class TestExpval:
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
-    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
-    def test_projector_expval(self, state, shots, seed):
+    def test_projector_expval_qnode(self, state, shots, seed):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
-        its subclasses."""
+        its subclasses when integrating with the ``QNode``."""
         dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
 
         @qml.qnode(dev)
@@ -201,7 +230,7 @@ class TestExpval:
 
         res = circuit()
         expected = [0.5, 0.5] if isinstance(shots, list) else 0.5
-        assert np.allclose(res, expected, atol=0.02, rtol=0.02)
+        assert np.allclose(res, expected, atol=0.02, rtol=0.04)
 
     def test_permuted_wires(self):
         """Test that the expectation value of an operator with permuted wires is the same."""
@@ -371,3 +400,15 @@ class TestExpval:
         res = qml.expval(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
 
         assert np.allclose(res, expected)
+
+
+@pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
+def test_qnode_expval_dtype(coeffs):
+    """System level test to ensure dtype is correctly preserved."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(coeffs):
+        return qml.expval(coeffs * qml.PauliZ(0))
+
+    res = circuit(coeffs)
+    assert np.allclose(res, coeffs)

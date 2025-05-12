@@ -90,4 +90,5 @@ from .vibrational import (
     taylor_coeffs,
     taylor_dipole_coeffs,
     taylor_hamiltonian,
+    vscf_integrals,
 )

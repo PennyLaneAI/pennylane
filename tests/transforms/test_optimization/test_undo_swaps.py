@@ -14,8 +14,6 @@
 """
 Unit tests for the optimization transform ``undo_swaps``.
 """
-import warnings
-
 import pytest
 from utils import compare_operation_lists
 
@@ -23,13 +21,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.optimization import undo_swaps
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestUndoSwaps:
@@ -225,8 +216,8 @@ class TestUndoSwapsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
     def test_undo_swaps_torch(self):
@@ -252,8 +243,8 @@ class TestUndoSwapsInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
     def test_undo_swaps_tf(self):
@@ -284,8 +275,8 @@ class TestUndoSwapsInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
     def test_undo_swaps_jax(self):
@@ -307,5 +298,6 @@ class TestUndoSwapsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)

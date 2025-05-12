@@ -25,6 +25,8 @@ try:
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
+# pylint: disable=too-many-positional-arguments
+
 
 def _to_tuple(a):
     """Converts int or iterable to tuple"""
@@ -63,20 +65,22 @@ class MPLDrawer:
 
     Args:
         n_layers (int): the number of layers
-        n_wires (int): the number of wires
+        wire_map (dict): the wires to be drawn. A dict mapping wire label to index (from top to bottom) in the figure
 
     Keyword Args:
         c_wires=0 (int): the number of classical wires to leave space for.
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
-            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
+            to scale with the size of the circuit via ``n_layers`` and ``len(wire_map)``.
         fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
+        starting_dots=False (bool): Adds dots after the wire labels. Can be used to denote this plot
+            follows after another one.
 
     **Example**
 
     .. code-block:: python
 
-        drawer = qml.drawer.MPLDrawer(n_wires=5, n_layers=6)
+        drawer = qml.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
@@ -165,7 +169,7 @@ class MPLDrawer:
     .. code-block:: python
 
         wire_options = {"color": "indigo", "linewidth": 4}
-        drawer = MPLDrawer(n_wires=2, n_layers=4, wire_options=wire_options)
+        drawer = MPLDrawer(wire_map={0: 0, 1: 1}, n_layers=4, wire_options=wire_options)
 
         label_options = {"fontsize": "x-large", 'color': 'indigo'}
         drawer.label(["0", "a"], text_options=label_options)
@@ -203,7 +207,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(2, 2)
+        drawer = MPLDrawer(2, {0:0, 1:1})
         drawer.box_gate(layer=0, wires=1, text="X")
         drawer.box_gate(layer=1, wires=1, text="Y")
 
@@ -255,7 +259,17 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None, fig=None):
+    def __init__(
+        self,
+        n_layers,
+        wire_map,
+        c_wires=0,
+        *,
+        wire_options=None,
+        figsize=None,
+        fig=None,
+        starting_dots: bool = False,
+    ):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -263,7 +277,8 @@ class MPLDrawer:
             )
 
         self.n_layers = n_layers
-        self.n_wires = n_wires
+        self.n_wires = len(wire_map)
+        self._starting_dots = starting_dots
 
         ## Creating figure and ax
 
@@ -281,7 +296,7 @@ class MPLDrawer:
 
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
-            xlim=(-2, self.n_layers + 1),
+            xlim=(-2.5 if starting_dots else -2, self.n_layers + 1),
             ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),
             xticks=[],
             yticks=[],
@@ -300,14 +315,14 @@ class MPLDrawer:
 
         # Adding wire lines with individual styles based on wire_options
         self._wire_lines = []
-        for wire in range(self.n_wires):
-            specific_options = wire_specific_options.get(wire, {})
+        for wire_label, idx in wire_map.items():
+            specific_options = wire_specific_options.get(wire_label, {})
             line_options = {**global_options, **specific_options}
 
             # Create Line2D with the combined options
             line = plt.Line2D(
                 (-1, self.n_layers),
-                (wire, wire),
+                (idx, idx),
                 zorder=1,
                 **line_options,
             )
@@ -349,7 +364,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.label(["a", "b"])
 
         .. figure:: ../../_static/drawer/labels.png
@@ -363,7 +378,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.label(["a", "b"], text_options={"color": "indigo", "fontsize": "xx-large"})
 
         .. figure:: ../../_static/drawer/labels_formatted.png
@@ -376,7 +391,18 @@ class MPLDrawer:
             text_options = {"ha": "center", "va": "center", "fontsize": self.fontsize}
 
         for wire, ii_label in enumerate(labels):
-            self._ax.text(-1.5, wire, ii_label, **text_options)
+            self._ax.text(-1.5 - 0.5 * self._starting_dots, wire, ii_label, **text_options)
+
+        if self._starting_dots:
+            for wire in range(self.n_wires):
+                self.ax.text(
+                    -1.5,
+                    wire,
+                    s="···",
+                    ha="center",
+                    va="center_baseline",
+                    fontsize=21,
+                )
 
     def erase_wire(self, layer: int, wire: int, length: int) -> None:
         """Erases a portion of a wire by adding a rectangle that matches the background.
@@ -419,7 +445,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
 
             drawer.box_gate(layer=0, wires=(0, 1), text="CY")
 
@@ -441,7 +467,7 @@ class MPLDrawer:
             box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
             text_options = {'fontsize': 'xx-large', 'color': 'maroon'}
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
 
             drawer.box_gate(layer=0, wires=(0, 1), text="CY",
                 box_options=box_options, text_options=text_options)
@@ -456,7 +482,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_layers=4, n_wires=2)
+            drawer = MPLDrawer(n_layers=4, wire_map={0:0, 1:1})
 
             drawer.box_gate(layer=0, wires=0, text="A longer label")
             drawer.box_gate(layer=0, wires=1, text="Label")
@@ -615,7 +641,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=3)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=3)
 
             drawer.ctrl(layer=0, wires=0, wires_target=1)
             drawer.ctrl(layer=1, wires=(0, 1), control_values=[0, 1])
@@ -714,7 +740,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=2)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=2)
 
             drawer.CNOT(0, (0, 1))
 
@@ -778,7 +804,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=2)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=2)
 
             drawer.SWAP(0, (0, 1))
 
@@ -848,7 +874,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(wire_map={0:0, 1:1}, n_layers=1)
             drawer.measure(layer=0, wires=0)
 
             measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
@@ -996,7 +1022,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=3, n_layers=4)
+            drawer = MPLDrawer(wire_map={0:0, 1:1, 2:2}, n_layers=4)
 
             drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
 

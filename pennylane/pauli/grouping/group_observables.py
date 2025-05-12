@@ -292,7 +292,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         using ``Rustworkx`` graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
 
         Returns:
-            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
+            list[list[Operator]]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
         """
         # Get the observables from the indices. itemgetter outperforms list comprehension
         pauli_partitions = items_partitions_from_idx_partitions(
@@ -393,12 +393,12 @@ def compute_partition_indices(
     and graph colouring method.
 
     Args:
-        observables (list[Observable]): A list of Pauli Observables to be partitioned.
+        observables (list[Operator]): A list of Pauli operators to be partitioned.
         grouping_type (str): The type of binary relation between Pauli observables.
-            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
+            It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover.
-            Can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
-            Defaults to ``'lf'``.
+            It can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). Defaults to ``'lf'``.
 
     Returns:
         tuple[tuple[int]]: A tuple of tuples where each inner tuple contains the indices of
@@ -410,6 +410,7 @@ def compute_partition_indices(
 
     **Example**
 
+    >>> from pennylane.pauli import compute_partition_indices
     >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
     >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
     ((0,), (1, 2))
@@ -437,9 +438,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
     """
 
     with qml.QueuingManager.stop_recording():
-        obs_groups = qml.pauli.group_observables(
-            observables, grouping_type=grouping_type, method="rlf"
-        )
+        obs_groups = group_observables(observables, grouping_type=grouping_type, method="rlf")
 
     observables = copy(observables)
 
@@ -476,12 +475,12 @@ def group_observables(
     graph using graph-colouring heuristic algorithms.
 
     Args:
-        observables (list[Operator]): a list of Pauli word ``Observable`` instances (Pauli
+        observables (list[Operator]): a list of Pauli word ``Operator`` instances (Pauli
             operation instances and tensor products thereof)
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
-            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
             ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
@@ -489,8 +488,8 @@ def group_observables(
     Returns:
        tuple:
 
-           * list[list[Observable]]: A list of the obtained groupings. Each grouping
-             is itself a list of Pauli word ``Observable`` instances.
+           * list[list[Operator]]: A list of the obtained groupings. Each grouping
+             is itself a list of Pauli word ``Operator`` instances.
            * list[TensorLike]: A list of coefficient groupings. Each coefficient
              grouping is itself a tensor or list of the grouping's corresponding coefficients. This is only
              returned if coefficients are specified.
@@ -504,6 +503,7 @@ def group_observables(
 
     **Example**
 
+    >>> from pennylane.pauli import group_observables
     >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')

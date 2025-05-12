@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
-import warnings
 
 # pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
@@ -23,14 +22,6 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.torch
 
@@ -103,9 +94,6 @@ class TestQNode:
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == ()
-
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         res.backward()
@@ -185,9 +173,10 @@ class TestQNode:
             interface=interface,
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         a_val = 0.1
@@ -196,7 +185,7 @@ class TestQNode:
         a = torch.tensor(a_val, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(b_val, dtype=torch.float64, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -204,8 +193,6 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         res = circuit(a, b)
-
-        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -264,7 +251,6 @@ class TestQNode:
         res = circuit(a, b)
 
         assert circuit.interface == interface
-        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -291,14 +277,15 @@ class TestQNode:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
+        gradient_kwargs = {"h": 1e-8, "approx_order": 2}
+
         @qnode(
             dev,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             interface=interface,
-            h=1e-8,
-            approx_order=2,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -337,9 +324,6 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
         assert np.allclose(res[0].detach().numpy(), expected[0], atol=tol, rtol=0)
@@ -362,9 +346,6 @@ class TestQNode:
         b = torch.tensor(b_val, dtype=torch.float64, requires_grad=False)
 
         res = circuit(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
@@ -404,10 +385,6 @@ class TestQNode:
 
         res = circuit(a, b, c)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
-
         res.backward()
 
         assert isinstance(a.grad, torch.Tensor)
@@ -441,9 +418,6 @@ class TestQNode:
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
 
         res = circuit(a, b)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == []
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -495,9 +469,6 @@ class TestQNode:
 
         res = circuit(U, a)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
-
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
         res.backward()
@@ -514,9 +485,10 @@ class TestQNode:
             interface=interface,
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):  # pylint:disable=too-few-public-methods
@@ -532,7 +504,7 @@ class TestQNode:
         p_val = [0.1, 0.2, 0.3]
         p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -636,12 +608,9 @@ class TestShotsIntegration:
         expected = torch.tensor([torch.sin(a) * torch.sin(b), -torch.cos(a) * torch.cos(b)])
         assert torch.allclose(weights.grad, expected, atol=tol, rtol=0)
 
-    def test_update_diff_method(self, mocker):
+    def test_update_diff_method(self):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
-
-        spy = mocker.spy(qml, "execute")
-
         dev = DefaultQubit()
 
         @qnode(dev, interface="torch")
@@ -651,14 +620,17 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            res = cost_fn(a, b, shots=100)
+            res.backward()
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
-        cost_fn(a, b)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            res = cost_fn(a, b)
+            res.backward()
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(
@@ -675,9 +647,9 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
-        kwargs = {}
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x_val = 0.543
@@ -691,7 +663,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             interface=interface,
             device_vjp=device_vjp,
-            **kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -739,9 +711,10 @@ class TestQubitIntegration:
             interface=interface,
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x_val = 0.543
@@ -749,7 +722,7 @@ class TestQubitIntegration:
         x = torch.tensor(x_val, requires_grad=True, dtype=torch.float64)
         y = torch.tensor(y_val, requires_grad=True, dtype=torch.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -844,7 +817,7 @@ class TestQubitIntegration:
             max_diff=2,
             interface=interface,
             device_vjp=device_vjp,
-            **options,
+            gradient_kwargs=options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -897,7 +870,7 @@ class TestQubitIntegration:
             max_diff=2,
             interface=interface,
             device_vjp=device_vjp,
-            **options,
+            gradient_kwargs=options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -959,7 +932,7 @@ class TestQubitIntegration:
             max_diff=2,
             interface=interface,
             device_vjp=device_vjp,
-            **options,
+            gradient_kwargs=options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1034,7 +1007,7 @@ class TestQubitIntegration:
             max_diff=2,
             interface=interface,
             device_vjp=device_vjp,
-            **options,
+            gradient_kwargs=options,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1131,11 +1104,12 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("adjoint supports either all expvals or all diagonal measurements")
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support variances.")
@@ -1147,7 +1121,7 @@ class TestQubitIntegration:
         x, y = 0.765, -0.654
         weights = torch.tensor([x, y], requires_grad=True, dtype=torch.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -1231,6 +1205,7 @@ class TestTapeExpansion:
 
         class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
+            has_generator = False
 
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
@@ -1316,18 +1291,19 @@ class TestTapeExpansion:
             interface="torch",
             device_vjp=device_vjp,
         )
+        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1420,7 +1396,7 @@ class TestTapeExpansion:
             max_diff=max_diff,
             interface="torch",
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])

@@ -24,8 +24,9 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import FlatPytree, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -55,17 +56,18 @@ class MultiRZ(Operation):
         will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
 
     Args:
-        theta (tensor_like or float): rotation angle :math:`\theta`
+        theta (TensorLike): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = {"num_wires"}
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -77,6 +79,10 @@ class MultiRZ(Operation):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
 
     @staticmethod
     def compute_matrix(
@@ -90,11 +96,11 @@ class MultiRZ(Operation):
         .. seealso:: :meth:`~.MultiRZ.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            theta (TensorLike): rotation angle
             num_wires (int): number of wires the rotation acts on
 
         Returns:
-            tensor_like: canonical matrix
+            TensorLike: canonical matrix
 
         **Example**
 
@@ -140,11 +146,11 @@ class MultiRZ(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            theta (TensorLike): rotation angle
             num_wires (int): number of wires the rotation acts on
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -175,7 +181,7 @@ class MultiRZ(Operation):
         .. seealso:: :meth:`~.MultiRZ.decomposition`.
 
         Args:
-            theta (float): rotation angle :math:`\theta`
+            theta (TensorLike): rotation angle :math:`\theta`
             wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
@@ -193,6 +199,10 @@ class MultiRZ(Operation):
 
         return ops
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": self.hyperparameters["num_wires"]}
+
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
@@ -206,6 +216,29 @@ class MultiRZ(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
+
+
+def _multi_rz_decomposition_resources(num_wires):
+    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}
+
+
+@register_resources(_multi_rz_decomposition_resources)
+def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+
+    @qml.for_loop(len(wires) - 1, 0, -1)
+    def _pre_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    @qml.for_loop(1, len(wires), 1)
+    def _post_cnot(i):
+        qml.CNOT(wires=(wires[i], wires[i - 1]))
+
+    _pre_cnot()  # pylint: disable=no-value-for-parameter
+    qml.RZ(theta, wires=wires[0])
+    _post_cnot()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(MultiRZ, _multi_rz_decomposition)
 
 
 class PauliRot(Operation):
@@ -247,7 +280,6 @@ class PauliRot(Operation):
     0.8775825618903724
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -257,6 +289,10 @@ class PauliRot(Operation):
     do_check_domain = False
     grad_method = "A"
     parameter_frequencies = [(1,)]
+
+    resource_keys = {
+        "pauli_word",
+    }
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -278,8 +314,13 @@ class PauliRot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
-        self.hyperparameters["pauli_word"] = pauli_word
 
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
+
+        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
@@ -337,6 +378,10 @@ class PauliRot(Operation):
 
         return op_label
 
+    @property
+    def resource_params(self) -> dict:
+        return {"pauli_word": self.hyperparameters["pauli_word"]}
+
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
         """Check that the given Pauli word has correct structure.
@@ -362,11 +407,11 @@ class PauliRot(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            theta (TensorLike): rotation angle
             pauli_word (str): string representation of Pauli word
 
         Returns:
-            tensor_like: canonical matrix
+            TensorLike: canonical matrix
 
         **Example**
 
@@ -443,7 +488,7 @@ class PauliRot(Operation):
 
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -471,7 +516,7 @@ class PauliRot(Operation):
         .. seealso:: :meth:`~.PauliRot.decomposition`.
 
         Args:
-            theta (float): rotation angle :math:`\theta`
+            theta (TensorLike): rotation angle :math:`\theta`
             wires (Iterable, Wires): the wires the operation acts on
             pauli_word (string): the Pauli word defining the rotation
 
@@ -520,6 +565,41 @@ class PauliRot(Operation):
 
     def pow(self, z):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+
+
+def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
+    if set(pauli_word) == {"I"}:
+        qml.GlobalPhase(theta / 2)
+        return
+    active_wires, active_gates = zip(
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+    )
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(np.pi / 2, wires=[wire])
+    qml.MultiRZ(theta, wires=list(active_wires))
+    for wire, gate in zip(active_wires, active_gates):
+        if gate == "X":
+            qml.Hadamard(wires=[wire])
+        elif gate == "Y":
+            qml.RX(-np.pi / 2, wires=[wire])
+
+
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {qml.GlobalPhase: 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+    }
+
+
+pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
+add_decomps(PauliRot, pauli_rot_decomposition)
 
 
 class PCPhase(Operation):
@@ -579,7 +659,6 @@ class PCPhase(Operation):
      [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
@@ -661,7 +740,7 @@ class PCPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params: TensorLike, wires: Optional[WiresLike] = None, **hyperparams
+        *params: TensorLike, wires: WiresLike, **hyperparams
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -788,6 +867,8 @@ class IsingXX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -796,6 +877,10 @@ class IsingXX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -807,10 +892,10 @@ class IsingXX(Operation):
 
 
         Args:
-           phi (tensor_like or float): phase angle
+           phi (TensorLike): phase angle
 
         Returns:
-           tensor_like: canonical matrix
+           TensorLike: canonical matrix
 
         **Example**
 
@@ -849,7 +934,7 @@ class IsingXX(Operation):
         .. seealso:: :meth:`~.IsingXX.decomposition`.
 
         Args:
-            phi (float): the phase angle
+            phi (TensorLike): the phase angle
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -882,6 +967,20 @@ class IsingXX(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return IsingXX(phi, wires=self.wires)
+
+
+def _isingxx_to_cnot_rx_cnot_resources():
+    return {qml.CNOT: 2, qml.RX: 1}
+
+
+@register_resources(_isingxx_to_cnot_rx_cnot_resources)
+def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
+    qml.CNOT(wires=wires)
+    qml.RX(phi, wires=[wires[0]])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
 
 
 class IsingYY(Operation):
@@ -924,6 +1023,8 @@ class IsingYY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -932,6 +1033,10 @@ class IsingYY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
@@ -972,10 +1077,10 @@ class IsingYY(Operation):
 
 
         Args:
-           phi (tensor_like or float): phase angle
+           phi (TensorLike): phase angle
 
         Returns:
-           tensor_like: canonical matrix
+           TensorLike: canonical matrix
 
         **Example**
 
@@ -1026,6 +1131,20 @@ class IsingYY(Operation):
         return IsingYY(phi, wires=self.wires)
 
 
+def _isingyy_to_cy_ry_cy_resources():
+    return {qml.CY: 2, RY: 1}
+
+
+@register_resources(_isingyy_to_cy_ry_cy_resources)
+def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
+    qml.CY(wires=wires)
+    RY(phi, wires=[wires[0]])
+    qml.CY(wires=wires)
+
+
+add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+
+
 class IsingZZ(Operation):
     r"""
     Ising ZZ coupling gate
@@ -1067,6 +1186,8 @@ class IsingZZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -1075,6 +1196,10 @@ class IsingZZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike):
@@ -1115,10 +1240,10 @@ class IsingZZ(Operation):
 
 
         Args:
-           phi (tensor_like or float): phase angle
+           phi (TensorLike): phase angle
 
         Returns:
-           tensor_like: canonical matrix
+           TensorLike: canonical matrix
 
         **Example**
 
@@ -1162,10 +1287,10 @@ class IsingZZ(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase angle
+            phi (TensorLike) phase angle
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -1197,6 +1322,20 @@ class IsingZZ(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return IsingZZ(phi, wires=self.wires)
+
+
+def _isingzz_to_cnot_rz_cnot_resources():
+    return {qml.CNOT: 2, RZ: 1}
+
+
+@register_resources(_isingzz_to_cnot_rz_cnot_resources)
+def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
+    qml.CNOT(wires=wires)
+    RZ(phi, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
 
 
 class IsingXY(Operation):
@@ -1250,6 +1389,8 @@ class IsingXY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = set()
+
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -1265,6 +1406,10 @@ class IsingXY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
@@ -1308,10 +1453,10 @@ class IsingXY(Operation):
 
 
         Args:
-           phi (tensor_like or float): phase angle
+           phi (TensorLike): phase angle
 
         Returns:
-           tensor_like: canonical matrix
+           TensorLike: canonical matrix
 
         **Example**
 
@@ -1365,10 +1510,10 @@ class IsingXY(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase angle
+            phi (TensorLike): phase angle
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -1398,6 +1543,23 @@ class IsingXY(Operation):
             return qml.Identity(wires=self.wires[0])
 
         return IsingXY(phi, wires=self.wires)
+
+
+def _isingxy_to_h_cy_resources():
+    return {Hadamard: 2, qml.CY: 2, RY: 1, RX: 1}
+
+
+@register_resources(_isingxy_to_h_cy_resources)
+def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
+    Hadamard(wires=[wires[0]])
+    qml.CY(wires=wires)
+    RY(phi / 2, wires=[wires[0]])
+    RX(-phi / 2, wires=[wires[1]])
+    qml.CY(wires=wires)
+    Hadamard(wires=[wires[0]])
+
+
+add_decomps(IsingXY, _isingxy_to_h_cy)
 
 
 class PSWAP(Operation):
@@ -1430,11 +1592,20 @@ class PSWAP(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
@@ -1475,10 +1646,10 @@ class PSWAP(Operation):
 
 
         Args:
-           phi (tensor_like or float): phase angle
+           phi (TensorLike): phase angle
 
         Returns:
-           tensor_like: canonical matrix
+           TensorLike: canonical matrix
 
         **Example**
 
@@ -1492,13 +1663,15 @@ class PSWAP(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         e = qml.math.exp(1j * phi)
+        zero = qml.math.zeros_like(phi)
+        one = qml.math.ones_like(phi)
 
         return qml.math.stack(
             [
-                stack_last([1, 0, 0, 0]),
-                stack_last([0, 0, e, 0]),
-                stack_last([0, e, 0, 0]),
-                stack_last([0, 0, 0, 1]),
+                stack_last([one, zero, zero, zero]),
+                stack_last([zero, zero, e, zero]),
+                stack_last([zero, e, zero, zero]),
+                stack_last([zero, zero, zero, one]),
             ],
             axis=-2,
         )
@@ -1520,10 +1693,10 @@ class PSWAP(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase angle
+            phi (TensorLike): phase angle
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -1533,7 +1706,9 @@ class PSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.stack([1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)])
+        e = qml.math.exp(1j * phi)
+        one = qml.math.ones_like(phi)
+        return qml.math.transpose(qml.math.stack([one, one, -e, e]))
 
     def adjoint(self) -> "PSWAP":
         (phi,) = self.parameters
@@ -1546,6 +1721,21 @@ class PSWAP(Operation):
             return qml.SWAP(wires=self.wires)
 
         return PSWAP(phi, wires=self.wires)
+
+
+def _pswap_to_swap_cnot_phaseshift_cnot_resources():
+    return {qml.SWAP: 1, qml.CNOT: 2, PhaseShift: 1}
+
+
+@register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources)
+def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
+    qml.SWAP(wires=wires)
+    qml.CNOT(wires=wires)
+    PhaseShift(phi, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+
+
+add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
 
 
 class CPhaseShift00(Operation):
@@ -1593,8 +1783,14 @@ class CPhaseShift00(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
+    resource_keys = set()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -1614,10 +1810,10 @@ class CPhaseShift00(Operation):
         .. seealso:: :meth:`~.CPhaseShift00.matrix`
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: canonical matrix
+            TensorLike: canonical matrix
 
         **Example**
 
@@ -1663,10 +1859,10 @@ class CPhaseShift00(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -1740,6 +1936,26 @@ class CPhaseShift00(Operation):
         return self.wires[0:1]
 
 
+def _cphaseshift00_resources():
+    return {PauliX: 4, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift00_resources)
+def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
+    PauliX(wires[0])
+    PauliX(wires[1])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[1])
+    PauliX(wires[0])
+
+
+add_decomps(CPhaseShift00, _cphaseshift00)
+
+
 class CPhaseShift01(Operation):
     r"""
     A qubit controlled phase shift.
@@ -1785,8 +2001,14 @@ class CPhaseShift01(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
+    resource_keys = set()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -1806,10 +2028,10 @@ class CPhaseShift01(Operation):
         .. seealso:: :meth:`~.CPhaseShift01.matrix`
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: canonical matrix
+            TensorLike: canonical matrix
 
         **Example**
 
@@ -1855,10 +2077,10 @@ class CPhaseShift01(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -1880,7 +2102,7 @@ class CPhaseShift01(Operation):
         .. seealso:: :meth:`~.CPhaseShift01.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (Tensorlike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -1923,6 +2145,24 @@ class CPhaseShift01(Operation):
     @property
     def control_wires(self) -> Wires:
         return self.wires[0:1]
+
+
+def _cphaseshift01_resources():
+    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift01_resources)
+def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
+    PauliX(wires[0])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[0])
+
+
+add_decomps(CPhaseShift01, _cphaseshift01)
 
 
 class CPhaseShift10(Operation):
@@ -1969,8 +2209,14 @@ class CPhaseShift10(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
+    resource_keys = set()
+
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     def label(
         self,
@@ -1990,10 +2236,10 @@ class CPhaseShift10(Operation):
         .. seealso:: :meth:`~.CPhaseShift10.matrix`
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: canonical matrix
+            TensorLike: canonical matrix
 
         **Example**
 
@@ -2039,10 +2285,10 @@ class CPhaseShift10(Operation):
 
 
         Args:
-            phi (tensor_like or float): phase shift
+            phi (TensorLike): phase shift
 
         Returns:
-            tensor_like: eigenvalues
+            TensorLike: eigenvalues
 
         **Example**
 
@@ -2064,7 +2310,7 @@ class CPhaseShift10(Operation):
         .. seealso:: :meth:`~.CPhaseShift10.decomposition`.
 
         Args:
-            phi (float): rotation angle :math:`\phi`
+            phi (TensorLike): rotation angle :math:`\phi`
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
@@ -2102,3 +2348,21 @@ class CPhaseShift10(Operation):
     @property
     def control_wires(self) -> Wires:
         return self.wires[0:1]
+
+
+def _cphaseshift10_resources():
+    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+
+
+@register_resources(_cphaseshift10_resources)
+def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
+    PauliX(wires[1])
+    PhaseShift(phi / 2, wires=[wires[0]])
+    PhaseShift(phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PhaseShift(-phi / 2, wires=[wires[1]])
+    qml.CNOT(wires=wires)
+    PauliX(wires[1])
+
+
+add_decomps(CPhaseShift10, _cphaseshift10)

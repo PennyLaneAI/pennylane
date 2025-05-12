@@ -15,25 +15,19 @@
 Tests for the transform implementing the deferred measurement principle.
 """
 import math
-import warnings
+import re
 
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
 
 import pytest
+from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def test_broadcasted_postselection(mocker):
@@ -117,7 +111,12 @@ def test_postselection_error_with_wrong_device():
         qml.measure(0, postselect=1)
         return qml.probs(wires=[0])
 
-    with pytest.raises(ValueError, match="Postselection is not supported"):
+    with pytest.raises(
+        qml.DeviceError,
+        match=re.escape(
+            "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
+        ),
+    ):
         _ = circ()
 
 
@@ -220,11 +219,13 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
-        assert len(qnode2.qtape.operations) == 0
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+        tape1 = qml.workflow.construct_tape(qnode1)()
+        tape2 = qml.workflow.construct_tape(qnode2)()
+        assert len(tape2.operations) == 0
+        assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements):
             assert isinstance(op1, type(op2))
 
     def test_reuse_wire_after_measurement(self):
@@ -272,7 +273,8 @@ class TestQNode:
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
         assert spy.call_count == 2  # once per device preprocessing
 
-        deferred_tapes, _ = qml.defer_measurements(qnode1.qtape)
+        tape1 = qml.workflow.construct_tape(qnode1)(np.pi / 4)
+        deferred_tapes, _ = qml.defer_measurements(tape1)
         deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], Controlled)
         qml.assert_equal(deferred_tape.operations[5].base, qml.PauliZ(2))
@@ -314,14 +316,16 @@ class TestQNode:
 
         assert spy.call_count == 4
 
-        deferred_tapes1, _ = qml.defer_measurements(qnode1.qtape)
+        tape1 = qml.workflow.construct_tape(qnode1)(np.pi / 4, 3 * np.pi / 4)
+        deferred_tapes1, _ = qml.defer_measurements(tape1)
         deferred_tape1 = deferred_tapes1[0]
         assert len(deferred_tape1.wires) == 4
         assert len(deferred_tape1.operations) == 6
 
         assert np.allclose(res1, res2)
 
-        deferred_tapes2, _ = qml.defer_measurements(qnode2.qtape)
+        tape2 = qml.workflow.construct_tape(qnode2)(np.pi / 4, 3 * np.pi / 4)
+        deferred_tapes2, _ = qml.defer_measurements(tape2)
         deferred_tape2 = deferred_tapes2[0]
         assert len(deferred_tape2.wires) == 3
         assert len(deferred_tape2.operations) == 4
@@ -333,6 +337,7 @@ class TestQNode:
         """Test that a qnode with a single mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -361,8 +366,9 @@ class TestQNode:
             qml.probs(wires=1),
         ]
 
-        assert len(circ1.qtape) == len(expected_circuit)
-        for op, expected_op in zip(circ1.qtape, expected_circuit):
+        tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
+        assert len(tape1) == len(expected_circuit)
+        for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
@@ -374,6 +380,7 @@ class TestQNode:
         """Test that a qnode with some mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -407,8 +414,9 @@ class TestQNode:
             qml.probs(wires=1),
         ]
 
-        assert len(circ1.qtape) == len(expected_circuit)
-        for op, expected_op in zip(circ1.qtape, expected_circuit):
+        tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
+        assert len(tape1) == len(expected_circuit)
+        for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
@@ -421,6 +429,7 @@ class TestQNode:
         """Test that a qnode with all mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         # Initializing mid circuit measurements here so that id can be controlled (affects
         # wire ordering for qml.cond)
@@ -488,8 +497,9 @@ class TestQNode:
             ]
         )
 
-        assert len(circ1.qtape) == len(expected_circuit)
-        for op, expected_op in zip(circ1.qtape, expected_circuit):
+        tape1 = qml.workflow.construct_tape(circ1)(phi, theta, shots=shots)
+        assert len(tape1) == len(expected_circuit)
+        for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
@@ -497,6 +507,7 @@ class TestQNode:
         """Test that users can collect measurement statistics on
         a single mid-circuit measurement."""
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -506,6 +517,7 @@ class TestQNode:
             return qml.probs(op=m0)
 
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -520,6 +532,7 @@ class TestQNode:
         """Test that collecting statistics on a measurement value works correctly
         when the measured wire is reused."""
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -530,6 +543,7 @@ class TestQNode:
             return qml.probs(op=m0)
 
         dev = DefaultQubit()
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -541,10 +555,11 @@ class TestQNode:
         assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots), atol=atol, rtol=0)
 
         expected_ops = [qml.RX(param, 0), qml.CNOT([0, 1]), qml.PauliX(0)]
-        assert circ1.qtape.operations == expected_ops
+        tape1 = qml.workflow.construct_tape(circ1)(param, shots=shots)
+        assert tape1.operations == expected_ops
 
-        assert len(circ1.qtape.measurements) == 1
-        mp = circ1.qtape.measurements[0]
+        assert len(tape1.measurements) == 1
+        mp = tape1.measurements[0]
         assert isinstance(mp, qml.measurements.ProbabilityMP)
         assert mp.mv is not None
         assert mp.mv.wires == qml.wires.Wires([1])
@@ -555,6 +570,7 @@ class TestQNode:
         can be made together."""
         # Using DefaultQubit to allow non-commuting measurements
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -565,6 +581,7 @@ class TestQNode:
             return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
 
         dev = DefaultQubit(seed=seed)
+        dev = shots_to_analytic(dev)
 
         @qml.qnode(dev)
         def circ2(x, y):
@@ -588,6 +605,7 @@ class TestQNode:
         after a mid-circuit measurement yields the correct results and is
         transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
+        dev = shots_to_analytic(dev)
 
         def func1():
             qml.RY(0.123, wires=0)
@@ -610,16 +628,18 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
-        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+        tape1 = qml.workflow.construct_tape(qnode1)()
+        tape2 = qml.workflow.construct_tape(qnode2)()
+        assert len(tape2.operations) == len(tape1.operations)
+        assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations):
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
         # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
@@ -1376,16 +1396,18 @@ class TestTemplates:
 
         assert np.allclose(res1, res2)
 
-        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+        tape1 = qml.workflow.construct_tape(qnode1)()
+        tape2 = qml.workflow.construct_tape(qnode2)()
+        assert len(tape2.operations) == len(tape1.operations)
+        assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
@@ -1413,17 +1435,18 @@ class TestTemplates:
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
-
-        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+        tape1 = qml.workflow.construct_tape(qnode1)(weights)
+        tape2 = qml.workflow.construct_tape(qnode2)(weights)
+        assert len(tape2.operations) == len(tape1.operations)
+        assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements):
             assert isinstance(op1, type(op2))
 
 
@@ -1446,8 +1469,6 @@ class TestQubitReuseAndReset:
             qml.measure(0)
             return qml.expval(qml.PauliZ(1))
 
-        _ = circ(1.0, 2.0)
-
         expected = [
             qml.RX(1.0, 0),
             qml.CNOT([0, 2]),
@@ -1456,7 +1477,8 @@ class TestQubitReuseAndReset:
             qml.RZ(3.0, 1),
         ]
 
-        assert circ.qtape.operations == expected
+        tape = qml.workflow.construct_tape(circ)(1.0, 2.0)
+        assert tape.operations == expected
 
     def test_correct_cnot_for_reset(self):
         """Test that a CNOT is applied from the wire that stores the measurement
@@ -1487,8 +1509,9 @@ class TestQubitReuseAndReset:
             qml.expval(qml.PauliZ(1)),
         ]
 
-        assert len(qnode2.qtape.circuit) == len(expected_circuit)
-        for actual, expected in zip(qnode2.qtape.circuit, expected_circuit):
+        tape2 = qml.workflow.construct_tape(qnode2)(0.123)
+        assert len(tape2.circuit) == len(expected_circuit)
+        for actual, expected in zip(tape2.circuit, expected_circuit):
             qml.assert_equal(actual, expected)
 
     def test_measurements_add_new_qubits(self):
@@ -1571,7 +1594,8 @@ class TestQubitReuseAndReset:
             qml.expval(qml.PauliZ(2)),
         ]
 
-        deferred_tapes, _ = qml.defer_measurements(qnode.qtape)
+        tape = qml.workflow.construct_tape(qnode)(0.123, 0.456, 0.789)
+        deferred_tapes, _ = qml.defer_measurements(tape)
         deferred_tape = deferred_tapes[0]
         assert len(deferred_tape.circuit) == len(expected_circuit)
         for actual, expected in zip(deferred_tape.circuit, expected_circuit):

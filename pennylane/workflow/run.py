@@ -30,6 +30,7 @@ from .jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
     JacobianProductCalculator,
+    NoGradients,
     TransformJacobianProducts,
 )
 
@@ -128,6 +129,9 @@ def _construct_ml_execution_pipeline(
 
     execute_fn = inner_execute
 
+    if config.gradient_method is None:
+        return NoGradients(), execute_fn
+
     if config.use_device_jacobian_product:
         return DeviceJacobianProducts(device, config), execute_fn
 
@@ -204,7 +208,7 @@ def _get_ml_boundary_execute(
         elif interface == Interface.TORCH:
             from .interfaces.torch import execute as ml_boundary
 
-        elif interface == Interface.JAX_JIT:
+        elif interface == Interface.JAX_JIT and resolved_execution_config.convert_to_numpy:
             from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
         else:  # interface is jax
@@ -276,12 +280,7 @@ def run(
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = (
-        config.interface == Interface.NUMPY
-        or config.gradient_method
-        in {
-            None,
-            "backprop",
-        }
+        config.interface == Interface.NUMPY or config.gradient_method == "backprop"
     )
     if no_interface_boundary_required:
         results = inner_execute(tapes)

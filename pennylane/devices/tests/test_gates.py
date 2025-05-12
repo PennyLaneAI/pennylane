@@ -72,7 +72,7 @@ ops = {
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
-    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
     "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
     "RX": qml.RX(0, wires=[0]),

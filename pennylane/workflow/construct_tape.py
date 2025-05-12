@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function to extract a single tape from a QNode
-
-"""
+"""Contains a function to extract a single tape from a QNode"""
 
 import pennylane as qml
 

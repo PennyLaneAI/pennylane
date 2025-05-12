@@ -18,21 +18,13 @@ import contextlib
 import warnings
 
 import pennylane as qml
-from pennylane.operation import (
-    gen_is_multi_term_hamiltonian,
-    has_gen,
-    has_grad_method,
-    has_nopar,
-    has_unitary_gen,
-    is_measurement,
-    is_trainable,
-    not_tape,
-)
+from pennylane import math
+from pennylane.measurements import MeasurementProcess
 
 
 def _update_trainable_params(tape):
     params = tape.get_parameters(trainable_only=False)
-    tape.trainable_params = qml.math.get_trainable_indices(params)
+    tape.trainable_params = math.get_trainable_indices(params)
 
 
 def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
@@ -65,7 +57,8 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
+    >>> def stop_at(obj):
+    ...     return not (len(op.data) > 1 and any(qml.math.requires_grad(d) for d in obj.data))
 
     Then the expansion function can be obtained via
 
@@ -97,7 +90,10 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         if stop_at is None:
             stop_at = device.stopping_condition
         else:
-            stop_at &= device.stopping_condition
+            orig_stop_at = stop_at
+
+            def stop_at(obj):
+                return orig_stop_at(obj) and device.stopping_condition(obj)
 
     def expand_fn(tape, depth=depth, **kwargs):
         with qml.QueuingManager.stop_recording():
@@ -133,9 +129,21 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _multipar_stopping_fn(obj):
+    try:
+        return (
+            isinstance(obj, MeasurementProcess)
+            or len(obj.data) == 0
+            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+        )
+    except qml.operation.TermsUndefinedError:
+        return True
+
+
 expand_multipar = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_multi_term_hamiltonian),
+    stop_at=_multipar_stopping_fn,
     docstring=_expand_multipar_doc,
 )
 
@@ -156,13 +164,14 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _trainable_multipar_stopping_fn(obj):
+    return _multipar_stopping_fn(obj) or not any(math.requires_grad(d) for d in obj.data)
+
+
 expand_trainable_multipar = create_expand_fn(
     depth=None,
-    stop_at=not_tape
-    | is_measurement
-    | has_nopar
-    | (~is_trainable)
-    | (has_gen & ~gen_is_multi_term_hamiltonian),
+    stop_at=_trainable_multipar_stopping_fn,
     docstring=_expand_trainable_multipar_doc,
 )
 
@@ -177,17 +186,12 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 
-    @qml.BooleanFn
-    def _is_trainable(obj):
-        return obj in trainable_ops
+    def _argnum_trainable_multipar(obj):
+        return _multipar_stopping_fn(obj) or obj not in trainable_ops
 
     return create_expand_fn(
         depth=None,
-        stop_at=not_tape
-        | is_measurement
-        | has_nopar
-        | (~_is_trainable)
-        | (has_gen & ~gen_is_multi_term_hamiltonian),
+        stop_at=_argnum_trainable_multipar,
         docstring=_expand_trainable_multipar_doc,
     )
 
@@ -209,9 +213,18 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _expand_nonunitary_gen_stop_at(obj):
+    return (
+        isinstance(obj, MeasurementProcess)
+        or len(obj.data) == 0
+        or (obj.has_generator and obj in qml.ops.qubit.attributes.has_unitary_generator)
+    )
+
+
 expand_nonunitary_gen = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & has_unitary_gen),
+    stop_at=_expand_nonunitary_gen_stop_at,
     docstring=_expand_nonunitary_gen_doc,
 )
 
@@ -232,9 +245,18 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
+
+def _stop_at_expand_invalid_trainable(obj):
+    return (
+        isinstance(obj, MeasurementProcess)
+        or not any(math.requires_grad(d) for d in obj.data)
+        or obj.grad_method is not None
+    )
+
+
 expand_invalid_trainable = create_expand_fn(
     depth=None,
-    stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
+    stop_at=_stop_at_expand_invalid_trainable,
     docstring=_expand_invalid_trainable_doc,
 )
 
@@ -303,7 +325,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -358,7 +380,7 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -393,7 +415,6 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
         for container in program:
             if container.transform == qml.devices.preprocess.decompose.transform:
                 container.kwargs["decomposer"] = decomposer
-                container.kwargs["max_expansion"] = decomp_depth
 
                 for cond in ["stopping_condition", "stopping_condition_shots"]:
                     # Devices that do not support native mid-circuit measurements
@@ -416,17 +437,13 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
 
 
 @contextlib.contextmanager
-def set_decomposition(custom_decomps, dev, decomp_depth=None):
+def set_decomposition(custom_decomps, dev):
     """Context manager for setting custom decompositions.
-
-    .. warning::
-        The ``decomp_depth`` argument is deprecated and will be removed in version 0.41.
 
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
         dev (pennylane.devices.LegacyDevice): A quantum device.
-        decomp_depth: The maximum depth of the expansion.
 
     **Example**
 
@@ -435,7 +452,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
 
     .. code-block:: python
 
-        def custom_cnot(wires):
+        def custom_cnot(wires, **_):
             return [
                 qml.Hadamard(wires=wires[1]),
                 qml.CZ(wires=[wires[0], wires[1]]),
@@ -458,19 +475,16 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
-    Now let's set up a context where the custom decomposition will be applied:
+    Now let's set up a context where the custom decomposition will be applied.
+    To see our change, the circuit is drawn at the device level where the
+    custom decomposition will be applied.
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
-    ...     print(qml.draw(circuit, wire_order=[0, 1])())
+    ...     print(qml.draw(circuit, level="device")())
     0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 
     """
-    if decomp_depth is not None:
-        warnings.warn(
-            "The decomp_depth argument is deprecated and will be removed in version v0.41.",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if isinstance(dev, qml.devices.LegacyDeviceFacade):
         dev = dev.target_device
@@ -479,9 +493,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
 
         # Create a new expansion function; stop at things that do not have
         # custom decompositions, or that satisfy the regular device stopping criteria
-        new_custom_expand_fn = create_decomp_expand_fn(
-            custom_decomps, dev, decomp_depth=decomp_depth
-        )
+        new_custom_expand_fn = create_decomp_expand_fn(custom_decomps, dev)
 
         # Set the custom expand function within this context only
         try:
@@ -499,9 +511,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
                 category=qml.PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess
-            new_preprocess = _create_decomp_preprocessing(
-                custom_decomps, dev, decomp_depth=decomp_depth
-            )
+            new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)
 
             try:
                 dev.preprocess = new_preprocess

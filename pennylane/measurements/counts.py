@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -41,7 +41,7 @@ def counts(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
@@ -138,7 +138,11 @@ def counts(
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+        if not all(
+            qml.math.is_abstract(o)
+            or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            for o in op
+        ):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
@@ -178,7 +182,9 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
-    # pylint: disable=too-many-arguments
+    _shortname = "counts"
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
@@ -188,6 +194,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
@@ -230,10 +237,6 @@ class CountsMP(SampleMeasurement):
         )
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
         self,
@@ -378,6 +381,17 @@ class CountsMP(SampleMeasurement):
             self._include_all_outcomes(mapped_counts)
         else:
             _remove_unobserved_outcomes(mapped_counts)
+
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            for outcome, count in mapped_counts.items():
+                val = eigvals[int(outcome, 2)]
+                eigvals_dict[val] += count
+            if not self.all_outcomes:
+                _remove_unobserved_outcomes(eigvals_dict)
+            return eigvals_dict
+
         return mapped_counts
 
     def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:

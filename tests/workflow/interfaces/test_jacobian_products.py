@@ -26,6 +26,7 @@ from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
     JacobianProductCalculator,
+    NoGradients,
     TransformJacobianProducts,
 )
 
@@ -77,6 +78,32 @@ def _accepts_finite_shots(jpc):
 
 def _tol_for_shots(shots):
     return 0.05 if shots else 1e-6
+
+
+def test_no_gradients():
+    """Test that errors are raised when derivatives are requested from `NoGradients`."""
+
+    jpc = NoGradients()
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.compute_jacobian(())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.compute_vjp((), ())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.execute_and_compute_jvp((), ())
+
+    with pytest.raises(
+        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
+    ):
+        jpc.execute_and_compute_jacobian(())
 
 
 # pylint: disable=too-few-public-methods
@@ -136,7 +163,8 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
             r" device_options={}, interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
+            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected
@@ -155,7 +183,8 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
             r" interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
+            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected
@@ -273,7 +302,7 @@ class TestJacobianProductResults:
             pytest.skip("jpc does not work with finite shots.")
         if jpc is hadamard_grad_jpc and qml.measurements.Shots(shots).has_partitioned_shots:
             pytest.skip(
-                "hadamard gradient does not support multiple measurments with partitioned shots."
+                "hadamard gradient does not support multiple measurements with partitioned shots."
             )
 
         x = 0.385

@@ -12,25 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the state module"""
-import warnings
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
+from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestStateMP:
@@ -48,7 +40,7 @@ class TestStateMP:
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
@@ -146,13 +138,13 @@ class TestStateMP:
 
     @pytest.mark.parametrize(
         "dm",
-        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
+        [np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j],
     )
     def test_process_density_matrix(self, dm):
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         # Expecting a NotImplementedError to be raised when process_density_matrix is called
@@ -179,7 +171,7 @@ class TestDensityMatrixMP:
         """Test the processing of a state vector into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(vec)))
@@ -206,7 +198,7 @@ class TestDensityMatrixMP:
         """Test the processing of a density matrix into a matrix."""
 
         mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
+        assert isinstance(mp, StateMP)
         assert mp.numeric_type is complex
 
         num_wires = int(np.log2(len(mat)))
@@ -247,10 +239,10 @@ class TestState:
             qml.Hadamard(0)
             return state()
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_correct_ghz(self, wires):
@@ -303,7 +295,7 @@ class TestState:
 
         state_val = func()
         program = dev.preprocess_transforms()
-        scripts, _ = program([func.tape])
+        scripts, _ = program([qml.workflow.construct_tape(func)()])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
         assert np.allclose(state_val, expected_state.flatten())
@@ -376,8 +368,8 @@ class TestState:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed", wires=1)
-        capabilities = dev.target_device.capabilities().copy()
+        dev = DefaultQubitLegacy(wires=1)
+        capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -385,7 +377,7 @@ class TestState:
             return state()
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
                 func()
 
@@ -578,10 +570,10 @@ class TestDensityMatrix:
             qml.Hadamard(0)
             return density_matrix(0)
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert isinstance(obs[0], StateMP)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -1008,7 +1000,7 @@ class TestDensityMatrix:
         """Test that no exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qml.qnode(dev)
         def func():
@@ -1021,8 +1013,8 @@ class TestDensityMatrix:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed", wires=2)
-        capabilities = dev.target_device.capabilities().copy()
+        dev = DefaultQubitLegacy(wires=2)
+        capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -1030,7 +1022,7 @@ class TestDensityMatrix:
             return density_matrix(0)
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
                 qml.QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",

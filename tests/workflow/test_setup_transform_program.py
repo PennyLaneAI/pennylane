@@ -140,9 +140,7 @@ def test_prune_dynamic_transform_warning_raised():
 
 def test_interface_data_not_supported():
     """Test that convert_to_numpy_parameters transform is correctly added."""
-    config = ExecutionConfig()
-    config.interface = "autograd"
-    config.gradient_method = "adjoint"
+    config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
@@ -154,10 +152,8 @@ def test_interface_data_not_supported():
 
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    config.interface = "autograd"
-    config.gradient_method = None
     device = qml.device("default.mixed", wires=1)
 
     user_transform_program = TransformProgram()
@@ -165,10 +161,8 @@ def test_interface_data_supported():
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    config.interface = "autograd"
-    config.gradient_method = "backprop"
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
@@ -176,15 +170,20 @@ def test_interface_data_supported():
 
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
-    config = ExecutionConfig()
+    config = ExecutionConfig(interface=None, gradient_method="backprop")
 
-    config.interface = None
-    config.gradient_method = "backprop"
     device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+
+    config = ExecutionConfig(
+        convert_to_numpy=False, interface="jax", gradient_method=qml.gradients.param_shift
+    )
+
+    _, inner_tp = _setup_transform_program(TransformProgram(), device, config)
     assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
 

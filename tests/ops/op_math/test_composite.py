@@ -251,7 +251,7 @@ def _assert_method_no_recursion_error(instance, method_name):
         getattr(instance, method_name)()
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 
@@ -261,7 +261,7 @@ def _assert_property_no_recursion_error(instance, property_name):
         getattr(instance, property_name)
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 
@@ -278,6 +278,11 @@ def _is_method_with_no_argument(method):
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
+
+    def test_empty_repr(self):
+        """Test __repr__ on an empty composite op."""
+        op = ValidOp()
+        assert repr(op) == "ValidOp()"
 
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):

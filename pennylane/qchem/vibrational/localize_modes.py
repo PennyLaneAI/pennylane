@@ -195,6 +195,22 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
          - TensorLike[float] : localization matrix describing the relationship between
            original and localized modes.
 
+    **Example**
+
+    >>> freqs = np.array([1326.66001461, 2297.26736859, 2299.65032901])
+    >>> vectors = np.array([[[ 5.71518696e-18, -4.55642350e-01,  5.20920552e-01],
+    ...                      [ 1.13167924e-17,  4.55642350e-01,  5.20920552e-01],
+    ...                      [-1.23163569e-17,  5.09494945e-12, -3.27565762e-02]],
+    ...                     [[-4.53008817e-17,  4.90364125e-01,  4.90363894e-01],
+    ...                      [-1.98591028e-16,  4.90361513e-01, -4.90361744e-01],
+    ...                      [-2.78235498e-18, -3.08350419e-02, -6.75886679e-08]],
+    ...                     [[ 5.75393451e-17,  5.37047963e-01,  4.41957355e-01],
+    ...                      [ 6.53049347e-17, -5.37050348e-01,  4.41959740e-01],
+    ...                      [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
+    >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
+    >>> freqs_loc
+    array([1332.62008773, 2296.73455892, 2296.7346082 ])
+
     """
     if not bins:
         raise ValueError("The `bins` list cannot be empty.")

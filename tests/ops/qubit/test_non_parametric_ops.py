@@ -20,6 +20,7 @@ import itertools
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import (
     CCZ,
     CH,
@@ -41,11 +42,10 @@ from gate_data import (
     Y,
     Z,
 )
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.operation import AnyWires
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -123,14 +123,14 @@ class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
+        op = op_cls(wires=0 if op_cls.num_wires is None else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
+        op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
         res_static = op.compute_matrix()
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
@@ -150,20 +150,15 @@ class TestDecompositions:
         op = qml.PauliX(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 2
 
-        assert res[0].name == "PhaseShift"
-
+        assert res[0].name == "RX"
         assert res[0].wires == Wires([0])
-        assert res[0].data[0] == np.pi / 2
+        assert res[0].data[0] == np.pi
 
-        assert res[1].name == "RX"
+        assert res[1].name == "GlobalPhase"
         assert res[1].wires == Wires([0])
-        assert res[1].data[0] == np.pi
-
-        assert res[2].name == "PhaseShift"
-        assert res[2].wires == Wires([0])
-        assert res[2].data[0] == np.pi / 2
+        assert res[1].data[0] == -np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -173,20 +168,15 @@ class TestDecompositions:
         op = qml.PauliY(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 2
 
-        assert res[0].name == "PhaseShift"
-
+        assert res[0].name == "RY"
         assert res[0].wires == Wires([0])
-        assert res[0].data[0] == np.pi / 2
+        assert res[0].data[0] == np.pi
 
-        assert res[1].name == "RY"
+        assert res[1].name == "GlobalPhase"
         assert res[1].wires == Wires([0])
-        assert res[1].data[0] == np.pi
-
-        assert res[2].name == "PhaseShift"
-        assert res[2].wires == Wires([0])
-        assert res[2].data[0] == np.pi / 2
+        assert res[1].data[0] == -np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -242,18 +232,17 @@ class TestDecompositions:
         res = op.decomposition()
 
         assert len(res) == 4
-
         assert all(res[i].wires == Wires([0]) for i in range(4))
 
         assert res[0].name == "RZ"
         assert res[1].name == "RY"
         assert res[2].name == "RZ"
-        assert res[3].name == "PhaseShift"
+        assert res[3].name == "GlobalPhase"
 
         assert res[0].data[0] == np.pi / 2
         assert res[1].data[0] == np.pi / 2
-        assert res[2].data[0] == -np.pi
-        assert res[3].data[0] == np.pi / 2
+        assert res[2].data[0] == -np.pi / 2
+        assert res[3].data[0] == -np.pi / 4
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -606,11 +595,11 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-    def test_str_control_values_deprecation(self):
+    def test_str_control_values_error(self):
         """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="Specifying control values using a bitstring is deprecated",
+        with pytest.raises(
+            ValueError,
+            match="control_values must be boolean or int",
         ):
             _ = qml.MultiControlledX(wires=[0, 1, 2], control_values="01")
 
@@ -630,116 +619,6 @@ class TestMultiControlledX:
         """Tests initializing a MultiControlledX with invalid arguments"""
         with pytest.raises(ValueError, match=error_message):
             _ = qml.MultiControlledX(wires=wires, control_values=control_values)
-
-    @pytest.mark.parametrize(
-        "control_wires, wires, control_values, error_message",
-        [
-            (
-                [0, 1],
-                [2],
-                [0, 1, 0],
-                "Length of control values must equal number of control wires.",
-            ),
-            ([0], None, [1], "Must specify the wires where the operation acts on"),
-            ([0, 1], 2, [0, 1, 1], "Length of control values must equal number of control wires."),
-            ([0, 1], [2, 3], [1, 0], "MultiControlledX accepts a single target wire."),
-        ],
-    )
-    def test_invalid_arguments_to_init_old(
-        self, control_wires, wires, control_values, error_message
-    ):
-        """Tests initializing a MultiControlledX with invalid arguments with the old interface"""
-        with pytest.warns(
-            UserWarning,
-            match="The control_wires keyword for MultiControlledX is deprecated",
-        ):
-            with pytest.raises(ValueError, match=error_message):
-                _ = qml.MultiControlledX(
-                    control_wires=control_wires, wires=wires, control_values=control_values
-                )
-
-    @pytest.mark.parametrize(
-        "wires, control_values, error_message",
-        [
-            ([0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
-            (
-                [0, 1, 2],
-                "011",
-                "Length of control values must equal number of control wires.",
-            ),
-        ],
-    )
-    def test_invalid_str_control_values(self, wires, control_values, error_message):
-        """Tests control_values specified with invalid strings"""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="Specifying control values using a bitstring is deprecated",
-        ):
-            with pytest.raises(ValueError, match=error_message):
-                _ = qml.MultiControlledX(wires=wires, control_values=control_values)
-
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values",
-        [
-            ([0], 1, [0]),
-            ([0, 1], 2, [0, 0]),
-            ([0, 1], 2, [1, 0]),
-            ([1, 0], 2, [1, 0]),
-            ([0, 1], 2, [1, 1]),
-            ([0, 2], 1, [1, 0]),
-            ([1, 2, 0], 3, [1, 0, 0]),
-            ([1, 0, 2, 4], 3, [1, 0, 0, 1]),
-            ([0, 1, 2, 5, 3, 6], 4, [1, 0, 0, 0, 0, 1]),
-        ],
-    )
-    def test_mixed_polarity_controls_old(self, control_wires, wires, control_values):
-        """Test if MultiControlledX properly applies mixed-polarity
-        control values with old version of the arguments."""
-
-        target_wires = Wires(wires)
-        dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
-
-        # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
-        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
-
-        @qml.qnode(dev)
-        def circuit_mpmct():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            qml.MultiControlledX(
-                control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
-            return qml.state()
-
-        # The result of applying the mixed-polarity gate should be the same as
-        # if we conjugated the specified control wires with Pauli X and applied the
-        # "regular" ControlledQubitUnitary in between.
-
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
-
-        @qml.qnode(dev)
-        def circuit_pauli_x():
-            qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
-            qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
-
-            for wire in x_locations:
-                qml.PauliX(wires=control_wires[wire])
-
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="deprecated"):
-            mpmct_state = circuit_mpmct()
-
-        pauli_x_state = circuit_pauli_x()
-
-        assert qml.math.allclose(mpmct_state, pauli_x_state)
 
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires is lower than two"""
@@ -805,7 +684,7 @@ class TestMultiControlledX:
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
 
-            qml.ControlledQubitUnitary(X, control_wires=control_wires, wires=target_wires)
+            qml.ControlledQubitUnitary(X, wires=control_wires + target_wires)
 
             for wire in x_locations:
                 qml.PauliX(wires=control_wires[wire])
@@ -948,7 +827,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
     # Controlled operations
     qml.CNOT(wires=(0, 1)),
@@ -1040,16 +918,37 @@ class TestPowMethod:
         assert op_pow[0].__class__ is qml.PhaseShift
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
-    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
-    def test_ISWAP_sqaure_root(self, n):
-        """Test that SISWAP is the square root of ISWAP."""
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, []),
+            (4, []),
+            (-4, []),
+            (-3, [qml.ISWAP(wires=(0, 1))]),
+            (5, [qml.ISWAP(wires=(0, 1))]),
+            (0.5, [qml.SISWAP(wires=(0, 1))]),
+            (4.5, [qml.SISWAP(wires=(0, 1))]),
+            (2, [qml.Z(0), qml.Z(1)]),
+            (-2, [qml.Z(0), qml.Z(1)]),
+            (6, [qml.Z(0), qml.Z(1)]),
+        ],
+    )
+    def test_ISWAP_powers(self, n, expected):
+        """Check that the special powers of ISWAP are correct."""
+
         op = qml.ISWAP(wires=(0, 1))
-
-        assert op.pow(n)[0].__class__ is qml.SISWAP
-
-        sqrt_mat = qml.matrix(op.pow, wire_order=[0, 1])(n)
-        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
-        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+        op_mat = qml.matrix(op)
+        pow_ops = op.pow(n)
+        assert pow_ops == expected
+        if not pow_ops:
+            pow_ops.append(qml.I(wires=(0, 1)))
+        mat = qml.matrix(qml.prod(*pow_ops), wire_order=[0, 1])
+        expected = (
+            qml.math.linalg.matrix_power(op_mat, n)
+            if isinstance(n, int)
+            else sp.linalg.fractional_matrix_power(op_mat, n)
+        )
+        assert qml.math.allclose(mat, expected)
 
     @pytest.mark.parametrize("offset", (0, 4, -4))
     def test_S_pow(self, offset):
@@ -1093,17 +992,28 @@ class TestPowMethod:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(2.43 + offset)
 
-    @pytest.mark.parametrize("offset", (0, 4, -4))
-    def test_SISWAP_pow(self, offset):
-        """Test powers of the SISWAP operator"""
-        op = qml.SISWAP(wires=("b", "c"))
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, []),
+            (8, []),
+            (9, [qml.SISWAP(wires=(0, 1))]),
+            (2, [qml.ISWAP(wires=(0, 1))]),
+            (4, [qml.Z(0), qml.Z(1)]),
+        ],
+    )
+    def test_SISWAP_powers(self, n, expected):
+        """Check that the special powers of SISWAP are correct."""
 
-        assert len(op.pow(0 + offset)) == 0
-        assert op.pow(1 + offset)[0].__class__ is qml.SISWAP
-        assert op.pow(2 + offset)[0].__class__ is qml.ISWAP
-
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(2.34 + offset)
+        op = qml.SISWAP(wires=(0, 1))
+        op_mat = qml.matrix(op)
+        pow_ops = op.pow(n)
+        assert pow_ops == expected
+        if not pow_ops:
+            pow_ops.append(qml.I(wires=(0, 1)))
+        mat = qml.matrix(qml.prod(*pow_ops), wire_order=[0, 1])
+        expected = qml.math.linalg.matrix_power(op_mat, n)
+        assert qml.math.allclose(mat, expected)
 
     @pytest.mark.parametrize("op", (qml.WireCut(0), qml.Barrier(0)))
     @pytest.mark.parametrize("n", (2, 0.123, -2.3))
@@ -1168,6 +1078,7 @@ SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
     (qml.PauliY(wires=0), Y),
     (qml.CY(wires=[0, 1]), CY),
     (qml.CZ(wires=[0, 1]), CZ),
+    (qml.SWAP(wires=(0, 1)), SWAP),
 )
 
 
@@ -1179,6 +1090,24 @@ def test_sparse_matrix(op, mat):
     assert isinstance(sparse_mat, type(expected_sparse_mat))
     assert all(sparse_mat.data == expected_sparse_mat.data)
     assert all(sparse_mat.indices == expected_sparse_mat.indices)
+
+
+FORMATS = [("coo", coo_matrix), ("csr", csr_matrix), ("lil", lil_matrix), ("csc", csc_matrix)]
+
+SPARSE_MATRIX_SUPPORTED_OPERATIONS_AND_FORMATS = [
+    (*op, *f) for op in SPARSE_MATRIX_SUPPORTED_OPERATIONS for f in FORMATS
+]
+
+
+@pytest.mark.parametrize(
+    "op, mat, format, expected_format", SPARSE_MATRIX_SUPPORTED_OPERATIONS_AND_FORMATS
+)
+def test_sparse_matrix_format(op, mat, format, expected_format):
+    expected_sparse_mat = expected_format(mat)
+    sparse_mat = op.sparse_matrix(format=format)
+    assert isinstance(sparse_mat, expected_format)
+    assert isinstance(sparse_mat, type(expected_sparse_mat))
+    assert all(sparse_mat.data == expected_sparse_mat.data)
 
 
 label_data = [

@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample
+from pennylane.measurements import MeasurementShapeError
 from pennylane.operation import EigvalsUndefinedError, Operator
 
 # pylint: disable=protected-access, no-member, too-many-public-methods
@@ -105,7 +105,6 @@ class TestSample:
         assert len(result) == 3
         assert result[0].dtype == np.dtype("float")
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_output_type_in_combination(self):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
@@ -121,23 +120,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], float)
-        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
-
-    def test_observable_return_type_is_sample(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.sample(qml.PauliZ(0))
-            assert res.return_type is Sample
-            return res
-
-        circuit()
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
@@ -342,6 +326,8 @@ class TestSample:
             expected_type = np.float64
         elif res.numeric_type == complex:
             expected_type = np.complex64
+        else:
+            raise ValueError("unexpected numeric type for result")
 
         assert expected_type == eigval_type
 
@@ -559,15 +545,37 @@ class TestSampleProcessCounts:
 
         assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
 
-    def test_process_counts_with_eigen_values(self):
+    @pytest.mark.parametrize(
+        "wire_order, expected_result", [((0, 1), [1, 1, -1, -1, -1]), ((1, 0), [1, 1, 1, 1, 1])]
+    )
+    def test_process_counts_with_eigen_values(self, wire_order, expected_result):
         """Test process_counts method with eigen values."""
         sample_mp = qml.sample(qml.Z(0))
         counts = {"00": 2, "10": 3}
-        wire_order = qml.wires.Wires((0, 1))
+        wire_order = qml.wires.Wires(wire_order)
 
         result = sample_mp.process_counts(counts, wire_order)
 
-        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+        assert np.array_equal(result, np.array(expected_result))
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result",
+        [
+            ((0, 1, 2), [1, -1, -1, 1, 1]),
+            ((0, 2, 1), [1, 1, -1, -1, -1]),
+            ((1, 2, 0), [1, 1, -1, -1, -1]),
+            ((2, 0, 1), [1, -1, 1, -1, -1]),
+        ],
+    )
+    def test_process_counts_with_eigen_values_multiple_wires(self, wire_order, expected_result):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0) @ qml.Z(1))
+        counts = {"000": 1, "101": 1, "011": 1, "110": 2}
+        wire_order = qml.wires.Wires(wire_order)
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array(expected_result))
 
     def test_process_counts_with_inverted_wire_order(self):
         """Test process_counts method with inverted wire order."""

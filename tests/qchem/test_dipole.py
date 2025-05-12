@@ -194,7 +194,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     dref_coeff, dref_ops = d_ref.terms()
 
     assert np.allclose(sorted(d_coeff), sorted(dref_coeff))
-    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
+    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops) == (
         qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
     )
     assert np.allclose(
@@ -321,3 +321,14 @@ def test_gradient_expvalD():
     grad_finitediff = (d_2 - d_1) / 0.0002
 
     assert np.allclose(grad_qml[0][0], grad_finitediff)
+
+
+def test_molecular_dipole_error():
+    """Test that an error is raised if the shape of the coordinates does not match the number of atoms in the molecule."""
+
+    m = qml.qchem.Molecule(["H"], np.array([1.0, 2.0]))
+    with pytest.raises(
+        ValueError,
+        match="The shape of the coordinates does not match the number of atoms in the molecule.",
+    ):
+        qml.qchem.molecular_dipole(m)

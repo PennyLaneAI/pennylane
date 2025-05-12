@@ -39,7 +39,7 @@ class GQSP(Operation):
          * & * \\
          \end{pmatrix}
 
-    The implementation requires one auxiliary qubit.
+    The implementation requires one control qubit.
 
     Args:
 

@@ -107,7 +107,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
+    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[2, 0]),
     qml.SingleExcitation(0.123, wires=[0, 3]),
     qml.SingleExcitationPlus(0.123, wires=[0, 3]),
     qml.SingleExcitationMinus(0.123, wires=[0, 3]),
@@ -878,18 +878,20 @@ class TestEqual:
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
+        # ControlledQubitUnitary
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
+        wires = [wire + 1, wire]
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
-                op1(p1, wires=wire, control_wires=wire + 1),
-                op1(p2, wires=wire, control_wires=wire + 1),
+                op1(p1, wires=wires),
+                op1(p2, wires=wires),
                 check_trainability=False,
                 check_interface=False,
             )
             assert not qml.equal(
-                op1(p1, wires=wire, control_wires=wire + 1),
-                op1(p2, wires=wire, control_wires=wire + 1),
+                op1(p1, wires=wires),
+                op1(p2, wires=wires),
                 check_trainability=False,
                 check_interface=True,
             )
@@ -897,14 +899,14 @@ class TestEqual:
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
         assert qml.equal(
-            op1(param_qml, wires=wire, control_wires=wire + 1),
-            op1(param_qml_1, wires=wire, control_wires=wire + 1),
+            op1(param_qml, wires=wires),
+            op1(param_qml_1, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param_qml, wires=wire, control_wires=wire + 1),
-            op1(param_qml_1, wires=wire, control_wires=wire + 1),
+            op1(param_qml, wires=wires),
+            op1(param_qml_1, wires=wires),
             check_trainability=True,
             check_interface=False,
         )
@@ -1061,21 +1063,22 @@ class TestEqual:
         wire = 0
         param = np.eye(2) * 1j
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
+        wires = [wire + 1, wire]
         assert qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param, wires=wire, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param * 2, wires=wire, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param * 2, wires=wires),
             check_trainability=False,
             check_interface=False,
         )
         assert not qml.equal(
-            op1(param, wires=wire, control_wires=wire + 1),
-            op1(param, wires=wire + 2, control_wires=wire + 1),
+            op1(param, wires=wires),
+            op1(param, wires=[wire + 1, wire + 2]),
             check_trainability=False,
             check_interface=False,
         )
@@ -1209,6 +1212,138 @@ class TestEqual:
     def test_not_equal_operator_measurement(self, op1, op2):
         """Test operator not equal to measurement"""
         assert not qml.equal(op1, op2)
+
+
+equal_pauli_words = [
+    ({0: "X", 1: "Y"}, {1: "Y", 0: "X"}, True, None),
+    ({0: "X", 1: "Y"}, {0: "X"}, False, "Different wires in Pauli words."),
+    ({0: "X", 1: "Z"}, {1: "Y", 0: "X"}, False, "agree on wires but differ in Paulis."),
+    ({0: "X", 1: "Y"}, {"X": "Y", 0: "X"}, False, "Different wires in Pauli words."),
+]
+
+
+# pylint: disable=too-few-public-methods
+class TestPauliWordsEqual:
+    """Tests for qml.equal with PauliSentences."""
+
+    @pytest.mark.parametrize("pw1, pw2, res, error_match", equal_pauli_words)
+    def test_equality(self, pw1, pw2, res, error_match):
+        """Test basic equalities/inequalities."""
+        pw1 = qml.pauli.PauliWord(pw1)
+        pw2 = qml.pauli.PauliWord(pw2)
+        assert qml.equal(pw1, pw2) is res
+        assert qml.equal(pw2, pw1) is res
+
+        if res:
+            assert_equal(pw1, pw2)
+            assert_equal(pw2, pw1)
+        else:
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(pw1, pw2)
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(pw2, pw1)
+
+
+equal_pauli_sentences = [
+    (qml.X(0) @ qml.Y(2), 1.0 * qml.Y(2) @ qml.X(0), True, None),
+    (
+        qml.X(0) @ qml.Y(2),
+        1.0 * qml.X(2) @ qml.Y(0),
+        False,
+        "Different Pauli words in PauliSentences",
+    ),
+    (qml.X(0) - qml.Y(2), -1.0 * (qml.Y(2) - qml.X(0)), True, None),
+    (qml.X(0) @ qml.Y(2), qml.Y(2) + qml.X(0), False, "Different Pauli words in PauliSentences"),
+    (qml.SISWAP([0, "a"]) @ qml.Z("b"), qml.Z("b") @ qml.SISWAP((0, "a")), True, None),
+    (qml.SWAP([0, "a"]) @ qml.S("b"), qml.S("b") @ qml.SWAP(("a", 0)), True, None),
+]
+
+
+class TestPauliSentencesEqual:
+    """Tests for qml.equal with PauliSentences."""
+
+    @pytest.mark.parametrize("ps1, ps2, res, error_match", equal_pauli_sentences)
+    def test_equality(self, ps1, ps2, res, error_match):
+        """Test basic equalities/inequalities."""
+        ps1 = qml.simplify(ps1).pauli_rep
+        ps2 = qml.simplify(ps2).pauli_rep
+
+        assert qml.equal(ps1, ps2) is res
+        assert qml.equal(ps1 * 0.6, ps2 * 0.6) is res
+        assert qml.equal(ps2, ps1) is res
+
+        if res:
+            assert_equal(ps1, ps2)
+            assert_equal(ps2, ps1)
+        else:
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(ps1, ps2)
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(ps2, ps1)
+
+    @pytest.mark.torch
+    def test_trainability_and_interface(self):
+        """Test that trainability and interface are compared correctly."""
+        import torch
+
+        x1 = qml.numpy.array(0.5, requires_grad=True)
+        x2 = qml.numpy.array(0.5, requires_grad=False)
+        x3 = torch.tensor(0.5, requires_grad=True)
+        x4 = torch.tensor(0.5, requires_grad=False)
+        pws = [qml.pauli.PauliWord({1: "X", 39: "Y"}), qml.pauli.PauliWord({0: "Z", 1: "Y"})]
+        ps1 = pws[0] * x1 - 0.7 * pws[1]
+        ps2 = pws[0] * x2 - 0.7 * pws[1]
+        ps3 = pws[0] * x3 - 0.7 * pws[1]
+        ps4 = pws[0] * x4 - 0.7 * pws[1]
+
+        assert qml.equal(ps1, ps2) is False
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(ps1, ps2)
+        assert qml.equal(ps1, ps3) is False
+        assert qml.equal(ps1, ps4) is False
+        assert qml.equal(ps2, ps3) is False
+        assert qml.equal(ps2, ps4) is False
+        assert qml.equal(ps3, ps4) is False
+
+        assert qml.equal(ps1, ps2, check_trainability=False) is True
+        assert_equal(ps1, ps2, check_trainability=False)
+        assert qml.equal(ps1, ps3, check_trainability=False) is False
+        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+            assert_equal(ps1, ps3, check_trainability=False)
+        assert qml.equal(ps1, ps4, check_trainability=False) is False
+        assert qml.equal(ps2, ps3, check_trainability=False) is False
+        assert qml.equal(ps2, ps4, check_trainability=False) is False
+        assert qml.equal(ps3, ps4, check_trainability=False) is True
+
+        assert qml.equal(ps1, ps2, check_interface=False) is False
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(ps1, ps2, check_interface=False)
+        assert qml.equal(ps1, ps3, check_interface=False) is True
+        assert_equal(ps1, ps3, check_interface=False)
+        assert qml.equal(ps1, ps4, check_interface=False) is False
+        assert qml.equal(ps2, ps3, check_interface=False) is False
+        assert qml.equal(ps2, ps4, check_interface=False) is True
+        assert qml.equal(ps3, ps4, check_interface=False) is False
+
+        assert qml.equal(ps1, ps2, check_trainability=False, check_interface=False) is True
+        assert_equal(ps1, ps2, check_trainability=False, check_interface=False)
+        assert qml.equal(ps1, ps3, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps1, ps4, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps2, ps3, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps2, ps4, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps3, ps4, check_trainability=False, check_interface=False) is True
+
+    @pytest.mark.parametrize(
+        "atol, rtol, res", [(1e-9, 0.0, False), (1e-7, 0.0, True), (0.0, 1e-9, True)]
+    )
+    def test_tolerance(self, atol, rtol, res):
+        """Test that tolerances are taken into account correctly."""
+        x1 = 100
+        x2 = 100 + 1e-8
+        pws = [qml.pauli.PauliWord({1: "X", 39: "Y"}), qml.pauli.PauliWord({0: "Z", 1: "Y"})]
+        ps1 = pws[0] * x1 - 0.7 * pws[1]
+        ps2 = pws[0] * x2 - 0.7 * pws[1]
+        assert qml.equal(ps1, ps2, atol=atol, rtol=rtol) is res
 
 
 class TestMeasurementsEqual:
@@ -1604,6 +1739,7 @@ class TestSymbolicOpComparison:
             ):
                 assert_equal(op1, op2)
 
+    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
         [
@@ -1696,6 +1832,19 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
+    def test_adjoint_observable_with_non_adjoint(self):
+        """Test that comparing an adjoint observable with a non-adjoint operation returns False"""
+
+        base = qml.X(0)
+        adj_op = qml.adjoint(base)
+
+        # if we get rid of Observable or stop having adjoint(Observable) be an Observable,
+        # this test is no longer relevant. Ref: https://github.com/PennyLaneAI/pennylane/pull/7107/
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert isinstance(adj_op, qml.operation.Observable)
+
+        assert not qml.equal(adj_op, qml.exp(base, 2))
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_conditional_base_operator_wire_comparison(self, wire1, wire2, res):
@@ -2466,7 +2615,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="The hyperparameter unitary_matrix is not equal"):
+        with pytest.raises(AssertionError, match="op1 and op2 have different data"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2497,7 +2646,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
 
-        with pytest.raises(AssertionError, match=r"has different interfaces for op1 and op2"):
+        with pytest.raises(AssertionError, match=r"have different interfaces"):
             assert_equal(op, other_op)
 
 

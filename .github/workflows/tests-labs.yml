@@ -23,7 +23,7 @@ jobs:
         
       - name: Assess changed files
         id: changed-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v46
         with:
           files: pennylane/labs/**
 
@@ -38,6 +38,7 @@ jobs:
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
   
   default-dependency-versions:
     needs:
@@ -67,5 +68,6 @@ jobs:
       python_version: '3.10'
       pytest_test_directory: pennylane/labs/tests
       additional_pip_packages: |
-        geometric mpi4py h5py
+        geometric mpi4py h5py basis_set_exchange pyscf
+        geometric mpi4py h5py basis-set-exchange pyscf optax
         ${{ needs.default-dependency-versions.outputs.jax-version }}

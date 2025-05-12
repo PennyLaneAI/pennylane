@@ -14,7 +14,6 @@
 """Integration tests for using the JAX-Python interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
-import warnings
 from itertools import product
 
 import numpy as np
@@ -23,13 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def get_device(device_name, wires, seed):
@@ -97,14 +89,9 @@ class TestQNode:
 
         assert circuit.interface == interface
 
-        # jax doesn't set trainable parameters on regular execution
-        assert circuit.qtape.trainable_params == []
-
         # gradients should work
         grad = jax.grad(circuit)(a)
         assert isinstance(grad, jax.Array)
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
         assert grad.shape == ()
 
     def test_changing_trainability(
@@ -132,18 +119,12 @@ class TestQNode:
         grad_fn = jax.grad(circuit, argnums=[0, 1])
         res = grad_fn(a, b)
 
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=0)
         res = grad_fn(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -171,9 +152,6 @@ class TestQNode:
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-
         assert len(res) == 2
 
     def test_matrix_parameter(
@@ -199,9 +177,6 @@ class TestQNode:
         res = jax.grad(circuit, argnums=1)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
-
     def test_differentiable_expand(
         self, dev_name, diff_method, grad_on_execution, interface, device_vjp, tol, seed
     ):
@@ -213,10 +188,10 @@ class TestQNode:
             "grad_on_execution": grad_on_execution,
             "device_vjp": device_vjp,
         }
-
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 10
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):  # pylint:disable=too-few-public-methods
@@ -231,7 +206,7 @@ class TestQNode:
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
 
-        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -265,12 +240,13 @@ class TestQNode:
 
         a = jax.numpy.array([0.1, 0.2])
 
+        gradient_kwargs = {"h": 1e-8, "approx_order": 2}
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
             diff_method="finite-diff",
-            h=1e-8,
-            approx_order=2,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -298,9 +274,9 @@ class TestVectorValuedQNode:
             "grad_on_execution": grad_on_execution,
             "device_vjp": device_vjp,
         }
-
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
@@ -308,7 +284,7 @@ class TestVectorValuedQNode:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -317,7 +293,6 @@ class TestVectorValuedQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == []
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -327,7 +302,6 @@ class TestVectorValuedQNode:
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
-        assert circuit.qtape.trainable_params == [0, 1]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -361,14 +335,15 @@ class TestVectorValuedQNode:
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -414,8 +389,9 @@ class TestVectorValuedQNode:
             "grad_on_execution": grad_on_execution,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
@@ -423,7 +399,7 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=2, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -463,8 +439,9 @@ class TestVectorValuedQNode:
             "device_vjp": device_vjp,
         }
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
@@ -472,7 +449,7 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -544,8 +521,9 @@ class TestVectorValuedQNode:
             "grad_on_execution": grad_on_execution,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
@@ -553,7 +531,7 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -626,7 +604,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **kwargs,
+            gradient_kwargs=kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -673,18 +651,19 @@ class TestVectorValuedQNode:
             "device_vjp": device_vjp,
         }
 
+        gradient_kwargs = {}
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -788,11 +767,9 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
 
-    def test_update_diff_method(self, interface, mocker):
+    def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = jax.numpy.array([0.543, -0.654])
-
-        spy = mocker.spy(qml, "execute")
 
         dev = DefaultQubit()
 
@@ -803,14 +780,15 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b, shots=100)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 3
 
         # if we use the default shots value of None, backprop can now be used
-        cost_fn(a, b)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            jax.grad(cost_fn)(a, b)
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(
@@ -983,7 +961,6 @@ class TestQubitIntegration:
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
-    @pytest.mark.local_salt(1)
     def test_second_derivative(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
     ):
@@ -996,13 +973,14 @@ class TestQubitIntegrationHigherOrder:
             "max_diff": 2,
         }
 
+        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
-        @qnode(get_device(dev_name, wires=0, seed=seed), **kwargs)
+        @qnode(get_device(dev_name, wires=0, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
@@ -1052,7 +1030,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1107,7 +1085,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1170,7 +1148,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1236,7 +1214,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1344,7 +1322,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1453,7 +1431,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=max_diff,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1541,7 +1519,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=max_diff,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)

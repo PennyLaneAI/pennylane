@@ -17,7 +17,9 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.math import get_canonical_interface_name
+from pennylane.concurrency.executors.backends import ExecBackends, get_executor
+from pennylane.concurrency.executors.base import RemoteExec
+from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 
@@ -26,7 +28,7 @@ class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
     mcm_method: Optional[str] = None
-    """Which mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
+    """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
@@ -34,7 +36,7 @@ class MCMConfig:
 
     postselect_mode: Optional[str] = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
-    discarded and only results for valid shots will be returned. In this case, less samples
+    discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
     will be of the same size as the original number of shots. If not specified, the device will
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
@@ -87,7 +89,7 @@ class ExecutionConfig:
     device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: Optional[str] = None
+    interface: Interface = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -95,6 +97,18 @@ class ExecutionConfig:
 
     mcm_config: MCMConfig = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
+
+    convert_to_numpy: bool = True
+    """Whether or not to convert parameters to numpy before execution.
+
+    If ``False`` and using the jax-jit, no pure callback will occur and the device
+    execution itself will be jitted.
+    """
+
+    executor_backend: Optional[RemoteExec] = None
+    """
+    Defines the class for the executor backend.
+    """
 
     def __post_init__(self):
         """
@@ -124,10 +138,13 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            self.mcm_config = MCMConfig(**self.mcm_config)
+            self.mcm_config = MCMConfig(**self.mcm_config)  # pylint: disable=not-a-mapping
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
+
+        if self.executor_backend is None:
+            self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
 
 
 DefaultExecutionConfig = ExecutionConfig()

@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,8 +117,7 @@ class QROM(Operation):
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)
 
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
         self.hyperparameters["bitstrings"] = tuple(bitstrings)
         self.hyperparameters["control_wires"] = control_wires
@@ -199,6 +198,10 @@ class QROM(Operation):
     def compute_decomposition(
         bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
+
+        if len(control_wires) == 0:
+            return [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+
         with qml.QueuingManager.stop_recording():
 
             swap_wires = target_wires + work_wires
@@ -206,6 +209,7 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
+            depth = min(depth, len(bitstrings))
 
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
@@ -247,7 +251,7 @@ class QROM(Operation):
                     )
                     swap_ops.insert(0, qml.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
-            if not clean:
+            if not clean or depth == 1:
                 # Based on this paper (Fig 1.c): https://arxiv.org/abs/1812.00954
                 decomp_ops = select_ops + swap_ops
 

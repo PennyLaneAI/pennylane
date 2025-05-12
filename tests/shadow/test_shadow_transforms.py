@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
-import warnings
 
 # pylint: disable=too-few-public-methods
 import pytest
@@ -20,13 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.shadows.transforms import _replace_obs
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -181,11 +173,11 @@ class TestStateForward:
         """Test that a warning is raised when the system to get the state
         of is large"""
         circuit = hadamard_circuit(8, shots=1)
-        circuit.construct([], {})
+        tape = qml.workflow.construct_tape(circuit)()
 
         msg = "Differentiable state reconstruction for more than 8 qubits is not recommended"
         with pytest.warns(UserWarning, match=msg):
-            qml.shadows.shadow_state(circuit.qtape, wires=[0, 1, 2, 3, 4, 5, 6, 7], diffable=True)
+            qml.shadows.shadow_state(tape, wires=[0, 1, 2, 3, 4, 5, 6, 7], diffable=True)
 
     def test_multi_measurement_error(self):
         """Test that an error is raised when classical shadows is returned

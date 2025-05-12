@@ -48,7 +48,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, AdjointOperation)
 
         # checking we can call `dir` without problems
@@ -69,7 +70,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, AdjointOperation)
 
         # check operation-specific properties made it into the mapping
@@ -79,10 +81,11 @@ class TestInheritanceMixins:
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
-        # pylint: disable=too-few-public-methods
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            # pylint: disable=too-few-public-methods
+            class CustomObs(qml.operation.Observable):
+                num_wires = 1
+                num_params = 0
 
         base = CustomObs(wires=0)
         ob = Adjoint(base)
@@ -90,11 +93,13 @@ class TestInheritanceMixins:
         assert isinstance(ob, Adjoint)
         assert isinstance(ob, qml.operation.Operator)
         assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert isinstance(ob, qml.operation.Observable)
         assert not isinstance(ob, AdjointOperation)
 
         # Check some basic observable functionality
-        assert ob.compare(ob)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert ob.compare(ob)
         assert isinstance(1.0 * ob @ ob, qml.ops.Prod)
 
         # check the dir
@@ -319,6 +324,15 @@ class TestProperties:
         op = Adjoint(base)
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
+
+    def test_pauli_rep(self):
+        """Test pauli_rep works after adjoint operation."""
+        coeffs = [1 - 0.5j, 0.2, -3j]
+        paulis = [qml.X(0), qml.Y(0), qml.Z(0)]
+        op = qml.dot(coeffs, paulis)
+        adjoint_ps = qml.adjoint(op).pauli_rep
+        assert (list(adjoint_ps.values()) == qml.math.conjugate(coeffs)).all()
+        assert (qml.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
 
 
 class TestSimplify:
@@ -996,9 +1010,10 @@ class TestAdjointConstructorOutsideofQueuing:
         obs = adjoint(base)
 
         assert isinstance(obs, Adjoint)
-        assert isinstance(base, qml.operation.Observable) == isinstance(
-            obs, qml.operation.Observable
-        )
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert isinstance(base, qml.operation.Observable) == isinstance(
+                obs, qml.operation.Observable
+            )
         assert obs.base is base
 
     def test_single_op_function(self):

@@ -17,9 +17,8 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = math.array(list(alphabet))
 
 
 def get_einsum_mapping(
@@ -72,6 +71,7 @@ def get_einsum_mapping(
     )
 
 
+# pylint: disable=too-many-arguments
 def _map_indices_apply_channel(
     *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
 ):

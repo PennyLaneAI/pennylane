@@ -16,13 +16,11 @@
 Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
-
 from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.operation import AnyWires
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
@@ -467,11 +465,12 @@ def op_eq(ops):
 
 
 class MeasEq(qml.BooleanFn):
-    """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
+    """A conditional for evaluating if a given measurement process is of the same type
+    as the specified measurement process.
 
     Args:
-        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement process instance or
-            a measurement function to build the measurement set.
+        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement
+            process instance or a measurement function to build the measurement set.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
     """
@@ -489,7 +488,9 @@ class MeasEq(qml.BooleanFn):
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
 
-        mp_ops = list(getattr(op, "return_type", op.__class__.__name__) for op in self.condition)
+        mp_ops = list(
+            getattr(op, "__name__", op.__class__.__name__) for op in self.condition
+        )  # pylint: disable=protected_access
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
             for idx, op in enumerate(mp_ops)
@@ -517,8 +518,8 @@ class MeasEq(qml.BooleanFn):
 
 
 def meas_eq(mps):
-    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
-    if a given measurement process is equal to the specified measurement process.
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating if a given
+    measurement process is of the same type as the specified measurement process.
 
     Args:
         mps (MeasurementProcess, Callable): An instance(s) of any class that inherits from
@@ -535,7 +536,7 @@ def meas_eq(mps):
     **Example**
 
     One may use ``meas_eq`` with an instance of
-    :class:`MeasurementProcess <pennylane.operation.MeasurementProcess>`:
+    :class:`MeasurementProcess <pennylane.measurements.MeasurementProcess>`:
 
     >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
     >>> cond_func(qml.expval(qml.Z(9)))
@@ -745,7 +746,7 @@ def partial_wires(operation, *args, **kwargs):
                 op_args[key] = val
 
         if issubclass(op_class, qml.operation.Operation):
-            num_wires = getattr(op_class, "num_wires", AnyWires)
+            num_wires = getattr(op_class, "num_wires", None)
             if "wires" in op_args and isinstance(num_wires, int):
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")

@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
@@ -92,9 +91,9 @@ class TestInitialization:
         def circuit():
             return qml.vn_entropy(wires=0, log_base=2)
 
-        circuit()
+        tape = qml.workflow.construct_tape(circuit)()
 
-        assert isinstance(circuit.tape[0], VnEntropyMP)
+        assert isinstance(tape[0], VnEntropyMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""
@@ -107,7 +106,6 @@ class TestInitialization:
         """Test that the properties are correct."""
         meas = qml.vn_entropy(wires=0)
         assert meas.numeric_type == float
-        assert meas.return_type == VnEntropy
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):

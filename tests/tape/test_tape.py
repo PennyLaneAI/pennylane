@@ -14,7 +14,6 @@
 """Unit tests for the QuantumTape"""
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -33,13 +32,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def TestOperationMonkeypatching():
@@ -103,16 +95,16 @@ class TestConstruction:
 
         # test that the internal tape.measurements list is created properly
         assert isinstance(tape.measurements[0], MeasurementProcess)
-        assert tape.measurements[0].return_type == qml.measurements.Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         qml.assert_equal(tape.measurements[0].obs, obs[0])
 
         assert isinstance(tape.measurements[1], MeasurementProcess)
-        assert tape.measurements[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.measurements[1], qml.measurements.ProbabilityMP)
 
         # test the public observables property
         assert len(tape.observables) == 2
         assert tape.observables[0].name == "PauliX"
-        assert tape.observables[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.observables[1], qml.measurements.ProbabilityMP)
 
         # test the public measurements property
         assert len(tape.measurements) == 2
@@ -132,7 +124,7 @@ class TestConstruction:
 
         assert tape.operations == [op_]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_rmatmul(self):
@@ -148,7 +140,7 @@ class TestConstruction:
 
         assert tape.operations == [op_]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_matmul(self):
@@ -165,7 +157,7 @@ class TestConstruction:
 
         assert tape.operations == [op_]
         assert tape.observables == [t_obs]
-        assert tape.measurements[0].return_type is qml.measurements.Variance
+        assert isinstance(tape.measurements[0], qml.measurements.VarianceMP)
         assert tape.measurements[0].obs is t_obs
 
     def test_qubit_diagonalization(self, make_tape):
@@ -280,7 +272,7 @@ class TestConstruction:
         target_wire = qml.wires.Wires(1)
 
         assert len(tape.circuit) == 5
-        assert tape.circuit[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(tape.circuit[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(tape.circuit[1], qml.ops.Conditional)
         assert isinstance(tape.circuit[1].base, qml.PauliX)
@@ -534,10 +526,9 @@ class TestResourceEstimation:
         assert tape.specs["resources"] == expected_resources
 
         assert tape.specs["num_observables"] == 1
-        assert tape.specs["num_diagonalizing_gates"] == 0
         assert tape.specs["num_trainable_params"] == 0
 
-        assert len(tape.specs) == 5
+        assert len(tape.specs) == 4
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -545,7 +536,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 5
+        assert len(specs) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -554,7 +545,6 @@ class TestResourceEstimation:
         )
         assert specs["resources"] == expected_resources
         assert specs["num_observables"] == 2
-        assert specs["num_diagonalizing_gates"] == 1
         assert specs["num_trainable_params"] == 5
 
     def test_specs_add_to_tape(self, make_extendible_tape):
@@ -563,7 +553,7 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 5
+        assert len(specs1) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -574,7 +564,6 @@ class TestResourceEstimation:
         assert specs1["resources"] == expected_resoures
 
         assert specs1["num_observables"] == 0
-        assert specs1["num_diagonalizing_gates"] == 0
         assert specs1["num_trainable_params"] == 5
 
         with tape as tape:
@@ -585,7 +574,7 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 5
+        assert len(specs2) == 4
 
         gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
@@ -596,7 +585,6 @@ class TestResourceEstimation:
         assert specs2["resources"] == expected_resoures
 
         assert specs2["num_observables"] == 2
-        assert specs2["num_diagonalizing_gates"] == 1
         assert specs2["num_trainable_params"] == 6
 
 
@@ -902,14 +890,13 @@ class TestExpand:
 
         new_tape = tape.expand()
 
-        assert len(new_tape.operations) == 3
+        assert len(new_tape.operations) == 2
 
-        assert new_tape.operations[0].name == "PhaseShift"
-        assert new_tape.operations[1].name == "RX"
-        assert new_tape.operations[2].name == "PhaseShift"
+        assert new_tape.operations[0].name == "RX"
+        assert new_tape.operations[1].name == "GlobalPhase"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.num_params == 2
+        assert new_tape.get_parameters() == [np.pi, -np.pi / 2]
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -943,7 +930,7 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2)
-        assert len(new_tape.operations) == 11
+        assert len(new_tape.operations) == 9
 
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(
@@ -1032,11 +1019,11 @@ class TestExpand:
         assert len(new_tape.operations) == 6
 
         expected = [
-            qml.measurements.Probability,
-            qml.measurements.Expectation,
-            qml.measurements.Variance,
+            qml.measurements.ProbabilityMP,
+            qml.measurements.ExpectationMP,
+            qml.measurements.VarianceMP,
         ]
-        assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
+        assert [isinstance(m, r) for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, None, None]
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
@@ -1751,7 +1738,7 @@ class TestOutputShape:
     def test_output_shapes_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
         num_wires = 3
@@ -1770,7 +1757,7 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.measurements.Sample:
+        if isinstance(measurement, qml.measurements.SampleMP):
             if measurement.obs is not None:
                 expected_shape = (shots,) if shots != 1 else ()
 
@@ -1784,17 +1771,17 @@ class TestOutputShape:
     def test_output_shapes_single_qnode_check(self, measurement, _, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if shots is not None and measurement.return_type is qml.measurements.State:
+        if shots is not None and isinstance(measurement, qml.measurements.StateMP):
             pytest.skip("State and density matrix don't support finite shots and raise a warning.")
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
         if (
             isinstance(shots, tuple)
-            and measurement.return_type is qml.measurements.Sample
+            and isinstance(measurement, qml.measurements.SampleMP)
             and not measurement.obs
         ):
             pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
@@ -1841,7 +1828,7 @@ class TestOutputShape:
                 qml.apply(m)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        if measurements[0].return_type is qml.measurements.Sample:
+        if isinstance(measurements[0], qml.measurements.SampleMP):
             expected[1] = shots
             expected = tuple(expected)
 
@@ -1860,7 +1847,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements with a shot
         vector."""
-        if measurements[0].return_type is qml.measurements.Probability:
+        if isinstance(measurements[0], qml.measurements.ProbabilityMP):
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
@@ -1948,10 +1935,10 @@ class TestOutputShape:
     def test_broadcasting_single(self, measurement, _, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for a single measurement and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type is qml.measurements.State and measurement.wires is not None:
+        if isinstance(measurement, qml.measurements.StateMP) and measurement.wires is not None:
             pytest.skip("Density matrix does not support parameter broadcasting")
 
         num_wires = 3
@@ -1976,10 +1963,10 @@ class TestOutputShape:
     def test_broadcasting_multi(self, measurement, expected, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for multiple measurements and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and isinstance(measurement, qml.measurements.SampleMP):
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type is qml.measurements.State:
+        if isinstance(measurement, qml.measurements.StateMP):
             pytest.skip("State does not support multiple measurements")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -2025,7 +2012,9 @@ class TestNumericType:
             assert np.issubdtype(result[0].dtype, float)
         else:
             assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -2045,7 +2034,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.numeric_type is complex
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is complex
 
     def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
@@ -2061,7 +2052,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.numeric_type is int
+
+        tape = qml.workflow.construct_tape(circuit)()
+        assert tape.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2088,7 +2081,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
@@ -2117,7 +2112,8 @@ class TestNumericType:
         assert result[0].dtype == float
         assert result[1].dtype == int
 
-        assert circuit.qtape.numeric_type == (float, int)
+        tape = qml.workflow.construct_tape(circuit)(0, 3)
+        assert tape.numeric_type == (float, int)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of

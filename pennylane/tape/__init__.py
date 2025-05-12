@@ -18,13 +18,13 @@ validates quantum operations and measurements.
 
 from .operation_recorder import OperationRecorder
 from .qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch, make_qscript
-from .tape import QuantumTape, QuantumTapeBatch, TapeError, expand_tape_state_prep
+from .tape import QuantumTape, QuantumTapeBatch, expand_tape_state_prep
 
-try:
-    from .plxpr_conversion import plxpr_to_tape
-except ImportError:  # pragma: no cover
 
-    # pragma: no cover
-    def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None):  # pragma: no cover
-        """A dummy version of ``plxpr_to_tape`` when jax is not installed on the system."""
-        raise ImportError("plxpr_to_tape requires jax to be installed")  # pragma: no cover
+# pylint: disable=import-outside-toplevel
+def __getattr__(key):
+    if key == "plxpr_to_tape":
+        from .plxpr_conversion import plxpr_to_tape
+
+        return plxpr_to_tape
+    raise AttributeError(f"module 'pennylane.tape' has no attribute '{key}'")  # pragma: no cover

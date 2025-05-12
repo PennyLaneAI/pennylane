@@ -35,6 +35,7 @@ def sample_state(state: np.ndarray, shots: int, seed=None):
     num_wires = int(np.log2(len(probs)))
 
     rng = np.random.default_rng(seed)
+    probs /= np.sum(probs)  # Fix: Normalize to prevent sum ≠ 1 errors in NumPy 2.0+
     basis_samples = rng.choice(basis_states, shots, p=probs)
 
     # convert basis state integers to array of booleans
@@ -57,6 +58,8 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     # 2) apply all the operations
     for op in tape.operations:
         op_mat = op.matrix(wire_order=tape.wires)
+        if qml.math.get_interface(op_mat) != "numpy":
+            raise ValueError("Reference qubit can only work with numpy data.")
         state = qml.math.matmul(op_mat, state)
 
     # 3) perform measurements

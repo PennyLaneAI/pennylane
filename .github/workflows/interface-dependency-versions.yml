@@ -16,17 +16,17 @@ on:
         description: The version of JAX to use for testing
         required: false
         type: string
-        default: '0.4.28'
+        default: '0.5.3'
       tensorflow_version:
         description: The version of TensorFlow to use for testing
         required: false
         type: string
-        default: '2.16.0'
+        default: '2.18.0'
       torch_version:
         description: The version of PyTorch to use for testing
         required: false
         type: string
-        default: '2.3.0'
+        default: '2.5.0'
     outputs:
       jax-version:
         description: The version of JAX to use
@@ -72,6 +72,6 @@ jobs:
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
       tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }}
+      pytorch-version: torch~=${{ steps.pytorch.outputs.version }}
       catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
       pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}

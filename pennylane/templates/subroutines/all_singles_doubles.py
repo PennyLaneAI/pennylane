@@ -20,7 +20,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
 
@@ -116,7 +116,6 @@ class AllSinglesDoubles(Operation):
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
@@ -223,15 +222,15 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if singles is None or not singles:
-            if doubles is None or not doubles:
-                raise ValueError(
-                    f"'singles' and 'doubles' lists can not be both empty;"
-                    f" got singles = {singles}, doubles = {doubles}"
-                )
-            if doubles is not None:
-                shape_ = (len(doubles),)
-        elif doubles is None:
+        if not singles and not doubles:
+            raise ValueError(
+                f"'singles' and 'doubles' lists can not be both empty;"
+                f" got singles = {singles}, doubles = {doubles}"
+            )
+
+        if not singles:
+            shape_ = (len(doubles),)
+        elif not doubles:
             shape_ = (len(singles),)
         else:
             shape_ = (len(singles) + len(doubles),)

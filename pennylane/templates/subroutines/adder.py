@@ -47,7 +47,7 @@ class Adder(Operation):
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty set.
+            should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -105,8 +105,7 @@ class Adder(Operation):
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
         num_works_wires = len(work_wires)
 
@@ -125,15 +124,11 @@ class Adder(Operation):
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
 
-        all_wires = (
-            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
-            if work_wires
-            else qml.wires.Wires(x_wires)
-        )
+        all_wires = x_wires + work_wires
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
 
         super().__init__(wires=all_wires, id=id)

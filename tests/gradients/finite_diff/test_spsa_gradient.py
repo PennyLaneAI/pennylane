@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
-from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
@@ -161,7 +160,7 @@ class TestSpsaGradient:
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="spsa", sampler_rng="foo")
+        @qml.qnode(dev, diff_method="spsa", gradient_kwargs={"sampler_rng": "foo"})
         def circuit(param):
             qml.RX(param, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -555,12 +554,10 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

@@ -186,7 +186,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
         return result
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
-    return jnp.array(result)
+    return result if qml.math.get_interface(result) == "jax" else jnp.array(result)
 
 
 def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:

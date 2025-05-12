@@ -178,9 +178,18 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
+    :class:`~.S`, and :class:`~.Hadamard`.
     """
     d_ops = []
+
+    if isinstance(op, qml.QubitUnitary):
+        ops = op.decomposition()
+        for o in ops[:-1]:
+            d_ops.extend(_rot_decompose(o))
+        d_ops.append(ops[-1])
+        return d_ops
+
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
@@ -213,6 +222,21 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
+            if not qml.math.is_abstract(theta):
+                # The following loop simplifies the two cases where for all odd intergers `k`,
+                # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
+                for val_ in [2, 4]:
+                    div_ = qml.math.divide(theta, math.pi / val_)
+                    mod_ = qml.math.mod(theta, math.pi / val_)
+                    if qml.math.allclose(mod_, 0.0, atol=1e-6) and qml.math.allclose(
+                        qml.math.mod(div_, 2), 1.0, atol=1e-6
+                    ):
+                        vop_ = qml.S(wires) if val_ == 2 else qml.T(wires)
+                        sign = qml.math.mod(qml.math.floor_divide(div_, 2), 2)
+                        ops_ = [
+                            vop_ if qml.math.allclose(sign, 0.0, atol=1e-6) else qml.adjoint(vop_)
+                        ]
+                        break
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -256,7 +280,7 @@ def _two_qubit_decompose(op):
     d_ops = []
     for td_op in td_ops:
         d_ops.extend(
-            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+            _rot_decompose(td_op) if td_op.num_params and len(td_op.wires) == 1 else [td_op]
         )
 
     return d_ops

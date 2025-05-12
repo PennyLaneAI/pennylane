@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ from .resource_operator import ResourceOperator
 
 # user-friendly gateset for visual checks and initial compilation
 _StandardGateSet = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
+    "X",
+    "Y",
+    "Z",
     "Hadamard",
     "SWAP",
     "CNOT",
@@ -53,7 +53,6 @@ DefaultGateSet = {
     "T",
     "Toffoli",
 }
-
 
 # parameters for further configuration of the decompositions
 resource_config = {
@@ -116,12 +115,12 @@ def get_resources(
 
         Users can provide custom gatesets to track resources with. Consider :code:`my_circuit()` from above:
 
-        >>> my_gateset = {"Hadamard", "RX", "RY", "QFT", "CNOT"}
+        >>> my_gateset = {"Hadamard", "RX", "RY", "QFT(3)", "CNOT"}
         >>> print(re.get_resources(my_circuit, gate_set = my_gateset)())
         wires: 3
         gates: 6
         gate_types:
-        {'Hadamard': 2, 'CNOT': 1, 'RX': 1, 'RY': 1, 'QFT': 1}
+        {'Hadamard': 2, 'CNOT': 1, 'RX': 1, 'RY': 1, 'QFT(3)': 1}
 
         We can also obtain resources for individual operations and quantum tapes in a similar manner:
 

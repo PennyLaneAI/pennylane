@@ -1,5 +1,8 @@
 name: Formatting check
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types:
       - opened
@@ -18,6 +21,7 @@ jobs:
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   black-pylint:
     if: github.event.pull_request.draft == false

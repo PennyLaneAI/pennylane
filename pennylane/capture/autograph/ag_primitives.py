@@ -44,6 +44,10 @@ __all__ = [
 ]
 
 
+class AutoGraphWarning(Warning):
+    """Warnings related to PennyLane's AutoGraph submodule."""
+
+
 class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 

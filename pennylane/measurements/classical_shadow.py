@@ -16,16 +16,16 @@ This module contains the qml.classical_shadow measurement.
 """
 import copy
 from collections.abc import Iterable, Sequence
-from string import ascii_letters as ABC
+from string import ascii_letters
 from typing import Optional, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform
 
 
 def shadow_expval(H, k=1, seed=None):
@@ -89,7 +89,7 @@ def shadow_expval(H, k=1, seed=None):
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires: WiresLike, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -180,8 +180,8 @@ def classical_shadow(wires, seed=None):
             measurements = [qml.classical_shadow(wires=(0,1))]
             tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
@@ -200,8 +200,8 @@ def classical_shadow(wires, seed=None):
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
             tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
+        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)
@@ -226,8 +226,13 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
+    _shortname = "shadow"
+
     def __init__(
-        self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
+        self,
+        wires: Optional[WiresLike] = None,
+        seed: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
@@ -402,11 +407,13 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # trace out every qubit except the first
             num_remaining_qubits = num_dev_qubits - active_qubit
-            conj_state_first_qubit = ABC[num_remaining_qubits]
-            stacked_dim = ABC[num_remaining_qubits + 1]
+            conj_state_first_qubit = ascii_letters[num_remaining_qubits]
+            stacked_dim = ascii_letters[num_remaining_qubits + 1]
 
-            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
-            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            state_str = f"{stacked_dim}{ascii_letters[:num_remaining_qubits]}"
+            conj_state_str = (
+                f"{stacked_dim}{conj_state_first_qubit}{ascii_letters[1:num_remaining_qubits]}"
+            )
             target_str = f"{stacked_dim}a{conj_state_first_qubit}"
 
             first_qubit_state = np.einsum(
@@ -442,10 +449,6 @@ class ClassicalShadowMP(MeasurementTransform):
     @property
     def numeric_type(self):
         return int
-
-    @property
-    def return_type(self):
-        return Shadow
 
     @classmethod
     def _abstract_eval(
@@ -489,6 +492,8 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    _shortname = "shadowexpval"
 
     def _flatten(self):
         metadata = (
@@ -561,10 +566,6 @@ class ShadowExpvalMP(MeasurementTransform):
     @property
     def numeric_type(self):
         return float
-
-    @property
-    def return_type(self):
-        return ShadowExpval
 
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)

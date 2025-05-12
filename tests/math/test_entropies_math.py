@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for differentiable quantum entropies.
-"""
+"""Unit tests for differentiable quantum entropies."""
 # pylint: disable=too-many-arguments
 import pytest
 
@@ -255,7 +254,7 @@ class TestRelativeEntropy:
         """Test that an error is raised when the dimensions do not match"""
         msg = "The two states must have the same number of wires"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(ValueError, match=msg):
             qml.math.relative_entropy(state0, state1)
 
 

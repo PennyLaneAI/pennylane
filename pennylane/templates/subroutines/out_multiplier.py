@@ -45,7 +45,7 @@ class OutMultiplier(Operation):
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
             work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty set.
+            should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -152,8 +152,7 @@ class OutMultiplier(Operation):
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
         output_wires = qml.wires.Wires(output_wires)
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 

@@ -70,7 +70,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and one param, the gradient is a float."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -92,7 +92,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -118,7 +118,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -141,7 +141,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -164,7 +164,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -191,7 +191,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -216,7 +216,13 @@ class TestReturnWithShotVectors:
         par_0 = tf.Variable(0.1)
         par_1 = tf.Variable(0.2)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=1, **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=1,
+            gradient_kwargs=gradient_kwargs,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -240,7 +246,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -263,7 +269,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a single params return an array."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -285,7 +291,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -311,7 +317,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -343,7 +349,13 @@ class TestReturnShotVectorHessian:
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=2,
+            gradient_kwargs=gradient_kwargs,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -373,7 +385,13 @@ class TestReturnShotVectorHessian:
 
         params = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=2,
+            gradient_kwargs=gradient_kwargs,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -400,7 +418,13 @@ class TestReturnShotVectorHessian:
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=2,
+            gradient_kwargs=gradient_kwargs,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -430,7 +454,13 @@ class TestReturnShotVectorHessian:
 
         params = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=2,
+            gradient_kwargs=gradient_kwargs,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -467,7 +497,7 @@ class TestReturnShotVectorIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -500,7 +530,7 @@ class TestReturnShotVectorIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])

@@ -18,17 +18,15 @@ Tests for the QubitUnitary decomposition transforms.
 
 from functools import reduce
 
+import numpy as np
 import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
+from scipy import sparse
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
-from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
-    _compute_num_cnots,
-    _convert_to_su4,
-    _su2su2_to_tensor_products,
-)
+from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_num_cnots
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -63,7 +61,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
         ), "Incorrect gate parameters"
 
     obtained_mat = reduce(
-        np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
     )
 
     if len(obtained_mat.shape) == 2:
@@ -127,6 +125,14 @@ test_cases_zyz = [
 ]
 
 
+def test_no_sparse_matrices():
+    """Test that a DecompositionUndefinedError is raised if the input is sparse."""
+
+    U = sparse.eye(4)
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        two_qubit_decomposition(U, wires=(0, 1))
+
+
 class TestQubitUnitaryZYZDecomposition:
     """Test that the ZYZ decomposition is correct."""
 
@@ -184,8 +190,8 @@ test_cases_xyx = [
     ),
     # Try a few specific special unitaries
     (I, [0, 0, 0, 0]),  # This triggers the if-conditional trivially
-    (X, [np.pi * 3 / 2, 0.0, 7 * np.pi / 2, -np.pi / 2]),
-    (Y, [np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
+    (X, [np.pi / 2, 0.0, np.pi / 2, -np.pi / 2]),
+    (Y, [0.0, np.pi, 0.0, -np.pi / 2]),
     (Z, [7 * np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -330,7 +336,7 @@ test_cases_zxz = [
     (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
     (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
     (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.log(1j) / 1j]),
-    (X, [0, np.pi, 4 * np.pi, -np.log(1j) / 1j]),
+    (X, [0, np.pi, 0, -np.log(1j) / 1j]),
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
     (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [11.195574287564275, 0.5, 1.2707963267948965, 0]),
@@ -420,7 +426,7 @@ test_cases_rot = [
     (T, [qml.RZ, qml.GlobalPhase], [np.pi / 4, -np.pi / 8]),
     (qml.RZ(0.3, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [0.3, 0.0]),
     (qml.RZ(-0.5, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [4 * np.pi - 0.5, 0.0]),
-    # # This will be decomposed to Rot
+    # This will be decomposed to Rot
     (
         qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
         [qml.Rot, qml.GlobalPhase],
@@ -947,22 +953,12 @@ samples_su2_su2 = [
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
 
-    @pytest.mark.parametrize("U", samples_3_cnots)
-    def test_convert_to_su4(self, U):
-        """Test a matrix in U(4) is correct converted to SU(4)."""
-
-        U_su4 = _convert_to_su4(np.array(U))
-
-        # Ensure the determinant is correct and the mats are equivalent up to a phase
-        assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
-        assert check_matrix_equivalence(np.array(U), U_su4)
-
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
 
         true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
-        A, B = _su2su2_to_tensor_products(true_matrix)
+        A, B = qml.math.decomposition.su2su2_to_tensor_products(true_matrix)
         assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -970,18 +966,14 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 18
+        assert len(obtained_decomposition) == 11
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         # We check with a slightly great tolerance threshold here simply because the
@@ -993,18 +985,14 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 16
+        assert len(obtained_decomposition) == 9
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1014,18 +1002,14 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = _convert_to_su4(np.array(U))
+        U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 13
+        assert len(obtained_decomposition) == 6
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1035,18 +1019,14 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U = qml.math.convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 6
+        assert len(obtained_decomposition) == 3
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1068,11 +1048,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1092,11 +1068,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1114,11 +1086,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1138,11 +1106,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1160,11 +1124,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1184,11 +1144,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
@@ -1254,38 +1210,52 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
 
-def test_two_qubit_decomposition_special_case_discontinuity():
+# This was the routine used to generate the problematic matrix in the original
+# bug report (see https://github.com/PennyLaneAI/pennylane/issues/5308)
+def _make_unitary(theta1):
+    generator = (
+        theta1
+        / 2
+        * (
+            np.cos(0.2) / 2 * (np.array([[0, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 0]]))
+            + np.sin(0.2)
+            / 2
+            * (np.array([[0, 0, 0, 0], [0, 0, 2j, 0], [0, -2j, 0, 0], [0, 0, 0, 0]]))
+        )
+    )
+
+    def expm(val):
+        d, U = np.linalg.eigh(-1.0j * val)
+        return np.dot(U, np.dot(np.diag(np.exp(1.0j * d)), np.conj(U).T))
+
+    mat = expm(-1j * generator)
+
+    assert np.allclose(
+        np.dot(np.transpose(np.conj(mat)), mat), np.eye(len(mat))
+    ), "mat is not unitary"
+
+    return mat
+
+
+@pytest.mark.parametrize(
+    "U",
+    [
+        _make_unitary(np.pi / 2),
+        np.array(
+            [
+                [-1, 0, 0, 0],
+                [0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+                [0, 1 / np.sqrt(2), -1 / np.sqrt(2), 0],
+                [0, 0, 0, -1],
+            ]
+        ),
+    ],
+)
+def test_two_qubit_decomposition_special_case_discontinuity(U):
     """Test that two_qubit_decomposition still provides accurate numbers at a special case."""
 
-    def make_unitary(theta1):
-        generator = (
-            theta1
-            / 2
-            * (
-                np.cos(0.2)
-                / 2
-                * (np.array([[0, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 0]]))
-                + np.sin(0.2)
-                / 2
-                * (np.array([[0, 0, 0, 0], [0, 0, 2j, 0], [0, -2j, 0, 0], [0, 0, 0, 0]]))
-            )
-        )
-
-        def expm(val):
-            d, U = np.linalg.eigh(-1.0j * val)
-            return np.dot(U, np.dot(np.diag(np.exp(1.0j * d)), np.conj(U).T))
-
-        mat = expm(-1j * generator)
-
-        assert np.allclose(
-            np.dot(np.transpose(np.conj(mat)), mat), np.eye(len(mat))
-        ), "mat is not unitary"
-
-        return mat
-
-    mat = make_unitary(np.pi / 2)
-    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
-    assert qml.math.allclose(mat, decomp_mat)
+    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(U, wires=(0, 1))
+    assert qml.math.allclose(U, decomp_mat)
 
 
 class TestTwoQubitDecompositionWarnings:
@@ -1411,3 +1381,127 @@ class TestTwoQubitDecompositionWarnings:
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
             qnode(1.0 + 0.5j)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestQubitUnitaryDecompositionGraph:
+    """Tests that the decomposition rules for QubitUnitary work with graph-enabled."""
+
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "GlobalPhase"),
+            ("RX", "RZ", "GlobalPhase"),
+            ("RZ", "RY", "GlobalPhase"),
+            ("Rot", "GlobalPhase"),
+        ],
+    )
+    def test_single_qubit_decomposition(self, gate_set):
+        """Tests that a single-qubit unitary can be decomposed."""
+
+        # Just a random matrix
+        U = np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        )
+
+        op = qml.QubitUnitary(U, wires=[0])
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "GlobalPhase"),
+            ("RX", "RZ", "GlobalPhase"),
+            ("RZ", "RY", "GlobalPhase"),
+            ("Rot", "GlobalPhase"),
+        ],
+    )
+    def test_single_qubit_decomposition_capture(self, gate_set):
+        """Tests that a single-qubit unitary can be decomposed with capture enabled."""
+
+        import jax
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        # Just a random matrix
+        U = np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        )
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(mat):
+            qml.QubitUnitary(mat, wires=[0])
+
+        jaxpr = jax.make_jaxpr(circuit)(U)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
+        decomp = collector.state["ops"]
+
+        decomp_tape = qml.tape.QuantumScript(decomp)
+        matrix = qml.matrix(decomp_tape)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition(self, gate_set, U):
+        """Tests that the two-qubit unitary can be decomposed."""
+
+        op = qml.QubitUnitary(U, wires=[0, 1])
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp, wire_order=[0, 1])
+        assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition_capture(self, gate_set, U):
+        """Tests that the two-qubit unitary can be decomposed with capture enabled."""
+
+        import jax
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        @DecomposeInterpreter(gate_set=gate_set)
+        def circuit(mat):
+            qml.QubitUnitary(mat, wires=[0, 1])
+
+        U = jax.numpy.array(U)
+        jaxpr = jax.make_jaxpr(circuit)(U)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
+        decomp = collector.state["ops"]
+
+        decomp_tape = qml.tape.QuantumScript(decomp)
+        matrix = qml.matrix(decomp_tape, wire_order=[0, 1])
+        assert qml.math.allclose(matrix, U, atol=1e-7)

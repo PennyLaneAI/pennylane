@@ -292,9 +292,9 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     if not fermionic:
         return singles, doubles
 
-    fermionic_singles = [qml.fermi.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
+    fermionic_singles = [qml.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
     fermionic_doubles = [
-        qml.fermi.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
+        qml.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
         for x in doubles
     ]
 
@@ -382,6 +382,8 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
         )
 
     state = np.where(np.arange(orbitals) < electrons, 1, 0)
+
+    basis = basis.strip().lower()
 
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))

@@ -141,6 +141,9 @@ test_matrix = [
     ({"diff_method": param_shift}, no_shots, "reference.qubit"),  # 7
     ({"diff_method": param_shift}, shots_10k, "reference.qubit"),  # 8
     ({"diff_method": param_shift}, shots_2_10k, "reference.qubit"),  # 9
+    ({"diff_method": "best"}, shots_10k, "default.qubit"),  # 10
+    ({"diff_method": "best"}, no_shots, "default.qubit"),  # 11
+    ({"diff_method": "best"}, no_shots, "reference.qubit"),  # 12
 ]
 
 
@@ -201,11 +204,7 @@ class TestJaxExecuteIntegration:
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
 
-        # compare to standard tape jacobian
-        tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
-        tape.trainable_params = [0]
-        tapes, fn = param_shift(tape)
-        expected = fn(device.execute(tapes))
+        expected = -qml.math.sin(a)
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
@@ -500,20 +499,7 @@ class TestJaxExecuteIntegration:
                 [qml.expval(qml.PauliX(0))],
                 shots=shots,
             )
-            diff_method = execute_kwargs["diff_method"]
-            if diff_method is None:
-                _gradient_method = None
-            elif isinstance(diff_method, str):
-                _gradient_method = diff_method
-            else:
-                _gradient_method = "gradient-transform"
-            conf = qml.devices.ExecutionConfig(
-                interface="autograd",
-                gradient_method=_gradient_method,
-                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
-            )
-            program = device.preprocess_transforms(execution_config=conf)
-            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
+            return execute([tape], device, **execute_kwargs)[0]
 
         a = jnp.array(0.1)
         p = jnp.array([0.1, 0.2, 0.3])
@@ -703,10 +689,12 @@ class TestHigherOrderDerivatives:
 
         def cost_fn(x):
             ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))])
+            tape1 = qml.tape.QuantumScript(
+                ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))], shots=50000
+            )
 
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
+            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)], shots=50000)
 
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
@@ -714,13 +702,13 @@ class TestHigherOrderDerivatives:
         res = cost_fn(params)
         x, y = params
         expected = 0.5 * (3 + jnp.cos(x) ** 2 * jnp.cos(2 * y))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=2e-2, rtol=0)
 
         res = jax.grad(cost_fn)(params)
         expected = jnp.array(
             [-jnp.cos(x) * jnp.cos(2 * y) * jnp.sin(x), -jnp.cos(x) ** 2 * jnp.sin(2 * y)]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=2e-2, rtol=0)
 
         res = jax.jacobian(jax.grad(cost_fn))(params)
         expected = jnp.zeros([2, 2])
@@ -728,24 +716,31 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
+@pytest.mark.parametrize("constructor", (qml.Hamiltonian, qml.dot, "dunders"))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device_name, seed):
+    def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""
 
         device = get_device(device_name, seed)
 
         def _cost_fn(weights, coeffs1, coeffs2):
-            obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-            H1 = qml.Hamiltonian(coeffs1, obs1)
-            H1 = qml.pauli.pauli_sentence(H1).operation()
+            if constructor == "dunders":
+                H1 = (
+                    coeffs1[0] * qml.Z(0) + coeffs1[1] * qml.Z(0) @ qml.X(1) + coeffs1[2] * qml.Y(0)
+                )
+                H2 = coeffs2[0] * qml.Z(0)
+            else:
 
-            obs2 = [qml.PauliZ(0)]
-            H2 = qml.Hamiltonian(coeffs2, obs2)
-            H2 = qml.pauli.pauli_sentence(H2).operation()
+                obs1 = [qml.Z(0), qml.Z(0) @ qml.X(1), qml.Y(0)]
+                H1 = constructor(coeffs1, obs1)
+
+                obs2 = [qml.PauliZ(0)]
+                H2 = constructor(coeffs2, obs2)
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -817,8 +812,6 @@ class TestHamiltonianWorkflows:
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.xfail("trainable hamiltonians not supported with adjoint")
-        if execute_kwargs["diff_method"] != "backprop":
-            pytest.xfail(reason="parameter shift derivatives do not yet support sums.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])
@@ -835,8 +828,7 @@ class TestHamiltonianWorkflows:
         res = jnp.hstack(jax.jacobian(cost_fn, argnums=[0, 1, 2])(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            pytest.xfail(
-                "multiple hamiltonians with shot vectors does not seem to be differentiable."
-            )
+            assert np.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

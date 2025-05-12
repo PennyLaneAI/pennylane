@@ -1493,7 +1493,7 @@ class TestReadoutError:
     @pytest.mark.parametrize(
         "relaxations, misclassifications, expected",
         [
-            ((0, 0, 0), (0, 0, 0), [(np.ones(2) * 2)] * 2),
+            ((0, 0, 0), (0, 0, 0), [np.ones(2) * 2] * 2),
             (None, (0, 0, 1), [np.ones(2)] * 2),
             ((0, 0, 1), None, [np.ones(2)] * 2),
             (None, (0, 1, 0), [np.zeros(2)] * 2),

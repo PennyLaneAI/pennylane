@@ -176,6 +176,9 @@ test_matrix = [
         Shots((50000, 50000)),
         "reference.qubit",
     ),
+    ({"diff_method": "best"}, Shots(10000), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "default.qubit"),
+    ({"diff_method": "best"}, Shots(None), "reference.qubit"),
 ]
 
 
@@ -238,11 +241,7 @@ class TestAutogradExecuteIntegration:
             res = qml.jacobian(cost)(a)
             assert res.shape == ()  # pylint: disable=no-member
 
-        # compare to standard tape jacobian
-        tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
-        tape.trainable_params = [0]
-        tapes, fn = param_shift(tape)
-        expected = fn(device.execute(tapes))
+        expected = -qml.math.sin(a)
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
@@ -340,7 +339,11 @@ class TestAutogradExecuteIntegration:
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
-        if execute_kwargs["diff_method"] == "backprop":
+        if (
+            execute_kwargs["diff_method"] == "backprop"
+            or execute_kwargs["diff_method"] == "best"
+            and not shots
+        ):
             pytest.xfail("backprop is not compatible with something about this situation.")
 
         device = get_device(device_name, seed=seed)
@@ -767,24 +770,32 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
+@pytest.mark.parametrize("constructor", (qml.Hamiltonian, qml.dot, "dunders"))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device_name, seed):
+    def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""
 
         device = get_device(device_name, seed=seed)
 
         def _cost_fn(weights, coeffs1, coeffs2):
-            obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-            H1 = qml.Hamiltonian(coeffs1, obs1)
-            H1 = qml.pauli.pauli_sentence(H1).operation()
 
-            obs2 = [qml.PauliZ(0)]
-            H2 = qml.Hamiltonian(coeffs2, obs2)
-            H2 = qml.pauli.pauli_sentence(H2).operation()
+            if constructor == "dunders":
+                H1 = (
+                    coeffs1[0] * qml.Z(0) + coeffs1[1] * qml.Z(0) @ qml.X(1) + coeffs1[2] * qml.Y(0)
+                )
+                H2 = coeffs2[0] * qml.Z(0)
+            else:
+
+                obs1 = [qml.Z(0), qml.Z(0) @ qml.X(1), qml.Y(0)]
+                H1 = constructor(coeffs1, obs1)
+
+                obs2 = [qml.PauliZ(0)]
+                H2 = constructor(coeffs2, obs2)
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -849,12 +860,16 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, constructor):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
-        if execute_kwargs["diff_method"] != "backprop":
-            pytest.xfail(reason="parameter shift derivatives do not yet support sums.")
+        if constructor == "dunders":
+            pytest.xfail("autograd does not like constructing an sprod via dunder.")
+        if shots.has_partitioned_shots:
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = pnp.array([0.7], requires_grad=True)
@@ -871,8 +886,7 @@ class TestHamiltonianWorkflows:
         res = pnp.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            pytest.xfail(
-                "multiple hamiltonians with shot vectors does not seem to be differentiable."
-            )
+            assert qml.math.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
         else:
             assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

@@ -35,14 +35,15 @@ class AttributeInfo(MutableMapping):
     attribute. Is stored in the HDF5 object's ``attrs`` dict.
 
     Attributes:
-        attrs_bind: The HDF5 attrs dict that this instance is bound to,
-            or any mutable mapping
         **kwargs: Extra metadata to include. Must be a string, number
             or numpy array
     """
 
     attrs_namespace: ClassVar[str] = "qml.data"
     attrs_bind: MutableMapping[str, Any]
+    """The HDF5 attrs dict that this instance is bound to,
+        or any mutable mapping
+    """
 
     @overload
     def __init__(  # overload to specify known keyword args
@@ -157,13 +158,10 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     The DatasetAttribute class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
     DatasetAttribute, and Python types to compatible AttributeTypes.
-
-    Attributes:
-        type_id: Unique identifier for this DatasetAttribute class. Must be declared
-            in subclasses.
     """
 
     type_id: ClassVar[str]
+    """Unique identifier for this DatasetAttribute class. Must be declared in subclasses."""
 
     @abstractmethod
     def hdf5_to_value(self, bind: HDF5) -> ValueType:
@@ -447,7 +445,7 @@ def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
 
 
 def match_obj_type(
-    type_or_obj: Union[ValueType, Type[ValueType]]
+    type_or_obj: Union[ValueType, Type[ValueType]],
 ) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``

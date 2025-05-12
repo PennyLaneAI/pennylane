@@ -34,7 +34,7 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         return toml.load(file)
 
 
@@ -56,19 +56,19 @@ VALID_CONDITION_STRINGS = {condition.value for condition in ExecutionCondition}
 
 @dataclass
 class OperatorProperties:
-    """Information about support for each operation.
-
-    Attributes:
-        invertible (bool): Whether the adjoint of the operation is also supported.
-        controllable (bool): Whether the operation can be controlled.
-        differentiable (bool): Whether the operation is supported for device gradients.
-        conditions (list[ExecutionCondition]): Execution conditions that the operation must meet.
-    """
+    """Information about support for each operation."""
 
     invertible: bool = False
+    """Whether the adjoint of the operation is also supported."""
+
     controllable: bool = False
+    """Whether the operation can be controlled."""
+
     differentiable: bool = False
+    """Whether the operation is supported for device gradients."""
+
     conditions: list[ExecutionCondition] = field(default_factory=list)
+    """Execution conditions that the operation must meet."""
 
     def __and__(self, other: "OperatorProperties") -> "OperatorProperties":
         # Take the intersection of support but the union of constraints (conditions)
@@ -103,31 +103,37 @@ def _get_supported_base_op(op_name: str, op_dict: dict[str, OperatorProperties])
 
 @dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
-    """Capabilities of a quantum device.
-
-    Attributes:
-        operations: Operations natively supported by the backend device.
-        observables: Observables that the device can measure.
-        measurement_processes: List of measurement processes supported by the backend device.
-        qjit_compatible (bool): Whether the device is compatible with qjit.
-        runtime_code_generation (bool): Whether the device requires run time generation of the quantum circuit.
-        dynamic_qubit_management (bool): Whether the device supports dynamic qubit allocation/deallocation.
-        overlapping_observables (bool): Whether the device supports measuring overlapping observables on the same tape.
-        non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
-        initial_state_prep (bool): Whether the device supports initial state preparation.
-        supported_mcm_methods (list[str]): List of supported methods of mid-circuit measurements.
-    """
+    """Capabilities of a quantum device."""
 
     operations: dict[str, OperatorProperties] = field(default_factory=dict)
+    """Operations natively supported by the backend device."""
+
     observables: dict[str, OperatorProperties] = field(default_factory=dict)
+    """Observables that the device can measure."""
+
     measurement_processes: dict[str, list[ExecutionCondition]] = field(default_factory=dict)
+    """List of measurement processes supported by the backend device."""
+
     qjit_compatible: bool = False
+    """Whether the device is compatible with qjit."""
+
     runtime_code_generation: bool = False
+    """Whether the device requires run time generation of the quantum circuit."""
+
     dynamic_qubit_management: bool = False
+    """Whether the device supports dynamic qubit allocation/deallocation."""
+
     overlapping_observables: bool = True
+    """Whether the device supports measuring overlapping observables on the same tape."""
+
     non_commuting_observables: bool = False
+    """Whether the device supports measuring non-commuting observables on the same tape."""
+
     initial_state_prep: bool = False
+    """Whether the device supports initial state preparation."""
+
     supported_mcm_methods: list[str] = field(default_factory=list)
+    """List of supported methods of mid-circuit measurements."""
 
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":
         """Returns the device capabilities conditioned on the given program features."""
@@ -162,8 +168,8 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         Args:
             file_path (str): The path to the TOML file.
             runtime_interface (str): The runtime execution interface to get the capabilities for.
-                Acceptable values are "pennylane" and "qjit". Use "pennylane" for capabilities of
-                the device's implementation of `Device.execute`, and "qjit" for capabilities of
+                Acceptable values are ``"pennylane"`` and ``"qjit"``. Use ``"pennylane"`` for capabilities of
+                the device's implementation of `Device.execute`, and ``"qjit"`` for capabilities of
                 the runtime execution function used by a qjit-compiled workflow.
 
         """
@@ -356,7 +362,7 @@ def parse_toml_document(document: dict) -> DeviceCapabilities:
     """Parses a TOML document into a DeviceCapabilities object.
 
     This function will ignore sections that are specific to either runtime interface, such as
-    "qjit.operators.gates". To include these sections, use :func:`update_device_capabilities`
+    ``"qjit.operators.gates"``. To include these sections, use :func:`update_device_capabilities`
     on the capabilities object returned from this function.
 
     """
@@ -429,7 +435,7 @@ def observable_stopping_condition_factory(
 
 
 def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
-    """Validates an MCM method against the device's capabilities.'"""
+    """Validates an MCM method against the device's capabilities."""
 
     if mcm_method is None or mcm_method == "deferred":
         return  # no need to validate if requested deferred or if no method is requested.

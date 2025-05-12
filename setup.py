@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<2.1",
+    "numpy",
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
@@ -30,7 +30,7 @@ requirements = [
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.39",
+    "pennylane-lightning>=0.41",
     "requests",
     "typing_extensions",
     "packaging",
@@ -75,7 +75,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Operating System :: MacOS :: MacOS X",

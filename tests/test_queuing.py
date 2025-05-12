@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
-import warnings
 from multiprocessing.dummy import Pool as ThreadPool
 
 import numpy as np
@@ -22,13 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -51,8 +43,7 @@ class TestStopRecording:
             res.extend(my_op())
             return qml.expval(qml.PauliZ(0))
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 0
         assert len(res) == 3
@@ -69,8 +60,7 @@ class TestStopRecording:
             res.extend([op1, op2])
             return qml.expval(qml.PauliZ(0))
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 1
         assert tape.operations[0] == res[1]
@@ -106,8 +96,7 @@ class TestStopRecording:
             my_op()
             return qml.state()
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "Hadamard"
@@ -125,7 +114,7 @@ class TestStopRecording:
         result = my_circuit()
         assert len(result) == 0
 
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
         assert len(tape.operations) == 0
         assert len(tape.measurements) == 0
 

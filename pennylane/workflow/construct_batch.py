@@ -11,12 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function extracting the tapes at postprocessing at any stage of a transform program.
-
-"""
+"""Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
 import inspect
 from collections.abc import Callable
-from contextlib import nullcontext
 from functools import wraps
 from typing import Literal, Union
 
@@ -67,7 +64,12 @@ def _get_full_transform_program(
             **qnode.gradient_kwargs,
         )
 
-    config = _make_execution_config(qnode, gradient_fn)
+    mcm_config = qml.devices.MCMConfig(
+        postselect_mode=qnode.execute_kwargs["postselect_mode"],
+        mcm_method=qnode.execute_kwargs["mcm_method"],
+    )
+
+    config = _make_execution_config(qnode, gradient_fn, mcm_config)
     return program + qnode.device.preprocess_transforms(config)
 
 
@@ -181,7 +183,13 @@ def get_transform_program(
 
     """
     if gradient_fn == "unset":
-        gradient_fn = QNode.get_gradient_fn(qnode.device, qnode.interface, qnode.diff_method)[0]
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)()
+        # pylint: disable = protected-access
+        config = qml.workflow.resolution._resolve_diff_method(
+            config,
+            qnode.device,
+        )
+        gradient_fn = config.gradient_method
 
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
@@ -220,7 +228,7 @@ def get_transform_program(
 
 
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
+    qnode: Union[QNode, "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
@@ -329,39 +337,23 @@ def construct_batch(
         else:
             shots = kwargs.pop("shots", qnode.device.shots)
 
-        context_fn = nullcontext
-
-        if type(qnode).__name__ == "KerasLayer":
-            # note that calling qml.qnn.KerasLayer pulls in a tf import
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
-
-            context_fn = tf.GradientTape
-
-        elif type(qnode).__name__ == "TorchLayer":
+        if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        with context_fn() as cntxt:
-            # If TF tape, use the watch function
-            if hasattr(cntxt, "watch"):
-                cntxt.watch(list(qnode.qnode_weights.values()))
+        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        params = initial_tape.get_parameters(trainable_only=False)
+        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-                kwargs = {
-                    **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
-                    **kwargs,
-                }
-
-            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-            params = initial_tape.get_parameters(trainable_only=False)
-            initial_tape.trainable_params = qml.math.get_trainable_indices(params)
-
-        gradient_fn = QNode.get_gradient_fn(
-            qnode.device, qnode.interface, qnode.diff_method, tape=initial_tape
-        )[0]
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
+        # pylint: disable = protected-access
+        config = qml.workflow.resolution._resolve_execution_config(
+            config, qnode.device, tapes=(initial_tape,)
+        )
+        gradient_fn = config.gradient_method
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
         return program((initial_tape,))

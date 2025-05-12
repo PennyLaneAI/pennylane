@@ -519,7 +519,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = [((0.55, 0.72, 0.6, 0.54, 0.42, 0.65))]
+        weights_tuple = [(0.55, 0.72, 0.6, 0.54, 0.42, 0.65)]
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
 

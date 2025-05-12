@@ -14,7 +14,6 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
-import warnings
 
 import numpy as np
 
@@ -29,13 +28,6 @@ from pennylane.resource.error import (
     SpectralNormError,
     _compute_algo_error,
 )
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class SimpleError(AlgorithmicError):
@@ -163,9 +155,9 @@ class TestSpectralNormError:
                 return self.__class__.__name__
 
         approx_op = MyOp(0)
-        exact_op = qml.RX(0.1, 1)
+        exact_op = qml.RX(0.1, 0)
 
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
+        with pytest.raises(qml.operation.MatrixUndefinedError):
             SpectralNormError.get_error(approx_op, exact_op)
 
     def test_repr(self):
@@ -274,8 +266,8 @@ class TestSpecAndTracker:
     def test_computation(self):
         """Test that _compute_algo_error are adding up errors as expected."""
 
-        _ = self.circuit()
-        algo_errors = _compute_algo_error(self.circuit.qtape)
+        tape = qml.workflow.construct_tape(self.circuit)()
+        algo_errors = _compute_algo_error(tape)
         assert len(algo_errors) == 3
         assert all(error in algo_errors for error in self.errors_types)
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24

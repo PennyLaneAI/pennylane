@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_mixed import (
-    DefaultMixedNewAPI,
+    DefaultMixed,
     observable_stopping_condition,
     stopping_condition,
 )
@@ -33,7 +33,7 @@ from pennylane.devices.default_mixed import (
 # pylint: disable=protected-access
 def test_mid_circuit_measurement_preprocessing():
     """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
-    dev = DefaultMixedNewAPI(wires=2, shots=1000)
+    dev = DefaultMixed(wires=2, shots=1000)
 
     # Define operations and mid-circuit measurement
     m0 = qml.measure(0)
@@ -88,7 +88,7 @@ class TestPreprocessing:
 
     def test_error_if_device_option_not_available(self):
         """Test that an error is raised if a device option is requested but not a valid option."""
-        dev = DefaultMixedNewAPI()
+        dev = DefaultMixed()
 
         config = ExecutionConfig(device_options={"invalid_option": "val"})
         with pytest.raises(qml.DeviceError, match="device option invalid_option"):
@@ -96,7 +96,7 @@ class TestPreprocessing:
 
     def test_chooses_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
-        dev = DefaultMixedNewAPI()
+        dev = DefaultMixed()
 
         config = ExecutionConfig(gradient_method="best")
 
@@ -108,7 +108,7 @@ class TestPreprocessing:
 
     def test_circuit_wire_validation(self):
         """Test that preprocessing validates wires on the circuits being executed."""
-        dev = DefaultMixedNewAPI(wires=3)
+        dev = DefaultMixed(wires=3)
 
         circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
         program, _ = dev.preprocess()
@@ -140,7 +140,7 @@ class TestPreprocessing:
     )
     def test_measurement_is_swapped_out(self, mp_fn, mp_cls, shots):
         """Test that preprocessing swaps out any MeasurementProcess with no wires or obs"""
-        dev = DefaultMixedNewAPI(wires=3)
+        dev = DefaultMixed(wires=3)
         original_mp = mp_fn()
         exp_z = qml.expval(qml.PauliZ(0))
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [original_mp, exp_z], shots=shots)
@@ -213,7 +213,7 @@ class TestPreprocessing:
         ops = [qml.Hadamard(0), qml.CNOT(wires=[0, 1]), qml.RX(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
-        device = DefaultMixedNewAPI(wires=2)
+        device = DefaultMixed(wires=2)
 
         program, _ = device.preprocess()
         tapes, _ = program([tape])
@@ -227,7 +227,7 @@ class TestPreprocessing:
         ops = [qml.Hadamard(0), qml.CNOT(wires=[0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
-        device = DefaultMixedNewAPI(wires=2)
+        device = DefaultMixed(wires=2)
 
         program, _ = device.preprocess()
         tapes, _ = program([tape])
@@ -245,7 +245,7 @@ class TestPreprocessing:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultMixedNewAPI(wires=2).preprocess()
+        program, _ = DefaultMixed(wires=2).preprocess()
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
@@ -266,7 +266,7 @@ class TestPreprocessing:
             qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = DefaultMixedNewAPI(wires=2).preprocess()
+        program, _ = DefaultMixed(wires=2).preprocess()
         res_tapes, batch_fn = program(tapes)
 
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
@@ -289,7 +289,7 @@ class TestPreprocessing:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultMixedNewAPI(wires=2).preprocess()
+        program, _ = DefaultMixed(wires=2).preprocess()
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             qml.Hadamard(0),
@@ -317,7 +317,7 @@ class TestPreprocessing:
             qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = DefaultMixedNewAPI(wires=2).preprocess()
+        program, _ = DefaultMixed(wires=2).preprocess()
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
@@ -346,7 +346,7 @@ class TestPreprocessing:
                 ops=[qml.Hadamard(0), qml.RZ(0.123, wires=1)], measurements=measurements
             ),
         ]
-        device = DefaultMixedNewAPI(wires=3, readout_prob=readout_err)
+        device = DefaultMixed(wires=3, readout_prob=readout_err)
         program, _ = device.preprocess()
 
         with warnings.catch_warnings(record=True) as warning:
@@ -360,7 +360,7 @@ class TestPreprocessing:
 
     def test_preprocess_linear_combination_observable(self):
         """Test that the device's preprocessing handles linear combinations of observables correctly."""
-        dev = DefaultMixedNewAPI(wires=2)
+        dev = DefaultMixed(wires=2)
 
         # Define the linear combination observable
         obs = qml.PauliX(0) + 2 * qml.PauliZ(1)
@@ -394,7 +394,7 @@ class TestPreprocessing:
 
         seed = jax.random.PRNGKey(42)
 
-        dev = DefaultMixedNewAPI(wires=1, seed=seed, shots=100)
+        dev = DefaultMixed(wires=1, seed=seed, shots=100)
 
         # Preprocess the device
         _ = dev.preprocess()

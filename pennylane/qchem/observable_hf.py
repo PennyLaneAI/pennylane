@@ -32,7 +32,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible integrals
 
     Returns:
-        FermiSentence: fermionic observable
+        ~.FermiSentence: fermionic observable
 
     **Example**
 
@@ -98,7 +98,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     Args:
-        o_ferm (Union[FermiWord, FermiSentence]): fermionic operator
+        o_ferm (Union[~.FermiWord, ~.FermiSentence]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
@@ -107,12 +107,13 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
 
     **Example**
 
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
+    mapping = mapping.strip().lower()
     if mapping == "jordan_wigner":
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     elif mapping == "parity":
@@ -121,6 +122,11 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+    else:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+        )
 
     if list(h.wires) != sorted(list(h.wires)):
         h = PauliSentence(

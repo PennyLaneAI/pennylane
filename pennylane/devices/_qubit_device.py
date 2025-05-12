@@ -235,7 +235,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -346,7 +346,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             tuple: statistics for each shot item from the shot vector
@@ -599,7 +599,7 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if a measurement is not supported
 
         Returns:
             Union[float, List[float]]: the corresponding statistics
@@ -634,7 +634,7 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            # TODO: Remove this when all overridden measurements support the `MeasurementProcess` class
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
@@ -642,7 +642,7 @@ class QubitDevice(Device):
             else:
                 obs = m.obs or m.mv
                 obs = m if obs is None else obs
-            # Check if there is an overriden version of the measurement process
+            # Check if there is an overridden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
                     result = method(tape=circuit)
@@ -758,13 +758,11 @@ class QubitDevice(Device):
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
-            elif m.return_type is not None:
+            else:
                 name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
-            else:
-                result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
@@ -1005,7 +1003,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1032,7 +1033,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1430,8 +1434,7 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on mp.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        The format of the dictionary depends on whether the MeasurementProcess CountsMP returns all counts or not. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
@@ -1510,7 +1513,7 @@ class QubitDevice(Device):
         """Return samples of an observable.
 
         Args:
-            observable (Observable): the observable to sample
+            observable (Operator): the observable to sample
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and

@@ -66,7 +66,7 @@ def is_pauli_word(observable):
     .. Warning::
 
         This function will only confirm that all operators are Pauli or Identity operators,
-        and not whether the Observable is mathematically a Pauli word.
+        and not whether the observable is mathematically a Pauli word.
         If an Observable consists of multiple Pauli operators targeting the same wire, the
         function will return ``True`` regardless of any complex coefficients.
 
@@ -105,7 +105,7 @@ def _is_pauli_word(observable):  # pylint:disable=unused-argument
 @_is_pauli_word.register(PauliZ)
 @_is_pauli_word.register(Identity)
 def _is_pw_pauli(
-    observable: Union[PauliX, PauliY, PauliZ, Identity]
+    observable: Union[PauliX, PauliY, PauliZ, Identity],
 ):  # pylint:disable=unused-argument
     return True
 
@@ -247,7 +247,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
     if check_is_pauli_word and not is_pauli_word(pauli_word):
-        raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
+        raise TypeError(f"Expected a Pauli word Operator instance, instead got {pauli_word}.")
 
     pw = next(iter(pauli_word.pauli_rep))
 
@@ -274,7 +274,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
 
 
 def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-branches
-    """Converts a binary vector of even dimension to an Observable instance.
+    """Converts a binary vector of even dimension to an Operator instance.
 
     This functions follows the convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.
@@ -395,7 +395,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
         'X'
 
     Args:
-        pauli_word (Union[Observable, Prod, SProd, Sum]): an observable, either a single-qubit observable
+        pauli_word (Operator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
         wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -446,7 +446,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        .Observable: The Pauli word representing of ``pauli_string`` on the wires
+        .Operator: The Pauli word representing of ``pauli_string`` on the wires
         enumerated in the wire map.
 
     **Example**
@@ -518,7 +518,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     product at the correct positions.
 
     Args:
-        pauli_word (Union[Observable, Prod, SProd, Sum]): an observable, either a single-qubit observable
+        pauli_word (Operator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
         wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -656,7 +656,7 @@ def are_pauli_words_qwc(lst_pauli_words):
     number of distinct wire labels used to represent the Pauli words.
 
     Args:
-        lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
+        lst_pauli_words (list[Operator]): List of observables (assumed to be valid Pauli words).
 
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise. If any of the provided
@@ -1051,7 +1051,7 @@ def diagonalize_qwc_pauli_words(
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
-        qwc_grouping (list[Observable]): a list of observables containing mutually
+        qwc_grouping (list[Operator]): a list of observables containing mutually
             qubit-wise commutative Pauli words
 
     Returns:
@@ -1059,7 +1059,7 @@ def diagonalize_qwc_pauli_words(
 
             * list[Operation]: an instance of the qwc_rotation template which
               diagonalizes the qubit-wise commuting grouping
-            * list[Observable]: list of Pauli string observables diagonal in
+            * list[Operator]: list of Pauli string observables diagonal in
               the computational basis
 
     Raises:
@@ -1106,7 +1106,7 @@ def diagonalize_qwc_groupings(qwc_groupings):
     """Diagonalizes a list of qubit-wise commutative groupings of Pauli strings.
 
     Args:
-        qwc_groupings (list[list[Observable]]): a list of mutually qubit-wise commutative groupings
+        qwc_groupings (list[list[Operator]]): a list of mutually qubit-wise commutative groupings
             of Pauli string observables
 
     Returns:
@@ -1115,7 +1115,7 @@ def diagonalize_qwc_groupings(qwc_groupings):
             * list[list[Operation]]: a list of instances of the qwc_rotation
               template which diagonalizes the qubit-wise commuting grouping,
               order corresponding to qwc_groupings
-            * list[list[Observable]]: a list of QWC groupings diagonalized in the
+            * list[list[Operator]]: a list of QWC groupings diagonalized in the
               computational basis, order corresponding to qwc_groupings
 
     **Example**

@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
 
 class TestConstructor:
@@ -116,7 +116,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -136,7 +137,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
@@ -146,9 +148,11 @@ class TestInheritanceMixins:
     def test_observable(self, power_method):
         """Test that when the base is an Observable, Pow will also inherit from Observable."""
 
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+
+            class CustomObs(qml.operation.Observable):
+                num_wires = 1
+                num_params = 0
 
         base = CustomObs(wires=0)
         ob: Pow = power_method(base=base, z=-1.2)
@@ -159,7 +163,8 @@ class TestInheritanceMixins:
         assert not isinstance(ob, PowOperation)
 
         # Check some basic observable functionality
-        assert ob.compare(ob)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert ob.compare(ob)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -859,6 +864,21 @@ class TestSparseMatrix:
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
+
+    def test_sparse_matrix_format(self):
+        """Test the sparse matrix is correct when the base defines a
+        sparse matrix and the exponennt is an int."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+        op = Pow(base, 3)
+
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
 
 
 class TestDecompositionExpand:

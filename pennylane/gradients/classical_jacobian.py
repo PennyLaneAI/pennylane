@@ -113,7 +113,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``tuple(array)``
 
     [1] If there only is one trainable QNode argument, the tuple is unpacked to a
-    single ``array``, as is the case for :func:`.jacobian`.
+    single ``array``, as is the case for :func:`pennylane.jacobian`.
 
     [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
     interfaces. This means that only the classical Jacobian with respect to the first
@@ -158,7 +158,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         if qnode.interface == "autograd":
             jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
-        if qnode.interface == "torch":
+        elif qnode.interface == "torch":
             import torch
 
             def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
@@ -177,7 +177,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        if qnode.interface in ["jax", "jax-jit"]:
+        elif qnode.interface in ["jax", "jax-jit"]:
             import jax
 
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
@@ -187,7 +187,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        if qnode.interface == "tf":
+        elif qnode.interface == "tf":
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):
@@ -205,6 +205,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 return jac
 
             jac = _jacobian(*args, **kwargs)
+
+        else:
+            raise ValueError(f"Undifferentiable interface {qnode.interface}.")
 
         if old_interface == "auto":
             qnode.interface = "auto"

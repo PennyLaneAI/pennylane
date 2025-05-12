@@ -21,7 +21,6 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.operation import AnyWires
 from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
@@ -189,7 +188,7 @@ class TestSupportsBroadcasting:
         cls = getattr(qml, name)
 
         # Provide up to 6 wires and take as many as the class requires
-        # This assumes that the class does *not* have `num_wires=qml.operation.AnyWires`
+        # This assumes that the class does *not* have `num_wires=qml.operation.None`
         wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
         op = cls(par, wires=wires)
 
@@ -283,15 +282,14 @@ class TestSupportsBroadcasting:
         actually does support broadcasting."""
 
         U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
-        wires = [0, "9"]
+        target_wires = [0, "9"]
+        control_wires = [1, "10"]
+        wires = control_wires + target_wires
 
-        op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
+        op = qml.ControlledQubitUnitary(U, wires=wires)
 
         mat1 = op.matrix()
-        single_mats = [
-            qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
-            for _U in U
-        ]
+        single_mats = [qml.ControlledQubitUnitary(_U, wires=wires).matrix() for _U in U]
 
         assert qml.math.allclose(mat1, single_mats)
 
@@ -486,9 +484,9 @@ class TestHasUnitaryGenerator:
         attribute are unitary up to a factor of 2."""
         op_class = getattr(qml, entry)
         phi = 1.23
-        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if op_class is qml.PauliRot:
-            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qml.PCPhase:
             op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
         else:
@@ -510,9 +508,9 @@ class TestHasUnitaryGenerator:
         if not op_class.has_generator:
             pytest.skip("Operator does not have a generator")
         phi = 1.23
-        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if op_class is qml.PauliRot:
-            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qml.PCPhase:
             op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
         else:

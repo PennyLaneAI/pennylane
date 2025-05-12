@@ -14,27 +14,17 @@
 """Unit tests for the ``Exp`` class"""
 import copy
 import re
-import warnings
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
-    AllWires,
-    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -477,11 +467,7 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = (
-            [0, 1, 2]
-            if op_class.num_wires in {AnyWires, AllWires}
-            else list(range(op_class.num_wires))
-        )
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -1089,4 +1075,6 @@ class TestDifferentiation:
 
         with pytest.warns(UserWarning):
             circuit(np.array(2.0), np.array(0.5))
-        assert circuit.tape.trainable_params == [0, 1]
+
+        tape = qml.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
+        assert tape.trainable_params == [0, 1]

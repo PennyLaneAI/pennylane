@@ -50,7 +50,7 @@ class ModExp(Operation):
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
             :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
-            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty set.
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
 
     **Example**
 
@@ -117,8 +117,8 @@ class ModExp(Operation):
     ):  # pylint: disable=too-many-arguments
 
         output_wires = qml.wires.Wires(output_wires)
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+
         if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for ModExp")
 

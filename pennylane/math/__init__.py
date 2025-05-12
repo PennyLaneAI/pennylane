@@ -34,7 +34,14 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
+from .matrix_manipulation import (
+    expand_matrix,
+    expand_vector,
+    reduce_matrices,
+    get_batch_size,
+    convert_to_su2,
+    convert_to_su4,
+)
 from .multi_dispatch import (
     add,
     array,
@@ -76,6 +83,7 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
     vn_entanglement_entropy,
     max_entropy,
@@ -100,9 +108,22 @@ from .interface_utils import (
     get_deep_interface,
     get_interface,
     Interface,
+    InterfaceLike,
 )
+from .grad import grad, jacobian
 
 sum = ar.numpy.sum
+conj = ar.numpy.conj
+transpose = ar.numpy.transpose
+sqrt = ar.numpy.sqrt
+zeros = ar.numpy.zeros
+moveaxis = ar.numpy.moveaxis
+mean = ar.numpy.mean
+round = ar.numpy.round
+shape = ar.numpy.shape
+flatten = ar.numpy.flatten
+reshape = ar.numpy.reshape
+multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
@@ -150,6 +171,8 @@ __all__ = [
     "cast_like",
     "concatenate",
     "convert_like",
+    "convert_to_su2",
+    "convert_to_su4",
     "cov_matrix",
     "detach",
     "diag",
@@ -159,33 +182,45 @@ __all__ = [
     "expand_matrix",
     "expand_vector",
     "expectation_value",
+    "expm",
     "eye",
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
+    "gammainc",
     "get_dtype_name",
     "get_interface",
+    "get_batch_size",
     "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
+    "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
+    "kron",
+    "Interface",
+    "matmul",
     "marginal_prob",
     "max_entropy",
     "min_entropy",
     "multi_dispatch",
     "mutual_info",
+    "norm",
     "ones_like",
     "partial_trace",
     "purity",
     "reduce_dm",
+    "reduce_matrices",
     "reduce_statevector",
     "relative_entropy",
     "requires_grad",
-    "sqrt_matrix",
+    "scatter",
     "scatter_element_add",
+    "set_index",
+    "sqrt_matrix",
     "stack",
     "svd",
     "tensordot",

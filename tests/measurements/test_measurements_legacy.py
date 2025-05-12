@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -26,13 +27,11 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument
+# pylint: disable=too-few-public-methods, unused-argument, protected-access
 
 
 class NotValidMeasurement(MeasurementProcess):
-    @property
-    def return_type(self):
-        return "NotValidReturnType"
+    _shortname = "NotValidReturnType"
 
 
 class TestSampleMeasurement:
@@ -49,7 +48,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.mixed", wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -69,7 +68,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -84,15 +83,15 @@ class TestSampleMeasurement:
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.mixed", wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.PauliX(0)
             return qml.sample(wires=[0]), qml.sample(wires=[1])
 
-        circuit.device.target_device.measurement_map[SampleMP] = "test_method"
-        circuit.device.target_device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+        circuit.device._device.measurement_map[SampleMP] = "test_method"
+        circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert qml.math.allequal(circuit(), [2, 2])
 
@@ -107,7 +106,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -122,7 +121,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.mixed", wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -137,14 +136,14 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit():
             return qml.state()
 
-        circuit.device.target_device.measurement_map[StateMP] = "test_method"
-        circuit.device.target_device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+        circuit.device._device.measurement_map[StateMP] = "test_method"
+        circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
 
@@ -159,24 +158,24 @@ class TestMeasurementTransform:
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
-        dev = qml.device("default.mixed", wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {dev._shots: len(circuit.tape)}  # pylint:disable=protected-access
+        assert circuit() == {dev._shots: 1}  # pylint:disable=protected-access
 
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.mixed", wires=2, shots=1000)
+        dev = DefaultQubitLegacy(wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
             return qml.classical_shadow(wires=0)
 
-        circuit.device.target_device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.target_device.test_method = lambda tape: 2
+        circuit.device._device.measurement_map[ClassicalShadowMP] = "test_method"
+        circuit.device._device.test_method = lambda tape: 2
 
         assert circuit() == 2

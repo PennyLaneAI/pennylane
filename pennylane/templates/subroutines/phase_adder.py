@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 
 def _add_k_fourier(k, wires: WiresLike):
@@ -65,7 +65,7 @@ class PhaseAdder(Operation):
             value for `mod`.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty set.
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple.
 
     **Example**
 
@@ -127,9 +127,8 @@ class PhaseAdder(Operation):
         self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        work_wire = work_wire or ()
-        work_wire = qml.wires.Wires(work_wire)
-        x_wires = qml.wires.Wires(x_wires)
+        work_wire = Wires(() if work_wire is None else work_wire)
+        x_wires = Wires(x_wires)
 
         num_work_wires = len(work_wire)
 
@@ -153,15 +152,11 @@ class PhaseAdder(Operation):
                         "None of the wires in work_wire should be included in x_wires."
                     )
 
-        all_wires = (
-            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
-            if work_wire
-            else qml.wires.Wires(x_wires)
-        )
+        all_wires = x_wires + work_wire
 
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["x_wires"] = x_wires
         super().__init__(wires=all_wires, id=id)
 

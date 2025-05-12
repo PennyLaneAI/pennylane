@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-import warnings
 
 import numpy as np
 
@@ -22,14 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -88,10 +79,6 @@ class TestQNode:
         a = tf.Variable(0.1)
         circuit(a)
 
-        # if executing outside a gradient tape, the number of trainable parameters
-        # cannot be determined by TensorFlow
-        assert circuit.qtape.trainable_params == []
-
         with tf.GradientTape() as tape:
             res = circuit(a)
 
@@ -100,9 +87,6 @@ class TestQNode:
         # with the interface, the tape returns tensorflow tensors
         assert isinstance(res, tf.Tensor)
         assert res.shape == ()
-
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = tape.gradient(res, a)
@@ -174,6 +158,7 @@ class TestQNode:
 
     def test_jacobian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface, seed):
         """Test jacobian calculation"""
+        gradient_kwargs = {}
         kwargs = {
             "diff_method": diff_method,
             "grad_on_execution": grad_on_execution,
@@ -181,14 +166,14 @@ class TestQNode:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -198,8 +183,6 @@ class TestQNode:
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
-
-        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -218,14 +201,15 @@ class TestQNode:
 
         a = tf.Variable([0.1, 0.2])
 
+        gradient_kwargs = {"approx_order": 2, "h": 1e-8}
+
         @qnode(
             dev,
             interface=interface,
-            h=1e-8,
-            approx_order=2,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -258,7 +242,7 @@ class TestQNode:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **diff_kwargs,
+            gradient_kwargs=diff_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -269,9 +253,6 @@ class TestQNode:
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
-
-        # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -290,9 +271,6 @@ class TestQNode:
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
             res = tf.stack(res)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -322,10 +300,6 @@ class TestQNode:
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b, c)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c], experimental_use_pfor=not device_vjp)
 
@@ -358,9 +332,6 @@ class TestQNode:
             res = circuit(a, b)
             res = tf.stack(res)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == []
-
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
 
@@ -391,9 +362,6 @@ class TestQNode:
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(U, a)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
-
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
         res = tape.jacobian(res, a, experimental_use_pfor=not device_vjp)
@@ -404,6 +372,7 @@ class TestQNode:
     ):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        gradient_kwargs = {}
         kwargs = {
             "diff_method": diff_method,
             "grad_on_execution": grad_on_execution,
@@ -411,8 +380,8 @@ class TestQNode:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -427,7 +396,7 @@ class TestQNode:
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -533,12 +502,10 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_update_diff_method(self, mocker, interface):
+    def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
         dev = DefaultQubit()
         weights = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        spy = mocker.spy(qml, "execute")
 
         @qnode(dev, interface=interface)
         def circuit(weights):
@@ -547,14 +514,19 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
-        # since we are using finite shots, parameter-shift will
-        # be chosen
-        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
+        with dev.tracker:
+            with tf.GradientTape() as tape:
+                res = circuit(weights, shots=100)
+            tape.gradient(res, weights)
+        # since we are using finite shots, use parameter shift
+        assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
-        circuit(weights)
-        assert spy.call_args[1]["diff_method"] == "backprop"
+        with dev.tracker:
+            with tf.GradientTape() as tape:
+                res = circuit(weights)
+            tape.gradient(res, weights)
+        assert dev.tracker.totals["executions"] == 1
 
 
 @pytest.mark.parametrize(
@@ -579,15 +551,16 @@ class TestQubitIntegration:
             "interface": interface,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -636,15 +609,16 @@ class TestQubitIntegration:
             "interface": interface,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -974,13 +948,14 @@ class TestQubitIntegration:
             "interface": interface,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("adjoint supports either all expvals or all diagonal measurements.")
         if diff_method == "hadamard":
             pytest.skip("Variance not implemented yet.")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
         if dev.name == "reference.qubit":
             pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
@@ -990,7 +965,7 @@ class TestQubitIntegration:
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -1079,6 +1054,7 @@ class TestTapeExpansion:
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
+            has_generator = False
 
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
@@ -1160,16 +1136,17 @@ class TestTapeExpansion:
             "interface": interface,
             "device_vjp": device_vjp,
         }
+        gradient_kwargs = {}
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
-            kwargs["num_directions"] = 20
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, **kwargs)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(data, weights, coeffs):
             weights = tf.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1242,7 +1219,7 @@ class TestTapeExpansion:
             max_diff=max_diff,
             interface=interface,
             device_vjp=device_vjp,
-            **gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = tf.reshape(weights, [1, -1])

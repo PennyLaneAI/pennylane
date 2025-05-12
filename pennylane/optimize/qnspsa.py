@@ -77,7 +77,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa>`_.
+    You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
 
     **Examples:**
 
@@ -221,20 +221,8 @@ class QNSPSAOptimizer:
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
 
-        if isinstance(cost.device, qml.devices.Device):
-            program, config = cost.device.preprocess()
-
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes,
-                cost.device,
-                None,
-                transform_program=program,
-                config=config,
-            )
-        else:
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes, cost.device, None
-            )  # pragma: no cover
+        # nosemgrep
+        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)

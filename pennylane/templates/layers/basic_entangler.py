@@ -16,7 +16,7 @@ Contains the BasicEntanglerLayers template.
 """
 # pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class BasicEntanglerLayers(Operation):
@@ -122,7 +122,6 @@ class BasicEntanglerLayers(Operation):
         ``ValueError: Wrong number of parameters``.
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires=None, rotation=None, id=None):

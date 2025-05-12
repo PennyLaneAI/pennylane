@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for getting the best differentiation method for a given QNode.
-
-"""
+"""Contains a function for getting the best differentiation method for a given QNode."""
 
 from functools import wraps
 
@@ -41,7 +39,7 @@ def get_best_diff_method(qnode: QNode):
     .. seealso::
 
         For a detailed comparison of the backpropagation and parameter-shift methods,
-        refer to the :doc:`quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`.
+        refer to the `quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`__.
 
     Args:
         qnode (.QNode): the qnode to get the 'best' differentiation method for.

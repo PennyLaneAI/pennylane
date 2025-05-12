@@ -20,11 +20,11 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from itertools import chain
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 import pennylane as qml
 from pennylane import Snapshot, transform
+from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -41,7 +41,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
+def _operator_decomposition_gen(  # pylint: disable = too-many-positional-arguments
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
@@ -161,7 +161,9 @@ def validate_device_wires(
                     modified = True
                     new_mp = copy(mp)
                     new_mp._wires = wires  # pylint:disable=protected-access
-                    new_ops[i] = qml.Snapshot(measurement=new_mp, tag=op.tag)
+                    new_ops[i] = qml.Snapshot(
+                        measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
+                    )
         if not new_ops:
             new_ops = tape.operations  # no copy in this case
 
@@ -187,8 +189,9 @@ def mid_circuit_measurements(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Provide the transform to handle mid-circuit measurements.
 
-    If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
-    and use the ``qml.defer_measurements`` transform otherwise.
+    In the case where no method is specified, if the tape or device
+    uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
+    applied, otherwise ``qml.defer_measurements`` is used instead.
     """
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
@@ -198,7 +201,7 @@ def mid_circuit_measurements(
 
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
-    if mcm_method == "tree-traversal":
+    if mcm_method in ("tree-traversal", "device"):
         return (tape,), null_postprocessing
     return qml.defer_measurements(
         tape, allow_postselect=isinstance(device, qml.devices.DefaultQubit)
@@ -276,13 +279,13 @@ def validate_adjoint_trainable_params(
     """
 
     for op in tape.operations[: tape.num_preps]:
-        if qml.operation.is_trainable(op):
+        if any(requires_grad(d) for d in op.data):
             raise qml.QuantumFunctionError(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
     for m in tape.measurements:
-        if m.obs and qml.operation.is_trainable(m.obs):
+        if m.obs and any(requires_grad(d) for d in m.obs.data):
             warnings.warn(
                 f"Differentiating with respect to the input parameters of {m.obs.name} "
                 "is not supported with the adjoint differentiation method. Gradients are computed "
@@ -294,7 +297,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(
+def decompose(  # pylint: disable = too-many-positional-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
@@ -302,7 +305,6 @@ def decompose(
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
-    max_expansion: Union[int, None] = None,
     name: str = "device",
     error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -313,11 +315,7 @@ def decompose(
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``,
             the operator should be decomposed. If an operator cannot be decomposed and is not
             accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
-            specified by the ``error`` keyward argument).
-
-    .. warning::
-
-        The `max_expansion` argument is deprecated and will be removed in v0.41.
+            specified by the ``error`` keyword argument).
 
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If
@@ -328,7 +326,6 @@ def decompose(
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion (int): The maximum depth of the expansion. Defaults to None.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -383,11 +380,6 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in v0.41. ",
-            qml.PennyLaneDeprecationWarning,
-        )
 
     if error is None:
         error = qml.DeviceError
@@ -416,7 +408,6 @@ def decompose(
                 op,
                 stopping_condition,
                 decomposer=decomposer,
-                max_expansion=max_expansion,
                 name=name,
                 error=error,
             )
@@ -520,28 +511,38 @@ def validate_measurements(
         def sample_measurements(m):
             return isinstance(m, SampleMeasurement)
 
-    # Gather all the measurements present in the snapshot operations with the
-    # exception of `qml.state` as this is supported for any supported simulator regardless
-    # of its configuration
-    snapshot_measurements = [
-        meas
-        for op in tape.operations
-        if isinstance(op, qml.Snapshot)
-        and not isinstance(meas := op.hyperparameters["measurement"], qml.measurements.StateMP)
-    ]
-
-    shots = qml.measurements.Shots(tape.shots)
-
-    if shots.total_shots is not None:
-        for m in chain(snapshot_measurements, tape.measurements):
+    if tape.shots:
+        for m in tape.measurements:
             if not sample_measurements(m):
                 raise qml.DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
-
     else:
-        for m in chain(snapshot_measurements, tape.measurements):
+        for m in tape.measurements:
             if not analytic_measurements(m):
                 raise qml.DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."
                 )
 
+    _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name)
+
     return (tape,), null_postprocessing
+
+
+def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, name):
+    for op in tape.operations:
+        if isinstance(op, qml.Snapshot):
+            shots = (
+                tape.shots
+                if op.hyperparameters["shots"] == "workflow"
+                else op.hyperparameters["shots"]
+            )
+            m = op.hyperparameters["measurement"]
+            if shots:
+                if not sample_measurements(m):
+                    raise qml.DeviceError(
+                        f"Measurement {m} not accepted with finite shots on {name}"
+                    )
+            else:
+                if not analytic_measurements(m):
+                    raise qml.DeviceError(
+                        f"Measurement {m} not accepted for analytic simulation on {name}."
+                    )

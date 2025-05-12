@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the transform ``qml.transform.split_to_single_terms`` """
+"""Tests for the transform ``qml.transform.split_to_single_terms``"""
 
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 

@@ -32,21 +32,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
-def test_legacy_qtape_property_is_deprecated():
-    """Test that the legacy qtape property is deprecated."""
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.PauliY(0)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="The tape/qtape property is deprecated"
-    ):
-        _ = circuit.qtape
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -127,168 +112,13 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    def test_best_method_wraps_legacy_device_correctly(self, mocker):
-        dev_legacy = DefaultQubitLegacy(wires=2)
-
-        spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            QNode.get_best_method(dev_legacy, "some_interface")
-
-        spy.assert_called_once()
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_best_method_is_device(self, monkeypatch):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns the device"""
-
-        dev = DefaultQubitLegacy(wires=1)
-
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-
-        # basic check if the device provides a Jacobian
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            gradient_fn, gradient_kwargs, execution_device = QNode.get_best_method(
-                dev, "another_interface"
-            )
-        assert gradient_fn == "device"
-        assert not gradient_kwargs
-        assert "DefaultQubitLegacy device" in repr(execution_device)
-
-        # device is returned even if backpropagation is possible
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            gradient_fn, gradient_kwargs, execution_device = QNode.get_best_method(
-                dev, "some_interface"
-            )
-        assert gradient_fn == "device"
-        assert not gradient_kwargs
-        assert "DefaultQubitLegacy device" in repr(execution_device)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
-    def test_best_method_is_backprop(self, interface):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns backpropagation"""
-        dev = DefaultQubitLegacy(wires=1)
-
-        # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            gradient_fn, gradient_kwargs, execution_device = QNode.get_best_method(dev, interface)
-        assert gradient_fn == "backprop"
-        assert not gradient_kwargs
-        assert "DefaultQubitLegacy device" in repr(execution_device)
-
-    # pylint: disable=protected-access
-    def test_best_method_is_param_shift(self):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns the parameter shift rule"""
-        dev = DefaultQubitLegacy(wires=1)
-
-        tape = qml.tape.QuantumScript([], [], shots=50)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            gradient_fn, gradient_kwargs, execution_device = QNode.get_best_method(
-                dev, None, tape=tape
-            )
-        assert gradient_fn is qml.gradients.param_shift
-        assert not gradient_kwargs
-        assert "DefaultQubitLegacy device" in repr(execution_device)
-
-    # pylint: disable=protected-access
-    def test_best_method_str_is_device(self, monkeypatch):
-        """Test that the method for determining the best diff method string
-        for a given device and interface returns 'device'"""
-        dev = DefaultQubitLegacy(wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-
-        # basic check if the device provides a Jacobian
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            res = QNode.best_method_str(dev, "another_interface")
-        assert res == "device"
-
-        # device is returned even if backpropagation is possible
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            res = QNode.best_method_str(dev, "some_interface")
-        assert res == "device"
-
-    # pylint: disable=protected-access
-    def test_best_method_str_is_backprop(self, monkeypatch):
-        """Test that the method for determining the best diff method string
-        for a given device and interface returns 'backprop'"""
-        dev = DefaultQubitLegacy(wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-
-        # backprop is returned when the interfaces match and Jacobian is not provided
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            res = QNode.best_method_str(dev, "some_interface")
-        assert res == "backprop"
-
-    def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
-        dev_legacy = DefaultQubitLegacy(wires=2)
-
-        spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            QNode.best_method_str(dev_legacy, "some_interface")
-
-        spy.assert_called_once()
-
-    # pylint: disable=protected-access
-    def test_best_method_str_is_param_shift(self):
-        """Test that the method for determining the best diff method string
-        for a given device and interface returns 'parameter-shift'"""
-        dev = DefaultQubitLegacy(wires=1, shots=50)
-
-        # parameter shift is returned when Jacobian is not provided and
-        # the backprop interfaces do not match
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            res = QNode.best_method_str(dev, "another_interface")
-        assert res == "parameter-shift"
-
-    # pylint: disable=protected-access
-    def test_best_method_str_is_finite_diff(self, mocker):
-        """Test that the method for determining the best diff method string
-        for a given device and interface returns 'finite-diff'"""
-        dev = DefaultQubitLegacy(wires=1)
-
-        mocker.patch.object(QNode, "get_best_method", return_value=[qml.gradients.finite_diff])
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
-        ):
-            res = QNode.best_method_str(dev, "another_interface")
-
-        assert res == "finite-diff"
-
     def test_unknown_diff_method_string(self):
         """Test that an exception is raised for an unknown differentiation method string"""
         dev = DefaultQubitLegacy(wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method hello not recognized"
+            qml.QuantumFunctionError,
+            match="Differentiation method hello not recognized",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
 
@@ -310,7 +140,8 @@ class TestValidation:
         dev = DefaultQubitLegacy(wires=1, shots=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support adjoint with requested circuit."
+            qml.QuantumFunctionError,
+            match="does not support adjoint with requested circuit.",
         ):
 
             @qnode(dev, diff_method="adjoint")
@@ -331,7 +162,8 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with requested circuit."
+            qml.QuantumFunctionError,
+            match="does not support backprop with requested circuit.",
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
@@ -372,7 +204,7 @@ class TestValidation:
 
         with warnings.catch_warnings(record=True) as w:
 
-            @qml.qnode(dev, random_kwarg=qml.gradients.finite_diff)
+            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
             def circuit(params):
                 qml.RX(params[0], wires=0)
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
@@ -798,7 +630,7 @@ class TestIntegration:
         y = pnp.array(-0.654, requires_grad=True)
 
         @qnode(
-            dev, diff_method=diff_method, argnum=[1]
+            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])

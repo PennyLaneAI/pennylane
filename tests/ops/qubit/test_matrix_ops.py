@@ -20,12 +20,176 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.wires import Wires
+
+
+class TestQubitUnitaryCSR:
+    """Tests for using csr_matrix in QubitUnitary."""
+
+    def test_compute_matrix_blocked(self):
+        """Test that when csr_matrix is used, the compute_matrix method works correctly."""
+        U = csr_matrix(I)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            qml.QubitUnitary.compute_matrix(U)
+
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            op = qml.QubitUnitary(U, wires=[0])
+            op.matrix()
+
+    def test_compute_sparse_matrix(self):
+        """Test that the compute_sparse_matrix method works correctly."""
+        U = np.array([[0, 1], [1, 0]])
+        U = csr_matrix(U)
+        op = qml.QubitUnitary.compute_sparse_matrix(U)
+        assert isinstance(op, csr_matrix)
+        assert np.allclose(op.toarray(), U.toarray())
+
+        # Test that the sparse matrix accepts the format parameter.
+        op_csc = qml.QubitUnitary.compute_sparse_matrix(U, format="csc")
+        op_lil = qml.QubitUnitary.compute_sparse_matrix(U, format="lil")
+        op_coo = qml.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        assert isinstance(op_csc, csc_matrix)
+        assert isinstance(op_lil, lil_matrix)
+        assert isinstance(op_coo, coo_matrix)
+
+    def test_generic_sparse_convert_to_csr(self):
+        """Test that other generic sparse matrices can be converted to csr_matrix."""
+        # 4x4 Identity as a csr_matrix
+        dense = np.eye(4)
+        sparse = coo_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        sparse = csc_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+
+    @pytest.mark.parametrize(
+        "dense",
+        [H, I, S, T, X, Z],
+    )
+    def test_csr_matrix_init_success(self, dense):
+        """Test that a valid 2-wire csr_matrix can be instantiated, covering necessary single-qubit gates."""
+        # 4x4 Identity as a csr_matrix
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0])
+        assert isinstance(op.sparse_matrix(), csr_matrix)  # Should still be sparse
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="U is sparse matrix",
+        ):
+            assert qml.math.allclose(op.matrix(), dense)
+
+    def test_csr_matrix_shape_mismatch(self):
+        """Test that shape mismatch with csr_matrix raises an error."""
+        dense = np.eye(2)  # Only 2x2
+        sparse = csr_matrix(dense)
+        with pytest.raises(ValueError, match="Input unitary must be of shape"):
+            qml.QubitUnitary(sparse, wires=[0, 1])
+
+    def test_csr_matrix_unitary_check_fail(self):
+        """Test that unitary_check warns if the matrix may not be unitary."""
+        dense = np.array([[1, 0], [0, 0.5]])  # Not a unitary
+        sparse = csr_matrix(dense)
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(sparse, wires=0, unitary_check=True)
+
+    def test_csr_matrix_pow_integer(self):
+        """Test that QubitUnitary.pow() works for integer exponents with csr_matrix."""
+        dense = np.eye(4)
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        powered_ops = op.pow(2)
+        assert len(powered_ops) == 1
+
+        powered_op = powered_ops[0]
+        assert isinstance(powered_op, qml.QubitUnitary)
+        assert isinstance(powered_op.sparse_matrix(), csr_matrix)
+        # The resulting matrix should still be the identity
+        final_mat = powered_op.sparse_matrix()
+        # If it's still sparse, compare .toarray()
+        if isinstance(final_mat, csr_matrix):
+            final_mat = final_mat.toarray()
+        assert qml.math.allclose(final_mat, dense)
+
+    @pytest.mark.parametrize(
+        "dense",
+        [
+            np.eye(4),
+            np.array(
+                [[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]
+            ),  # sample permutation matrix
+        ],
+    )
+    def test_csr_matrix_adjoint(self, dense):
+        """Test that QubitUnitary.adjoint() works with csr_matrix, matching dense result."""
+        sparse = csr_matrix(dense)
+        op = qml.QubitUnitary(sparse, wires=[0, 1])
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, qml.QubitUnitary)
+        assert isinstance(adj_op.sparse_matrix(), csr_matrix)
+
+        final_mat = adj_op.sparse_matrix()
+        # Compare with dense representation if still sparse
+        if isinstance(final_mat, csr_matrix):
+            final_mat = final_mat.toarray()
+
+        # For real/complex conjugate transpose, if dense is unitary, final_mat == dense^\dagger
+        expected = dense.conjugate().T
+        assert qml.math.allclose(final_mat, expected)
+
+    def test_csr_matrix_adjoint_large(self):
+        """Construct a large sparse matrix (e.g. 2^20 dimension) but only store minimal elements."""
+        N = 20
+        dim = 2**N
+
+        # For demonstration, let's just store a single 1 on the diagonal
+        row_indices = [12345]  # some arbitrary index < dim
+        col_indices = [12345]
+        data = [1.0]
+
+        sparse_large = csr_matrix((data, (row_indices, col_indices)), shape=(dim, dim))
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            op = qml.QubitUnitary(sparse_large, wires=range(N), unitary_check=True)
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, qml.QubitUnitary)
+        assert isinstance(adj_op.sparse_matrix(), csr_matrix)
+
+        # The single element should remain 1 at [12345,12345] after conjugate transpose
+        final_mat = adj_op.sparse_matrix()
+        assert final_mat[12345, 12345] == 1.0
+
+    def test_csr_matrix_decomposition(self):
+        """Test that QubitUnitary.decomposition() works with csr_matrix."""
+        # 4x4 Identity as a csr_matrix
+        U = csr_matrix(unitary_group.rvs(4))
+        op = qml.QubitUnitary(U, wires=[0, 1])
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+        # 2x2 Identity as a csr_matrix
+        mat = csr_matrix(unitary_group.rvs(2))
+        op = qml.QubitUnitary(mat, wires=[0])
+        assert op.has_decomposition
+        decomp = op.decomposition()
+        assert len(decomp) == 4
+        mat2 = qml.matrix(op.decomposition, wire_order=[0])()
+        assert qml.math.allclose(mat2, mat.todense())
 
 
 class TestQubitUnitary:
@@ -257,17 +421,16 @@ class TestQubitUnitary:
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize(
-        "U,expected_gates,expected_params",
+        "U, expected_params",
         [
-            (I, (qml.RZ, qml.RY, qml.RZ), [0.0, 0.0, 0.0]),
-            (Z, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, 0.0, np.pi / 2]),
-            (S, (qml.RZ, qml.RY, qml.RZ), [np.pi / 4, 0.0, np.pi / 4]),
-            (T, (qml.RZ, qml.RY, qml.RZ), [np.pi / 8, 0.0, np.pi / 8]),
-            (qml.matrix(qml.RZ(0.3, wires=0)), (qml.RZ, qml.RY, qml.RZ), [0.15, 0.0, 0.15]),
+            (I, [0.0, 0.0, 0.0, 0.0]),
+            (Z, [np.pi / 2, 0.0, np.pi / 2, -np.pi / 2]),
+            (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
+            (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
+            (qml.matrix(qml.RZ(0.3, wires=0)), [0.15, 0.0, 0.15, 0.0]),
             (
                 qml.matrix(qml.RZ(-0.5, wires=0)),
-                (qml.RZ, qml.RY, qml.RZ),
-                [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25],
+                [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0.0],
             ),
             (
                 np.array(
@@ -276,20 +439,17 @@ class TestQubitUnitary:
                         [9.831019270939975e-01 + 0.1830590094588862j, 0],
                     ]
                 ),
-                (qml.RZ, qml.RY, qml.RZ),
-                [12.382273469673908, np.pi, 0.18409714468526372],
+                [12.382273469673908, np.pi, 0.18409714468526372, 0.0],
             ),
-            (H, (qml.RZ, qml.RY, qml.RZ), [np.pi, np.pi / 2, 0.0]),
-            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, 7 * np.pi / 2]),
+            (H, [np.pi, np.pi / 2, 0.0, -np.pi / 2]),
+            (X, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
             (
                 qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
-                (qml.RZ, qml.RY, qml.RZ),
-                [0.2, 0.5, 4 * np.pi - 0.3],
+                [0.2, 0.5, 4 * np.pi - 0.3, 0.0],
             ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
-                (qml.RZ, qml.RY, qml.RZ),
-                [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0],
+                [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0, -0.02],
             ),
             # An instance of a broadcast unitary
             (
@@ -297,23 +457,79 @@ class TestQubitUnitary:
                 * qml.Rot(
                     np.array([1.2, 2.3]), np.array([0.12, 0.5]), np.array([0.98, 0.567]), wires=0
                 ).matrix(),
-                (qml.RZ, qml.RY, qml.RZ),
-                [[1.2, 2.3], [0.12, 0.5], [0.98, 0.567]],
+                [[1.2, 2.3], [0.12, 0.5], [0.98, 0.567], [-0.02, -0.02]],
             ),
         ],
     )
-    def test_qubit_unitary_decomposition(self, U, expected_gates, expected_params):
+    def test_qubit_unitary_decomposition(self, U, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
+
+        expected_gates = (qml.RZ, qml.RY, qml.RZ, qml.GlobalPhase)
 
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
-        assert len(decomp) == 3 == len(decomp2)
-        for i in range(3):
+        mat1 = qml.matrix(qml.QubitUnitary.compute_decomposition, wire_order=[0])(U, wires=0)
+        assert qml.math.allclose(mat1, U)
+
+        assert len(decomp) == 4 == len(decomp2)
+        for i in range(4):
             assert isinstance(decomp[i], expected_gates[i])
             assert np.allclose(decomp[i].parameters, expected_params[i], atol=1e-7)
             assert isinstance(decomp2[i], expected_gates[i])
             assert np.allclose(decomp2[i].parameters, expected_params[i], atol=1e-7)
+
+    @pytest.mark.parametrize(
+        "U",
+        [
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qml.matrix(qml.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qml.matrix(qml.TrotterProduct(qml.X(0) + 0.3 * qml.Y(1), time=1, n=5))),  # 0 cnots
+            (
+                qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))
+            ),  # 2 cnots
+            (qml.matrix(qml.CRY(1, wires=[0, 1]))),  # 2 cnots
+            (qml.matrix(qml.QFT(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.QFT(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.RZ(1, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qml.matrix(qml.CRY(-1, wires=[0, 1]))),  # 2 cnots
+            (qml.matrix(qml.SWAP(wires=[0, 1]))),  # 3 cnots
+            (qml.matrix(qml.SWAP(wires=[0, 1]) @ qml.GlobalPhase(3))),  # 3 cnots
+            (qml.matrix(qml.Hadamard(wires=[0]) @ qml.RX(2, wires=1))),  # 0 cnots
+            (qml.matrix(qml.RX(-1, wires=[0]) @ qml.RZ(-5, wires=1))),  # 0 cnots
+            (
+                qml.matrix(
+                    qml.MottonenStatePreparation(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
+                )
+            ),  # 2 cnots
+        ],
+    )
+    def test_qubit_unitary_correct_global_phase(self, U):
+        """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
+
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+
+        assert qml.math.allclose(
+            U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
+        )
+
+    def test_operations_correctly_queued(self):
+        """Tests that the operators in the decomposition are queued correctly"""
+
+        dev = qml.device("default.qubit")
+
+        matrix = qml.matrix(qml.QFT(wires=[0, 1]))
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+            return qml.state()
+
+        tape = qml.workflow.construct_tape(circuit)()
+        for op1, op2 in zip(tape.operations, ops_decompostion):
+            qml.assert_equal(op1, op2)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
@@ -360,7 +576,7 @@ class TestQubitUnitary:
         U = qml.PauliX.compute_matrix()
         base = qml.QubitUnitary(U, wires=0)
 
-        expected = qml.ControlledQubitUnitary(U, control_wires="a", wires=0)
+        expected = qml.ControlledQubitUnitary(U, wires=["a", 0])
 
         out = base._controlled("a")
         qml.assert_equal(out, expected)
@@ -735,7 +951,7 @@ class TestDiagonalQubitUnitary:
 labels = [X, X, [1, 1]]
 ops = [
     qml.QubitUnitary(X, wires=0),
-    qml.ControlledQubitUnitary(X, control_wires=0, wires=1),
+    qml.ControlledQubitUnitary(X, wires=[0, 1]),
     qml.DiagonalQubitUnitary([1, 1], wires=0),
 ]
 
@@ -788,6 +1004,48 @@ class TestUnitaryLabels:
 
 class TestBlockEncode:
     """Test the BlockEncode operation."""
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "issparse"),
+        [
+            (np.array([[1, 0], [0, 1]]), False),
+            (X, False),
+            (csr_matrix([[1, 0], [0, 1]]), True),
+        ],
+    )
+    def test_property(self, input_matrix, issparse):
+        """Test that BlockEncode has the correct properties."""
+        op = qml.BlockEncode(input_matrix, wires=range(2))
+        assert op.has_matrix != issparse
+        assert op.has_sparse_matrix == issparse
+        if issparse:
+            # Test if there's correct error out
+            with pytest.raises(qml.operation.MatrixUndefinedError):
+                op.matrix()
+        else:
+            with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+                op.sparse_matrix()
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "input_matrix",
+        [
+            np.array([[1, 0], [0, 1]]),
+            X,
+            csr_matrix([[1, 0], [0, 1]]),
+        ],
+    )
+    def test_applicable(self, input_matrix):
+        """Integration Test that BlockEncode can be applied onto a state."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BlockEncode(input_matrix, wires=range(2))
+            return qml.state()
+
+        state = circuit()
+        assert state.shape == (2**2,)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
@@ -1129,6 +1387,56 @@ class TestBlockEncode:
 
         assert circuit(input_matrix) == output_value
 
+    @pytest.mark.parametrize(
+        "matrix_data",
+        [
+            {
+                "data": [0.1, 0.2, 0.3] * 4,
+                "indices": [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3],
+                "indptr": [0, 3, 6, 9, 12],
+                "shape": (4, 8),
+            },
+            {
+                # A smaller example
+                "data": [1.0, 2.0, 3.0],
+                "indices": [0, 1, 2],
+                "indptr": [0, 3],
+                "shape": (1, 3),
+            },
+            {
+                # A small 2x2 square example
+                "data": [1.0, 2.0],
+                "indices": [0, 1],
+                "indptr": [0, 2, 2],
+                "shape": (2, 2),
+            },
+            {
+                # Another 3x3 square example
+                "data": [0.5, 1.1, 1.2, 0.3],
+                "indices": [0, 2, 1, 2],
+                "indptr": [0, 2, 3, 4],
+                "shape": (3, 3),
+            },
+        ],
+    )
+    @pytest.mark.parametrize("format", ["coo", "csr", "csc", "bsr"])
+    def test_sparse_matrix(self, matrix_data, format):
+        """Test that the BlockEncode works well with various sparse matrices."""
+        data = matrix_data["data"]
+        indices = matrix_data["indices"]
+        indptr = matrix_data["indptr"]
+        shape = matrix_data["shape"]
+
+        num_wires = 5
+        sparse_matrix = csr_matrix((data, indices, indptr), shape=shape).asformat(format)
+        op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
+
+        # Test the operator is unitary
+        mat = op.sparse_matrix()
+        assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
+        mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
+        assert qml.math.allclose(mat, mat_dense)
+
 
 class TestInterfaceMatricesLabel:
     """Test different interface matrices with qubit."""
@@ -1179,7 +1487,7 @@ class TestInterfaceMatricesLabel:
 control_data = [
     (qml.QubitUnitary(X, wires=0), Wires([])),
     (qml.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
-    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), Wires([0])),
+    (qml.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
 ]
 
 

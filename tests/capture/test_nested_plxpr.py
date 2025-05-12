@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestAdjointQfunc:
@@ -154,7 +155,6 @@ class TestAdjointQfunc:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim
@@ -185,6 +185,92 @@ class TestAdjointQfunc:
 
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestAdjointDynamicShapes:
+
+    def test_dynamic_shape_input(self):
+        """Test that the adjoint transform can accept arrays with dynamic shapes."""
+
+        def f(x):
+            qml.adjoint(qml.RX)(x, 0)
+
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
+        qml.assert_equal(tape[0], expected)
+
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
+
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
+
+        def w(i):
+            qml.adjoint(f)(i)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.adjoint(qml.RX(jax.numpy.arange(3), 3))
+        qml.assert_equal(expected, collector.state["ops"][0])
+
+    def test_complicated_dynamic_shape_input(self):
+        """Test a dynamic shape input with a more complicate shape."""
+
+        def g(x, y):
+            qml.RX(x["a"], 0)
+            qml.RY(y, 0)
+
+        def f(x, y):
+            qml.adjoint(g)(x, y)
+
+        x_a_axes = {0: "n"}
+        y_axes = {0: "m"}
+        x = {"a": jax.numpy.arange(2)}
+        y = jax.numpy.arange(3)
+
+        abstracted_axes = ({"a": x_a_axes}, y_axes)
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
+        tape = qml.tape.plxpr_to_tape(
+            jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
+        )
+
+        op1 = qml.adjoint(qml.RY(jax.numpy.arange(4), 0))
+        op2 = qml.adjoint(qml.RX(jax.numpy.arange(3), 0))
+        qml.assert_equal(op1, tape[0])
+        qml.assert_equal(op2, tape[1])
+
+    def test_dynamic_shape_matches_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def f(i, x):
+            return qml.RX(x, i)
+
+        def workflow(i):
+            return qml.adjoint(f)(i, jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
+        op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
+        qml.assert_equal(op1, tape[0])
+
+    def test_dynamic_shape_before_matching_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def workflow(i):
+            return qml.adjoint(qml.RX)(jax.numpy.arange(i), i)
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
+        op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
+        qml.assert_equal(op1, tape[0])
 
 
 class TestCtrlQfunc:
@@ -329,7 +415,6 @@ class TestCtrlQfunc:
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
         from pennylane.capture.primitives import grad_prim, qnode_prim
@@ -361,3 +446,78 @@ class TestCtrlQfunc:
 
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, -0.5 * qml.math.sin(0.5 + 0.3))
+
+    def test_pytree_input(self):
+        """Test that ctrl can accept pytree inputs."""
+
+        def g(x):
+            qml.RX(x["a"], x["wire"])
+
+        def f(x):
+            qml.ctrl(g, [1])(x)
+
+        jaxpr = jax.make_jaxpr(f)({"a": 0.5, "wire": 0})
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
+        assert len(tape) == 1
+        expected = qml.ctrl(qml.RX(0.5, 0), [1])
+        qml.assert_equal(tape[0], expected)
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestCtrlDynamicShapeInput:
+
+    def test_dynamic_shape_input(self):
+        """Test that ctrl can accept dynamic shape inputs."""
+
+        def f(x):
+            qml.ctrl(qml.RX, (2, 3))(x, 0)
+
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
+        qml.assert_equal(tape[0], expected)
+
+    def test_execution_of_dynamic_array_creation(self):
+        """Test that the inner function can create a dynamic array."""
+
+        def f(i):
+            x = jax.numpy.arange(i)
+            qml.RX(x, i)
+
+        def w(i):
+            qml.ctrl(f, 4)(i)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
+
+        expected = qml.ctrl(qml.RX(jax.numpy.arange(3), 3), 4)
+        qml.assert_equal(expected, collector.state["ops"][0])
+
+    def test_dynamic_shape_matches_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def f(i, x):
+            return qml.RX(x, i)
+
+        def workflow(i):
+            return qml.ctrl(f, 2)(i, jax.numpy.arange(i))
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
+        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 2)
+        qml.assert_equal(op1, tape[0])
+
+    def test_dynamic_shape_before_matching_arg(self):
+        """Test that a dynamically shaped array can have a shape that matches another arg."""
+
+        def workflow(i):
+            return qml.ctrl(qml.RX, 6)(jax.numpy.arange(i), i)
+
+        jaxpr = jax.make_jaxpr(workflow)(3)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert len(tape) == 1
+        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 6)
+        qml.assert_equal(op1, tape[0])

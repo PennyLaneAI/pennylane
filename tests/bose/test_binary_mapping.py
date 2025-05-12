@@ -548,7 +548,7 @@ def test_binary_mapping_wiremap(bose_op, wire_map, result):
 def test_error_is_raised_for_incompatible_type():
     """Test that an error is raised if the input is not a BoseWord or BoseSentence"""
 
-    with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
+    with pytest.raises(TypeError, match="bose_operator must be a BoseWord or BoseSentence"):
         binary_mapping(X(0))
 
 

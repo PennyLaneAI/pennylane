@@ -22,10 +22,11 @@ from copy import copy
 from typing import Optional, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable, Operation
+from pennylane._deprecated_observable import Observable
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -58,7 +59,9 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
+    _queue_category = None
+
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -134,9 +137,10 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
+    # pylint: disable=arguments-differ, unused-argument
     @staticmethod
-    def compute_sparse_matrix(A) -> csr_matrix:  # pylint: disable=arguments-differ
-        return csr_matrix(Hermitian.compute_matrix(A))
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:
+        return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
     def eigendecomposition(self) -> dict[str, TensorLike]:
@@ -296,7 +300,8 @@ class SparseHamiltonian(Observable):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
-    num_wires = AnyWires
+    _queue_category = None
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -363,8 +368,9 @@ class SparseHamiltonian(Observable):
         """
         return H.toarray()
 
+    # pylint: disable=arguments-differ, unused-argument
     @staticmethod
-    def compute_sparse_matrix(H: csr_matrix) -> csr_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -443,8 +449,8 @@ class Projector(Observable):
 
     """
 
+    is_hermitian = True
     name = "Projector"
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -654,8 +660,8 @@ class BasisStateProjector(Projector, Operation):
 
     @staticmethod
     def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        basis_state: TensorLike,
-    ) -> csr_matrix:
+        basis_state: TensorLike, format="csr"
+    ) -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -670,7 +676,9 @@ class BasisStateProjector(Projector, Operation):
         data = [1]
         rows = [int("".join(str(bit) for bit in basis_state), 2)]
         cols = rows
-        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits))
+        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits)).asformat(
+            format
+        )
 
 
 class StateVectorProjector(Projector):
@@ -688,6 +696,7 @@ class StateVectorProjector(Projector):
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
+    # pylint: disable=unused-argument
     def label(
         self,
         decimals: Optional[int] = None,

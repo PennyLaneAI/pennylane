@@ -303,19 +303,19 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
     >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                  4.33e-01, 7.20e-01, 4.33e-01,
-                                  8.85e-02, 4.94e-03, 3.96e-05])
+    ...                           4.33e-01, 7.20e-01, 4.33e-01,
+    ...                           8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
-            freqs=np.array([0.025]),
-            grid=grid,
-            uloc=np.array([[1.0]]),
-            gauss_weights=gauss_weights,
-            pes_data=[pes_onemode, pes_twomode],
-            dipole_data=[dipole_onemode],
-            localized=True,
-            dipole_level=1,
-        )
+    ...     freqs=np.array([0.025]),
+    ...     grid=grid,
+    ...     uloc=np.array([[1.0]]),
+    ...     gauss_weights=gauss_weights,
+    ...     pes_data=[pes_onemode, pes_twomode],
+    ...     dipole_data=[dipole_onemode],
+    ...     localized=True,
+    ...     dipole_level=1,
+    ... )
     >>> one, two = qml.qchem.taylor_coeffs(pes_object, 4, 2)
     >>> print(one)
     [[-0.00088528 -0.00361425  0.00068143]]
@@ -359,22 +359,26 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     >>> freqs = np.array([0.01885397])
     >>> grid, weights = np.polynomial.hermite.hermgauss(9)
     >>> pes_onebody = np.array([[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
-                                 0.00584504, 0.02881817, 0.08483433, 0.22025702]])
+    ...                          0.00584504, 0.02881817, 0.08483433, 0.22025702]])
     >>> pes_twobody = None
     >>> dipole_onebody = np.array([[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
-                                    [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
-                                    [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
-                                    [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
-                                    [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
-                                    [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
-                                    [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
-                                    [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
-                                    [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
-    >>>
-    >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
-                                 uloc = None, pes_data=[pes_onebody, pes_twobody],
-                                 dipole_data=[dipole_onebody], localized=False)
-    >>>
+    ...                             [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
+    ...                             [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
+    ...                             [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
+    ...                             [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
+    ...                             [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
+    ...                             [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
+    ...                             [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
+    ...                             [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
+    >>> vib_obj = qml.qchem.VibrationalPES(
+    ...     freqs=freqs,
+    ...     grid=grid,
+    ...     gauss_weights=weights,
+    ...     uloc=None,
+    ...     pes_data=[pes_onebody, pes_twobody],
+    ...     dipole_data=[dipole_onebody],
+    ...     localized=False
+    ... )
     >>> x, y, z = qml.qchem.taylor_dipole_coeffs(vib_obj, 4, 2)
     >>> print(z)
     [array([[ 1.64124324e-03,  5.39120159e-03, -4.80053702e-05]])]
@@ -657,19 +661,19 @@ def taylor_hamiltonian(
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
     >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                  4.33e-01, 7.20e-01, 4.33e-01,
-                                  8.85e-02, 4.94e-03, 3.96e-05])
+    ...                           4.33e-01, 7.20e-01, 4.33e-01,
+    ...                           8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
-            freqs=np.array([0.025]),
-            grid=grid,
-            uloc=np.array([[1.0]]),
-            gauss_weights=gauss_weights,
-            pes_data=[pes_onemode, pes_twomode],
-            dipole_data=[dipole_onemode],
-            localized=True,
-            dipole_level=1,
-        )
+    ...     freqs=np.array([0.025]),
+    ...     grid=grid,
+    ...     uloc=np.array([[1.0]]),
+    ...     gauss_weights=gauss_weights,
+    ...     pes_data=[pes_onemode, pes_twomode],
+    ...     dipole_data=[dipole_onemode],
+    ...     localized=True,
+    ...     dipole_level=1,
+    ... )
     >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
     (
         -0.003833496032473659 * X(0)
@@ -677,16 +681,16 @@ def taylor_hamiltonian(
         + (-0.013079509779221888+0j) * Z(0)
     )
     """
-    mapping.lower().strip()
-    if mapping not in ["binary", "unary"]:
-        raise ValueError(
-            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
-        )
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
+    mapping = mapping.lower().strip()
     if mapping == "binary":
         ham = binary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
     elif mapping == "unary":
         ham = unary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
+    else:
+        raise ValueError(
+            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
+        )
 
     return ham

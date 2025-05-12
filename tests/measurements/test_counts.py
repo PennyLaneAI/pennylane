@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, CountsMP
+from pennylane.measurements import CountsMP
 from pennylane.wires import Wires
 
 
@@ -30,9 +30,9 @@ class TestCounts:
         meas1 = qml.counts(wires=0)
         meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
         assert meas1.samples_computational_basis is True
-        assert meas1.return_type == Counts
+        assert isinstance(meas1, CountsMP)
         assert meas2.samples_computational_basis is False
-        assert meas2.return_type == AllCounts
+        assert meas2.all_outcomes is True
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -396,6 +396,35 @@ class TestProcessSamples:
 class TestCountsIntegration:
     # pylint:disable=too-many-public-methods,not-an-iterable
 
+    def test_counts_all_outcomes_with_mcm(self):
+        """Test that all outcomes are present in results if requested."""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", shots=n_sample)
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def single_mcm():
+            m = qml.measure(0)
+            return qml.counts(m, all_outcomes=True)
+
+        res = single_mcm()
+
+        assert list(res.keys()) == [0.0, 1.0]
+        assert sum(res.values()) == n_sample
+        assert res[0.0] == n_sample
+
+        @qml.qnode(device=dev, mcm_method="one-shot")
+        def double_mcm():
+            m1 = qml.measure(0)
+            m2 = qml.measure(1)
+            return qml.counts([m1, m2], all_outcomes=True)
+
+        res = double_mcm()
+
+        assert list(res.keys()) == ["00", "01", "10", "11"]
+        assert sum(res.values()) == n_sample
+        assert res["00"] == n_sample
+
     def test_counts_dimension(self):
         """Test that the counts function outputs counts of the right size"""
         n_sample = 10
@@ -489,19 +518,6 @@ class TestCountsIntegration:
         assert len(result) == 3
         assert all(sum(r.values()) == n_sample for r in result)
         assert all(all(v.dtype == np.dtype("int") for v in r.values()) for r in result)
-
-    def test_observable_return_type_is_counts(self):
-        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.counts(qml.PauliZ(0))
-            return res
-
-        circuit()
-        assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""
@@ -986,3 +1002,48 @@ class TestProcessCounts:
         actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
 
         assert actual == expected
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result", [((0, 1), {-1.0: 3, 1.0: 2}), ((1, 0), {1.0: 5})]
+    )
+    def test_with_observable(self, wire_order, expected_result):
+        """Test that processing counts to get the counts for an eigenvalue of an observable
+        works as expected for an observable with a single wire."""
+
+        counts_mp = qml.counts(qml.Z(0))
+
+        result = counts_mp.process_counts({"00": 2, "10": 3}, wire_order)
+
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result",
+        [
+            ((0, 1, 2), {-1.0: 4, 1.0: 6}),
+            ((0, 2, 1), {-1.0: 3, 1.0: 7}),
+            ((2, 1, 0), {-1.0: 4, 1.0: 6}),
+        ],
+    )
+    def test_with_observable_multi_wire(self, wire_order, expected_result):
+        """Test that processing counts to get the counts for an eigenvalue of an observable
+        works as expected for an observable with a single wire."""
+
+        counts_mp = qml.counts(qml.Z(0) @ qml.Z(2))
+        counts = {"000": 2, "001": 1, "101": 2, "010": 1, "110": 3, "111": 1}
+
+        result = counts_mp.process_counts(counts, wire_order)
+
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "all_outcomes, expected_result", [(True, {-1.0: 0, 1.0: 5}), (False, {1.0: 5})]
+    )
+    def test_process_counts_with_observable_all_outcomes(self, all_outcomes, expected_result):
+        """Test that all-outcomes works as expected when returning observable/eigenvalue outcomes
+        instead of counts in the computational basis"""
+
+        counts_mp = qml.counts(qml.Z(0), all_outcomes=all_outcomes)
+
+        result = counts_mp.process_counts({"00": 2, "10": 3}, [1, 0])
+
+        assert result == expected_result
