@@ -129,6 +129,8 @@ from pennylane.transforms import (
     clifford_t_decomposition,
     add_noise,
     set_shots,
+    singleshot,
+    with_shots,
 )
 from pennylane.ops.functions import (
     dot,
