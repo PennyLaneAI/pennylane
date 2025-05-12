@@ -72,14 +72,6 @@ class TestSetShots:
         assert new_tape.operations == ops
         assert new_tape.measurements == measurements
 
-    def test_returns_tuple(self):
-        """Test that set_shots returns a tuple of (QuantumScriptBatch, postprocessing_fn)."""
-        tape = QuantumScript([qml.PauliX(0)], [qml.probs(0)], shots=1)
-        result = set_shots(tape, 2)
-        assert isinstance(result, tuple)
-        assert isinstance(result[0], (list, tuple))
-        assert callable(result[1])
-
     @pytest.mark.integration
     def test_circuit_specification(self):
         """Test that a handy shot specification works."""

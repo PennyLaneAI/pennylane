@@ -428,7 +428,7 @@ def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
     jaxpr = jax.make_jaxpr(f)(*args)
     transformed_jaxpr = merge_rotations_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     collector = CollectOpsandMeas()
     collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
