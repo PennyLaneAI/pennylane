@@ -41,9 +41,7 @@ TWO_QUBIT_GATES = {
 }
 
 MULTI_QUBIT_GATES = {
-    "Toffoli": Toffoli,
-    "MultiControlledX": MultiControlledX,
-    "Barrier": Barrier
+    "CCX": Toffoli,
 }
 
 class QasmInterpreter(QASMVisitor):
@@ -134,13 +132,15 @@ class QasmInterpreter(QASMVisitor):
             print(f"Unsupported gate encountered in QASM: {node.name}")
         context["gates"].append(gate)
 
-    def single_qubit_gate(self, node: QASMNode, context: dict):
+    @staticmethod
+    def single_qubit_gate(node: QASMNode, context: dict):
         """
         Registers a single qubit gate application.
         """
         return partial(SINGLE_QUBIT_GATES[node.name.name.upper()], wires=[context["wires"].index(node.qubits[0].name)])
 
-    def param_single_qubit_gate(self, node: QASMNode, context: dict):
+    @staticmethod
+    def param_single_qubit_gate(node: QASMNode, context: dict):
         """
         Registers a parameterized single qubit gate application.
         """
@@ -156,7 +156,8 @@ class QasmInterpreter(QASMVisitor):
             wires=[context["wires"].index(node.qubits[0].name)]
         )
 
-    def two_qubit_gate(self, node: QASMNode, context: dict):
+    @staticmethod
+    def two_qubit_gate(node: QASMNode, context: dict):
         """
         Registers a two qubit gate application.
         """
@@ -168,8 +169,15 @@ class QasmInterpreter(QASMVisitor):
             ]
         )
 
-    def multi_qubit_gate(self, node: QASMNode, context: dict):
+    @staticmethod
+    def multi_qubit_gate(node: QASMNode, context: dict):
         """
         Registers a multi qubit gate application.
         """
-        pass
+        return partial(
+            MULTI_QUBIT_GATES[node.name.name.upper()],
+            wires=[
+                context["wires"].index(node.qubits[q].name)
+                for q in range(len(node.qubits))
+            ]
+        )
