@@ -139,6 +139,7 @@ class ReferenceQubit(Device):
         program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(qml.transforms.split_non_commuting)
         program.add_transform(qml.transforms.diagonalize_measurements)
+        program.add_transform(qml.devices.preprocess.measurements_from_samples)
         program.add_transform(
             decompose,
             stopping_condition=supports_operation,
