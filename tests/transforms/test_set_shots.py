@@ -14,8 +14,6 @@
 
 """Unit tests for the ``set_shots`` transformer"""
 
-from functools import partial
-
 import pytest
 
 import pennylane as qml
@@ -110,11 +108,12 @@ class TestSetShots:
         new_circuit = set_shots(circuit, shots=None)
         with qml.Tracker(dev) as tracker:
             new_circuit()
-        assert not ("shots" in tracker.history)
+        assert not "shots" in tracker.history
 
         # 2. Device originally is analytic, override with finite shots
         dev = qml.device("default.qubit", wires=1, shots=None)
 
+        # pylint: disable=function-redefined
         @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.RX(1.23, wires=0)
@@ -122,7 +121,7 @@ class TestSetShots:
 
         with qml.Tracker(dev) as tracker:
             circuit()
-        assert not ("shots" in tracker.history)
+        assert not "shots" in tracker.history
 
         new_circuit = set_shots(circuit, shots=20)
         with qml.Tracker(dev) as tracker:
