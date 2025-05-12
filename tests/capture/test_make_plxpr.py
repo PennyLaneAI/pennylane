@@ -78,7 +78,7 @@ class TestMakePLxPR:
 
         spy.assert_called()
         assert hasattr(plxpr, "jaxpr")
-        isinstance(plxpr, jax._src.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(plxpr, jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
@@ -148,8 +148,8 @@ class TestMakePLxPR:
 
         # output is as expected for return_shape=True
         assert len(output) == 2
-        isinstance(output[0], jax._src.core.ClosedJaxpr)  # pylint: disable=protected-access
-        isinstance(output[0], jax._src.api.ShapeDtypeStruct)  # pylint: disable=protected-access
+        isinstance(output[0], jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
