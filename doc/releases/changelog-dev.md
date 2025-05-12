@@ -120,6 +120,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane supports `JAX` version 0.6.0.
+  [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
+
 * PennyLane supports `JAX` version 0.5.3.
   [(#6919)](https://github.com/PennyLaneAI/pennylane/pull/6919)
 
