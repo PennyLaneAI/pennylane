@@ -270,6 +270,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce `gradients` module to be an auxiliary layer module.
+  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
