@@ -1,11 +1,31 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains tests for classes needed to track auxilliary qubits.
+"""
 import pytest
+
+import pennylane as qml
 from pennylane.labs.resource_estimation import QubitManager, GrabWires, FreeWires
 
-class TestQubitManager():
+
+class TestQubitManager:
     """Test the methods and attributes of the QubitManager class"""
+
     qm_quantities = (
         QubitManager(work_wires=2),
-        QubitManager(work_wires = {"clean": 4, "dirty": 2}),
+        QubitManager(work_wires={"clean": 4, "dirty": 2}),
         QubitManager({"clean": 2, "dirty": 2}, True),
     )
 
@@ -25,30 +45,32 @@ class TestQubitManager():
         assert qm.algo_qubits == logic_qubits
         assert qm.tight_budget == tight_budget
 
-
-
     extra_qubits = (0, 2, 4)
 
-    @pytest.mark.parametrize("qm, attribute_tup, alloc_q", zip(qm_quantities, qm_parameters, extra_qubits))
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, alloc_q", zip(qm_quantities, qm_parameters, extra_qubits)
+    )
     def test_allocate_qubits(self, qm, attribute_tup, alloc_q):
         """Test that the extra qubits are allocated correctly."""
 
-        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+        clean_qubits = attribute_tup[0]
 
         qm.allocate_qubits(alloc_q)
         assert qm.clean_qubits == clean_qubits + alloc_q
-        
+
     qm_parameters_algo = (
         (2, 0, 0, False),
         (4, 2, 2, False),
         (2, 2, 4, True),
     )
 
-    @pytest.mark.parametrize("qm, attribute_tup, algo_q", zip(qm_quantities, qm_parameters_algo, extra_qubits))
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q", zip(qm_quantities, qm_parameters_algo, extra_qubits)
+    )
     def test_algo_qubits(self, qm, attribute_tup, algo_q):
         """Test that the logic qubits are set correctly."""
 
-        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+        logic_qubits = attribute_tup[2]
 
         qm.algo_qubits = algo_q
         assert qm.algo_qubits == logic_qubits
@@ -60,7 +82,7 @@ class TestQubitManager():
         qm.grab_clean_qubits(6)
         assert qm.clean_qubits == 0
         assert qm.dirty_qubits == 8
-        
+
     def test_error_grab_clean_qubits(self):
         """Test that an error is raised when the number of clean qubits required is greater
         than the available qubits."""
@@ -68,7 +90,6 @@ class TestQubitManager():
         qm = QubitManager(work_wires={"clean": 4, "dirty": 2}, tight_budget=True)
         with pytest.raises(ValueError, match="Grabbing more qubits than available clean qubits."):
             qm.grab_clean_qubits(6)
-
 
     def test_free_qubits(self):
         """Test that the dirty qubits are freed properly."""
@@ -86,22 +107,35 @@ class TestQubitManager():
         with pytest.raises(ValueError, match="Freeing more qubits than available dirty qubits."):
             qm.free_qubits(6)
 
-        
-class TestGrabWires():
+
+class TestGrabWires:
     """Test the methods and attributes of the GrabWires class"""
 
     def test_init(self):
-        """Test that the GrabWires class is instantiated as expected."""
+        """Test that the GrabWires class is instantiated as expected when there is no active recording."""
 
         for i in range(3):
             assert GrabWires(i).num_wires == i
 
-class TestFreeWires():
+    def test_init_recording(self):
+        """Test that the GrabWires class is instantiated as expected when there is active recording."""
+        with qml.queuing.AnnotatedQueue() as q:
+            ops = [GrabWires(2), GrabWires(4)]
+        assert q.queue == ops
+
+
+class TestFreeWires:
     """Test the methods and attributes of the GrabWires class"""
 
     def test_init(self):
-        """Test that the FreeWires class is instantiated as expected."""
+        """Test that the FreeWires class is instantiated as expected when there is no recording."""
 
-        wires = 4
         for i in range(3):
             assert FreeWires(i).num_wires == i
+
+    def test_init_recording(self):
+        """Test that the FreeWires class is instantiated as expected when there is active recording."""
+        with qml.queuing.AnnotatedQueue() as q:
+            ops = [FreeWires(2), FreeWires(4), FreeWires(8)]
+
+        assert q.queue == ops
