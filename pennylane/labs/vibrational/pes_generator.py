@@ -1345,3 +1345,129 @@ def vibrational_pes(
     return VibrationalPES(
         freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )
+
+def vibrational_pes_test(
+    molecule,
+    quad_order=9,
+    method="rhf",
+    localize=True,
+    bins=None,
+    cubic=False,
+    dipole_level=1,
+):
+    r"""Computes potential energy surfaces along vibrational normal modes.
+
+    Args:
+       molecule (~qchem.molecule.Molecule): Molecule object
+       quad_order (int): Order for Gauss-Hermite quadratures. Default value is ``9``.
+       method (str): Electronic structure method that can be either restricted and unrestricted
+           Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+       localize (bool): Flag to perform normal mode localization. Default is ``False``.
+       bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+           Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
+       cubic (bool)): Flag to include three-mode couplings. Default is ``False``.
+       dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
+           ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
+           value is ``1``.
+
+    Returns:
+       VibrationalPES object.
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = vibrational_pes(mol)
+    >>> pes.pes_onemode
+    array([[ 6.26177771e-02,  3.62085556e-02,  1.72120120e-02,
+         4.71674655e-03, -2.84217094e-14,  6.06717218e-03,
+         2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
+
+    """
+    if bins is None:
+        bins = [2600]
+
+    if dipole_level > 3 or dipole_level < 1:
+        raise ValueError(
+            "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
+            "between 1 and 3."
+        )
+    if quad_order < 1:
+        raise ValueError("Number of sample points cannot be less than 1.")
+
+    geom_eq = optimize_geometry(molecule, method)
+
+    mol_eq = qml.qchem.Molecule(
+        molecule.symbols,
+        geom_eq,
+        unit=molecule.unit,
+        basis_name=molecule.basis_name,
+        charge=molecule.charge,
+        mult=molecule.mult,
+        load_data=molecule.load_data,
+    )
+
+    scf_result = _single_point(mol_eq, method)
+
+    freqs = None
+    uloc = None
+    vectors = None
+    
+    freqs, vectors = _harmonic_analysis(scf_result, method)
+    if localize:
+        freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
+
+    grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
+
+    dipole = True
+    pes_onebody, dipole_onebody = _pes_onemode_test(
+        mol_eq, scf_result, freqs, vectors, grid, method=method, dipole=dipole
+    )
+    
+
+    # build PES -- two-body
+    if dipole_level < 2:
+        dipole = False
+
+    pes_twobody, dipole_twobody = _pes_twomode_test(
+        mol_eq,
+        scf_result,
+        freqs,
+        vectors,
+        grid,
+        pes_onebody,
+        dipole_onebody,
+        method=method,
+        dipole=dipole,
+    )
+    
+
+    pes_data = [pes_onebody, pes_twobody]
+    dipole_data = [dipole_onebody, dipole_twobody]
+
+    if cubic:
+        if dipole_level < 3:
+            dipole = False
+
+        pes_threebody, dipole_threebody = _pes_threemode_test(
+            mol_eq,
+            scf_result,
+            freqs,
+            vectors,
+            grid,
+            pes_onebody,
+            pes_twobody,
+            dipole_onebody,
+            dipole_twobody,
+            method=method,
+            dipole=dipole,
+        )
+        
+        pes_data = [pes_onebody, pes_twobody, pes_threebody]
+        dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
+
+    freqs = freqs * CM_TO_AU
+    return VibrationalPES(
+        freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
+    )
