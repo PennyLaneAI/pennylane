@@ -17,7 +17,6 @@ per normal modes on a grid."""
 import itertools
 import os
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor 
 import numpy as np
 import scipy as sp
 from typing import Union
@@ -44,18 +43,7 @@ BOHR_TO_ANG = (
 )  # factor to convert bohr to angstrom
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
-# not used anymore
-def _import_mpi4py():
-    """Import mpi4py."""
-    try:
-        import mpi4py
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires mpi4py. It can be installed with: pip install mpi4py."
-        ) from Error
-
-    return mpi4py
-def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
+def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, backend="serial", max_workers=1):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
@@ -67,7 +55,8 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        hardware : Backends from the module qml.concurrency (Dask is not supported yet)
+        backend (str) = "serial" : The executor backend from the list of supported backends
+        max_workers (int) = 1 : the maximum number of concurrent units to use 
 
     Returns:
         tuple: A tuple containing the following:
@@ -76,59 +65,41 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
            if dipole is set to ``False``
 
     """
-    _import_mpi4py()
-    from mpi4py import MPI
+    quad_order = len(grid)
+    all_jobs = range(quad_order)
+    jobs_on_rank = np.array_split(all_jobs, max_workers)
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    arguments = [(j, i, molecule, scf_result, freqs, vectors, grid, method, dipole)
+                 for j, i in enumerate(jobs_on_rank)]
+    
+    
+    
+    executor_class = concurrency.backends.get_executor(backend)
+    executor = executor_class(max_workers=max_workers)
+    executor.starmap(_local_pes_onemode, arguments)
 
-    local_pes_onebody, local_dipole_onebody = _local_pes_onemode(
-        comm,
-        molecule,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        method=method,
-        dipole=dipole,
-    )
-
-    filename = f"v1data_{rank}.hdf5"
-    with h5py.File(filename, "w") as f:
-        f.create_dataset("V1_PES", data=local_pes_onebody)
-        if dipole:
-            f.create_dataset("D1_DMS", data=local_dipole_onebody)
-        f.close()
-
-    comm.Barrier()
     pes_onebody = None
     dipole_onebody = None
-    if rank == 0:
-        pes_onebody, dipole_onebody = _load_pes_onemode(
-            comm.Get_size(), len(freqs), len(grid), dipole=dipole
-        )
-        current_directory = Path.cwd()
-        for file_path in current_directory.glob("v1data*"):
-            file_path.unlink(missing_ok=False)
-
-    comm.Barrier()
-    pes_onebody = comm.bcast(pes_onebody, root=0)
+    pes_onebody, dipole_onebody = _load_pes_onemode(
+        max_workers, len(freqs), len(grid), dipole=dipole)
+    current_directory = Path.cwd()
+    for file_path in current_directory.glob("v1data*"):
+        file_path.unlink(missing_ok=False)
 
     if dipole:
-        dipole_onebody = comm.bcast(dipole_onebody, root=0)
         return pes_onebody, dipole_onebody
 
     return pes_onebody, None
 
 
-def _local_pes_onemode(
-    comm, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False
-):
+
+def _local_pes_onemode(rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by
     displacement vectors for each thread.
 
     Args:
-        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        rank (int) : rank of the process
+        jobs_on_rank : list of gridpoint processes by this worker
         molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
         scf_result (pyscf.scf object): pyscf object from electronic structure calculations
         freqs (list[float]): list of normal mode frequencies in ``cm^-1``
@@ -145,87 +116,6 @@ def _local_pes_onemode(
            if dipole is set to ``False``
 
     """
-
-    size = comm.Get_size()
-    rank = comm.Get_rank()
-    quad_order = len(grid)
-    nmodes = len(freqs)
-    init_geom = molecule.coordinates * BOHR_TO_ANG
-
-    jobs_on_rank = np.array_split(range(quad_order), size)[rank]
-    local_pes_onebody = np.zeros((nmodes, len(jobs_on_rank)), dtype=float)
-
-    if dipole:
-        local_dipole_onebody = np.zeros((nmodes, len(jobs_on_rank), 3), dtype=float)
-        ref_dipole = _get_dipole(scf_result, method)
-    for mode in range(nmodes):
-        vec = vectors[mode]
-        if (freqs[mode].imag) > 1e-6:
-            continue  # pragma: no cover
-
-        for job_idx, job in enumerate(jobs_on_rank):
-            gridpoint = grid[job]
-            scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * sp.constants.c))
-            positions = np.array(init_geom + scaling * gridpoint * vec)
-
-            displ_mol = qml.qchem.Molecule(
-                molecule.symbols,
-                positions,
-                basis_name=molecule.basis_name,
-                charge=molecule.charge,
-                mult=molecule.mult,
-                unit="angstrom",
-                load_data=True,
-            )
-
-            displ_scf = _single_point(displ_mol, method=method)
-
-            local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
-            if dipole:
-                local_dipole_onebody[mode, job_idx, :] = _get_dipole(displ_scf, method) - ref_dipole
-
-    if dipole:
-        return local_pes_onebody, local_dipole_onebody
-    return local_pes_onebody, None
-
-
-def _pes_onemode_test(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"):
-
-    num_proc = os.cpu_count()
-    quad_order = len(grid)
-    all_jobs = range(quad_order)
-    jobs_on_rank = np.array_split(all_jobs, num_proc)
-
-    arguments = [(j, i, molecule, scf_result, freqs, vectors, grid, method, dipole)
-                 for j, i in enumerate(jobs_on_rank)]
-    
-    
-    
-    executor_class = concurrency.backends.get_executor(hardware)
-    if (hardware == "serial"):
-        executor = executor_class(max_workers=1)
-    else : 
-        executor = executor_class(max_workers=num_proc)
-    executor.starmap(_local_pes_onemode_t, arguments)
-
-    pes_onebody = None
-    dipole_onebody = None
-    pes_onebody, dipole_onebody = _load_pes_onemode(
-        num_proc, len(freqs), len(grid), dipole=dipole)
-    current_directory = Path.cwd()
-    for file_path in current_directory.glob("v1data*"):
-        file_path.unlink(missing_ok=False)
-
-    if dipole:
-        return pes_onebody, dipole_onebody
-
-    return pes_onebody, None
-
-
-
-def _local_pes_onemode_t(rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
-    
-    
     nmodes = len(freqs)
     init_geom = molecule.coordinates * BOHR_TO_ANG
 
@@ -313,7 +203,6 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
         return pes_onebody, dipole_onebody
     return pes_onebody, None
 
-
 def _pes_twomode(
     molecule,
     scf_result,
@@ -324,6 +213,8 @@ def _pes_twomode(
     dipole_onebody,
     method="rhf",
     dipole=False,
+    backend="serial", 
+    max_workers=1
 ):
     r"""Computes the two-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -339,7 +230,8 @@ def _pes_twomode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        hardware : Backends from the module qml.concurrency (Dask is not supported yet)
+        backend (str) = "serial" : The executor backend from the list of supported backends
+        max_workers (int) = 1 : the maximum number of concurrent units to use 
 
     Returns:
         tuple: A tuple containing the following:
@@ -348,112 +240,27 @@ def _pes_twomode(
            if dipole is set to ``False``
 
     """
-    _import_mpi4py()
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
-    local_pes_twobody, local_dipole_twobody = _local_pes_twomode(
-        comm,
-        molecule,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        pes_onebody,
-        dipole_onebody,
-        method=method,
-        dipole=dipole,
-    )
-
-    filename = f"v2data_{rank}.hdf5"
-    with h5py.File(filename, "w") as f:
-        f.create_dataset("V2_PES", data=local_pes_twobody)
-        if dipole:
-            f.create_dataset("D2_DMS", data=local_dipole_twobody)
-
-    comm.Barrier()
-    pes_twobody = None
-    dipole_twobody = None
-    if rank == 0:
-        pes_twobody, dipole_twobody = _load_pes_twomode(
-            comm.Get_size(), len(freqs), len(grid), dipole=dipole
-        )
-        current_directory = Path.cwd()
-        for file_path in current_directory.glob("v2data*"):
-            file_path.unlink(missing_ok=False)
-
-    comm.Barrier()
-    pes_twobody = comm.bcast(pes_twobody, root=0)
-
-    if dipole:
-        dipole_twobody = comm.bcast(dipole_twobody, root=0)
-        return pes_twobody, dipole_twobody
-    return pes_twobody, None  # pragma: no cover
-
-def _pes_twomode_test(
-    molecule,
-    scf_result,
-    freqs,
-    vectors,
-    grid,
-    pes_onebody,
-    dipole_onebody,
-    method="rhf",
-    dipole=False,
-    hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"
-):
-    r"""Computes the two-mode potential energy surface on a grid along directions defined by
-    displacement vectors.
-
-    Args:
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-        vectors (TensorLike[float]): list of displacement vectors for each normal mode
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        pes_onebody (TensorLike[float]): one-mode PES
-        dipole_onebody (TensorLike[float]): one-mode dipole
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-
-    Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: two-mode potential energy surface
-         - TensorLike[float] or None: two-mode dipole, returns ``None``
-           if dipole is set to ``False``
-
-    """
-   
-    num_proc = os.cpu_count()
-
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2]
         for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
     ]
 
-    jobs_on_rank = np.array_split(all_jobs, num_proc)
+    jobs_on_rank = np.array_split(all_jobs, max_workers)
     arguments = [(j, i, molecule, scf_result, freqs, vectors, pes_onebody, dipole_onebody, method, dipole)
                  for j, i in enumerate(jobs_on_rank)]
     
     
     
-    #with MPIPoolExecutor() as executor:
-       # executor.starmap(_local_pes_twomode, arguments)
-    executor_class = concurrency.backends.get_executor(hardware)
-    if (hardware == "serial"):
-        executor = executor_class(max_workers=1)
-    else : 
-        executor = executor_class(max_workers=num_proc)
-    executor.starmap(_local_pes_twomode_t, arguments)
+    
+    executor_class = concurrency.backends.get_executor(backend)
+    executor = executor_class(max_workers=max_workers)
+    executor.starmap(_local_pes_twomode, arguments)
 
     pes_twobody = None
     dipole_twobody = None
     
     pes_twobody, dipole_twobody = _load_pes_twomode(
-        num_proc, len(freqs), len(grid), dipole=dipole
+        max_workers, len(freqs), len(grid), dipole=dipole
     )
     current_directory = Path.cwd()
     for file_path in current_directory.glob("v2data*"):
@@ -464,7 +271,7 @@ def _pes_twomode_test(
         return pes_twobody, dipole_twobody
     return pes_twobody, None  # pragma: no cover
 
-def _local_pes_twomode_t(
+def _local_pes_twomode(
     rank,
     jobs_on_rank,
     molecule,
@@ -480,7 +287,8 @@ def _local_pes_twomode_t(
     displacement vectors for each thread.
 
     Args:
-        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        rank (int) : rank of the process
+        jobs_on_rank : list of gridpoint processes by this worker
         molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
         scf_result (pyscf.scf object): pyscf object from electronic structure calculations
         freqs (list[float]): list of vibrational frequencies in ``cm^-1``
@@ -563,108 +371,6 @@ def _local_pes_twomode_t(
         return local_pes_twobody, local_dipole_twobody
 
     return local_pes_twobody, None  # pragma: no cover
-
-
-
-def _local_pes_twomode(
-    comm,
-    molecule,
-    scf_result,
-    freqs,
-    vectors,
-    grid,
-    pes_onebody,
-    dipole_onebody,
-    method="rhf",
-    dipole=False,
-):
-    r"""Computes the two-mode potential energy surface on a grid along directions defined by
-    displacement vectors for each thread.
-
-    Args:
-        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-        vectors (TensorLike[float]): list of displacement vectors for each normal mode
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        pes_onebody (TensorLike[float]): one-mode PES
-        dipole_onebody (TensorLike[float]): one-mode dipole
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-
-    Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: two-mode potential energy surface
-         - TensorLike[float] or None: two-mode dipole, returns ``None``
-           if dipole is set to ``False``
-
-    """
-
-    size = comm.Get_size()
-    rank = comm.Get_rank()
-    init_geom = molecule.coordinates * BOHR_TO_ANG
-    nmodes = len(freqs)
-
-    all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
-
-    all_jobs = [
-        [i, gridpoint_1, j, gridpoint_2]
-        for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
-    ]
-    jobs_on_rank = np.array_split(all_jobs, size)[rank]
-    local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
-
-    if dipole:
-        local_dipole_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float)
-        ref_dipole = _get_dipole(scf_result, method)
-
-    for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
-
-        if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
-            continue  # pragma: no cover
-
-        vec_a = vectors[mode_a]
-        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * sp.constants.c))
-
-        vec_b = vectors[mode_b]
-
-        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * sp.constants.c))
-        for job_idx, [i, gridpoint_1, j, gridpoint_2] in enumerate(jobs_on_rank):
-            i, j = int(i), int(j)
-            positions = np.array(
-                init_geom + scaling_a * gridpoint_1 * vec_a + scaling_b * gridpoint_2 * vec_b
-            )
-            displ_mol = qml.qchem.Molecule(
-                molecule.symbols,
-                positions,
-                basis_name=molecule.basis_name,
-                charge=molecule.charge,
-                mult=molecule.mult,
-                unit="angstrom",
-                load_data=True,
-            )
-            displ_scf = _single_point(displ_mol, method=method)
-            idx = mode_idx * len(jobs_on_rank) + job_idx
-
-            local_pes_twobody[idx] = (
-                displ_scf.e_tot - pes_onebody[mode_a, i] - pes_onebody[mode_b, j] - scf_result.e_tot
-            )
-
-            if dipole:
-                local_dipole_twobody[idx, :] = (
-                    _get_dipole(displ_scf, method)
-                    - dipole_onebody[mode_a, i, :]
-                    - dipole_onebody[mode_b, j, :]
-                    - ref_dipole
-                )
-
-    if dipole:
-        return local_pes_twobody, local_dipole_twobody
-
-    return local_pes_twobody, None  # pragma: no cover
-
 
 def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
     """
@@ -727,7 +433,7 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
 
 
 
-def _local_pes_threemode_test(
+def _local_pes_threemode(
     rank,
     jobs_on_rank,
     molecule,
@@ -745,7 +451,8 @@ def _local_pes_threemode_test(
     displacement vectors for each thread.
 
     Args:
-        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        rank (int) : rank of the process
+        jobs_on_rank : list of gridpoint processes by this worker
         molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
         scf_result (pyscf.scf object): pyscf object from electronic structure calculations
         freqs (list[float]): list of vibrational frequencies in ``cm^-1``
@@ -863,7 +570,7 @@ def _local_pes_threemode_test(
     return local_pes_threebody, None  # pragma: no cover
 
 
-def _pes_threemode_test(
+def _pes_threemode(
     molecule,
     scf_result,
     freqs,
@@ -875,7 +582,8 @@ def _pes_threemode_test(
     dipole_twobody,
     method="rhf",
     dipole=False,
-    hardware: Union[concurrency.backends.ExecBackends, str] = "cf_threadpool"
+    backend="serial", 
+    max_workers=1
 ):
     r"""Computes the three-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -902,29 +610,25 @@ def _pes_threemode_test(
            if dipole is set to ``False``
 
     """
-    num_proc = os.cpu_count()
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
         for (i, gridpoint_1), (j, gridpoint_2), (k, gridpoint_3) in itertools.product(
             enumerate(grid), repeat=3
         )
     ]
-    jobs_on_rank = np.array_split(all_jobs, num_proc)
+    jobs_on_rank = np.array_split(all_jobs, max_workers)
     arguments = [(j, i, molecule, scf_result, freqs, vectors, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method, dipole)
                  for j, i in enumerate(jobs_on_rank)]
     
-    executor_class = concurrency.backends.get_executor(hardware)
-    if (hardware == "serial"):
-        executor = executor_class(max_workers=1)
-    else : 
-        executor = executor_class(max_workers=num_proc)
-    executor.starmap(_local_pes_threemode_test, arguments)
+    executor_class = concurrency.backends.get_executor(backend)
+    executor = executor_class(max_workers=max_workers)
+    executor.starmap(_local_pes_threemode, arguments)
     
 
     pes_threebody = None
  
     pes_threebody, dipole_threebody = _load_pes_threemode(
-        num_proc, len(freqs), len(grid), dipole
+        max_workers, len(freqs), len(grid), dipole
     )
     current_directory = Path.cwd()
     for file_path in current_directory.glob("v3data*"):
@@ -935,145 +639,6 @@ def _pes_threemode_test(
         return pes_threebody, dipole_threebody
 
     return pes_threebody, None  # pragma: no cover
-
-def _local_pes_threemode(
-    comm,
-    molecule,
-    scf_result,
-    freqs,
-    vectors,
-    grid,
-    pes_onebody,
-    pes_twobody,
-    dipole_onebody,
-    dipole_twobody,
-    method="rhf",
-    dipole=False,
-):
-    r"""Computes the three-mode potential energy surface on a grid along directions defined by
-    displacement vectors for each thread.
-
-    Args:
-        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-        vectors (TensorLike[float]): list of displacement vectors for each normal mode
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        pes_onebody (TensorLike[float]): one-mode PES
-        pes_twobody (TensorLike[float]): two-mode PES
-        dipole_onebody (TensorLike[float]): one-mode dipole
-        dipole_twobody (TensorLike[float]): one-mode dipole
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-
-    Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: three-mode potential energy surface
-         - TensorLike[float] or None: three-mode dipole, returns ``None``
-           if dipole is set to ``False``
-
-    """
-
-    size = comm.Get_size()
-    rank = comm.Get_rank()
-
-    init_geom = molecule.coordinates * BOHR_TO_ANG
-    nmodes = len(freqs)
-
-    all_mode_combos = [
-        (mode_a, mode_b, mode_c)
-        for mode_a in range(nmodes)
-        for mode_b in range(mode_a)
-        for mode_c in range(mode_b)
-    ]
-
-    all_jobs = [
-        [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
-        for (i, gridpoint_1), (j, gridpoint_2), (k, gridpoint_3) in itertools.product(
-            enumerate(grid), repeat=3
-        )
-    ]
-
-    jobs_on_rank = np.array_split(all_jobs, size)[rank]
-    local_pes_threebody = np.zeros(len(all_mode_combos) * len(jobs_on_rank))
-
-    if dipole:
-        local_dipole_threebody = np.zeros(
-            (len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float
-        )
-        ref_dipole = _get_dipole(scf_result, method)
-
-    mode_combo = 0
-    for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
-
-        if (
-            (freqs[mode_a].imag) > 1e-6
-            or (freqs[mode_b].imag) > 1e-6
-            or (freqs[mode_c].imag) > 1e-6
-        ):
-            continue  # pragma: no cover
-
-        vec_a = vectors[mode_a]
-        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * sp.constants.c))
-
-        vec_b = vectors[mode_b]
-        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * sp.constants.c))
-
-        vec_c = vectors[mode_c]
-        scaling_c = np.sqrt(HBAR / (2 * np.pi * freqs[mode_c] * 100 * sp.constants.c))
-
-        for job_idx, [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3] in enumerate(jobs_on_rank):
-
-            i, j, k = int(i), int(j), int(k)
-            positions = np.array(
-                init_geom
-                + scaling_a * gridpoint_1 * vec_a
-                + scaling_b * gridpoint_2 * vec_b
-                + scaling_c * gridpoint_3 * vec_c
-            )
-
-            displ_mol = qml.qchem.Molecule(
-                molecule.symbols,
-                positions,
-                basis_name=molecule.basis_name,
-                charge=molecule.charge,
-                mult=molecule.mult,
-                unit="angstrom",
-                load_data=True,
-            )
-            displ_scf = _single_point(displ_mol, method=method)
-
-            idx = mode_combo * len(jobs_on_rank) + job_idx
-            local_pes_threebody[idx] = (
-                displ_scf.e_tot
-                - pes_twobody[mode_a, mode_b, i, j]
-                - pes_twobody[mode_a, mode_c, i, k]
-                - pes_twobody[mode_b, mode_c, j, k]
-                - pes_onebody[mode_a, i]
-                - pes_onebody[mode_b, j]
-                - pes_onebody[mode_c, k]
-                - scf_result.e_tot
-            )
-            if dipole:
-                local_dipole_threebody[idx, :] = (
-                    _get_dipole(displ_scf, method)
-                    - dipole_twobody[mode_a, mode_b, i, j, :]
-                    - dipole_twobody[mode_a, mode_c, i, k, :]
-                    - dipole_twobody[mode_b, mode_c, j, k, :]
-                    - dipole_onebody[mode_a, i, :]
-                    - dipole_onebody[mode_b, j, :]
-                    - dipole_onebody[mode_c, k, :]
-                    - ref_dipole
-                )
-
-    comm.Barrier()
-    if dipole:
-        return local_pes_threebody, local_dipole_threebody
-
-    return local_pes_threebody, None  # pragma: no cover
-
 
 def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
     """
@@ -1134,92 +699,6 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
         return pes_threebody, dipole_threebody
     return pes_threebody, None  # pragma: no cover
 
-
-def _pes_threemode(
-    molecule,
-    scf_result,
-    freqs,
-    vectors,
-    grid,
-    pes_onebody,
-    pes_twobody,
-    dipole_onebody,
-    dipole_twobody,
-    method="rhf",
-    dipole=False,
-):
-    r"""Computes the three-mode potential energy surface on a grid along directions defined by
-    displacement vectors.
-
-    Args:
-        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-        vectors (TensorLike[float]): list of displacement vectors for each normal mode
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        pes_onebody (TensorLike[float]): one-mode PES
-        pes_twobody (TensorLike[float]): two-mode PES
-        dipole_onebody (TensorLike[float]): one-mode dipole
-        dipole_twobody (TensorLike[float]): one-mode dipole
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-
-    Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: three-mode potential energy surface
-         - TensorLike[float] or None: three-mode dipole, returns ``None``
-           if dipole is set to ``False``
-
-    """
-    _import_mpi4py()
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
-    local_pes_threebody, local_dipole_threebody = _local_pes_threemode(
-        comm,
-        molecule,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        pes_onebody,
-        pes_twobody,
-        dipole_onebody,
-        dipole_twobody,
-        method=method,
-        dipole=dipole,
-    )
-    comm.Barrier()
-
-    f = h5py.File("v3data" + f"_{rank}" + ".hdf5", "w")
-    f.create_dataset("V3_PES", data=local_pes_threebody)
-    if dipole:
-        dipole_threebody = None
-        f.create_dataset("D3_DMS", data=local_dipole_threebody)
-    f.close()
-    comm.Barrier()
-
-    pes_threebody = None
-    if rank == 0:
-        pes_threebody, dipole_threebody = _load_pes_threemode(
-            comm.Get_size(), len(freqs), len(grid), dipole
-        )
-        current_directory = Path.cwd()
-        for file_path in current_directory.glob("v3data*"):
-            file_path.unlink(missing_ok=False)
-
-    comm.Barrier()
-    pes_threebody = comm.bcast(pes_threebody, root=0)
-    if dipole:
-        dipole_threebody = comm.bcast(dipole_threebody, root=0)
-        return pes_threebody, dipole_threebody
-
-    return pes_threebody, None  # pragma: no cover
-
-
 def vibrational_pes(
     molecule,
     quad_order=9,
@@ -1228,144 +707,8 @@ def vibrational_pes(
     bins=None,
     cubic=False,
     dipole_level=1,
-):
-    r"""Computes potential energy surfaces along vibrational normal modes.
-
-    Args:
-       molecule (~qchem.molecule.Molecule): Molecule object
-       quad_order (int): Order for Gauss-Hermite quadratures. Default value is ``9``.
-       method (str): Electronic structure method that can be either restricted and unrestricted
-           Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       localize (bool): Flag to perform normal mode localization. Default is ``False``.
-       bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
-           Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
-       cubic (bool)): Flag to include three-mode couplings. Default is ``False``.
-       dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
-           ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-           value is ``1``.
-
-    Returns:
-       VibrationalPES object.
-
-    **Example**
-
-    >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = vibrational_pes(mol)
-    >>> pes.pes_onemode
-    array([[ 6.26177771e-02,  3.62085556e-02,  1.72120120e-02,
-         4.71674655e-03, -2.84217094e-14,  6.06717218e-03,
-         2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
-
-    """
-    if bins is None:
-        bins = [2600]
-
-    if dipole_level > 3 or dipole_level < 1:
-        raise ValueError(
-            "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
-            "between 1 and 3."
-        )
-    if quad_order < 1:
-        raise ValueError("Number of sample points cannot be less than 1.")
-
-    _import_mpi4py()
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    geom_eq = optimize_geometry(molecule, method)
-
-    mol_eq = qml.qchem.Molecule(
-        molecule.symbols,
-        geom_eq,
-        unit=molecule.unit,
-        basis_name=molecule.basis_name,
-        charge=molecule.charge,
-        mult=molecule.mult,
-        load_data=molecule.load_data,
-    )
-
-    scf_result = _single_point(mol_eq, method)
-
-    freqs = None
-    uloc = None
-    vectors = None
-    if rank == 0:
-        freqs, vectors = _harmonic_analysis(scf_result, method)
-        if localize:
-            freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
-
-    # Broadcast data to all threads
-    freqs = comm.bcast(freqs, root=0)
-    vectors = np.array(comm.bcast(vectors, root=0))
-    uloc = np.array(comm.bcast(uloc, root=0))
-
-    comm.Barrier()
-
-    grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
-
-    dipole = True
-    pes_onebody, dipole_onebody = _pes_onemode(
-        mol_eq, scf_result, freqs, vectors, grid, method=method, dipole=dipole
-    )
-    comm.Barrier()
-
-    # build PES -- two-body
-    if dipole_level < 2:
-        dipole = False
-
-    pes_twobody, dipole_twobody = _pes_twomode(
-        mol_eq,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        pes_onebody,
-        dipole_onebody,
-        method=method,
-        dipole=dipole,
-    )
-    comm.Barrier()
-
-    pes_data = [pes_onebody, pes_twobody]
-    dipole_data = [dipole_onebody, dipole_twobody]
-
-    if cubic:
-        if dipole_level < 3:
-            dipole = False
-
-        pes_threebody, dipole_threebody = _pes_threemode(
-            mol_eq,
-            scf_result,
-            freqs,
-            vectors,
-            grid,
-            pes_onebody,
-            pes_twobody,
-            dipole_onebody,
-            dipole_twobody,
-            method=method,
-            dipole=dipole,
-        )
-        comm.Barrier()
-        pes_data = [pes_onebody, pes_twobody, pes_threebody]
-        dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
-
-    freqs = freqs * CM_TO_AU
-    return VibrationalPES(
-        freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
-    )
-
-def vibrational_pes_test(
-    molecule,
-    quad_order=9,
-    method="rhf",
-    localize=True,
-    bins=None,
-    cubic=False,
-    dipole_level=1,
+    backend="serial",
+    max_workers=1
 ):
     r"""Computes potential energy surfaces along vibrational normal modes.
 
@@ -1433,8 +776,8 @@ def vibrational_pes_test(
     grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
 
     dipole = True
-    pes_onebody, dipole_onebody = _pes_onemode_test(
-        mol_eq, scf_result, freqs, vectors, grid, method=method, dipole=dipole
+    pes_onebody, dipole_onebody = _pes_onemode(
+        mol_eq, scf_result, freqs, vectors, grid, method=method, dipole=dipole, backend=backend, max_workers=max_workers
     )
     
 
@@ -1442,7 +785,7 @@ def vibrational_pes_test(
     if dipole_level < 2:
         dipole = False
 
-    pes_twobody, dipole_twobody = _pes_twomode_test(
+    pes_twobody, dipole_twobody = _pes_twomode(
         mol_eq,
         scf_result,
         freqs,
@@ -1452,6 +795,8 @@ def vibrational_pes_test(
         dipole_onebody,
         method=method,
         dipole=dipole,
+        backend=backend,
+        max_workers=max_workers
     )
     
 
@@ -1462,7 +807,7 @@ def vibrational_pes_test(
         if dipole_level < 3:
             dipole = False
 
-        pes_threebody, dipole_threebody = _pes_threemode_test(
+        pes_threebody, dipole_threebody = _pes_threemode(
             mol_eq,
             scf_result,
             freqs,
@@ -1474,6 +819,8 @@ def vibrational_pes_test(
             dipole_twobody,
             method=method,
             dipole=dipole,
+            backend=backend,
+            max_workers=max_workers
         )
         
         pes_data = [pes_onebody, pes_twobody, pes_threebody]
