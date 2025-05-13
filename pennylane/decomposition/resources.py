@@ -268,7 +268,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
 
-        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep` and :func:`~pennylane.decomposition.adjoint_resource_rep`
+        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
@@ -288,7 +288,11 @@ def controlled_resource_rep(
     num_zero_control_values: int = 0,
     num_work_wires: int = 0,
 ):
-    """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
+    """Creates a ``CompressedResourceOp`` representation of a controlled operator.
+
+    This function mirrors the custom logic in ``qml.ctrl`` which does the following:
+    - Flattens nested controlled operations.
+    - Dispatches to custom controlled operations when applicable.
 
     Args:
         base_class: the base operator type
@@ -301,32 +305,68 @@ def controlled_resource_rep(
 
     _validate_resource_rep(base_class, base_params)
 
-    # Flatten nested controlled operations
-    if base_class is qml.ops.Controlled or base_class is qml.ops.ControlledOp:
-        base_resource_rep = controlled_resource_rep(**base_params)
-        base_class = base_resource_rep.params["base_class"]
-        base_params = base_resource_rep.params["base_params"]
-        num_control_wires += base_resource_rep.params["num_control_wires"]
-        num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
-        num_work_wires += base_resource_rep.params["num_work_wires"]
+    custom_controlled_map = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
+    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
+    if num_zero_control_values == 0 and custom_ctrl:
+        return resource_rep(custom_ctrl)
 
-    elif base_class in custom_ctrl_op_to_base():
-        num_control_wires += base_class.num_wires - 1
+    if base_class is qml.QubitUnitary:
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_params["num_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    if base_class is qml.ControlledQubitUnitary:
+        num_control_wires += base_params["num_control_wires"]
+        num_zero_control_values += base_params["num_zero_control_values"]
+        num_work_wires += base_params["num_work_wires"]
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_params["num_target_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    if base_class in custom_ctrl_op_to_base():
+        num_control_wires = base_class.num_wires - 1 + num_control_wires
         base_class = custom_ctrl_op_to_base()[base_class]
+        return CompressedResourceOp(
+            qml.ops.Controlled,
+            {
+                "base_class": base_class,
+                "base_params": {},
+                "num_control_wires": num_control_wires,
+                "num_zero_control_values": num_zero_control_values,
+                "num_work_wires": num_work_wires,
+            },
+        )
 
-    elif base_class is qml.MultiControlledX:
-        base_class = qml.X
+    if base_class is qml.MultiControlledX:
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
-        base_params = {}
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
 
-    elif base_class is qml.ControlledQubitUnitary:
-        base_class = qml.QubitUnitary
+    if base_class in (qml.ops.Controlled, qml.ops.ControlledOp):
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
-        base_params = {"num_wires": base_params["num_target_wires"]}
+        return controlled_resource_rep(
+            base_class=base_params["base_class"],
+            base_params=base_params["base_params"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
 
     return CompressedResourceOp(
         qml.ops.Controlled,
