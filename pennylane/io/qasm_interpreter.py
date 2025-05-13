@@ -8,7 +8,7 @@ from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ,
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 SINGLE_QUBIT_GATES = {
-    "ID": Identity,  # TODO: translate all other QASM std lib gates to equivalent series of pennylane gates
+    "ID": Identity,
     "H": Hadamard,
     "X": PauliX,
     "Y": PauliY,
