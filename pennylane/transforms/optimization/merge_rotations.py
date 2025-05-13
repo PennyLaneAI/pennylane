@@ -110,11 +110,7 @@ def _get_plxpr_merge_rotations():
 
             # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
-            can_merge = (
-                previous_op is not None
-                and op.wires == previous_op.wires
-                and type(op) == type(previous_op)
-            )
+            can_merge = op.wires == previous_op.wires and type(op) == type(previous_op)
             if not can_merge:
                 self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
