@@ -200,7 +200,8 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
-* Updated `requirements-dev.txt` and `requirements-ci.txt` with `build` package. Updated  `pyproject.toml` with console_scripts and extended packages. [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
+* Updated `requirements-dev.txt` and `requirements-ci.txt` to include the `build` package. Updated  `pyproject.toml` with console_scripts and extended packages. 
+  [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
