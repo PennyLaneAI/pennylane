@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
@@ -32,7 +32,7 @@ from .gradient_transform import (
     _all_zero_grad,
     _no_trainable_grad,
     assert_no_trainable_tape_batching,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
 )
 
@@ -89,7 +89,7 @@ def _expand_transform_spsa(
 @partial(
     transform,
     expand_transform=_expand_transform_spsa,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def spsa_grad(
@@ -289,11 +289,11 @@ def spsa_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
     diff_methods = (
-        find_and_validate_gradient_methods(tape, "numeric", trainable_params)
+        find_and_validate_gradient_methods(tape, "numeric", trainable_params_indices)
         if validate_params
-        else {idx: "F" for idx in trainable_params}
+        else {idx: "F" for idx in trainable_params_indices}
     )
 
     if all(g == "0" for g in diff_methods.values()):

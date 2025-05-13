@@ -71,6 +71,7 @@ Utility functions
     :toctree: api
 
     finite_diff_coeffs
+    finite_diff_jvp
     generate_shifted_tapes
     generate_multishifted_tapes
     generate_shift_rule
@@ -345,7 +346,7 @@ from . import (
 )
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .classical_jacobian import classical_jacobian
-from .finite_difference import finite_diff, finite_diff_coeffs
+from .finite_difference import finite_diff, finite_diff_coeffs, finite_diff_jvp
 from .fisher import classical_fisher, quantum_fisher
 from .general_shift_rules import (
     eigvals_to_frequencies,
@@ -356,7 +357,6 @@ from .general_shift_rules import (
 )
 from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .hadamard_gradient import hadamard_grad
-from .hamiltonian_grad import hamiltonian_grad
 from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor
 from .parameter_shift import param_shift

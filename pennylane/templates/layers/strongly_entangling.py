@@ -16,7 +16,7 @@ Contains the StronglyEntanglingLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class StronglyEntanglingLayers(Operation):
@@ -130,7 +130,6 @@ class StronglyEntanglingLayers(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
@@ -235,3 +234,41 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
+
+    # pylint:disable = no-value-for-parameter
+    @staticmethod
+    def compute_qfunc_decomposition(
+        weights, *wires, ranges, imprimitive
+    ):  # pylint: disable=arguments-differ
+        wires = qml.math.array(wires, like="jax")
+        ranges = qml.math.array(ranges, like="jax")
+
+        n_wires = len(wires)
+        n_layers = weights.shape[0]
+
+        @qml.for_loop(n_layers)
+        def layers(l):
+            @qml.for_loop(n_wires)
+            def rot_loop(i):
+                qml.Rot(
+                    weights[l, i, 0],
+                    weights[l, i, 1],
+                    weights[l, i, 2],
+                    wires=wires[i],
+                )
+
+            def imprim_true():
+                @qml.for_loop(n_wires)
+                def imprimitive_loop(i):
+                    act_on = qml.math.array([i, i + ranges[l]], like="jax") % n_wires
+                    imprimitive(wires=wires[act_on])
+
+                imprimitive_loop()
+
+            def imprim_false():
+                pass
+
+            rot_loop()
+            qml.cond(n_wires > 1, imprim_true, imprim_false)()
+
+        layers()

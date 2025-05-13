@@ -29,23 +29,67 @@ The operations are divided into the following files:
 * ``special_unitary.py``: The ``SpecialUnitary`` operation.
 """
 
-from ..identity import GlobalPhase, Identity
+from ..identity import GlobalPhase, Identity, I
 from ..meta import Barrier, Snapshot, WireCut
-from .arithmetic_ops import *
-from .hamiltonian import Hamiltonian
-from .matrix_ops import *
-from .non_parametric_ops import *
-from .observables import *
-from .parametric_ops_multi_qubit import *
-from .parametric_ops_single_qubit import *
-from .qchem_ops import *
-from .special_unitary import SpecialUnitary
-from .state_preparation import *
+from .arithmetic_ops import QubitCarry, QubitSum, IntegerComparator
+from .matrix_ops import QubitUnitary, DiagonalQubitUnitary, BlockEncode
+from .non_parametric_ops import (
+    Hadamard,
+    H,
+    PauliX,
+    X,
+    PauliY,
+    Y,
+    PauliZ,
+    Z,
+    S,
+    T,
+    SX,
+    SWAP,
+    ECR,
+    ISWAP,
+    SISWAP,
+    SQISW,
+)
+from .observables import (
+    Hermitian,
+    SparseHamiltonian,
+    Projector,
+    BasisStateProjector,
+    StateVectorProjector,
+)
+from .parametric_ops_multi_qubit import (
+    MultiRZ,
+    PauliRot,
+    PCPhase,
+    IsingXX,
+    IsingYY,
+    IsingZZ,
+    IsingXY,
+    PSWAP,
+    CPhaseShift00,
+    CPhaseShift01,
+    CPhaseShift10,
+)
+from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, Rot, U1, U2, U3
+from .qchem_ops import (
+    SingleExcitation,
+    SingleExcitationPlus,
+    SingleExcitationMinus,
+    DoubleExcitation,
+    DoubleExcitationPlus,
+    DoubleExcitationMinus,
+    OrbitalRotation,
+    FermionicSWAP,
+)
+from .special_unitary import SpecialUnitary, TmpPauliRot
+from .state_preparation import BasisState, StatePrep, QubitDensityMatrix
 
 __ops__ = {
     "Identity",
     "Snapshot",
     "Hadamard",
+    "H",
     "PauliX",
     "X",
     "PauliY",
@@ -81,7 +125,6 @@ __ops__ = {
     "IsingXY",
     "BasisState",
     "StatePrep",
-    "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
     "BlockEncode",
@@ -106,6 +149,7 @@ __ops__ = {
 
 __obs__ = {
     "Hadamard",
+    "H",
     "PauliX",
     "X",
     "PauliY",
@@ -115,7 +159,6 @@ __obs__ = {
     "Hermitian",
     "Projector",
     "SparseHamiltonian",
-    "Hamiltonian",
 }
 
 

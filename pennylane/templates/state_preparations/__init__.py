@@ -17,7 +17,9 @@ by decomposing it into elementary operations.
 """
 
 from .arbitrary_state_preparation import ArbitraryStatePreparation
-from .basis import BasisStatePreparation
 from .basis_qutrit import QutritBasisStatePreparation
 from .cosine_window import CosineWindow
 from .mottonen import MottonenStatePreparation
+from .superposition import Superposition
+from .qrom_state_prep import QROMStatePreparation
+from .state_prep_mps import MPSPrep, right_canonicalize_mps

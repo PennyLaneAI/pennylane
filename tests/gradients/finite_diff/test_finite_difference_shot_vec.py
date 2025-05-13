@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
@@ -412,10 +411,8 @@ class TestFiniteDiff:
                 return self + other
 
         # pylint: disable=too-few-public-methods
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -509,10 +506,10 @@ class TestFiniteDiffIntegration:
             assert res[1][1].shape == (4,)
             assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, validate):
+    def test_single_expectation_value(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -548,11 +545,11 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -590,7 +587,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -598,7 +595,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2, seed=1967, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, seed=seed, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -637,7 +634,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.12, rtol=0)
 
-    def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate):
+    def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
         be trainable.
@@ -646,7 +643,7 @@ class TestFiniteDiffIntegration:
         jacobian will match the expected analytical value.
         """
 
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -685,10 +682,10 @@ class TestFiniteDiffIntegration:
             assert np.allclose(res[0], exp_probs, atol=0.07)
             assert np.allclose(res[1], exp_expval, atol=0.2)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, validate):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -728,10 +725,10 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_var_expectation_values(self, approx_order, strategy, validate):
+    def test_var_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -771,10 +768,10 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_prob_expectation_values(self, approx_order, strategy, validate):
+    def test_prob_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 

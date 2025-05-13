@@ -16,7 +16,7 @@ Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class QAOAEmbedding(Operation):
@@ -157,7 +157,6 @@ class QAOAEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, features, weights, wires, local_field="Y", id=None):

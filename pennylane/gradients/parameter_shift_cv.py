@@ -24,9 +24,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import (
-    _contract_qjac_with_cjac,
     _validate_gradient_methods,
-    choose_trainable_params,
+    choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
 from pennylane.measurements import (
     ExpectationMP,
@@ -152,13 +152,13 @@ def _transform_observable(obs, Z, device_wires):
     """Apply a Gaussian linear transformation to an observable.
 
     Args:
-        obs (.Observable): observable to transform
+        obs (.Operator): observable to transform
         Z (array[float]): Heisenberg picture representation of the linear transformation
         device_wires (.Wires): wires on the device the transformed observable is to be
             measured on
 
     Returns:
-        .Observable: the transformed observable
+        .Operator: the transformed observable
     """
     # Get the Heisenberg representation of the observable
     # in the position/momentum basis. The returned matrix/vector
@@ -450,7 +450,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         start = 0
 
         if not results:
-            results = [np.squeeze(np.zeros([tape.output_dim]))]
+            results = [np.array(0.0)]
 
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
@@ -520,7 +520,7 @@ def _expand_transform_param_shift_cv(
 @partial(
     transform,
     expand_transform=_expand_transform_param_shift_cv,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def param_shift_cv(
@@ -538,7 +538,7 @@ def param_shift_cv(
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
-        dev (pennylane.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.devices.LegacyDeviceFacade): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -708,8 +708,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    method_map = _gradient_analysis_and_validation_cv(tape, method, trainable_params_indices)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -726,7 +726,7 @@ def param_shift_cv(
         fns.append(data[1])
 
     if all(g == "0" for g in method_map.values()):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: np.zeros([1, len(tape.trainable_params)])
 
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 

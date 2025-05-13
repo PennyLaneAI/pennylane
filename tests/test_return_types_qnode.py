@@ -1359,7 +1359,7 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res, tuple)
 
-        if comp_basis_sampling.return_type == qml.measurements.Sample:
+        if isinstance(comp_basis_sampling, qml.measurements.SampleMP):
             assert res[0].shape == (shot_num, num_wires)
         else:
             assert isinstance(res[0], dict)
@@ -2247,42 +2247,6 @@ class TestIntegrationShotVectors:
         wires_to_use = wires if wires else op.wires
 
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res)
-
-    @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
-    def test_density_matrix(self, shot_vector, wires, device):
-        """Test a density matrix measurement."""
-        if 1 in shot_vector:
-            pytest.xfail("cannot handle single-shot in shot vector")
-
-        if device == "default.qubit":
-            pytest.xfail("state-based measurement fails on default.qubit")
-
-        dev = qml.device(device, wires=3, shots=shot_vector)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.density_matrix(wires=wires)
-
-        # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
-
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        dim = 2 ** len(wires)
-        assert all(r.shape == (dim, dim) for r in res)
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement, device):

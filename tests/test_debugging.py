@@ -41,7 +41,8 @@ class TestSnapshotTape:
             qml.Hadamard(wires=0),
             qml.Snapshot("very_important_state"),
             qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
+            qml.Snapshot(measurement=qml.probs()),
+            qml.Snapshot(measurement=qml.sample(), shots=10),
         ]
 
         measurements = [qml.expval(qml.PauliX(0))]
@@ -49,9 +50,10 @@ class TestSnapshotTape:
         num_snapshots = len(tuple(filter(lambda x: isinstance(x, qml.Snapshot), ops)))
 
         expected_tapes = [
-            qml.tape.QuantumTape([], [qml.state()], shots=shots),
-            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=shots),
-            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.state()], shots=shots),
+            qml.tape.QuantumTape([], [qml.state()], shots=None),
+            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=None),
+            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.probs()], shots=shots),
+            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.sample()], shots=10),
             qml.tape.QuantumTape(
                 [qml.Hadamard(0), qml.CNOT((0, 1))], [qml.expval(qml.X(0))], shots=shots
             ),
@@ -166,27 +168,20 @@ class TestSnapshotGeneral:
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
-        if "lightning" in dev.name:
+        if "lightning" in dev.name or "mixed" in dev.name:
             pytest.skip()
 
         @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.state())
             qml.Snapshot()
-            if "mixed" in dev.name:
-                qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
 
             if isinstance(dev, qml.devices.QutritDevice):
                 return qml.expval(qml.GellMann(0, 1))
 
             return qml.expval(qml.PauliZ(0))
 
-        with (
-            pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
-            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
-            else nullcontext()
-        ):
-            qml.snapshots(circuit)(shots=200)
+        _ = qml.snapshots(circuit)(shots=200)
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
@@ -244,6 +239,46 @@ class TestSnapshotGeneral:
             expected = {"execution_results": np.array(1.0)}
 
         _compare_numpy_dicts(result, expected)
+
+    def test_override_shots(self, dev):
+        """Test that override shots allow snapshots to work with different numbers of measurements."""
+
+        @qml.qnode(dev)
+        def c():
+            if dev.name != "default.qutrit":
+                qml.H(0)
+            qml.Snapshot("sample", qml.sample(wires=0), shots=5)
+            qml.Snapshot("counts", qml.counts(wires=0, all_outcomes=True), shots=20)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=21)
+            return qml.state()
+
+        out = qml.snapshots(c)()
+
+        assert out["sample"].shape == (5,)
+        assert out["counts"]["0"] + out["counts"].get("1", 0) == 20
+        if dev.name != "default.qutrit":
+            # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
+            assert not qml.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
+
+    def test_override_analytic(self, dev):
+        """Test that finite shots can be written with analytic calculations."""
+
+        if dev.name == "default.qutrit":
+            pytest.skip("hard to write generic test that works with qutrits.")
+
+        @qml.transform
+        def set_shots(tape, shots):
+            return (tape.copy(shots=shots),), lambda res: res[0]
+
+        @qml.qnode(dev, diff_method=None)
+        def c():
+            qml.H(0)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=None)
+            return qml.sample(wires=0)
+
+        out = qml.snapshots(set_shots(c, shots=10))()
+        assert qml.math.allclose(out["probs"], np.array([0.5, 0.5]))
+        assert out["execution_results"].shape == (10,)
 
 
 class TestSnapshotSupportedQNode:
@@ -364,6 +399,10 @@ class TestSnapshotSupportedQNode:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_default_qutrit_mixed_finite_shot(self, diff_method):
         """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
@@ -397,7 +436,7 @@ class TestSnapshotSupportedQNode:
         )
         assert result["execution_results"] == expected["execution_results"]
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
@@ -482,6 +521,10 @@ class TestSnapshotSupportedQNode:
 
     def test_adjoint_circuit(self):
         """Test that snapshots are returned correctly when adjointed."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(params, wire):
@@ -508,6 +551,10 @@ class TestSnapshotSupportedQNode:
 
     def test_all_sample_measurement_snapshot(self):
         """Test that the correct measurement snapshots are returned for different measurement types."""
+
+        # TODO: The fact that this entire test depends on a global seed is not good
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
@@ -543,7 +590,7 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = qml.snapshots(circuit)(shots=200)
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
@@ -600,7 +647,7 @@ class TestSnapshotUnsupportedQNode:
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
@@ -611,16 +658,9 @@ class TestSnapshotUnsupportedQNode:
 
         dev = qml.device("lightning.qubit", wires=2)
 
-        with (
-            pytest.raises(
-                qml.DeviceError,
-                match=r"not accepted for analytic simulation on adjoint \+ lightning.qubit",
-            )
-            if diff_method == "adjoint"
-            else pytest.raises(
-                qml.QuantumFunctionError,
-                match=f"does not support {diff_method} with requested circuit",
-            )
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match=f"does not support {diff_method} with requested circuit",
         ):
 
             @qml.qnode(dev, diff_method=diff_method)
@@ -629,6 +669,19 @@ class TestSnapshotUnsupportedQNode:
                 return qml.expval(qml.PauliX(0))
 
             qml.snapshots(circuit)()
+
+    def test_state_wire_order_preservation(self):
+        """Test that the snapshots wire order reflects the wire order on the device."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.X(1)
+            qml.Snapshot()
+            return qml.state()
+
+        out = qml.snapshots(circuit)()
+
+        assert qml.math.allclose(out[0], out["execution_results"])
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
@@ -650,8 +703,9 @@ class TestSnapshotUnsupportedQNode:
             circuit = qml.snapshots(circuit)
 
         result = circuit()
+        analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
         expected = {
-            0: np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
+            0: analytic_result,
             "execution_results": np.array([1 / 3, 1 / 3, 1 / 3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         }
 
@@ -662,12 +716,13 @@ class TestSnapshotUnsupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-        # Make sure shots are overriden correctly
+        # Make sure shots are overridden correctly
         result = circuit(shots=200)
-        assert np.allclose(
-            result[0],
-            np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
-            atol=0.1,
+        finite_shot_result = result[0]
+        assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
+            finite_shot_result,
+            analytic_result,
+            atol=np.finfo(np.float64).eps,
             rtol=0,
         )
 

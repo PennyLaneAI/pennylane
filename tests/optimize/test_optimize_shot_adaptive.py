@@ -14,7 +14,6 @@
 """Tests for the shot adaptive optimizer"""
 # pylint: disable=unused-argument
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -101,16 +100,12 @@ class TestSingleShotGradientIntegration:
     """Integration tests to ensure that the single shot gradient is correctly computed
     for a variety of argument types."""
 
-    dev = qml.device("default.qubit", wires=1, shots=100)
-
     @staticmethod
-    @qml.qnode(dev)
     def cost_fn0(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    @flaky(max_runs=3)
-    def test_single_argument_step(self, mocker, monkeypatch):
+    def test_single_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with a single argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
@@ -119,15 +114,17 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
+        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
         x_init = np.array(0.5, requires_grad=True)
-        new_x = opt.step(self.cost_fn0, x_init)
+        qnode = qml.QNode(self.cost_fn0, device=dev)
+        new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.tensor)
         assert new_x != x_init
 
         spy_grad.assert_called_once()
         spy_single_shot_qnodes.assert_called_once()
-        single_shot_grads = opt._single_shot_qnode_gradients(self.cost_fn0, [x_init], {})
+        single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
 
         # assert single shot gradients are computed correctly
         assert len(single_shot_grads) == 1
@@ -143,7 +140,7 @@ class TestSingleShotGradientIntegration:
         opt.s = [np.array(10)]
 
         # check that the gradient and variance are computed correctly
-        grad, grad_variance = opt.compute_grad(self.cost_fn0, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
         assert np.allclose(grad, np.mean(single_shot_grads))
@@ -152,19 +149,18 @@ class TestSingleShotGradientIntegration:
         # check that the gradient and variance are computed correctly
         # with a different shot budget
         opt.s = [np.array(5)]
-        grad, grad_variance = opt.compute_grad(self.cost_fn0, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
         assert np.allclose(grad, np.mean(single_shot_grads[0][:5]))
         assert np.allclose(grad_variance, np.var(single_shot_grads[0][:5], ddof=1))
 
     @staticmethod
-    @qml.qnode(dev)
     def cost_fn1(params):
         ansatz1(params)
         return qml.expval(qml.PauliZ(0))
 
-    def test_single_array_argument_step(self, mocker, monkeypatch):
+    def test_single_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with a single array argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
@@ -172,14 +168,17 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
+        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
+
         x_init = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        new_x = opt.step(self.cost_fn1, x_init)
+        qnode = qml.QNode(self.cost_fn1, device=dev)
+        new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)
         assert not np.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
-        single_shot_grads = opt._single_shot_qnode_gradients(self.cost_fn1, [x_init], {})
+        single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
         spy_grad.assert_called_once()
 
         # assert single shot gradients are computed correctly
@@ -196,7 +195,7 @@ class TestSingleShotGradientIntegration:
         opt.s = [10 * np.ones([2, 3], dtype=np.int64)]
 
         # check that the gradient and variance are computed correctly
-        grad, grad_variance = opt.compute_grad(self.cost_fn1, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
         assert grad[0].shape == x_init.shape
@@ -210,7 +209,7 @@ class TestSingleShotGradientIntegration:
         opt.s[0] = opt.s[0] // 2  # all array elements have a shot budget of 5
         opt.s[0][0, 0] = 8  # set the shot budget of the zeroth element to 8
 
-        grad, grad_variance = opt.compute_grad(self.cost_fn1, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
 
@@ -222,15 +221,12 @@ class TestSingleShotGradientIntegration:
         assert np.allclose(grad[0][0, 1], np.mean(single_shot_grads[0][:5, 0, 1]))
         assert np.allclose(grad_variance[0][0, 1], np.var(single_shot_grads[0][:5, 0, 1], ddof=1))
 
-    dev = qml.device("default.qubit", wires=2, shots=100)
-
     @staticmethod
-    @qml.qnode(dev)
     def cost_fn2(params):
         ansatz2(params)
         return qml.expval(qml.PauliZ(0))
 
-    def test_padded_single_array_argument_step(self, mocker, monkeypatch):
+    def test_padded_single_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with a single array argument with extra dimensions correctly
         performs an optimization step, and that the single-shot gradients generated have the
         correct shape"""
@@ -241,13 +237,15 @@ class TestSingleShotGradientIntegration:
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
         x_init = np.ones(shape) * 0.5
-        new_x = opt.step(self.cost_fn2, x_init)
+        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
+        qnode = qml.QNode(self.cost_fn2, device=dev)
+        new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)
         assert not np.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
-        single_shot_grads = opt._single_shot_qnode_gradients(self.cost_fn2, [x_init], {})
+        single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
         spy_grad.assert_called_once()
 
         # assert single shot gradients are computed correctly
@@ -264,7 +262,7 @@ class TestSingleShotGradientIntegration:
         opt.s = [10 * np.ones(shape, dtype=np.int64)]
 
         # check that the gradient and variance are computed correctly
-        grad, grad_variance = opt.compute_grad(self.cost_fn2, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
         assert grad[0].shape == x_init.shape
@@ -278,7 +276,7 @@ class TestSingleShotGradientIntegration:
         opt.s[0] = opt.s[0] // 2  # all array elements have a shot budget of 5
         opt.s[0][0, 0, 0] = 8  # set the shot budget of the zeroth element to 8
 
-        grad, grad_variance = opt.compute_grad(self.cost_fn2, [x_init], {})
+        grad, grad_variance = opt.compute_grad(qnode, [x_init], {})
         assert len(grad) == 1
         assert len(grad_variance) == 1
 
@@ -297,13 +295,13 @@ class TestSingleShotGradientIntegration:
         # Step twice to ensure that `opt.s` does not get reshaped.
         # If it was reshaped, its shape would not match `new_x`
         # and an error would get raised.
-        _ = opt.step(self.cost_fn2, new_x)
+        _ = opt.step(qnode, new_x)
 
-    def test_multiple_argument_step(self, mocker, monkeypatch):
+    def test_multiple_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -356,11 +354,11 @@ class TestSingleShotGradientIntegration:
             assert np.allclose(grad[p], np.mean(single_shot_grads[p][:s]))
             assert np.allclose(grad_variance[p], np.var(single_shot_grads[p][:s], ddof=1))
 
-    def test_multiple_array_argument_step(self, mocker, monkeypatch):
+    def test_multiple_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
         # pylint: disable=protected-access
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1, shots=100, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -600,9 +598,9 @@ class TestOptimization:
     minimizes simple examples"""
 
     @pytest.mark.slow
-    def test_multi_qubit_rotation(self):
+    def test_multi_qubit_rotation(self, seed):
         """Test that multiple qubit rotation can be optimized"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -627,11 +625,10 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
-    @flaky(max_runs=3)
     @pytest.mark.slow
-    def test_vqe_optimization(self):
+    def test_vqe_optimization(self, seed):
         """Test that a simple VQE circuit can be optimized"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2, shots=100, seed=seed)
         coeffs = [0.1, 0.2]
         obs = [qml.PauliZ(0), qml.PauliX(0)]
         H = qml.Hamiltonian(coeffs, obs)
@@ -649,7 +646,7 @@ class TestOptimization:
             ansatz(params)
             return qml.expval(H)
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         params = rng.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
@@ -671,12 +668,11 @@ class TestStepAndCost:
     """Tests for the step_and_cost method"""
 
     @pytest.mark.slow
-    @flaky(max_runs=3)
-    def test_qnode_cost(self, tol):
+    def test_qnode_cost(self, tol, seed):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10, seed=seed)
 
         @qml.qnode(dev, cache=False)
         def circuit(x):

@@ -46,7 +46,7 @@ For example:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.Z(wires=1))
 
 .. note::
 
@@ -79,7 +79,7 @@ Defining a device
 
 To run---and later optimize---a quantum circuit, one needs to first specify a *computational device*.
 
-The device is an instance of the :class:`~.pennylane.Device`
+The device is an instance of the :class:`~.pennylane.devices.Device`
 class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`device <pennylane.device>` loader.
 
@@ -89,7 +89,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
-(see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
+(see `available plugins <https://pennylane.ai/plugins>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
@@ -212,6 +212,8 @@ A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
+    import numpy as np
+
     circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
@@ -241,6 +243,28 @@ or the :func:`~.pennylane.draw_mpl` transform:
     :target: javascript:void(0);
 
 .. _intro_vcirc_decorator:
+
+Re-configuring QNode settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There is often a need to modify an existing QNode setup to test a new configuration. This includes,
+but is not limited to, executing on a different quantum device, using a new differentiation method or 
+machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
+way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
+QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
+used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the transform program cannot be updated 
+using this method.
+
+For instance, to use a different quantum device, the configuration can be updated with,
+
+>>> new_dev = qml.device('lightning.qubit', wires=dev_unique_wires.wires)
+>>> new_circuit = circuit.update(device = new_dev)
+>>> print(new_circuit.device.name)
+lightning.qubit
+>>> print(qml.draw(new_circuit)(np.pi/4, 0.7))
+aux: ───────────╭●─┤     
+ q1: ──RZ(0.79)─╰X─┤     
+ q2: ──RY(0.70)────┤  <Z>
 
 The QNode decorator
 -------------------

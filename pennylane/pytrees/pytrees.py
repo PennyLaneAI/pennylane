@@ -18,6 +18,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+import autograd
+
 import pennylane.queuing
 
 has_jax = True
@@ -66,7 +68,7 @@ def unflatten_tuple(data, _) -> tuple:
 
 
 def unflatten_dict(data, metadata) -> dict:
-    """Unflatten a dictinoary."""
+    """Unflatten a dictionary."""
     return dict(zip(metadata, data))
 
 
@@ -292,3 +294,21 @@ def _unflatten(new_data, structure):
         return next(new_data)
     children = tuple(_unflatten(new_data, s) for s in structure.children)
     return unflatten_registrations[structure.type_](children, structure.metadata)
+
+
+# pylint: disable=no-member
+register_pytree(
+    autograd.builtins.list,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.list(data),
+)
+register_pytree(
+    autograd.builtins.tuple,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.tuple(data),
+)
+register_pytree(
+    autograd.builtins.SequenceBox,
+    lambda obj: (list(obj), ()),
+    lambda data, _: autograd.builtins.SequenceBox(data),
+)

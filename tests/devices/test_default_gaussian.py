@@ -23,7 +23,6 @@ from scipy.linalg import block_diag
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane.devices.default_gaussian import (
     beamsplitter,
     coherent_state,
@@ -113,7 +112,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError,
+        qml.DeviceError,
         match=msg,
     ):
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
@@ -729,7 +728,7 @@ class TestDefaultGaussianIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.gaussian", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "cv",
             "supports_finite_shots": True,

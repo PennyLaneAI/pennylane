@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.add_noise import add_noise
 
@@ -106,13 +105,10 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
     def test_noise_tape_with_state_prep(self):
         """Test if the expected tape is returned with the transform"""
@@ -142,13 +138,10 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
 
 
 class TestAddNoiseInterface:
@@ -179,9 +172,21 @@ class TestAddNoiseInterface:
             qml.RX(z, wires=1)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        @qml.qnode(dev)
+        def g(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.AmplitudeDamping(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.AmplitudeDamping(0.4, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
         args = [0.1, 0.2, 0.3, 0.4]
 
         assert not np.isclose(f_noisy(*args), f(*args))
+        assert np.isclose(f_noisy(*args), g(*args))
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_add_noise_dev(self, dev_name):
@@ -199,17 +204,17 @@ class TestAddNoiseInterface:
         in_tape = QuantumScript.from_queue(q_in_tape)
         dev = qml.device(dev_name, wires=2)
 
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res_without_noise = qml.execute(
             [in_tape], dev, qml.gradients.param_shift, transform_program=program
         )
 
         c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseShift, 0.4)
         new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
-        new_program, _ = new_dev.preprocess()
+        new_program = new_dev.preprocess_transforms()
         [tape], _ = new_program([in_tape])
         res_with_noise = qml.execute(
-            [in_tape], new_dev, qml.gradients, transform_program=new_program
+            [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
         )
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
@@ -233,16 +238,13 @@ class TestAddNoiseInterface:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 2
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
         assert tape.observables[1].name == "PauliZ"
         assert tape.observables[1].wires.tolist() == [0]
-        assert tape.measurements[1].return_type is Expectation
+        assert isinstance(tape.measurements[1], qml.measurements.ExpectationMP)
 
         assert not np.allclose(res_without_noise, res_with_noise)
 
@@ -280,7 +282,7 @@ class TestAddNoiseInterface:
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=5)
 
         fcond = qml.noise.wires_in([0, 1])
 
@@ -316,6 +318,77 @@ class TestAddNoiseInterface:
 
         assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
 
+    # pylint:disable = cell-var-from-loop
+    def test_add_noise_with_readout_errors(self):
+        """Test that a add_noise works with readout errors."""
+        dev = qml.device("default.mixed", wires=2)
+
+        fc, fn = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(
+            qml.AmplitudeDamping, 0.4
+        )
+        mc, mn = (qml.noise.meas_eq(qml.expval) | qml.noise.meas_eq(qml.var)) & qml.noise.wires_in(
+            [0, 1]
+        ), qml.noise.partial_wires(qml.PhaseFlip, 0.2)
+
+        @partial(add_noise, noise_model=qml.NoiseModel({fc: fn}, {mc: mn}))
+        @qml.qnode(dev)
+        def f_noisy(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return (
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.probs(op=qml.Z(0) @ qml.Z(1)),
+                qml.purity(wires=0),
+                qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
+            )
+
+        args = [0.1, 0.2, 0.3, 0.4]
+
+        results = []
+        for mp in [
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
+        ]:
+
+            @qml.qnode(dev)
+            def f(w, x, y, z):
+                qml.RX(w, wires=0)
+                qml.RY(x, wires=1)
+                qml.AmplitudeDamping(0.4, wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(y, wires=0)
+                qml.AmplitudeDamping(0.4, wires=0)
+                qml.RX(z, wires=1)
+                qml.PhaseFlip(0.2, wires=0)
+                qml.PhaseFlip(0.2, wires=1)
+                return qml.apply(mp)
+
+            results.append(f(*args))
+
+        for mp in [qml.probs(op=qml.Z(0) @ qml.Z(1)), qml.purity(wires=0)]:
+
+            @qml.qnode(dev)
+            def g(w, x, y, z):
+                qml.RX(w, wires=0)
+                qml.RY(x, wires=1)
+                qml.AmplitudeDamping(0.4, wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(y, wires=0)
+                qml.AmplitudeDamping(0.4, wires=0)
+                qml.RX(z, wires=1)
+                return qml.apply(mp)
+
+            results.append(g(*args))
+
+        noise_res = f_noisy(*args)
+        assert qml.math.allclose(results[0], noise_res[0])
+        assert qml.math.allclose(results[2], noise_res[1])
+        assert qml.math.allclose(results[3], noise_res[2])
+        assert qml.math.allclose(results[1], noise_res[3])
+
 
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
@@ -340,7 +413,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -373,7 +446,7 @@ class TestAddNoiseLevels:
         @qml.transforms.undo_swaps
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)

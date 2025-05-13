@@ -15,9 +15,8 @@
 This module contains templates, which are pre-coded routines that can be used in a quantum node.
 """
 
-from .broadcast import *
 from .embeddings import *
-from .layer import *
+from .layer import layer
 from .layers import *
 from .state_preparations import *
 from .subroutines import *

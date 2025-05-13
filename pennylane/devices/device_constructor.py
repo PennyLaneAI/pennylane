@@ -87,8 +87,11 @@ def device(name, *args, **kwargs):
     * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
       of quantum circuits based on tensor networks.
 
+    * :mod:`'null.qubit' <pennylane.devices.null_qubit>`: a simulator that performs no
+      operations associated with numerical computations.
+
     Additional devices are supported through plugins — see
-    the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
+    the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run
     :func:`qml.about <pennylane.about>`.
 
@@ -267,12 +270,12 @@ def device(name, *args, **kwargs):
         if custom_decomps is not None:
             if isinstance(dev, qml.devices.LegacyDevice):
                 custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev, decomp_depth=10
+                    custom_decomps, dev
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
             else:
                 custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev, decomp_depth=10
+                    custom_decomps, dev
                 )
                 dev.preprocess = custom_decomp_preprocess
 

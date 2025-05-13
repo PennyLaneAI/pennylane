@@ -18,6 +18,7 @@ This submodule defines a base class for composite operations.
 import abc
 import copy
 from collections.abc import Callable
+from functools import wraps
 
 import pennylane as qml
 from pennylane import math
@@ -25,6 +26,24 @@ from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
+
+
+def handle_recursion_error(func):
+    """Handles any recursion errors raised from too many levels of nesting."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except RecursionError as e:
+            raise RuntimeError(
+                "Maximum recursion depth reached! This is likely due to nesting too many levels "
+                "of composite operators. Try setting lazy=False when calling qml.sum, qml.prod, "
+                "and qml.s_prod, or use the +, @, and * operators instead. Alternatively, you "
+                "can periodically call qml.simplify on your operators."
+            ) from e
+
+    return wrapper
 
 
 class CompositeOp(Operator):
@@ -70,6 +89,7 @@ class CompositeOp(Operator):
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 
+    @handle_recursion_error
     def _check_batching(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
@@ -80,10 +100,13 @@ class CompositeOp(Operator):
         self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
 
+    @handle_recursion_error
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -113,6 +136,7 @@ class CompositeOp(Operator):
         """The symbol used when visualizing the composite operator"""
 
     @property
+    @handle_recursion_error
     def data(self):
         """Create data property"""
         return tuple(d for op in self for d in op.data)
@@ -132,6 +156,7 @@ class CompositeOp(Operator):
         return len(self.wires)
 
     @property
+    @handle_recursion_error
     def num_params(self):
         return sum(op.num_params for op in self)
 
@@ -152,9 +177,11 @@ class CompositeOp(Operator):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @handle_recursion_error
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in self)
+        return all(op.has_matrix for op in self)
 
+    @handle_recursion_error
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
 
@@ -168,12 +195,12 @@ class CompositeOp(Operator):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = self.__class__(*ops)
                 eigvals.append(
-                    qml.utils.expand_vector(
+                    math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),
@@ -290,6 +317,7 @@ class CompositeOp(Operator):
                 )
         return diag_gates
 
+    @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the composite operator is represented in diagrams and drawings.
 
@@ -344,6 +372,7 @@ class CompositeOp(Operator):
         """Sort composite operands by their wire indices."""
 
     @property
+    @handle_recursion_error
     def hash(self):
         if self._hash is None:
             self._hash = hash(
@@ -357,6 +386,7 @@ class CompositeOp(Operator):
         return None
 
     @property
+    @handle_recursion_error
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
 
@@ -365,6 +395,7 @@ class CompositeOp(Operator):
     def _math_op(self) -> Callable:
         """The function used when combining the operands of the composite operator"""
 
+    @handle_recursion_error
     def map_wires(self, wire_map: dict):
         # pylint:disable=protected-access
         cls = self.__class__

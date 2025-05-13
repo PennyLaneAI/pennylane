@@ -25,7 +25,7 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane import expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
 from pennylane.queuing import WrappedObj
@@ -81,7 +81,7 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
+        if obs is not None and isinstance(obs, qml.ops.Prod):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
@@ -204,8 +204,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
-                measurements_from_graph.append(qml.expval(prod_type(*observables)))
+                measurements_from_graph.append(qml.expval(qml.prod(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 

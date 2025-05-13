@@ -183,28 +183,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             "Unsupported return type specified for observable Von Neumann entropy"
         )
 
-    def vn_entanglement_entropy(self, wires0, wires1, log_base):
-        r"""Returns the Von Neumann entanglement entropy prior to measurement.
-
-        .. math::
-
-            S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
-
-        Args:
-            wires0 (Sequence[int] or int): the wires of the first subsystem
-            wires1 (Sequence[int] or int): the wires of the second subsystem
-            log_base (float): Base for the logarithm.
-
-        Returns:
-            float: returns the Von Neumann entropy
-        """
-        # TODO: Add support for VnEntanglementEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
-        # states (see `qml.math.vn_entanglement_entropy()`), so it needs to be updated before VnEntanglementEntropy can be supported for qutrits.
-        # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
-            "Unsupported return type specified for observable Von Neumann entanglement entropy"
-        )
-
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:
 

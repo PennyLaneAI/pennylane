@@ -92,3 +92,23 @@ class TestAQFT:
 
         for gate in decomp:
             assert gate.name in ["Hadamard", "ControlledPhaseShift", "SWAP"]
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        import jax
+
+        wires = 3
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            qml.Hadamard(1)
+            qml.AQFT(order=1, wires=range(wires))
+            return qml.state()
+
+        jit_circuit = jax.jit(circuit)
+
+        res = circuit()
+        res2 = jit_circuit()
+        assert qml.math.allclose(res, res2)

@@ -408,3 +408,20 @@ class TestInterfaces:
         grads2 = grad_fn2(input_jax)
 
         assert qml.math.allclose(grads, grads2)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Tests jit within the jax interface."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+        ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Select(ops, control=[0, 1])
+            return qml.state()
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())

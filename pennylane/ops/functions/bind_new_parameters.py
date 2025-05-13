@@ -22,7 +22,7 @@ from functools import singledispatch
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 from ..identity import Identity
@@ -163,6 +163,7 @@ def bind_new_parameters_copy(op, params: Sequence[TensorLike]):  # pylint:disabl
 @bind_new_parameters.register(qml.CRZ)
 @bind_new_parameters.register(qml.CRot)
 @bind_new_parameters.register(qml.ControlledPhaseShift)
+@bind_new_parameters.register(qml.ControlledQubitUnitary)
 def bind_new_parameters_parametric_controlled_ops(
     op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
     params: Sequence[TensorLike],
@@ -231,26 +232,6 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     # signature results in a call to `Pow.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Pow(bind_new_parameters(op.base, params), op.scalar)
-
-
-@bind_new_parameters.register
-def bind_new_parameters_hamiltonian(op: qml.ops.Hamiltonian, params: Sequence[TensorLike]):
-    new_H = qml.ops.Hamiltonian(params, op.ops)
-    if op.grouping_indices is not None:
-        new_H.grouping_indices = op.grouping_indices
-    return new_H
-
-
-@bind_new_parameters.register
-def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
-    new_obs = []
-
-    for obs in op.obs:
-        sub_params = params[: obs.num_params]
-        params = params[obs.num_params :]
-        new_obs.append(bind_new_parameters(obs, sub_params))
-
-    return Tensor(*new_obs)
 
 
 @bind_new_parameters.register

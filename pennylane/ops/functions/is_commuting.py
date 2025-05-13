@@ -152,16 +152,16 @@ _commutes = _create_commute_function()
 
 
 def _check_opmath_operations(operation1, operation2):
-    """Check that `Tensor`, `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
+    """Check that `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
 
     for op in [operation1, operation2]:
 
         if op.pauli_rep is not None:
             continue
 
-        if isinstance(op, (qml.operation.Tensor, SProd, Prod, Sum)):
+        if isinstance(op, (SProd, Prod, Sum)):
             raise qml.QuantumFunctionError(
-                f"Operation {op} currently not supported. Tensor, Prod, Sprod, and Sum instances must have a valid Pauli representation."
+                f"Operation {op} currently not supported. Prod, Sprod, and Sum instances must have a valid Pauli representation."
             )
 
 
@@ -262,12 +262,10 @@ unsupported_operations = [
 ]
 non_commuting_operations = [
     # StatePrepBase
-    "QubitStateVector",
     "StatePrep",
     "BasisState",
     # Templates
     "ArbitraryStatePreparation",
-    "BasisStatePreparation",
     "MottonenStatePreparation",
     "QubitCarry",
     "QubitSum",

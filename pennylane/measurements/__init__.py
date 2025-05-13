@@ -269,34 +269,25 @@ from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shado
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
 from .measurements import (
-    AllCounts,
-    Counts,
-    Expectation,
     MeasurementProcess,
     MeasurementShapeError,
     MeasurementTransform,
-    MidMeasure,
-    MutualInfo,
-    ObservableReturnTypes,
-    Probability,
-    Purity,
-    Sample,
     SampleMeasurement,
-    Shadow,
-    ShadowExpval,
-    State,
     StateMeasurement,
-    Variance,
-    VnEntropy,
-    VnEntanglementEntropy,
 )
-from .mid_measure import MeasurementValue, MidMeasureMP, measure, find_post_processed_mcms
+from .mid_measure import (
+    MeasurementValue,
+    MidMeasureMP,
+    measure,
+    find_post_processed_mcms,
+    get_mcm_predicates,
+)
 from .mutual_info import MutualInfoMP, mutual_info
+from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots
+from .shots import ShotCopies, Shots, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
-from .vn_entanglement_entropy import VnEntanglementEntropyMP, vn_entanglement_entropy

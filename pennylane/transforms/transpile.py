@@ -7,8 +7,7 @@ from functools import partial
 import networkx as nx
 
 import pennylane as qml
-from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, LinearCombination
+from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
@@ -127,7 +126,7 @@ def transpile(
     """
     if device:
         device_wires = device.wires
-        is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+        is_default_mixed = device.name == "default.mixed"
     else:
         device_wires = None
         is_default_mixed = False
@@ -143,12 +142,9 @@ def transpile(
             f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
         )
 
-    if any(
-        isinstance(m.obs, (Hamiltonian, LinearCombination, Tensor, qml.ops.Prod))
-        for m in tape.measurements
-    ):
+    if any(isinstance(m.obs, (LinearCombination, qml.ops.Prod)) for m in tape.measurements):
         raise NotImplementedError(
-            "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
 
     if any(len(op.wires) > 2 for op in tape.operations):
@@ -225,7 +221,7 @@ def transpile(
             list_op_copy = [op.map_wires(wire_map) for op in list_op_copy]
             wire_order = [wire_map[w] for w in wire_order]
             measurements = [m.map_wires(wire_map) for m in measurements]
-    new_tape = type(tape)(gates, measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=gates, measurements=measurements)
 
     # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
     # pylint: disable=unidiomatic-typecheck

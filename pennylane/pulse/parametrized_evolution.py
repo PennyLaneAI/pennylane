@@ -23,7 +23,7 @@ from collections.abc import Sequence
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import functions
 from pennylane.typing import TensorLike
 
@@ -365,7 +365,6 @@ class ParametrizedEvolution(Operation):
     """
 
     _name = "ParametrizedEvolution"
-    num_wires = AnyWires
     grad_method = "A"
 
     # pylint: disable=too-many-arguments
@@ -381,7 +380,7 @@ class ParametrizedEvolution(Operation):
         id=None,
         **odeint_kwargs,
     ):
-        if not all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in H.ops):
+        if not all(op.has_matrix for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )

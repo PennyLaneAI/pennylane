@@ -14,10 +14,10 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-# pylint: disable=too-few-public-methods, too-many-arguments
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -29,9 +29,25 @@ from pennylane.measurements import (
     SampleMP,
 )
 from pennylane.transforms.dynamic_one_shot import (
+    _supports_one_shot,
     fill_in_value,
+    get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
+
+# pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_get_legacy_capability():
+    dev = DefaultQubitLegacy(wires=[0], shots=1)
+    dev = qml.devices.LegacyDeviceFacade(dev)
+    caps = get_legacy_capabilities(dev)
+    assert caps["model"] == "qubit"
+    assert not "supports_mid_measure" in caps
+    assert not _supports_one_shot(dev)
+
+    dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
+    assert not _supports_one_shot(dev2)
 
 
 @pytest.mark.parametrize(
@@ -55,7 +71,10 @@ def test_postselection_error_with_wrong_device():
     """Test that an error is raised when a device does not support native execution."""
     dev = qml.device("default.mixed", wires=2)
 
-    with pytest.raises(TypeError, match="does not support mid-circuit measurements natively"):
+    with pytest.raises(
+        TypeError,
+        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
+    ):
 
         @qml.dynamic_one_shot
         @qml.qnode(dev)
@@ -87,16 +106,36 @@ def test_postselect_mode(postselect_mode, mocker):
     assert np.all(res != np.iinfo(np.int32).min)
 
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode_transform(postselect_mode):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+
+    @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
+
+
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
 @pytest.mark.parametrize("diff_method", [None, "best"])
-def test_hw_like_with_jax(use_jit, diff_method):
+def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
     import jax  # pylint: disable=import-outside-toplevel
 
     shots = 10
-    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(123))
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(seed))
 
     @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
     def f(x):
@@ -280,15 +319,13 @@ class TestInterfaces:
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_tape_results(
-        self, shots, n_mcms, measure_f, interface, use_interface_for_results
+        self, shots, n_mcms, measure_f, interface, use_interface_for_results, seed
     ):  # pylint: disable=unused-argument
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
             from jax.random import PRNGKey
 
-            seed = PRNGKey(123)
-        else:
-            seed = 123
+            seed = PRNGKey(seed)
 
         dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
         param = qml.math.array(np.pi / 2, like=interface)

@@ -14,11 +14,9 @@
 """The fermionic representation classes and functions."""
 import re
 from copy import copy
-from numbers import Number
 
-from numpy import ndarray
-
-import pennylane as qml
+from pennylane import fermi, math
+from pennylane.typing import TensorLike
 
 
 class FermiWord(dict):
@@ -32,7 +30,7 @@ class FermiWord(dict):
     :math:`a^{\dagger}_0 a_1` can then be constructed as
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w
+    >>> print(w)
     a⁺(0) a(1)
     """
 
@@ -62,8 +60,8 @@ class FermiWord(dict):
         for key, value in reversed(self.items()):
             position = n - key[0] - 1
             orbital = key[1]
-            fermi = "+" if value == "-" else "-"
-            adjoint_dict[(position, orbital)] = fermi
+            fermi_string = "+" if value == "-" else "-"
+            adjoint_dict[(position, orbital)] = fermi_string
 
         return FermiWord(adjoint_dict)
 
@@ -116,7 +114,7 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
-        a⁺(0) a(1)
+        'a⁺(0) a(1)'
         """
         if len(self) == 0:
             return "I"
@@ -154,23 +152,20 @@ class FermiWord(dict):
         if isinstance(other, FermiWord):
             return self_fs + FermiSentence({other: 1.0})
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return self_fs + FermiSentence({FermiWord({}): other})
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
-        raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        return self_fs + FermiSentence({FermiWord({}): other})
 
     def __radd__(self, other):
         """Add a FermiWord to a constant, i.e. `2 + FermiWord({...})`"""
-
-        if isinstance(other, (Number, ndarray)):
-            return self.__add__(other)
-
-        raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
+        return self.__add__(other)
 
     def __sub__(self, other):
         """Subtract a FermiSentence, FermiWord or constant from a FermiWord. Converts both
@@ -186,35 +181,37 @@ class FermiWord(dict):
             other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return self_fs + FermiSentence({FermiWord({}): -1 * other})  # -constant * I
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
 
-        raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        return self_fs + FermiSentence({FermiWord({}): -1 * other})  # -constant * I
 
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            self_fs = FermiSentence({self: -1.0})
-            other_fs = FermiSentence({FermiWord({}): other})
-            return self_fs + other_fs
 
-        raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
+
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+        self_fs = FermiSentence({self: -1.0})
+        other_fs = FermiSentence({FermiWord({}): other})
+        return self_fs + other_fs
 
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a constant.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w * w
+        >>> print(w * w)
         a⁺(0) a(1) a⁺(0) a(1)
         """
 
@@ -243,15 +240,16 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return FermiSentence({self: other})
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
 
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        return FermiSentence({self: other})
 
     def __rmul__(self, other):
         r"""Reverse multiply a FermiWord
@@ -261,21 +259,13 @@ class FermiWord(dict):
         ``2 * FermiWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
         will fail to multiply with a FermiWord"""
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return FermiSentence({self: other})
-
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+        return self.__mul__(other)
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi word to an integer power.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w**3
+        >>> print(w**3)
         a⁺(0) a(1) a⁺(0) a(1) a⁺(0) a(1)
         """
 
@@ -320,7 +310,7 @@ class FermiWord(dict):
 
         largest_order = n_orbitals or largest_orb_id
 
-        return qml.jordan_wigner(self, ps=True).to_mat(
+        return fermi.jordan_wigner(self, ps=True).to_mat(
             wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
         )
 
@@ -358,7 +348,7 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.shift_operator(0, 1)
         -1 * a(1) a⁺(0)
         """
@@ -437,7 +427,7 @@ class FermiSentence(dict):
     >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> s
+    >>> print(s)
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
     """
@@ -456,7 +446,7 @@ class FermiSentence(dict):
         adjoint_dict = {}
         for key, value in self.items():
             word = key.adjoint()
-            scalar = qml.math.conj(value)
+            scalar = math.conj(value)
             adjoint_dict[word] = scalar
 
         return FermiSentence(adjoint_dict)
@@ -484,37 +474,31 @@ class FermiSentence(dict):
         r"""Add a FermiSentence, FermiWord or constant to a FermiSentence by iterating over the
         smaller one and adding its terms to the larger one."""
 
-        # ensure other is FermiSentence
+        if not isinstance(other, (TensorLike, FermiWord, FermiSentence)):
+            raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, Number):
-            other = FermiSentence({FermiWord({}): other})
-        if isinstance(other, ndarray):
-            if qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
+        if isinstance(other, TensorLike):
             other = FermiSentence({FermiWord({}): other})
 
-        if isinstance(other, FermiSentence):
-            smaller_fs, larger_fs = (
-                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-            )
-            for key in smaller_fs:
-                larger_fs[key] += smaller_fs[key]
+        smaller_fs, larger_fs = (
+            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+        )
+        for key in smaller_fs:
+            larger_fs[key] += smaller_fs[key]
 
-            return larger_fs
-
-        raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+        return larger_fs
 
     def __radd__(self, other):
         """Add a FermiSentence to a constant, i.e. `2 + FermiSentence({...})`"""
-
-        if isinstance(other, (Number, ndarray)):
-            return self.__add__(other)
-
-        raise TypeError(f"Cannot add a FermiSentence to {type(other)}.")
+        return self.__add__(other)
 
     def __sub__(self, other):
         r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
@@ -522,42 +506,39 @@ class FermiSentence(dict):
             other = FermiSentence({other: -1})
             return self.__add__(other)
 
-        if isinstance(other, Number):
-            other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
-            return self.__add__(other)
-
-        if isinstance(other, ndarray):
-            if qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
-            return self.__add__(other)
-
         if isinstance(other, FermiSentence):
             other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
             return self.__add__(other)
 
-        raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
+
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
+        return self.__add__(other)
 
     def __rsub__(self, other):
         """Subtract a FermiSentence to a constant, i.e.
 
         >>> 2 - FermiSentence({...})
         """
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
-            other_fs = FermiSentence({FermiWord({}): other})  # constant * I
-            return self_fs + other_fs
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
 
-        raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
+        self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        other_fs = FermiSentence({FermiWord({}): other})  # constant * I
+        return self_fs + other_fs
 
     def __mul__(self, other):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
@@ -578,16 +559,16 @@ class FermiSentence(dict):
 
             return product
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            vals = [i * other for i in self.values()]
-            return FermiSentence(dict(zip(self.keys(), vals)))
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
-        raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+        vals = [i * other for i in self.values()]
+        return FermiSentence(dict(zip(self.keys(), vals)))
 
     def __rmul__(self, other):
         r"""Reverse multiply a FermiSentence
@@ -597,16 +578,17 @@ class FermiSentence(dict):
         multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a FermiSentence"""
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            vals = [i * other for i in self.values()]
-            return FermiSentence(dict(zip(self.keys(), vals)))
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
 
-        raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
+        if math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        vals = [i * other for i in self.values()]
+        return FermiSentence(dict(zip(self.keys(), vals)))
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
@@ -659,7 +641,7 @@ class FermiSentence(dict):
 
         largest_order = n_orbitals or largest_orb_id
 
-        return qml.jordan_wigner(self, ps=True).to_mat(
+        return fermi.jordan_wigner(self, ps=True).to_mat(
             wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
         )
 
@@ -772,13 +754,15 @@ class FermiC(FermiWord):
 
     To construct the operator :math:`a^{\dagger}_0`:
 
-    >>> FermiC(0)
+    >>> w = FermiC(0)
+    >>> print(w)
     a⁺(0)
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """
 
@@ -814,13 +798,15 @@ class FermiA(FermiWord):
 
     To construct the operator :math:`a_0`:
 
-    >>> FermiA(0)
+    >>> w = FermiA(0)
+    >>> print(w)
     a(0)
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """
 

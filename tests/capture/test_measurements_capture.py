@@ -32,7 +32,6 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
 )
 
@@ -42,14 +41,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     AbstractMeasurement,
 )
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def _get_shapes_for(*measurements, shots=qml.measurements.Shots(None), num_device_wires=0):
@@ -150,7 +142,6 @@ creation_funcs = [
     lambda: ProbabilityMP(wires=qml.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
     lambda: qml.sample(wires=(3, 4)),
     lambda: qml.shadow_expval(np.array(2) * qml.X(0)),
-    lambda: qml.vn_entanglement_entropy(wires0=(1, 3), wires1=(2, 4), log_base=2),
     lambda: qml.vn_entropy(wires=(1, 2)),
     lambda: qml.purity(wires=(0, 1)),
     lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
@@ -171,11 +162,8 @@ def test_capture_and_eval(func):
     qml.assert_equal(mp, out)
 
 
-@pytest.mark.parametrize("x64_mode", [True, False])
-def test_mid_measure(x64_mode):
+def test_mid_measure():
     """Test that mid circuit measurements can be captured and executed."""
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     def f(w):
         return MidMeasureMP(qml.wires.Wires((w,)), reset=True, postselect=1)
@@ -191,23 +179,17 @@ def test_mid_measure(x64_mode):
     assert mp._abstract_eval == MidMeasureMP._abstract_eval
 
     shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
-    assert shapes[0] == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
+    assert shapes[0] == jax.core.ShapedArray(
+        (), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+    )
 
     mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
     assert mp == f(1)
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize(
-    "x64_mode, expected", [(True, jax.numpy.complex128), (False, jax.numpy.complex64)]
-)
 @pytest.mark.parametrize("state_wires, shape", [(None, 16), (qml.wires.Wires((0, 1, 2, 3, 4)), 32)])
-def test_state(x64_mode, expected, state_wires, shape):
+def test_state(state_wires, shape):
     """Test the capture of a state measurement."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     def f():
         return StateMP(wires=state_wires)
@@ -225,19 +207,13 @@ def test_state(x64_mode, expected, state_wires, shape):
     shapes = _get_shapes_for(
         *jaxpr.out_avals, shots=qml.measurements.Shots(None), num_device_wires=4
     )[0]
-    assert shapes == jax.core.ShapedArray((shape,), expected)
-    jax.config.update("jax_enable_x64", initial_mode)
+    t = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
+    assert shapes == jax.core.ShapedArray((shape,), t)
 
 
-@pytest.mark.parametrize(
-    "x64_mode, expected", [(True, jax.numpy.complex128), (False, jax.numpy.complex64)]
-)
 @pytest.mark.parametrize("wires, shape", [([0, 1], (4, 4)), ([], (16, 16))])
-def test_density_matrix(wires, shape, x64_mode, expected):
+def test_density_matrix(wires, shape):
     """Test the capture of a density matrix."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     def f():
         return qml.density_matrix(wires=wires)
@@ -255,22 +231,16 @@ def test_density_matrix(wires, shape, x64_mode, expected):
     shapes = _get_shapes_for(
         *jaxpr.out_avals, shots=qml.measurements.Shots(None), num_device_wires=4
     )
-    assert shapes[0] == jax.core.ShapedArray(shape, expected)
-    jax.config.update("jax_enable_x64", initial_mode)
+    t = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
+    assert shapes[0] == jax.core.ShapedArray(shape, t)
 
 
-@pytest.mark.parametrize(
-    "x64_mode, expected", [(True, jax.numpy.float64), (False, jax.numpy.float32)]
-)
 @pytest.mark.parametrize("m_type", (ExpectationMP, VarianceMP))
 class TestExpvalVar:
     """Tests for capturing an expectation value or variance."""
 
-    def test_capture_obs(self, m_type, x64_mode, expected):
+    def test_capture_obs(self, m_type):
         """Test that the expectation value of an observable can be captured."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
             return m_type(obs=qml.X(0))
@@ -291,14 +261,11 @@ class TestExpvalVar:
         shapes = _get_shapes_for(
             *jaxpr.out_avals, num_device_wires=0, shots=qml.measurements.Shots(50)
         )[0]
-        assert shapes == jax.core.ShapedArray((), expected)
-        jax.config.update("jax_enable_x64", initial_mode)
+        t = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        assert shapes == jax.core.ShapedArray((), t)
 
-    def test_capture_eigvals_wires(self, m_type, x64_mode, expected):
+    def test_capture_eigvals_wires(self, m_type):
         """Test that we can capture an expectation value of eigvals+wires."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f(eigs):
             return m_type(eigvals=eigs, wires=qml.wires.Wires((0, 1)))
@@ -320,14 +287,11 @@ class TestExpvalVar:
         shapes = _get_shapes_for(
             *jaxpr.out_avals, num_device_wires=0, shots=qml.measurements.Shots(50)
         )[0]
-        assert shapes == jax.core.ShapedArray((), expected)
-        jax.config.update("jax_enable_x64", initial_mode)
+        t = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        assert shapes == jax.core.ShapedArray((), t)
 
-    def test_simple_single_mcm(self, m_type, x64_mode, expected):
+    def test_simple_single_mcm(self, m_type):
         """Test that we can take the expectation value of a mid circuit measurement."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
             m = qml.measure(0)
@@ -346,20 +310,17 @@ class TestExpvalVar:
         shapes = _get_shapes_for(
             *jaxpr.out_avals, num_device_wires=0, shots=qml.measurements.Shots(50)
         )[0]
-        assert shapes == jax.core.ShapedArray((), expected)
+        t = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        assert shapes == jax.core.ShapedArray((), t)
 
-        jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
 class TestProbs:
 
-    @pytest.mark.parametrize("wires, shape", [([0, 1, 2], 8), ([], 16)])
-    def test_wires(self, wires, shape, x64_mode):
+    @pytest.mark.parametrize(
+        "wires, shape", [([0, 1, 2], 8), ([], 16), (jax.numpy.array([0, 1, 2]), 8)]
+    )
+    def test_wires(self, wires, shape):
         """Tests capturing probabilities on wires."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
             return qml.probs(wires=wires)
@@ -369,7 +330,7 @@ class TestProbs:
         assert len(jaxpr.eqns) == 1
 
         assert jaxpr.eqns[0].primitive == ProbabilityMP._wires_primitive
-        assert [x.val for x in jaxpr.eqns[0].invars] == wires
+        assert [x.val for x in jaxpr.eqns[0].invars] == list(wires)
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == len(wires)
@@ -379,16 +340,11 @@ class TestProbs:
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )[0]
         assert shapes == jax.core.ShapedArray(
-            (shape,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (shape,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
         )
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_eigvals(self, x64_mode):
+    def test_eigvals(self):
         """Test capturing probabilities with eigenvalues."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f(eigs):
             return ProbabilityMP(eigvals=eigs, wires=qml.wires.Wires((0, 1)))
@@ -407,16 +363,11 @@ class TestProbs:
 
         shapes = _get_shapes_for(*jaxpr.out_avals)
         assert shapes[0] == jax.core.ShapedArray(
-            (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (4,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
         )
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_multiple_mcms(self, x64_mode):
+    def test_multiple_mcms(self):
         """Test measuring probabilities of multiple mcms."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
             m1 = qml.measure(0)
@@ -437,22 +388,24 @@ class TestProbs:
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=6
         )
         assert shapes[0] == jax.core.ShapedArray(
-            (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (4,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
         )
 
-        jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
 class TestSample:
 
-    @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4), (1, 1)])
-    def test_wires(self, wires, dim1_len, x64_mode):
+    @pytest.mark.parametrize(
+        "wires, dim1_len",
+        [
+            ([0, 1, 2], 3),
+            ([], 4),
+            (1, 1),
+            (jax.numpy.array([0, 1, 2]), 3),
+            (np.array([0, 1, 2]), 3),
+        ],
+    )
+    def test_wires(self, wires, dim1_len):
         """Tests capturing samples on wires."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-
         if isinstance(wires, list):
 
             def f(*inner_wires):
@@ -466,34 +419,36 @@ class TestSample:
 
             jaxpr = jax.make_jaxpr(f)(wires)
 
-        assert len(jaxpr.eqns) == 1
+        if not isinstance(wires, (jax.numpy.ndarray, np.ndarray)):
+            assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == SampleMP._wires_primitive
+        assert jaxpr.eqns[-1].primitive == SampleMP._wires_primitive
         assert [x.aval for x in jaxpr.eqns[0].invars] == jaxpr.in_avals
-        mp = jaxpr.eqns[0].outvars[0].aval
+        mp = jaxpr.eqns[-1].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
-        assert mp.n_wires == len(wires) if isinstance(wires, list) else 1
+        assert (
+            mp.n_wires == len(wires)
+            if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray))
+            else 1
+        )
         assert mp._abstract_eval == SampleMP._abstract_eval
 
         shapes = _get_shapes_for(
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
         assert len(shapes) == 1
-        shape = (50, dim1_len) if isinstance(wires, list) else (50,)
+        shape = (
+            (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
+        )
         assert shapes[0] == jax.core.ShapedArray(
-            shape, jax.numpy.int64 if x64_mode else jax.numpy.int32
+            shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )
 
         with pytest.raises(ValueError, match="finite shots are required"):
             jaxpr.out_avals[0].abstract_eval(shots=None, num_device_wires=4)
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_eigvals(self, x64_mode):
+    def test_eigvals(self):
         """Test capturing samples with eigenvalues."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f(eigs):
             return SampleMP(eigvals=eigs, wires=qml.wires.Wires((0, 1)))
@@ -512,16 +467,11 @@ class TestSample:
 
         shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(50))
         assert shapes[0] == jax.core.ShapedArray(
-            (50,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (50,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
         )
 
-        jax.config.update("jax_enable_x64", initial_mode)
-
-    def test_multiple_mcms(self, x64_mode):
+    def test_multiple_mcms(self):
         """Test sampling from multiple mcms."""
-
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
             m1 = qml.measure(0)
@@ -540,21 +490,15 @@ class TestSample:
 
         shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(50))
         assert shapes[0] == jax.core.ShapedArray(
-            (50, 2), jax.numpy.int64 if x64_mode else jax.numpy.int32
+            (50, 2), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )
 
-        jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_shadow_expval(x64_mode):
+def test_shadow_expval(seed):
     """Test that the shadow expval of an observable can be captured."""
 
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
-
     def f():
-        return qml.shadow_expval(qml.X(0), seed=887, k=4)
+        return qml.shadow_expval(qml.X(0), seed=seed, k=4)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -563,7 +507,7 @@ def test_shadow_expval(x64_mode):
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
-    assert jaxpr.eqns[1].params == {"seed": 887, "k": 4}
+    assert jaxpr.eqns[1].params == {"seed": seed, "k": 4}
 
     am = jaxpr.eqns[1].outvars[0].aval
     assert isinstance(am, AbstractMeasurement)
@@ -572,19 +516,13 @@ def test_shadow_expval(x64_mode):
 
     shapes = _get_shapes_for(*jaxpr.out_avals, num_device_wires=0, shots=qml.measurements.Shots(50))
     assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("mtype, kwargs", [(VnEntropyMP, {"log_base": 2}), (PurityMP, {})])
-def test_vn_entropy_purity(mtype, kwargs, x64_mode):
+def test_vn_entropy_purity(mtype, kwargs):
     """Test the capture of a vn entropy and purity measurement."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     def f(w1, w2):
         return mtype(wires=qml.wires.Wires([w1, w2]), **kwargs)
@@ -604,48 +542,39 @@ def test_vn_entropy_purity(mtype, kwargs, x64_mode):
         *jaxpr.out_avals, num_device_wires=4, shots=qml.measurements.Shots(None)
     )
     assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-@pytest.mark.parametrize("mtype", [MutualInfoMP, VnEntanglementEntropyMP])
-def test_mutual_info_vn_entanglement_entropy(mtype, x64_mode):
+def test_mutual_info():
     """Test the capture of a mutual info and vn entanglement entropy measurement."""
 
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
-
     def f(w1, w2):
-        return mtype(wires=(qml.wires.Wires([w1, 1]), qml.wires.Wires([w2, 3])), log_base=2)
+        return MutualInfoMP(wires=(qml.wires.Wires([w1, 1]), qml.wires.Wires([w2, 3])), log_base=2)
 
     jaxpr = jax.make_jaxpr(f)(0, 2)
     assert len(jaxpr.eqns) == 1
 
-    assert jaxpr.eqns[0].primitive == mtype._wires_primitive
+    assert jaxpr.eqns[0].primitive == MutualInfoMP._wires_primitive
     assert jaxpr.eqns[0].params == {"log_base": 2, "n_wires0": 2}
     assert len(jaxpr.eqns[0].invars) == 4
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
-    assert mp._abstract_eval == mtype._abstract_eval
+    assert mp._abstract_eval == MutualInfoMP._abstract_eval
 
     shapes = _get_shapes_for(
         *jaxpr.out_avals, num_device_wires=4, shots=qml.measurements.Shots(None)
     )
     assert shapes[0] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-def test_ClassicalShadow():
+def test_ClassicalShadow(seed):
     """Test that the classical shadow measurement can be captured."""
 
     def f():
-        return qml.classical_shadow(wires=(0, 1, 2), seed=95)
+        return qml.classical_shadow(wires=(0, 1, 2), seed=seed)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -653,7 +582,7 @@ def test_ClassicalShadow():
     assert len(jaxpr.eqns) == 1
 
     assert jaxpr.eqns[0].primitive == ClassicalShadowMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"seed": 95}
+    assert jaxpr.eqns[0].params == {"seed": seed}
     assert len(jaxpr.eqns[0].invars) == 3
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)

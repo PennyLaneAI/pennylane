@@ -24,6 +24,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -43,26 +44,6 @@ from .sampling import jax_random_split, measure_with_samples
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-}
 
 
 class TreeTraversalStack:
@@ -196,7 +177,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -340,6 +322,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    circuit = circuit.copy()
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
@@ -349,11 +332,7 @@ def simulate(
             return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
-        aux_circ = qml.tape.QuantumScript(
-            circuit.operations,
-            circuit.measurements,
-            shots=[1],
-        )
+        aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
@@ -426,11 +405,7 @@ def simulate_tree_mcm(
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
         for k, s in zip(keys, circuit.shots):
-            aux_circuit = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=s,
-            )
+            aux_circuit = circuit.copy(shots=s)
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
@@ -563,11 +538,7 @@ def simulate_tree_mcm(
                 initial_state = stack.states[0]
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
-            circtmp = qml.tape.QuantumScript(
-                circuits[depth].operations,
-                circuits[depth].measurements,
-                qml.measurements.shots.Shots(shots),
-            )
+            circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
             circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
             state, is_state_batched = get_final_state(
                 circtmp,
@@ -654,16 +625,14 @@ def split_circuit_at_mcms(circuit):
         new_measurements = (
             [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
         )
-        circuits.append(
-            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
-        )
+        circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 
     last_circuit_operations = circuit.operations[first:]
     last_circuit_measurements = []
 
     for m in circuit.measurements:
-        if not m.mv:
+        if m.mv is None:
             last_circuit_measurements.append(m)
 
     circuits.append(
@@ -683,31 +652,28 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    state = (
-        create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
-        if state is None
-        else state
-    )
-    return qml.tape.QuantumScript(
-        [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
-        + circuit.operations,
-        circuit.measurements,
-        shots=circuit.shots,
-    )
+
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
+    new_ops = [
+        qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)
+    ] + circuit.operations
+    return circuit.copy(operations=new_ops)
 
 
 def insert_mcms(circuit, results, mid_measurements):
     """Inserts terminal measurements of MCMs if the circuit is evaluated in analytic mode."""
-    if circuit.shots or not any(m.mv for m in circuit.measurements):
+    if circuit.shots or all(m.mv is None for m in circuit.measurements):
         return results
     results = list(results)
     new_results = []
     mid_measurements = {k: qml.math.array([[v]]) for k, v in mid_measurements.items()}
     for m in circuit.measurements:
-        if m.mv:
-            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
-        else:
+        if m.mv is None:
             new_results.append(results.pop(0))
+        else:
+            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
+
     return new_results
 
 
@@ -841,9 +807,9 @@ def variance_transform(circuit):
     extra_measurements = []
     for m in circuit.measurements:
         if isinstance(m, VarianceMP):
-            obs2 = m.mv * m.mv if m.mv else m.obs @ m.obs
+            obs2 = m.mv * m.mv if m.mv is not None else m.obs @ m.obs
             new_measurements.append(ExpectationMP(obs=obs2))
-            extra_measurements.append(ExpectationMP(obs=m.mv if m.mv else m.obs))
+            extra_measurements.append(ExpectationMP(obs=m.mv if m.mv is not None else m.obs))
         else:
             new_measurements.append(m)
     new_measurements.extend(extra_measurements)
@@ -870,16 +836,18 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
     """Returns combined measurement values of various types."""
     empty_mcm_samples = False
     need_mcm_samples = not all(v is None for v in mcm_samples.values())
-    need_mcm_samples = need_mcm_samples and any(circ_meas.mv for circ_meas in terminal_measurements)
+    need_mcm_samples = need_mcm_samples and any(
+        circ_meas.mv is not None for circ_meas in terminal_measurements
+    )
     if need_mcm_samples:
         empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
         if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
             raise ValueError("mcm_samples have inconsistent shapes.")
     final_measurements = []
     for circ_meas in terminal_measurements:
-        if need_mcm_samples and circ_meas.mv and empty_mcm_samples:
+        if need_mcm_samples and circ_meas.mv is not None and empty_mcm_samples:
             comb_meas = measurement_with_no_shots(circ_meas)
-        elif need_mcm_samples and circ_meas.mv:
+        elif need_mcm_samples and circ_meas.mv is not None:
             mcm_samples = {k: v.reshape((-1, 1)) for k, v in mcm_samples.items()}
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)

@@ -37,7 +37,7 @@ def check_op_supported(op, dev):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
-        prog, _ = dev.preprocess()
+        prog = dev.preprocess_transforms()
         tape = qml.tape.QuantumScript([op])
         try:
             prog((tape,))
@@ -224,23 +224,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         assert np.allclose(
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
-
-    @pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    )
-    def test_BasisStatePreparation(self, device, tol):
-        """Test the BasisStatePreparation template."""
-        dev = device(4)
-
-        @qml.qnode(dev)
-        def circuit(basis_state):
-            qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.Z(i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        res = circuit(basis_state)
-        expected = [1.0, -1.0, -1.0, 1.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.xfail(reason="most devices do not support CV")
     def test_CVNeuralNetLayers(self, device):
@@ -695,7 +678,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
-        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
+        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), dev)
 
         @qml.qnode(dev)
         def circuit():

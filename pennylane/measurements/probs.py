@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -46,7 +46,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -116,7 +116,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+    if isinstance(op, qml.ops.LinearCombination):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
@@ -151,7 +151,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Probability
+    _shortname = "probs"
 
     @classmethod
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
@@ -256,15 +256,19 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return prob_vector
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        if len(np.shape(density_matrix)) == 2:
+        if len(qml.math.shape(density_matrix)) == 2:
             prob = qml.math.diagonal(density_matrix)
         else:
-            prob = qml.math.array(
-                [qml.math.diagonal(density_matrix[i]) for i in range(np.shape(density_matrix)[0])]
+            prob = qml.math.stack(
+                [
+                    qml.math.diagonal(density_matrix[i])
+                    for i in range(qml.math.shape(density_matrix)[0])
+                ]
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
-        p_state = np.sqrt(prob)
+        prob = qml.math.convert_like(prob, density_matrix)
+        p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
     @staticmethod

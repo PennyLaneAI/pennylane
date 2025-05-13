@@ -13,6 +13,7 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
+from copy import copy
 from typing import Any, Callable, Literal, Union
 
 import pennylane as qml
@@ -46,13 +47,13 @@ def specs(
 
     .. code-block:: python3
 
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
-        x = pnp.array([0.1, 0.2])
+        x = np.array([0.1, 0.2])
         hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
@@ -66,7 +67,6 @@ def specs(
     {'resources': Resources(num_wires=2, num_gates=98, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'Exp': 96}), gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}), depth=98, shots=Shots(total_shots=None, shot_vector=())),
     'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
     'num_observables': 1,
-    'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,
     'num_device_wires': 2,
     'num_tape_wires': 2,
@@ -103,8 +103,8 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-        wires: 2
-        gates: 6
+        num_wires: 2
+        num_gates: 6
         depth: 6
         shots: Shots(total=None)
         gate_types:
@@ -115,8 +115,8 @@ def specs(
         We then check the resources after applying all transforms:
 
         >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
-        wires: 2
-        gates: 2
+        num_wires: 2
+        num_gates: 2
         depth: 1
         shots: Shots(total=None)
         gate_types:
@@ -127,8 +127,8 @@ def specs(
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
-        wires: 2
-        gates: 3
+        num_wires: 2
+        num_gates: 3
         depth: 3
         shots: Shots(total=None)
         gate_types:
@@ -169,7 +169,6 @@ def specs(
         Dictionary keys:
             * ``"num_operations"`` number of operations in the qnode
             * ``"num_observables"`` number of observables in the qnode
-            * ``"num_diagonalizing_gates"`` number of diagonalizing gates required for execution of the qnode
             * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
             * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode
             * ``"num_used_wires"``: number of wires used by the circuit
@@ -194,8 +193,8 @@ def specs(
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         for tape in batch:
-            info = tape.specs.copy()
 
+            info = copy(tape.specs)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name
@@ -208,12 +207,8 @@ def specs(
                 else qnode.diff_method
             )
 
-            gradient_fn = qml.QNode.get_gradient_fn(
-                qnode.device,
-                qnode.interface,
-                qnode.diff_method,
-                tape=tape,
-            )[0]
+            config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
+            gradient_fn = config.gradient_method
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 

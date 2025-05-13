@@ -100,10 +100,10 @@ def _check_clifford_op(op, use_decomposition=False):
         qml.pauli.pauli_sentence(qml.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
+    pauli_ops = (pauli_sen.operation(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
-    for pauli_prod in product([pauli_terms], pauli_hams, [pauli_terms_adj]):
+    for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*pauli_prod))
         upu.simplify()
@@ -178,9 +178,18 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
+    :class:`~.S`, and :class:`~.Hadamard`.
     """
     d_ops = []
+
+    if isinstance(op, qml.QubitUnitary):
+        ops = op.decomposition()
+        for o in ops[:-1]:
+            d_ops.extend(_rot_decompose(o))
+        d_ops.append(ops[-1])
+        return d_ops
+
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
@@ -213,6 +222,21 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
+            if not qml.math.is_abstract(theta):
+                # The following loop simplifies the two cases where for all odd intergers `k`,
+                # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
+                for val_ in [2, 4]:
+                    div_ = qml.math.divide(theta, math.pi / val_)
+                    mod_ = qml.math.mod(theta, math.pi / val_)
+                    if qml.math.allclose(mod_, 0.0, atol=1e-6) and qml.math.allclose(
+                        qml.math.mod(div_, 2), 1.0, atol=1e-6
+                    ):
+                        vop_ = qml.S(wires) if val_ == 2 else qml.T(wires)
+                        sign = qml.math.mod(qml.math.floor_divide(div_, 2), 2)
+                        ops_ = [
+                            vop_ if qml.math.allclose(sign, 0.0, atol=1e-6) else qml.adjoint(vop_)
+                        ]
+                        break
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -256,7 +280,7 @@ def _two_qubit_decompose(op):
     d_ops = []
     for td_op in td_ops:
         d_ops.extend(
-            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+            _rot_decompose(td_op) if td_op.num_params and len(td_op.wires) == 1 else [td_op]
         )
 
     return d_ops
@@ -311,7 +335,6 @@ def _merge_param_gates(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    max_expansion=6,
     method="sk",
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -331,7 +354,6 @@ def clifford_t_decomposition(
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
@@ -370,15 +392,14 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
+
     with QueuingManager.stop_recording():
-        # Build the basis set and the pipeline for intial compilation pass
-        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+        # Build the basis set and the pipeline for initial compilation pass
+        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
         # Compile the tape according to depth provided by the user and expand it
-        [compiled_tape], _ = qml.compile(
-            tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
-        )
+        [compiled_tape], _ = qml.compile(tape, pipelines, basis_set=basis_set)
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
@@ -414,44 +435,11 @@ def clifford_t_decomposition(
                     d_ops = _two_qubit_decompose(op)
                     decomp_ops.extend(d_ops)
 
-                # For special multi-qubit gates and ones constructed from matrix
+                # If we don't know how to decompose the operation
                 else:
-                    try:
-                        # Attempt decomposing the operation
-                        md_ops = op.decomposition()
-                        idx = 0  # might not be fast but at least is not recursive
-                        while idx < len(md_ops):
-                            md_op = md_ops[idx]
-                            if md_op.name not in basis_set or not check_clifford_t(md_op):
-                                # For the gates acting on one qubit
-                                if len(md_op.wires) == 1:
-                                    if md_op.name in basis_set:  # For known recipe
-                                        d_ops = _rot_decompose(md_op)
-                                    else:  # Resort to decomposing manually
-                                        d_ops, g_op = _one_qubit_decompose(md_op)
-                                        gphase_ops.append(g_op)
-
-                                # For the gates acting on two qubits
-                                elif len(md_op.wires) == 2:
-                                    # Resort to decomposing manually
-                                    d_ops = _two_qubit_decompose(md_op)
-
-                                # Final resort (should not enter in an ideal situtation)
-                                else:
-                                    d_ops = md_op.decomposition()
-
-                                # Expand the list and iterate over
-                                del md_ops[idx]
-                                md_ops[idx:idx] = d_ops
-                            idx += 1
-
-                        decomp_ops.extend(md_ops)
-
-                    # If we don't know how to decompose the operation
-                    except Exception as exc:
-                        raise ValueError(
-                            f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
-                        ) from exc
+                    raise ValueError(
+                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
+                    )
 
         # Merge RZ rotations together
         merged_ops, number_ops = _merge_param_gates(decomp_ops, merge_ops=["RZ"])
@@ -490,7 +478,7 @@ def clifford_t_decomposition(
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
+    new_tape = compiled_tape.copy(operations=decomp_ops)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)

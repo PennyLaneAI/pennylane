@@ -386,11 +386,11 @@ class TestNonzeroCoeffsAndWords:
         assert words == []
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
-    def test_separate_nonzero(self, num_wires):
+    def test_separate_nonzero(self, num_wires, seed):
         """Test that a single coefficient in any of the coefficients is sufficient
         to keep the Pauli word in the filter."""
         # Create many coefficients, each greater or equal ``1`` at distinct places.
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         coeffs = tuple(rng.uniform(1, 2, size=(4**num_wires - 1, 4**num_wires - 1)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
@@ -1001,13 +1001,13 @@ class TestPulseOdegenTape:
     """Test that differentiating tapes with ``pulse_odegen`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
-    def test_single_pulse_single_term(self, shots, tol):
+    def test_single_pulse_single_term(self, shots, tol, seed):
         """Test that a single pulse with a single Hamiltonian term is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 
         H = jnp.polyval * X(0)
@@ -1016,12 +1016,13 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))], shots=shots)
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t)
-        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         _tapes, fn = pulse_odegen(tape)
         assert len(_tapes) == 2
+
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         grad = fn(qml.execute(_tapes, dev))
         par_jac = jax.jacobian(integral_of_polyval)(x, t)
@@ -1036,13 +1037,13 @@ class TestPulseOdegenTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_single_pulse_multi_term(self, shots, tol):
+    def test_single_pulse_multi_term(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=None)
         dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 
@@ -1056,9 +1057,8 @@ class TestPulseOdegenTape:
             qml.evolve(H)(par, t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
@@ -1091,9 +1091,7 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x, y], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t) + y * (t[1] - t[0])
-        assert qml.math.allclose(val, jnp.cos(2 * theta))
 
         # Argnum=[0] or 0
         par_jac_0 = jax.jacobian(integral_of_polyval)(x, t)
@@ -1106,6 +1104,9 @@ class TestPulseOdegenTape:
         _tapes, fn = pulse_odegen(tape, argnum=argnum)
         assert len(_tapes) == 2
 
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta))
+
         grad = fn(qml.execute(_tapes, dev))
         assert isinstance(grad, tuple) and len(grad) == 2
         assert isinstance(grad[0], jnp.ndarray) and grad[0].shape == x.shape
@@ -1116,13 +1117,13 @@ class TestPulseOdegenTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_multi_pulse(self, shots, tol):
+    def test_multi_pulse(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=None)
         dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 
@@ -1139,9 +1140,8 @@ class TestPulseOdegenTape:
             qml.evolve(H1)(par[1:], t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])

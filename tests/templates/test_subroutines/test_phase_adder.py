@@ -32,6 +32,16 @@ def test_standard_validity_Phase_Adder():
     qml.ops.functions.assert_valid(op)
 
 
+def test_falsy_zero_as_work_wire():
+    """Test that work wire is not treated as a falsy zero."""
+    k = 6
+    mod = 11
+    x_wires = [1, 2, 3, 4]
+    work_wire = 0
+    op = qml.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
+    qml.ops.functions.assert_valid(op)
+
+
 def test_add_k_fourier():
     """Test the private _add_k_fourier function."""
 
@@ -245,6 +255,11 @@ class TestPhaseAdder:
 
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    def test_work_wires_added_correctly(self):
+        """Test that no work wires are added if work_wire = None"""
+        wires = qml.PhaseAdder(1, x_wires=[1, 2]).wires
+        assert wires == qml.wires.Wires([1, 2])
 
     @pytest.mark.jax
     def test_jit_compatible(self):

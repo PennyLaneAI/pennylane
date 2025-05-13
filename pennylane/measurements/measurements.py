@@ -19,7 +19,6 @@ and measurement samples using AnnotatedQueues.
 import copy
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from enum import Enum
 from typing import Optional, Union
 
 import pennylane as qml
@@ -28,85 +27,6 @@ from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedErr
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-# =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Counts = "counts"
-    AllCounts = "allcounts"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-    VnEntropy = "vnentropy"
-    VnEntanglementEntropy = "vnentanglemententropy"
-    MutualInfo = "mutualinfo"
-    Shadow = "shadow"
-    ShadowExpval = "shadowexpval"
-    Purity = "purity"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Counts = ObservableReturnTypes.Counts
-"""Enum: An enumeration which represents returning the number of times
- each of the observed outcomes occurred in sampling."""
-
-AllCounts = ObservableReturnTypes.AllCounts
-"""Enum: An enumeration which represents returning the number of times
- each of the possible outcomes occurred in sampling, including 0 counts
- for unobserved outcomes."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
-
-VnEntropy = ObservableReturnTypes.VnEntropy
-"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-VnEntanglementEntropy = ObservableReturnTypes.VnEntanglementEntropy
-"""Enum: An enumeration which represents returning Von Neumann entanglement entropy before measurements."""
-
-MutualInfo = ObservableReturnTypes.MutualInfo
-"""Enum: An enumeration which represents returning the mutual information before measurements."""
-
-Shadow = ObservableReturnTypes.Shadow
-"""Enum: An enumeration which represents returning the bitstrings and recipes from
-the classical shadow protocol"""
-
-ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the estimated expectation value
-from a classical shadow measurement"""
-
-Purity = ObservableReturnTypes.Purity
-"""Enum: An enumeration which represents returning the purity of the system prior ot measurement."""
 
 
 class MeasurementShapeError(ValueError):
@@ -132,13 +52,15 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     # pylint:disable=too-many-instance-attributes
 
-    _obs_primitive: Optional["jax.core.Primitive"] = None
-    _wires_primitive: Optional["jax.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.core.Primitive"] = None
+    _shortname = None
+
+    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
+    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
-        name = getattr(cls.return_type, "value", cls.__name__)
+        name = cls._shortname or cls.__name__
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
@@ -271,11 +193,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         self.queue()
 
     @property
-    def return_type(self) -> Optional[ObservableReturnTypes]:
-        """Measurement return type."""
-        return None
-
-    @property
     def numeric_type(self) -> type:
         """The Python numeric type of the measurement result.
 
@@ -337,8 +254,9 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        name_str = self.return_type.value if self.return_type else type(self).__name__
-        if self.mv:
+        name_str = self._shortname or type(self).__name__
+
+        if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
             return f"{name_str}({self.obs})"
@@ -346,7 +264,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
+        name_str = self._shortname or "None"
+        return f"{name_str}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -412,9 +331,10 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         """
         if self.mv is not None:
             if getattr(self.mv, "name", None) == "MeasurementValue":
-                # Indexing a MeasurementValue gives the output of the processing function
-                # for the binary number corresponding to the index.
-                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
+                # "Eigvals" should be the processed values for all branches of a MeasurementValue
+                _, processed_values = tuple(zip(*self.mv.items()))
+                interface = qml.math.get_deep_interface(processed_values)
+                return qml.math.asarray(processed_values, like=interface)
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
@@ -578,6 +498,8 @@ class SampleMeasurement(MeasurementProcess):
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
+    _shortname = "sample"
+
     @abstractmethod
     def process_samples(
         self,
@@ -680,7 +602,7 @@ class MeasurementTransform(MeasurementProcess):
     which should have the following arguments:
 
     * tape (QuantumTape): quantum tape to transform
-    * device (pennylane.Device): device used to transform the quantum tape
+    * device (pennylane.devices.LegacyDevice): device used to transform the quantum tape
     """
 
     @abstractmethod
@@ -689,5 +611,5 @@ class MeasurementTransform(MeasurementProcess):
 
         Args:
             tape (QuantumTape): quantum tape to transform
-            device (pennylane.Device): device used to transform the quantum tape
+            device (pennylane.devices.LegacyDevice): device used to transform the quantum tape
         """

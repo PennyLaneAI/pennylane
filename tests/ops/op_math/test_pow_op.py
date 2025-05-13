@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
 
 class TestConstructor:
@@ -116,7 +116,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -136,7 +137,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
@@ -146,9 +148,11 @@ class TestInheritanceMixins:
     def test_observable(self, power_method):
         """Test that when the base is an Observable, Pow will also inherit from Observable."""
 
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+
+            class CustomObs(qml.operation.Observable):
+                num_wires = 1
+                num_params = 0
 
         base = CustomObs(wires=0)
         ob: Pow = power_method(base=base, z=-1.2)
@@ -159,31 +163,8 @@ class TestInheritanceMixins:
         assert not isinstance(ob, PowOperation)
 
         # Check some basic observable functionality
-        assert ob.compare(ob)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_observable_legacy_opmath(self, power_method):
-        """Test that when the base is an Observable, Pow will also inherit from Observable."""
-
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert ob.compare(ob)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -236,9 +217,9 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("b")
         assert op.num_wires == 1
 
-    def test_template_base(self, power_method):
+    def test_template_base(self, power_method, seed):
         """Test pow initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)  # pylint:disable=no-member
 
@@ -256,26 +237,6 @@ class TestInitialization:
         assert qml.math.allclose(params, op.data[0])
 
         assert op.wires == qml.wires.Wires((0, 1))
-        assert op.num_wires == 2
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_hamiltonian_base(self, power_method):
-        """Test pow initialization for a hamiltonian."""
-        base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
-
-        op: Pow = power_method(base=base, z=3.4)
-
-        assert op.base is base
-        assert op.z == 3.4
-        assert op.hyperparameters["base"] is base
-        assert op.hyperparameters["z"] == 3.4
-        assert op.name == "Hamiltonian**3.4"
-
-        assert op.num_params == 2
-        assert qml.math.allclose(op.parameters, [2.0, 1.0])
-        assert qml.math.allclose(op.data, [2.0, 1.0])
-
-        assert op.wires == qml.wires.Wires([0, "b"])
         assert op.num_wires == 2
 
 
@@ -423,12 +384,6 @@ class TestProperties:
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_queue_category_None(self, power_method):
-        """Test that the queue category `None` for some observables carries over."""
-        op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None  # pylint: disable=protected-access
-
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""
 
@@ -536,46 +491,27 @@ class TestSimplify:
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
         final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.Identity)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = qml.s_prod(9, qml.PauliX(0))
+        final_op = qml.s_prod(9, qml.Identity(0))
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
+        qml.assert_equal(simplified_op, final_op)
 
-        assert isinstance(simplified_op, ControlledOp)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-    def test_simplify_with_adjoint_not_defined(self):
+    def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
         op = Pow(qml.U2(1, 1, 0), z=3)
         simplified_op = op.simplify()
-        assert isinstance(simplified_op, Pow)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, op)
 
 
 class TestMiscMethods:
@@ -587,7 +523,7 @@ class TestMiscMethods:
 
         base = qml.RX(1, 0) + qml.S(1)
         op = Pow(base, 2.5)
-        assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
+        assert repr(op) == "(RX(1, wires=[0]) + S(1))**2.5"
 
     # pylint: disable=protected-access
     def test_flatten_unflatten(self):
@@ -876,7 +812,6 @@ class TestMatrix:
 
         assert qml.math.allclose(op_mat, compare_mat)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pow_hamiltonian(self):
         """Test that a hamiltonian object can be exponentiated."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0)])
@@ -929,6 +864,21 @@ class TestSparseMatrix:
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
+
+    def test_sparse_matrix_format(self):
+        """Test the sparse matrix is correct when the base defines a
+        sparse matrix and the exponennt is an int."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+        op = Pow(base, 3)
+
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
 
 
 class TestDecompositionExpand:

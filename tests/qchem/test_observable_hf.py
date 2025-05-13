@@ -166,17 +166,12 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
         (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
     h_as_op = qchem.qubit_observable(f_observable)
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, q_observable[1])
-    ]
-    h_ref = qml.Hamiltonian(q_observable[0], ops)
-
-    assert h_ref.compare(h_as_op)
+    ops = list(map(qml.simplify, q_observable[1]))
+    h_ref = qml.dot(q_observable[0], ops)
+    qml.assert_equal(h_ref, h_as_op)
     assert np.allclose(
         qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref, wire_order=[0, 1, 2])
     )
@@ -195,13 +190,21 @@ def test_qubit_observable(f_observable, q_observable):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable_cutoff(f_observable, cut_off):
     """Test that qubit_observable returns the correct operator when a cutoff is provided."""
-    h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))
+    h_ref, h_ref_op = 0 * qml.I(0), qml.s_prod(0, qml.Identity(0))
     h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
 
-    assert h_ref.compare(h_as_op)
+    qml.assert_equal(h_ref, h_as_op)
     assert np.allclose(
         qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
     )
+
+
+def test_qubit_observable_error():
+    """Test that qubit_observable raises an error for unsupported mapping."""
+
+    f_observable = 0.01 * from_string("0+ 0-")
+
+    with pytest.raises(ValueError, match="transformation is not available"):
+        qchem.qubit_observable(f_observable, mapping="random")

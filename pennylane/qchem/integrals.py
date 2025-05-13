@@ -129,7 +129,8 @@ def _fac2(n):
 
 def _generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
-    parameters and the user-defined values are used for the differentiable ones.
+    parameters and the user-defined values are used for the differentiable ones. Generate params
+    returns params in order: [alpha, coeff, coord]
 
     Args:
         params (list(array[float])): default values of the basis set parameters
@@ -138,14 +139,29 @@ def _generate_params(params, args):
     Returns:
         list(array[float]): basis set parameters
     """
+    # Developer note for ordering with JAX:
+    # 1. params order is [ALPHA COEFF COORD]
+    # 2. args order is [COORD COEFF ALPHA]
     basis_params = []
     c = 0
-    for p in params:
-        if p.requires_grad:
-            basis_params.append(args[c])
-            c += 1
-        else:
+    for i, p in enumerate(params):
+        if len(args) == 0:
             basis_params.append(p)
+            continue
+
+        interface = qml.math.get_deep_interface(p)
+        if interface == "autograd":
+            if getattr(p, "requires_grad", False):
+                basis_params.append(args[c])
+                c += 1
+            else:
+                basis_params.append(p)
+        else:
+            if qml.math.requires_grad(args[2 - i]):
+                basis_params.append(args[2 - i])
+            else:
+                basis_params.append(p)
+
     return basis_params
 
 
@@ -274,6 +290,22 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
+def _check_requires_grad(basis_param, normalize, args, index):
+    """Helper function that returns differentiability of params
+
+    For JAX arrays, only JAX tracers are considered differentiable.
+    """
+    return (
+        getattr(basis_param, "requires_grad", False)
+        or normalize
+        or (
+            len(args) > 0
+            and qml.math.get_deep_interface(basis_param) == "jax"
+            and qml.math.requires_grad(args[index])
+        )
+    )
+
+
 def overlap_integral(basis_a, basis_b, normalize=True):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
@@ -304,13 +336,13 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
-
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
+
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad or normalize:
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -506,7 +538,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad or normalize:
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -677,7 +709,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad or normalize:
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -880,7 +912,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         Returns:
             array[float]: the electron-nuclear attraction integral
         """
-        if r.requires_grad:
+        if _check_requires_grad(r, False, args, 0):
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
             args_b = [arg[1] for arg in args[1:]]
@@ -891,8 +923,9 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
-
-        if basis_a.params[1].requires_grad or normalize:
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1) and qml.math.requires_grad(
+            basis_a.params[1]
+        ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -1040,7 +1073,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         gamma, cc, rc = _generate_params(basis_c.params, args_c)
         delta, cd, rd = _generate_params(basis_d.params, args_d)
 
-        if basis_a.params[1].requires_grad or normalize:
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)

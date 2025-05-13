@@ -20,7 +20,7 @@ from itertools import product
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import gradients, math, measurements, transforms, workflow
 
 from .utils import get_spectrum, join_spectra
 
@@ -224,6 +224,12 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         as long as this processing is *linear*. In particular, constant
         prefactors for the encoding arguments are allowed.
 
+    .. warning::
+
+        In order to validate the preprocessing of the QNode arguments, automatic
+        differentiation is used by ``qnode_spectrum``. Therefore, pure Numpy parameters
+        are not supported, but one of the machine learning frameworks has to be used.
+
     **Example**
 
     Consider the following example, which uses non-trainable inputs ``x``, ``y`` and ``z``
@@ -246,10 +252,11 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
     This circuit looks as follows:
 
-    >>> x = np.array([1., 2., 3.])
-    >>> y = np.array([0.1, 0.3, 0.5])
-    >>> z = -1.8
-    >>> w = np.random.random((2, n_qubits, 3))
+    >>> from pennylane import numpy as pnp
+    >>> x = pnp.array([1., 2., 3.])
+    >>> y = pnp.array([0.1, 0.3, 0.5])
+    >>> z = pnp.array(-1.8)
+    >>> w = pnp.random.random((2, n_qubits, 3))
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
     1: ──RX(1.00)──Rot(0.98,0.61,0.07)──RY(0.69)──Rot(0.62,0.00,0.28)──RX(-1.80)─┤
@@ -351,7 +358,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
 
-        >>> x, y, z = 0.1, 0.2, 0.3
+        >>> x, y, z = pnp.array(0.1, 0.2, 0.3)
         >>> circuit_spec_fn = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x","y0","y1"])
         >>> circuit_spec = circuit_spec_fn(x, y, z)
         >>> for _id, spec in circuit_spec.items():
@@ -363,7 +370,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         As we can see, the preprocessing in the QNode is not included in the simple spectrum.
         In contrast, the output of ``qnode_spectrum`` is:
 
-        >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})
+        >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})(x, y, z)
         >>> for _id, spec in adv_spec.items():
         ...     print(f"{_id}: {spec}")
         y: {(): [-2.3, 0.0, 2.3]}
@@ -387,28 +394,37 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            new_interface = math.get_interface(*args, *list(kwargs.values()))
+            interfaces = [math.get_interface(arg) for arg in args]
+            if any(interface == "numpy" for interface in interfaces):
+                raise ValueError(
+                    "qnode_spectrum requires an automatic differentiation library to validate "
+                    "classical processing in the QNode. Only pure numpy arguments were provided:"
+                    f"\n{args}\n{kwargs}"
+                )
+            qnode.interface = new_interface
 
-        jac_fn = qml.gradients.classical_jacobian(
-            qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
+        jac_fn = gradients.classical_jacobian(
+            qnode, argnum=argnum, expand_fn=transforms.expand_multipar
         )
         # Compute classical Jacobian and assert preprocessing is linear
-        if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
+        if not math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
                 "The Jacobian of the classical preprocessing in the provided QNode "
                 "is not constant; only linear classical preprocessing is supported."
             )
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
-        for m in qnode.qtape.measurements:
-            if not isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.ProbabilityMP)):
+        tape = workflow.construct_tape(qnode)(*args, **kwargs)
+        for m in tape.measurements:
+            if not isinstance(m, (measurements.ExpectationMP, measurements.ProbabilityMP)):
                 raise ValueError(
                     f"The measurement {m.__class__.__name__} is not supported as it likely does "
                     "not admit a Fourier spectrum."
                 )
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = qml.transforms.expand_multipar(qnode.qtape)
+        tape = transforms.expand_multipar(tape)
         par_info = tape.par_info
 
         # Iterate over jacobians per argument
@@ -455,7 +471,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 # For each contributing parameter, rescale the operation's spectrum
                 # and add it to the spectrum for that parameter
                 for par_idx in par_ids:
-                    scale = float(qml.math.abs(jac_of_op[par_idx]))
+                    scale = float(math.abs(jac_of_op[par_idx]))
                     scaled_spec = [scale * f for f in spec]
                     _spectra[par_idx] = join_spectra(_spectra[par_idx], scaled_spec)
 

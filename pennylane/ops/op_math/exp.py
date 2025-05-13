@@ -23,17 +23,14 @@ import pennylane as qml
 from pennylane import math
 from pennylane.math import expand_matrix
 from pennylane.operation import (
-    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
     Operator,
     OperatorPropertyUndefined,
-    Tensor,
 )
 from pennylane.wires import Wires
 
-from ..qubit.hamiltonian import Hamiltonian
 from .linear_combination import LinearCombination
 from .sprod import SProd
 from .sum import Sum
@@ -181,7 +178,6 @@ class Exp(ScalarSymbolicOp, Operation):
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
-
         self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):
@@ -216,15 +212,13 @@ class Exp(ScalarSymbolicOp, Operation):
     @property
     def has_decomposition(self):
         # TODO: Support nested sums in method
-        if isinstance(self.base, Tensor) and len(self.base.wires) != len(self.base.obs):
-            return False
         base = self.base
         coeff = self.coeff
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
         is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
-        is_hamiltonian = isinstance(base, (Hamiltonian, LinearCombination))
+        is_hamiltonian = isinstance(base, LinearCombination)
         is_sum_of_pauli_words = isinstance(base, Sum) and all(
             qml.pauli.is_pauli_word(o) for o in base
         )
@@ -261,18 +255,9 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: decomposition
         """
-        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
-            raise DecompositionUndefinedError(
-                "Unable to determine if the exponential has a decomposition "
-                "when the base operator is a Tensor object with overlapping wires. "
-                f"Received base {base}."
-            )
-
         # Change base to `Sum`/`Prod`
-        if isinstance(base, (Hamiltonian, LinearCombination)):
+        if isinstance(base, LinearCombination):
             base = qml.dot(base.coeffs, base.ops)
-        elif isinstance(base, Tensor):
-            base = qml.prod(*base.obs)
 
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
@@ -311,11 +296,11 @@ class Exp(ScalarSymbolicOp, Operation):
         for op_name in qml.ops.qubit.__all__:  # pylint:disable=no-member
             op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
             if op_class.has_generator:
-                if op_class.num_wires == AnyWires:
+                if op_class.num_wires is None:
                     has_generator_types_anywires.append(op_class)
                 elif op_class.num_wires == len(base.wires):
                     has_generator_types.append(op_class)
-        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires == AnyWires
+        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires is None
         has_generator_types.extend(has_generator_types_anywires)
 
         for op_class in has_generator_types:

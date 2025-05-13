@@ -18,12 +18,11 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_jvp_primitive
+from pennylane._deprecated_observable import Observable
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
@@ -191,19 +190,22 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    adjoint_prim = create_non_jvp_primitive()("adjoint_transform")
+    adjoint_prim = QmlPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
+    adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         args = args[n_consts:]
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
-        for op in reversed(ops):
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr, consts, *args)
+        for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
 
@@ -223,9 +225,16 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr=jaxpr.jaxpr,
+            lazy=lazy,
+            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
@@ -235,7 +244,11 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(qfunc)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
@@ -311,6 +324,8 @@ class Adjoint(SymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params"}
+
     def _flatten(self):
         return (self.base,), tuple()
 
@@ -343,9 +358,18 @@ class Adjoint(SymbolicOp):
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
+        if self.base.pauli_rep:
+            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         return f"Adjoint({self.base})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property
     def ndim_params(self):
@@ -360,11 +384,7 @@ class Adjoint(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
-        else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
-
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -409,10 +429,10 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base.simplify()
-        if self.base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint(base=base.simplify())
+        base = self.base if qml.capture.enabled() else self.base.simplify()
+        if base.has_adjoint:
+            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+        return Adjoint(base=base)
 
 
 # pylint: disable=no-member
@@ -485,3 +505,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

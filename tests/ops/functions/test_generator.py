@@ -341,30 +341,14 @@ class TestObservableReturn:
     """Tests for format="observable". This format preserves the initial generator
     encoded in the operator."""
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
-        gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(ObservableOp(0.5, wires=0).generator())
-
-    @pytest.mark.usefixtures("use_new_opmath")
-    def test_observable_opmath(self):
-        """Test a generator that returns a single observable is correct with opmath enabled"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
         assert gen.name == "SProd"
         qml.assert_equal(gen, ObservableOp(0.5, wires=0).generator())
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
-        gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
-
-    @pytest.mark.usefixtures("use_new_opmath")
-    def test_tensor_observable_opmath(self):
-        """Test a generator that returns a tensor observable is correct with opmath enabled"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
         assert gen.name == "Prod"
         qml.assert_equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
@@ -373,7 +357,7 @@ class TestObservableReturn:
         """Test a generator that returns a Hamiltonian"""
         gen = qml.generator(HamiltonianOp, format="observable")(0.5, wires=[0, 1])
         assert isinstance(gen, type(qml.Hamiltonian([], [])))
-        assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
+        assert gen == HamiltonianOp(0.5, wires=[0, 1]).generator()
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
@@ -390,37 +374,33 @@ class TestObservableReturn:
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianReturn:
     """Tests for format="hamiltonian". This format always returns the generator
-    as a Hamiltonian (either a qml.ops.Hamiltonian or a qml.ops.LinearCombination
-    depending on whether new_opmath is enabled.)"""
+    as a qml.ops.LinearCombination."""
 
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="hamiltonian")(0.5, wires=0)
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen.compare(qml.Hamiltonian([1.0], [qml.PhaseShift(0.5, wires=0).generator()]))
+        assert gen == qml.Hamiltonian([1.0], [qml.PhaseShift(0.5, wires=0).generator()])
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen.compare(ObservableOp(0.5, wires=0).generator())
+        assert gen == qml.Hamiltonian(*ObservableOp(0.5, wires=0).generator().terms())
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
+        assert gen == qml.Hamiltonian(*TensorOp(0.5, wires=[0, 1]).generator().terms())
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
         gen = qml.generator(HamiltonianOp, format="hamiltonian")(0.5, wires=[0, 1])
         assert isinstance(gen, qml.Hamiltonian)
-        assert gen.compare(HamiltonianOp(0.5, wires=[0, 1]).generator())
+        assert gen == HamiltonianOp(0.5, wires=[0, 1]).generator()
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
@@ -429,7 +409,7 @@ class TestHamiltonianReturn:
         assert isinstance(gen, qml.Hamiltonian)
 
         expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True)
-        assert gen.compare(expected)
+        assert gen == expected
 
     def test_sparse_hamiltonian(self):
         """Test a generator that returns a SparseHamiltonian observable
@@ -438,7 +418,7 @@ class TestHamiltonianReturn:
         assert isinstance(gen, qml.Hamiltonian)
 
         expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
-        assert gen.compare(expected)
+        assert gen == expected
 
     def test_sum(self):
         """Test a generator that returns a Sum is correct"""
@@ -449,7 +429,7 @@ class TestHamiltonianReturn:
             [1.0, 0.5], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0) @ qml.PauliY(1)]
         )
 
-        assert gen.compare(expected)
+        assert gen == expected
 
 
 class TestArithmeticReturn:

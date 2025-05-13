@@ -113,10 +113,10 @@ def test_unwraps_arithmetic_op_measurement():
 
 
 @pytest.mark.autograd
-def test_unwraps_tensor_observables():
-    """Test that the measurement helper function can set data on a tensor observable."""
+def test_unwraps_prod_observables():
+    """Test that the measurement helper function can set data on a prod observable."""
     mat = qml.numpy.eye(2)
-    obs = qml.operation.Tensor(qml.PauliZ(0), qml.Hermitian(mat, 1))
+    obs = qml.prod(qml.PauliZ(0), qml.Hermitian(mat, 1))
     m = qml.expval(obs)
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)

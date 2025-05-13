@@ -18,7 +18,7 @@ Contains the ApproxTimeEvolution template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.wires import Wires
 
@@ -66,7 +66,7 @@ class ApproxTimeEvolution(Operation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.LinearCombination` objects may undergo different time evolutions
         due to the order in which those observables are stored.
 
     .. note::
@@ -116,7 +116,6 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):

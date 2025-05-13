@@ -20,7 +20,7 @@ supported plugins and devices.
 import contextlib
 import os
 
-import toml
+import tomlkit as toml
 from appdirs import user_config_dir
 
 

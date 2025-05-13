@@ -21,7 +21,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Purity, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def purity(wires) -> "PurityMP":
@@ -74,12 +74,13 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
+    def __str__(self):
+        return "purity"
+
+    _shortname = "purity"
+
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    @property
-    def return_type(self):
-        return Purity
 
     @property
     def numeric_type(self):
@@ -93,3 +94,8 @@ class PurityMP(StateMeasurement):
         indices = [wire_map[w] for w in self.wires]
         state = qml.math.dm_from_state_vector(state)
         return qml.math.purity(state, indices=indices, c_dtype=state.dtype)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        indices = [wire_map[w] for w in self.wires]
+        return qml.math.purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)

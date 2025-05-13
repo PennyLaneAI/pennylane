@@ -54,6 +54,7 @@ ops = {
     "CH": qml.CH(wires=[0, 1]),
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
+    "H": qml.H(wires=[0]),
     "MultiRZ": qml.MultiRZ(0, wires=[0]),
     "PauliX": qml.X(0),
     "PauliY": qml.Y(0),
@@ -67,12 +68,11 @@ ops = {
     "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
     "CPhaseShift10": qml.CPhaseShift10(0, wires=[0, 1]),
-    "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "StatePrep": qml.StatePrep(np.array([1.0, 0.0]), wires=[0]),
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
-    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
     "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
     "RX": qml.RX(0, wires=[0]),
@@ -281,6 +281,7 @@ single_qubit = [
     (qml.Y, Y),
     (qml.Z, Z),
     (qml.Hadamard, H),
+    (qml.H, H),
     (qml.S, S),
     (qml.T, T),
     (qml.SX, SX),
@@ -363,7 +364,7 @@ class TestSupportedGates:
                 pytest.skip("operation not supported.")
         else:
             if ops[operation].name == "QubitDensityMatrix":
-                prog = dev.preprocess()[0]
+                prog = dev.preprocess_transforms()
                 tape = qml.tape.QuantumScript([ops[operation]])
                 try:
                     prog((tape,))

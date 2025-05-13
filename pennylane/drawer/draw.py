@@ -16,14 +16,21 @@
 """
 Contains the drawing function.
 """
+from __future__ import annotations
+
 import warnings
 from functools import wraps
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
 
-import pennylane as qml
+from pennylane import math
+from pennylane.tape import make_qscript
+from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 
 def catalyst_qjit(qnode):
@@ -36,23 +43,25 @@ def draw(
     wire_order=None,
     show_all_wires=False,
     decimals=2,
+    *,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
-    r"""Create a function that draws the given qnode or quantum function.
+    r"""Create a function that draws the given QNode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
-           If not provided, the wire order defaults to the device wires. If device wires are not
-           available, the circuit wires are sorted if possible.
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+            Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
-        max_length (int): Maximum string width (columns) when printing the circuit
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
+        show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
+        show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -137,13 +146,13 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
-        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
-        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
-        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
-        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
-        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
+        >>> print(qml.draw(longer_circuit, max_length=65, level="device")(params))
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X ···
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰● ···
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X─── ···
+        0: ··· ──Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        1: ··· ─╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        2: ··· ─╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
@@ -167,7 +176,7 @@ def draw(
         .. code-block:: python
 
             from functools import partial
-            from pennylane import numpy as pnp
+            from pennylane import numpy as np
 
             @partial(qml.gradients.param_shift, shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
@@ -175,7 +184,7 @@ def draw(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
+        >>> print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 
@@ -254,6 +263,7 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             level=level,
         )
 
@@ -265,7 +275,7 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -281,6 +291,7 @@ def draw(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -289,16 +300,18 @@ def draw(
 
 def _draw_qnode(
     qnode,
-    wire_order=None,
-    show_all_wires=False,
+    wire_order: Optional[Sequence] = None,
+    show_all_wires: bool = False,
+    *,
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -310,50 +323,42 @@ def _draw_qnode(
             except TypeError:
                 _wire_order = tapes[0].wires
 
-        if tapes is not None:
-            cache = {"tape_offset": 0, "matrices": []}
-            res = [
-                tape_text(
-                    t,
-                    wire_order=_wire_order,
-                    show_all_wires=show_all_wires,
-                    decimals=decimals,
-                    show_matrices=False,
-                    max_length=max_length,
-                    cache=cache,
-                )
-                for t in tapes
-            ]
-            if show_matrices and cache["matrices"]:
-                mat_str = ""
-                for i, mat in enumerate(cache["matrices"]):
-                    if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
-                        mat = mat.detach()
-                    mat_str += f"\nM{i} = \n{mat}"
-                if mat_str:
-                    mat_str = "\n" + mat_str
-                return "\n\n".join(res) + mat_str
-            return "\n\n".join(res)
-
-        return tape_text(
-            qnode.qtape,
-            wire_order=_wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            show_matrices=show_matrices,
-            max_length=max_length,
-        )
+        cache = {"tape_offset": 0, "matrices": []}
+        res = [
+            tape_text(
+                t,
+                wire_order=_wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                show_matrices=False,
+                show_wire_labels=show_wire_labels,
+                max_length=max_length,
+                cache=cache,
+            )
+            for t in tapes
+        ]
+        if show_matrices and cache["matrices"]:
+            mat_str = ""
+            for i, mat in enumerate(cache["matrices"]):
+                if math.requires_grad(mat) and hasattr(mat, "detach"):
+                    mat = mat.detach()
+                mat_str += f"\nM{i} = \n{mat}"
+            if mat_str:
+                mat_str = "\n" + mat_str
+            return "\n\n".join(res) + mat_str
+        return "\n\n".join(res)
 
     return wrapper
 
 
 def draw_mpl(
-    qnode,
-    wire_order=None,
-    show_all_wires=False,
-    decimals=None,
-    style=None,
+    qnode: Union[QNode, Callable],
+    wire_order: Optional[Sequence] = None,
+    show_all_wires: bool = False,
+    decimals: Optional[int] = None,
+    style: Optional[str] = None,
     *,
+    max_length: Optional[int] = None,
     fig=None,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
     **kwargs,
@@ -375,12 +380,17 @@ def draw_mpl(
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
 
     Keyword Args:
+        max_length (Optional[int]): When there are more than ``max_length`` layers, additional plots
+            will be produced with at most ``max_length`` individual layers.
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
-        wire_options (dict): matplotlib formatting options for the wire lines
+        wire_options (dict): matplotlib formatting options for the wire lines. In addition to
+            standard options, options per wire can be specified with ``wire_label: options``
+            pairs, also see examples below.
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (None, str, int, slice): An indication of what transforms to apply before drawing.
@@ -390,7 +400,8 @@ def draw_mpl(
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
         the function will draw the QNode as a tuple of (``matplotlib.figure.Figure``,
-        ``matplotlib.axes._axes.Axes``)
+        ``matplotlib.axes._axes.Axes``). If ``max_length`` is less than the number of layers,
+        a list of tuples containing the figures and axes will be returned instead.
 
     .. warning::
 
@@ -451,7 +462,8 @@ def draw_mpl(
 
         **Wires:**
 
-        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires from top to bottom.
+        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires
+        from top to bottom.
 
         .. code-block:: python
 
@@ -463,8 +475,8 @@ def draw_mpl(
                 :width: 60%
                 :target: javascript:void(0);
 
-        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.  Only by selecting
-        ``show_all_wires=True`` will empty wires be displayed.
+        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.
+        Only by selecting ``show_all_wires=True`` will empty wires be displayed.
 
         .. code-block:: python
 
@@ -475,6 +487,30 @@ def draw_mpl(
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
+
+        **Max Length:**
+
+        For deep circuits, the ``max_length`` kwarg can break the circuit into multiple independent figures.
+
+        .. code-block:: python
+
+            def circuit():
+                for _ in range(10):
+                    qml.X(0)
+                return qml.expval(qml.Z(0))
+
+            [(fig1, ax1), (fig2, ax2)] = qml.draw_mpl(circuit, max_length=5)()
+
+        .. figure:: ../../_static/draw_mpl/max_length1.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
+        .. figure:: ../../_static/draw_mpl/max_length2.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
 
         **Integration with matplotlib:**
 
@@ -561,6 +597,25 @@ def draw_mpl(
                 :width: 60%
                 :target: javascript:void(0);
 
+
+        Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+        to separate wire labels, which will control the line style for the respective individual wires.
+
+        .. code-block:: python
+
+            wire_options = {
+                'color': 'teal', # all wires but wire 2 will be teal
+                'linewidth': 5, # all wires but wire 2 will be bold
+                2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
+            }
+            fig, ax = qml.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/per_wire_options.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
         **Levels:**
 
         The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
@@ -640,6 +695,7 @@ def draw_mpl(
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            max_length=max_length,
             level=level,
             style=style,
             fig=fig,
@@ -654,7 +710,7 @@ def draw_mpl(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
         if wire_order:
             _wire_order = wire_order
         else:
@@ -668,6 +724,7 @@ def draw_mpl(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            max_length=max_length,
             style=style,
             fig=fig,
             level=level,
@@ -682,15 +739,15 @@ def _draw_mpl_qnode(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
+    *,
     level="gradient",
     style="black_white",
-    *,
     fig=None,
     **kwargs,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
         if len(tapes) > 1:
             warnings.warn(

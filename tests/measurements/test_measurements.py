@@ -18,30 +18,22 @@ import pytest
 import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
-    Counts,
     CountsMP,
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
     MeasurementValue,
-    MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
-    Probability,
     ProbabilityMP,
     PurityMP,
-    Sample,
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
     Shots,
-    State,
     StateMeasurement,
     StateMP,
-    Variance,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
     expval,
     sample,
@@ -55,29 +47,7 @@ from pennylane.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):
-    @property
-    def return_type(self):
-        return "NotValidReturnType"
-
-
-@pytest.mark.parametrize(
-    "return_type, value",
-    [
-        (Expectation, "expval"),
-        (Sample, "sample"),
-        (Counts, "counts"),
-        (Variance, "var"),
-        (Probability, "probs"),
-        (State, "state"),
-        (MidMeasure, "measure"),
-    ],
-)
-def test_ObservableReturnTypes(return_type, value):
-    """Test the ObservableReturnTypes enum value, repr, and enum membership."""
-
-    assert return_type.value == value
-    assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
-    assert repr(return_type) == value
+    _shortname = "NotValidReturnType"
 
 
 def test_no_measure():
@@ -116,17 +86,6 @@ def test_shape_unrecognized_error():
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
         mp.shape(dev, Shots(None))
-
-
-def test_none_return_type():
-    """Test that a measurement process without a return type property has return_type
-    `None`"""
-
-    class NoReturnTypeMeasurement(MeasurementProcess):
-        """Dummy measurement process with no return type."""
-
-    mp = NoReturnTypeMeasurement()
-    assert mp.return_type is None
 
 
 def test_eq_correctness():
@@ -185,7 +144,6 @@ valid_meausurements = [
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
     VarianceMP(obs=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
-    VnEntanglementEntropyMP(wires=(Wires("a"), Wires("b")), log_base=3),
 ]
 
 
@@ -211,7 +169,7 @@ def test_jax_pytree_integration(mp):
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
+    "stat_func,return_type", [(expval, ExpectationMP), (var, VarianceMP), (sample, SampleMP)]
 )
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
@@ -229,8 +187,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -244,8 +201,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -267,8 +223,7 @@ class TestStatisticsQueuing:
 
         assert len(q.queue) == 1
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -292,8 +247,7 @@ class TestStatisticsQueuing:
         assert len(q.queue) == 1
 
         meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == return_type
+        assert isinstance(meas_proc, return_type)
 
 
 class TestProperties:
@@ -423,7 +377,7 @@ class TestExpansion:
         assert tape.operations[3].wires.tolist() == [1]
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == [0, 1]
         assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
@@ -447,7 +401,7 @@ class TestExpansion:
         )
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation
+        assert isinstance(tape.measurements[0], ExpectationMP)
         assert tape.measurements[0].wires.tolist() == ["a"]
         assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
@@ -513,7 +467,6 @@ class TestExpansion:
             CountsMP(wires=["a", 1]),
             StateMP(),
             VnEntropyMP(wires=["a", 1]),
-            VnEntanglementEntropyMP(wires=[["a", 1], ["b", 2]]),
             MutualInfoMP(wires=[["a", 1], ["b", 2]]),
             ProbabilityMP(wires=["a", 1]),
         ],
@@ -593,10 +546,6 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-            @property
-            def return_type(self):
-                return Sample
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -612,7 +561,7 @@ class TestSampleMeasurement:
 
 
 class TestStateMeasurement:
-    """Tests for the SampleMeasurement class."""
+    """Tests for the StateMeasurement class."""
 
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
@@ -620,6 +569,11 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
+
+            _shortname = "state"
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -636,9 +590,10 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            @property
-            def return_type(self):
-                return State
+            _shortname = "state"
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -673,7 +628,7 @@ class TestMeasurementTransform:
 
         class CountTapesMP(MeasurementTransform, SampleMeasurement):
             def process(self, tape, device):
-                program, _ = device.preprocess()
+                program = device.preprocess_transforms()
                 tapes, _ = program([tape])
                 return len(tapes)
 
@@ -702,7 +657,6 @@ class TestMeasurementProcess:
         (qml.state(), (8,)),
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
         (qml.mutual_info(wires0=[0], wires1=[1]), ()),
-        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
@@ -715,7 +669,6 @@ class TestMeasurementProcess:
         (qml.sample(qml.PauliZ(0)), (10,)),
         (qml.sample(), (10, 3)),
         (qml.mutual_info(wires0=0, wires1=1), ()),
-        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 

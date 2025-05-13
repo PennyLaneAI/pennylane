@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
+import json
+import os
 from collections import defaultdict as dd
 
 import numpy as np
@@ -61,6 +63,73 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
+def test_resource_tracking_attribute():
+    """Test NullQubit track_resources attribute"""
+    # pylint: disable=protected-access
+    assert NullQubit()._track_resources is False
+    assert NullQubit(track_resources=True)._track_resources is True
+
+    dev = NullQubit(track_resources=True)
+
+    def small_circ(params):
+        qml.X(0)
+        qml.H(0)
+
+        qml.Barrier()
+
+        # Add a more complex operation to check that the innermost operation is counted
+        op = qml.T(0)
+        op = qml.adjoint(op)
+        op = qml.ctrl(op, control=1, control_values=[1])
+
+        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+
+        qml.CNOT([0, 1])
+        qml.Barrier()
+
+        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
+        qml.adjoint(qml.S(0))
+
+        qml.RX(params[0], wires=0)
+        qml.RX(params[0] * 2, wires=1)
+
+        return qml.expval(qml.PauliZ(0))
+
+    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
+
+    inputs = qml.numpy.array([0.5])
+
+    qnode(inputs)
+
+    # Check that resource tracking doesn't interfere with backprop
+    assert qml.grad(qnode)(inputs) == 0
+
+    RESOURCES_FNAME = "__pennylane_resources_data.json"
+    assert os.path.exists(RESOURCES_FNAME)
+
+    with open(RESOURCES_FNAME, "r") as f:
+        stats = f.read()
+
+    os.remove(RESOURCES_FNAME)
+
+    assert stats == json.dumps(
+        {
+            "num_wires": 3,
+            "num_gates": 9,
+            "gate_types": {
+                "PauliX": 1,
+                "Hadamard": 1,
+                "C(Adj(T))": 1,
+                "2C(S)": 1,
+                "CNOT": 1,
+                "C(IsingXX)": 1,
+                "Adj(S)": 1,
+                "RX": 2,
+            },
+        }
+    )
+
+
 @pytest.mark.parametrize("shots", (None, 10))
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
@@ -72,7 +141,7 @@ def test_supports_operator_without_decomp(shots):
     tape = qml.tape.QuantumScript([MyOp(wires=(0, 1))], [qml.expval(qml.Z(0))], shots=shots)
     dev = NullQubit()
 
-    program, _ = dev.preprocess()
+    program = dev.preprocess_transforms()
     batch, _ = program((tape,))
 
     assert isinstance(batch[0][0], MyOp)
@@ -167,7 +236,7 @@ class TestSupportsDerivatives:
         """Test that null.qubit interprets 'adjoint' as device derivatives."""
         dev = NullQubit()
         config = ExecutionConfig(gradient_method="adjoint")
-        _, config = dev.preprocess(config)
+        config = dev.setup_execution_config(config)
         assert config.gradient_method == "device"
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
@@ -247,7 +316,7 @@ class TestBasicCircuit:
             qs = qml.tape.QuantumScript(
                 [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
             )
-            return dev.execute(qs, ExecutionConfig(interface="torch"))
+            return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
@@ -280,6 +349,8 @@ class TestBasicCircuit:
         """Test that even if no interface parameters are given, result is correct."""
         dev = NullQubit()
 
+        import tensorflow as tf
+
         @qml.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
@@ -287,7 +358,8 @@ class TestBasicCircuit:
 
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
-        assert res == qml.math.asarray(0.0, like="tensorflow")
+        # float64 due to float64 input variables
+        assert qml.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -406,7 +478,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        # TODO: resume from here
+
         x, y = np.array(0.732), np.array(0.488)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
@@ -527,7 +599,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        config = ExecutionConfig(interface=qml.math.get_interface(phi), gradient_method="backprop")
         return dev.execute((qs1, qs2), config)
 
     @staticmethod
@@ -549,7 +621,10 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return NullQubit().execute((qs1, qs2))
+        config = qml.devices.ExecutionConfig(
+            gradient_method="backprop", interface=qml.math.get_interface(phi)
+        )
+        return NullQubit().execute((qs1, qs2), execution_config=config)
 
     @staticmethod
     def assert_results(results):
@@ -652,9 +727,7 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         config = ExecutionConfig(interface=qml.math.get_interface(scale))
@@ -668,11 +741,8 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return NullQubit().execute(qs)
 
@@ -685,7 +755,7 @@ class TestSumOfTermsDifferentiability:
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = NullQubit()
@@ -695,7 +765,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
@@ -708,7 +778,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="torch backprop does not work")
     @pytest.mark.torch
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_torch_backprop(self, style):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
@@ -724,7 +794,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="tf can't track derivatives")
     @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_tf_backprop(self, style):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
@@ -754,7 +824,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
@@ -770,7 +840,8 @@ class TestDeviceDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        transform_program = dev.preprocess_transforms(config)
+        [qs], _ = transform_program((qs,))
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert actual_grad == (np.array(0.0),)
 
@@ -816,7 +887,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_jvp(qs, tangent, self.ec)
         assert isinstance(actual_grad, np.ndarray)
@@ -835,7 +906,7 @@ class TestDeviceDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
         assert actual_grad == (np.array(0.0),)
@@ -890,7 +961,7 @@ class TestDeviceDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
         assert actual_grad == (0.0,)
@@ -906,7 +977,7 @@ class TestDeviceDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert actual_grad == ((0.0,),)
@@ -970,12 +1041,12 @@ class TestClassicalShadows:
         assert np.array_equal(res, np.zeros((2, 100, n_qubits)))
         assert res.dtype == np.int8
 
-    def test_expval(self):
+    def test_expval(self, seed):
         """Test that shadow expval measurements work as expected"""
         dev = NullQubit()
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=1000)
         assert dev.execute(qs) == np.array(0.0)
 
@@ -1129,12 +1200,12 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
-    def test_expected_shape_all_methods(self, diff_method):
+    def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
         n_wires = 4
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
-        rng = np.random.default_rng(seed=1239594)
+        rng = np.random.default_rng(seed=seed)
         params = qml.numpy.array(rng.random(shape))
         dev = qml.device("null.qubit")
 
@@ -1271,3 +1342,42 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     res = qml.QNode(circuit, nq)(x)
     target = qml.QNode(circuit, dq)(x)
     assert qml.math.shape(res) == qml.math.shape(target)
+
+
+# pylint: disable=unused-argument
+@pytest.mark.jax
+def test_execute_plxpr(enable_disable_plxpr):
+    """Test that null.qubit can execute plxpr."""
+
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), qml.probs(), 4, qml.var(qml.X(0)), qml.state()
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], jax.numpy.zeros(2**4))
+    assert qml.math.allclose(res[2], 0)  # other values are still just zero
+    assert qml.math.allclose(res[3], 0)
+    assert qml.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
+
+
+@pytest.mark.jax
+def test_execute_plxpr_shots(enable_disable_plxpr):
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), 5, qml.sample(wires=(0, 1))
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4, shots=50)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], 0)
+    assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))

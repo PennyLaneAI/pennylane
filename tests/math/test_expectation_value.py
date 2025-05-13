@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for differentiable matrix-vector expectation values.
-"""
+"""Unit tests for differentiable matrix-vector expectation values."""
 
 import numpy as onp
 import pytest
@@ -29,7 +28,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 class TestExpectationValueMath:
-    """Tests for Expectation value of a operator for a state vector."""
+    """Tests for Expectation value of a single operator for a state vector."""
 
     ops_vs_vecstates = [
         ([[1, 0], [0, 0]], [1, 0], 1),
@@ -60,7 +59,7 @@ class TestExpectationValueMath:
     @pytest.mark.parametrize("operator_and_states", ops_vs_vecstates)
     @pytest.mark.parametrize("func", array_funcs)
     def test_mat_expectation_value(self, operator_and_states, func):
-        """Test the expectation value of a operator for a vector state."""
+        """Test the expectation value of a single operator for a vector state."""
         ops, state_vectors, expected = operator_and_states
         ops = func(ops)
         state_vectors = func(state_vectors)
@@ -136,7 +135,7 @@ class TestExpectationValueMath:
         ops = np.diag([0, 1, 0, 0])
         state_vectors = [1, 0]
         with pytest.raises(
-            qml.QuantumFunctionError,
+            ValueError,
             match="The operator and the state vector must have the same number of wires.",
         ):
             qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)

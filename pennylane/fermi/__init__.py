@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A module containing utility functions and reduced representation classes for working with
-fermionic operators. """
+fermionic operators."""
 
 
 from .conversion import bravyi_kitaev, jordan_wigner, parity_transform

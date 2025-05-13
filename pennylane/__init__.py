@@ -15,29 +15,50 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-
+import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.compiler
+from pennylane.compiler import qjit
 import pennylane.capture
+import pennylane.control_flow
+from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
+)
+from pennylane.bose import (
+    BoseSentence,
+    BoseWord,
+    binary_mapping,
+    unary_mapping,
+    christiansen_mapping,
 )
 from pennylane.qchem import (
     taper,
@@ -53,10 +74,18 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
-from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -67,7 +96,6 @@ from pennylane.measurements import (
     state,
     var,
     vn_entropy,
-    vn_entanglement_entropy,
     purity,
     mutual_info,
     classical_shadow,
@@ -75,7 +103,8 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
-from pennylane.templates import broadcast, layer
+from pennylane.ops import LinearCombination as Hamiltonian
+from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
@@ -134,76 +163,44 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
-
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
 
 import pennylane.data
 
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
+
+import pennylane.liealg
+from pennylane.liealg import lie_closure, structure_constants, center
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
 
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-del globals()["Hamiltonian"]
-
-
 def __getattr__(name):
-    if name == "Hamiltonian":
-        if pennylane.operation.active_new_opmath():
-            return pennylane.ops.LinearCombination
-        return pennylane.ops.Hamiltonian
+    if name in {
+        "DeviceError",
+        "PennyLaneDeprecationWarning",
+        "QuantumFunctionError",
+        "ExperimentalWarning",
+    }:
+        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
+        # warnings.warn(
+        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
+        #     pennylane.exceptions.PennyLaneDeprecationWarning,
+        # )
+        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
-
-    from warnings import warn  # pylint: disable=import-outside-toplevel
-
-    if name == "QubitDevice":
-        warn(
-            "QubitDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QubitDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
-
-    if name == "QutritDevice":
-        warn(
-            "QutritDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QutritDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
-
-    if name == "Device":
-        warn(
-            "Device will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.LegacyDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

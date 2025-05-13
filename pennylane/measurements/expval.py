@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import Expectation, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 from .sample import SampleMP
 
@@ -50,7 +50,7 @@ def expval(
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object. To
+        op (Union[Operator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
 
@@ -92,7 +92,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    return_type = Expectation
+    _shortname = "expval"
 
     @property
     def numeric_type(self):
@@ -144,6 +144,17 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
         return self._calculate_expectation(probs)
 
+    def process_density_matrix(
+        self, density_matrix: Sequence[complex], wire_order: Wires
+    ):  # pylint: disable=unused-argument
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
+        return self._calculate_expectation(prob)
+
     def _calculate_expectation(self, probabilities):
         """
         Calculate the of expectation set of probabilities.
@@ -151,5 +162,4 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.cast_like(self.eigvals(), 1.0)
-        return qml.math.dot(probabilities, eigvals)
+        return qml.math.dot(probabilities, self.eigvals())

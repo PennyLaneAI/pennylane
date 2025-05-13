@@ -21,18 +21,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
-from pennylane.operation import Tensor
-from pennylane.ops import (
-    Hamiltonian,
-    Identity,
-    LinearCombination,
-    PauliX,
-    PauliY,
-    PauliZ,
-    Prod,
-    SProd,
-    Sum,
-)
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -230,7 +219,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> Union[Hamiltonian, PauliSentence]:
+) -> Union[LinearCombination, PauliSentence]:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -243,8 +232,8 @@ def pauli_decompose(
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
-        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, returned either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence`
+        Union[~.LinearCombination, ~.PauliSentence]: the matrix decomposed as a linear combination
+        of Pauli operators, returned either as a :class:`~.ops.LinearCombination` or :class:`~.PauliSentence`
         instance.
 
     **Example:**
@@ -402,15 +391,6 @@ def _(op: Identity):  # pylint:disable=unused-argument
 
 
 @_pauli_sentence.register
-def _(op: Tensor):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a @ b, factors)
-
-
-@_pauli_sentence.register
 def _(op: Prod):
     factors = (_pauli_sentence(factor) for factor in op)
     return reduce(lambda a, b: a @ b, factors)
@@ -421,28 +401,6 @@ def _(op: SProd):
     ps = _pauli_sentence(op.base)
     for pw, coeff in ps.items():
         ps[pw] = coeff * op.scalar
-    return ps
-
-
-@_pauli_sentence.register(qml.ops.Hamiltonian)
-def _(op: qml.ops.Hamiltonian):
-    if not all(is_pauli_word(o) for o in op.ops):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    def term_2_pauli_word(term):
-        if isinstance(term, Tensor):
-            pw = {obs.wires[0]: obs.name[-1] for obs in term.non_identity_obs}
-        elif isinstance(term, Identity):
-            pw = {}
-        else:
-            pw = dict([(term.wires[0], term.name[-1])])
-        return PauliWord(pw)
-
-    ps = PauliSentence()
-    for coeff, term in zip(*op.terms()):
-        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
-        ps += sub_ps
-
     return ps
 
 

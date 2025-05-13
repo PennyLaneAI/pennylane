@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
-import contextlib
 import os
 import pathlib
 import sys
@@ -25,7 +24,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
-from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -41,12 +39,6 @@ class DummyDevice(DefaultGaussian):
 
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
-
-
-@pytest.fixture(autouse=True)
-def set_numpy_seed():
-    np.random.seed(9872653)
-    yield
 
 
 @pytest.fixture(scope="session")
@@ -106,12 +98,6 @@ def qutrit_device_3_wires(request):
 #######################################################################
 
 
-@pytest.fixture(scope="module", params=[1, 2, 3])
-def seed(request):
-    """Different seeds."""
-    return request.param
-
-
 @pytest.fixture(scope="function")
 def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
@@ -139,54 +125,68 @@ def tear_down_thermitian():
     qml.THermitian._eigs = {}
 
 
-#######################################################################
-# Fixtures for testing under new and old opmath
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
-    )
-
-
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        qml.operation.disable_new_opmath(warn=True)
-
-
-@pytest.fixture(scope="function")
-def use_legacy_opmath():
-    with disable_new_opmath_cm() as cm:
-        yield cm
-
-
-# pylint: disable=contextmanager-generator-missing-cleanup
-@pytest.fixture(scope="function")
-def use_new_opmath():
-    with enable_new_opmath_cm() as cm:
-        yield cm
-
-
-@pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
-def use_legacy_and_new_opmath(request):
-    with request.param() as cm:
-        yield cm
+@pytest.fixture(autouse=True)
+def restore_global_seed():
+    original_state = np.random.get_state()
+    yield
+    np.random.set_state(original_state)
 
 
 @pytest.fixture
-def new_opmath_only():
-    if not qml.operation.active_new_opmath():
-        pytest.skip("This feature only works with new opmath enabled")
+def seed(request):
+    """An integer random number generator seed
+
+    This fixture overrides the ``seed`` fixture provided by pytest-rng, adding the flexibility
+    of locally getting a new seed for a test case by applying the ``local_salt`` marker. This is
+    useful when the seed from pytest-rng happens to be a bad seed that causes your test to fail.
+
+    .. code_block:: python
+
+        @pytest.mark.local_salt(42)
+        def test_something(seed):
+            ...
+
+    The value passed to ``local_salt`` needs to be an integer.
+
+    """
+
+    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
+    original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
+    original_seed = original_fixture_def.func(request)
+    marker = request.node.get_closest_marker("local_salt")
+    if marker and marker.args:
+        return original_seed + marker.args[0]
+    return original_seed
 
 
-@pytest.fixture
-def legacy_opmath_only():
-    if qml.operation.active_new_opmath():
-        pytest.skip("This test exclusively tests legacy opmath")
+@pytest.fixture(scope="function")
+def enable_disable_plxpr():
+    """enable and disable capture around each test."""
+    qml.capture.enable()
+    try:
+        yield
+    finally:
+        qml.capture.disable()
+
+
+@pytest.fixture(scope="function")
+def enable_disable_dynamic_shapes():
+    jax.config.update("jax_dynamic_shapes", True)
+    try:
+        yield
+    finally:
+        jax.config.update("jax_dynamic_shapes", False)
+
+
+@pytest.fixture(scope="function")
+def enable_graph_decomposition():
+    """enable and disable graph-decomposition around each test."""
+    qml.decomposition.enable_graph()
+    try:
+        yield
+    finally:
+        qml.decomposition.disable_graph()
 
 
 #######################################################################

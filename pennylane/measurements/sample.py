@@ -14,7 +14,6 @@
 """
 This module contains the qml.sample measurement.
 """
-import functools
 from collections.abc import Sequence
 from typing import Optional, Union
 
@@ -24,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .measurements import MeasurementShapeError, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
@@ -41,7 +40,7 @@ def sample(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue): a quantum observable object. To get samples
+        op (Operator or MeasurementValue): a quantum observable object. To get samples
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
@@ -156,6 +155,8 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    _shortname = "sample"
+
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
         if isinstance(obs, MeasurementValue):
@@ -163,7 +164,9 @@ class SampleMP(SampleMeasurement):
             return
 
         if isinstance(obs, Sequence):
-            if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs):
+            if not all(
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
+            ) and not all(qml.math.is_abstract(o) for o in obs):
                 raise qml.QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
@@ -182,8 +185,6 @@ class SampleMP(SampleMeasurement):
             wires = Wires(wires)
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-
-    return_type = Sample
 
     @classmethod
     def _abstract_eval(
@@ -213,7 +214,6 @@ class SampleMP(SampleMeasurement):
         return tuple(shape), dtype
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         if self.obs is None:
             # Computational basis samples
@@ -228,6 +228,8 @@ class SampleMP(SampleMeasurement):
             )
         if self.obs:
             num_values_per_shot = 1  # one single eigenvalue
+        elif self.mv is not None:
+            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
             # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
@@ -300,8 +302,8 @@ class SampleMP(SampleMeasurement):
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1:
-                # If only one wire is sampled, flatten the list
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
                 outcome_sample = outcome_sample[0]
             samples.extend([outcome_sample] * count)
 
@@ -329,10 +331,8 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
-
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+            return eigvals[int(outcome, 2)]
 
-        return outcome_samples
+        return [int(bit) for bit in outcome]

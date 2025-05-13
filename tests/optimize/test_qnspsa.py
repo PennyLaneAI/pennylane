@@ -129,7 +129,6 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     return metric_tensor_expected
 
 
-@pytest.mark.parametrize("seed", [1, 151, 1231])
 @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
 class TestQNSPSAOptimizer:
     def test_gradient_from_single_input(self, finite_diff_step, seed):
@@ -424,7 +423,7 @@ class TestQNSPSAOptimizer:
         assert np.allclose(new_params, params)
 
 
-def test_template_no_adjoint():
+def test_template_no_adjoint(seed):
     """Test that qnspsa iterates when the operations do not have a custom adjoint."""
 
     num_qubits = 2
@@ -432,7 +431,7 @@ def test_template_no_adjoint():
 
     @qml.qnode(dev)
     def cost(params):
-        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=42)
+        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=seed)
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     params = np.random.normal(0, np.pi, (2, 4))
