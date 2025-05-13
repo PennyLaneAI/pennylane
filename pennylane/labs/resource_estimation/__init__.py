@@ -167,6 +167,7 @@ from .qubit_manager import (
     clean_qubits,
     dirty_qubits,
     borrowable_qubits,
+    tight_qubit_budget,
 )
 
 from .resource_operator import (
@@ -186,7 +187,7 @@ from .resource_container import (
     mul_in_parallel,
 )
 
-from .resource_tracking import DefaultGateSet, get_resources, resource_config
+from .resource_tracking import DefaultGateSet, get_resources, resource_config, new_get_resources
 
 
 from .ops import (

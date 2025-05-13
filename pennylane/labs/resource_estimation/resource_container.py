@@ -161,12 +161,18 @@ class Resources:
         # items = items.replace(")", "")
 
         gate_type_str = ", ".join(
-            [f"'{gate_name}': {Decimal(count):.3E}" for gate_name, count in self.clean_gate_counts.items()]
+            [f"'{gate_name}': {Decimal(count):.3E}" if count>999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
         )
 
         items = "--- Resources: ---\n"
         items += f" qubit manager: {self.qubit_manager}\n"
-        items += f" total # qubits: {Decimal(sum(self.clean_gate_counts.values())):.3E}\n"
+
+        total_gates = sum(self.clean_gate_counts.values())
+        if total_gates>999:
+            items += f" total # gates: {total_gates}\n"
+        else:
+            items += f" total # gates: {Decimal(total_gates):.3E}\n"
+
         items += " gate_types:\n  {" + gate_type_str + "}"
 
         return items

@@ -26,6 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     ResourceOperator,
 )
+from pennylane.labs.resource_estimation.qubit_manager import clean_qubits, tight_qubit_budget
 
 # pylint: disable=arguments-differ, protected-access
 
@@ -1686,6 +1687,17 @@ class ResourceQROM(ResourceOperator):
         W_opt = ResourceQROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = math.ceil(math.log2(L_opt))
+
+        available_wires = clean_qubits()
+        if tight_qubit_budget() and available_wires < ((W_opt - 1) * size_bitstring + (l - 1)):
+            for W_opt_new in range(1, W_opt):
+                L_opt_new = math.ceil(num_bitstrings / W_opt_new)
+                l_new = math.ceil(math.log2(L_opt_new))
+
+                if available_wires < ((W_opt_new - 1) * size_bitstring + (l_new - 1)):
+                    break
+
+                W_opt, L_opt, l = (W_opt_new, L_opt_new, l_new)
 
         gate_cost = []
         gate_cost.append(

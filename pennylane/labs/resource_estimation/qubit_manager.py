@@ -26,6 +26,12 @@ def clean_qubits() -> int:
     return qm.clean_qubits
 
 
+def tight_qubit_budget():
+    _chech_active_manger()
+    qm = QubitManager.active_context()
+    return qm.tight_budget
+
+
 def dirty_qubits() -> int:
     _chech_active_manger()
     qm = QubitManager.active_context()
@@ -132,7 +138,8 @@ class QubitManager:
             missing_qubits = num_qubits - available_clean
             if self.tight_budget:
                 raise ValueError(
-                    f"Not enough work qubits, please allocate atleast {missing_qubits} more qubits"
+                    f"Not enough work qubits, trying to allocate {num_qubits} qubits with "
+                    + f"only {available_clean} availbe qubits, please allocate more qubits."
                 )
 
             self.allocate_qubits(missing_qubits)

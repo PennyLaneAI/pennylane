@@ -483,11 +483,25 @@ def new_resources_from_resource(
     obj: Resources,
     gate_set: Set = DefaultGateSet,
     config: Dict = resource_config,
-    work_wires=0,
-    tight_budget=False,
+    work_wires=None,
+    tight_budget=None,
 ) -> Callable:
-    
+
     existing_qm = obj.qubit_manager
+    if work_wires is not None:
+        if isinstance(work_wires, dict):
+            clean_wires = work_wires["clean"]
+            dirty_wires = work_wires["dirty"]
+        else:
+            clean_wires = work_wires
+            dirty_wires = 0
+    
+        existing_qm._clean_qubit_counts = max(clean_wires, existing_qm._clean_qubit_counts)
+        existing_qm._dirty_qubit_counts = max(dirty_wires, existing_qm._dirty_qubit_counts)
+
+    if tight_budget is not None:
+        existing_qm.tight_budget = tight_budget
+    
     with existing_qm:
         gate_counts = defaultdict(int)
         for cmpr_rep_op, count in obj.gate_types.items():
