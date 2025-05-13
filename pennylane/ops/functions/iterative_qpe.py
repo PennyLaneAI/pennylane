@@ -44,7 +44,7 @@ def iterative_qpe(base, aux_wire, iters):
         from functools import partial
         dev = qml.device("default.qubit")
 
-        @partial(qml.set_shot, shots=5)
+        @partial(qml.set_shots, shots=5)
         @qml.qnode(dev)
         def circuit():
 

@@ -76,7 +76,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @partial(qml.set_shot, shots=100)
+    >>> @partial(qml.set_shots, shots=100)
+
     ... @qml.qnode(dev)
     ... def cost(weights):
     ...     qml.StronglyEntanglingLayers(weights, wires=range(2))

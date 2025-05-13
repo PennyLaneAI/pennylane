@@ -63,7 +63,7 @@ class OutAdder(Operation):
         work_wires=[6,10]
 
         dev = qml.device("default.qubit")
-        @partial(qml.set_shot, shots=1)
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -111,7 +111,7 @@ class OutAdder(Operation):
             work_wires=[6,10]
 
             dev = qml.device("default.qubit")
-            @partial(qml.set_shot, shots=1)
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(dev)
             def circuit():
                 qml.BasisEmbedding(x, wires=x_wires)

@@ -152,7 +152,7 @@ def device(name, *args, **kwargs):
 
         dev = qml.device('default.qubit', wires=1)
 
-        @partial(qml.qnode, shots=10)
+        @partial(qml.set_shots, shots=10)
         @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)

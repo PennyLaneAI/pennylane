@@ -178,7 +178,7 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @partial(qml.set_shot, shots=1)
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # load values of x and y
@@ -224,7 +224,7 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @partial(qml.set_shot, shots=1)
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # loading values for x and y
