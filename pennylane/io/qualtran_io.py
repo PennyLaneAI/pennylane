@@ -68,24 +68,31 @@ def _map_to_bloq():
         return ToBloq(op)
 
     @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
+        if args and isinstance(args[0], dict) and args[0]:
+            try:
+                return args[0][type(op)]
+            except KeyError:
+                # ToDo: make this more robust of an error
+                return args[0][op]
+            
         return TextbookQPE(
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
             ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
         )
 
-    # @_to_qt_bloq.register
-    # def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
-    #     from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+    @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
+        from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
-    #     dt = op.data[0]
+        dt = op.data[0]
 
-    # return TrotterizedUnitary(
-    #     bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
-    # )
+    return TrotterizedUnitary(
+        bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+    )
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
@@ -965,6 +972,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     """
 
     if map_ops:
-        return _map_to_bloq()(circuit, **kwargs)
+        return _map_to_bloq()(circuit, custom_mapping, **kwargs)
 
     return ToBloq(circuit, **kwargs)
