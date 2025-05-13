@@ -21,7 +21,8 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
-from pennylane.ops import PauliRot, exp, functions
+from pennylane.ops import PauliRot, exp
+from pennylane.ops.functions import dot, eigvals
 from pennylane.pauli import is_pauli_word, pauli_word_prefactor, pauli_word_to_string
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
