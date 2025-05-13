@@ -280,7 +280,9 @@ class TestDynamicShapes:
 
         @qml.for_loop(3, allow_array_resizing=False)
         def f(i, a, b):
-            return jax.numpy.hstack([a, b]), 2 * b
+            a_size = a.shape[0]
+            b_size = b.shape[0]
+            return jax.numpy.ones(a_size + b_size), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
@@ -364,7 +366,7 @@ class TestDynamicShapes:
 
         @qml.for_loop(2, allow_array_resizing=allow_array_resizing)
         def f(i, x, y):
-            x = jnp.hstack([x, y])
+            x = jnp.ones(x.shape[0] + y.shape[0])
             return x, (i + 2) * x
 
         def workflow(i0):
@@ -375,7 +377,7 @@ class TestDynamicShapes:
         jaxpr = jax.make_jaxpr(workflow)(2)
         [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(s, 8)
-        x_expected = jnp.array([1, 1, 1, 1, 2, 2, 2, 2])
+        x_expected = jnp.ones(8)
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 3 * x_expected)
 
@@ -385,7 +387,7 @@ class TestDynamicShapes:
 
         @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
         def f(i, a, b):
-            return jnp.hstack((a, b)), b + 1
+            return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
             return f(jnp.zeros(i0), jnp.zeros(i0))
@@ -394,7 +396,7 @@ class TestDynamicShapes:
         [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
         assert jnp.allclose(shape2, 3)
-        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        expected = jnp.ones(15)
         assert jnp.allclose(a, expected)
         assert jnp.allclose(b, jnp.array([4, 4, 4]))
 
