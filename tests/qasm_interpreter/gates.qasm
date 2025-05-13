@@ -4,6 +4,7 @@ float theta = 0.5;
 x q0;
 cx q0, q1;
 rx(theta) q0;
+ry(0.2) q0;
 inv @ rx(theta) q0;
 pow(2) @ x q0;
 ctrl @ x q1, q0;

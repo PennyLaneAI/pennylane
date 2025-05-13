@@ -1,7 +1,7 @@
 import pytest
 
 from openqasm3.parser import parse
-from pennylane import PauliX, CNOT, RX
+from pennylane import PauliX, CNOT, RX, RY
 from pennylane.io.qasm_interpreter import QasmInterpreter
 
 class TestInterpreter:
@@ -42,6 +42,7 @@ class TestInterpreter:
         x = mocker.spy(PauliX, "__init__")
         cx = mocker.spy(CNOT, "__init__")
         rx = mocker.spy(RX, "__init__")
+        ry = mocker.spy(RY, "__init__")
 
         # execute the QNode
         context["qnode"].func()
@@ -58,3 +59,6 @@ class TestInterpreter:
 
         assert rx.call_count == 2  # one adjoint call and one direct call
         rx.assert_called_with(RX(0.5, 0), 0.5, wires=0)
+
+        assert ry.call_count == 1
+        ry.assert_called_with(RY(0.2, [0]), 0.2, wires=[0])
