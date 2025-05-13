@@ -51,3 +51,9 @@ class TestInterpreter:
 
         assert ry.call_count == 1
         ry.assert_called_with(RY(0.2, [0]), 0.2, wires=[0])
+
+    def test_control_flow(self):
+
+        # parse the QASM program
+        ast = parse(open('rus.qasm', mode='r').read(), permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"program_name": "repeat-until-success"})
