@@ -1,9 +1,8 @@
 import re
+
 from functools import partial
 from typing import Callable
-
-from openqasm3.visitor import QASMNode, QASMVisitor
-import re
+from copy import deepcopy
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
     ArrayLiteral, UnaryExpression
@@ -157,6 +156,18 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
+    @staticmethod
+    def retrieve_variable(name: str, context: dict): # TODO: update this to account for deferred evals?
+        """
+        Attempts to retrieve a variable from the current context by name.
+        """
+        if name in context["vars"]:
+            return context["vars"][name]
+        else:
+            raise NameError(
+                f"Uninitialized variable {name} encountered in QASM."
+            )
+
     def eval_expr(self, node: QASMNode, context: dict):
         """
         Evaluates an expression.
@@ -166,15 +177,15 @@ class QasmInterpreter(QASMVisitor):
             if re.search('Literal', node.lhs.__class__.__name__) is not None:
                 lhs = node.lhs.value
             elif isinstance(node.lhs, Cast):
-                lhs = context["vars"][node.lhs.argument.name]["val"]  # TODO: update this to account for deferred evals?
+                lhs = self.retrieve_variable(node.lhs.argument.name, context)["val"]
             else:
-                lhs = context["vars"][node.lhs.name]["val"]
+                lhs = self.retrieve_variable(node.lhs.name, context)["val"]
             if re.search('Literal', node.rhs.__class__.__name__) is not None:
                 rhs = node.rhs.value
             elif isinstance(node.rhs, Cast):
-                rhs = context["vars"][node.rhs.argument.name]["val"]
+                rhs = self.retrieve_variable(node.rhs.argument.name, context)["val"]
             else:
-                rhs = context["vars"][node.rhs.name]["val"]
+                rhs = self.retrieve_variable(node.rhs.name, context)["val"]
             res = eval(f'{lhs}{node.op.name}{rhs}')
         elif isinstance(node, UnaryExpression):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
@@ -190,12 +201,26 @@ class QasmInterpreter(QASMVisitor):
         if "gates" not in context:
             context["gates"] = []
 
+        if not "scopes" in context:
+            context["scopes"] = {
+                "loops": dict()
+            }
+
+        # in this case the namespace is shared with the outer scope, but we need to keep track of the gates separately
+        context["scopes"]["loops"][f"while_{node.span.start_line}"] = {
+            "vars": context["vars"],
+            "wires": context["wires"],
+            "name": f'{context["name"]}_while_{node.span.start_line}'
+        }
+
         @while_loop(partial(self.eval_expr, node.while_condition))  # TODO: traces data dep through context
         def loop(context):
-            self.visit(node.block, context)  # process loop body
-            for gate in context["gates"]:
-                gate()  # updates vars in context
-            # TODO: structure in the loop body?
+            # process loop body...
+            inner_context = self.visit(node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"])
+            for gate in inner_context["gates"]:
+                gate()  # updates vars in context... need to propagate these to outer scope
+            context["vals"] = inner_context["vals"]
+            context["wires"] = inner_context["wires"]
             return context
 
         context["gates"].append(loop)
@@ -207,12 +232,24 @@ class QasmInterpreter(QASMVisitor):
         if "gates" not in context:
             context["gates"] = []
 
+        if not "scopes" in context:
+            context["scopes"] = {
+                "loops": dict()
+            }
+
+        # in this case the namespace is shared with the outer scope, but we need to keep track of the gates separately
+        context["scopes"]["loops"][f"for_{node.span.start_line}"] = {
+            "vars": context["vars"],
+            "wires": context["wires"],
+            "name": f'{context["name"]}_for_{node.span.start_line}'
+        }
+
         loop_params = node.set_declaration
 
         # de-referencing
         if isinstance(loop_params, Identifier):
-            # TODO: could be a ref to a range? support range, etc. vals in context?
-            loop_params = context["vars"][loop_params.name]["val"]
+            # TODO: could be a ref to a range? support AST types, etc. in context instead of python types?
+            loop_params = self.retrieve_variable(loop_params.name, context)["val"]
 
         if isinstance(loop_params, RangeDefinition):
             start = self.eval_expr(loop_params.start, context)
@@ -223,10 +260,15 @@ class QasmInterpreter(QASMVisitor):
 
             @for_loop(start, stop, step)
             def loop(i, context):
-                self.visit(node.block, context)  # process loop body... doesn't get its own namespace
-                for gate in context["gates"]:
-                    gate()  # updates vars in context
-                # TODO: structure in the loop body?
+                # process loop body
+                inner_context = self.visit(
+                    node.block,
+                    deepcopy(context["scopes"]["loops"][f"for_{node.span.start_line}"])
+                )
+                for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
+                    gate()  # updates vars in sub context... need to propagate these to outer context
+                context["vals"] = inner_context["vals"]
+                context["wires"] = inner_context["wires"]
                 return context
 
             context["gates"].append(loop)
@@ -284,7 +326,7 @@ class QasmInterpreter(QASMVisitor):
             res = measure()
             context["vars"][node.target.name]["val"] = res
 
-        context["vars"][node.target.name]["val"] = set_local_var  # references to an unresolved value see a func
+        context["vars"][node.target.name]["val"] = set_local_var  # references to an unresolved value see a func for now
         context["gates"].append(set_local_var)
 
     def quantum_reset(self, node: QASMNode, context: dict):
@@ -402,6 +444,7 @@ class QasmInterpreter(QASMVisitor):
         if "vars" not in context:
             context["vars"] = {}
         if node.init_expression is not None:
+            # TODO: store AST objects in context instead of these objects?
             if not isinstance(node.init_expression, ArrayLiteral):
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
@@ -473,7 +516,7 @@ class QasmInterpreter(QASMVisitor):
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pennylane.pow, z=mod.argument.value)
                 elif mod.argument.name in context["vars"]:
-                    wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])  # TODO: update this to account for deferred evals?
+                    wrapper = partial(pennylane.pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
             elif mod.modifier.name == 'ctrl':
                 wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
@@ -495,8 +538,7 @@ class QasmInterpreter(QASMVisitor):
 
         return call
 
-    @staticmethod
-    def param_single_qubit_gate(node: QASMNode, context: dict):
+    def param_single_qubit_gate(self, node: QASMNode, context: dict):
         """
         Registers a parameterized single qubit gate application. Builds a Callable partial
         that can be executed when the QNode is called. The gate will be executed aat that time
@@ -515,17 +557,13 @@ class QasmInterpreter(QASMVisitor):
         """
         args = []
         for arg in node.arguments:
-            if hasattr(arg, "name") and arg.name in context["vars"]:
+            if hasattr(arg, "name"):
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
-                args.append(context["vars"][arg.name]["val"])
-            elif re.search("Literal", arg.__class__.__name__) is not None:
+                # But what about deferred evaluations?
+                args.append(self.retrieve_variable(arg.name, context)["val"])
+            elif re.search('Literal', arg.__class__.__name__) is not None:
                 args.append(arg.value)
-            else:
-                raise NameError(
-                    f"Uninitialized variable {arg.name if hasattr(arg, 'name') else arg.__class__.__name__} "
-                    f"encountered in QASM."
-                )
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
             *args,

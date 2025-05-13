@@ -21,7 +21,7 @@ class TestInterpreter:
         QasmInterpreter().generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
-    def test_parses_simple_qasm(self, mocker):
+    def test_interprets_simple_qasm(self, mocker):
 
         # parse the QASM program
         ast = parse(open('gates.qasm', mode='r').read(), permissive=True)
@@ -59,4 +59,3 @@ class TestInterpreter:
         context = QasmInterpreter().generic_visit(ast, context={"name": "control-flow"})
 
         # TODO: compare to a QNode constructed in the typical way with a decorator
-
