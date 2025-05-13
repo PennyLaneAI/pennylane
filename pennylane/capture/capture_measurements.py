@@ -103,14 +103,12 @@ def _get_abstract_measurement():
         def __hash__(self):
             return hash("AbstractMeasurement")
 
-    jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
-
     return AbstractMeasurement
 
 
 def create_measurement_obs_primitive(
     measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator.
 
     Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
@@ -122,15 +120,15 @@ def create_measurement_obs_primitive(
             ``"_obs"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
 
     """
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_obs")
+    primitive = QmlPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -149,7 +147,7 @@ def create_measurement_obs_primitive(
 
 def create_measurement_mcm_primitive(
     measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
     mid circuit measurement results.
 
@@ -162,15 +160,15 @@ def create_measurement_mcm_primitive(
             ``"_mcm"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
     """
 
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_mcm")
+    primitive = QmlPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -189,7 +187,7 @@ def create_measurement_mcm_primitive(
 
 def create_measurement_wires_primitive(
     measurement_type: type, name: str
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are the wires.
 
     Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
@@ -201,14 +199,14 @@ def create_measurement_wires_primitive(
             ``"_wires"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
     """
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(name + "_wires")
+    primitive = QmlPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
