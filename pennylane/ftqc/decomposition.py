@@ -88,7 +88,7 @@ def convert_to_mbqc_formalism(tape):
                 ctrl, tgt = op.wires[0], op.wires[1]
                 (wire_map[ctrl], wire_map[tgt]) = queue_cnot(q_mgr, wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                if isinstance(op, (X, Y, Z, Identity)):
+                if isinstance(op, tuple([X, Y, Z, Identity])):
                     wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
@@ -273,7 +273,10 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
 
     # We can now free all but the last qubit, which has become the new input_idx
     q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
-    return output_ctrl_idx, output_target_idx
+    return (
+        output_ctrl_idx,
+        output_target_idx,
+    )  # ToDo: this should return measurements and not queue the corrections above - we can queue the corrections in the transform
 
 
 def cnot_measurements(wires):
