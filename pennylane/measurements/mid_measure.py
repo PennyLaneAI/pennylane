@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MidMeasure
+from .measurements import MeasurementProcess
 
 
 def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Optional[int] = None):
@@ -240,16 +240,16 @@ def _create_mid_measure_primitive():
     Called when using :func:`~pennylane.measure`.
 
     Returns:
-        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        jax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
         measurement.
 
     """
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    mid_measure_p = NonInterpPrimitive("measure")
+    mid_measure_p = QmlPrimitive("measure")
 
     @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):
@@ -284,7 +284,7 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
-    _shortname = MidMeasure  #! Note: deprecated. Change the value to "measure" in v0.42
+    _shortname = "measure"
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))

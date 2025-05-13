@@ -42,7 +42,8 @@ class TestSnapshotTape:
             qml.Hadamard(wires=0),
             qml.Snapshot("very_important_state"),
             qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
+            qml.Snapshot(measurement=qml.probs()),
+            qml.Snapshot(measurement=qml.sample(), shots=10),
         ]
 
         measurements = [qml.expval(qml.PauliX(0))]
@@ -50,9 +51,10 @@ class TestSnapshotTape:
         num_snapshots = len(tuple(filter(lambda x: isinstance(x, qml.Snapshot), ops)))
 
         expected_tapes = [
-            qml.tape.QuantumTape([], [qml.state()], shots=shots),
-            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=shots),
-            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.state()], shots=shots),
+            qml.tape.QuantumTape([], [qml.state()], shots=None),
+            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=None),
+            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.probs()], shots=shots),
+            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.sample()], shots=10),
             qml.tape.QuantumTape(
                 [qml.Hadamard(0), qml.CNOT((0, 1))], [qml.expval(qml.X(0))], shots=shots
             ),
@@ -180,12 +182,7 @@ class TestSnapshotGeneral:
 
             return qml.expval(qml.PauliZ(0))
 
-        with (
-            pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
-            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
-            else nullcontext()
-        ):
-            qml.snapshots(circuit)(shots=200)
+        _ = qml.snapshots(circuit)(shots=200)
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
@@ -243,6 +240,46 @@ class TestSnapshotGeneral:
             expected = {"execution_results": np.array(1.0)}
 
         _compare_numpy_dicts(result, expected)
+
+    def test_override_shots(self, dev):
+        """Test that override shots allow snapshots to work with different numbers of measurements."""
+
+        @qml.qnode(dev)
+        def c():
+            if dev.name != "default.qutrit":
+                qml.H(0)
+            qml.Snapshot("sample", qml.sample(wires=0), shots=5)
+            qml.Snapshot("counts", qml.counts(wires=0, all_outcomes=True), shots=20)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=21)
+            return qml.state()
+
+        out = qml.snapshots(c)()
+
+        assert out["sample"].shape == (5,)
+        assert out["counts"]["0"] + out["counts"].get("1", 0) == 20
+        if dev.name != "default.qutrit":
+            # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
+            assert not qml.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
+
+    def test_override_analytic(self, dev):
+        """Test that finite shots can be written with analytic calculations."""
+
+        if dev.name == "default.qutrit":
+            pytest.skip("hard to write generic test that works with qutrits.")
+
+        @qml.transform
+        def set_shots(tape, shots):
+            return (tape.copy(shots=shots),), lambda res: res[0]
+
+        @qml.qnode(dev, diff_method=None)
+        def c():
+            qml.H(0)
+            qml.Snapshot("probs", qml.probs(wires=0), shots=None)
+            return qml.sample(wires=0)
+
+        out = qml.snapshots(set_shots(c, shots=10))()
+        assert qml.math.allclose(out["probs"], np.array([0.5, 0.5]))
+        assert out["execution_results"].shape == (10,)
 
 
 class TestSnapshotSupportedQNode:
@@ -622,16 +659,9 @@ class TestSnapshotUnsupportedQNode:
 
         dev = qml.device("lightning.qubit", wires=2)
 
-        with (
-            pytest.raises(
-                DeviceError,
-                match=r"not accepted for analytic simulation on adjoint \+ lightning.qubit",
-            )
-            if diff_method == "adjoint"
-            else pytest.raises(
-                QuantumFunctionError,
-                match=f"does not support {diff_method} with requested circuit",
-            )
+        with pytest.raises(
+            QuantumFunctionError,
+            match=f"does not support {diff_method} with requested circuit",
         ):
 
             @qml.qnode(dev, diff_method=diff_method)
@@ -674,8 +704,9 @@ class TestSnapshotUnsupportedQNode:
             circuit = qml.snapshots(circuit)
 
         result = circuit()
+        analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
         expected = {
-            0: np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
+            0: analytic_result,
             "execution_results": np.array([1 / 3, 1 / 3, 1 / 3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         }
 
@@ -688,10 +719,11 @@ class TestSnapshotUnsupportedQNode:
 
         # Make sure shots are overridden correctly
         result = circuit(shots=200)
-        assert np.allclose(
-            result[0],
-            np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
-            atol=0.1,
+        finite_shot_result = result[0]
+        assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
+            finite_shot_result,
+            analytic_result,
+            atol=np.finfo(np.float64).eps,
             rtol=0,
         )
 

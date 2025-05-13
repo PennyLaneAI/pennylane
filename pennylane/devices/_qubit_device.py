@@ -1512,7 +1512,7 @@ class QubitDevice(Device):
         """Return samples of an observable.
 
         Args:
-            observable (Observable): the observable to sample
+            observable (Operator): the observable to sample
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and

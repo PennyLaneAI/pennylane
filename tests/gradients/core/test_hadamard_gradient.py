@@ -1483,7 +1483,8 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0[0])
             assert np.allclose(res[1], expected_0[1])
         if argnums == [1]:
-            assert np.allclose(res, expected_1)
+            assert np.allclose(res[0][0], expected_1[0])
+            assert np.allclose(res[1][0], expected_1[1])
         if argnums == [0, 1]:
             assert np.allclose(res[0][0], expected_0[0])
             assert np.allclose(res[0][1], expected_0[1])

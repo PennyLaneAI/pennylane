@@ -26,7 +26,7 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import Operator
 
 h_val = 0.1
 spsa_shot_vec_tol = 0.33
@@ -454,12 +454,10 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(Operator):
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

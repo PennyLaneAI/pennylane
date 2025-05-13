@@ -23,7 +23,6 @@ from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
@@ -413,10 +412,8 @@ class TestFiniteDiff:
                 return self + other
 
         # pylint: disable=too-few-public-methods
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

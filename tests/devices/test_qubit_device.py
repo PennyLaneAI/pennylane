@@ -26,17 +26,12 @@ from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
-    Probability,
     ProbabilityMP,
-    Sample,
     SampleMP,
     Shots,
-    State,
     StateMP,
-    Variance,
     VarianceMP,
 )
 from pennylane.resource import Resources
@@ -394,7 +389,7 @@ class TestExtractStatistics:
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
+        assert returntype not in ["Expectation", "Variance", "Sample", "Probability", "State", None]
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
@@ -654,7 +649,7 @@ class TestExpval:
         dev = mock_qubit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -733,7 +728,7 @@ class TestVar:
         dev = mock_qubit_device_with_original_statistics()
 
         # pylint: disable=too-few-public-methods
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -805,7 +800,7 @@ class TestSample:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
 
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -875,7 +870,7 @@ class TestSampleWithBroadcasting:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
 
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
