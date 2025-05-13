@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    pow_of_self_adjoint,
+    pow_involutory,
     pow_rotation,
     self_adjoint,
 )
@@ -337,7 +337,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 add_decomps(CH, _ch_to_ry_cz_ry)
 add_decomps("Adjoint(CH)", self_adjoint)
-add_decomps("Pow(CH)", pow_of_self_adjoint)
+add_decomps("Pow(CH)", pow_involutory)
 
 
 class CY(ControlledOp):
@@ -472,7 +472,7 @@ def _cy(wires: WiresLike, **__):
 
 add_decomps(CY, _cy)
 add_decomps("Adjoint(CY)", self_adjoint)
-add_decomps("Pow(CY)", pow_of_self_adjoint)
+add_decomps("Pow(CY)", pow_involutory)
 
 
 class CZ(ControlledOp):
@@ -590,7 +590,7 @@ def _cz_to_cnot(wires: WiresLike, **__):
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
 add_decomps("Adjoint(CZ)", self_adjoint)
-add_decomps("Pow(CZ)", pow_of_self_adjoint)
+add_decomps("Pow(CZ)", pow_involutory)
 
 
 class CSWAP(ControlledOp):
@@ -742,7 +742,7 @@ def _cswap(wires: WiresLike, **__):
 
 add_decomps(CSWAP, _cswap)
 add_decomps("Adjoint(CSWAP)", self_adjoint)
-add_decomps("Pow(CSWAP)", pow_of_self_adjoint)
+add_decomps("Pow(CSWAP)", pow_involutory)
 
 
 class CCZ(ControlledOp):
@@ -940,7 +940,7 @@ def _ccz(wires: WiresLike, **__):
 
 add_decomps(CCZ, _ccz)
 add_decomps("Adjoint(CCZ)", self_adjoint)
-add_decomps("Pow(CCZ)", pow_of_self_adjoint)
+add_decomps("Pow(CCZ)", pow_involutory)
 
 
 class CNOT(ControlledOp):
@@ -1072,7 +1072,7 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
 
 add_decomps(CNOT, _cnot_to_cz_h)
 add_decomps("Adjoint(CNOT)", self_adjoint)
-add_decomps("Pow(CNOT)", pow_of_self_adjoint)
+add_decomps("Pow(CNOT)", pow_involutory)
 
 
 class Toffoli(ControlledOp):
@@ -1286,7 +1286,7 @@ def _toffoli(wires: WiresLike, **__):
 
 add_decomps(Toffoli, _toffoli)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
-add_decomps("Pow(Toffoli)", pow_of_self_adjoint)
+add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 class MultiControlledX(ControlledOp):
@@ -1566,7 +1566,7 @@ class MultiControlledX(ControlledOp):
 
 
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-add_decomps("Pow(MultiControlledX)", pow_of_self_adjoint)
+add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
 class CRX(ControlledOp):

@@ -64,7 +64,7 @@ def _adjoint_rotation(base_class, base_params, **__):
 # pylint: disable=protected-access,unused-argument
 @register_resources(_adjoint_rotation)
 def adjoint_rotation(phi, wires, base, **__):
-    """Decompose the adjoint of a rotation operator by negating the angle."""
+    """Decompose the adjoint of a rotation operator by inverting the angle."""
     _, struct = base._flatten()
     base._unflatten((-phi,), struct)
 
@@ -130,16 +130,16 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
     qml.adjoint(qml.pow(base_op, z))
 
 
-def _pow_self_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_involutory_resource(base_class, base_params, z):  # pylint: disable=unused-argument
     if (not is_integer(z)) or z < 0:
         raise DecompositionNotApplicable
     return {resource_rep(base_class, **base_params): z % 2}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_pow_self_adjoint_resource)
-def pow_of_self_adjoint(*params, wires, base, z, **__):
-    """Decompose the power of a self-adjoint operator, assumes z is an integer."""
+@register_resources(_pow_involutory_resource)
+def pow_involutory(*params, wires, base, z, **__):
+    """Decompose the power of an involutory operator, assumes z is an integer."""
 
     def f():
         base._unflatten(*base._flatten())

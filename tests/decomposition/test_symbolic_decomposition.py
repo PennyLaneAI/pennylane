@@ -34,7 +34,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_of_self_adjoint,
+    pow_involutory,
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
@@ -261,23 +261,23 @@ class TestPowDecomposition:
         op4 = qml.pow(CustomOp(wires=[0, 1, 2]), 4)
 
         with qml.queuing.AnnotatedQueue() as q:
-            pow_of_self_adjoint(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            pow_of_self_adjoint(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            pow_of_self_adjoint(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            pow_of_self_adjoint(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            pow_involutory(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            pow_involutory(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            pow_involutory(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            pow_involutory(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
 
         assert q.queue == [CustomOp(wires=[0, 1, 2]), CustomOp(wires=[0, 1, 2])]
-        assert pow_of_self_adjoint.compute_resources(**op1.resource_params) == Resources(
+        assert pow_involutory.compute_resources(**op1.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
-        assert pow_of_self_adjoint.compute_resources(**op3.resource_params) == Resources(
+        assert pow_involutory.compute_resources(**op3.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
-        assert pow_of_self_adjoint.compute_resources(**op2.resource_params) == Resources()
-        assert pow_of_self_adjoint.compute_resources(**op4.resource_params) == Resources()
+        assert pow_involutory.compute_resources(**op2.resource_params) == Resources()
+        assert pow_involutory.compute_resources(**op4.resource_params) == Resources()
 
         with pytest.raises(DecompositionNotApplicable):
-            pow_of_self_adjoint.compute_resources(CustomOp, {}, z=0.5)
+            pow_involutory.compute_resources(CustomOp, {}, z=0.5)
 
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
