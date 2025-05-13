@@ -177,12 +177,17 @@ class QasmInterpreter(QASMVisitor):
         """
         args = []
         for arg in node.arguments:
-            if arg.name in context["vars"]:
+            if hasattr(arg, "name") and arg.name in context["vars"]:
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
                 args.append(context["vars"][arg.name]["val"])
+            elif re.search('Literal', arg.__class__.__name__) is not None:
+                args.append(arg.value)
             else:
-                raise NameError(f"Uninitialized variable {arg.name} encountered in QASM.")
+                raise NameError(
+                    f"Uninitialized variable {arg.name if hasattr(arg, 'name') else arg.__class__.__name__} "
+                    f"encountered in QASM."
+                )
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
             *args,
