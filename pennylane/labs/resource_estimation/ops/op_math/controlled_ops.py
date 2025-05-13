@@ -944,7 +944,7 @@ class ResourceToffoli(ResourceOperator):
                 values are the counts.
         """
         if elbow is None:
-            raise re.ResourcesNotDefined
+            return [GateCount(cls.resource_rep())]
 
         adj_elbow = "left" if elbow == "right" else "right"
         return [GateCount(cls.resource_rep(elbow=adj_elbow))]

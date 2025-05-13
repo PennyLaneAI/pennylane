@@ -60,10 +60,15 @@ _StandardGateSet = {
 
 # practical/realistic gateset for useful compilation of circuits
 DefaultGateSet = {
+    "X",
+    "Y",
+    "Z",
     "Hadamard",
     "CNOT",
     "S",
     "T",
+    "Adjoint(T)",
+    "Adjoint(S)",
     "Toffoli",
 }
 

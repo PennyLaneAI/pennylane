@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
+from pennylane.labs.resource_estimation.qubit_manager import clean_qubits, tight_qubit_budget
 from pennylane.operation import Operation
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
@@ -668,6 +669,258 @@ class ResourceQROMStatePreparation(ResourceOperator):
                             "num_bitstrings": 2**num_state_qubits,
                             "num_bit_flips": 2 ** (num_state_qubits - 1),
                             "size_bitstring": num_precision_wires,
+                            "clean": False,
+                        },
+                    )
+                )
+            )
+
+        gate_counts.append(CutQubits(num_precision_wires))
+        return gate_counts
+    
+    @staticmethod
+    def optimized_ww_decomp(
+        num_state_qubits,
+        precision,
+        positive_and_real,
+        **kwargs,
+    ):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+            num_work_wires (int): additional qubits which optimize the implementation
+            num_phase_gradient_wires (int): number of qubits where the phase gradient state is stored. Must be equal
+                to ``num_precision_wires``
+            positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+        """
+        gate_counts = []
+        precision = precision or kwargs["config"]["precision_qrom_state_prep"]
+        num_precision_wires = abs(math.floor(math.log2(precision)))
+
+        gate_counts.append(AddQubits(num_precision_wires))
+        available_wires = clean_qubits() - num_precision_wires
+
+        for j in range(1, num_state_qubits):
+            num_bitstrings = 2**j
+            num_bit_flips = max(2 ** (j - 1), 1)
+
+            W_opt = re.ResourceQROM._t_optimized_select_swap_width(num_bitstrings, num_precision_wires)
+            l = math.ceil(math.log2(math.ceil(num_bitstrings / W_opt)))
+            l_new = l
+            if tight_qubit_budget() and available_wires < ((W_opt - 1) * num_precision_wires + (l - 1)):
+                for p in range(0, int(math.log2(W_opt))+ 1):
+                # for W_opt_new in range(1, W_opt):
+                    W_opt_new = 2**p
+                    l_new = math.ceil(math.log2(math.ceil(num_bitstrings / W_opt_new)))
+                    if available_wires < ((W_opt_new - 1) * num_precision_wires + (l_new - 1)):
+                        break
+                    W_opt = W_opt_new
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings,
+                        num_bit_flips,
+                        num_precision_wires,
+                        select_swap_depth=W_opt,
+                        clean=False,
+                    )
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": num_bitstrings,
+                            "num_bit_flips": num_bit_flips,
+                            "size_bitstring": num_precision_wires,
+                            "select_swap_depth": W_opt,
+                            "clean": False,
+                        },
+                    )
+                )
+            )
+
+        t = re.ResourceT.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+
+        # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+        # TODO: Update once we have qml.SemiAdder
+        gate_counts.append(
+            GateCount(
+                t, 
+                (2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)) * num_state_qubits,
+            )
+        )
+
+        gate_counts.append(GateCount(h, 2 * num_state_qubits))
+
+        if not positive_and_real:
+            num_bitstrings = 2**num_state_qubits
+            W_opt = re.ResourceQROM._t_optimized_select_swap_width(num_bitstrings, num_precision_wires)
+            l = math.ceil(math.log2(math.ceil(num_bitstrings / W_opt)))
+            
+            if tight_qubit_budget() and available_wires < ((W_opt - 1) * num_precision_wires + (l - 1)):
+                for p in range(0, int(math.log2(W_opt)) + 1):
+                # for W_opt_new in range(1, W_opt):
+                    W_opt_new = 2**p
+                    l_new = math.ceil(math.log2(math.ceil(num_bitstrings / W_opt_new)))
+                    if available_wires < ((W_opt_new - 1) * num_precision_wires + (l_new - 1)):
+                        break
+                    W_opt = W_opt_new
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        2**num_state_qubits,
+                        2 ** (num_state_qubits - 1),
+                        num_precision_wires,
+                        select_swap_depth=W_opt,
+                        clean=False,
+                    )
+                )
+            )
+
+            # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+            # TODO: Update once we have qml.SemiAdder
+            gate_counts.append(
+                GateCount(
+                    t, 
+                    2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1),
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": 2**num_state_qubits,
+                            "num_bit_flips": 2 ** (num_state_qubits - 1),
+                            "size_bitstring": num_precision_wires,
+                            "select_swap_depth": W_opt,
+                            "clean": False,
+                        },
+                    )
+                )
+            )
+
+        gate_counts.append(CutQubits(num_precision_wires))
+        return gate_counts
+
+    @staticmethod
+    def zero_swap_w_decomp(
+        num_state_qubits,
+        precision,
+        positive_and_real,
+        **kwargs,
+    ):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            num_precision_wires (int): number of qubits that specify the precision of the rotation angles
+            num_work_wires (int): additional qubits which optimize the implementation
+            num_phase_gradient_wires (int): number of qubits where the phase gradient state is stored. Must be equal
+                to ``num_precision_wires``
+            positive_and_real (bool): flag that the coefficients of the statevector are all real and positive.
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_.
+        """
+        gate_counts = []
+        precision = precision or kwargs["config"]["precision_qrom_state_prep"]
+        num_precision_wires = abs(math.floor(math.log2(precision)))
+
+        gate_counts.append(AddQubits(num_precision_wires))
+
+        for j in range(1, num_state_qubits):
+            num_bitstrings = 2**j
+            num_bit_flips = max(2 ** (j - 1), 1)
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        num_bitstrings,
+                        num_bit_flips,
+                        num_precision_wires,
+                        select_swap_depth=1,
+                        clean=False,
+                    )
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": num_bitstrings,
+                            "num_bit_flips": num_bit_flips,
+                            "size_bitstring": num_precision_wires,
+                            "select_swap_depth": 1,
+                            "clean": False,
+                        },
+                    )
+                )
+            )
+
+        t = re.ResourceT.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+
+        # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+        # TODO: Update once we have qml.SemiAdder
+        gate_counts.append(
+            GateCount(
+                t, 
+                (2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)) * num_state_qubits,
+            )
+        )
+
+        gate_counts.append(GateCount(h, 2 * num_state_qubits))
+
+        if not positive_and_real:
+            gate_counts.append(
+                GateCount(
+                    re.ResourceQROM.resource_rep(
+                        2**num_state_qubits,
+                        2 ** (num_state_qubits - 1),
+                        num_precision_wires,
+                        select_swap_depth=1,
+                        clean=False,
+                    )
+                )
+            )
+
+            # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
+            # TODO: Update once we have qml.SemiAdder
+            gate_counts.append(
+                GateCount(
+                    t, 
+                    2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1),
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    re.ResourceAdjoint.resource_rep(
+                        base_class=re.ResourceQROM,
+                        base_params={
+                            "num_bitstrings": 2**num_state_qubits,
+                            "num_bit_flips": 2 ** (num_state_qubits - 1),
+                            "size_bitstring": num_precision_wires,
+                            "select_swap_depth": 1,
                             "clean": False,
                         },
                     )

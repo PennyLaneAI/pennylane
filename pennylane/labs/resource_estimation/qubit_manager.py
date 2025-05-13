@@ -139,7 +139,7 @@ class QubitManager:
             if self.tight_budget:
                 raise ValueError(
                     f"Not enough work qubits, trying to allocate {num_qubits} qubits with "
-                    + f"only {available_clean} availbe qubits, please allocate more qubits."
+                    + f"only {available_clean} available qubits, please allocate more qubits."
                 )
 
             self.allocate_qubits(missing_qubits)

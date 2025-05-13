@@ -1647,12 +1647,11 @@ class ResourceQROM(ResourceOperator):
             return 1
 
     def __init__(
-        self, num_bitstrings, size_bitstring, num_bit_flips=None, clean=True, wires=None
+        self, num_bitstrings, size_bitstring, num_bit_flips=None, clean=True, wires=None, select_swap_depth=None,
     ) -> None:
         self.clean = clean
         self.num_bitstrings = num_bitstrings
         self.size_bitstring = size_bitstring
-
         self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring / 2)
 
         if wires:
@@ -1665,6 +1664,7 @@ class ResourceQROM(ResourceOperator):
             self.num_control_wires = math.ceil(math.log2(num_bitstrings))
             self.num_wires = size_bitstring + self.num_control_wires
 
+        self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
 
     @staticmethod
@@ -1672,7 +1672,8 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings,
         num_bit_flips,
         size_bitstring,
-        clean,
+        select_swap_depth=None,
+        clean=True,
         **kwargs,
     ) -> Dict[CompressedResourceOp, int]:
         r"""The resources for QROM are taken from the following two papers:
@@ -1684,20 +1685,12 @@ class ResourceQROM(ResourceOperator):
         work qubits, where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is
         the number of batches of unitaries to select.
         """
-        W_opt = ResourceQROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
+        
+        if select_swap_depth:
+            select_swap_depth = 2**math.floor(math.log2(select_swap_depth))
+        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = math.ceil(math.log2(L_opt))
-
-        available_wires = clean_qubits()
-        if tight_qubit_budget() and available_wires < ((W_opt - 1) * size_bitstring + (l - 1)):
-            for W_opt_new in range(1, W_opt):
-                L_opt_new = math.ceil(num_bitstrings / W_opt_new)
-                l_new = math.ceil(math.log2(L_opt_new))
-
-                if available_wires < ((W_opt_new - 1) * size_bitstring + (l_new - 1)):
-                    break
-
-                W_opt, L_opt, l = (W_opt_new, L_opt_new, l_new)
 
         gate_cost = []
         gate_cost.append(
@@ -1732,7 +1725,7 @@ class ResourceQROM(ResourceOperator):
 
         gate_cost.append(CutQubits(l - 1))  # release UI trick work wires
 
-        # SWAP cost:
+        # # SWAP cost:
         ctrl_swap = re.ResourceCSWAP.resource_rep()
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
     
@@ -1747,9 +1740,10 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings,
         num_bit_flips,
         size_bitstring,
+        select_swap_depth,
         clean,
     ):
-        W_opt = ResourceQROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
+        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         L_opt = math.ceil(num_bitstrings / W_opt)
         l = math.ceil(math.log2(L_opt))
 
@@ -1811,6 +1805,7 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings,
         num_bit_flips,
         size_bitstring,
+        select_swap_depth,
         clean,
         **kwargs,
     ):
@@ -1820,7 +1815,7 @@ class ResourceQROM(ResourceOperator):
             gate_cost.append(GateCount(x, 2 * num_ctrl_values))
 
         single_ctrl_cost = cls.single_controlled_res_decomp(
-            num_bitstrings, num_bit_flips, size_bitstring, clean
+            num_bitstrings, num_bit_flips, size_bitstring, select_swap_depth, clean,
         )
 
         if num_ctrl_wires == 1:
@@ -1964,6 +1959,7 @@ class ResourceQROM(ResourceOperator):
             "num_bitstrings": self.num_bitstrings,
             "num_bit_flips": self.num_bit_flips,
             "size_bitstring": self.size_bitstring,
+            "select_swap_depth": self.select_swap_depth,
             "clean": self.clean,
         }
 
@@ -1973,7 +1969,8 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings,
         num_bit_flips,
         size_bitstring,
-        clean,
+        select_swap_depth=None,
+        clean=True,
     ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -1993,6 +1990,7 @@ class ResourceQROM(ResourceOperator):
             "num_bitstrings": num_bitstrings,
             "num_bit_flips": num_bit_flips,
             "size_bitstring": size_bitstring,
+            "select_swap_depth": select_swap_depth,
             "clean": clean,
         }
         return CompressedResourceOp(cls, params)
