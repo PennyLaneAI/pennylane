@@ -21,8 +21,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
-from pennylane.ops import PauliRot, exp
-from pennylane.ops import functions as qfuncs
+from pennylane.ops import PauliRot, exp, functions
 from pennylane.pauli import is_pauli_word, pauli_word_prefactor, pauli_word_to_string
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -121,9 +120,9 @@ def _split_evol_ops(op, ob, tau):
                 warnings.filterwarnings(
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
-            eigvals = qfuncs.eigvals(ob)
+            eigvals = functions.eigvals(ob)
         coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
-        insert_ops = [exp(qfuncs.dot([-1j * shift], [ob])) for shift in shifts]
+        insert_ops = [exp(functions.dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
     ode_kwargs = op.odeint_kwargs
