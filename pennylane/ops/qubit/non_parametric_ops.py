@@ -1500,6 +1500,155 @@ def _swap_to_cnot(wires, **__):
 add_decomps(SWAP, _swap_to_cnot)
 
 
+class SQSWAP(Operation):
+    r"""SISWAP(wires)
+    The square root of the swap operator.
+
+    .. math:: SQSWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \frac{1}{2}(1+i) & \frac{1}{2}(1-i) & 0\\
+            0 & \frac{1}{2}(1-i) & \frac{1}{2}(1+i) & 0\\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_wires = 2
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    batch_size = None
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.75 + 0.25j,
+                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.25 - 0.25j,
+                    qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.25 - 0.25j,
+                    qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.25 - 0.25j,
+                }
+            )
+        return self._pauli_rep
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SISWAP.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.SISWAP.compute_matrix())
+        [[1.+0.j  0. +0.j    0.+ 0.j   0.+0.j]
+         [0.+0.j  0.5+0.5j   0.5-0.5j  0.+0.j]
+         [0.+0.j  0.5-0.5j   0.5+0.5j  0.+0.j]
+         [0.+0.j  0. +0.j    0.+0.j    1.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 0.5 + 0.5j, 0.5 - 0.5j, 0],
+                [0, 0.5 - 0.5j, 0.5 + 0.5j, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+
+    @staticmethod
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.SQSWAP.eigvals`
+
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> print(qml.SQSWAP.compute_eigvals())
+        [1, 1j, 1, 1]
+        """
+        return np.array([1, 1j, 1, 1])
+
+    @staticmethod
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SQSWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.SQSWAP.compute_decomposition((0,1)))
+        [CNOT(wires=[0, 1]), CSX(wires=[1, 0]), CNOT(wires=[0, 1])]
+
+        """
+        return [
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CSX(wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+        z_mod8 = z % 4
+        if abs(z_mod8 - 2) < 1e-6:
+            return [SWAP(wires=self.wires)]
+        return super().pow(z_mod8)
+
+
+def _sqswap_decomp_resources():
+    return {qml.CNOT: 2, qml.CSX: 1}
+
+
+@register_resources(_sqswap_decomp_resources)
+def _sqswap_decomp(wires, **__):
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CSX(wires=[wires[1], wires[0]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+add_decomps(SQSWAP, _sqswap_decomp)
+
+
 class ECR(Operation):
     r""" ECR(wires)
 
