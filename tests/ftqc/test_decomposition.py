@@ -300,7 +300,8 @@ class TestMBQCFormalismConversion:
         # queue ops with queue_single_qubit_gate
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(1.2, 0.34, 0.7, wire_map[w])
-            wire_map[w] = queue_single_qubit_gate(q_mgr, op=op, in_wire=wire_map[w])
+            wire_map[w], measurements = queue_single_qubit_gate(q_mgr, op=op, in_wire=wire_map[w])
+            queue_corrections(op, measurements)(wire_map[w])
             qml.expval(qml.X(wire_map[w]))
             qml.expval(qml.Y(wire_map[w]))
             qml.expval(qml.Z(wire_map[w]))
@@ -346,7 +347,10 @@ class TestMBQCFormalismConversion:
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(1.2, 0.34, 0.7, wire_map[ctrl])
             qml.Rot(0.65, 0.43, 0.21, wire_map[target])
-            wire_map[ctrl], wire_map[target] = queue_cnot(q_mgr, wire_map[ctrl], wire_map[target])
+            wire_map[ctrl], wire_map[target], measurements = queue_cnot(
+                q_mgr, wire_map[ctrl], wire_map[target]
+            )
+            cnot_corrections(measurements)(wire_map[ctrl], wire_map[target])
             qml.expval(qml.X(wire_map[ctrl]))
             qml.expval(qml.Y(wire_map[ctrl]))
             qml.expval(qml.Z(wire_map[ctrl]))
