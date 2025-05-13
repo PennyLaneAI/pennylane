@@ -643,8 +643,8 @@ class TestDiagonalQubitUnitary:
 
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.RZ(np.pi / 2, 0))
-            qml.assert_equal(decomp[1], qml.GlobalPhase(-3 * np.pi / 4, 0))
+            qml.assert_equal(decomp[0], qml.GlobalPhase(-3 * np.pi / 4, 0))
+            qml.assert_equal(decomp[1], qml.RZ(np.pi / 2, 0))
 
     def test_decomposition_single_qubit_broadcasted(self):
         """Test that a broadcasted single-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -657,8 +657,8 @@ class TestDiagonalQubitUnitary:
         global_angles = np.array([3 / 4, 0, 0, 1]) * np.pi
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.RZ(angles, 0))
-            qml.assert_equal(decomp[1], qml.GlobalPhase(-global_angles, 0))
+            qml.assert_equal(decomp[0], qml.GlobalPhase(-global_angles, 0))
+            qml.assert_equal(decomp[1], qml.RZ(angles, 0))
 
     def test_decomposition_two_qubits(self):
         """Test that a two-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -672,8 +672,8 @@ class TestDiagonalQubitUnitary:
 
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.SelectPauliRot(angles, [0], target_wire=1))
-            qml.assert_equal(decomp[1], qml.DiagonalQubitUnitary(new_D, wires=[0]))
+            qml.assert_equal(decomp[0], qml.DiagonalQubitUnitary(new_D, wires=[0]))
+            qml.assert_equal(decomp[1], qml.SelectPauliRot(angles, [0], target_wire=1))
 
     def test_decomposition_two_qubits_broadcasted(self):
         """Test that a broadcasted two-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -687,8 +687,8 @@ class TestDiagonalQubitUnitary:
 
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.SelectPauliRot(angles, [0], target_wire=1))
-            qml.assert_equal(decomp[1], qml.DiagonalQubitUnitary(new_D, wires=[0]))
+            qml.assert_equal(decomp[0], qml.DiagonalQubitUnitary(new_D, wires=[0]))
+            qml.assert_equal(decomp[1], qml.SelectPauliRot(angles, [0], target_wire=1))
 
     def test_decomposition_three_qubits(self):
         """Test that a three-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -701,8 +701,8 @@ class TestDiagonalQubitUnitary:
         new_D = np.exp(1j * np.array([0, 3 / 4, 0.15, 1.45]))
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.SelectPauliRot(angles, [0, 1], target_wire=2))
-            qml.assert_equal(decomp[1], qml.DiagonalQubitUnitary(new_D, wires=[0, 1]))
+            qml.assert_equal(decomp[0], qml.DiagonalQubitUnitary(new_D, wires=[0, 1]))
+            qml.assert_equal(decomp[1], qml.SelectPauliRot(angles, [0, 1], target_wire=2))
 
     def test_decomposition_three_qubits_broadcasted(self):
         """Test that a broadcasted three-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -720,8 +720,8 @@ class TestDiagonalQubitUnitary:
         new_D = np.exp(1j * np.array([[0, 3 / 4, 0.15, 1.45], [0.6, 0.35, 1.4, 0.15]]))
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qml.assert_equal(decomp[0], qml.SelectPauliRot(angles, [0, 1], target_wire=2))
-            qml.assert_equal(decomp[1], qml.DiagonalQubitUnitary(new_D, wires=[0, 1]))
+            qml.assert_equal(decomp[0], qml.DiagonalQubitUnitary(new_D, wires=[0, 1]))
+            qml.assert_equal(decomp[1], qml.SelectPauliRot(angles, [0, 1], target_wire=2))
 
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match(self, n, seed):
@@ -771,10 +771,10 @@ class TestDiagonalQubitUnitary:
             if dtype in [np.float64, np.int64, np.int32, np.complex128]
             else np.complex64
         )
-        assert decomp1[0].data[0].dtype == r_dtype
-        assert decomp2[0].data[0].dtype == r_dtype
-        assert decomp1[1].data[0].dtype == c_dtype
-        assert decomp2[1].data[0].dtype == c_dtype
+        assert decomp1[0].data[0].dtype == c_dtype
+        assert decomp2[0].data[0].dtype == c_dtype
+        assert decomp1[1].data[0].dtype == r_dtype
+        assert decomp2[1].data[0].dtype == r_dtype
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
