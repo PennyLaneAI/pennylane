@@ -240,6 +240,7 @@ def _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires):
             num_control_wires=rep.params["num_control_wires"],
             num_zero_control_values=rep.params["num_zero_control_values"],
             num_work_wires=rep.params["num_work_wires"],
+            work_wire_type=rep.params.get("work_wire_type", "clean"),
         )
 
     if base_op_rep.op_type == qml.QubitUnitary:
