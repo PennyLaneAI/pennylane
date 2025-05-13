@@ -5,7 +5,8 @@ from typing import Callable
 from openqasm3.visitor import QASMNode, QASMVisitor
 import re
 
-from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral
+from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast
+from openqasm3.visitor import QASMVisitor, QASMNode
 
 import pennylane
 from pennylane import (
@@ -36,7 +37,7 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    device,
+    device, while_loop,
 )
 
 SINGLE_QUBIT_GATES = {
@@ -123,6 +124,8 @@ class QasmInterpreter(QASMVisitor):
                 self.quantum_measurement_statement(node, context)
             case "ReturnStatement":
                 self.return_statement(node, context)
+            case "WhileLoop":
+                self.loop_while(node, context)
             # TODO: call appropriate handler methods here
             case _:
                 # TODO: turn into a NameError when we have supported all the node types we want
@@ -149,6 +152,44 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
+    def eval_expr(self, node: QASMNode, context: dict):
+        """
+        Evaluates an expression.
+        """
+        if isinstance(node, BinaryExpression):
+            if re.search('Literal', node.lhs.__class__.__name__) is not None:
+                lhs = node.lhs.value
+            elif isinstance(node.lhs, Cast):
+                lhs = context["vars"][node.lhs.argument.name]["val"]  # TODO: update this to account for deferred evals?
+            else:
+                lhs = context["vars"][node.lhs.name]["val"]
+            if re.search('Literal', node.rhs.__class__.__name__) is not None:
+                rhs = node.rhs.value
+            elif isinstance(node.rhs, Cast):
+                rhs = context["vars"][node.rhs.argument.name]["val"]
+            else:
+                rhs = context["vars"][node.rhs.name]["val"]
+            res = eval(f'{lhs}{node.op.name}{rhs}')
+        # TODO: include all other cases here
+        return res
+
+    def loop_while(self, node: QASMNode, context: dict):
+        """
+        Registers a while loop.
+        """
+        if "gates" not in context:
+            context["gates"] = []
+
+        @while_loop(partial(self.eval_expr, node.while_condition))  # TODO: traces data dep through context
+        def loop(context):
+            self.visit(node.block, context)  # process function body
+            for gate in context["gates"]:
+                gate()  # updates vars in context
+            # TODO: structure in the loop body
+            return context
+
+        context["gates"].append(loop)
+
     def return_statement(self, node: QASMNode, context: dict):
         """
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
@@ -165,7 +206,7 @@ class QasmInterpreter(QASMVisitor):
         if isinstance(node.measure.qubit, Identifier):
             measure = partial(pennylane.measure, node.measure.qubit.name)
 
-        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary / supported
+        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary
             measure = partial(pennylane.measure, node.measure.qubit.value)
 
         elif isinstance(node.measure.qubit, list):
@@ -364,8 +405,8 @@ class QasmInterpreter(QASMVisitor):
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pennylane.pow, z=mod.argument.value)
                 elif mod.argument.name in context["vars"]:
-                    wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == "ctrl":
+                    wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])  # TODO: update this to account for deferred evals?
+            elif mod.modifier.name == 'ctrl':
                 wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
