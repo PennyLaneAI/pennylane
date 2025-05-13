@@ -121,7 +121,7 @@ def _split_evol_ops(op, ob, tau):
                 warnings.filterwarnings(
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
-            eigvals = functions.eigvals(ob)
+            eigvals = eigvals(ob)
         coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
         insert_ops = [exp(functions.dot([-1j * shift], [ob])) for shift in shifts]
 
