@@ -121,8 +121,8 @@ def _split_evol_ops(op, ob, tau):
                 warnings.filterwarnings(
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
-            eigvals = eigvals(ob)
-        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+            eigenvalues = eigvals(ob)
+        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigenvalues))))
         insert_ops = [exp(dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
