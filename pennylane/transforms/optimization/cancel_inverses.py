@@ -121,9 +121,15 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 return super().interpret_operation(op)
 
             prev_op = self.previous_ops.get(op.wires[0], None)
-            cancel = False
+            if prev_op is None:
+                if any(is_abstract(w) for w in op.wires):
+                    self.interpret_all_previous_ops()
+                for w in op.wires:
+                    self.previous_ops[w] = op
+                return []
 
-            if prev_op is not None and _are_inverses(op, prev_op):
+            cancel = False
+            if _are_inverses(op, prev_op):
                 # Same wires, cancel
                 if op.wires == prev_op.wires:
                     cancel = True
@@ -143,12 +149,6 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             if cancel:
                 for w in op.wires:
                     self.previous_ops.pop(w)
-                return []
-
-            if any(is_abstract(w) for w in op.wires):
-                self.interpret_all_previous_ops()
-                for w in op.wires:
-                    self.previous_ops[w] = op
                 return []
 
             previous_ops_on_wires = list(
