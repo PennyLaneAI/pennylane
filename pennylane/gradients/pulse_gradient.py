@@ -123,7 +123,7 @@ def _split_evol_ops(op, ob, tau):
                 )
             eigvals = eigvals(ob)
         coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
-        insert_ops = [exp(functions.dot([-1j * shift], [ob])) for shift in shifts]
+        insert_ops = [exp(dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
     ode_kwargs = op.odeint_kwargs
