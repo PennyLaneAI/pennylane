@@ -71,6 +71,7 @@ Controlled Operator Classes
     ~CNOT
     ~Toffoli
     ~MultiControlledX
+    ~CSX
     ~CRX
     ~CRY
     ~CRZ
@@ -111,6 +112,7 @@ from .controlled_ops import (
     CCZ,
     CH,
     CNOT,
+    CSX,
     CRX,
     CRY,
     CRZ,
@@ -144,6 +146,7 @@ controlled_qubit_ops = {
     "CNOT",
     "Toffoli",
     "MultiControlledX",
+    "CSX",
     "CRX",
     "CRY",
     "CRZ",
