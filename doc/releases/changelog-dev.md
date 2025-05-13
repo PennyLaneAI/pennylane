@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Add `get_best_mcm_method(qnode)(*args, **kwargs)` to the `workflow` module.
+  [(#7424)](https://github.com/PennyLaneAI/pennylane/pull/7424)
+
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
