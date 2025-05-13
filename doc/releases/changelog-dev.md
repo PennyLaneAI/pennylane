@@ -270,6 +270,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Added `MCM_METHOD` and `POSTSELECT_MODE` `Enum` objects to improve MCM configuration validation and handling.
+  [(#7161)](https://github.com/PennyLaneAI/pennylane/pull/7161)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
