@@ -239,9 +239,9 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    ctrl_prim = NonInterpPrimitive("ctrl_transform")
+    ctrl_prim = QmlPrimitive("ctrl_transform")
     ctrl_prim.multiple_results = True
     ctrl_prim.prim_type = "higher_order"
 
