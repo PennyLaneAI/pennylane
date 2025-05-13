@@ -272,8 +272,6 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
 
     """
     _validate_resource_rep(op_type, params)
-    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-        return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):

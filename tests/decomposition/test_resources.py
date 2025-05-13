@@ -306,28 +306,6 @@ class TestControlledResourceRep:
             },
         )
 
-    def test_resource_rep_dispatch_to_controlled_resource_rep(self, mocker):
-        """Tests that resource_rep dispatches to controlled_resource_rep for Controlled."""
-
-        expected_fn = mocker.patch("pennylane.decomposition.resources.controlled_resource_rep")
-        _ = resource_rep(
-            qml.ops.Controlled,
-            **{
-                "base_class": qml.CRX,
-                "base_params": {},
-                "num_control_wires": 2,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-            },
-        )
-        expected_fn.assert_called_once_with(
-            base_class=qml.CRX,
-            base_params={},
-            num_control_wires=2,
-            num_zero_control_values=1,
-            num_work_wires=1,
-        )
-
     def test_controlled_resource_op_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
