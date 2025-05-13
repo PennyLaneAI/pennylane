@@ -350,7 +350,7 @@ class DefaultClifford(Device):
 
             import pennylane as qml
             import numpy as np
-            
+
             from functools import partial
 
             dev = qml.device("default.clifford", seed=42)

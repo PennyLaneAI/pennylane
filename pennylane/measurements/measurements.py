@@ -496,7 +496,7 @@ class SampleMeasurement(MeasurementProcess):
     ... def circuit():
     ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
-    ... 
+    ...
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
