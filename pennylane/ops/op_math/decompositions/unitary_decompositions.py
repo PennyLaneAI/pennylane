@@ -789,6 +789,7 @@ def _compute_udv(a, b):
 
 def multi_qubit_decomposition(U, wires):
     r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
+
     The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
     unitaries (:class:`~pennylane.ops.QubitUnitary`) and three multiplexers (:class:`~pennylane.templates.SelectPauliRot`)
     using the cosine-sine decomposition.
