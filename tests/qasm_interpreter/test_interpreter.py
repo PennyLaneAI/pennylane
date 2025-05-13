@@ -33,3 +33,4 @@ class TestInterpreter:
     def test_parses_simple_qasm(self):
         ast = parse(open('gates.qasm', mode='r').read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
+        context["qnode"].func()

@@ -1,7 +1,10 @@
 from functools import partial
+from typing import Callable
+import re
+import pennylane
 from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ, S, T, SX, RX, RY, RZ, \
     PhaseShift, U1, U2, U3, CNOT, CY, CZ, CH, SWAP, CSWAP, CPhase, CRX, CRY, CRZ, \
-    Toffoli, MultiControlledX, Barrier
+    Toffoli
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 SINGLE_QUBIT_GATES = {
@@ -80,7 +83,7 @@ class QasmInterpreter(QASMVisitor):
     def construct_qnode(context: dict):
         if "device" not in context:
             context["device"] = device("default.qubit", wires=len(context["wires"]))
-        QNode(lambda _: [gate() for gate in context["gates"]], device=context["device"])
+        context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
 
     @staticmethod
     def identifier(node: QASMNode, context: dict):
@@ -121,61 +124,77 @@ class QasmInterpreter(QASMVisitor):
         if "gates" not in context:
             context["gates"] = []
         if node.name.name.upper() in SINGLE_QUBIT_GATES:
-            gate = self.single_qubit_gate(node, context)
+            gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
         elif node.name.name.upper() in PARAMETERIZED_SIGNLE_QUBIT_GATES:
             gate = self.param_single_qubit_gate(node, context)
         elif node.name.name.upper() in TWO_QUBIT_GATES:
-            gate = self.two_qubit_gate(node, context)
+            gate = self.non_parameterized_gate(TWO_QUBIT_GATES, node, context)
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
-            gate = self.multi_qubit_gate(node, context)
+            gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
             print(f"Unsupported gate encountered in QASM: {node.name}")
+
+        if len(node.modifiers) > 0:
+            gate = self.modifiers(gate, node, context)
+
         context["gates"].append(gate)
 
-    @staticmethod
-    def single_qubit_gate(node: QASMNode, context: dict):
+    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
         """
-        Registers a single qubit gate application.
+        Registers a modifier on a gate.
         """
-        return partial(SINGLE_QUBIT_GATES[node.name.name.upper()], wires=[context["wires"].index(node.qubits[0].name)])
+        call_stack = [gate]
+        for mod in node.modifiers:
+            if mod.modifier.name == 'inv':
+                wrapper = pennylane.adjoint
+            elif mod.modifier.name == 'pow':
+                if re.search('Literal', mod.argument.__class__.__name__) is not None:
+                    wrapper = partial(pennylane.pow, z=mod.argument.value)
+                elif mod.argument.name in context["vars"]:
+                    wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])
+            elif mod.modifier.name == 'ctrl':
+                wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
+            call_stack = [wrapper] + call_stack
+
+        def call():
+            res = None
+            for callable in call_stack[::-1]:
+                if ('partial' == call_stack[0].__class__.__name__ and
+                        'control' in call_stack[0].keywords):
+                    if 'control' in callable.keywords:
+                        res.keywords["wires"] = [res.keywords["wires"][-1]]
+                    res = callable(res.func)(**res.keywords) if res is not None else callable
+                else:
+                    res = callable(res) if res is not None else callable()
+
+        return call
 
     @staticmethod
     def param_single_qubit_gate(node: QASMNode, context: dict):
         """
         Registers a parameterized single qubit gate application.
         """
-        keyword_args = {}
+        args = []
         for arg in node.arguments:
             if arg.name in context["vars"]:
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
-                keyword_args[arg.name] = context["vars"][arg.name]["val"]
+                args.append(context["vars"][arg.name]["val"])
+            else:
+                raise NameError(f"Uninitialized variable {arg.name} encountered in QASM.")
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
-            **keyword_args,
+            *args,
             wires=[context["wires"].index(node.qubits[0].name)]
         )
 
     @staticmethod
-    def two_qubit_gate(node: QASMNode, context: dict):
-        """
-        Registers a two qubit gate application.
-        """
-        return partial(
-            TWO_QUBIT_GATES[node.name.name.upper()],
-            wires=[
-                context["wires"].index(node.qubits[0].name),
-                context["wires"].index(node.qubits[1].name),
-            ]
-        )
-
-    @staticmethod
-    def multi_qubit_gate(node: QASMNode, context: dict):
+    def non_parameterized_gate(gates_dict: dict, node: QASMNode, context: dict):
         """
         Registers a multi qubit gate application.
         """
         return partial(
-            MULTI_QUBIT_GATES[node.name.name.upper()],
+            gates_dict[node.name.name.upper()],
             wires=[
                 context["wires"].index(node.qubits[q].name)
                 for q in range(len(node.qubits))
