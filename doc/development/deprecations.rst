@@ -3,7 +3,7 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
