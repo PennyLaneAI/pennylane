@@ -318,7 +318,6 @@ From here, we can iterate through the stages of decomposition:
 1: ──H─╰●──────│───────│───────╭QFT†─┤  
 2: ──H─────────╰●──────│───────├QFT†─┤  
 3: ──H─────────────────╰●──────╰QFT†─┤  
-
 >>> print("M0: \n", unitary)
 M0: 
  [[0.87758256+0.j         0.        -0.47942554j]
