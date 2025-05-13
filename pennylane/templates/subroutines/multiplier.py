@@ -75,7 +75,8 @@ class Multiplier(Operation):
         x_wires = [0,1,2]
         work_wires = [3,4,5,6,7]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
