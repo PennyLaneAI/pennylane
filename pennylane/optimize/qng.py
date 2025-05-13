@@ -308,7 +308,7 @@ def _flatten_np(x):
         )  # should we allow object arrays? or just "yield from x.flat"?
     elif isinstance(x, Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
-        # Since Wires are always flat,djust yield.
+        # Since Wires are always flat, just yield.
         yield from x
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
