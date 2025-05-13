@@ -5,7 +5,7 @@ from typing import Callable
 from openqasm3.visitor import QASMNode, QASMVisitor
 import re
 
-from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast
+from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 import pennylane
@@ -37,7 +37,9 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    device, while_loop,
+    device,
+    while_loop,
+    for_loop
 )
 
 SINGLE_QUBIT_GATES = {
@@ -126,6 +128,8 @@ class QasmInterpreter(QASMVisitor):
                 self.return_statement(node, context)
             case "WhileLoop":
                 self.loop_while(node, context)
+            case "ForInLoop":
+                self.loop_for(node, context)
             # TODO: call appropriate handler methods here
             case _:
                 # TODO: turn into a NameError when we have supported all the node types we want
@@ -170,6 +174,8 @@ class QasmInterpreter(QASMVisitor):
             else:
                 rhs = context["vars"][node.rhs.name]["val"]
             res = eval(f'{lhs}{node.op.name}{rhs}')
+        elif re.search('Literal', node.__class__.__name__):
+            res = node.value
         # TODO: include all other cases here
         return res
 
@@ -182,13 +188,40 @@ class QasmInterpreter(QASMVisitor):
 
         @while_loop(partial(self.eval_expr, node.while_condition))  # TODO: traces data dep through context
         def loop(context):
-            self.visit(node.block, context)  # process function body
+            self.visit(node.block, context)  # process loop body
             for gate in context["gates"]:
                 gate()  # updates vars in context
-            # TODO: structure in the loop body
+            # TODO: structure in the loop body?
             return context
 
         context["gates"].append(loop)
+
+    def loop_for(self, node: QASMNode, context: dict):
+        """
+        Registers a for loop.
+        """
+        if "gates" not in context:
+            context["gates"] = []
+
+        loop_params = node.set_declaration
+        if isinstance(loop_params, RangeDefinition):
+            start = self.eval_expr(loop_params.start, context)
+            stop = self.eval_expr(loop_params.end, context)
+            step = self.eval_expr(loop_params.step, context)
+        # elif:  #TODO: other cases here
+
+        # TODO: convert all forms of QASM loops to start, stop, step
+
+        @for_loop(start, stop, step)
+        def loop(i, context):
+            self.visit(node.block, context)  # process loop body
+            for gate in context["gates"]:
+                gate()  # updates vars in context
+            # TODO: structure in the loop body?
+            return context
+
+        context["gates"].append(loop)
+
 
     def return_statement(self, node: QASMNode, context: dict):
         """
