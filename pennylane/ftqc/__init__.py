@@ -39,7 +39,7 @@ from .parametric_midmeasure import (
 )
 from .conditional_measure import cond_measure
 from .lattice import Lattice, generate_lattice
-from .graph_state_preparation import GraphStatePrep
+from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
 from .utils import QubitMgr
 
@@ -61,4 +61,5 @@ __all__ = [
     "convert_to_mbqc_formalism",
     "convert_to_mbqc_gateset",
     "generate_lattice",
+    "make_graph_state",
 ]

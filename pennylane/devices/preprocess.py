@@ -550,12 +550,12 @@ def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, n
 
 @transform
 def measurements_from_samples(tape):
-    """Quantum function transform that replaces all measurements from a tape with a single
-    sample measurement, and adds postprocessing functions for each original measurement.
+    """Quantum function transform that replaces all terminal measurements from a tape with a single
+    :func:`pennylane.sample` measurement, and adds postprocessing functions for each original measurement.
 
     This transform can be used to make tapes compatible with device backends that only return
-    `samples`. The final output will return the initial requested measurements, calculated from
-    the raw counts returned immediately after execution.
+    :func:`pennylane.sample`. The final output will return the initial requested measurements, calculated instead from
+    the raw samples returned immediately after execution.
 
     The transform is only applied if the tape is being executed with shots.
 
@@ -580,7 +580,7 @@ def measurements_from_samples(tape):
     >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
     >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
 
-    We can apply the transform to diagonalize and convert the two measurements to a single sample:
+    We can apply the transform to diagonalize and convert the two measurements to a single `sample` measurement:
 
     >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_samples(tape)
     >>> new_tape.measurements
@@ -658,11 +658,11 @@ def measurements_from_samples(tape):
 
 @transform
 def measurements_from_counts(tape):
-    r"""Quantum function transform that replaces all measurements from a tape with a single
-    counts measurement, and adds postprocessing functions for each original measurement.
+    r"""Quantum function transform that replaces all terminal measurements from a tape with a single
+    :func:`pennylane.counts` measurement, and adds postprocessing functions for each original measurement.
 
     This transform can be used to make tapes compatible with device backends that only return
-    `counts`. The final output will return the initial requested measurements, calculated from
+    :func:`pennylane.counts`. The final output will return the initial requested measurements, calculated instead from
     the raw counts returned immediately after execution.
 
     The transform is only applied if the tape is being executed with shots.
