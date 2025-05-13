@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the product formula representations"""
 
-from itertools import product
-
 import numpy as np
 import pytest
 
@@ -145,9 +143,6 @@ def test_pow(fragment_dict):
     eff1 = effective_hamiltonian(pf1, fragment_dict, order=5)
     eff2 = effective_hamiltonian(pf2, fragment_dict, order=5)
     eff3 = effective_hamiltonian(pf3, fragment_dict, order=5)
-
-    print(eff1)
-    print(eff2)
 
     assert np.allclose(eff1, eff2)
     assert np.allclose(eff1, eff3)

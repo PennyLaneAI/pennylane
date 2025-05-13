@@ -112,6 +112,15 @@ class ProductFormula:
         return hash((terms, self.exponent))
 
     def __matmul__(self, other: ProductFormula) -> ProductFormula:
+        if self.recursive:
+            if other.recursive:
+                return ProductFormula(self.terms + other.terms, label=f"{self.label}@{other.label}")
+
+            return ProductFormula([*self.terms, other], label=f"{self.label}@{other.label}")
+
+        if other.recursive:
+            return ProductFormula([self, *other.terms], label=f"{self.label}@{other.label}")
+
         return ProductFormula([self, other], label=f"{self.label}@{other.label}")
 
     def __pow__(self, z: float) -> ProductFormula:
@@ -135,10 +144,16 @@ class ProductFormula:
         This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
         """
 
-        return _remove_redundancies(
+        bch = _remove_redundancies(
             [_kth_order_terms(self.terms, self.coeffs, k) for k in range(1, max_order + 1)],
             self._ordered_terms,
         )
+
+        for i, ith_order_commutators in enumerate(bch):
+            for commutator, coeff in ith_order_commutators.items():
+                bch[i][commutator] = coeff * self.exponent
+
+        return bch
 
     def to_matrix(self, fragments: Dict[Hashable, Fragment], accumulator: Fragment) -> np.ndarray:
         """Returns a numpy representation of the product formula"""
@@ -157,7 +172,7 @@ def _kth_order_terms(
 ) -> Dict[Tuple[int], float]:
     n = len(fragments)
 
-    terms = defaultdict(float)
+    terms = defaultdict(complex)
 
     for partition in _partitions(n, k):
         args = tuple()
@@ -188,7 +203,7 @@ def _partitions(n: int, m: int) -> Generator[Tuple[int]]:
 
 def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
     n = len(fragments)
-    terms = defaultdict(float)
+    terms = defaultdict(complex)
 
     for permutation in permutations(range(n - 1)):
         d = _n_descents(permutation)

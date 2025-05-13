@@ -184,6 +184,12 @@ Z = "Z"
                 {(X, X, Y): -1 / 6, (Y, X, Y): -1 / 6},
             ],
         ),
+        (
+            ["X", "Y", "X"],
+            [1 / 2, 1, 1 / 2],
+            3,
+            [{(X,): 1, (Y,): 1}, {}, {(X, X, Y): -1 / 24, (Y, X, Y): -1 / 12}],
+        ),
     ],
 )
 def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):

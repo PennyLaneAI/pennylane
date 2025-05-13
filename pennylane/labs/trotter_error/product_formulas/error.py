@@ -19,9 +19,14 @@ from collections.abc import Hashable
 from itertools import product
 from typing import Dict, List, Sequence
 
+import numpy as np
+
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
-from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
+from pennylane.labs.trotter_error.product_formulas.product_formula import (
+    ProductFormula,
+    _remove_redundancies,
+)
 
 
 class _AdditiveIdentity:
@@ -71,8 +76,9 @@ def effective_hamiltonian(
     bch = _recursive_bch(product_formula, order)
     eff = _AdditiveIdentity()
 
-    for commutator, coeff in bch.items():
-        eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
+    for ith_order in bch:
+        for commutator, coeff in ith_order.items():
+            eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
 
     return eff
 
@@ -90,44 +96,61 @@ def _insert_fragments(commutator, fragments):
 
 def _recursive_bch(product_formula: ProductFormula, order: int = 3):
 
-    bch = {}
-    for commutator_order in product_formula.bch_approx(order):
-        for commutator, coeff in commutator_order.items():
-            bch[commutator] = product_formula.exponent * coeff
+    bch = product_formula.bch_approx(order)
 
     if not product_formula.recursive:
         return bch
 
     terms = {pf: _recursive_bch(pf, order) for pf in product_formula.terms}
+    merged_bch = [defaultdict(complex) for _ in range(order)]
 
-    merged_bch = defaultdict(complex)
-    for commutator, coeff in bch.items():
-        merged_bch = _add_dicts(merged_bch, _merge_commutators(commutator, terms, order, coeff))
+    for ith_order_commutators in bch:
+        for commutator, coeff in ith_order_commutators.items():
+            for j, merged in enumerate(_merge_commutators(commutator, terms, order, coeff)):
+                merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return merged_bch
 
 
 def _merge_commutators(commutator, terms, order, bch_coeff):
-    commutator_terms = [terms[term].items() for term in commutator]
+    merged = [defaultdict(complex) for _ in range(order)]
 
-    merged = defaultdict(complex)
-
-    if len(commutator_terms) > order:
-        return merged
-
-    for x in product(*commutator_terms):
-        if len(x) > 1 and x[-1][0] == x[-2][0]:
-            continue
-
+    for x in _commutator_terms(commutator, terms, order):
         new_commutator = x[0][0] if len(x) == 1 else tuple(_flatten_commutator(y[0]) for y in x)
 
-        if _commutator_order(new_commutator) > order:
-            continue
-        term_coeff = math.prod(y[1] for y in x)
+        commutator_order = _commutator_order(new_commutator)
+        term_coeff = math.prod(y[1] for y in x) * bch_coeff
 
-        merged[new_commutator] += bch_coeff * term_coeff
+        if np.isclose(term_coeff, 0):
+            continue
+
+        merged[commutator_order - 1][new_commutator] += term_coeff
 
     return merged
+
+
+def _commutator_terms(commutator, terms, order):
+    for i in range(order):
+        for partition in _partitions(len(commutator), i + 1):
+            kept_terms = [
+                terms[term][partition[j] - 1].items() for j, term in enumerate(commutator)
+            ]
+            yield from product(*kept_terms)
+
+
+def _partitions(m: int, n: int):
+    """number of ways to sum m positive integers to n"""
+
+    if m == 1:
+        yield (n,)
+    elif m == n:
+        yield (1,) * m
+    elif n < m:
+        yield from []
+    else:
+        for i in range(1, n - m + 2):
+            for partition in _partitions(m - 1, n - i):
+                yield (i,) + partition
 
 
 def _flatten_commutator(commutator):
