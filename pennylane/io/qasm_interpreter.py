@@ -3,6 +3,9 @@ from functools import partial
 from typing import Callable
 
 from openqasm3.visitor import QASMNode, QASMVisitor
+import re
+
+from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral
 
 import pennylane
 from pennylane import (
@@ -101,6 +104,9 @@ class QasmInterpreter(QASMVisitor):
             NameError: When a (so far) unsupported node type is encountered.
         """
         match node.__class__.__name__:
+            case 'list':
+                for sub_node in node:
+                    self.visit(sub_node, context)
             case "Identifier":
                 self.identifier(node, context)
             case "QubitDeclaration":
@@ -109,6 +115,14 @@ class QasmInterpreter(QASMVisitor):
                 self.classical_declaration(node, context)
             case "QuantumGate":
                 self.quantum_gate(node, context)
+            case "SubroutineDefinition":
+                self.subroutine(node, context)
+            case "QuantumReset":
+                self.quantum_reset(node, context)
+            case "QuantumMeasurementStatement":
+                self.quantum_measurement_statement(node, context)
+            case "ReturnStatement":
+                self.return_statement(node, context)
             # TODO: call appropriate handler methods here
             case _:
                 # TODO: turn into a NameError when we have supported all the node types we want
@@ -135,19 +149,116 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
-    @staticmethod
-    def construct_qnode(context: dict):
+    def return_statement(self, node: QASMNode, context: dict):
         """
-        Constructs the device and the QNode programmatically from the context, adds them to the final context.
+        Registers a return statement. Points to the var that needs to be set in an outer scope when this
+        subroutine is called.
+        """
+        context["return"] = node.expression.name
 
-        Args:
-            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
+    def quantum_measurement_statement(self, node: QASMNode, context: dict):
         """
-        if "device" not in context:
-            context["device"] = device("default.qubit", wires=len(context["wires"]))
-        context["qnode"] = QNode(
-            lambda: [gate() for gate in context["gates"]], device=context["device"]
+        Registers a quantum measurement.
+        """
+        if "gates" not in context:
+            context["gates"] = []
+        if isinstance(node.measure.qubit, Identifier):
+            measure = partial(pennylane.measure, node.measure.qubit.name)
+
+        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary / supported
+            measure = partial(pennylane.measure, node.measure.qubit.value)
+
+        elif isinstance(node.measure.qubit, list):
+            for qubit in node.measure.qubit:
+                if isinstance(qubit, Identifier):
+                    measure = partial(pennylane.measure, qubit.name)
+
+                elif isinstance(qubit, IntegerLiteral):
+                    measure = partial(pennylane.measure, qubit.value)
+
+        # handle data flow. Note: data flow dependent on quantum operations deferred? Promises?
+        def set_local_var():
+            res = measure()
+            context["vars"][node.target.name]["val"] = res
+
+        context["vars"][node.target.name]["val"] = set_local_var  # references to an unresolved value see a func
+        context["gates"].append(set_local_var)
+
+    def quantum_reset(self, node: QASMNode, context: dict):
+        """
+        Registers a reset of a quantum gate.
+        """
+        if "gates" not in context:
+            context["gates"] = []
+        if isinstance(node.qubits, Identifier):
+            context["gates"].append(
+                partial(pennylane.measure, node.qubits.name, reset=True)
+            )
+        elif isinstance(node.qubits, IntegerLiteral):  # TODO: are all these cases necessary / supported
+            context["gates"].append(
+                partial(pennylane.measure, node.qubits.value, reset=True)
+            )
+        elif isinstance(node.qubits, list):
+            for qubit in node.qubits:
+                if isinstance(qubit, Identifier):
+                    context["gates"].append(
+                        partial(pennylane.measure, qubit.name, reset=True)
+                    )
+                elif isinstance(qubit, IntegerLiteral):
+                    context["gates"].append(
+                        partial(pennylane.measure, qubit.value, reset=True)
+                    )
+
+    def subroutine(self, node: QASMNode, context: dict):
+        """
+        Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
+        its parameters.
+        """
+        if not "scopes" in context:
+            context["scopes"] = {
+                "subroutines": dict()
+            }
+        context["scopes"]["subroutines"][node.name.name] = {
+            "vars": context["vars"],  # outer scope variables are available to inner scopes... but not vice versa!
+            "wires": context["wires"],
+            "name": f'{context["name"]}_{node.name.name}'  # names prefixed with outer scope names for specificity
+        }
+
+        # register the params
+        for param in node.arguments:
+            if not isinstance(param, QuantumArgument):
+                context["scopes"]["subroutines"][node.name.name]["vars"][param.name.name] = {
+                    'ty': param.__class__.__name__,
+                    'val': None,
+                    'line': param.span.start_line
+                }
+            else:
+                # wire mapping is all messed up now, should be named wires
+                context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
+
+        # process the subroutine body
+        context["scopes"]["subroutines"][node.name.name] = self.visit(
+            node.body,
+            context["scopes"]["subroutines"][node.name.name]
         )
+
+    def _get_wires_helper(self, curr: dict, wires: list):
+        if "scopes" in curr:
+            contexts = curr["scopes"]
+            for context_type, typed_contexts in contexts.items():
+                for typed_context_name, typed_context in typed_contexts.items():
+                    wires += [f'{contexts["scopes"][context_type][typed_context_name]["name"]}_{w}'
+                              for w in contexts["scopes"][context_type][typed_context_name]["wires"]]
+                    wires += self._get_wires_helper(typed_context, wires)
+        return wires
+
+    def construct_qnode(self, context: dict):
+        if "device" not in context:
+            wires = [w for w in context["wires"]]
+            curr = context
+            wires = self._get_wires_helper(curr, wires)
+            context["device"] = device("default.qubit", wires=wires)
+        context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
 
     @staticmethod
     def identifier(node: QASMNode, context: dict):
@@ -190,15 +301,16 @@ class QasmInterpreter(QASMVisitor):
             context["vars"] = {}
         if node.init_expression is not None:
             context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": node.init_expression.value,
-                "line": node.init_expression.span.start_line,
+                'ty': node.type.__class__.__name__,
+                'val': node.init_expression.value,
+                'line': node.init_expression.span.start_line
             }
         else:
+            # the var is declared but uninitialized
             context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": None,
-                "line": node.span.start_line,
+                'ty': node.type.__class__.__name__,
+                'val': None,
+                'line': node.span.start_line
             }
 
     def quantum_gate(self, node: QASMNode, context: dict):
@@ -308,7 +420,7 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
             *args,
-            wires=[context["wires"].index(node.qubits[0].name)],
+            wires=pennylane.wires.Wires([node.qubits[0].name])
         )
 
     @staticmethod
@@ -328,11 +440,6 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[
-                context["wires"].index(
-                    node.qubits[q].name
-                    if isinstance(node.qubits[q].name, str)
-                    else node.qubits[q].name.name
-                )
-                for q in range(len(node.qubits))
-            ],
+                pennylane.wires.Wires([node.qubits[q].name]) for q in range(len(node.qubits))
+            ]
         )

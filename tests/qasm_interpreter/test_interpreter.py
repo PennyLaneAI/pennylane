@@ -18,14 +18,14 @@ class TestInterpreter:
         """Tests that visitor is called on each element of the AST."""
         ast = parse(qasm_program, permissive=True)
         spy = mocker.spy(QasmInterpreter, "visit")
-        QasmInterpreter().generic_visit(ast, context={"program_name": program_name})
+        QasmInterpreter().generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(open("tests/qasm_interpreter/gates.qasm", mode="r").read(), permissive=True)
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
+        ast = parse(open('gates.qasm', mode='r').read(), permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -56,4 +56,7 @@ class TestInterpreter:
 
         # parse the QASM program
         ast = parse(open('control_flow.qasm', mode='r').read(), permissive=True)
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "control-flow"})
+        context = QasmInterpreter().generic_visit(ast, context={"name": "control-flow"})
+
+        # TODO: compare to a QNode constructed in the typical way with a decorator
+
