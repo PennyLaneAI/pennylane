@@ -21,8 +21,7 @@ from typing import Literal
 
 import numpy as np
 
-from pennylane import math
-from pennylane import ops as qops
+from pennylane import math, ops
 from pennylane.devices.preprocess import decompose
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import DecompositionUndefinedError, Operator
@@ -435,8 +434,8 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     new_batch = []
     for gen in generators:
-        ctrl_gen = [qops.op_math.ctrl(gen, control=aux_wire)]
-        hadamard = [qops.H(wires=aux_wire)]
+        ctrl_gen = [ops.op_math.ctrl(gen, control=aux_wire)]
+        hadamard = [ops.H(wires=aux_wire)]
         operators = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
 
         new_tape = QuantumScript(operators, measurements, shots=tape.shots)
@@ -459,8 +458,8 @@ def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, li
     new_batch = []
     new_coeffs = []
     for idx, gen in enumerate(generators):
-        pos_rot = [qops.functions.evolve(gen, np.pi / 4)]
-        neg_rot = [qops.functions.evolve(gen, -np.pi / 4)]
+        pos_rot = [ops.functions.evolve(gen, np.pi / 4)]
+        neg_rot = [ops.functions.evolve(gen, -np.pi / 4)]
         pos_ops = ops_to_trainable_op + pos_rot + ops_after_trainable_op
         neg_ops = ops_to_trainable_op + neg_rot + ops_after_trainable_op
 
@@ -479,11 +478,11 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
 
     ops_before_trainable_op = tape.operations[:]
     ops_after_trainable_op = [
-        qops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
+        ops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
     ]
 
     # Create measurement with gate generators
-    mp = expval(trainable_op.generator() @ qops.Y(aux_wire))
+    mp = expval(trainable_op.generator() @ ops.Y(aux_wire))
     measurements = [mp]
 
     # Get the observable from tape measurement
@@ -493,8 +492,8 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
 
     new_batch = []
     for obs in observables:
-        ctrl_obs = [qops.op_math.ctrl(obs, control=aux_wire)]
-        hadamard = [qops.H(wires=aux_wire)]
+        ctrl_obs = [ops.op_math.ctrl(obs, control=aux_wire)]
+        hadamard = [ops.H(wires=aux_wire)]
         operators = (
             ops_before_trainable_op + hadamard + ctrl_obs + hadamard + ops_after_trainable_op
         )
@@ -510,7 +509,7 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
 
     ops_before_trainable_op = tape.operations[:]
     ops_after_trainable_op = [
-        qops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
+        ops.op_math.adjoint(op) for op in reversed(tape.operations[idx + 1 :])
     ]
 
     # Create measurement with gate generators
@@ -523,8 +522,8 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
     new_batch = []
     new_coeffs = []
     for idx, obs in enumerate(observables):
-        pos_rot = [qops.functions.evolve(obs, np.pi / 4)]
-        neg_rot = [qops.functions.evolve(obs, -np.pi / 4)]
+        pos_rot = [ops.functions.evolve(obs, np.pi / 4)]
+        neg_rot = [ops.functions.evolve(obs, -np.pi / 4)]
         pos_ops = ops_before_trainable_op + pos_rot + ops_after_trainable_op
         neg_ops = ops_before_trainable_op + neg_rot + ops_after_trainable_op
 
@@ -538,8 +537,8 @@ def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple
 
 
 def _new_measurement(mp, aux_wire, all_wires: Wires):
-    obs = mp.obs or qops.op_math.prod(*(qops.Z(w) for w in mp.wires or all_wires))
-    new_obs = qops.functions.simplify(obs @ qops.Y(aux_wire))
+    obs = mp.obs or ops.op_math.prod(*(ops.Z(w) for w in mp.wires or all_wires))
+    new_obs = ops.functions.simplify(obs @ ops.Y(aux_wire))
     return type(mp)(obs=new_obs)
 
 
@@ -556,7 +555,7 @@ def _get_pauli_terms(op):
         The Pauli terms (generators) and their coefficients.
     """
     if op.pauli_rep is None:
-        mat = qops.functions.matrix(op, wire_order=op.wires)
+        mat = ops.functions.matrix(op, wire_order=op.wires)
         pauli_rep = pauli_decompose(mat, wire_order=op.wires, pauli=True)
     else:
         pauli_rep = op.pauli_rep
@@ -569,7 +568,7 @@ def _get_pauli_terms(op):
     # qml.PauliZ has no defined terms() behavior
     return (
         pauli_rep.operation().terms()
-        if isinstance(pauli_rep.operation(), qops.op_math.Sum)
+        if isinstance(pauli_rep.operation(), ops.op_math.Sum)
         else (1 * pauli_rep.operation()).terms()
     )
 
