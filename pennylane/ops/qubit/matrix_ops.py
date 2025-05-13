@@ -27,6 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.decomposition.decomposition_rule import add_decomps
 from pennylane.math import (
     cast,
     conj,
@@ -38,7 +39,15 @@ from pennylane.math import (
     transpose,
     zeros,
 )
-from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    rot_decomp_rule,
+    two_qubit_decomp_rule,
+    xyx_decomp_rule,
+    xzx_decomp_rule,
+    zxz_decomp_rule,
+    zyz_decomp_rule,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -92,7 +101,10 @@ class QubitUnitary(Operation):
 
     .. warning::
 
-        The sparse matrix representation of QubitUnitary is still under development. Currently we only support a limited set of interfaces that preserve the sparsity of the matrix, including :func:`~.adjoint`, :func:`~.pow`, :meth:`~.QubitUnitary.compute_sparse_matrix` and :meth:`~.QubitUnitary.compute_decomposition`. Differentiability is not supported for sparse matrices.
+        The sparse matrix representation of QubitUnitary is still under development. Currently,
+        we only support a limited set of interfaces that preserve the sparsity of the matrix,
+        including :func:`~.adjoint`, :func:`~.pow`, and :meth:`~.QubitUnitary.compute_sparse_matrix`.
+        Differentiability is not supported for sparse matrices.
 
     **Details:**
 
@@ -122,9 +134,6 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -342,6 +351,17 @@ class QubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
+add_decomps(
+    QubitUnitary,
+    zyz_decomp_rule,
+    zxz_decomp_rule,
+    xzx_decomp_rule,
+    xyx_decomp_rule,
+    rot_decomp_rule,
+    two_qubit_decomp_rule,
+)
+
+
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
@@ -357,9 +377,6 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -605,9 +622,6 @@ class BlockEncode(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
@@ -648,6 +662,20 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
+        self._issparse = sp.sparse.issparse(A)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return not self._issparse
+
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
@@ -681,45 +709,22 @@ class BlockEncode(Operation):
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
         A = params[0]
-        n, m, k = hyperparams["subspace"]
-        shape_a = qml.math.shape(A)
-
-        sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
-
-        def _stack(lst, h=False, like=None):
-            if like == "tensorflow":
-                axis = 1 if h else 0
-                return qml.math.concat(lst, like=like, axis=axis)
-            return qml.math.hstack(lst) if h else qml.math.vstack(lst)
-
-        interface = qml.math.get_interface(A)
-
-        if qml.math.sum(shape_a) <= 2:
-            col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
-            col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
-        else:
-            d1, d2 = shape_a
-            col1 = _stack(
-                [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
-                like=interface,
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
+            raise qml.operation.MatrixUndefinedError(
+                "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
             )
-            col2 = _stack(
-                [
-                    sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
-                    -transpose(conj(A)),
-                ],
-                like=interface,
-            )
-            u = _stack([col1, col2], h=True, like=interface)
+        return _process_blockencode(A, subspace)
 
-        if n + m < k:
-            r = k - (n + m)
-            col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
-            col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
-
-        return u
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        A = params[0]
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
+            return _process_blockencode(A, subspace)
+        raise qml.operation.SparseMatrixUndefinedError(
+            "The operator is initialized with a dense matrix, use the matrix method instead."
+        )
 
     def adjoint(self) -> "BlockEncode":
         A = self.parameters[0]
@@ -732,3 +737,48 @@ class BlockEncode(Operation):
         cache: Optional[dict] = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
+
+
+def _process_blockencode(A, subspace):
+    """
+    Process the BlockEncode operation.
+    """
+    n, m, k = subspace
+    shape_a = qml.math.shape(A)
+
+    sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+
+    def _stack(lst, h=False, like=None):
+        if like == "tensorflow":
+            axis = 1 if h else 0
+            return qml.math.concat(lst, like=like, axis=axis)
+        return qml.math.hstack(lst) if h else qml.math.vstack(lst)
+
+    interface = qml.math.get_interface(A)
+
+    if qml.math.sum(shape_a) <= 2:
+        col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
+        col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+    else:
+        d1, d2 = shape_a
+        col1 = _stack(
+            [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+            like=interface,
+        )
+        col2 = _stack(
+            [
+                sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                -transpose(conj(A)),
+            ],
+            like=interface,
+        )
+        u = _stack([col1, col2], h=True, like=interface)
+
+    if n + m < k:
+        r = k - (n + m)
+        col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
+        col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+
+    return u

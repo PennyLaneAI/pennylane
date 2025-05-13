@@ -22,7 +22,7 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
-from pennylane.math import get_canonical_interface_name
+from pennylane.math import get_canonical_interface_name, requires_grad
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
@@ -101,7 +101,7 @@ def legacy_device_batch_transform(tape, device):
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    if isinstance(op, qml.QubitUnitary) and not qml.operation.is_trainable(op):
+    if isinstance(op, qml.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
@@ -168,7 +168,7 @@ class LegacyDeviceFacade(Device):
 
     @property
     def tracker(self):
-        """A :class:`~.Tracker` that can store information about device executions, shots, batches,
+        """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
         intermediate results, or any additional device dependent information.
         """
         return self._device.tracker
@@ -354,7 +354,11 @@ class LegacyDeviceFacade(Device):
         _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
         try:
             program((tape,))
-        except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+        except (
+            qml.operation.DecompositionUndefinedError,
+            qml.DeviceError,
+            AttributeError,
+        ):
             return False
         return True
 

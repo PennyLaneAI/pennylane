@@ -25,8 +25,9 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
+from pennylane._deprecated_observable import Observable
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -50,6 +51,8 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -57,8 +60,6 @@ class Hadamard(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     resource_keys = set()
-
-    _queue_category = "_ops"
 
     def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
@@ -266,6 +267,8 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -277,8 +280,6 @@ class PauliX(Observable, Operation):
     resource_keys = set()
 
     batch_size = None
-
-    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -480,6 +481,8 @@ class PauliY(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
+    is_hermitian = True
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -693,6 +696,7 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    is_hermitian = True
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -704,8 +708,6 @@ class PauliZ(Observable, Operation):
     batch_size = None
 
     resource_keys = set()
-
-    _queue_category = "_ops"
 
     @property
     def pauli_rep(self):
@@ -1790,10 +1792,12 @@ class ISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod2 = z % 2
-        if abs(z_mod2 - 0.5) < 1e-6:
+        z_mod4 = z % 4
+        if abs(z_mod4 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
-        return super().pow(z_mod2)
+        if abs(z_mod4 - 2) < 1e-6:
+            return [qml.Z(wires=self.wires[0]), qml.Z(wires=self.wires[1])]
+        return super().pow(z_mod4)
 
 
 def _iswap_decomp_resources():
@@ -1964,8 +1968,12 @@ class SISWAP(Operation):
         ]
 
     def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
-        z_mod4 = z % 4
-        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
+        z_mod8 = z % 8
+        if abs(z_mod8 - 2) < 1e-6:
+            return [ISWAP(wires=self.wires)]
+        if abs(z_mod8 - 4) < 1e-6:
+            return [qml.Z(wires=self.wires[0]), qml.Z(wires=self.wires[1])]
+        return super().pow(z_mod8)
 
 
 def _siswap_decomp_resources():

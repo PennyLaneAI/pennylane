@@ -25,6 +25,7 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
+from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -115,33 +116,35 @@ def _to_qfunc_output_type(
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
-        if kwarg == "expansion_strategy":
-            raise ValueError(
-                "'expansion_strategy' is no longer a valid keyword argument to QNode."
-                " To inspect the circuit at a given stage in the transform program, please"
-                " use qml.workflow.construct_batch instead."
-            )
-
-        if kwarg == "max_expansion":
-            raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
-        if kwarg in ["gradient_fn", "grad_method"]:
-            warnings.warn(
-                "It appears you may be trying to set the method of differentiation via the "
-                f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                "backpropogation. Use diff_method instead."
-            )
-        elif kwarg == "shots":
-            raise ValueError(
-                "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
-                "argument 'shots' or if you want to set the number of shots with which the "
-                "QNode is executed, pass it to the QNode call, not its definition."
-            )
-        elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-            warnings.warn(
-                f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
-                "the gradient_kwargs argument as a dictionary."
-            )
+        match kwarg:
+            case "expansion_strategy":
+                raise ValueError(
+                    "'expansion_strategy' is no longer a valid keyword argument to QNode."
+                    " To inspect the circuit at a given stage in the transform program, please"
+                    " use qml.workflow.construct_batch instead."
+                )
+            case "max_expansion":
+                raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
+            case "gradient_fn" | "grad_method":
+                warnings.warn(
+                    "It appears you may be trying to set the method of differentiation via the "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                    "backpropogation. Use diff_method instead."
+                )
+            case "shots":
+                raise ValueError(
+                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                    "argument 'shots' or if you want to set the number of shots with which the "
+                    "QNode is executed, pass it to the QNode call, not its definition."
+                )
+            case _:
+                if kwarg in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                    continue
+                warnings.warn(
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                    "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                    "the gradient_kwargs argument as a dictionary."
+                )
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
@@ -326,6 +329,11 @@ class QNode:
         autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
             convert Python control flow to native PennyLane control flow. For more information, refer to
             :doc:`Autograph </development/autograph>`. Defaults to ``True``.
+        executor_backend (Union[RemoteExec, str]): The backend executor for concurrent function execution. This argument
+            allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
+            environment. All supported options can be queried using
+            :func:`~qml.concurrency.executors.get_supported_backends.
+            The default value is :class:`qml.concurrency.executors.native.MP_PoolExec`.
 
     **Example**
 
@@ -545,6 +553,7 @@ class QNode:
         gradient_kwargs: Optional[dict] = None,
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
+        executor_backend: Optional[Union[RemoteExec, str]] = None,
         **kwargs,
     ):
         self._init_args = locals()
@@ -606,7 +615,6 @@ class QNode:
         self._interface = get_canonical_interface_name(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
-
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -627,6 +635,7 @@ class QNode:
             "device_vjp": device_vjp,
             "postselect_mode": postselect_mode,
             "mcm_method": mcm_method,
+            "executor_backend": executor_backend,
         }
 
         # internal data attributes
@@ -719,7 +728,7 @@ class QNode:
                 return qml.expval(qml.PauliZ(1))
 
         If we wish to try out a new configuration without having to repeat the
-        boiler plate above, we can use the ``QNode.update`` method. For example,
+        boilerplate above, we can use the ``QNode.update`` method. For example,
         we can update the differentiation method and execution arguments,
 
         >>> new_circuit = circuit.update(diff_method="adjoint", device_vjp=True)
@@ -766,6 +775,13 @@ class QNode:
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
+        .. warning::
+
+            This function is deprecated and will be removed in v0.43. Instead, use
+
+            :func:`~.workflow.get_best_diff_method` to determine the best differentiation method.
+
+
         Args:
             device (.device.Device): PennyLane device
             interface (str): name of the requested interface
@@ -779,6 +795,11 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
+        warnings.warn(
+            "The `qml.QNode.get_gradient_fn` method is deprecated and will be removed in a future release."
+            "Instead, use `qml.workflow.get_best_diff_method` to determine the best differentiation method.",
+            qml.PennyLaneDeprecationWarning,
+        )
         if diff_method is None:
             return None, {}, device
 

@@ -17,7 +17,7 @@ This submodule contains the qutrit quantum observables.
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane.operation import Observable
+from pennylane._deprecated_observable import Observable
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
@@ -197,9 +197,14 @@ class GellMann(Observable):
 
     """
 
+    is_hermitian = True
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
 
     def __init__(self, wires, index=1, id=None):
         if not isinstance(index, int) or index < 1 or index > 8:

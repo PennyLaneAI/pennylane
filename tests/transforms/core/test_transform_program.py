@@ -833,7 +833,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)(1.5, 5)
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
@@ -861,7 +861,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)()
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         assert len(transformed_jaxpr.eqns) == 2
@@ -893,7 +893,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)()
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
 
         # pylint: disable=protected-access
         isingxx_decomp = [qml.CNOT(wires=[0, 1]), qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])]

@@ -514,6 +514,23 @@ class TestQubitUnitary:
             U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
         )
 
+    def test_operations_correctly_queued(self):
+        """Tests that the operators in the decomposition are queued correctly"""
+
+        dev = qml.device("default.qubit")
+
+        matrix = qml.matrix(qml.QFT(wires=[0, 1]))
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+            return qml.state()
+
+        tape = qml.workflow.construct_tape(circuit)()
+        for op1, op2 in zip(tape.operations, ops_decompostion):
+            qml.assert_equal(op1, op2)
+
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
         U = qml.IsingYY.compute_matrix(np.array([1.2, 2.3, 3.4]))
@@ -989,6 +1006,48 @@ class TestBlockEncode:
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
+        ("input_matrix", "issparse"),
+        [
+            (np.array([[1, 0], [0, 1]]), False),
+            (X, False),
+            (csr_matrix([[1, 0], [0, 1]]), True),
+        ],
+    )
+    def test_property(self, input_matrix, issparse):
+        """Test that BlockEncode has the correct properties."""
+        op = qml.BlockEncode(input_matrix, wires=range(2))
+        assert op.has_matrix != issparse
+        assert op.has_sparse_matrix == issparse
+        if issparse:
+            # Test if there's correct error out
+            with pytest.raises(qml.operation.MatrixUndefinedError):
+                op.matrix()
+        else:
+            with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+                op.sparse_matrix()
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "input_matrix",
+        [
+            np.array([[1, 0], [0, 1]]),
+            X,
+            csr_matrix([[1, 0], [0, 1]]),
+        ],
+    )
+    def test_applicable(self, input_matrix):
+        """Integration Test that BlockEncode can be applied onto a state."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BlockEncode(input_matrix, wires=range(2))
+            return qml.state()
+
+        state = circuit()
+        assert state.shape == (2**2,)
+
+    @pytest.mark.parametrize(
         ("input_matrix", "wires", "expected_hyperparameters"),
         [
             (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
@@ -1373,7 +1432,7 @@ class TestBlockEncode:
         op = qml.BlockEncode(sparse_matrix, wires=range(num_wires))
 
         # Test the operator is unitary
-        mat = qml.matrix(op)
+        mat = op.sparse_matrix()
         assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qml.matrix(qml.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qml.math.allclose(mat, mat_dense)

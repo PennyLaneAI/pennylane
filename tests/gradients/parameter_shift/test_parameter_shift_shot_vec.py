@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires, Observable
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -1936,10 +1935,8 @@ class TestParameterShiftRule:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -2036,11 +2033,10 @@ class TestHamiltonianExpvalGradients:
         with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
-    def test_no_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_no_trainable_coeffs(self, broadcast, tol):
         """Test no trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         weights = np.array([0.4, 0.5])
 
@@ -2068,7 +2064,6 @@ class TestHamiltonianExpvalGradients:
         # two (broadcasted if broadcast=True) shifts per rotation gate
         assert len(tapes) == (2 if broadcast else 2 * 2)
         assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
-        spy.assert_not_called()
 
         all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)
