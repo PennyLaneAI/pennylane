@@ -5,7 +5,8 @@ from typing import Callable
 from openqasm3.visitor import QASMNode, QASMVisitor
 import re
 
-from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition
+from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
+    ArrayLiteral, UnaryExpression
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 import pennylane
@@ -160,6 +161,7 @@ class QasmInterpreter(QASMVisitor):
         """
         Evaluates an expression.
         """
+        res = None
         if isinstance(node, BinaryExpression):
             if re.search('Literal', node.lhs.__class__.__name__) is not None:
                 lhs = node.lhs.value
@@ -174,9 +176,11 @@ class QasmInterpreter(QASMVisitor):
             else:
                 rhs = context["vars"][node.rhs.name]["val"]
             res = eval(f'{lhs}{node.op.name}{rhs}')
+        elif isinstance(node, UnaryExpression):
+            res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
         elif re.search('Literal', node.__class__.__name__):
             res = node.value
-        # TODO: include all other cases here
+        # TODO: include all other cases here, such as references to vars in the current scope (Identifier)
         return res
 
     def loop_while(self, node: QASMNode, context: dict):
@@ -204,24 +208,49 @@ class QasmInterpreter(QASMVisitor):
             context["gates"] = []
 
         loop_params = node.set_declaration
+
+        # de-referencing
+        if isinstance(loop_params, Identifier):
+            # TODO: could be a ref to a range? support range, etc. vals in context?
+            loop_params = context["vars"][loop_params.name]["val"]
+
         if isinstance(loop_params, RangeDefinition):
             start = self.eval_expr(loop_params.start, context)
             stop = self.eval_expr(loop_params.end, context)
             step = self.eval_expr(loop_params.step, context)
-        # elif:  #TODO: other cases here
+            if step is None:
+                step = 1
 
-        # TODO: convert all forms of QASM loops to start, stop, step
+            @for_loop(start, stop, step)
+            def loop(i, context):
+                self.visit(node.block, context)  # process loop body... doesn't get its own namespace
+                for gate in context["gates"]:
+                    gate()  # updates vars in context
+                # TODO: structure in the loop body?
+                return context
 
-        @for_loop(start, stop, step)
-        def loop(i, context):
-            self.visit(node.block, context)  # process loop body
-            for gate in context["gates"]:
-                gate()  # updates vars in context
-            # TODO: structure in the loop body?
-            return context
+            context["gates"].append(loop)
 
-        context["gates"].append(loop)
+        # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
+        # accepts (start, stop, step) and nto a list of values.
+        elif isinstance(loop_params, ArrayLiteral):
+            def unrolled():
+                for i in [self.eval_expr(literal, context) for literal in loop_params.values]:
+                    context["vars"][node.identifier.name] = i
+                    self.visit(node.block, context)  # visit the nodes once per loop iteration
+                    for gate in context["gates"]:
+                        gate()  # updates vars in context if any measurements etc. occur
 
+            context["gates"].append(unrolled)
+        elif isinstance(loop_params, list):  # it is an array literal that has been evaluatd before TODO: unify these reprs?
+            def unrolled():
+                for i in [val for val in loop_params]:
+                    context["vars"][node.identifier.name] = i
+                    self.visit(node.block, context)  # visit the nodes once per loop iteration
+                    for gate in context["gates"]:
+                        gate()  # updates vars in context if any measurements etc. occur
+
+            context["gates"].append(unrolled)
 
     def return_statement(self, node: QASMNode, context: dict):
         """
@@ -361,8 +390,7 @@ class QasmInterpreter(QASMVisitor):
             context["wires"] = []
         context["wires"].append(node.qubit.name)
 
-    @staticmethod
-    def classical_declaration(node: QASMNode, context: dict):
+    def classical_declaration(self, node: QASMNode, context: dict):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -374,11 +402,18 @@ class QasmInterpreter(QASMVisitor):
         if "vars" not in context:
             context["vars"] = {}
         if node.init_expression is not None:
-            context["vars"][node.identifier.name] = {
-                'ty': node.type.__class__.__name__,
-                'val': node.init_expression.value,
-                'line': node.init_expression.span.start_line
-            }
+            if not isinstance(node.init_expression, ArrayLiteral):
+                context["vars"][node.identifier.name] = {
+                    'ty': node.type.__class__.__name__,
+                    'val': self.eval_expr(node.init_expression, context),
+                    'line': node.init_expression.span.start_line
+                }
+            else:
+                context["vars"][node.identifier.name] = {
+                    'ty': node.type.__class__.__name__,
+                    'val': [self.eval_expr(literal, context) for literal in node.init_expression.values],
+                    'line': node.init_expression.span.start_line
+                }
         else:
             # the var is declared but uninitialized
             context["vars"][node.identifier.name] = {
