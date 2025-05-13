@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches
 from functools import lru_cache, partial
 
+from pennylane.math import is_abstract
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -120,13 +121,9 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 return super().interpret_operation(op)
 
             prev_op = self.previous_ops.get(op.wires[0], None)
-            if prev_op is None:
-                for w in op.wires:
-                    self.previous_ops[w] = op
-                return []
-
             cancel = False
-            if _are_inverses(op, prev_op):
+
+            if prev_op is not None and _are_inverses(op, prev_op):
                 # Same wires, cancel
                 if op.wires == prev_op.wires:
                     cancel = True
@@ -146,6 +143,12 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
             if cancel:
                 for w in op.wires:
                     self.previous_ops.pop(w)
+                return []
+
+            if any(is_abstract(w) for w in op.wires):
+                self.interpret_all_previous_ops()
+                for w in op.wires:
+                    self.previous_ops[w] = op
                 return []
 
             previous_ops_on_wires = list(
