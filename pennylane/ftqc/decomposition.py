@@ -86,14 +86,20 @@ def convert_to_mbqc_formalism(tape):
                 GlobalPhase(*op.data)
             elif isinstance(op, CNOT):  # two wires
                 ctrl, tgt = op.wires[0], op.wires[1]
-                (wire_map[ctrl], wire_map[tgt]) = queue_cnot(q_mgr, wire_map[ctrl], wire_map[tgt])
+                wire_map[ctrl], wire_map[tgt], measurements = queue_cnot(
+                    q_mgr, wire_map[ctrl], wire_map[tgt]
+                )
+                cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                if isinstance(op, (X, Y, Z, Identity)):
+                if isinstance(op, tuple([X, Y, Z, Identity])):
                     wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
                     w = op.wires[0]
-                    wire_map[w] = queue_single_qubit_gate(q_mgr, op, in_wire=wire_map[w])
+                    wire_map[w], measurements = queue_single_qubit_gate(
+                        q_mgr, op, in_wire=wire_map[w]
+                    )
+                    queue_corrections(op, measurements)(wire_map[w])
 
     temp_tape = QuantumScript.from_queue(q)
 
@@ -117,11 +123,10 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
     CZ([wires[0], wires[1]])
 
     measurements = queue_measurements(op, wires)
-    queue_corrections(op, measurements)(wires[-1])
 
     # release input qubit and intermediate graph qubits
     q_mgr.release_qubits(wires[0:-1])
-    return wires[-1]
+    return wires[-1], measurements
 
 
 @singledispatch
@@ -266,14 +271,13 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     CZ([target_idx, graph_wires[7]])
 
     measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires))
-    cnot_corrections(measurements)(output_ctrl_idx, output_target_idx)
 
     q_mgr.release_qubit(ctrl_idx)
     q_mgr.release_qubit(target_idx)
 
     # We can now free all but the last qubit, which has become the new input_idx
     q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
-    return output_ctrl_idx, output_target_idx
+    return output_ctrl_idx, output_target_idx, measurements
 
 
 def cnot_measurements(wires):

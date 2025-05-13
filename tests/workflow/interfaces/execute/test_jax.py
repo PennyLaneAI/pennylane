@@ -391,7 +391,7 @@ class TestJaxExecuteIntegration:
 
         def cost(a, b):
             new_tape = tape.bind_new_parameters([a, b], [0, 1])
-            return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
+            return jnp.hstack(jnp.array(execute([new_tape], device, **execute_kwargs)[0]))
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
         jac = jac_fn(a, b)
@@ -535,7 +535,7 @@ class TestJaxExecuteIntegration:
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            return jnp.hstack(jnp.array(execute([tape], device, **execute_kwargs)[0]))
 
         x = jnp.array(0.543)
         y = jnp.array(-0.654)

@@ -14,7 +14,6 @@
 """
 This submodule defines the abstract classes and primitives for capturing operators.
 """
-
 from functools import lru_cache
 from typing import Optional, Type
 
@@ -23,6 +22,7 @@ import pennylane as qml
 has_jax = True
 try:
     import jax
+
 except ImportError:
     has_jax = False
 
@@ -77,14 +77,12 @@ def _get_abstract_operator() -> type:
         def _pow(a, b):
             return qml.pow(a, b)
 
-    jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
-
     return AbstractOperator
 
 
 def create_operator_primitive(
     operator_type: Type["qml.operation.Operator"],
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Called when defining any :class:`~.Operator` subclass, and is used to set the
@@ -94,16 +92,16 @@ def create_operator_primitive(
         operator_type (type): a subclass of qml.operation.Operator
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
         ``None`` is returned if jax is not available.
 
     """
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(operator_type.__name__)
+    primitive = QmlPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
 
     @primitive.def_impl

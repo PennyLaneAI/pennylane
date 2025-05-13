@@ -28,7 +28,7 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = math.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
