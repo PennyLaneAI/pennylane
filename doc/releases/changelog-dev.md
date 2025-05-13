@@ -310,6 +310,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
+  circuit drawings now render in a way that's easier to read.
+  [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
+
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
@@ -397,6 +401,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
