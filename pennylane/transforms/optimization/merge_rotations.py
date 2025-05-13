@@ -102,13 +102,19 @@ def _get_plxpr_merge_rotations():
 
             previous_op = self.previous_ops.get(op.wires[0])
             if previous_op is None:
+                if any(qml.math.is_abstract(w) for w in op.wires):
+                    self._interpret_remaining_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return
 
             # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
-            can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
+            can_merge = (
+                previous_op is not None
+                and op.wires == previous_op.wires
+                and type(op) == type(previous_op)
+            )
             if not can_merge:
                 self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
@@ -136,6 +142,12 @@ def _get_plxpr_merge_rotations():
                 or qml.math.requires_grad(cumulative_angles)
                 or not angles_cancel
             )
+
+            if any(qml.math.is_abstract(w) for w in op.wires):
+                for w in op.wires:
+                    del self.previous_ops[w]
+                self._interpret_remaining_ops()
+
             if keep_merged_op:
                 # pylint: disable = protected-access
                 new_op = op._primitive.impl(*cumulative_angles, wires=op.wires)
