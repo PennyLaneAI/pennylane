@@ -193,7 +193,9 @@ def __getattr__(name):
         "ExperimentalWarning",
     }:
         warnings.warn(
-            f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
+            f"pennylane.{name} is no longer accessible at top-level \
+                and must be imported as pennylane.exceptions.{name}. \
+                    Support for top-level access will be removed in v0.42.",
             pennylane.exceptions.PennyLaneDeprecationWarning,
         )
         return getattr(pennylane.exceptions, name)
