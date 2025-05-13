@@ -129,9 +129,9 @@ class QNSPSAOptimizer:
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
+        *,
         stepsize=1e-3,
         regularization=1e-3,
         finite_diff_step=1e-2,
