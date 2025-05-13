@@ -110,6 +110,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
 
             prev_op = self.previous_ops.get(op_wire)
             if prev_op is None:
+                if any(qml.math.is_abstract(w) for w in op.wires):
+                    self.interpret_all_previous_ops()
                 self.previous_ops[op_wire] = op
                 return []
 
