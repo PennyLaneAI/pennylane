@@ -159,12 +159,13 @@ class QasmInterpreter(QASMVisitor):
         def call():
             res = None
             for callable in call_stack[::-1]:
-                if ('partial' == call_stack[0].__class__.__name__ and
-                        'control' in call_stack[0].keywords):
+                if ('partial' == call_stack[0].__class__.__name__ and 'control' in call_stack[0].keywords):
                     if 'control' in callable.keywords:
                         res.keywords["wires"] = [res.keywords["wires"][-1]]
+                    # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
                     res = callable(res.func)(**res.keywords) if res is not None else callable
                 else:
+                    # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
                     res = callable(res) if res is not None else callable()
 
         return call
