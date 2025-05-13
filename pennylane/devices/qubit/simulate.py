@@ -322,6 +322,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    circuit = circuit.copy()
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
