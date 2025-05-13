@@ -187,8 +187,7 @@ def _transform_observable(obs, Z, device_wires):
     return PolyXP(A, wires=device_wires)
 
 
-# pylint: disable=too-many-positional-arguments
-def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None, f0=None):
+def var_param_shift(tape, dev_wires, *, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
     consisting of a mixture of expectation values and variances of observables.
 
@@ -527,10 +526,10 @@ def _expand_transform_param_shift_cv(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable=too-many-positional-arguments
 def param_shift_cv(
     tape: QuantumScript,
     dev,
+    *,
     argnum=None,
     shifts=None,
     gradient_recipes=None,
@@ -783,7 +782,16 @@ def param_shift_cv(
     gradient_recipes = gradient_recipes or [None] * len(argnum)
 
     if var_present:
-        _update(var_param_shift(tape, dev.wires, argnum, shifts, gradient_recipes, f0))
+        _update(
+            var_param_shift(
+                tape,
+                dev.wires,
+                argnum=argnum,
+                shifts=shifts,
+                gradient_recipes=gradient_recipes,
+                f0=f0,
+            )
+        )
 
     else:
         # Only expectation values were specified
