@@ -131,8 +131,8 @@ class QNSPSAOptimizer:
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        *,
         stepsize=1e-3,
+        *,
         regularization=1e-3,
         finite_diff_step=1e-2,
         resamplings=1,
