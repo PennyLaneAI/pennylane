@@ -305,7 +305,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 <h3>Documentation 📝</h3>
 
 * In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
-  the circuit drawing rendering and the unitary display have been fixed.
+  circuit drawings now render in a way that's easier to read.
   [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
