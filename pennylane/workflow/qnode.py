@@ -794,7 +794,7 @@ class QNode:
         warnings.warn(
             "The `qml.QNode.get_gradient_fn` method is deprecated and will be removed in a future release."
             "Instead, use `qml.workflow.get_best_diff_method` to determine the best differentiation method.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         if diff_method is None:
             return None, {}, device

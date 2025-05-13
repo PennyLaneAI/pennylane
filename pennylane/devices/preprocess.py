@@ -537,12 +537,10 @@ def _validate_snapshot_shots(tape, sample_measurements, analytic_measurements, n
             m = op.hyperparameters["measurement"]
             if shots:
                 if not sample_measurements(m):
-                    raise qml.DeviceError(
-                        f"Measurement {m} not accepted with finite shots on {name}"
-                    )
+                    raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
             else:
                 if not analytic_measurements(m):
-                    raise qml.DeviceError(
+                    raise DeviceError(
                         f"Measurement {m} not accepted for analytic simulation on {name}."
                     )
 

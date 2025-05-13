@@ -1648,7 +1648,7 @@ class TestGetGradientFn:
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
@@ -1661,7 +1661,7 @@ class TestGetGradientFn:
         dev = qml.device("default.gaussian", wires=1)
         tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             res = qml.QNode.get_gradient_fn(
@@ -1673,7 +1673,7 @@ class TestGetGradientFn:
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
         dev = qml.devices.DefaultQubit()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
@@ -1688,7 +1688,7 @@ class TestGetGradientFn:
             match=r"Device CustomDevice does not support adjoint",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
@@ -1700,7 +1700,7 @@ class TestGetGradientFn:
             match=r"Device CustomDevice does not support backprop",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, "autograd", "backprop")
@@ -1720,7 +1720,7 @@ class TestGetGradientFn:
 
         dev = BackpropDevice()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1745,7 +1745,7 @@ class TestGetGradientFn:
 
         dev = DerivativeDevice()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
@@ -1756,7 +1756,7 @@ class TestGetGradientFn:
     def test_diff_method_is_none(self):
         """Test get_gradient_fn behaves correctly."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1769,7 +1769,7 @@ class TestGetGradientFn:
     def test_transform_dispatcher_as_diff_method(self):
         """Test when diff_method is of type TransformDispatcher"""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1786,7 +1786,7 @@ class TestGetGradientFn:
             match="Differentiation method invalid-method not recognized",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
@@ -1801,7 +1801,7 @@ class TestGetGradientFn:
             "hadamard": qml.gradients.hadamard_grad,
         }
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1815,7 +1815,7 @@ class TestGetGradientFn:
         """Test that 'parameter-shift-cv' is used when CV operations are present."""
         tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(

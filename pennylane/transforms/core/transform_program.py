@@ -538,7 +538,7 @@ class TransformProgram:
             return None
 
         if "argnum" in self[index].kwargs:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
             )
 
@@ -546,7 +546,7 @@ class TransformProgram:
         argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
 
         if argnums is None and math.get_interface(args[0]) != "jax":
-            raise qml.QuantumFunctionError("No trainable parameters.")
+            raise QuantumFunctionError("No trainable parameters.")
 
         argnums = [0] if argnums is None else argnums
         # pylint: disable=protected-access

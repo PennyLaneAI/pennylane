@@ -473,7 +473,7 @@ class TestMeasureFunctions:
         """Test that a QuanutmFunctionError is raised if too many wires are passed when using capture"""
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             func([0, 1])
