@@ -17,7 +17,7 @@ This module contains tests for classes needed to track auxilliary qubits.
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import QubitManager, GrabWires, FreeWires
+from pennylane.labs.resource_estimation import FreeWires, GrabWires, QubitManager
 
 
 # pylint: disable= no-self-use
