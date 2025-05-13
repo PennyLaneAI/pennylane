@@ -55,5 +55,5 @@ class TestInterpreter:
     def test_control_flow(self):
 
         # parse the QASM program
-        ast = parse(open('rus.qasm', mode='r').read(), permissive=True)
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "repeat-until-success"})
+        ast = parse(open('control_flow.qasm', mode='r').read(), permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"program_name": "control-flow"})
