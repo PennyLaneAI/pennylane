@@ -1330,6 +1330,9 @@ class SX(Operation):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
+    def _controlled(self, wire: WiresLike) -> "qml.CSX":
+        return qml.CSX(wires=wire + self.wires)
+
 
 def _sx_to_rz_ry_rz_ps_resources():
     return {qml.PhaseShift: 1, qml.RZ: 2, qml.RY: 1}
