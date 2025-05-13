@@ -17,7 +17,7 @@ Unit tests for Operators inheriting from ControlledOp.
 
 import numpy as np
 import pytest
-from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
+from gate_data import CSX, CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
 from scipy import sparse
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
@@ -25,10 +25,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.wires import Wires
 
-NON_PARAMETRIZED_OPERATIONS = [
-    (qml.CY, CY),
-    (qml.CZ, CZ),
-]
+NON_PARAMETRIZED_OPERATIONS = [(qml.CY, CY), (qml.CZ, CZ), (qml.CSX, CSX)]
 
 PARAMETRIZED_OPERATIONS = [
     (qml.CRX, CRotx),
@@ -43,6 +40,7 @@ ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 NON_PARAMETRIC_OPS_DECOMPOSITIONS = (
     (qml.CY, [qml.CRY(np.pi, wires=[0, 1]), qml.S(0)]),
     (qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
+    (qml.CSX, [qml.CRZ(np.pi / 2, wires=[0, 1]), qml.CRY(np.pi / 2, wires=[0, 1]), qml.CRZ(-np.pi / 2, wires=[0, 1]), qml.GlobalPhase(-np.pi / 4, wires=[0, 1])]),
 )
 
 X = np.array([[0, 1], [1, 0]])
@@ -777,7 +775,7 @@ def test_controlling_a_controlled_operation(control, control_values, base_op):
     qml.ctrl(base_op, control=control, control_values=control_values)
 
 
-@pytest.mark.parametrize("op_type", (qml.CH, qml.CY, qml.CZ, qml.CNOT))
+@pytest.mark.parametrize("op_type", (qml.CH, qml.CY, qml.CZ, qml.CNOT, qml.CSX))
 def test_tuple_control_wires_non_parametric_ops(op_type):
     """Test that tuples can be provided as control wire labels."""
 

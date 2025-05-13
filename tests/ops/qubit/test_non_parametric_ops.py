@@ -31,6 +31,7 @@ from gate_data import (
     ECR,
     ISWAP,
     SISWAP,
+    SQSWAP,
     SWAP,
     SX,
     H,
@@ -52,6 +53,7 @@ from pennylane.wires import Wires
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.Identity, I),
     (qml.SWAP, SWAP),
+    (qml.SQSWAP, SQSWAP),
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
     (qml.S, S),
@@ -75,6 +77,7 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qml.T(10000000), T),
     (qml.SX("qubit0"), SX),
     (qml.SWAP([0, 1]), SWAP),
+    (qml.SQSWAP([0, 1]), SQSWAP),
     (qml.ISWAP([0, 1]), ISWAP),
     (qml.ECR([-1, 1]), ECR),
     (qml.SISWAP(["qubit0", "qubit1"]), SISWAP),
@@ -359,6 +362,43 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_SQSWAP_decomposition(self, tol):
+        """Tests that the decomposition of the SQSWAP gate is correct"""
+        op = qml.SQSWAP(wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([0, 1])
+        assert res[1].wires == Wires([1, 0])
+        assert res[2].wires == Wires([0, 1])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "CSX"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([0, 1]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            elif i.wires == Wires([0, 1]) and i.name == "CSX":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, 0.5 + 0.5j, 0.5 - 0.5j, 0],
+                            [0, 0.5 - 0.5j, 0.5 + 0.5j, 0],
+                            [0, 0, 0, 1],
+                        ]
+                    )
+                )
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
@@ -563,6 +603,13 @@ class TestEigenval:
     def test_ECR_eigenval(self):
         """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
         op = qml.ECR(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
+    def test_sqswap_eigenval(self):
+        """Tests that the SQSWAP eigenvalue matches the numpy eigenvalues of the SQSWAP matrix"""
+        op = qml.SQSWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
@@ -1015,6 +1062,28 @@ class TestPowMethod:
         expected = qml.math.linalg.matrix_power(op_mat, n)
         assert qml.math.allclose(mat, expected)
 
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, []),
+            (4, []),
+            (5, [qml.SQSWAP(wires=(0, 1))]),
+            (2, [qml.SWAP(wires=(0, 1))]),
+        ],
+    )
+    def test_SQSWAP_powers(self, n, expected):
+        """Check that the special powers of SQISWAP are correct."""
+
+        op = qml.SQSWAP(wires=(0, 1))
+        op_mat = qml.matrix(op)
+        pow_ops = op.pow(n)
+        assert pow_ops == expected
+        if not pow_ops:
+            pow_ops.append(qml.I(wires=(0, 1)))
+        mat = qml.matrix(qml.prod(*pow_ops), wire_order=[0, 1])
+        expected = qml.math.linalg.matrix_power(op_mat, n)
+        assert qml.math.allclose(mat, expected)
+
     @pytest.mark.parametrize("op", (qml.WireCut(0), qml.Barrier(0)))
     @pytest.mark.parametrize("n", (2, 0.123, -2.3))
     def test_pow_independent_ops(self, op, n):
@@ -1124,6 +1193,7 @@ label_data = [
     (qml.ECR(wires=(0, 1)), "ECR"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP"),
     (qml.SQISW(wires=(0, 1)), "SISWAP"),
+    (qml.SQSWAP(wires=(0, 1)), "SQSWAP"),
     (qml.Barrier(0), "||"),
     (qml.WireCut(wires=0), "//"),
     # Controlled operations
@@ -1155,6 +1225,7 @@ control_data = [
     (qml.SWAP(wires=(0, 1)), Wires([])),
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
+    (qml.SQSWAP(wires=(0, 1)), Wires([])),
     (qml.ECR(wires=(0, 1)), Wires([])),
     # Controlled operations
     (qml.CY(wires=(0, 1)), Wires(0)),
