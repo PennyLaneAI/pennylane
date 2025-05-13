@@ -273,6 +273,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Enforce `optimize` module to be an auxiliary layer module.
   [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
 
+* The argument signatures for the `QNSPSAOptimizer`, `SPSAOptimizer`, and `ShotAdaptiveOptimizer` have been updated. While the first argument can still be provided positionally, all subsequent arguments are now keyword-only.
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
