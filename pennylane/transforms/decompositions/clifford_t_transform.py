@@ -459,6 +459,7 @@ def clifford_t_decomposition(
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
+            # Cache the decomposition function for performance
             decompose_fn = lru_cache(maxsize=10000)(
                 partial(sk_decomposition, epsilon=epsilon, **method_kwargs, map_wires=False)
             )
@@ -472,8 +473,11 @@ def clifford_t_decomposition(
         phase = new_operations.pop().data[0]
         for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
+                # Decompose the RZ operation with a default wire
                 clifford_ops = decompose_fn(qml.RZ(op.data[0], [0]))
+                # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                # Map the operations to the original wires
                 mapped_ops = qml.map_wires(qml.prod(*clifford_ops[:-1]), {0: op.wires[0]})
                 decomp_ops.extend(getattr(mapped_ops, "operands", [mapped_ops]))
             else:
