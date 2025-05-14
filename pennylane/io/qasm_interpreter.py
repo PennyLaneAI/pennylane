@@ -49,14 +49,26 @@ MULTI_QUBIT_GATES = {
 
 class QasmInterpreter(QASMVisitor):
     """
-    Inherits generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
+    Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
     top level node of the AST as a parameter and recursively descends the AST, calling the
-    user-defined visitor function on each node.
+    overriden visitor function on each node.
     """
 
     def visit(self, node: QASMNode, context: dict):
         """
-        Applied to each node in the AST.
+        Visitor function is called on each node in the AST, which is traversed using recursive descent.
+        The purpose of this function is to pass each node to the appropriate handler.
+
+        Args:
+            node (QASMNode): the QASMNode to visit next.
+            context (dict): the current context populated with any locally available variables, etc.
+
+        Returns:
+            dict: The context updated after the compilation of the current node into Callables
+                to queue into a QNode.
+
+        Raises:
+            NameError: When a (so far) unsupported node type is encountered.
         """
         match node.__class__.__name__:
             case "Identifier":
@@ -69,18 +81,36 @@ class QasmInterpreter(QASMVisitor):
                 self.quantum_gate(node, context)
             # TODO: call appropriate handler methods here
             case _:
+                # TODO: turn into a NameError when we have supported all the node types we want
                 print(f"An unrecognized QASM instruction was encountered: {node.__class__.__name__}")
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
-        """Wraps the provided generic_visit method to make the context a required parameter
-        and return the context."""
+        """
+        Wraps the provided generic_visit method to make the context a required parameter
+        and return the context for testability. Constructs the QNode after all of the nodes
+        have been visited.
+
+        Args:
+            node (QASMNode): The top-most QASMNode.
+            context (dict): The initial context populated with the name of the program (the outermost scope).
+
+        Returns:
+            dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
+                with a list of Callables that are queued into it.
+        """
         super().generic_visit(node, context)
         self.construct_qnode(context)
         return context
 
     @staticmethod
     def construct_qnode(context: dict):
+        """
+        Constructs the device and the QNode programmatically from the context, adds them to the final context.
+
+        Args:
+            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
+        """
         if "device" not in context:
             context["device"] = device("default.qubit", wires=len(context["wires"]))
         context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
@@ -89,6 +119,10 @@ class QasmInterpreter(QASMVisitor):
     def identifier(node: QASMNode, context: dict):
         """
         Registers an identifier in the current context.
+
+        Args:
+            node (QASMNode): The Identifier QASMNode.
+            context (dict): The current context.
         """
         if not hasattr(context, "identifiers"):
             context["identifiers"] = []
@@ -98,7 +132,11 @@ class QasmInterpreter(QASMVisitor):
     def qubit_declaration(node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
-        in context["wires"].
+        in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
+
+        Args:
+            node (QASMNode): The QubitDeclaration QASMNode.
+            context (dict): The current context.
         """
         if "wires" not in context:
             context["wires"] = []
@@ -107,7 +145,12 @@ class QasmInterpreter(QASMVisitor):
     @staticmethod
     def classical_declaration(node: QASMNode, context: dict):
         """
-        Registers a classical declaration.
+        Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
+        type variables that can be readily used in expression evaluation, for example.
+
+        Args:
+            node (QASMNode): The ClassicalDeclaration QASMNode.
+            context (dict): The current context.
         """
         if "vars" not in context:
             context["vars"] = {}
@@ -126,7 +169,12 @@ class QasmInterpreter(QASMVisitor):
 
     def quantum_gate(self, node: QASMNode, context: dict):
         """
-        Registers a quantum gate application. TODO: support modifiers
+        Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
+        (parameterized or non-parameterized).
+
+        Args:
+            node (QASMNode): The QuantumGate QASMNode.
+            context (dict): The current context.
         """
         gate = None
         if "gates" not in context:
@@ -140,6 +188,7 @@ class QasmInterpreter(QASMVisitor):
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
+            # TODO: turn into warning when we have supported all we would like to
             print(f"Unsupported gate encountered in QASM: {node.name}")
 
         if len(node.modifiers) > 0:
@@ -149,7 +198,17 @@ class QasmInterpreter(QASMVisitor):
 
     def modifiers(self, gate: Callable, node: QASMNode, context: dict):
         """
-        Registers a modifier on a gate.
+        Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
+        depending on the type of modifier. We build a Callable that applies the modifier appropriately
+        at execution time, evaluating the gate Callable appropriately as well.
+
+        Args:
+            gate (Callable): The Callable partial built for the gate we wish to modify.
+            node (QASMNode): The original QquantumGate QASMNode.
+            context (dict): The current context.
+
+        Returns:
+            Callable: The callable which will appropriately apply the modifier and execute the gate.
         """
         call_stack = [gate]
         for mod in node.modifiers:
@@ -181,7 +240,20 @@ class QasmInterpreter(QASMVisitor):
     @staticmethod
     def param_single_qubit_gate(node: QASMNode, context: dict):
         """
-        Registers a parameterized single qubit gate application.
+        Registers a parameterized single qubit gate application. Builds a Callable partial
+        that can be executed when the QNode is called. The gate will be executed aat that time
+        with the appropriate arguments.
+
+        Args:
+            node (QASMNode): The QuantumGate QASMNode.
+            context (dict): The current context.
+
+        Returns:
+            Callable: The Callable partial that will execute the gate with the appropriate arguments at
+                "runtime".
+
+        Raises:
+            NameError: If an argument is not found in the current context.
         """
         args = []
         for arg in node.arguments:
@@ -205,7 +277,16 @@ class QasmInterpreter(QASMVisitor):
     @staticmethod
     def non_parameterized_gate(gates_dict: dict, node: QASMNode, context: dict):
         """
-        Registers a multi qubit gate application.
+        Registers a multi qubit gate application. Builds a Callable partial that
+        will execute the gate with the appropriate arguments at "runtime".
+
+        Args:
+            gates_dict (dict): A mapping from QASM std lib naming to Pennylane gate class.
+            node (QASMNode): The QuantumGate QASMNode.
+            context (dict): The current context.
+
+        Returns:
+            Callable: The Callable partial that will execute the gate on the appropriate qubits.
         """
         return partial(
             gates_dict[node.name.name.upper()],
