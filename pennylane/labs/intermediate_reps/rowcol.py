@@ -277,7 +277,7 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
 
 
 def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) -> list[tuple[int]]:
-    """CNOT routing algorithm ROWCOL.
+    r"""CNOT routing algorithm ROWCOL.
 
     This algorithm was introduced by `Wu et al. <https://arxiv.org/abs/1910.14478>`__ and is
     detailed in the `compilation hub <https://pennylane.ai/compilation/rowcol-algorithm>`__,
@@ -293,6 +293,299 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
         list[tuple[int]]: Wire pairs for CNOTs that implement the parity matrix (control first,
         target second).
 
+    Given a parity matrix :math:`P` and a connectivity graph :math:`G(V, E)`,
+    the algorithm consists of the following steps:
+
+    1. If :math:`|V|=1` (there is a single node), go to step 5. Else, select a vertex
+       :math:`i\in V` that is not a cut vertex.
+
+    2. Eliminate column ``P[:, i]``
+
+        a. Construct :math:`S = \{j | P_{ji} \neq 0\} \cup \{i\}` and find a Steiner tree
+           :math:`T \supseteq S`.
+        b. `Post-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Post-order,_LRN>`__
+           the Steiner tree :math:`T` starting from :math:`i` as root. If ``P[c, i]=1`` for node
+           :math:`c` in the traversal and ``P[p, i]=0`` for parent node :math:`p` of node :math:`c`,
+           add row ``P[c]`` to row ``P[p]``.
+        c. Post-order traverse :math:`T` again starting from :math:`i`. For each node :math:`p`
+           in the traversal, add row ``P[p]`` to row ``P[c]``, where :math:`c` is the child node
+           of :math:`p`.
+
+    3. Eliminate row ``P[i]``
+
+        a. Construct :math:`S'` such that the corresponding rows of :math:`P` add up to the
+           :math:`i`\ th basis vector, :math:`\sum_{j\in S'} P[j] = e_i`. Find a Steiner tree
+           :math:`T' \supseteq S'`.
+        b. `Pre-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR>`__
+           the Steiner tree :math:`T'` starting from :math:`i` and for each node :math:`c` in
+           the traversal for which :math:`c \notin S'`, add row :math:`P[c]` to row :math:`P[p]`,
+           where :math:`p` is the parent node of :math:`c`.
+        c. Post-order traverse :math:`T` starting from :math:`i`. For each node :math:`c`
+           in the traversal, add row ``P[c]`` to row ``P[p]``, where :math:`p` is the parent node
+           of :math:`c`.
+
+    4. Delete vertex :math:`i` from :math:`G` and ignore row and column with index :math:`i` in
+       the following. Go to step 1.
+
+    5. Go backwards through all row additions performed and queue the corresponding
+       :math:`\text{CNOT}` gate to obtain the output circuit.
+
+    **Example**
+
+    We walk through example 1 in arXiv:1910.14478 by Wu et al. in detail.
+    We restrict ourselves to the following connectivity graph.
+
+    ```
+    (0) - (3) - (4)
+           |
+          (2)
+           |
+          (1)
+    ```
+
+    Or, in code:
+
+    >>> import networkx as nx
+    >>> G = nx.Graph([(0, 3), (1, 2), (2, 3), (3, 4)])
+
+    We look at a CNOT circuit with the following parity matrix. The first column is
+    highlighted as we are going to start by eliminating it (``(0)`` is not a cut vertex).
+
+    .. math::
+
+        P = \begin{pmatrix}
+            \color{blue}1 & 1 & 0 & 1 & 1 \\
+            \color{blue}0 & 0 & 1 & 1 & 0 \\
+            \color{blue}1 & 0 & 1 & 0 & 1 \\
+            \color{blue}1 & 1 & 0 & 1 & 0 \\
+            \color{blue}1 & 1 & 1 & 1 & 0
+        \end{pmatrix}
+
+    Again, we also define the parity matrix in code:
+
+    >>> P = np.array([
+    ...     [1, 1, 0, 1, 1], [0, 0, 1, 1, 0], [1, 0, 1, 0 ,1], [1, 1, 0, 1, 0], [1, 1, 1, 1, 0]
+    ... ])
+
+    *Step 1: Pick vertex ``i=0``*
+
+    *Step 2: Eliminate ``P[:, 0]``*
+
+    *Step 2.a: Find :math:`S` and :math:`T`*
+
+    All non-zero vertices are ``S = [0, 2, 3, 4]``. A Steiner tree ``T`` connecting those
+    vertices is given by
+
+    ```
+    (0) - (3) - (4)
+           |
+          (2)
+    ```
+
+    *Step 2.b: First post-order traversal*
+
+    We post-order traverse :math:`T` from :math:`0`, giving the ordering :math:`[2, 4, 3, 0]`,
+    and check for nodes :math:`c` with parent :math:`p` where :math:`P_{ci}=0` and
+    :math:`P_{pi}=1`. This can only happen when we have elements in :math:`T` that are not in
+    :math:`S` or when the vertex :math:`i` itself has a value :math:`0`. Neither is the case here;
+    therefore, no action is required.
+
+    *Step 2.c: Second post-order traversal*
+
+    We again post-order traverse the tree and add *every* vertex to its children, i.e.
+    we get the CNOT operations :math:`\text{CNOT}_{3 2} \text{CNOT}_{3 4} \text{CNOT}_{0 3}`.
+    Simultaneously, we update the parity matrix with the corresponding row additions (modulo 2).
+
+    .. math::
+
+        P = \begin{pmatrix}
+            1 & 1 & 0 & 1 & 1 \\
+            0 & 0 & 1 & 1 & 0 \\
+            0 & 1 & 1 & 1 & 1 \\
+            0 & 0 & 0 & 0 & 1 \\
+            0 & 0 & 1 & 0 & 0
+        \end{pmatrix}.
+
+    *Step 3: Eliminate ``P[0, :]``*
+
+    Now we eliminate the first row, marked blue below.
+
+    .. math::
+
+        P = \begin{pmatrix}
+            \color{blue}1 & \color{blue}1 & \color{blue}0 & \color{blue}1 & \color{blue}1 \\
+            0 & 0 & 1 & 1 & 0 \\
+            0 & 1 & 1 & 1 & 1 \\
+            0 & 0 & 0 & 0 & 1 \\
+            0 & 0 & 1 & 0 & 0
+        \end{pmatrix}
+
+    *Step 3.a: Find :math:`S'` and :math:`T'`*
+
+    We see that we can add rows :math:`S' = \{0, 2, 4\}` together to obtain the
+    first unit vector :math:`e_0`.
+    The Steiner tree :math:`T'` encapsulating :math:`S'` is then
+
+    ```
+    (0) - (3) - (4)
+           |
+          (2)
+    ```
+
+    where :math:`4 \notin S'`.
+
+    *Step 3.b: Pre-order traverse*
+
+    We pre-order traverse :math:`T'` (yielding :math:`[0, 3, 2, 4]`) and for all
+    :math:`c \notin S'`, we add them to their parent. In particular, we get an
+    additional :math:`\text{CNOT}_{3 0}`.
+    This is necessary because we are going to traverse through this node in the next step and we
+    need to undo this step again to eliminate the targeted row.
+
+    *Step 3.c: Post-order traverse*
+
+    Similarly to step 2.c, we post-order traverse :math:`T'`, but this time adding every node's
+    row to that of its parent. This yields the same circuit as in step 2.c (because the Steiner
+    trees are the same), but with the roles of target and control qubits reversed.
+
+    *Step 4: Delete and iterate*
+
+    We delete vertex :math:`i=0` from :math:`G` and ignore the first row and column of :math:`P`
+    in the following. Then we return to step 1.
+
+    *Step 1: Pick vertex ``i=1``*
+
+    *Step 2: Eliminate ``P[:, 1]``*
+
+    We repeat the procedure for the next vertex :math:`i=1` from the resulting parity matrix
+
+    .. math::
+
+        P = \begin{pmatrix}
+            1 & 0 & 0 & 0 & 0 \\
+            0 & \color{blue}0 & 1 & 1 & 0 \\
+            0 & \color{blue}1 & 1 & 1 & 1 \\
+            0 & \color{blue}1 & 0 & 1 & 0 \\
+            0 & \color{blue}0 & 1 & 0 & 0
+        \end{pmatrix}.
+
+    *Step 2.a: Find :math:`S` and :math:`T`*
+
+    The set :math:`S` of non-zero entries in column ``P[:,1]`` together with :math:`i` itself
+    is :math:`S = [1, 2, 3]` and the encapsulating Steiner tree :math:`T` is simply
+
+    ```
+    (3)
+     |
+    (2)
+     |
+    (1)
+    ```
+
+    *Step 2.b: First post-order traversal*
+
+    We postorder traverse :math:`T` from :math:`1` (yielding :math:`[3, 2, 1]`) to check
+    if any parent has :math:`P_{pi}=0`, which is the case for :math:`p=1`, so we add
+    :math:`\text{CNOT}_{2 1}`.
+
+    *Step 2.c: Second post-order traversal*
+
+    Once again, add every parent node row to the row of its children while post-order traversing.
+    We additionally get :math:`\text{CNOT}_{2 3}\text{CNOT}_{1 2}$.
+
+    *Step 3: Eliminate ``P[1]``*
+
+    Now we eliminate the second row, marked blue below.
+
+    .. math::
+
+        P = \begin{pmatrix}
+            1 & 0 & 0 & 0 & 0 \\
+            0 & \color{blue}1 & \color{blue}0 & \color{blue}0 & \color{blue}1 \\
+            0 & 0 & 1 & 1 & 0 \\
+            0 & 0 & 1 & 0 & 1 \\
+            0 & 0 & 1 & 0 & 0
+        \end{pmatrix}
+
+    *Step 3.a: Find :math:`S'` and :math:`T'`*
+
+    We first construct :math:`S' = [1, 3, 4]`, which labels rows whose sum yields :math:`e_1`.
+    The encapsulating Steiner tree :math:`T'` is
+
+    ```
+    (3) - (4)
+     |
+    (2)
+     |
+    (1)
+    ```
+
+    where :math:`2 \notin S'`.
+
+    *Step 3.b: Pre-order traverse*
+
+    Add :math:`2 \notin S'` to its parent during preorder traversal (:math:`[1, 2, 3, 4]`),
+    i.e. add :math:`\text{CNOT}_{2 1}`.
+
+    *Step 3.c: Post-order traverse*
+
+    Postorder traverse the tree (:math:`[4, 3, 2, 1]`) and add every row to its parent:
+    :math:`\text{CNOT}_{4 3}\text{CNOT}_{3 2}\text{CNOT}_{2 1}`.
+
+    *Step 4: Delete and iterate*
+
+    We delete vertex :math:`i=1` from :math:`G` and ignore the second row and column of :math:`P`
+    in the following. Then we return to step 1.
+
+    **Remaining operations**
+
+    At this point, we have covered all the cases. We defer to the compilation hub
+    for a more extensive explanation of this example and here simply list the remaining gates.
+
+    Step 1: Select vertex :math:`i=2`
+    Step 2.b: :math:`\text{CNOT}_{4 3}`
+    Step 2.c: :math:`\text{CNOT}_{3 4}\text{CNOT}_{2 3}`
+    Step 3.a: no gate
+    Step 3.c: :math:`\text{CNOT}_{4 3}\text{CNOT}_{3 2}`
+    Step 4: Delete :math:`i=2`
+
+    Step 1: Select vertex :math:`i=3`
+    Step 2.b: no gate
+    Step 2.c: no gate
+    Step 3.a: no gate
+    Step 3.c: :math:`\text{CNOT}_{4 3}`
+    Step 4: Delete :math:`i=3`
+
+    Step 1: :math:`|V|=|\{4\}|=1`, terminate.
+
+    The final circuit is the reverse of the synthesized subcircuits.
+
+    We apply the function to obtain it:
+
+    >>> from pennylane.labs.intermediate_reps import rowcol, parity_matrix
+    >>> new_P, cnots = rowcol(P, G)
+
+    The new parity matrix has been transformed into the identity matrix:
+
+    >>> np.allclose(new_P, np.eye(5))
+    True
+
+    The constructed circuit is the one that we found manually above:
+
+    >>> circ = qml.tape.QuantumScript([qml.CNOT(pair) for pair in cnots])
+    >>> print(qml.drawer.tape_text(circ, wire_order=range(5)))
+    0: ──────────────────────────────────╭X───────╭X─╭●───────┤
+    1: ─────────────╭X───────╭X─╭●────╭X─│────────│──│────────┤
+    2: ────╭X────╭●─╰●────╭X─╰●─╰X─╭●─╰●─│─────╭●─│──│─────╭X─┤
+    3: ─╭X─╰●─╭X─╰X─╭●─╭X─╰●─╭X────╰X────╰●─╭X─╰X─╰●─╰X─╭●─╰●─┤
+    4: ─╰●────╰●────╰X─╰●────╰●─────────────╰●──────────╰X────┤
+
+    We can confirm that this circuit indeed implements the original parity matrix
+    by constructing it:
+
+    >>> recon_P = parity_matrix(circ, wire_order=range(5))
+    >>> np.allclose(P, recon_P)
+    True
     """
     P = P.copy()
     n = len(P)
