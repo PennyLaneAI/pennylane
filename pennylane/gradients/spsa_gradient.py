@@ -93,9 +93,9 @@ def _expand_transform_spsa(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
+# pylint: disable=too-many-positional-arguments
 def spsa_grad(
     tape: QuantumScript,
-    *,
     argnum=None,
     h=1e-5,
     approx_order=2,
