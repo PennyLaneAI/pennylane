@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation.qubit_manager import (
     FreeWires,
 )
 from pennylane.labs.resource_estimation.resources_base import Resources
-# from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     ResourceOperator,
@@ -330,7 +330,7 @@ def _ops_to_compressed_reps(
         if op._queue_category == "_resource_op":
             cmp_rep_ops.append(op.resource_rep_from_op())
 
-        # elif op._queue_category == "_ops":
-        #     cmp_rep_ops.append(map_to_resource_op(op))
+        elif op._queue_category == "_ops":
+            cmp_rep_ops.append(map_to_resource_op(op))
 
     return cmp_rep_ops

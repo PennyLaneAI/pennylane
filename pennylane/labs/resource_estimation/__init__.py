@@ -36,6 +36,7 @@ from .resource_operator import (
     set_pow_decomp,
     GateCount,
 )
+from .resource_mapping import map_to_resource_op
 from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
