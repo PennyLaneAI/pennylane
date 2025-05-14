@@ -13,7 +13,7 @@
 # limitations under the License.
 """Public API"""
 
-# pragma: no cover
+# pragma: exclude file
 
 from .transform_interpreter_catalyst import TransformInterpreterPass
 

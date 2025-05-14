@@ -14,7 +14,7 @@
 
 """Public API"""
 
-# pragma: no cover
+# pragma: exclude file
 
 from .impl import TransformFunctionsExt
 

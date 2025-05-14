@@ -30,7 +30,7 @@ from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils import parse_pipeline
 
-# pragma: no cover
+# pragma: exclude file
 
 
 # pylint: disable=too-few-public-methods

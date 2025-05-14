@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pragma: no cover
+# pragma: exclude file
 
 """Custom Transform Dialect Interpreter Pass
 
