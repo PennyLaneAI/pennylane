@@ -13,8 +13,11 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API."""
 
+# pragma: no cover
+
 from xdsl.transforms.transform_interpreter import TransformInterpreterPass
 from .apply_transform_sequence import ApplyTransformSequence, register_pass
+
 
 __all__ = [
     "ApplyTransformSequence",

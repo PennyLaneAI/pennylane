@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pragma: no cover
+
 """Custom Transform Dialect Interpreter Pass
 
 Differs from xDSL's upstream implementation by allowing passes
