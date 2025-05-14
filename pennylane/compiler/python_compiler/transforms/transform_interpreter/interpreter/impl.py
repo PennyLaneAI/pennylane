@@ -12,39 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+An custom implementation of the interpreter functions used for the transform dialect.
+"""
+
 import io
 from typing import Callable
 
-from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
-from xdsl.interpreters.transform import TransformFunctions
+from catalyst.compiler import _quantum_opt
 from xdsl.context import Context
 from xdsl.dialects import transform
+from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
+from xdsl.interpreters.transform import TransformFunctions
 from xdsl.parser import Parser
 from xdsl.passes import ModulePass, PipelinePass
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils import parse_pipeline
 
-from catalyst.compiler import _quantum_opt
 
 @register_impls
 class TransformFunctionsExt(TransformFunctions):
+    """
+    Unlike the implementation available in xDSL, this implementation overrides
+    the semantics of the `transform.apply_registered_pass` operation by
+    first always attempting to apply the xDSL pass, but if it isn't found
+    then it will try to run this pass in Catalyst.
+    """
+
     ctx: Context
     passes: dict[str, Callable[[], type[ModulePass]]]
 
-    def __init__(
-        self, ctx: Context, passes : dict[str, Callable[[], type[ModulePass]]]
-    ):
+    def __init__(self, ctx: Context, passes: dict[str, Callable[[], type[ModulePass]]]):
         self.ctx = ctx
         self.passes = passes
 
     @impl(transform.ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(
         self,
-        interpreter: Interpreter,
+        _interpreter: Interpreter,
         op: transform.ApplyRegisteredPassOp,
         args: PythonValues,
     ) -> PythonValues:
+        """Try to run the pass in xDSL, if it can't run on catalyst"""
         pass_name = op.pass_name.data
         requested_by_user = PipelinePass.build_pipeline_tuples(
             self.passes, parse_pipeline.parse_pipeline(pass_name)
@@ -57,7 +67,7 @@ class TransformFunctionsExt(TransformFunctions):
             pipeline = PipelinePass(schedule)
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
-        except:
+        except:  # pylint: disable=bare-except
             buffer = io.StringIO()
 
             Printer(stream=buffer, print_generic_format=True).print(args[0])

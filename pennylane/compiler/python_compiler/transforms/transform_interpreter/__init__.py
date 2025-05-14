@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .transform_interpreter_catalyst import TransformInterpreterPass
+"""Public API"""
 
-__all__ = [
-    "TransformInterpreterPass"
-]
+from .transform_interpreter_catalyst import TransformInterpreterPassExt as TransformInterpreterPass
+
+__all__ = ["TransformInterpreterPass"]

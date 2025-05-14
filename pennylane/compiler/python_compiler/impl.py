@@ -13,24 +13,28 @@
 # limitations under the License.
 """This file contains the implementation of the PennyLane-xDSL integration API."""
 
+
 import io
 
-from jaxlib.mlir.ir import Context as jaxContext, Module as jaxModule
-from jaxlib.mlir.dialects import stablehlo
 from jax._src.interpreters import mlir
-
+from jaxlib.mlir.dialects import stablehlo
+from jaxlib.mlir.ir import Context as jaxContext  # pylint: disable=no-name-in-module
+from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xdslContext
 from xdsl.dialects import arith, builtin, func, scf, tensor, transform
 from xdsl.parser import Parser
-from xdsl.printer import Printer
 from xdsl.passes import PipelinePass
+from xdsl.printer import Printer
 
 from .quantum_dialect import QuantumDialect as Quantum
-
 from .transforms import ApplyTransformSequence
 
-class Compiler:
 
+# pylint: disable=too-few-public-methods
+class Compiler:
+    """Compiler namespace"""
+
+    # TODO: Change to static
     def run(self, jmod: jaxModule) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
@@ -38,7 +42,9 @@ class Compiler:
         it is a pass that runs other passes.
         """
 
-        gentxtmod: str = jmod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
+        gentxtmod: str = jmod.operation.get_asm(
+            binary=False, print_generic_op_form=True, assume_verified=True
+        )
 
         ctx = xdslContext(allow_unregistered=True)
         ctx.load_dialect(arith.Arith)
@@ -59,7 +65,7 @@ class Compiler:
         with jaxContext() as ctx:
             ctx.allow_unregistered_dialects = True
             ctx.append_dialect_registry(mlir.upstream_dialects)
-            stablehlo.register_dialect(ctx)
+            stablehlo.register_dialect(ctx)  # pylint: disable=no-member
             newmod: jaxModule = jaxModule.parse(buffer.getvalue())
 
         return newmod

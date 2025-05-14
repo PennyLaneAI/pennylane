@@ -15,22 +15,35 @@
 
 from dataclasses import dataclass
 
-from xdsl.dialects import builtin
 from xdsl.context import Context
+from xdsl.dialects import builtin
 from xdsl.passes import ModulePass, PipelinePass
 
-from .transform_interpreter import TransformInterpreterPass
+from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
 
 available_passes = {}
 
+
 def register_pass(name, _callable):
+    """Registers the passes available in the dictionary"""
     available_passes[name] = _callable
+
 
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
+    """
+    Looks for nested modules. Nested modules in this context are guaranteed to correspond
+    to qnodes. These modules are already annotated with which passes are to be executed.
+    The pass ApplyTransformSequence will run passes annotated in the qnode modules.
+
+    At the end, we delete the list of passes as they have already been applied.
+    """
+
     name = "apply-transform-sequence"
 
-    def apply(self, ctx: Context, module: builtin.ModuleOp) -> None:
+    def apply(  # pylint: disable=arguments-renamed
+        self, ctx: Context, module: builtin.ModuleOp
+    ) -> None:
         nested_modules = []
         for region in module.regions:
             for block in region.blocks:
@@ -38,7 +51,10 @@ class ApplyTransformSequence(ModulePass):
                     if isinstance(op, builtin.ModuleOp):
                         nested_modules.append(op)
 
-        pipeline = PipelinePass((TransformInterpreterPass(passes=available_passes),))
+        pipeline = PipelinePass(
+            # pylint: disable-next=unexpected-keyword-arg
+            (TransformInterpreterPass(passes=available_passes),)
+        )
         for op in nested_modules:
             pipeline.apply(ctx, op)
 
@@ -46,5 +62,7 @@ class ApplyTransformSequence(ModulePass):
             for region in op.regions:
                 for block in region.blocks:
                     for op in block.ops:
-                        if isinstance(op, builtin.ModuleOp) and op.get_attr_or_prop("transform.with_named_sequence"):
+                        if isinstance(op, builtin.ModuleOp) and op.get_attr_or_prop(
+                            "transform.with_named_sequence"
+                        ):
                             block.erase_op(op)
