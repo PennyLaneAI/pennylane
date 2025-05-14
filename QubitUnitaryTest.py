@@ -1,20 +1,23 @@
+from dataclasses import dataclass
+from typing import Callable
+
 import numpy as np
 import xdsl
+from catalyst.compiler import _quantum_opt
+from xdsl import context, passes, pattern_rewriter
 from xdsl.context import Context
 from xdsl.dialects import arith, builtin, func, scf, tensor, transform
+from xdsl.dialects.arith import ConstantOp
+from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
+from xdsl.ir import BlockArgument, OpResult
+from xdsl.rewriter import InsertPoint
+from xdsl.utils import parse_pipeline
 
 import pennylane as qml
-
-# from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
-# The allow_unregistered option is important.
-# It says that the program will contain things the context doesn't understand
-# This is needed for the catalyst.launch_kernel operation
 ctx = Context(allow_unregistered=True)
-
-# Load the dialects that the context does understand.
 ctx.load_dialect(arith.Arith)
 ctx.load_dialect(builtin.Builtin)
 ctx.load_dialect(func.Func)
@@ -22,11 +25,6 @@ ctx.load_dialect(scf.Scf)
 ctx.load_dialect(tensor.Tensor)
 ctx.load_dialect(transform.Transform)
 ctx.load_dialect(QuantumDialect)
-
-from dataclasses import dataclass
-
-from xdsl import context, passes
-from xdsl.utils import parse_pipeline
 
 
 @dataclass(frozen=True)
@@ -40,13 +38,8 @@ class PrintModule(passes.ModulePass):
         print("Hello from inside the pass\n", module)
 
 
-from typing import Callable
-
 CustomOp = QuantumDialect._operations[4]
-
-
-from xdsl import pattern_rewriter
-from xdsl.rewriter import InsertPoint
+QubitUnitaryOp = QuantumDialect._operations[20]
 
 U = np.array(
     [
@@ -59,7 +52,6 @@ U = np.array(
 @qml.qjit(target="mlir")
 @qml.qnode(qml.device("lightning.qubit", wires=3))
 def circuit():
-    qml.RX(0.1, wires=0)
     qml.QubitUnitary(U, wires=2)
     return qml.state()
 
@@ -67,52 +59,22 @@ def circuit():
 mlir_string = circuit.mlir
 print(mlir_string)
 
-
-from catalyst.compiler import _quantum_opt
-
 generic = _quantum_opt(
     ("--pass-pipeline", "builtin.module(canonicalize)"), "-mlir-print-op-generic", stdin=mlir_string
 )
-print(generic)
-
-
-# The allow_unregistered option is important.
-# It says that the program will contain things the context doesn't understand
-# This is needed for the catalyst.launch_kernel operation
-ctx = Context(allow_unregistered=True)
-
-# Load the dialects that the context does understand.
-ctx.load_dialect(arith.Arith)
-ctx.load_dialect(builtin.Builtin)
-ctx.load_dialect(func.Func)
-ctx.load_dialect(scf.Scf)
-ctx.load_dialect(tensor.Tensor)
-ctx.load_dialect(transform.Transform)
-ctx.load_dialect(QuantumDialect)
-
 m = xdsl.parser.Parser(ctx, generic).parse_module()
 print(m)
 
 
 available_passes: dict[str, Callable[[], type[passes.ModulePass]]] = {}
 available_passes["print"] = lambda: PrintModule
-
 user_requested_pass = "print"  # just for example
-
 requested_by_user = passes.PipelinePass.build_pipeline_tuples(
     available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
 )
 schedule = tuple(pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user)
 pipeline = passes.PipelinePass(schedule)
 pipeline.apply(ctx, m)
-
-
-QubitUnitaryOp = QuantumDialect._operations[20]
-
-
-from xdsl import pattern_rewriter
-from xdsl.ir import BlockArgument, Operation, OpResult
-from xdsl.rewriter import InsertPoint
 
 
 # This function is still a bit of a mess and right now doesn't work
@@ -186,67 +148,29 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
             else:
                 ops = [op]
 
-            # breakpoint()
-
-            # ops = [RZ(tensor(0., requires_grad=True), wires=[2]), RY(tensor(1.05043081, requires_grad=True), wires=[2]), RZ(tensor(0., requires_grad=True), wires=[2])]
-            # Now I just need to create a 'CustomOp' for every op in ops
-            # and replace the QubitUnitaryOp with the new ops.
-
-            # 'CustomOp' inherits from the 'IRDLOperation' class defined in xdsl.
-            # How can I create a new 'CustomOp' and replace the QubitUnitaryOp with it?
-
-            # new_op = CustomOp(
-            #    operands=...
-            #    properties=...
-            #    attributes=...
-            #    successors=...
-            #    regions=...
-            #    result_types=...
-            # )
-
-            from xdsl.dialects.arith import ConstantOp
-            from xdsl.dialects.builtin import (
-                AnyAttr,
-                AnyOf,
-                BaseAttr,
-                Float64Type,
-                FloatAttr,
-                IntegerType,
-                StringAttr,
-                UnitAttr,
-            )
-
-            # angle = ops[0].parameters[0].item()
-
-            # Convert raw float to a FloatAttr (with correct type)
-            # angle_attr = FloatAttr(angle, Float64Type())
-
-            # Create a constant op from the attribute
-            # angle_const_op.result gets the SSA value (result) from the constant op
-            # angle_const_op = ConstantOp(value=angle_attr)
-
-            # Insert the constant op into the IR BEFORE `op`
-            # rewriter.insert_op(angle_const_op, InsertPoint.before(op))
-
-            # Operand is the original qubit being used:
-            current_input = op.in_qubits[0]  # SSAValue
+            print(f"ops: {ops}")
 
             for qml_op in ops:
                 angle = qml_op.parameters[0].item()
-                gate_name = qml_op.name  # e.g., "RX", "RY", "RZ"
+                wire = qml_op.wires[0]
 
                 # Build constant op for angle
+                # and inserts the constant op corresponding to the angle
+                # into the IR, before QubitUnitaryOp
                 angle_attr = FloatAttr(angle, Float64Type())
                 angle_const_op = ConstantOp(value=angle_attr)
-                rewriter.insert_op(angle_const_op, InsertPoint.before(op))  # insert constant
+                rewriter.insert_op(angle_const_op, InsertPoint.before(op))
 
-                angle_ssa = angle_const_op.result
+                # And we do the same for the wire
+                wire_attr = IntegerAttr(wire, IntegerType(64))
+                wire_const_op = ConstantOp(value=wire_attr)
+                rewriter.insert_op(wire_const_op, InsertPoint.before(op))
 
-                # Create and insert the custom op
+                # angle_const_op.result is the SSA value of the constant op
                 custom_op = CustomOp(
-                    operands=(angle_ssa, current_input, None, None),
+                    operands=(angle_const_op.result, wire_const_op.result, None, None),
                     properties={
-                        "gate_name": StringAttr(gate_name),
+                        "gate_name": StringAttr(qml_op.name),
                         **op.properties,
                     },
                     attributes=op.attributes,
@@ -254,42 +178,19 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                     regions=op.regions,
                     result_types=(op.result_types, []),
                 )
+
+                # This line inserts the custom op into the IR, before QubitUnitaryOp
                 rewriter.insert_op(custom_op, InsertPoint.before(op))
 
+                # This line replaces the uses (SSA values) of the QubitUnitaryOp with the new custom op
+                # This is needed because the QubitUnitaryOp is being erased at the end
                 for old_res, new_res in zip(op.results, custom_op.results):
                     old_res.replace_by(new_res)
 
-                # Update current input for next gate in chain
-                current_input = custom_op.in_qubits[0]
-
             breakpoint()
 
-            # new_op = CustomOp(
-            #    operands=(angle_const_op.result, qubit_operand, None, None),
-            #    properties={
-            #        "gate_name": StringAttr("RX"),
-            #        **op.properties,
-            #    },
-            #    attributes=op.attributes,
-            #    successors=op.successors,
-            #    regions=op.regions,
-            #    result_types=(op.result_types, []),
-            # )
-
-            # breakpoint()
-
-            # Step 6: Insert before the original op
-            # rewriter.insert_op(new_op, InsertPoint.before(op))
-
-            # Step 7: Replace uses if needed
-            # for old_res, new_res in zip(op.results, new_op.results):
-            #    old_res.replace_by(new_res)
-
-            # Step 8: Erase original op
+            # We finally erase the QubitUnitaryOp
             rewriter.erase_op(op)
-
-            # Continue from here
-            pass
 
 
 @dataclass(frozen=True)
@@ -308,9 +209,7 @@ print(f"Running the pass")
 
 
 available_passes["unitary-to-rot"] = lambda: UnitaryToRotPass
-
-user_requested_pass = "unitary-to-rot"  # just for example
-
+user_requested_pass = "unitary-to-rot"
 requested_by_user = passes.PipelinePass.build_pipeline_tuples(
     available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
 )
@@ -318,10 +217,3 @@ schedule = tuple(pass_type.from_pass_spec(spec) for pass_type, spec in requested
 pipeline = passes.PipelinePass(schedule)
 pipeline.apply(ctx, m)
 print(m)
-
-
-# op.matrix = <OpResult[tensor<2x2xcomplex<f64>>] index: 0, operation: builtin.unregistered, uses: 1>
-# op.matrix.owner = UnregisteredOp.with_name.<locals>.UnregisteredOpWithNameOp(%0 = "stablehlo.convert"(%arg0) : (tensor<2x2xf64>) -> tensor<2x2xcomplex<f64>>)
-# op.matrix.op = UnregisteredOp.with_name.<locals>.UnregisteredOpWithNameOp(%0 = "stablehlo.convert"(%arg0) : (tensor<2x2xf64>) -> tensor<2x2xcomplex<f64>>)
-# matrix_op = UnregisteredOp.with_name.<locals>.UnregisteredOpWithNameOp(%0 = "stablehlo.convert"(%arg0) : (tensor<2x2xf64>) -> tensor<2x2xcomplex<f64>>)
-# matrix_op.name = builtin.unregistered
