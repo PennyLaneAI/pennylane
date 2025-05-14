@@ -18,39 +18,9 @@ utilize in the ``condition`` attribute.
 """
 from inspect import isclass, signature
 
-from pennylane import math
+from pennylane import math, measurements
 from pennylane import ops as pl_ops
 from pennylane.boolean_fn import BooleanFn
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    CountsMP,
-    DensityMatrixMP,
-    ExpectationMP,
-    MeasurementProcess,
-    MeasurementValue,
-    MidMeasureMP,
-    MutualInfoMP,
-    ProbabilityMP,
-    PurityMP,
-    SampleMP,
-    ShadowExpvalMP,
-    StateMP,
-    VarianceMP,
-    VnEntropyMP,
-    classical_shadow,
-    counts,
-    density_matrix,
-    expval,
-    measure,
-    mutual_info,
-    probs,
-    purity,
-    sample,
-    shadow_expval,
-    state,
-    var,
-    vn_entropy,
-)
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
 from pennylane.ops.functions import simplify
@@ -121,12 +91,12 @@ def wires_in(wires):
     if the wires of an input operation are within the specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+        wires (Union(Iterable[int, str], Wires, Operation, measurements.MeasurementProcess, int, str)):
             Object to be used for building the wire set.
 
     Returns:
         :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        signature ``Union(Iterable[int, str], Wires, Operation, measurements.MeasurementProcess, int, str)``.
         It evaluates to ``True`` if the wire set constructed from the input to the callable is
         a subset of the one built from the specified ``wires`` set.
 
@@ -162,12 +132,12 @@ def wires_eq(wires):
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+        wires (Union(Iterable[int, str], Wires, Operation, measurements.MeasurementProcess, int, str)):
             Object to be used for building the wire set.
 
     Returns:
         :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        signature ``Union(Iterable[int, str], Wires, Operation, measurements.MeasurementProcess, int, str)``.
         It evaluates to ``True`` if the wire set constructed from the input to the callable
         is equal to the one built from the specified ``wires`` set.
 
@@ -213,7 +183,7 @@ class OpIn(BooleanFn):
         self._cond = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in ops_
@@ -229,7 +199,7 @@ class OpIn(BooleanFn):
         xs = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in xs
@@ -274,7 +244,7 @@ class OpEq(BooleanFn):
         self._cond = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in ops_
@@ -296,7 +266,7 @@ class OpEq(BooleanFn):
             xs = [
                 (
                     op
-                    if not isinstance(op, MeasurementProcess)
+                    if not isinstance(op, measurements.MeasurementProcess)
                     else (getattr(op, "obs", None) or getattr(op, "H", None))
                 )
                 for op in xs
@@ -335,12 +305,14 @@ def _get_ops(val):
     for _val in vals:
         if isinstance(_val, str):
             op_names.append(getattr(pl_ops, _val, None))
-        elif isclass(_val) and not issubclass(_val, MeasurementProcess):
+        elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
-        elif isinstance(_val, (MeasurementValue, MidMeasureMP)):
-            mid_measure = _val if isinstance(_val, MidMeasureMP) else _val.measurements[0]
+        elif isinstance(_val, (measurements.MeasurementValue, measurements.MidMeasureMP)):
+            mid_measure = (
+                _val if isinstance(_val, measurements.MidMeasureMP) else _val.measurements[0]
+            )
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
-        elif isinstance(_val, MeasurementProcess):
+        elif isinstance(_val, measurements.MeasurementProcess):
             obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
             if len(obs_name) == 1:
                 obs_name = obs_name[0]
@@ -410,15 +382,15 @@ def op_in(ops):
     if a given operation exist in a specified set of operations.
 
     Args:
-        ops (str, class, Operation, list(Union[str, class, Operation, MeasurementProcess])):
+        ops (str, class, Operation, list(Union[str, class, Operation, measurements.MeasurementProcess])):
             Sequence of string representations, instances, or classes of the operation(s).
 
     Returns:
         :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
-        an :class:`~.Operation` or :class:`~.MeasurementProcess` and returns a boolean output.
+        an :class:`~.Operation` or :class:`~.measurements.MeasurementProcess` and returns a boolean output.
         For an input from: ``Union[str, class, Operation, list(Union[str, class, Operation])]``
         and evaluates to ``True`` if the input operation(s) exists in the set of operation(s)
-        specified by ``ops``. For a ``MeasurementProcess`` input, similar evaluation happens
+        specified by ``ops``. For a ``measurements.MeasurementProcess`` input, similar evaluation happens
         on its observable. In both cases, comparison is based on the operation's type,
         irrespective of wires.
 
@@ -458,15 +430,15 @@ def op_eq(ops):
     if a given operation is equal to the specified operation.
 
     Args:
-        ops (str, class, Operation, MeasurementProcess): String representation, an instance
+        ops (str, class, Operation, measurements.MeasurementProcess): String representation, an instance
             or class of the operation, or a measurement process.
 
     Returns:
         :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
-        an :class:`~.Operation` or :class:`~.MeasurementProcess` and returns a boolean output.
+        an :class:`~.Operation` or :class:`~.measurements.MeasurementProcess` and returns a boolean output.
         For an input from: ``Union[str, class, Operation]`` it evaluates to ``True``
         if the input operations are equal to the operations specified by ``ops``.
-        For a ``MeasurementProcess`` input, similar evaluation happens on its observable. In
+        For a ``measurements.MeasurementProcess`` input, similar evaluation happens on its observable. In
         both cases, the comparison is based on the operation's type, irrespective of wires.
 
     **Example**
@@ -501,7 +473,7 @@ class MeasEq(BooleanFn):
     as the specified measurement process.
 
     Args:
-        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement
+        mp(Union[Iterable[measurements.MeasurementProcess], measurements.MeasurementProcess, Callable]): A measurement
             process instance or a measurement function to build the measurement set.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
@@ -512,10 +484,10 @@ class MeasEq(BooleanFn):
         self.condition, self._cmps = [], []
         for mp in self._cond:
             if (callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None) or (
-                isclass(mp) and not issubclass(mp, MeasurementProcess)
+                isclass(mp) and not issubclass(mp, measurements.MeasurementProcess)
             ):
                 raise ValueError(
-                    f"MeasEq should be initialized with a MeasurementProcess, got {mp}"
+                    f"MeasEq should be initialized with a measurements.MeasurementProcess, got {mp}"
                 )
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
@@ -533,7 +505,7 @@ class MeasEq(BooleanFn):
 
     def _check_meas(self, mp):
 
-        if isclass(mp) and not issubclass(mp, MeasurementProcess):
+        if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 
         if callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None:
@@ -554,13 +526,13 @@ def meas_eq(mps):
     measurement process is of the same type as the specified measurement process.
 
     Args:
-        mps (MeasurementProcess, Callable): An instance(s) of any class that inherits from
-            :class:`~.MeasurementProcess` or a :mod:`measurement <pennylane.measurements>` function(s).
+        mps (measurements.MeasurementProcess, Callable): An instance(s) of any class that inherits from
+            :class:`~.measurements.MeasurementProcess` or a :mod:`measurement <pennylane.measurements>` function(s).
 
     Returns:
         :class:`MeasEq <pennylane.noise.conditionals.MeasEq>`: A callable object that accepts
-        an instance of :class:`~.MeasurementProcess` and returns a boolean output. It accepts
-        any input from: ``Union[class, function, list(Union[class, function, MeasurementProcess])]``
+        an instance of :class:`~.measurements.MeasurementProcess` and returns a boolean output. It accepts
+        any input from: ``Union[class, function, list(Union[class, function, measurements.MeasurementProcess])]``
         and evaluates to ``True`` if the input measurement process(es) is equal to the
         measurement process(es) specified by ``ops``. Comparison is based on the measurement's
         return type, irrespective of wires, observables or any other relevant attribute.
@@ -568,45 +540,45 @@ def meas_eq(mps):
     **Example**
 
     One may use ``meas_eq`` with an instance of
-    :class:`MeasurementProcess <pennylane.measurements.MeasurementProcess>`:
+    :class:`measurements.MeasurementProcess <pennylane.measurements.measurements.MeasurementProcess>`:
 
-    >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
-    >>> cond_func(qml.expval(qml.Z(9)))
+    >>> cond_func = qml.noise.meas_eq(qml.measurements.expval(qml.Y(0)))
+    >>> cond_func(qml.measurements.expval(qml.Z(9)))
     True
 
-    >>> cond_func(qml.sample(op=qml.Y(0)))
+    >>> cond_func(qml.measurements.sample(op=qml.Y(0)))
     False
 
     Additionally, a :mod:`measurement <pennylane.measurements>` function
     can also be provided:
 
-    >>> cond_func = qml.noise.meas_eq(qml.expval)
-    >>> cond_func(qml.expval(qml.X(0)))
+    >>> cond_func = qml.noise.meas_eq(qml.measurements.expval)
+    >>> cond_func(qml.measurements.expval(qml.X(0)))
     True
 
-    >>> cond_func(qml.probs(wires=[0, 1]))
+    >>> cond_func(qml.measurements.probs(wires=[0, 1]))
     False
 
-    >>> cond_func(qml.counts(qml.Z(0)))
+    >>> cond_func(qml.measurements.counts(qml.Z(0)))
     False
     """
     return MeasEq(mps)
 
 
 _MEAS_FUNC_MAP = {
-    expval: ExpectationMP,
-    var: VarianceMP,
-    state: StateMP,
-    density_matrix: DensityMatrixMP,
-    counts: CountsMP,
-    sample: SampleMP,
-    probs: ProbabilityMP,
-    vn_entropy: VnEntropyMP,
-    mutual_info: MutualInfoMP,
-    purity: PurityMP,
-    classical_shadow: ClassicalShadowMP,
-    shadow_expval: ShadowExpvalMP,
-    measure: MidMeasureMP,
+    measurements.expval: measurements.ExpectationMP,
+    measurements.var: measurements.VarianceMP,
+    measurements.state: measurements.StateMP,
+    measurements.density_matrix: measurements.DensityMatrixMP,
+    measurements.counts: measurements.CountsMP,
+    measurements.sample: measurements.SampleMP,
+    measurements.probs: measurements.ProbabilityMP,
+    measurements.vn_entropy: measurements.VnEntropyMP,
+    measurements.mutual_info: measurements.MutualInfoMP,
+    measurements.purity: measurements.PurityMP,
+    measurements.classical_shadow: measurements.ClassicalShadowMP,
+    measurements.shadow_expval: measurements.ShadowExpvalMP,
+    measurements.measure: measurements.MidMeasureMP,
 }
 
 
@@ -629,7 +601,7 @@ def _process_instance(operation, *args, **kwargs):
         )
 
     op_class, op_type = type(operation), [] if kwargs else ["Mappable"]
-    if isinstance(operation, MeasurementProcess):
+    if isinstance(operation, measurements.MeasurementProcess):
         op_type.append("MeasFunc")
     elif isinstance(operation, (Adjoint, Controlled)):
         op_type.append("MetaFunc")
@@ -669,7 +641,7 @@ def partial_wires(operation, *args, **kwargs):
     with all argument frozen except ``wires``.
 
     Args:
-        operation (Operation | MeasurementProcess | class | Callable): Instance of an
+        operation (Operation | measurements.MeasurementProcess | class | Callable): Instance of an
             operation or the class (callable) corresponding to the operation (measurement).
         *args: Positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
@@ -711,11 +683,11 @@ def partial_wires(operation, *args, **kwargs):
     qml.RX(2.3, wires=["light"])
 
     Finally, one may also use this with an instance of
-    :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`
+    :class:`measurements.MeasurementProcess <pennylane.measurement.measurements.MeasurementProcess>`
 
-    >>> func = qml.noise.partial_wires(qml.expval(qml.Z(0)))
+    >>> func = qml.noise.partial_wires(qml.measurements.expval(qml.Z(0)))
     >>> func(qml.RX(1.2, wires=[9]))
-    qml.expval(qml.Z(9))
+    qml.measurements.expval(qml.Z(9))
     """
     if callable(operation):
         op_class, op_type = _process_callable(operation)
@@ -760,7 +732,7 @@ def partial_wires(operation, *args, **kwargs):
 
         if op_type:
             _name, _op = _fargs[op_type[0]], "op"
-            if op_class == ShadowExpvalMP:
+            if op_class == measurements.ShadowExpvalMP:
                 _name = _op = "H"
 
             if not op_args.get(_name, None) and partial_kwargs.get(_op, None):
