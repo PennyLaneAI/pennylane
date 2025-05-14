@@ -213,7 +213,15 @@
   interface to maintain a list of special implementations.
   [(#7327)](https://github.com/PennyLaneAI/pennylane/pull/7327)
 
-* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1.
+* Two new device-developer transforms have been added to `devices.preprocess`: 
+  :func:`~.devices.preprocess.measurements_from_counts` and :func:`~.devices.preprocess.measurements_from_samples`.
+  These transforms modify the tape to instead contain a `counts` or `sample` measurement process, 
+  deriving the original measurements from the raw counts/samples in post-processing. This allows 
+  expanded measurement support for devices that only 
+  support counts/samples at execution, like real hardware devices.
+  [(#7317)](https://github.com/PennyLaneAI/pennylane/pull/7317)
+
+* Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. 
   [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
 
 * Migrated `setup.py` package build and install to `pyproject.toml`
@@ -222,6 +230,8 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
+* Updated requirements and pyproject files to include the other package.  
+  [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -230,6 +240,7 @@
   It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
   It is important for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -291,6 +302,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce `optimize` module to be an auxiliary layer module.
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
@@ -300,6 +314,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
   [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
   [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
+  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
@@ -324,6 +339,13 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Documentation 📝</h3>
+
+* Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
+ [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
+
+* In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
+  circuit drawings now render in a way that's easier to read.
+  [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
@@ -413,6 +435,7 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
