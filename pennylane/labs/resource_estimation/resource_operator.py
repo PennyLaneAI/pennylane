@@ -15,11 +15,15 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable, List, Hashable, Optional, Type
+from collections import defaultdict
+from typing import Callable, List, Type, Optional, Hashable
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 from pennylane.operation import classproperty
+
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 # pylint: disable=unused-argument
 
@@ -88,9 +92,6 @@ def _make_hashable(d) -> tuple:
 class ResourceOperator(ABC):
     r"""Abstract base class to represent quantum operators according to the 
     information required for resource estimation.
-
-    
-
     """
 
     num_wires = 0
@@ -111,7 +112,8 @@ class ResourceOperator(ABC):
         return self
 
     @classproperty
-    def resource_keys(self) -> set:  # pylint: disable=no-self-use
+    @classmethod
+    def resource_keys(cls) -> set:  # pylint: disable=no-self-use
         """The set of parameters that affects the resource requirement of the operator.
 
         All resource decomposition functions for this operator class are expected to accept the
@@ -167,7 +169,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def default_resource_decomp(*args, **kwargs) -> List:
+    def default_resource_decomp(cls, *args, **kwargs) -> List:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
@@ -252,26 +254,24 @@ class ResourceOperator(ABC):
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
         return str_rep
 
-    # def __mul__(self, scalar: int):
-    #     assert isinstance(scalar, int)
-    #     gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-    #     qubit_manager = QubitManager(0)
-    #     qubit_manager._logic_qubit_counts = self.num_wires
+    def __mul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = self.num_wires
 
-    #     from pennylane.labs.resource_estimation.resource_container import Resources
-    #     return Resources(qubit_manager, gate_types)
+        return Resources(qubit_manager, gate_types)
 
-    # def __matmul__(self, scalar: int):
-    #     assert isinstance(scalar, int)
-    #     gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-    #     qubit_manager = QubitManager(0)
-    #     qubit_manager._logic_qubit_counts = scalar * self.num_wires
+    def __matmul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = scalar * self.num_wires
 
-    #     from pennylane.labs.resource_estimation.resource_container import Resources
-    #     return Resources(qubit_manager, gate_types)
+        return Resources(qubit_manager, gate_types)
 
-    # __rmul__ = __mul__
-    # __rmatmul__ = __matmul__
+    __rmul__ = __mul__
+    __rmatmul__ = __matmul__
 
     @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
