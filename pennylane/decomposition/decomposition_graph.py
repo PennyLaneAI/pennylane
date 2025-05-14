@@ -169,9 +169,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             and self_adjoint not in decomps
             and adjoint_rotation not in decomps
         ):
-            # Only when the base op is not self-adjoint or a rotation with a single rotation
-            # angle that could be trivially negated do we need to apply adjoint to each of
-            # the base op's decomposition rules.
+            # In general, we decompose the adjoint of an operator by applying adjoint to the
+            # decompositions of the operator. However, this is not necessary if the operator
+            # is self-adjoint or if it has a single rotation angle which can be trivially
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
+            # would've already been retrieved as a potential decomposition rule for this
+            # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op_node))
 
         elif (
@@ -179,9 +182,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             and pow_rotation not in decomps
             and pow_involutory not in decomps
         ):
-            # Only when the operator is not self-adjoint or a rotation with a single rotation
-            # angle that could be trivially multiplied with the power do we need to apply the
-            # power to each of the base op's decomposition rules.
+            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
+            # approach we take to decompose powers of operators. However, if the operator is
+            # involutory or if it has a single rotation angle that can be trivially multiplied
+            # with the power, we would've already had retrieved `pow_involutory` or `pow_rotation`
+            # as a potential decomposition rule for this operator, so there is no need to consider
+            # the general case.
             decomps.extend(self._get_pow_decompositions(op_node))
 
         elif op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
