@@ -50,6 +50,11 @@ def translate_op_alias(op_alias):
     if match := re.match(r"Pow\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"Pow({translate_op_alias(base_op_name)})"
+    if match := re.match(r"(\w+)\(\w+\)", op_alias):
+        raise ValueError(
+            f"'{match.group(1)}' is not a valid name for a symbolic operator. Supported "
+            f'names include: "Adjoint", "C", "Controlled", "Pow".'
+        )
     return op_alias
 
 

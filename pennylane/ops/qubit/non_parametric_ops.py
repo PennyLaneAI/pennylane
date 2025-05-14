@@ -36,7 +36,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
-    pow_of_self_adjoint,
+    pow_involutory,
     self_adjoint,
 )
 from pennylane.operation import Operation
@@ -262,7 +262,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
-add_decomps("Pow(Hadamard)", pow_of_self_adjoint)
+add_decomps("Pow(Hadamard)", pow_involutory)
 
 
 def _controlled_h_resources(*_, num_control_wires, num_work_wires, **__):
@@ -511,7 +511,7 @@ def _paulix_to_rx(wires: WiresLike, **__):
 
 add_decomps(PauliX, _paulix_to_rx)
 add_decomps("Adjoint(PauliX)", self_adjoint)
-add_decomps("Pow(PauliX)", pow_of_self_adjoint)
+add_decomps("Pow(PauliX)", pow_involutory)
 
 
 def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires, **__):
@@ -770,7 +770,7 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
 add_decomps("Adjoint(PauliY)", self_adjoint)
-add_decomps("Pow(PauliY)", pow_of_self_adjoint)
+add_decomps("Pow(PauliY)", pow_involutory)
 
 
 def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
@@ -1021,7 +1021,7 @@ def _pauliz_to_ps(wires: WiresLike, **__):
 
 add_decomps(PauliZ, _pauliz_to_ps)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
-add_decomps("Pow(PauliZ)", pow_of_self_adjoint)
+add_decomps("Pow(PauliZ)", pow_involutory)
 
 
 def _controlled_z_resources(*_, num_control_wires, num_work_wires, **__):
@@ -1734,7 +1734,7 @@ def _swap_to_cnot(wires, **__):
 
 add_decomps(SWAP, _swap_to_cnot)
 add_decomps("Adjoint(SWAP)", self_adjoint)
-add_decomps("Pow(SWAP)", pow_of_self_adjoint)
+add_decomps("Pow(SWAP)", pow_involutory)
 
 
 def _controlled_swap_resources(*_, num_control_wires, num_work_wires, **__):
@@ -1928,7 +1928,7 @@ def _ecr_decomp(wires, **__):
 
 add_decomps(ECR, _ecr_decomp)
 add_decomps("Adjoint(ECR)", self_adjoint)
-add_decomps("Pow(ECR)", pow_of_self_adjoint)
+add_decomps("Pow(ECR)", pow_involutory)
 
 
 class ISWAP(Operation):

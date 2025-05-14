@@ -23,7 +23,7 @@ from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    pow_of_self_adjoint,
+    pow_involutory,
     pow_rotation,
     self_adjoint,
 )
@@ -144,7 +144,7 @@ decompositions["C(GlobalPhase)"] = [_controlled_g_phase_decomp]
 decompositions["C(Hadamard)"] = [_controlled_hadamard]
 decompositions["C(PhaseShift)"] = [_controlled_phase_shift_decomp]
 decompositions["Adjoint(Hadamard)"] = [self_adjoint]
-decompositions["Pow(Hadamard)"] = [pow_of_self_adjoint]
+decompositions["Pow(Hadamard)"] = [pow_involutory]
 decompositions["Adjoint(RX)"] = [adjoint_rotation]
 decompositions["Pow(RX)"] = [pow_rotation]
 decompositions["Adjoint(CNOT)"] = [self_adjoint]
