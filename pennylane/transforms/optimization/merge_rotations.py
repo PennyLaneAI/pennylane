@@ -101,8 +101,15 @@ def _get_plxpr_merge_rotations():
                 return self._update_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
-            if previous_op is None:
-                if any(qml.math.is_abstract(w) for w in op.wires):
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+            if previous_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't merge. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to merge, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (previous_op is None or other_saved_wires):
                     self._interpret_remaining_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
