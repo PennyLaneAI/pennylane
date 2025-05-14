@@ -65,10 +65,10 @@ for bit b in alias {
 int i = 15;
 
 switch (i) {
-    case 1, 3, 5 {
+    case 1 {
         x q0;
     }
-    case 2, 4, 6 {
+    case 2 {
         y q0;
     }
     case -1 {

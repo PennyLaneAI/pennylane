@@ -4,11 +4,9 @@ from functools import partial
 from typing import Callable, Iterable
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral
+    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop
 from openqasm3.visitor import QASMVisitor, QASMNode
-from pygments.lexers.robotframework import ForLoop
 
-import pennylane
 from pennylane import (
     CH,
     CNOT,
@@ -39,7 +37,11 @@ from pennylane import (
     Toffoli,
     device,
     while_loop,
-    for_loop
+    for_loop,
+    wires,
+    ctrl,
+    adjoint,
+    pow, measure, cond
 )
 
 SINGLE_QUBIT_GATES = {
@@ -98,6 +100,9 @@ class QasmInterpreter(QASMVisitor):
     flow and control flow is evaluated completely during this second pass. The control flow
     is handled using Pennylane provided qml.while_loop and qml.for_loop etc. to be compatible
     with qjit. The data flow is traced through the context, which is mutated during each pass.
+
+    The first pass does optimization using static values only. We therefore need to track whether
+    values are dirty.
     """
 
     def visit(self, node: QASMNode, context: dict):
@@ -150,7 +155,60 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a switch statement.
         """
+        print("here")
+        self._init_switches_scope(node, context)
 
+        # switches need to have access to the outer context but not get called unless the condition is met
+
+        # we need to keep track of each clause individually
+        for i, case in enumerate(node.cases):
+            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"] = {
+                "vars": context["vars"],
+                "wires": context["wires"],
+                "name": f'{context["name"]}_switch_{node.span.start_line}_cond_{i}'
+            }
+
+            # process the individual clauses
+            self.visit(
+                case[1].statements,
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"]
+            )
+
+        context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = {
+            "vars": context["vars"],
+            "wires": context["wires"],
+            "name": f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
+        }
+
+        # process the default case
+        self.visit(
+            node.default.statements,
+            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
+        )
+
+        def switch():
+            target = self.retrieve_variable(node.target.name, context)
+            cond(
+                # TODO: support eval of lists, etc. to match
+                target == self.eval_expr(node.cases[0][0][0], context),
+                lambda: [
+                    gate() for gate in
+                    context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_0"]["gates"]
+                ],
+                lambda: [
+                    gate() for gate in
+                    context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]["gates"]
+                ],
+                [
+                    (target == self.eval_expr(node.cases[j][0][0], context), lambda: [
+                        gate() for gate in
+                        context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]["gates"]
+                    ]) for j, case in
+                    enumerate(context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys()[1:-1])
+                ]
+            )()
+
+        context["gates"].append(switch)
 
     def alias_statement(self, node: QASMNode, context: dict):
         """
@@ -219,6 +277,19 @@ class QasmInterpreter(QASMVisitor):
         if "aliases" not in context:
             context["aliases"] = dict()
 
+    def _init_switches_scope(self, node: QASMNode, context: dict):
+        """
+        Inits the switches scope on the current context.
+        """
+        if not "scopes" in context:
+            context["scopes"] = {
+                "switches": dict()
+            }
+        elif "switches" not in context["scopes"]:
+            context["scopes"]["switches"] = dict()
+
+        context["scopes"]["switches"][f"switch_{node.span.start_line}"] = dict()
+
     def _init_gates_list(self, context: dict):
         """
         Inits the gates list on the current context.
@@ -244,7 +315,7 @@ class QasmInterpreter(QASMVisitor):
                 "wires": context["wires"],
                 "name": f'{context["name"]}_while_{node.span.start_line}'
             }
-        elif isinstance(node, ForLoop):
+        elif isinstance(node, ForInLoop):
             context["scopes"]["loops"][f"for_{node.span.start_line}"] = {
                 "vars": context["vars"],
                 "wires": context["wires"],
@@ -364,22 +435,22 @@ class QasmInterpreter(QASMVisitor):
         """
         self._init_gates_list(context)
         if isinstance(node.measure.qubit, Identifier):
-            measure = partial(pennylane.measure, node.measure.qubit.name)
+            meas = partial(measure, node.measure.qubit.name)
 
         elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary
-            measure = partial(pennylane.measure, node.measure.qubit.value)
+            meas = partial(measure, node.measure.qubit.value)
 
         elif isinstance(node.measure.qubit, list):
             for qubit in node.measure.qubit:
                 if isinstance(qubit, Identifier):
-                    measure = partial(pennylane.measure, qubit.name)
+                    meas = partial(measure, qubit.name)
 
                 elif isinstance(qubit, IntegerLiteral):
-                    measure = partial(pennylane.measure, qubit.value)
+                    meas = partial(measure, qubit.value)
 
         # handle data flow. Note: data flow dependent on quantum operations deferred? Promises?
         def set_local_var():
-            res = measure()
+            res = meas()
             context["vars"][node.target.name]["val"] = res
             context["vars"][node.target.name]["line"] = node.span.start_line
 
@@ -393,21 +464,21 @@ class QasmInterpreter(QASMVisitor):
         self._init_gates_list(context)
         if isinstance(node.qubits, Identifier):
             context["gates"].append(
-                partial(pennylane.measure, node.qubits.name, reset=True)
+                partial(measure, node.qubits.name, reset=True)
             )
         elif isinstance(node.qubits, IntegerLiteral):  # TODO: are all these cases necessary / supported
             context["gates"].append(
-                partial(pennylane.measure, node.qubits.value, reset=True)
+                partial(measure, node.qubits.value, reset=True)
             )
         elif isinstance(node.qubits, list):
             for qubit in node.qubits:
                 if isinstance(qubit, Identifier):
                     context["gates"].append(
-                        partial(pennylane.measure, qubit.name, reset=True)
+                        partial(measure, qubit.name, reset=True)
                     )
                 elif isinstance(qubit, IntegerLiteral):
                     context["gates"].append(
-                        partial(pennylane.measure, qubit.value, reset=True)
+                        partial(measure, qubit.value, reset=True)
                     )
 
     def subroutine_definition(self, node: QASMNode, context: dict):
@@ -574,14 +645,14 @@ class QasmInterpreter(QASMVisitor):
         call_stack = [gate]
         for mod in node.modifiers:
             if mod.modifier.name == "inv":
-                wrapper = pennylane.adjoint
+                wrapper = adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(pennylane.pow, z=mod.argument.value)
+                    wrapper = partial(pow, z=mod.argument.value)
                 elif mod.argument.name in context["vars"]:
-                    wrapper = partial(pennylane.pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
+                    wrapper = partial(pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
             elif mod.modifier.name == 'ctrl':
-                wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
+                wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
         def call():
@@ -629,7 +700,7 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
             *args,
-            wires=pennylane.wires.Wires([node.qubits[0].name])
+            wires=wires.Wires([node.qubits[0].name])
         )
 
     @staticmethod
@@ -649,6 +720,6 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[
-                pennylane.wires.Wires([node.qubits[q].name]) for q in range(len(node.qubits))
+                wires.Wires([node.qubits[q].name]) for q in range(len(node.qubits))
             ]
         )
