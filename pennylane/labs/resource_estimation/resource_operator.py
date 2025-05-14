@@ -14,6 +14,7 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
+from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Callable, List, Type
@@ -180,12 +181,18 @@ class ResourceOperator(ABC):
     def set_resources(cls, new_func: Callable, override_type: str = "base"):
         """Set a custom resource method."""
         if override_type == "base":
+            _validate_signature(new_func, cls.resource_keys)
             cls.resource_decomp = new_func
         if override_type == "pow":
+            keys = cls.resource_keys + {"pow_z"}
+            _validate_signature(new_func, keys)
             cls.pow_resource_decomp = new_func
         if override_type == "adj":
+            _validate_signature(new_func, cls.resource_keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
+            keys = cls.resource_keys + {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values"}
+            _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
 
@@ -209,6 +216,34 @@ class ResourceOperator(ABC):
 
         return Resources(qubit_manager, gate_types)
 
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            gate_types = defaultdict(int, {self.resource_rep_from_op(): 1, other.resource_rep_from_op(): 1})
+            qubit_manager = QubitManager(0)
+            qubit_manager._logic_qubit_counts = max(self.num_wires, other.num_wires)
+
+            return Resources(qubit_manager, gate_types)
+        
+        if isinstance(other, Resources):
+            return (1 * self) + other
+        
+        raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
+    
+    def __and__(self, other):
+        if isinstance(other, self.__class__):
+            gate_types = defaultdict(int, {self.resource_rep_from_op(): 1, other.resource_rep_from_op(): 1})
+            qubit_manager = QubitManager(0)
+            qubit_manager._logic_qubit_counts = self.num_wires + other.num_wires
+
+            return Resources(qubit_manager, gate_types)
+        
+        if isinstance(other, Resources):
+            return (1 * self) & other
+        
+        raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
+
+    __radd__ = __add__
+    __rand__ = __and__
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
 
@@ -220,6 +255,31 @@ class ResourceOperator(ABC):
     def tracking_name_from_op(self) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return self.__class__.tracking_name(**self.resource_params)
+
+
+def _validate_signature(func: Callable, expected_args: set):
+    """Raise an error if the provided function doesn't match expected signature
+
+    Args:
+        func (Callable): function to match signature with
+        expected_args (set): expected signature
+    """
+    
+    sig = signature(func)
+    actual_args = set(sig.parameters)
+
+    if (extra_args := actual_args - expected_args):
+        raise ValueError(
+            f"The function provided specifies addtional arguments ({extra_args}) from"
+            + f" the expected arguments ({expected_args}). Please update the function signature or"
+            + " modify the base class' `resource_keys` argument."
+        )
+
+    if (missing_args := expected_args - actual_args):
+        raise ValueError(
+            f"The function is missing arguments ({missing_args}) which are expected. Please"
+            + " update the function signature or modify the base class' `resource_keys` argument."
+        )
 
 
 class ResourcesNotDefined(Exception):
