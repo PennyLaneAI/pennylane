@@ -70,37 +70,56 @@ class FTQCQubit(Device):
 
         # validate the initial circuit is one we can process, and update all observables to have wires
         program.add_transform(no_analytic)
-        program.add_transform(validate_device_wires, wires=self.wires, name="ftqc.qubit")
+        program.add_transform(validate_device_wires, wires=self.wires, name=self.name)
         program.add_transform(
             validate_observables,
             lambda obs: self.backend.capabilities.supports_observable(obs.name),
-            name="ftqc.qubit",
+            name=self.name,
         )
+
+        # program.add_transform(qml.transforms.broadcast_expand)
 
         # convert to mbqc formalism
         program.add_transform(split_non_commuting)
         program.add_transform(measurements_from_samples)
         program.add_transform(convert_to_mbqc_gateset)
         program.add_transform(combine_global_phases)
-        # program.add_transform(convert_to_mbqc_formalism)  # we will want to be able to swap this out more easily - maybe its a setting on backend, or passed to the device on initialization, at the moment
-        #
-        # # set up for MCM execution
-        # if execution_config.mcm_config.mcm_method == "one-shot":
-        #     program.add_transform(dynamic_one_shot)
-        # if self.backend.diagonalize_mcms:
-        #     program.add_transform(diagonalize_mcms)
-        #
-        # # validate final circuit
-        # program.add_transform(validate_device_wires, wires=self.backend.wires, name=f"ftqc.qubit.{self.backend.name}")
-        # program.add_transform(
-        #     validate_measurements,
-        #     sample_measurements=lambda m: isinstance(m, qml.measurements.SampleMP),
-        #     name="ftqc.qubit"
-        # )
+        program.add_transform(
+            self.backend.conversion_transform
+        )  # we will want to be able to swap this out more easily - maybe its a setting on backend, or passed to the device on initialization, at the moment
 
-        # program.add_transform(qml.transforms.broadcast_expand)
+        # set up for MCM execution
+        if execution_config.mcm_config.mcm_method == "one-shot":
+            program.add_transform(dynamic_one_shot)
+        if self.backend.diagonalize_mcms:
+            program.add_transform(diagonalize_mcms)
+
+        # validate final circuit
+        program.add_transform(
+            validate_device_wires, wires=self.backend.wires, name=f"{self.name}.{self.backend.name}"
+        )
+        program.add_transform(
+            validate_measurements,
+            sample_measurements=lambda m: isinstance(m, qml.measurements.SampleMP),
+            name=self.name,
+        )
 
         # currently no need to preprocess the config as the device does not support derivatives
+        return program
+
+    def _core_catalyst_null_qubit_preprocess_transforms(
+        self, execution_config=DefaultExecutionConfig
+    ):
+
+        # Here we convert an arbitrary tape into one natively supported by the device
+        program = qml.transforms.core.TransformProgram()
+
+        program.add_transform(validate_device_wires, wires=self.wires, name="ftqc.qubit")
+        program.add_transform(split_non_commuting)
+        program.add_transform(measurements_from_samples)
+        program.add_transform(convert_to_mbqc_gateset)
+        program.add_transform(convert_to_mbqc_formalism)
+
         return program
 
     def setup_execution_config(
@@ -150,11 +169,11 @@ class LightningQubitBackend:
     name = "lightning"
     config_filepath = Path(__file__).parent / "lightning_backend.toml"
 
-    def __init__(self):
+    def __init__(self, mbqc_conversion_transform=convert_to_mbqc_formalism):
         self.diagonalize_mcms = True
-        self.max_wires = 25
+        self.conversion_transform = mbqc_conversion_transform
         self.wires = qml.wires.Wires(range(25))
-        self.device = qml.device("lightning.qubit")
+        self.device = qml.device("default.qubit")
 
         if self.config_filepath is not None:
             self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
@@ -168,8 +187,9 @@ class NullQubitBackend:
     name = "null"
     config_filepath = Path(__file__).parent / "null_backend.toml"
 
-    def __init__(self):
+    def __init__(self, mbqc_conversion_transform=convert_to_mbqc_formalism):
         self.diagonalize_mcms = False
+        self.conversion_transform = mbqc_conversion_transform
         self.wires = qml.wires.Wires(range(100))
         self.device = qml.device("null.qubit")
 

@@ -17,7 +17,7 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
-from copy import copy
+from copy import deepcopy
 from functools import lru_cache
 from typing import Iterable, Optional, Union
 
@@ -790,11 +790,11 @@ def diagonalize_mcms(tape):
         if mp.mv is None:
             new_measurements.append(mp)
         else:
-            new_mp = copy(mp)
+            new_mp = deepcopy(mp)
             mps = [mps_mapping.get(m, m) for m in mp.mv.measurements]
             new_mp.mv.measurements = mps
             new_measurements.append(new_mp)
 
-    new_tape = tape.copy(operations=new_operations)
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     return (new_tape,), null_postprocessing
