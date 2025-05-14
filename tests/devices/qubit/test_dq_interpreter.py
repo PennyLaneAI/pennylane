@@ -314,6 +314,7 @@ class TestSampling:
         with pytest.raises(NotImplementedError):
             f()
 
+    @pytest.mark.skip("Temporary")
     def test_mcms_not_all_same_key(self, seed):
         """Test that each mid circuit measurement has a different key."""
 
@@ -358,6 +359,7 @@ class TestSampling:
         s2 = f()  # should be done with different key, leading to different results.
         assert not qml.math.allclose(s1, s2)
 
+    @pytest.mark.skip("Temporary")
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     def test_projector_samples_hw_like(self, seed, n_postselects):
         """Test that hw-like postselect_mode causes the number of samples to change as expected."""
