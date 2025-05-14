@@ -279,12 +279,7 @@ class ResourceOperator(ABC):
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            gate_types = defaultdict(int, {self.resource_rep_from_op(): 1, other.resource_rep_from_op(): 1})
-            qubit_manager = QubitManager(0)
-            qubit_manager._logic_qubit_counts = max(self.num_wires, other.num_wires)
-
-            return Resources(qubit_manager, gate_types)
-        
+            return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
         
@@ -292,12 +287,7 @@ class ResourceOperator(ABC):
     
     def __and__(self, other):
         if isinstance(other, self.__class__):
-            gate_types = defaultdict(int, {self.resource_rep_from_op(): 1, other.resource_rep_from_op(): 1})
-            qubit_manager = QubitManager(0)
-            qubit_manager._logic_qubit_counts = self.num_wires + other.num_wires
-
-            return Resources(qubit_manager, gate_types)
-        
+            return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
         
