@@ -8,17 +8,17 @@ class TestInterpreter:
 
     qasm_programs = [
         (
-            open('adder.qasm', mode='r').read(),
+            open('tests/qasm_interpreter/adder.qasm', mode='r').read(),
             22,
             'adder'
         ),
         (
-            open('qec.qasm', mode='r').read(),
+            open('tests/qasm_interpreter/qec.qasm', mode='r').read(),
             15,
             'qec'
         ),
         (
-            open('teleport.qasm', mode='r').read(),
+            open('tests/qasm_interpreter/teleport.qasm', mode='r').read(),
             19,
             'teleport'
         )
@@ -35,7 +35,7 @@ class TestInterpreter:
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(open('gates.qasm', mode='r').read(), permissive=True)
+        ast = parse(open('tests/qasm_interpreter/gates.qasm', mode='r').read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
 
         # setup mocks
