@@ -154,7 +154,7 @@ def _rot_measurements(op: RotXZX, wires):
         partial(measure_arbitrary_basis, angle=-theta),
     )(plane="XY", wires=wires[2], reset=True)
     m4 = cond_measure(
-        (m1 + m3) % 2,
+        m1 ^ m3,
         partial(measure_arbitrary_basis, angle=omega),
         partial(measure_arbitrary_basis, angle=-omega),
     )(plane="XY", wires=wires[3], reset=True)
