@@ -213,7 +213,7 @@ class TestCompressedResourceOp:
         [
             (resource_rep(qml.RX), "RX"),
             (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qml.RX, {}, 1, 0, 0), "C(RX)"),
+            (controlled_resource_rep(qml.T, {}, 1, 0, 0), "C(T)"),
             (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
         ],
     )
@@ -432,39 +432,6 @@ class TestSymbolicResourceRep:
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             qml.decomposition.adjoint_resource_rep(DummyOp, {})
-
-    def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
-        """Tests that the adjoint of a nested controlled op is flattened."""
-
-        rep = qml.decomposition.adjoint_resource_rep(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Controlled,
-                "base_params": {
-                    "base_class": qml.CRX,
-                    "base_params": {},
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
-                },
-            },
-        )
-        assert rep == CompressedResourceOp(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Adjoint,
-                "base_params": {
-                    "base_class": qml.ops.Controlled,
-                    "base_params": {
-                        "base_class": qml.RX,
-                        "base_params": {},
-                        "num_control_wires": 3,
-                        "num_zero_control_values": 1,
-                        "num_work_wires": 1,
-                    },
-                },
-            },
-        )
 
     def test_adjoint_custom_controlled_ops(self):
         """Tests that the adjoint of custom controlled ops remain as the custom version."""

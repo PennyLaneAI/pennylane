@@ -252,18 +252,14 @@ def _flip_control_adjoint_resource(
 ):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
-    return {
-        adjoint_resource_rep(
-            qml.ops.Controlled,
-            {
-                "base_class": target_class,
-                "base_params": target_params,
-                "num_control_wires": num_control_wires,
-                "num_zero_control_values": num_zero_control_values,
-                "num_work_wires": num_work_wires,
-            },
-        ): 1
-    }
+    inner_rep = controlled_resource_rep(
+        base_class=target_class,
+        base_params=target_params,
+        num_control_wires=num_control_wires,
+        num_zero_control_values=num_zero_control_values,
+        num_work_wires=num_work_wires,
+    )
+    return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
 @register_resources(_flip_control_adjoint_resource)

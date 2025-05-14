@@ -276,6 +276,8 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
+    if op_type is qml.ops.ControlledOp:
+        op_type = qml.ops.Controlled
     return CompressedResourceOp(op_type, params)
 
 
@@ -332,15 +334,35 @@ def controlled_resource_rep(
     if base_class in custom_ctrl_op_to_base():
         num_control_wires = base_class.num_wires - 1 + num_control_wires
         base_class = custom_ctrl_op_to_base()[base_class]
-        return CompressedResourceOp(
-            qml.ops.Controlled,
-            {
-                "base_class": base_class,
-                "base_params": {},
-                "num_control_wires": num_control_wires,
-                "num_zero_control_values": num_zero_control_values,
-                "num_work_wires": num_work_wires,
-            },
+
+    if base_class is qml.X:
+        if num_control_wires == 1 and num_zero_control_values == 0:
+            return resource_rep(qml.CNOT)
+        if num_control_wires == 2 and num_zero_control_values == 0:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    if base_class is qml.CNOT:
+        if num_control_wires == 1 and num_zero_control_values == 0:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires + 1,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    if base_class is qml.Toffoli:
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires + 2,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
         )
 
     if base_class is qml.MultiControlledX:
