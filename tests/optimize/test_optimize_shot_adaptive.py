@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane import optimize
 
 
 class TestExceptions:
@@ -556,7 +557,8 @@ class TestQNodeWeightedRandomSampling:
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
-        spy = mocker.spy(qml, "jacobian")
+
+        spy = mocker.spy(optimize.shot_adaptive, "jacobian")
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
         )
@@ -582,7 +584,7 @@ class TestQNodeWeightedRandomSampling:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        spy = mocker.spy(qml, "jacobian")
+        spy = mocker.spy(optimize.shot_adaptive, "jacobian")
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
