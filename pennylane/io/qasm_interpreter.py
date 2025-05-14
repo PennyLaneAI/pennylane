@@ -111,16 +111,24 @@ class QasmInterpreter(QASMVisitor):
         """
         if "vars" not in context:
             context["vars"] = {}
-        context["vars"][node.identifier.name] = {
-            'ty': node.type.__class__.__name__,
-            'val': node.init_expression.value,
-            'line': node.init_expression.span.start_line
-        }
+        if node.init_expression is not None:
+            context["vars"][node.identifier.name] = {
+                'ty': node.type.__class__.__name__,
+                'val': node.init_expression.value,
+                'line': node.init_expression.span.start_line
+            }
+        else:
+            context["vars"][node.identifier.name] = {
+                'ty': node.type.__class__.__name__,
+                'val': None,
+                'line': node.span.start_line
+            }
 
     def quantum_gate(self, node: QASMNode, context: dict):
         """
         Registers a quantum gate application. TODO: support modifiers
         """
+        gate = None
         if "gates" not in context:
             context["gates"] = []
         if node.name.name.upper() in SINGLE_QUBIT_GATES:
@@ -202,7 +210,9 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[
-                context["wires"].index(node.qubits[q].name)
+                context["wires"].index(
+                    node.qubits[q].name if isinstance(node.qubits[q].name, str) else node.qubits[q].name.name
+                )
                 for q in range(len(node.qubits))
             ]
         )
