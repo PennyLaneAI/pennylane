@@ -134,6 +134,22 @@ def _get_op_call_graph():
             gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
 
         return gate_types
+    
+    # @_op_call_graph.register
+    # def _(op: qtemps.subroutines.ModExp):
+    #     import pennylane as qml
+    #     gate_types = {}
+    #     x_wires = op.hyperparameters["x_wires"]
+    #     output_wires = op.hyperparameters["output_wires"]
+    #     base = op.hyperparameters["base"]
+    #     mod = op.hyperparameters["mod"]
+    #     work_wires = op.hyperparameters["work_wires"]
+    #     x_wires, output_wires, base, mod, work_wires = op.hyperparameters
+
+    #     controlled_sequence_multiplier = qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+    #     gate_types[controlled_sequence_multiplier] = 1
+
+    #     return gate_types
 
     return _op_call_graph
 
@@ -145,22 +161,22 @@ def _map_to_bloq():
     def _to_qt_bloq(op):
         return ToBloq(op)
 
-    @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
-        from qualtran.bloqs.phase_estimation import RectangularWindowState
-        from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+    # @_to_qt_bloq.register
+    # def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
+    #     from qualtran.bloqs.phase_estimation import RectangularWindowState
+    #     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if args and isinstance(args[0], dict) and args[0]:
-            try:
-                return args[0][type(op)]
-            except KeyError:
-                # ToDo: make this more robust of an error
-                return args[0][op]
+    #     if args and isinstance(args[0], dict) and args[0]:
+    #         try:
+    #             return args[0][type(op)]
+    #         except KeyError:
+    #             # ToDo: make this more robust of an error
+    #             return args[0][op]
             
-        return TextbookQPE(
-            unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
-            ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
-        )
+    #     return TextbookQPE(
+    #         unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
+    #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+    #     )
 
     # @_to_qt_bloq.register
     # def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
@@ -838,6 +854,7 @@ def _inherit_from_bloq(cls):
                     else:
                         ops = self.op.decomposition()
                         all_wires = list(self.op.wires)
+
                     signature = self.signature
                     in_quregs = out_quregs = {
                         "qubits": np.array(all_wires).reshape(len(all_wires), 1)
@@ -894,7 +911,7 @@ def _inherit_from_bloq(cls):
                         }
 
                         # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
-                        # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
+                        # input `in_quregs` and updating the `qreg_to_qvar` mapping.
                         qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
 
                         # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
