@@ -153,11 +153,6 @@ def extract_matrix_value(rewriter, op, module):
         deviceProgram = get_parent_of_type(funcOp, builtin.ModuleOp)
         hostProgram = get_parent_of_type(deviceProgram.parent_op(), builtin.ModuleOp)
 
-        # print(f"funcOp = {funcOp}")
-        # print(f"deviceProgram = {deviceProgram}")
-        # print(f"hostProgram = {hostProgram}")
-
-        # Determine the argument index (not used yet)
         arg_index = funcOp.body.blocks[0].args.index(convert_operand)
 
         for operation in hostProgram.walk():
@@ -221,42 +216,74 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                 UnitAttr,
             )
 
-            angle = ops[0].parameters[0].item()
+            # angle = ops[0].parameters[0].item()
 
             # Convert raw float to a FloatAttr (with correct type)
-            angle_attr = FloatAttr(angle, Float64Type())
+            # angle_attr = FloatAttr(angle, Float64Type())
 
             # Create a constant op from the attribute
-            angle_const_op = ConstantOp(value=angle_attr)
-
-            # Get the SSA value (result) from the constant op
-            angle_ssa = angle_const_op.result
+            # angle_const_op.result gets the SSA value (result) from the constant op
+            # angle_const_op = ConstantOp(value=angle_attr)
 
             # Insert the constant op into the IR BEFORE `op`
-            rewriter.insert_op(angle_const_op, InsertPoint.before(op))
+            # rewriter.insert_op(angle_const_op, InsertPoint.before(op))
 
             # Operand is the original qubit being used:
-            qubit_operand = op.in_qubits[0]  # SSAValue
+            current_input = op.in_qubits[0]  # SSAValue
 
-            # breakpoint()
+            for qml_op in ops:
+                angle = qml_op.parameters[0].item()
+                gate_name = qml_op.name  # e.g., "RX", "RY", "RZ"
 
-            new_op = CustomOp(
-                operands=(angle_ssa, qubit_operand, None, None),
-                properties=op.properties,
-                attributes=op.attributes,
-                successors=op.successors,
-                regions=op.regions,
-                result_types=(op.result_types, []),
-            )
+                # Build constant op for angle
+                angle_attr = FloatAttr(angle, Float64Type())
+                angle_const_op = ConstantOp(value=angle_attr)
+                rewriter.insert_op(angle_const_op, InsertPoint.before(op))  # insert constant
+
+                angle_ssa = angle_const_op.result
+
+                # Create and insert the custom op
+                custom_op = CustomOp(
+                    operands=(angle_ssa, current_input, None, None),
+                    properties={
+                        "gate_name": StringAttr(gate_name),
+                        **op.properties,
+                    },
+                    attributes=op.attributes,
+                    successors=op.successors,
+                    regions=op.regions,
+                    result_types=(op.result_types, []),
+                )
+                rewriter.insert_op(custom_op, InsertPoint.before(op))
+
+                for old_res, new_res in zip(op.results, custom_op.results):
+                    old_res.replace_by(new_res)
+
+                # Update current input for next gate in chain
+                current_input = custom_op.in_qubits[0]
+
+            breakpoint()
+
+            # new_op = CustomOp(
+            #    operands=(angle_const_op.result, qubit_operand, None, None),
+            #    properties={
+            #        "gate_name": StringAttr("RX"),
+            #        **op.properties,
+            #    },
+            #    attributes=op.attributes,
+            #    successors=op.successors,
+            #    regions=op.regions,
+            #    result_types=(op.result_types, []),
+            # )
 
             # breakpoint()
 
             # Step 6: Insert before the original op
-            rewriter.insert_op(new_op, InsertPoint.before(op))
+            # rewriter.insert_op(new_op, InsertPoint.before(op))
 
             # Step 7: Replace uses if needed
-            for old_res, new_res in zip(op.results, new_op.results):
-                old_res.replace_by(new_res)
+            # for old_res, new_res in zip(op.results, new_op.results):
+            #    old_res.replace_by(new_res)
 
             # Step 8: Erase original op
             rewriter.erase_op(op)
