@@ -4,7 +4,7 @@ from functools import partial
 from typing import Callable
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop
+    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression
 from openqasm3.visitor import QASMVisitor, QASMNode
 from pygments.lexers.robotframework import ForLoop
 
@@ -88,6 +88,16 @@ class QasmInterpreter(QASMVisitor):
     Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
     top level node of the AST as a parameter and recursively descends the AST, calling the
     overriden visitor function on each node.
+
+    There are two passes. The first queues Callables such as gate partials into a QNode,
+    so that the QNode can be called and the program will be executed at that time. During
+    this first pass, any available values provided by the program like literals are used to
+    optimize the compilation with as much detail as possible. A simulation does not occur
+    during the first pass which just queues Callables into a QNode. The second pass occurs
+    during the execution of the QNode and involves simulating everything. All remaining data
+    flow and control flow is evaluated completely during this second pass. The control flow
+    is handled using Pennylane provided qml.while_loop and qml.for_loop etc. to be compatible
+    with qjit. The data flow is traced through the context, which is mutated during each pass.
     """
 
     def visit(self, node: QASMNode, context: dict):
@@ -115,7 +125,7 @@ class QasmInterpreter(QASMVisitor):
             getattr(self, handler_name)(node, context)
         else:
             print(f"An unrecognized QASM instruction {node.__class__.__name__} "  # TODO: change to warning
-                  f"was encountered on line {node.span.start_line}.")
+                  f"was encountered on line {node.span.start_line}, in {context['name']}.")
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
@@ -136,17 +146,35 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
+    def alias_statement(self, node: QASMNode, context: dict):
+        """
+        Registers an alias statement.
+        """
+        self._init_aliases(context)
+        context["aliases"][node.target.name] = self.eval_expr(node.value, context)
+
     @staticmethod
-    def retrieve_variable(name: str, context: dict): # TODO: update this to account for deferred evals?
+    def retrieve_variable(name: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
         """
+        def _warning(context, name):
+            print(
+                f"Attempt to use unevaluated variable {name} in {context['name']}, "
+                f"last updated on line {context['vars'][name]['line']}."
+            )  # TODO: make a warning
+
         if name in context["vars"]:
-            return context["vars"][name]
+            if isinstance(context["vars"][name], Callable):
+                _warning(context, name)
+            else:
+                return context["vars"][name]
+        elif name in context["wires"]:
+            return context["wires"][name]
+        elif "aliases" in context and name in context["aliases"]:
+            return context["aliases"][name](context)  # evaluate the alias and de-reference
         else:
-            raise NameError(
-                f"Uninitialized variable {name} encountered in QASM."
-            )
+            _warning(context, name)
 
     def eval_expr(self, node: QASMNode, context: dict):
         """
@@ -169,14 +197,33 @@ class QasmInterpreter(QASMVisitor):
             res = eval(f'{lhs}{node.op.name}{rhs}')
         elif isinstance(node, UnaryExpression):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
+        elif isinstance(node, IndexExpression):
+            def alias(context):
+                try:
+                    return self.retrieve_variable(node.collection.name, context)
+                except NameError:
+                    # TODO: make a warning
+                    print(f"Attempt to alias an undeclared variable {node.collection.name} in {context['name']}.")
+
+                # if isinstance(node.index[0], RangeDefinition): TODO: support indexing here
+                #     ret = ret[node.index[0].start: node.index[0].end: node.index[0].step]
+                # return ret
+            res = alias
         elif re.search('Literal', node.__class__.__name__):
             res = node.value
         # TODO: include all other cases here, such as references to vars in the current scope (Identifier)
         return res
 
+    def _init_aliases(self, context: dict):
+        """
+        Inits the aliases dict on the current context.
+        """
+        if "aliases" not in context:
+            context["aliases"] = dict()
+
     def _init_gates_list(self, context: dict):
         """
-        Inits the gates list on the curren context.
+        Inits the gates list on the current context.
         """
         if "gates" not in context:
             context["gates"] = []
@@ -247,7 +294,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(loop)
 
-    def for_loop(self, node: QASMNode, context: dict):
+    def for_in_loop(self, node: QASMNode, context: dict):
         """
         Registers a for loop.
         """
@@ -301,6 +348,8 @@ class QasmInterpreter(QASMVisitor):
                         gate()  # updates vars in sub context if any measurements etc. occur
 
             context["gates"].append(unrolled)
+        elif isinstance(loop_params, None):  # it's a value that will be evaluated at "runtime" (when calling the QNode)
+            pass
 
     def return_statement(self, node: QASMNode, context: dict):
         """
@@ -332,6 +381,7 @@ class QasmInterpreter(QASMVisitor):
         def set_local_var():
             res = measure()
             context["vars"][node.target.name]["val"] = res
+            context["vars"][node.target.name]["line"] = node.span.start_line
 
         context["vars"][node.target.name]["val"] = set_local_var  # references to an unresolved value see a func for now
         context["gates"].append(set_local_var)
