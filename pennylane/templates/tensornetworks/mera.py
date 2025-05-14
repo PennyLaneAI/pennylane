@@ -24,7 +24,7 @@ from collections.abc import Callable
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def compute_indices(wires, n_block_wires):
@@ -171,7 +171,6 @@ class MERA(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @property

@@ -1003,7 +1003,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1030,7 +1033,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            qml.QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1507,7 +1513,7 @@ class QubitDevice(Device):
         """Return samples of an observable.
 
         Args:
-            observable (Observable): the observable to sample
+            observable (Operator): the observable to sample
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and

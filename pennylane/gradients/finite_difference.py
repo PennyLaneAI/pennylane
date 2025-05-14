@@ -28,7 +28,7 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -305,7 +305,7 @@ def _expand_transform_finite_diff(
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def finite_diff(

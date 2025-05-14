@@ -14,7 +14,7 @@
 """The bosonic representation classes and functions."""
 from copy import copy
 
-import pennylane as qml
+from pennylane import math
 from pennylane.typing import TensorLike
 
 
@@ -153,7 +153,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot add {type(other)} to a BoseWord.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -182,7 +182,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a BoseWord.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -195,7 +195,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a BoseWord from {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -240,7 +240,7 @@ class BoseWord(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply BoseWord by {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -441,7 +441,7 @@ class BoseSentence(dict):
         adjoint_dict = {}
         for key, value in self.items():
             word = key.adjoint()
-            scalar = qml.math.conj(value)
+            scalar = math.conj(value)
             adjoint_dict[word] = scalar
 
         return BoseSentence(adjoint_dict)
@@ -472,7 +472,7 @@ class BoseSentence(dict):
         if not isinstance(other, (TensorLike, BoseWord, BoseSentence)):
             raise TypeError(f"Cannot add {type(other)} to a BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -508,7 +508,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -523,7 +523,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a BoseSentence from {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -555,7 +555,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply BoseSentence by {type(other)}.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -574,7 +574,7 @@ class BoseSentence(dict):
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply {type(other)} by BoseSentence.")
 
-        if qml.math.size(other) > 1:
+        if math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"

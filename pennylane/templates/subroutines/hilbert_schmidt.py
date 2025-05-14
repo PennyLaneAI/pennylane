@@ -16,7 +16,7 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class HilbertSchmidt(Operation):
@@ -97,7 +97,6 @@ class HilbertSchmidt(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):

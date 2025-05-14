@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.math import expand_matrix
 from pennylane.operation import (
-    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
@@ -296,11 +295,11 @@ class Exp(ScalarSymbolicOp, Operation):
         for op_name in qml.ops.qubit.__all__:
             op_class = getattr(qml.ops.qubit, op_name)
             if op_class.has_generator:
-                if op_class.num_wires == AnyWires:
+                if op_class.num_wires is None:
                     has_generator_types_anywires.append(op_class)
                 elif op_class.num_wires == len(base.wires):
                     has_generator_types.append(op_class)
-        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires == AnyWires
+        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires is None
         has_generator_types.extend(has_generator_types_anywires)
 
         for op_class in has_generator_types:

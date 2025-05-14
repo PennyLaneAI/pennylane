@@ -1841,7 +1841,8 @@ class TestSymbolicOpComparison:
 
         # if we get rid of Observable or stop having adjoint(Observable) be an Observable,
         # this test is no longer relevant. Ref: https://github.com/PennyLaneAI/pennylane/pull/7107/
-        assert isinstance(adj_op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert isinstance(adj_op, qml.operation.Observable)
 
         assert not qml.equal(adj_op, qml.exp(base, 2))
 

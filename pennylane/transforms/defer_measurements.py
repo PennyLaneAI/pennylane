@@ -260,7 +260,7 @@ def _get_plxpr_defer_measurements():
 
         def resolve_mcm_values(
             self,
-            primitive: "jax.core.Primitive",
+            primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
             invals: Sequence[Union[MeasurementValue, Number]],
             params: dict,
@@ -269,7 +269,7 @@ def _get_plxpr_defer_measurements():
             input ``eqn`` in its ``processing_fn``.
 
             Args:
-                primitive (jax.core.Primitive): Jax primitive
+                primitive (jax.extend.core.Primitive): Jax primitive
                 subfuns (Sequence[Callable]): Callable positional arguments to the primitive.
                     These are created by pre-processing jaxpr equation parameters.
                 invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the primitive
@@ -306,11 +306,11 @@ def _get_plxpr_defer_measurements():
             [m0, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
             return m0._apply(lambda x: processing_fn(x, other))
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 

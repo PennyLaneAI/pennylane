@@ -24,9 +24,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import (
-    _contract_qjac_with_cjac,
     _validate_gradient_methods,
     choose_trainable_param_indices,
+    contract_qjac_with_cjac,
 )
 from pennylane.measurements import (
     ExpectationMP,
@@ -152,13 +152,13 @@ def _transform_observable(obs, Z, device_wires):
     """Apply a Gaussian linear transformation to an observable.
 
     Args:
-        obs (.Observable): observable to transform
+        obs (.Operator): observable to transform
         Z (array[float]): Heisenberg picture representation of the linear transformation
         device_wires (.Wires): wires on the device the transformed observable is to be
             measured on
 
     Returns:
-        .Observable: the transformed observable
+        .Operator: the transformed observable
     """
     # Get the Heisenberg representation of the observable
     # in the position/momentum basis. The returned matrix/vector
@@ -520,7 +520,7 @@ def _expand_transform_param_shift_cv(
 @partial(
     transform,
     expand_transform=_expand_transform_param_shift_cv,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def param_shift_cv(

@@ -414,16 +414,16 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
 
 
 def _square_hamiltonian_terms(
-    coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
-) -> tuple[list[float], list[qml.operation.Observable]]:
+    coeffs: Iterable[float], ops: Iterable[qml.operation.Operator]
+) -> tuple[list[float], list[qml.operation.Operator]]:
     """Calculates the coefficients and observables that compose the squared Hamiltonian.
 
     Args:
         coeffs (Iterable[float]): coeffients of the input Hamiltonian
-        ops (Iterable[qml.operation.Observable]): observables of the input Hamiltonian
+        ops (Iterable[qml.operation.Operator]): observables of the input Hamiltonian
 
     Returns:
-        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of observables
+        Tuple[List[float], List[qml.operation.Operator]]: The list of coefficients and list of observables
         of the squared Hamiltonian.
     """
     squared_coeffs, squared_ops = [], []

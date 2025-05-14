@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import FlatPytree, Operation
 from pennylane.ops import Identity
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -401,7 +401,6 @@ class IntegerComparator(Operation):
     """
 
     is_self_inverse: bool = True
-    num_wires = AnyWires
     num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 

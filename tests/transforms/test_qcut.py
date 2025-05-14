@@ -510,7 +510,7 @@ class TestTapeToGraph:
             node.obj for node in nodes if isinstance(node.obj, qml.measurements.MeasurementProcess)
         ]
 
-        assert node_observables[0]._shortname.value == expected_measurement
+        assert node_observables[0]._shortname == expected_measurement
 
     def test_multiple_observables(self):
         """
@@ -1575,7 +1575,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == 2
-        assert [o._shortname.value for o in out] == ["expval", "expval"]
+        assert [o._shortname for o in out] == ["expval", "expval"]
 
         obs = [o.obs for o in out]
 

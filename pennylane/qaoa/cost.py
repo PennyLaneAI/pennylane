@@ -24,12 +24,13 @@ import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
+from pennylane.wires import Wires
 
 ########################
 # Hamiltonian components
 
 
-def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
+def bit_driver(wires: Union[Iterable, Wires], b: int):
     r"""Returns the bit-driver cost Hamiltonian.
 
     This Hamiltonian is defined as:

@@ -191,7 +191,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
 
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         if "mcm" in eqn.primitive.name:
             raise NotImplementedError(
                 "DefaultQubitInterpreter does not yet support postprocessing mcms"

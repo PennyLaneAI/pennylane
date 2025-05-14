@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -130,7 +130,6 @@ class QFT(Operation):
             [1 0 1 0]
     """
 
-    num_wires = AnyWires
     grad_method = None
     resource_keys = {
         "num_wires",

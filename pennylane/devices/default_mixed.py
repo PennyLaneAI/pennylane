@@ -24,8 +24,6 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Optional, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.logging import debug_logger, debug_logger_init
@@ -230,13 +228,13 @@ class DefaultMixed(Device):
         super().__init__(wires=wires, shots=shots)
 
         # Seed setting
-        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        seed = qml.math.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":
             self._prng_key = seed
-            self._rng = np.random.default_rng(None)
+            self._rng = qml.math.random.default_rng(None)
         else:
             self._prng_key = None
-            self._rng = np.random.default_rng(seed)
+            self._rng = qml.math.random.default_rng(seed)
 
         self._debugger = None
 

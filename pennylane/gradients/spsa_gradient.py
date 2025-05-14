@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
@@ -89,7 +89,7 @@ def _expand_transform_spsa(
 @partial(
     transform,
     expand_transform=_expand_transform_spsa,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def spsa_grad(

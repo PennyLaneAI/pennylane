@@ -350,6 +350,7 @@ diff_method_map = {"finite-diff": _finite_diff}
 
 @debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
+
     if execution_config.use_device_gradient:
         return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 

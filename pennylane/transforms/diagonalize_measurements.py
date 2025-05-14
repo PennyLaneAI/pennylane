@@ -46,7 +46,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -235,7 +235,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Args:
         tape: the observable to be diagonalized
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
