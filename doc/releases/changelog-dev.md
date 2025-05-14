@@ -275,6 +275,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Enforce `gradients` module to be an auxiliary layer module.
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
 
+* Enforce `optimize` module to be an auxiliary layer module.
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
@@ -309,6 +312,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Documentation 📝</h3>
+
+* Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
+ [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
 * In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
   circuit drawings now render in a way that's easier to read.
