@@ -32,6 +32,7 @@ def register_pass(name, _callable):
     available_passes[name] = _callable
 
 
+# pylint: disable=too-few-public-methods
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
     """
@@ -44,9 +45,10 @@ class ApplyTransformSequence(ModulePass):
 
     name = "apply-transform-sequence"
 
-    def apply(  # pylint: disable=arguments-renamed
+    def apply(  # pylint: disable=arguments-renamed,no-self-use
         self, ctx: Context, module: builtin.ModuleOp
     ) -> None:
+        """Applies the transformation"""
         nested_modules = []
         for region in module.regions:
             for block in region.blocks:
@@ -61,8 +63,8 @@ class ApplyTransformSequence(ModulePass):
         for op in nested_modules:
             pipeline.apply(ctx, op)
 
-        for op in nested_modules:
-            for region in op.regions:
+        for mod in nested_modules:
+            for region in mod.regions:
                 for block in region.blocks:
                     for op in block.ops:
                         if isinstance(op, builtin.ModuleOp) and op.get_attr_or_prop(
