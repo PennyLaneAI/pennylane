@@ -1,10 +1,10 @@
 import re
 
 from functools import partial
-from typing import Callable
+from typing import Callable, Iterable
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression
+    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral
 from openqasm3.visitor import QASMVisitor, QASMNode
 from pygments.lexers.robotframework import ForLoop
 
@@ -146,6 +146,12 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
+    def switch_statement(self, node: QASMNode, context: dict):
+        """
+        Registers a switch statement.
+        """
+
+
     def alias_statement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.
@@ -181,19 +187,11 @@ class QasmInterpreter(QASMVisitor):
         Evaluates an expression.
         """
         res = None
+        if isinstance(node, Cast):
+            return self.retrieve_variable(node.argument.name, context)["val"]
         if isinstance(node, BinaryExpression):
-            if re.search('Literal', node.lhs.__class__.__name__) is not None:
-                lhs = node.lhs.value
-            elif isinstance(node.lhs, Cast):
-                lhs = self.retrieve_variable(node.lhs.argument.name, context)["val"]
-            else:
-                lhs = self.retrieve_variable(node.lhs.name, context)["val"]
-            if re.search('Literal', node.rhs.__class__.__name__) is not None:
-                rhs = node.rhs.value
-            elif isinstance(node.rhs, Cast):
-                rhs = self.retrieve_variable(node.rhs.argument.name, context)["val"]
-            else:
-                rhs = self.retrieve_variable(node.rhs.name, context)["val"]
+            lhs = self.eval_expr(node.lhs, context)
+            rhs = self.eval_expr(node.rhs, context)
             res = eval(f'{lhs}{node.op.name}{rhs}')
         elif isinstance(node, UnaryExpression):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
@@ -277,7 +275,7 @@ class QasmInterpreter(QASMVisitor):
         self._init_gates_list(context)
         self._init_loops_scope(node, context)
 
-        @while_loop(partial(self.eval_expr, node.while_condition))  # traces data dep through context
+        @while_loop(partial(self.eval_expr, node.while_condition, context))  # traces data dep through context
         def loop(context):
             # we don't want to populate the gates again with every call to visit
             context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
@@ -306,7 +304,9 @@ class QasmInterpreter(QASMVisitor):
         # de-referencing
         if isinstance(loop_params, Identifier):
             # TODO: could be a ref to a range? support AST types, etc. in context instead of python types?
-            loop_params = self.retrieve_variable(loop_params.name, context)["val"]
+            loop_params = self.retrieve_variable(loop_params.name, context)
+            if loop_params["ty"] == "BitType":
+                loop_params =  bin(loop_params["val"])[2:].zfill(loop_params["size"])
 
         if isinstance(loop_params, RangeDefinition):
             start = self.eval_expr(loop_params.start, context)
@@ -336,7 +336,7 @@ class QasmInterpreter(QASMVisitor):
         # accepts (start, stop, step) and nto a list of values.
         elif isinstance(loop_params, ArrayLiteral):
             iter = [self.eval_expr(literal, context) for literal in loop_params.values]
-        elif isinstance(loop_params, list):  # it's an array literal that's been eval'd before TODO: unify these reprs?
+        elif isinstance(loop_params, Iterable):  # it's an array literal that's been eval'd before TODO: unify these reprs?
             iter = [val for val in loop_params]
             def unrolled():
                 for i in iter:
@@ -348,8 +348,8 @@ class QasmInterpreter(QASMVisitor):
                         gate()  # updates vars in sub context if any measurements etc. occur
 
             context["gates"].append(unrolled)
-        elif isinstance(loop_params, None):  # it's a value that will be evaluated at "runtime" (when calling the QNode)
-            pass
+        elif loop_params is None:  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
+            print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     def return_statement(self, node: QASMNode, context: dict):
         """
@@ -426,7 +426,6 @@ class QasmInterpreter(QASMVisitor):
                     'line': param.span.start_line
                 }
             else:
-                # wire mapping is all messed up now, should be named wires
                 context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
 
         # process the subroutine body. Note we don't call the gates in the outer context until the subroutine is called.
@@ -450,10 +449,11 @@ class QasmInterpreter(QASMVisitor):
             contexts = curr["scopes"]
             for context_type, typed_contexts in contexts.items():
                 for typed_context_name, typed_context in typed_contexts.items():
-                    wires += [f'{contexts["scopes"][context_type][typed_context_name]["name"]}_{w}'
-                              for w in contexts["scopes"][context_type][typed_context_name]["wires"]]
+                    wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
+                              for w in contexts[context_type][typed_context_name]["wires"]]
                     wires += self._get_wires_helper(typed_context, wires)
-        return wires
+            return wires
+        return []
 
     def construct_qnode(self, context: dict):
         if "device" not in context:
@@ -461,6 +461,7 @@ class QasmInterpreter(QASMVisitor):
             curr = context
             wires = self._get_wires_helper(curr, wires)
             context["device"] = device("default.qubit", wires=wires)
+        # TODO: pass context through gate calls during second pass
         context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
 
     @staticmethod
@@ -503,7 +504,14 @@ class QasmInterpreter(QASMVisitor):
             context["vars"] = {}
         if node.init_expression is not None:
             # TODO: store AST objects in context instead of these objects?
-            if not isinstance(node.init_expression, ArrayLiteral):
+            if isinstance(node.init_expression, BitstringLiteral):
+                context["vars"][node.identifier.name] = {
+                    'ty': node.type.__class__.__name__,
+                    'val': self.eval_expr(node.init_expression, context),
+                    'size': node.init_expression.width,
+                    'line': node.init_expression.span.start_line
+                }
+            elif not isinstance(node.init_expression, ArrayLiteral):
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
                     'val': self.eval_expr(node.init_expression, context),

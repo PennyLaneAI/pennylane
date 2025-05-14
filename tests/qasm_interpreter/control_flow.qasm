@@ -55,7 +55,7 @@ for float[64] f in my_floats {
 }
 
 // Loop over a register of bits.
-bit[5] register;
+bit[5] register = "011011";
 for bit b in register {}
 let alias = register[1:3];
 for bit b in alias {

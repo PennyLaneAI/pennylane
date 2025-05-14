@@ -58,4 +58,7 @@ class TestInterpreter:
         ast = parse(open('control_flow.qasm', mode='r').read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"name": "control-flow"})
 
+        # execute the QNode
+        context["qnode"].func()
+
         # TODO: compare to a QNode constructed in the typical way with a decorator
