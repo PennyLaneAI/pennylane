@@ -18,7 +18,6 @@ Differs from xDSL's upstream implementation by allowing passes
 to be passed in as options.
 """
 
-from dataclasses import dataclass
 from typing import Callable
 
 from xdsl.context import Context
@@ -30,7 +29,6 @@ from xdsl.utils.exceptions import PassFailedException
 from .interpreter import TransformFunctionsExt
 
 
-@dataclass(frozen=True)
 class TransformInterpreterPass(ModulePass):
     """Transform dialect interpreter"""
 
