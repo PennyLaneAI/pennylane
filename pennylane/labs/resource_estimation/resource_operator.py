@@ -15,14 +15,15 @@ r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, List, Type
+from collections import defaultdict
+from typing import Callable, List, Type
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 from pennylane.operation import classproperty
 
-# if TYPE_CHECKING:
-#     from pennylane.labs.resource_estimation import CompressedResourceOp
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 # pylint: disable=unused-argument
 
@@ -30,9 +31,6 @@ from pennylane.operation import classproperty
 class ResourceOperator(ABC):
     r"""Abstract base class to represent quantum operators according to the 
     information required for resource estimation.
-
-    
-
     """
 
     num_wires = 0
@@ -194,26 +192,24 @@ class ResourceOperator(ABC):
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
         return str_rep
 
-    # def __mul__(self, scalar: int):
-    #     assert isinstance(scalar, int)
-    #     gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-    #     qubit_manager = QubitManager(0)
-    #     qubit_manager._logic_qubit_counts = self.num_wires
+    def __mul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = self.num_wires
 
-    #     from pennylane.labs.resource_estimation.resource_container import Resources
-    #     return Resources(qubit_manager, gate_types)
-    
-    # def __matmul__(self, scalar: int):
-    #     assert isinstance(scalar, int)
-    #     gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-    #     qubit_manager = QubitManager(0)
-    #     qubit_manager._logic_qubit_counts = scalar * self.num_wires
+        return Resources(qubit_manager, gate_types)
 
-    #     from pennylane.labs.resource_estimation.resource_container import Resources
-    #     return Resources(qubit_manager, gate_types)
+    def __matmul__(self, scalar: int):
+        assert isinstance(scalar, int)
+        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        qubit_manager = QubitManager(0)
+        qubit_manager._logic_qubit_counts = scalar * self.num_wires
 
-    # __rmul__ = __mul__
-    # __rmatmul__ = __matmul__
+        return Resources(qubit_manager, gate_types)
+
+    __rmul__ = __mul__
+    __rmatmul__ = __matmul__
 
     @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
