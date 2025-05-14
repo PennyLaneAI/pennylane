@@ -175,6 +175,11 @@
 
 * Sphinx version was updated to 8.1. Sphinx is upgraded to version 8.1 and uses Python 3.10. References to intersphinx (e.g. `<demos/>` or `<catalyst/>` are updated to remove the :doc: prefix that is incompatible with sphinx 8.1. [(7212)](https://github.com/PennyLaneAI/pennylane/pull/7212)
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
+  [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
