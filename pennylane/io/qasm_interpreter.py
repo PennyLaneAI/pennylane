@@ -2,11 +2,11 @@ import re
 
 from functools import partial
 from typing import Callable
-from copy import deepcopy
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression
+    ArrayLiteral, UnaryExpression, WhileLoop
 from openqasm3.visitor import QASMVisitor, QASMNode
+from pygments.lexers.robotframework import ForLoop
 
 import pennylane
 from pennylane import (
@@ -106,36 +106,16 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        match node.__class__.__name__:
-            case 'list':
-                for sub_node in node:
-                    self.visit(sub_node, context)
-            case "Identifier":
-                self.identifier(node, context)
-            case "QubitDeclaration":
-                self.qubit_declaration(node, context)
-            case "ClassicalDeclaration":
-                self.classical_declaration(node, context)
-            case "QuantumGate":
-                self.quantum_gate(node, context)
-            case "SubroutineDefinition":
-                self.subroutine(node, context)
-            case "QuantumReset":
-                self.quantum_reset(node, context)
-            case "QuantumMeasurementStatement":
-                self.quantum_measurement_statement(node, context)
-            case "ReturnStatement":
-                self.return_statement(node, context)
-            case "WhileLoop":
-                self.loop_while(node, context)
-            case "ForInLoop":
-                self.loop_for(node, context)
-            # TODO: call appropriate handler methods here
-            case _:
-                # TODO: turn into a NameError when we have supported all the node types we want
-                print(
-                    f"An unrecognized QASM instruction was encountered: {node.__class__.__name__}"
-                )
+        # CamelCase -> snake_case
+        handler_name = re.sub(r'(?<!^)(?=[A-Z])', '_', node.__class__.__name__).lower()
+        if node.__class__ == list:
+            for sub_node in node:
+                self.visit(sub_node, context)
+        elif hasattr(self, handler_name):
+            getattr(self, handler_name)(node, context)
+        else:
+            print(f"An unrecognized QASM instruction {node.__class__.__name__} "  # TODO: change to warning
+                  f"was encountered on line {node.span.start_line}.")
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
@@ -194,29 +174,71 @@ class QasmInterpreter(QASMVisitor):
         # TODO: include all other cases here, such as references to vars in the current scope (Identifier)
         return res
 
-    def loop_while(self, node: QASMNode, context: dict):
+    def _init_gates_list(self, context: dict):
         """
-        Registers a while loop.
+        Inits the gates list on the curren context.
         """
         if "gates" not in context:
             context["gates"] = []
 
+    def _init_loops_scope(self, node: QASMNode, context: dict):
+        """
+        Inits the loops scope on the current context.
+        """
         if not "scopes" in context:
             context["scopes"] = {
                 "loops": dict()
             }
+        elif "loops" not in context["scopes"]:
+            context["scopes"]["loops"] = dict()
 
-        # in this case the namespace is shared with the outer scope, but we need to keep track of the gates separately
-        context["scopes"]["loops"][f"while_{node.span.start_line}"] = {
-            "vars": context["vars"],
+        # the namespace is shared with the outer scope, but we need to keep track of the gates separately
+        if isinstance(node, WhileLoop):
+            context["scopes"]["loops"][f"while_{node.span.start_line}"] = {
+                "vars": context["vars"],
+                "wires": context["wires"],
+                "name": f'{context["name"]}_while_{node.span.start_line}'
+            }
+        elif isinstance(node, ForLoop):
+            context["scopes"]["loops"][f"for_{node.span.start_line}"] = {
+                "vars": context["vars"],
+                "wires": context["wires"],
+                "name": f'{context["name"]}_for_{node.span.start_line}'
+            }
+
+    def _init_subroutine_scope(self, node: QASMNode, context: dict):
+        """
+        Inits the subroutine scope on the current context.
+        """
+        if not "scopes" in context:
+            context["scopes"] = {
+                "subroutines": dict()
+            }
+        elif "subroutines" not in context["scopes"]:
+            context["scopes"]["subroutines"] = dict()
+
+        context["scopes"]["subroutines"][node.name.name] = {
+            "vars": context["vars"],  # outer scope variables are available to inner scopes... but not vice versa!
             "wires": context["wires"],
-            "name": f'{context["name"]}_while_{node.span.start_line}'
+            "name": f'{context["name"]}_{node.name.name}'  # names prefixed with outer scope names for specificity
         }
 
-        @while_loop(partial(self.eval_expr, node.while_condition))  # TODO: traces data dep through context
+    def while_loop(self, node: QASMNode, context: dict):
+        """
+        Registers a while loop.
+        """
+        self._init_gates_list(context)
+        self._init_loops_scope(node, context)
+
+        @while_loop(partial(self.eval_expr, node.while_condition))  # traces data dep through context
         def loop(context):
+            # we don't want to populate the gates again with every call to visit
+            context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
             # process loop body...
-            inner_context = self.visit(node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"])
+            inner_context = self.visit(
+                node.block,
+                context["scopes"]["loops"][f"while_{node.span.start_line}"]
+            )
             for gate in inner_context["gates"]:
                 gate()  # updates vars in context... need to propagate these to outer scope
             context["vals"] = inner_context["vals"]
@@ -225,24 +247,12 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(loop)
 
-    def loop_for(self, node: QASMNode, context: dict):
+    def for_loop(self, node: QASMNode, context: dict):
         """
         Registers a for loop.
         """
-        if "gates" not in context:
-            context["gates"] = []
-
-        if not "scopes" in context:
-            context["scopes"] = {
-                "loops": dict()
-            }
-
-        # in this case the namespace is shared with the outer scope, but we need to keep track of the gates separately
-        context["scopes"]["loops"][f"for_{node.span.start_line}"] = {
-            "vars": context["vars"],
-            "wires": context["wires"],
-            "name": f'{context["name"]}_for_{node.span.start_line}'
-        }
+        self._init_gates_list(context)
+        self._init_loops_scope(node, context)
 
         loop_params = node.set_declaration
 
@@ -260,10 +270,12 @@ class QasmInterpreter(QASMVisitor):
 
             @for_loop(start, stop, step)
             def loop(i, context):
+                # we don't want to populate the gates again with every call to visit
+                context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                 # process loop body
                 inner_context = self.visit(
                     node.block,
-                    deepcopy(context["scopes"]["loops"][f"for_{node.span.start_line}"])
+                    context["scopes"]["loops"][f"for_{node.span.start_line}"]
                 )
                 for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
                     gate()  # updates vars in sub context... need to propagate these to outer context
@@ -276,21 +288,17 @@ class QasmInterpreter(QASMVisitor):
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
         # accepts (start, stop, step) and nto a list of values.
         elif isinstance(loop_params, ArrayLiteral):
+            iter = [self.eval_expr(literal, context) for literal in loop_params.values]
+        elif isinstance(loop_params, list):  # it's an array literal that's been eval'd before TODO: unify these reprs?
+            iter = [val for val in loop_params]
             def unrolled():
-                for i in [self.eval_expr(literal, context) for literal in loop_params.values]:
-                    context["vars"][node.identifier.name] = i
-                    self.visit(node.block, context)  # visit the nodes once per loop iteration
-                    for gate in context["gates"]:
-                        gate()  # updates vars in context if any measurements etc. occur
-
-            context["gates"].append(unrolled)
-        elif isinstance(loop_params, list):  # it is an array literal that has been evaluatd before TODO: unify these reprs?
-            def unrolled():
-                for i in [val for val in loop_params]:
-                    context["vars"][node.identifier.name] = i
-                    self.visit(node.block, context)  # visit the nodes once per loop iteration
-                    for gate in context["gates"]:
-                        gate()  # updates vars in context if any measurements etc. occur
+                for i in iter:
+                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = i
+                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
+                    # visit the nodes once per loop iteration
+                    self.visit(node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"])
+                    for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]:
+                        gate()  # updates vars in sub context if any measurements etc. occur
 
             context["gates"].append(unrolled)
 
@@ -305,8 +313,7 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a quantum measurement.
         """
-        if "gates" not in context:
-            context["gates"] = []
+        self._init_gates_list(context)
         if isinstance(node.measure.qubit, Identifier):
             measure = partial(pennylane.measure, node.measure.qubit.name)
 
@@ -333,8 +340,7 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a reset of a quantum gate.
         """
-        if "gates" not in context:
-            context["gates"] = []
+        self._init_gates_list(context)
         if isinstance(node.qubits, Identifier):
             context["gates"].append(
                 partial(pennylane.measure, node.qubits.name, reset=True)
@@ -354,20 +360,12 @@ class QasmInterpreter(QASMVisitor):
                         partial(pennylane.measure, qubit.value, reset=True)
                     )
 
-    def subroutine(self, node: QASMNode, context: dict):
+    def subroutine_definition(self, node: QASMNode, context: dict):
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
         its parameters.
         """
-        if not "scopes" in context:
-            context["scopes"] = {
-                "subroutines": dict()
-            }
-        context["scopes"]["subroutines"][node.name.name] = {
-            "vars": context["vars"],  # outer scope variables are available to inner scopes... but not vice versa!
-            "wires": context["wires"],
-            "name": f'{context["name"]}_{node.name.name}'  # names prefixed with outer scope names for specificity
-        }
+        self._init_subroutine_scope(node, context)
 
         # register the params
         for param in node.arguments:
@@ -381,13 +379,23 @@ class QasmInterpreter(QASMVisitor):
                 # wire mapping is all messed up now, should be named wires
                 context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
 
-        # process the subroutine body
+        # process the subroutine body. Note we don't call the gates in the outer context until the subroutine is called.
         context["scopes"]["subroutines"][node.name.name] = self.visit(
             node.body,
             context["scopes"]["subroutines"][node.name.name]
         )
 
+        # Should we visit now or when the function is called with arguments?
+        # Now is fine b/c we evaluate vars at the end, and visit only constructs partials that
+        # reference them during a visit.
+
     def _get_wires_helper(self, curr: dict, wires: list):
+        """
+        We need a device with enough wires to support all the qubit declarations in every sub-context.
+        We need to instantiate a device with enough wires to support all qubit declarations, with names
+        that give enough specificity to identify them when they are in different scopes but share the same
+        name in the QASM file, for example.
+        """
         if "scopes" in curr:
             contexts = curr["scopes"]
             for context_type, typed_contexts in contexts.items():
@@ -475,8 +483,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         gate = None
-        if "gates" not in context:
-            context["gates"] = []
+        self._init_gates_list(context)
         if node.name.name.upper() in SINGLE_QUBIT_GATES:
             gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
         elif node.name.name.upper() in PARAMETERIZED_SIGNLE_QUBIT_GATES:
@@ -486,9 +493,7 @@ class QasmInterpreter(QASMVisitor):
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
-            # TODO: turn into warning when we have supported all we would like to
-            print(f"Unsupported gate encountered in QASM: {node.name}")
-
+            print(f"Unsupported gate encountered in QASM: {node.name}")  # TODO: change to warning
         if len(node.modifiers) > 0:
             gate = self.modifiers(gate, node, context)
 
@@ -524,12 +529,11 @@ class QasmInterpreter(QASMVisitor):
         def call():
             res = None
             for callable in call_stack[::-1]:
-                if (
-                    "partial" == call_stack[0].__class__.__name__
-                    and "control" in call_stack[0].keywords
-                ):
-                    if "control" in callable.keywords:
-                        res.keywords["wires"] = [res.keywords["wires"][-1]]
+                # checks there is a control in the stack
+                if ('partial' == call_stack[0].__class__.__name__ and 'control' in call_stack[0].keywords):
+                    # checks we are processing the control now
+                    if 'control' in callable.keywords:
+                        res.keywords["wires"] = [res.keywords["wires"][-1]]  # ctrl on all wires but the target
                     # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
                     res = callable(res.func)(**res.keywords) if res is not None else callable
                 else:
