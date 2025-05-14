@@ -25,9 +25,9 @@ Methods for constructing QAOA mixer Hamiltonians.
 .. autosummary::
     :toctree: api
 
+    mixers.bit_flip_mixer
     mixers.x_mixer
     mixers.xy_mixer
-    mixers.bit_flip_mixer
 
 Cost Hamiltonians
 ~~~~~~~~~~~~~~~~~
