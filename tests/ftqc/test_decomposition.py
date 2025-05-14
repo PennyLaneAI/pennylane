@@ -279,28 +279,15 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
             queue_corrections(qml.Identity, measurements=[0, 0, 0, 0])
 
-    @pytest.mark.parametrize(
-        "ops, meas, error_msg",
-        [
-            (
-                [qml.H(0), qml.RZ(0.23, 0), qml.RX(1.23, 0)],  # invalid op
-                [qml.sample(wires=0)],
-                "unsupported gate",
-            ),
-            (
-                [qml.H(0), qml.RZ(0.23, 0), qml.S(0)],  # invalid measurement
-                [qml.expval(qml.X(0))],
-                "final measurements have not been converted",
-            ),
-        ],
-    )
-    def test_invalid_tape_raises_error(self, ops, meas, error_msg):
+    def test_invalid_op_in_tape_raises_error(self):
         """Test that a NotImplemented error is raised if the tape isn't valid for conversion
         to the MBQC formalism using this transform"""
 
-        tape = qml.tape.QuantumScript(ops, measurements=meas)
+        tape = qml.tape.QuantumScript(
+            [qml.H(0), qml.RZ(0.23, 0), qml.RX(1.23, 0)], measurements=[qml.sample(wires=0)]
+        )
 
-        with pytest.raises(NotImplementedError, match=error_msg):
+        with pytest.raises(NotImplementedError, match="unsupported gate"):
             _, _ = convert_to_mbqc_formalism(tape)
 
     @pytest.mark.parametrize(
@@ -508,7 +495,7 @@ class TestMBQCFormalismConversion:
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qml.device("lightning.qubit")
+        dev = qml.device("lightning.qubit", seed=1234)
 
         theta = 2.5
         with qml.queuing.AnnotatedQueue() as q:

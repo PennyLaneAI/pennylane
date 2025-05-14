@@ -28,7 +28,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
-from .graph_state_preparation import GraphStatePrep
+from .graph_state_preparation import make_graph_state
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr
@@ -120,7 +120,7 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
     graph_wires = q_mgr.acquire_qubits(4)
     wires = [in_wire] + graph_wires
 
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
+    make_graph_state(nx.grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
     measurements = queue_measurements(op, wires)
@@ -265,7 +265,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     output_target_idx = graph_wires[12]
 
     # Prepare the state
-    GraphStatePrep(_generate_cnot_graph(), wires=graph_wires)
+    make_graph_state(_generate_cnot_graph(), wires=graph_wires)
 
     # entangle input and graph using first qubit
     CZ([ctrl_idx, graph_wires[0]])
