@@ -17,7 +17,7 @@ from __future__ import annotations
 from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type
+from typing import Callable, List, Type, Optional, Hashable
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
@@ -27,6 +27,67 @@ from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 # pylint: disable=unused-argument
+
+class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+    r"""Instantiate the light weight class corresponding to the operator type and parameters.
+
+    Args:
+        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        params (dict): a dictionary containing the minimal pairs of parameter names and values
+                    required to compute the resources for the given operator
+
+    .. details::
+
+        This representation is the minimal amount of information required to estimate resources for the operator.
+
+        **Example**
+
+        >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
+        >>> print(op_tp)
+        Hadamard(num_wires=1)
+    """
+
+    def __init__(
+        self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None
+    ):
+
+        if not issubclass(op_type, ResourceOperator):
+            raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
+        self.op_type = op_type
+        self.params = params or {}
+        self._hashable_params = _make_hashable(params) if params else ()
+        self._name = name or op_type.tracking_name(**self.params)
+
+    def __hash__(self) -> int:
+        return hash((self.op_type, self._hashable_params))
+
+    def __eq__(self, other: CompressedResourceOp) -> bool:
+        return (
+            isinstance(other, CompressedResourceOp)
+            and self.op_type == other.op_type
+            and self.params == other.params
+        )
+
+    def __repr__(self) -> str:
+        return self._name
+
+
+def _make_hashable(d) -> tuple:
+    r"""Converts a potentially non-hashable object into a hashable tuple.
+
+    Args:
+        d : The object to potentially convert to a hashable tuple.
+           This can be a dictionary, list, set, or an array.
+
+    Returns:
+        A hashable tuple representation of the input.
+
+    """
+
+    if isinstance(d, Hashable):
+        return d
+    sorted_keys = sorted(d)
+    return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
 
 
 class ResourceOperator(ABC):
@@ -134,32 +195,32 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-		cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-	) -> List:
+        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+    ) -> List:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-		)
-    
+        )
+
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -169,7 +230,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -285,7 +346,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="ctrl")
 
-    
+
 def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="adj")
 
