@@ -143,6 +143,11 @@ layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.gradients"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.optimize"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -198,10 +203,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.transforms.core"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.gradients"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
