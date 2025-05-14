@@ -142,6 +142,11 @@ path = "pennylane.shadows"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[modules]]
+path = "pennylane.optimize"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
 ## TERTIARY modules
 # These modules can only import from CORE or AUXILIARY modules.
 
@@ -253,10 +258,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qnn"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.optimize"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
