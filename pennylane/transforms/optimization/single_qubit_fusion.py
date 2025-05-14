@@ -108,11 +108,20 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=missing-function-docstr
             # Only single-qubit gates are considered for fusion
             op_wire = op.wires[0]
 
-            prev_op = self.previous_ops.get(op_wire)
-            if prev_op is None:
-                if any(qml.math.is_abstract(w) for w in op.wires):
+            prev_op = self.previous_ops.get(op.wires[0], None)
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if prev_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't fuse. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to fuse, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (prev_op is None or other_saved_wires):
                     self.interpret_all_previous_ops()
-                self.previous_ops[op_wire] = op
+                for w in op.wires:
+                    self.previous_ops[w] = op
                 return []
 
             prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
