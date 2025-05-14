@@ -96,3 +96,10 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.coverage.report]
+exclude_also = [
+    # A pragma comment that excludes an entire file:
+    '\A(?s:.*# pragma: exclude file.*)\Z',
+]
+
