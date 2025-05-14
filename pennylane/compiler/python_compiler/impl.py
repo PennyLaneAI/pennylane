@@ -21,7 +21,9 @@ from jaxlib.mlir.dialects import stablehlo
 from jaxlib.mlir.ir import Context as jaxContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xdslContext
-from xdsl.dialects import arith, builtin, func, scf, tensor, transform
+from xdsl.dialects import arith, builtin, func, scf
+from xdsl.dialects import stablehlo as xdslstablehlo
+from xdsl.dialects import tensor, transform
 from xdsl.parser import Parser
 from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
@@ -51,6 +53,7 @@ class Compiler:
         ctx.load_dialect(builtin.Builtin)
         ctx.load_dialect(func.Func)
         ctx.load_dialect(scf.Scf)
+        ctx.load_dialect(xdslstablehlo.StableHLO)
         ctx.load_dialect(tensor.Tensor)
         ctx.load_dialect(transform.Transform)
         ctx.load_dialect(Quantum)
