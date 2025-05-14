@@ -98,33 +98,32 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
-* Decomposition rules can be marked as not-applicable with :class:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
-  rules based on parameters that affects the rule's resources.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+* A :func:`~.register_condition` decorator is added that allows users to bind a condition to a
+  decomposition rule for when it is applicable. The condition should be a function that takes the
+  resource parameters of an operator as arguments and returns `True` or `False` based on whether
+  these parameters satisfy the condition for when this rule can be applied.
 
   ```python
   import pennylane as qml
-  from pennylane.decomposition import DecompositionNotApplicable
   from pennylane.math.decomposition import zyz_rotation_angles
   
-  def _zyz_resource(num_wires):
-      if num_wires != 1:
-          # This decomposition is only applicable when num_wires is 1
-          raise DecompositionNotApplicable
-      return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
+  # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
+  def _zyz_condition(num_wires):
+    return num_wires == 1
 
-  @qml.register_resources(_zyz_resource)
+  @qml.register_condition(_zyz_condition)
+  @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
   def zyz_decomposition(U, wires, **__):
+      # Assumes that U is a 2x2 unitary matrix
       phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
       qml.RZ(phi, wires=wires[0])
       qml.RY(theta, wires=wires[0])
       qml.RZ(omega, wires=wires[0])
       qml.GlobalPhase(-phase)
   
-  qml.add_decomps(QubitUnitary, zyz_decomposition)
+  # This decomposition will be ignored for `QubitUnitary` on more than one wire.
+  qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
   ```
-  
-  This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
 * The :func:`~.transforms.decompose` transform now supports symbolic operators (e.g., `Adjoint` and `Controlled`) specified as strings in the `gate_set` argument
   when the new graph-based decomposition system is enabled.
