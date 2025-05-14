@@ -23,7 +23,7 @@ def phase_polynomial(
     circ: qml.tape.QuantumScript, wire_order: Sequence = None, verbose: bool = False
 ):
     r"""
-    Phase polynomial IR for circuits consisting of CNOT and RZ gates.
+    Phase polynomial intermediate representation for circuits consisting of CNOT and RZ gates.
 
     The action of such circuits can be described by a phase polynomial :math:`p(\boldsymbol{x})` and a :func:`~parity_matrix` :math:`P` acting on a computational basis state :math:`|\boldsymbol{x}\rangle = |x_1, x_2, .., x_n\rangle` in the following way:
 
