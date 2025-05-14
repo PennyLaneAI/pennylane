@@ -20,7 +20,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import QubitUnitary
 from pennylane.wires import Wires
 
@@ -341,7 +341,6 @@ class QuantumMonteCarlo(Operation):
         0.4327096457464369
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @classmethod
