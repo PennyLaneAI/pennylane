@@ -68,12 +68,11 @@ class UnitaryToRotPattern(
                 angle = qml_op.parameters[0].item()
                 wire = qml_op.wires[0]
 
-                # (right now know this is a float)
+                # Right now, we know that the angle is a float.
                 angle_attr = FloatAttr(angle, Float64Type())
                 angle_const_op = ConstantOp(value=angle_attr)
                 rewriter.insert_op(angle_const_op, InsertPoint.before(op))
 
-                # And we do the same for the wire
                 wire_attr = IntegerAttr(wire, IntegerType(64))
                 wire_const_op = ConstantOp(value=wire_attr)
                 rewriter.insert_op(wire_const_op, InsertPoint.before(op))
@@ -97,7 +96,6 @@ class UnitaryToRotPattern(
                 for old_res, new_res in zip(op.results, custom_op.results):
                     old_res.replace_by(new_res)
 
-            # We finally erase the QubitUnitaryOp
             rewriter.erase_op(op)
 
 
