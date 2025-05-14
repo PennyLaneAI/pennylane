@@ -305,77 +305,7 @@ def controlled_resource_rep(
 
     _validate_resource_rep(base_class, base_params)
 
-    custom_controlled_map = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
-    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
-    if num_zero_control_values == 0 and custom_ctrl:
-        return resource_rep(custom_ctrl)
-
-    if base_class is qml.QubitUnitary:
-        return resource_rep(
-            qml.ControlledQubitUnitary,
-            num_target_wires=base_params["num_wires"],
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
-    if base_class is qml.ControlledQubitUnitary:
-        num_control_wires += base_params["num_control_wires"]
-        num_zero_control_values += base_params["num_zero_control_values"]
-        num_work_wires += base_params["num_work_wires"]
-        return resource_rep(
-            qml.ControlledQubitUnitary,
-            num_target_wires=base_params["num_target_wires"],
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
-    if base_class in custom_ctrl_op_to_base():
-        num_control_wires = base_class.num_wires - 1 + num_control_wires
-        base_class = custom_ctrl_op_to_base()[base_class]
-
-    if base_class is qml.X:
-        if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qml.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0:
-            return resource_rep(qml.Toffoli)
-        return resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
-    if base_class is qml.CNOT:
-        if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qml.Toffoli)
-        return resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires + 1,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
-    if base_class is qml.Toffoli:
-        return resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires + 2,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
-    if base_class is qml.MultiControlledX:
-        num_control_wires += base_params["num_control_wires"]
-        num_zero_control_values += base_params["num_zero_control_values"]
-        num_work_wires += base_params["num_work_wires"]
-        return resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-        )
-
+    # Flattens nested controlled structures.
     if base_class in (qml.ops.Controlled, qml.ops.ControlledOp):
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
@@ -386,6 +316,37 @@ def controlled_resource_rep(
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
+        )
+
+    custom_controlled_map = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
+    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
+    if num_zero_control_values == 0 and custom_ctrl:
+        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
+
+    # When the base class is a custom controlled op, update the base to the base of the op.
+    # For example, when the base class is `CRX`, use `RX` as the new base class.
+    if base_class in custom_ctrl_op_to_base():
+        num_control_wires = base_class.num_wires - 1 + num_control_wires
+        base_class = custom_ctrl_op_to_base()[base_class]
+
+    # Special case for controlled qubit unitaries
+    if base_class in (qml.QubitUnitary, qml.ControlledQubitUnitary):
+        return _controlled_qubit_unitary_rep(
+            base_class,
+            base_params,
+            num_control_wires,
+            num_zero_control_values,
+            num_work_wires,
+        )
+
+    # Special case for when the base class is X
+    if base_class in (qml.X, qml.MultiControlledX):
+        return _controlled_x_rep(
+            base_class,
+            base_params,
+            num_control_wires,
+            num_zero_control_values,
+            num_work_wires,
         )
 
     return CompressedResourceOp(
@@ -450,3 +411,59 @@ def custom_ctrl_op_to_base():
         qml.CRot: qml.Rot,
         qml.ControlledPhaseShift: qml.PhaseShift,
     }
+
+
+def _controlled_qubit_unitary_rep(
+    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+) -> CompressedResourceOp:
+    """Helper function that handles the custom logic for controlled qubit unitaries."""
+
+    if base_class is qml.QubitUnitary:
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_params["num_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    # base_class is qml.ControlledQubitUnitary
+    num_control_wires += base_params["num_control_wires"]
+    num_zero_control_values += base_params["num_zero_control_values"]
+    num_work_wires += base_params["num_work_wires"]
+    return resource_rep(
+        qml.ControlledQubitUnitary,
+        num_target_wires=base_params["num_target_wires"],
+        num_control_wires=num_control_wires,
+        num_zero_control_values=num_zero_control_values,
+        num_work_wires=num_work_wires,
+    )
+
+
+def _controlled_x_rep(
+    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+) -> Optional[CompressedResourceOp]:
+    """Helper function that handles custom logic for controlled X gates."""
+
+    if base_class is qml.X:
+        if num_control_wires == 1 and num_zero_control_values == 0:
+            return resource_rep(qml.CNOT)
+        if num_control_wires == 2 and num_zero_control_values == 0:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    # base_class is qml.MultiControlledX:
+    num_control_wires += base_params["num_control_wires"]
+    num_zero_control_values += base_params["num_zero_control_values"]
+    num_work_wires += base_params["num_work_wires"]
+    return resource_rep(
+        qml.MultiControlledX,
+        num_control_wires=num_control_wires,
+        num_zero_control_values=num_zero_control_values,
+        num_work_wires=num_work_wires,
+    )
