@@ -60,13 +60,14 @@ create the QAOA cost function: the expected value of the cost Hamiltonian with r
 of the QAOA circuit.
 
 .. code-block:: python3
+    
     # Defines the device and the QAOA cost function
     dev = qml.device('default.qubit', wires=len(wires))
     @qml.qnode(dev)
     def cost_function(params):
         circuit(params)
         return qml.expval(cost_h)
-        
+
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299
 
