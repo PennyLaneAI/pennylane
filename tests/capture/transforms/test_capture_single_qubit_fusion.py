@@ -683,7 +683,7 @@ class TestSingleQubitFusionPLXPR:
         transformed_jaxpr = single_qubit_plxpr_to_plxpr(
             jaxpr.jaxpr, jaxpr.consts, [], {"atol": 1e-5, "exclude_gates": "RY"}
         )
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 3
         assert transformed_jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive

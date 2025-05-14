@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -88,32 +88,6 @@ ops_hermitian_status = (  # computed manually
     False,  # False
     False,  # False
 )
-
-
-def test_legacy_ops():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
-        _ = H.ops
-
-
-def test_legacy_coeffs():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
-        _ = H.coeffs
-
-
-def test_obs_attribute():
-    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
-    op = qml.prod(X(0), X(1), X(2))
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
-    ):
-        obs = op.obs
-
-    assert obs == (X(0), X(1), X(2))
 
 
 def test_basic_validity():
@@ -542,6 +516,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
+
+
 # pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
@@ -560,8 +539,8 @@ class TestMatrix:
         true_mat = mat1 @ mat2
 
         prod_op = Prod(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         prod_mat = prod_op.matrix()
 
