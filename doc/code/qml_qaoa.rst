@@ -3,8 +3,6 @@ qml.qaoa
 
 .. currentmodule:: pennylane.qaoa
 
-.. rubric:: Modules
-
 .. automodule:: pennylane.qaoa
 
 Solving the MaxCut problem using QAOA
