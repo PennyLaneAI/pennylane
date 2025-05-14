@@ -59,7 +59,7 @@ def convert_to_mbqc_gateset(tape):
 @transform
 def convert_to_mbqc_formalism(tape):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
-    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
+    Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
     before applying the transform.
 
