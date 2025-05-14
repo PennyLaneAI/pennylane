@@ -14,7 +14,7 @@ from xdsl.rewriter import InsertPoint
 from xdsl.utils import parse_pipeline
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect, QubitType
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
 ctx = Context(allow_unregistered=True)
@@ -148,8 +148,6 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
             else:
                 ops = [op]
 
-            print(f"ops: {ops}")
-
             for qml_op in ops:
                 angle = qml_op.parameters[0].item()
                 wire = qml_op.wires[0]
@@ -157,6 +155,7 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                 # Build constant op for angle
                 # and inserts the constant op corresponding to the angle
                 # into the IR, before QubitUnitaryOp
+                # (right now know it is a float)
                 angle_attr = FloatAttr(angle, Float64Type())
                 angle_const_op = ConstantOp(value=angle_attr)
                 rewriter.insert_op(angle_const_op, InsertPoint.before(op))
@@ -167,16 +166,18 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                 rewriter.insert_op(wire_const_op, InsertPoint.before(op))
 
                 # angle_const_op.result is the SSA value of the constant op
+                # TODO: here I am simply parsing the properties and successors of the QubitUnitaryOp
+                # and passing them to the custom op. But it would be probably better to it differently.
                 custom_op = CustomOp(
                     operands=(angle_const_op.result, wire_const_op.result, None, None),
                     properties={
                         "gate_name": StringAttr(qml_op.name),
                         **op.properties,
                     },
-                    attributes=op.attributes,
+                    attributes={},
                     successors=op.successors,
-                    regions=op.regions,
-                    result_types=(op.result_types, []),
+                    regions=(),
+                    result_types=(QubitType(), []),
                 )
 
                 # This line inserts the custom op into the IR, before QubitUnitaryOp
@@ -186,8 +187,6 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                 # This is needed because the QubitUnitaryOp is being erased at the end
                 for old_res, new_res in zip(op.results, custom_op.results):
                     old_res.replace_by(new_res)
-
-            breakpoint()
 
             # We finally erase the QubitUnitaryOp
             rewriter.erase_op(op)
