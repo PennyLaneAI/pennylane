@@ -65,12 +65,12 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 .. autosummary::
     :toctree: api
 
-    cycle.edges_to_wires
-    cycle.wires_to_edges
     cycle.cycle_mixer
+    cycle.edges_to_wires
     cycle.loss_hamiltonian
-    cycle.out_flow_constraint
     cycle.net_flow_constraint
+    cycle.out_flow_constraint
+    cycle.wires_to_edges
 
 """
 
