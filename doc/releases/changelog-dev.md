@@ -200,6 +200,8 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
+* Updated requirements and pyproject files to include the other package.  
+  [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -284,6 +286,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
   [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
   [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
+  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
@@ -308,6 +311,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Documentation 📝</h3>
+
+* In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
+  circuit drawings now render in a way that's easier to read.
+  [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
 
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
@@ -396,6 +403,7 @@ Lillian Frederiksen,
 Pietropaolo Frisoni,
 Korbinian Kottmann,
 Christina Lee,
+Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
