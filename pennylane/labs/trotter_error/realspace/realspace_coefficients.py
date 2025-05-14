@@ -22,6 +22,8 @@ from typing import Dict, Tuple
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
 
+# from functools import lru_cache
+
 
 class RealspaceCoeffs:
     """Lightweight representation of a tensor of coefficients.
@@ -208,6 +210,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         scalar: float = None,
         value: float = None,
         label: str = None,
+        cache_maxsize: int = None,
     ) -> _RealspaceTree:
 
         self.node_type = node_type
@@ -217,6 +220,9 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         self.scalar = scalar
         self.value = value
         self.label = label
+
+        self._cache = {}
+        self._cache_maxsize = cache_maxsize
 
         if node_type == _NodeType.SUM:
             self.shape = l_child.shape
@@ -454,20 +460,34 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if not self._validate_index(index):
             raise ValueError(f"Given index {index} is not compatible with shape {self.shape}")
 
+        # use cache to speed up computation
+        if index in self._cache:
+            return self._cache[index]
+
+        # check if the cache is full
+        if self._cache_maxsize is not None and len(self._cache) >= self._cache_maxsize:
+            self._cache.popitem()
+
         if self.node_type == _NodeType.TENSOR:
-            return self.tensor[index]
-        if self.node_type == _NodeType.FLOAT:
-            return self.value
-        if self.node_type == _NodeType.SCALAR:
-            return self.scalar * self.l_child.compute(index)
-        if self.node_type == _NodeType.SUM:
-            return self.l_child.compute(index) + self.r_child.compute(index)
-        if self.node_type == _NodeType.OUTER:
+            value = self.tensor[index]
+        elif self.node_type == _NodeType.FLOAT:
+            value = self.value
+        elif self.node_type == _NodeType.SCALAR:
+            value = self.scalar * self.l_child.compute(index)
+        elif self.node_type == _NodeType.SUM:
+            value = self.l_child.compute(index) + self.r_child.compute(index)
+        elif self.node_type == _NodeType.OUTER:
             l_index = index[: len(self.l_child.shape)]
             r_index = index[len(self.l_child.shape) :]
-            return self.l_child.compute(l_index) * self.r_child.compute(r_index)
+            value = self.l_child.compute(l_index) * self.r_child.compute(r_index)
+        else:
+            raise ValueError(
+                f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}."
+            )
 
-        raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
+        # Cache and return the value
+        self._cache[index] = value
+        return value
 
     def _validate_index(self, index: Tuple[int]) -> bool:
         """Validate the shape of an index.

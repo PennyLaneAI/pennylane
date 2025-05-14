@@ -14,6 +14,6 @@
 """Module for realspace operators"""
 
 from .ho_state import HOState, VibronicHO
-from .realspace_coefficients import RealspaceCoeffs
+from .realspace_coefficients import RealspaceCoeffs, _RealspaceTree
 from .realspace_operator import RealspaceOperator, RealspaceSum
 from .realspace_matrix import RealspaceMatrix
