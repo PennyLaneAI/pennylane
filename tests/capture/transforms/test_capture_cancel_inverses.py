@@ -236,17 +236,20 @@ class TestCancelInversesInterpreter:
         assert ops == expected_ops
         assert meas == expected_meas
 
-    def test_diff_dyn_wires_dont_cancel(self):
-        """Test that ops on different dynamic wires do not get cancelled"""
+    def test_different_dyn_wires_interleaved(self):
+        """Test that ops on different dynamic wires interleaved with each other
+        do not cancel."""
 
         @CancelInversesInterpreter()
         def f(w1, w2):
             qml.H(w1)
-            qml.H(w2)
+            qml.X(w2)
+            qml.H(w1)
+            qml.X(w2)
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0, 0)
-        assert len(jaxpr.eqns) == 4
+        assert len(jaxpr.eqns) == 6
 
         dyn_wires = (0, 0)
         collector = CollectOpsandMeas()
@@ -254,7 +257,7 @@ class TestCancelInversesInterpreter:
         ops = collector.state["ops"]
         meas = collector.state["measurements"]
 
-        expected_ops = [qml.H(0), qml.H(0)]
+        expected_ops = [qml.H(0), qml.X(0), qml.H(0), qml.X(0)]
         expected_meas = [qml.expval(qml.Z(0))]
         assert ops == expected_ops
         assert meas == expected_meas
@@ -265,7 +268,7 @@ class TestCancelInversesInterpreter:
         ops = collector.state["ops"]
         meas = collector.state["measurements"]
 
-        expected_ops = [qml.H(0), qml.H(1)]
+        expected_ops = [qml.H(0), qml.X(1), qml.H(0), qml.X(1)]
         assert ops == expected_ops
         assert meas == expected_meas
 
