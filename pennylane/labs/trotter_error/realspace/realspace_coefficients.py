@@ -379,34 +379,27 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         return self.__class__.outer_node(self, other)
 
     def __eq__(self, other: _RealspaceTree) -> bool:  # pylint: disable=too-many-return-statements
-        if self.node_type != other.node_type:
+        if self is other:
+            return True
+
+        node_type = self.node_type
+
+        if node_type != other.node_type:
             return False
 
         if self.shape != other.shape:
             return False
 
-        if self.node_type == _NodeType.OUTER:
-            if self.l_child.shape != other.l_child.shape:
-                return False
-
-            if self.r_child.shape != other.r_child.shape:
-                return False
-
+        if node_type == _NodeType.OUTER or node_type == _NodeType.SUM:
             return (self.l_child == other.l_child) and (self.r_child == other.r_child)
 
-        if self.node_type == _NodeType.SCALAR:
-            if self.scalar != other.scalar:
-                return False
+        if node_type == _NodeType.SCALAR:
+            return self.scalar == other.scalar and self.l_child == other.l_child
 
-            return self.l_child == other.l_child
-
-        if self.node_type == _NodeType.SUM:
-            return (self.l_child == other.l_child) and (self.r_child == other.r_child)
-
-        if self.node_type == _NodeType.TENSOR:
+        if node_type == _NodeType.TENSOR:
             return allclose(self.tensor, other.tensor)
 
-        if self.node_type == _NodeType.FLOAT:
+        if node_type == _NodeType.FLOAT:
             return self.value == other.value
 
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
