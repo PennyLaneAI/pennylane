@@ -250,6 +250,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         if mid_measurements is not None:
             raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
 
+        # print(circuit.measurements[0])
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
@@ -462,12 +463,24 @@ def simulate_tree_mcm(
     # zero-branch and one-branch measurements are available.
     depth = 0
 
+    visited = 0
     while stack.any_is_empty(1):
 
         ###########################################
         # Combine measurements & step up the tree #
         ###########################################
 
+        print("-"*100)
+        print("visited", visited)
+        print("depth", depth)
+        print("mcms", mcms)
+        print("mcm_current", mcm_current)   
+        print("mid_measurements", mid_measurements)
+        print("stack.results_0", stack.results_0)
+        print("stack.results_1", stack.results_1)
+        print("stack.probs", stack.probs)
+        
+        visited += 1
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
             # Call `combine_measurements` to count-average measurements
@@ -546,6 +559,7 @@ def simulate_tree_mcm(
                 **execution_kwargs,
             )
             measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
+            print("measurements")
 
         #####################################
         # Update stack & step down the tree #
@@ -572,6 +586,7 @@ def simulate_tree_mcm(
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
+            print("Assign the probabilities to the stack")
             continue
 
         ################################################
@@ -586,9 +601,11 @@ def simulate_tree_mcm(
             stack.results_0[depth] = measurements
             mcm_current[depth] = True
             mid_measurements[mcms[depth]] = True
+            print("Update for results_0")
             continue
         # If at a one-branch leaf, update measurements
         stack.results_1[depth] = measurements
+        print("Update for results_1")
 
     ##################################################
     # Finalize terminal measurements post-processing #
@@ -892,6 +909,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
             continue
         cum_value += qml.math.multiply(v[0], v[1])
         total_counts += v[0]
+        # total_counts += 1
     return cum_value / total_counts
 
 
