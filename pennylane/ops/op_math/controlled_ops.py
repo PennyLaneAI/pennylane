@@ -1540,6 +1540,153 @@ class MultiControlledX(ControlledOp):
         )
 
 
+class CSX(ControlledOp):
+    r"""CSX(wires)
+    The controlled-SX operator
+
+    .. math:: \sqrt{X} = \begin{bmatrix}
+        1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0\\
+        0 & 0 & \frac{1}{2}(1+i) & \frac{1}{2}(1-i)\\
+        0 & 0 & \frac{1}{2}(1-i) & \frac{1}{2}(1+i)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    resource_keys = set()
+
+    name = "CSX"
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=2)
+
+    def __init__(self, wires, id=None):
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.SX, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
+
+    def adjoint(self):
+        return CNOT(self.wires)
+
+    @property
+    def has_decomposition(self):
+        return True
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):  # -> List["Operator"]:
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+        >>> print(qml.CSX.compute_decomposition([0, 1]))
+        [CRZ(1.5707963267948966, wires=[0, 1]),
+         CRY(1.5707963267948966, wires=[0, 1]),
+         CRZ(-1.5707963267948966, wires=[0, 1]),
+         GlobalPhase(-0.7853981633974483, wires=[0, 1])]
+        """
+        return [
+            qml.CRZ(np.pi / 2, wires=wires),
+            qml.CRY(np.pi / 2, wires=wires),
+            qml.CRZ(-np.pi / 2, wires=wires),
+            qml.GlobalPhase(-np.pi / 4, wires=wires),
+        ]
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def __repr__(self):
+        return f"CSX(wires={self.wires.tolist()})"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CSX.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CSX.compute_matrix())
+        [[1 0 0 0]
+         [0 1 0 0]
+         [0 0 0.5+0.5j 0.5-0.5j]
+         [0 0 0.5-0.5j 0.5+0.5j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0.5 + 0.5j, 0.5 - 0.5j],
+                [0, 0, 0.5 - 0.5j, 0.5 + 0.5j],
+            ]
+        )
+
+
+def _csx_to_crz_cry_ps_resources():
+    return {qml.CRZ: 2, qml.CRY: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_csx_to_crz_cry_ps_resources)
+def _csx_to_crz_cry_ps(wires: WiresLike, **__):
+    qml.CRZ(np.pi / 2, wires=wires)
+    qml.CRY(np.pi / 2, wires=wires)
+    qml.CRZ(-np.pi / 2, wires=wires)
+    qml.GlobalPhase(-np.pi / 4, wires=wires)
+
+
+add_decomps(CSX, _csx_to_crz_cry_ps)
+
+
 class CRX(ControlledOp):
     r"""The controlled-RX operator
 
