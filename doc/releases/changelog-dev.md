@@ -200,6 +200,7 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
+* Improved error messaging in `qml.assert_equal` for measurement processes by returning a descriptive explanation when      observables differ. [(#7421)](https://github.com/PennyLaneAI/pennylane/pull/7421)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
