@@ -66,6 +66,7 @@ of the QAOA circuit.
     def cost_function(params):
         circuit(params)
         return qml.expval(cost_h)
+        
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299
 
