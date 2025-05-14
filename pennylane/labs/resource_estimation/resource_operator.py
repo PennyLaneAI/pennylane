@@ -242,17 +242,19 @@ class ResourceOperator(ABC):
     def set_resources(cls, new_func: Callable, override_type: str = "base"):
         """Set a custom resource method."""
         if override_type == "base":
-            _validate_signature(new_func, cls.resource_keys)
+            keys = cls.resource_keys + {"kwargs"}
+            _validate_signature(new_func, keys)
             cls.resource_decomp = new_func
         if override_type == "pow":
-            keys = cls.resource_keys + {"pow_z"}
+            keys = cls.resource_keys + {"pow_z", "kwargs"}
             _validate_signature(new_func, keys)
             cls.pow_resource_decomp = new_func
         if override_type == "adj":
-            _validate_signature(new_func, cls.resource_keys)
+            keys = cls.resource_keys + {"kwargs"}
+            _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys + {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values"}
+            keys = cls.resource_keys + {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
