@@ -315,6 +315,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
+ [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
+
 * In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
   circuit drawings now render in a way that's easier to read.
   [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
