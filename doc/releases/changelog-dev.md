@@ -6,6 +6,36 @@
 
 * Add `get_best_mcm_method(qnode)(*args, **kwargs)` to the `workflow` module.
   [(#7424)](https://github.com/PennyLaneAI/pennylane/pull/7424)
+  
+* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+  [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
+
+  Consider this simple circuit in PennyLane:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=100)
+
+  @qml.qnode(dev)
+  def circuit(theta, phi):
+      qml.RX(theta, wires=0)
+      qml.CNOT(wires=[0,1])
+      qml.RZ(phi, wires=1)
+      return qml.sample()
+  ```
+
+  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
+  ```pycon
+  >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
+  >>> print(openqasm_circ)
+  OPENQASM 2.0;
+  include "qelib1.inc";
+  qreg q[2];
+  creg c[2];
+  rx(1.2) q[0];
+  cx q[0],q[1];
+  rz(0.9) q[1];
+  measure q[0] -> c[0];
+  measure q[1] -> c[1];
+  ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
@@ -275,6 +305,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce `gradients` module to be an auxiliary layer module.
+  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
+
+* Enforce `optimize` module to be an auxiliary layer module.
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
@@ -309,6 +345,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h3>Documentation 📝</h3>
+
+* Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
+ [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
 * In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
   circuit drawings now render in a way that's easier to read.
@@ -399,6 +438,7 @@ Astral Cai,
 Yushao Chen,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
