@@ -40,11 +40,11 @@ different optimization problems.
 
     cost.bit_driver
     cost.edge_driver
-    cost.maxcut
-    cost.max_independent_set
-    cost.min_vertex_cover
     cost.max_clique
+    cost.max_independent_set
     cost.max_weight_cycle
+    cost.maxcut
+    cost.min_vertex_cover
 
 QAOA Layers
 ~~~~~~~~~~~
