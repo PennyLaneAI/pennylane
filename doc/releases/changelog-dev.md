@@ -272,6 +272,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce `noise` module to be an tertiary layer module.
+  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
+
 * Enforce `gradients` module to be an auxiliary layer module.
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
 
