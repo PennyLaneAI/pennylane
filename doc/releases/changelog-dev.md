@@ -190,12 +190,14 @@
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 
-* The functions :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` and 
-  :func:`phase_polynomial <pennylane.labs.intermediate_reps.phase_polynomial>` are now 
-  available in :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`.
-  They allow to compute efficient intermediate representations for CNOT circuits (:func:`phase_polynomial <pennylane.labs.intermediate_reps.phase_polynomial>`)
-  and (CNOT, RZ) circuits (:mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`).
-  These efficient intermediate representations are important for CNOT routing algorithms and other quantum compilation routines.
+* A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
+  provides functionality to compute intermediate representations for particular circuits.
+  :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` computes
+  the parity matrix intermediate representation for CNOT circuits.
+  :func:`phase_polynomial <pennylane.labs.intermediate_reps.phase_polynomial>` computes
+  the phase polynomial intermediate representation for {CNOT, RZ} circuits.
+  These efficient intermediate representations are important
+  for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
