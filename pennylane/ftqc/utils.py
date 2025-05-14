@@ -245,18 +245,19 @@ _paulis = frozenset({qml.X, qml.Y, qml.Z, qml.I})
 
 def pauli_encode_xz(op: qml.operation.Operator) -> Tuple[np.uint8, np.uint8]:
     """
-    Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., $encode_xz(Pauli)=(x,z)=X^xZ^z)$, where
-    $x$ is the exponent of the :class:`~pennylane.X` and $z$ is the exponent of
-    the :class:`~pennylane.Z`, meaning $op_encode_xz(I) = (0, 0)$, $op_encode_xz(X) = (1, 0)$,
-    $op_encode_xz(Y) = (1, 1)$ and $op_encode_xz(Z) = (0, 1)$.
+    Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
+    :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
+    the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
+    :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
 
     Args:
         op (qml.operation.Operator): A Pauli operator.
 
     Return:
-        (x, z, m): A tuple of xz encoding data, $x$ is the exponent of the :class:`~pennylane.X`, $z$ is the exponent of
+        A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
     the :class:`~pennylane.Z`.
     """
+
     if op in _paulis:
         return _ENCODE_XZ_OPS[op]
     raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
@@ -270,9 +271,10 @@ def pauli_prod_to_xz(ops: List[qml.operation.Operator]) -> Tuple[np.uint8, np.ui
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
-        (x, z): A tuple of xz encoding data, $x$ is the exponent of the :class:`~pennylane.X`, $z$ is the exponent of
+        A tuple of `xz` encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
     the :class:`~pennylane.Z`.
     """
+
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
 
