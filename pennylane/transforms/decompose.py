@@ -104,7 +104,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 gate_set: set[Type[Operator] | str] = {gate_set}
 
             if isinstance(gate_set, dict):
-                target_gate_types = tuple(gate for gate in gate_set.keys() if isinstance(gate, type))
+                target_gate_types = tuple(
+                    gate for gate in gate_set.keys() if isinstance(gate, type)
+                )
                 target_gate_names = set(
                     translate_op_alias(gate) for gate in gate_set.keys() if isinstance(gate, str)
                 )
@@ -281,7 +283,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
                         operations,
-                        self._target_gate_names if not isinstance(self._gate_set, dict) else self._gate_set,
+                        (
+                            self._target_gate_names
+                            if not isinstance(self._gate_set, dict)
+                            else self._gate_set
+                        ),
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
@@ -678,6 +684,7 @@ def decompose(
             )
 
     if isinstance(gate_set, Iterable) or isinstance(gate_set, dict):
+
         def gate_set_contains(op):
             return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 

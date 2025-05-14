@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+* [WIP] Can queue some basic series of QASM gates into a QNode. Not a complete implementation.
+
 * Support for weighted gates in target gatesets added which reflects the 
   relative costs of executing different gates on a hardware backend i.e. T is more expensive
   than a Pauli gate.

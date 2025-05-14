@@ -209,10 +209,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         if op_node.name in self._gate_set:
             if hasattr(self, "_weights"):
                 self._graph.add_edge(
-                    self._start, op_node_idx,
-                    self._weights[self._op_indices[op_node_idx]]
-                    if self._op_indices[op_node_idx] in self._weights.keys()
-                    else 1
+                    self._start,
+                    op_node_idx,
+                    (
+                        self._weights[self._op_indices[op_node_idx]]
+                        if self._op_indices[op_node_idx] in self._weights.keys()
+                        else 1
+                    ),
                 )
             else:
                 self._graph.add_edge(self._start, op_node_idx, 1)

@@ -1,11 +1,40 @@
+import re
 from functools import partial
 from typing import Callable
-import re
+
+from openqasm3.visitor import QASMNode, QASMVisitor
+
 import pennylane
-from pennylane import QNode, device, Identity, Hadamard, PauliX, PauliY, PauliZ, S, T, SX, RX, RY, RZ, \
-    PhaseShift, U1, U2, U3, CNOT, CY, CZ, CH, SWAP, CSWAP, CPhase, CRX, CRY, CRZ, \
-    Toffoli
-from openqasm3.visitor import QASMVisitor, QASMNode
+from pennylane import (
+    CH,
+    CNOT,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    RX,
+    RY,
+    RZ,
+    SWAP,
+    SX,
+    U1,
+    U2,
+    U3,
+    CPhase,
+    Hadamard,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    PhaseShift,
+    QNode,
+    S,
+    T,
+    Toffoli,
+    device,
+)
 
 SINGLE_QUBIT_GATES = {
     "ID": Identity,
@@ -15,7 +44,7 @@ SINGLE_QUBIT_GATES = {
     "Z": PauliZ,
     "S": S,
     "T": T,
-    "SX": SX
+    "SX": SX,
 }
 
 PARAMETERIZED_SIGNLE_QUBIT_GATES = {
@@ -46,6 +75,7 @@ TWO_QUBIT_GATES = {
 MULTI_QUBIT_GATES = {
     "CCX": Toffoli,
 }
+
 
 class QasmInterpreter(QASMVisitor):
     """
@@ -82,7 +112,9 @@ class QasmInterpreter(QASMVisitor):
             # TODO: call appropriate handler methods here
             case _:
                 # TODO: turn into a NameError when we have supported all the node types we want
-                print(f"An unrecognized QASM instruction was encountered: {node.__class__.__name__}")
+                print(
+                    f"An unrecognized QASM instruction was encountered: {node.__class__.__name__}"
+                )
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
@@ -113,7 +145,9 @@ class QasmInterpreter(QASMVisitor):
         """
         if "device" not in context:
             context["device"] = device("default.qubit", wires=len(context["wires"]))
-        context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
+        context["qnode"] = QNode(
+            lambda: [gate() for gate in context["gates"]], device=context["device"]
+        )
 
     @staticmethod
     def identifier(node: QASMNode, context: dict):
@@ -156,15 +190,15 @@ class QasmInterpreter(QASMVisitor):
             context["vars"] = {}
         if node.init_expression is not None:
             context["vars"][node.identifier.name] = {
-                'ty': node.type.__class__.__name__,
-                'val': node.init_expression.value,
-                'line': node.init_expression.span.start_line
+                "ty": node.type.__class__.__name__,
+                "val": node.init_expression.value,
+                "line": node.init_expression.span.start_line,
             }
         else:
             context["vars"][node.identifier.name] = {
-                'ty': node.type.__class__.__name__,
-                'val': None,
-                'line': node.span.start_line
+                "ty": node.type.__class__.__name__,
+                "val": None,
+                "line": node.span.start_line,
             }
 
     def quantum_gate(self, node: QASMNode, context: dict):
@@ -212,22 +246,25 @@ class QasmInterpreter(QASMVisitor):
         """
         call_stack = [gate]
         for mod in node.modifiers:
-            if mod.modifier.name == 'inv':
+            if mod.modifier.name == "inv":
                 wrapper = pennylane.adjoint
-            elif mod.modifier.name == 'pow':
-                if re.search('Literal', mod.argument.__class__.__name__) is not None:
+            elif mod.modifier.name == "pow":
+                if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pennylane.pow, z=mod.argument.value)
                 elif mod.argument.name in context["vars"]:
                     wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == 'ctrl':
+            elif mod.modifier.name == "ctrl":
                 wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
         def call():
             res = None
             for callable in call_stack[::-1]:
-                if ('partial' == call_stack[0].__class__.__name__ and 'control' in call_stack[0].keywords):
-                    if 'control' in callable.keywords:
+                if (
+                    "partial" == call_stack[0].__class__.__name__
+                    and "control" in call_stack[0].keywords
+                ):
+                    if "control" in callable.keywords:
                         res.keywords["wires"] = [res.keywords["wires"][-1]]
                     # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
                     res = callable(res.func)(**res.keywords) if res is not None else callable
@@ -261,7 +298,7 @@ class QasmInterpreter(QASMVisitor):
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
                 args.append(context["vars"][arg.name]["val"])
-            elif re.search('Literal', arg.__class__.__name__) is not None:
+            elif re.search("Literal", arg.__class__.__name__) is not None:
                 args.append(arg.value)
             else:
                 raise NameError(
@@ -271,7 +308,7 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
             *args,
-            wires=[context["wires"].index(node.qubits[0].name)]
+            wires=[context["wires"].index(node.qubits[0].name)],
         )
 
     @staticmethod
@@ -292,8 +329,10 @@ class QasmInterpreter(QASMVisitor):
             gates_dict[node.name.name.upper()],
             wires=[
                 context["wires"].index(
-                    node.qubits[q].name if isinstance(node.qubits[q].name, str) else node.qubits[q].name.name
+                    node.qubits[q].name
+                    if isinstance(node.qubits[q].name, str)
+                    else node.qubits[q].name.name
                 )
                 for q in range(len(node.qubits))
-            ]
+            ],
         )
