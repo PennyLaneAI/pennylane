@@ -58,6 +58,15 @@ class QubitManager:
     def __repr__(self) -> str:
         return str(self)
 
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and (self.clean_qubits == other.clean_qubits)
+            and (self.dirty_qubits == other.dirty_qubits)
+            and (self.algo_qubits == other.algo_qubits)
+            and (self.tight_budget == other.tight_budget)
+        )
+
     @property
     def clean_qubits(self):
         r"""Returns the number of clean qubits."""
