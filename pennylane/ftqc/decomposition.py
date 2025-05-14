@@ -75,6 +75,7 @@ def convert_to_mbqc_formalism(tape):
     mp = tape.measurements[0]
     meas_wires = mp.wires if mp.wires else tape.wires
 
+    # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
@@ -91,7 +92,7 @@ def convert_to_mbqc_formalism(tape):
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                if isinstance(op, tuple([X, Y, Z, Identity])):
+                if isinstance(op, X | Y | Z | Identity):
                     wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
@@ -113,7 +114,7 @@ def convert_to_mbqc_formalism(tape):
 def queue_single_qubit_gate(q_mgr, op, in_wire):
     """Queue the resource state preparation, measurements and byproducts
     to execute the operation in the MBQC formalism. This implementation
-    follows the procedures defined in Raussendorf et. al. 2003,
+    follows the procedures defined in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312"""
 
     graph_wires = q_mgr.acquire_qubits(4)
@@ -219,8 +220,8 @@ def _rotation_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond((m1 + m3) % 2, Z)(wire)
-        cond((m2 + m4) % 2, X)(wire)
+        cond(m1 ^ m3, Z)(wire)
+        cond(m2 ^ m4, X)(wire)
 
     return correction_func
 
@@ -232,7 +233,7 @@ def _hadamard_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond((m2 + m3) % 2, Z)(wire)
+        cond(m2 ^ m3, Z)(wire)
         cond((m1 + m3 + m4) % 2, X)(wire)
 
     return correction_func
@@ -247,7 +248,7 @@ def _s_corrections(op, measurements):
 
     def correction_func(wire):
         cond((m1 + m2 + m3 + 1) % 2, Z)(wire)
-        cond((m2 + m4) % 2, X)(wire)
+        cond(m2 ^ m4, X)(wire)
 
     return correction_func
 
@@ -255,7 +256,7 @@ def _s_corrections(op, measurements):
 def queue_cnot(q_mgr, ctrl_idx, target_idx):
     """Queue the resource state preparation, measurements and byproducts to execute
     the operation in the MBQC formalism. This is the 15-qubit procedure from
-    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312"""
+    Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312"""
 
     graph_wires = q_mgr.acquire_qubits(13)
 
@@ -282,7 +283,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
 
 def cnot_measurements(wires):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
-    Numbering convention follows the procedure in Raussendorf et. al. 2003,
+    Numbering convention follows the procedure in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312"""
     ctrl_idx, target_idx, graph_wires = wires
 
@@ -309,7 +310,7 @@ def cnot_corrections(measurements):
     """Queue the byproduct corrections associated with the CNOT gate in
     the MBQC formalism, based on measurement results"""
 
-    # Numbering convention follows the procedure in Raussendorf et. al. 2003,
+    # Numbering convention follows the procedure in Raussendorf et al. 2003,
     # https://doi.org/10.1103/PhysRevA.68.022312
     m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
 

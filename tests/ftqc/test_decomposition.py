@@ -280,6 +280,30 @@ class TestMBQCFormalismConversion:
             queue_corrections(qml.Identity, measurements=[0, 0, 0, 0])
 
     @pytest.mark.parametrize(
+        "ops, meas, error_msg",
+        [
+            (
+                [qml.H(0), qml.RZ(0.23, 0), qml.RX(1.23, 0)],  # invalid op
+                [qml.sample(wires=0)],
+                "unsupported gate",
+            ),
+            (
+                [qml.H(0), qml.RZ(0.23, 0), qml.S(0)],  # invalid measurement
+                [qml.expval(qml.X(0))],
+                "final measurements have not been converted",
+            ),
+        ],
+    )
+    def test_invalid_tape_raises_error(self, ops, meas, error_msg):
+        """Test that a NotImplemented error is raised if the tape isn't valid for conversion
+        to the MBQC formalism using this transform"""
+
+        tape = qml.tape.QuantumScript(ops, measurements=meas)
+
+        with pytest.raises(NotImplementedError, match=error_msg):
+            _, _ = convert_to_mbqc_formalism(tape)
+
+    @pytest.mark.parametrize(
         "op",
         [qml.H(2), qml.S(2), qml.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
     )
@@ -479,6 +503,7 @@ class TestMBQCFormalismConversion:
         else:
             assert len(transformed_tape.measurements[0].wires) == len(tape.wires)
 
+    @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
