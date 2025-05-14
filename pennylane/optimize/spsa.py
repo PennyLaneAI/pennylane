@@ -166,7 +166,7 @@ class SPSAOptimizer:
     """
 
     # pylint: disable-msg=too-many-arguments
-    def __init__(self, *, maxiter=None, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
+    def __init__(self, maxiter=None, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         self.a = a
         self.A = A
         if not maxiter and not A:

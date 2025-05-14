@@ -179,7 +179,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
           <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
     """
 
-    def __init__(self, min_shots, *, term_sampling=None, mu=0.99, b=1e-6, stepsize=0.07):
+    # pylint: disable = too-many-positional-arguments
+    def __init__(self, min_shots, term_sampling=None, mu=0.99, b=1e-6, stepsize=0.07):
         self.term_sampling = term_sampling
         self.trainable_args = set()
 
