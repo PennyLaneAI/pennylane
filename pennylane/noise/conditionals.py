@@ -19,7 +19,7 @@ utilize in the ``condition`` attribute.
 from inspect import isclass, signature
 
 from pennylane import math, measurements
-from pennylane import ops as pl_ops
+from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.operation import Operation
 from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
@@ -304,7 +304,7 @@ def _get_ops(val):
     op_names = []
     for _val in vals:
         if isinstance(_val, str):
-            op_names.append(getattr(pl_ops, _val, None))
+            op_names.append(getattr(qops, _val, None))
         elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
         elif isinstance(_val, (measurements.MeasurementValue, measurements.MidMeasureMP)):
