@@ -302,7 +302,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Enforce `qaoa` module to be an tertiary layer module.
+* Enforce `qaoa` module to be a tertiary layer module.
   [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
 
 * Enforce `gradients` module to be an auxiliary layer module.
