@@ -95,7 +95,7 @@ def cost_layer(gamma, hamiltonian):
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    # NOTE: op is defined explicitely as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
+    # NOTE: op is defined explicitly as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
     op = ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
