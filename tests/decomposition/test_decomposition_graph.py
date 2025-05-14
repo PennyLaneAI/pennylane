@@ -32,6 +32,8 @@ from pennylane.decomposition import (
     pow_resource_rep,
 )
 
+# pylint: disable=protected-access,no-name-in-module
+
 
 @pytest.mark.unit
 @patch(
@@ -97,6 +99,7 @@ class TestDecompositionGraph:
         assert len(graph2._graph.nodes()) == 7
         # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
+
 
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules that raise DecompositionNotApplicable are skipped."""

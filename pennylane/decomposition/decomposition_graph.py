@@ -180,6 +180,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         if op_node.name in self._gate_set:
             self._target_ops_indices.add(op_node_idx)
+
             return op_node_idx
 
         if op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
