@@ -37,8 +37,8 @@ from .transforms import ApplyTransformSequence
 class Compiler:
     """Compiler namespace"""
 
-    # TODO: Change to static
-    def run(self, jmod: jaxModule) -> jaxModule:
+    @staticmethod
+    def run(jmod: jaxModule) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
