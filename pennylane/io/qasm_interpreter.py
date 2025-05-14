@@ -451,15 +451,15 @@ class QasmInterpreter(QASMVisitor):
                 for typed_context_name, typed_context in typed_contexts.items():
                     wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
                               for w in contexts[context_type][typed_context_name]["wires"]]
-                    wires += self._get_wires_helper(typed_context, wires)
-            return wires
-        return []
+                    wires = self._get_wires_helper(typed_context, wires)
+        return wires
 
     def construct_qnode(self, context: dict):
         if "device" not in context:
             wires = [w for w in context["wires"]]
             curr = context
-            wires = self._get_wires_helper(curr, wires)
+            if "scopes" in curr:
+                wires = self._get_wires_helper(curr, wires)
             context["device"] = device("default.qubit", wires=wires)
         # TODO: pass context through gate calls during second pass
         context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])

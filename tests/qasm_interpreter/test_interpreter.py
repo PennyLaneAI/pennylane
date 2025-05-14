@@ -8,9 +8,9 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 class TestInterpreter:
 
     qasm_programs = [
-        (open("tests/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
-        (open("tests/qasm_interpreter/qec.qasm", mode="r").read(), 15, "qec"),
-        (open("tests/qasm_interpreter/teleport.qasm", mode="r").read(), 19, "teleport"),
+        (open("adder.qasm", mode="r").read(), 22, "adder"),
+        (open("qec.qasm", mode="r").read(), 15, "qec"),
+        (open("teleport.qasm", mode="r").read(), 19, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
