@@ -809,6 +809,4 @@ def _equal_prep_sel_prep(
 
 @_equal_dispatch.register(MeasurementProcess, MeasurementProcess)
 def _equal_measurement_measurement(m1, m2):
-    if m1.obs != m2.obs:
-        return f"{m1} and {m2} are not equal because their observables differ."
-    return True
+    return qml.equal(m1, m2)
