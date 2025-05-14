@@ -17,6 +17,10 @@ This module contains utility data-structures and algorithms supporting functiona
 ftqc module.
 """
 from threading import RLock
+from typing import List, Tuple
+
+import pennylane as qml
+from pennylane import numpy as np
 
 
 class QubitMgr:
@@ -227,3 +231,57 @@ class QubitMgr:
                 raise RuntimeError(
                     f"Qubit index {idx} not found in inactive set. Execution aborted."
                 )
+
+
+_ENCODE_XZ_OPS = {
+    qml.I: (0, 0, 1 + 0j),
+    qml.X: (1, 0, 1 + 0j),
+    qml.Y: (1, 1, 0 + 1j),
+    qml.Z: (0, 1, 1 + 0j),
+}
+
+_paulis = frozenset({qml.X, qml.Y, qml.Z, qml.I})
+
+
+def pauli_encode_xz(op: qml.operation.Operator) -> Tuple[np.uint8, np.uint8, np.complex64]:
+    """
+    Encode a `Pauli` operator to its `xz` representation, i.e., $encode_xz(Pauli)=m*(x,z)=m*X^xZ^z)$, where
+    $m$ is the phase information, $x$ is the exponent of the :class:`~pennylane.X` and $z$ is the exponent of
+    the :class:`~pennylane.Z`, meaning $op_encode_xz(I) = (0, 0, 1)$, $op_encode_xz(X) = (1, 0, 1)$,
+    $op_encode_xz(Y) = (1, 1, 1j)$ and $op_encode_xz(Z) = (0, 1, 1)$.
+
+    Args:
+        op (qml.operation.Operator): A Pauli operator.
+
+    Return:
+        (x, z, m): A tuple of xz encoding data, $x$ is the exponent of the :class:`~pennylane.X`, $z$ is the exponent of
+    the :class:`~pennylane.Z` and $m$ is the phase information.
+    """
+    if op in _paulis:
+        return _ENCODE_XZ_OPS[op]
+    raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
+
+
+def pauli_prod_to_xz(ops: List[qml.operation.Operator]) -> Tuple[np.uint8, np.uint8, np.complex64]:
+    """
+    Get the result of a product of list of Pauli operators. The result is encoded with `xz` representation.
+
+    Args:
+        ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
+
+    Return:
+        (x, z, m): A tuple of xz encoding data, $x$ is the exponent of the :class:`~pennylane.X`, $z$ is the exponent of
+    the :class:`~pennylane.Z` and $m$ is the phase information.
+    """
+    if len(ops) == 0:
+        raise ValueError("Please ensure that a valid list of operators are passed to the method.")
+
+    res_xz = pauli_encode_xz(ops.pop())
+
+    while len(ops) > 0:
+        op_xz = pauli_encode_xz(ops.pop())
+        res_xz[0] ^= op_xz[0]
+        res_xz[1] ^= op_xz[1]
+        res_xz[2] *= op_xz[2]
+
+    return res_xz
