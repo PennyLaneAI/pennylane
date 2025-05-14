@@ -15,7 +15,10 @@
 
 import math
 import warnings
+from functools import lru_cache, partial
 from itertools import product
+
+from tqdm import tqdm
 
 import pennylane as qml
 from pennylane.ops import Adjoint
@@ -403,7 +406,7 @@ def clifford_t_decomposition(
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
-        for op in compiled_tape.operations:
+        for op in tqdm(compiled_tape.operations):
             # Check whether operation is to be skipped
             if isinstance(op, _SKIP_OP_TYPES):
                 decomp_ops.append(op)
@@ -456,7 +459,9 @@ def clifford_t_decomposition(
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
-            decompose_fn = sk_decomposition
+            decompose_fn = lru_cache(maxsize=10000)(
+                partial(sk_decomposition, epsilon=epsilon, **method_kwargs, map_wires=False)
+            )
 
         else:
             raise NotImplementedError(
@@ -465,11 +470,12 @@ def clifford_t_decomposition(
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
-        for op in new_operations:
+        for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                phase += qml.math.convert_like(clifford_ops.pop().data[0], phase)
-                decomp_ops.extend(clifford_ops)
+                clifford_ops = decompose_fn(qml.RZ(op.data[0], [0]))
+                phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                mapped_ops = qml.map_wires(qml.prod(*clifford_ops[:-1]), {0: op.wires[0]})
+                decomp_ops.extend(getattr(mapped_ops, "operands", [mapped_ops]))
             else:
                 decomp_ops.append(op)
 
