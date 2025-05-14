@@ -22,20 +22,7 @@ from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import (
-    CNOT,
-    CZ,
-    RZ,
-    GlobalPhase,
-    H,
-    Identity,
-    PauliX,
-    PauliY,
-    PauliZ,
-    Rot,
-    S,
-    cond,
-)
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
@@ -46,7 +33,7 @@ from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr
 
-mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, PauliX, PauliY, PauliZ, Identity, GlobalPhase})
+mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
 
 
 @register_resources({RotXZX: 1})
@@ -105,7 +92,7 @@ def convert_to_mbqc_formalism(tape):
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                if isinstance(op, (PauliX, PauliY, PauliZ, Identity)):
+                if isinstance(op, (X, Y, Z, Identity)):
                     wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
@@ -233,8 +220,8 @@ def _rotation_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond(m1 ^ m3, PauliZ)(wire)
-        cond(m2 ^ m4, PauliX)(wire)
+        cond(m1 ^ m3, Z)(wire)
+        cond(m2 ^ m4, X)(wire)
 
     return correction_func
 
@@ -246,8 +233,8 @@ def _hadamard_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond(m2 ^ m3, PauliZ)(wire)
-        cond((m1 + m3 + m4) % 2, PauliX)(wire)
+        cond(m2 ^ m3, Z)(wire)
+        cond((m1 + m3 + m4) % 2, X)(wire)
 
     return correction_func
 
@@ -260,8 +247,8 @@ def _s_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond((m1 + m2 + m3 + 1) % 2, PauliZ)(wire)
-        cond(m2 ^ m4, PauliX)(wire)
+        cond((m1 + m2 + m3 + 1) % 2, Z)(wire)
+        cond(m2 ^ m4, X)(wire)
 
     return correction_func
 
@@ -336,10 +323,10 @@ def cnot_corrections(measurements):
     z_cor_tgt = m9 + m11 + m13
 
     def correction_func(ctrl_wire, target_wire):
-        cond(z_cor_ctrl % 2, PauliZ)(ctrl_wire)
-        cond(x_cor_ctrl % 2, PauliX)(ctrl_wire)
-        cond(z_cor_tgt % 2, PauliZ)(target_wire)
-        cond(x_cor_tgt % 2, PauliX)(target_wire)
+        cond(z_cor_ctrl % 2, Z)(ctrl_wire)
+        cond(x_cor_ctrl % 2, X)(ctrl_wire)
+        cond(z_cor_tgt % 2, Z)(target_wire)
+        cond(x_cor_tgt % 2, X)(target_wire)
 
     return correction_func
 
