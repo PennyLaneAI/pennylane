@@ -31,5 +31,6 @@ class PennyLaneDeprecationWarning(UserWarning):  # pragma: no cover
 class ExperimentalWarning(UserWarning):  # pragma: no cover
     """Warning raised to indicate experimental/non-stable feature or support."""
 
+
 class GraphFeaturesUsedButNotEnabled(UserWarning):  # pragma: no cover
     """Warning raised when weights are provided with a gateset but graph decomposition is not enabled."""

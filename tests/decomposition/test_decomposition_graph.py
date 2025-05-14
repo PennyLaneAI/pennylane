@@ -14,13 +14,11 @@
 
 """Unit tests for the decomposition graph."""
 from functools import partial
-# pylint: disable=protected-access,no-name-in-module
-
 from unittest.mock import patch
 
 import numpy as np
 import pytest
-from conftest import decompositions, weighted_decompositions, to_resources
+from conftest import decompositions, to_resources, weighted_decompositions
 
 import pennylane as qml
 from pennylane.decomposition import (
@@ -33,6 +31,8 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.decomposition_graph import _to_name
+
+# pylint: disable=protected-access,no-name-in-module
 
 
 @pytest.mark.unit
@@ -50,7 +50,14 @@ class TestDecompositionGraph:
         # the RZ CZ RX CZ decomp is chosen when the RZ and CNOT weights are large.
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"RX": 1.0, "RY": 3.0, "RZ": 10.0, "GlobalPhase": 1.0, "CNOT": 20.0, "CZ": 1.0},
+            gate_set={
+                "RX": 1.0,
+                "RY": 3.0,
+                "RZ": 10.0,
+                "GlobalPhase": 1.0,
+                "CNOT": 20.0,
+                "CZ": 1.0,
+            },
         )
         graph.solve()
 
@@ -105,7 +112,9 @@ class TestDecompositionGraph:
 
         op = qml.Hadamard(wires=[0])
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0})
+        graph = DecompositionGraph(
+            operations=[op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0}
+        )
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY) and 1 dummy starting node
         assert len(graph._graph.nodes()) == 9
         # 8 edges from ops to decompositions, 3 from decompositions to ops, and 3 from the
@@ -113,7 +122,9 @@ class TestDecompositionGraph:
         assert len(graph._graph.edges()) == 14
 
         # Check that graph construction stops at gates in the target gate set.
-        graph2 = DecompositionGraph(operations=[op], gate_set={"RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0})
+        graph2 = DecompositionGraph(
+            operations=[op], gate_set={"RY": 1.0, "RZ": 1.0, "GlobalPhase": 1.0}
+        )
         # 5 ops and 2 decompositions (RY is in the target gate set now), and the dummy starting node
         assert len(graph2._graph.nodes()) == 8
         # 6 edges from ops to decompositions and 2 from decompositions to ops,

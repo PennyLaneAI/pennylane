@@ -706,4 +706,3 @@ def from_quil_file(quil_filename: str):
 
 def from_qasm_three(quantum_circuit: str, measurements=None):
     pass
-
