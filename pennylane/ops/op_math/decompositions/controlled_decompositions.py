@@ -24,9 +24,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=protected-access
-    _controlled_resource_rep,
-)
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
@@ -217,13 +214,15 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=len_k2,
             num_work_wires=len_k1,
         ): 4,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=len_k1,
             num_work_wires=len_k2,
         ): 2,
@@ -293,8 +292,9 @@ def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_wo
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=num_control_wires - 1,
             num_work_wires=num_work_wires,
         ): 2,
@@ -320,14 +320,18 @@ def _controlled_two_qubit_unitary_resource(
         raise DecompositionNotApplicable
 
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
-
-    return {
-        ops.X: num_zero_control_values * 2,
-        **{
-            _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
-            for base_op_rep, count in base_resources.gate_counts.items()
-        },
+    gate_counts = {
+        controlled_resource_rep(
+            base_class=base_op_rep.op_type,
+            base_params=base_op_rep.params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): count
+        for base_op_rep, count in base_resources.gate_counts.items()
     }
+    gate_counts[ops.X] = num_zero_control_values * 2
+    return gate_counts
 
 
 @register_resources(_controlled_two_qubit_unitary_resource)
