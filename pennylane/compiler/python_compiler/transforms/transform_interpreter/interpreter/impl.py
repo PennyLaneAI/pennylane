@@ -33,6 +33,7 @@ from xdsl.utils import parse_pipeline
 # pragma: no cover
 
 
+# pylint: disable=too-few-public-methods
 @register_impls
 class TransformFunctionsExt(TransformFunctions):
     """
