@@ -34,4 +34,11 @@ from .resource_operator import (
     set_ctrl_decomp,
     set_decomp,
     set_pow_decomp,
+    GateCount,
+)
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
 )
