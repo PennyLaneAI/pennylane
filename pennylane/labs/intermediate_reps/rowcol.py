@@ -43,11 +43,11 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     Consider the tree
 
     ```
-                      (4)
-                       |
-    (6) - (2) - (0) - (1) - (3) - (8)
-           |           |
-          (7)         (5)
+    #                   (4)
+    #                    |
+    # (6) - (2) - (0) - (1) - (3) - (8)
+    #        |           |
+    #       (7)         (5)
     ```
 
     and consider ``(0)`` to be the source, or root, of the tree.
@@ -127,11 +127,11 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
     Consider the tree
 
     ```
-                      (4)
-                       |
-    (6) - (2) - (0) - (1) - (3) - (8)
-           |           |
-          (7)         (5)
+    #                   (4)
+    #                    |
+    # (6) - (2) - (0) - (1) - (3) - (8)
+    #        |           |
+    #       (7)         (5)
     ```
 
     and consider ``(0)`` to be the source, or root, of the tree.
@@ -336,11 +336,11 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     We restrict ourselves to the following connectivity graph.
 
     ```
-    (0) - (3) - (4)
-           |
-          (2)
-           |
-          (1)
+    # (0) - (3) - (4)
+    #        |
+    #       (2)
+    #        |
+    #       (1)
     ```
 
     Or, in code:
@@ -377,9 +377,9 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     vertices is given by
 
     ```
-    (0) - (3) - (4)
-           |
-          (2)
+    # (0) - (3) - (4)
+    #        |
+    #       (2)
     ```
 
     *Step 2.b: First post-order traversal*
@@ -427,9 +427,9 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     The Steiner tree :math:`T'` encapsulating :math:`S'` is then
 
     ```
-    (0) - (3) - (4)
-           |
-          (2)
+    # (0) - (3) - (4)
+    #        |
+    #       (2)
     ```
 
     where :math:`4 \notin S'`.
@@ -475,11 +475,11 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     is :math:`S = [1, 2, 3]` and the encapsulating Steiner tree :math:`T` is simply
 
     ```
-    (3)
-     |
-    (2)
-     |
-    (1)
+    # (3)
+    #  |
+    # (2)
+    #  |
+    # (1)
     ```
 
     *Step 2.b: First post-order traversal*
@@ -491,7 +491,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     *Step 2.c: Second post-order traversal*
 
     Once again, add every parent node row to the row of its children while post-order traversing.
-    We additionally get :math:`\text{CNOT}_{2 3}\text{CNOT}_{1 2}$.
+    We additionally get :math:`\text{CNOT}_{2 3}\text{CNOT}_{1 2}`.
 
     *Step 3: Eliminate ``P[1]``*
 
@@ -513,11 +513,11 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     The encapsulating Steiner tree :math:`T'` is
 
     ```
-    (3) - (4)
-     |
-    (2)
-     |
-    (1)
+    # (3) - (4)
+    #  |
+    # (2)
+    #  |
+    # (1)
     ```
 
     where :math:`2 \notin S'`.
