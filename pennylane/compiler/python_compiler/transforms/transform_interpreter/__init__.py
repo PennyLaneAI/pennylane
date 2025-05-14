@@ -13,6 +13,6 @@
 # limitations under the License.
 """Public API"""
 
-from .transform_interpreter_catalyst import TransformInterpreterPassExt as TransformInterpreterPass
+from .transform_interpreter_catalyst import TransformInterpreterPass
 
 __all__ = ["TransformInterpreterPass"]
