@@ -54,7 +54,7 @@ from .symbolic_decomposition import (
     repeat_pow_base,
     self_adjoint,
 )
-from .utils import DecompositionError, DecompositionNotApplicable, translate_op_alias
+from .utils import DecompositionError, translate_op_alias
 
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
@@ -228,21 +228,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     def _add_decomp(self, rule: DecompositionRule, op_node: CompressedResourceOp, op_idx: int):
         """Adds a decomposition rule to the graph."""
-        try:
-            decomp_resource = rule.compute_resources(**op_node.params)
-            d_node = _DecompositionNode(rule, decomp_resource)
-            d_node_idx = self._graph.add_node(d_node)
-            if not decomp_resource.gate_counts:
-                # If an operator decomposes to nothing (e.g., a Hadamard raised to a
-                # power of 2), we must still connect something to this decomposition
-                # node so that it is accounted for.
-                self._graph.add_edge(self._start, d_node_idx, 0)
-            for op in decomp_resource.gate_counts:
-                op_node_idx = self._add_op_node(op)
-                self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
-            self._graph.add_edge(d_node_idx, op_idx, 0)
-        except DecompositionNotApplicable:
-            pass  # ignore decompositions that are not applicable to the given op params.
+        if not rule.is_applicable(**op_node.params):
+            return  # skip the decomposition rule if it is not applicable
+        decomp_resource = rule.compute_resources(**op_node.params)
+        d_node = _DecompositionNode(rule, decomp_resource)
+        d_node_idx = self._graph.add_node(d_node)
+        if not decomp_resource.gate_counts:
+            # If an operator decomposes to nothing (e.g., a Hadamard raised to a
+            # power of 2), we must still connect something to this decomposition
+            # node so that it is accounted for.
+            self._graph.add_edge(self._start, d_node_idx, 0)
+        for op in decomp_resource.gate_counts:
+            op_node_idx = self._add_op_node(op)
+            self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
+        self._graph.add_edge(d_node_idx, op_idx, 0)
 
     def _get_adjoint_decompositions(self, op_node: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
