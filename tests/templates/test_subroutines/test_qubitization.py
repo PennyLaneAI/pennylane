@@ -173,6 +173,7 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
+        atol = 1e-5 if shots is None else 0.05
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
             qnode = jax.jit(qnode)
@@ -185,7 +186,7 @@ class TestDifferentiability:
 
         jac = jac_fn(params)
         assert jac.shape == (4,)
-        assert np.allclose(jac, self.exp_grad, atol=0.05)
+        assert np.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -196,12 +197,13 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
+        atol = 1e-5 if shots is None else 0.05
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
         assert qml.math.shape(jac) == (4,)
-        # assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
+        assert qml.math.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
