@@ -310,7 +310,7 @@ def _to_controlled_qu_resource(num_control_wires, num_zero_control_values, num_w
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
-        )
+        ): 1
     }
 
 
