@@ -13,8 +13,6 @@
 # limitations under the License.
 """Public API"""
 
-# pragma: exclude file
-
 from .transform_interpreter_catalyst import TransformInterpreterPass
 
 __all__ = ["TransformInterpreterPass"]

@@ -33,7 +33,6 @@ from .transforms import ApplyTransformSequence
 
 
 # pylint: disable=too-few-public-methods
-# pragma: exclude file
 class Compiler:
     """Compiler namespace"""
 

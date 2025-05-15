@@ -29,8 +29,6 @@ from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils import parse_pipeline
 
-# pragma: exclude file
-
 
 # pylint: disable=too-few-public-methods
 @register_impls
@@ -57,6 +55,7 @@ class TransformFunctionsExt(TransformFunctions):
         args: PythonValues,
     ) -> PythonValues:
         """Try to run the pass in xDSL, if it can't run on catalyst"""
+        # pragma: no cover
         pass_name = op.pass_name.data
         requested_by_user = PipelinePass.build_pipeline_tuples(
             self.passes, parse_pipeline.parse_pipeline(pass_name)

@@ -13,8 +13,6 @@
 # limitations under the License.
 """This file contains the pass that applies all passes present in the program representation."""
 
-# pragma: exclude file
-
 
 from dataclasses import dataclass
 

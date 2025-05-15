@@ -14,15 +14,15 @@
 
 """Unit test module for pennylane/compiler/python_compiler/impl.py"""
 
+# pylint: disable=wrong-import-position
 import pytest
 
-# pylint: disable=wrong-import-position
+pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 jax = pytest.importorskip("jax")
 jaxlib = pytest.importorskip("jaxlib")
 
-pytestmark = pytest.mark.external
 
 from pennylane.compiler.python_compiler.impl import Compiler
 from pennylane.compiler.python_compiler.jax_utils import jax_from_docstring, module

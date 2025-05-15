@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pragma: exclude file
-
 """Custom Transform Dialect Interpreter Pass
 
 Differs from xDSL's upstream implementation by allowing passes
@@ -50,6 +48,7 @@ class TransformInterpreterPass(ModulePass):
         for op in root.walk():
             if isinstance(op, transform.NamedSequenceOp) and op.sym_name.data == entry_point:
                 return op
+        # pragma: no cover
         raise PassFailedException(
             f"{root} could not find a nested named sequence with name: {entry_point}"
         )
