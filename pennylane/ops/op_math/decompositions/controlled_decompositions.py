@@ -352,7 +352,7 @@ def _decompose_mcx_with_many_workers_resource(num_control_wires, **__):
 
 @register_condition(_decompose_mcx_with_many_workers_condition)
 @register_resources(_decompose_mcx_with_many_workers_resource)
-def decompose_mcx_with_many_workers(wires, work_wires, **__):
+def _decompose_mcx_with_many_workers(wires, work_wires, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
@@ -378,6 +378,9 @@ def decompose_mcx_with_many_workers(wires, work_wires, **__):
     loop_down()
 
 
+decompose_mcx_with_many_workers = flip_zero_control(_decompose_mcx_with_many_workers)
+
+
 def _two_workers_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires >= 2
 
@@ -393,7 +396,7 @@ def _two_workers_resource(num_control_wires, work_wire_type, **__):
 
 @register_condition(_two_workers_condition)
 @register_resources(_two_workers_resource)
-def decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
+def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
@@ -424,11 +427,14 @@ def decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
-def _decompose_mcx_one_worker_condition(num_control_wires, num_work_wires, work_wire_type, **__):
+decompose_mcx_with_two_workers = flip_zero_control(_decompose_mcx_with_two_workers)
+
+
+def _decompose_mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and num_work_wires == 1
 
 
-def _decompose_mcx_one_worker_resource(num_control_wires, num_work_wires, work_wire_type, **__):
+def _decompose_mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
     if work_wire_type == "clean":
         n_ccx = 2 * num_control_wires - 3
         return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
