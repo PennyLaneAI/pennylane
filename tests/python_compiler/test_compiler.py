@@ -20,6 +20,7 @@ import pytest
 
 xdsl = pytest.importorskip("xdsl")
 jax = pytest.importorskip("jax")
+jaxlib = pytest.importskip("jaxlib")
 
 pytestmark = pytest.mark.external
 
@@ -45,7 +46,9 @@ def test_compiler():
 
     input_module = identity(1)
     retval = Compiler.run(input_module)
-    assert isinstance(retval) == isinstance(input_module)
+    assert isinstance(retval, jaxlib.mlir.ir.Module) == isinstance(
+        input_module, jaxlib.mlir.ir.Module
+    )
     assert str(retval) == str(input_module)
 
 
