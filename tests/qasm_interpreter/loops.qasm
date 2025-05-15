@@ -1,7 +1,7 @@
 // loop over every even integer from 0 to 20 using a range, and call a
 // subroutine with that value.
 for int i in [0:2:20]
-   random(ancilla, q0);
+   x q0;
 
 // high precision typed loop variable
 for uint[64] i in [4294967296:4294967306] {
@@ -19,5 +19,5 @@ bit[5] register = "011011";
 for bit b in register {}
 let alias = register[1:3];
 for bit b in alias {
-    measure q0 -> b;
+    y q0;
 }

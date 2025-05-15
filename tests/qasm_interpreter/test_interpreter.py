@@ -100,3 +100,23 @@ class TestInterpreter:
         assert x.call_count == 1
         assert y.call_count == 1
         assert z.call_count == 0
+
+    def test_loops(self, mocker):
+
+        # parse the QASM program
+        ast = parse(open('if_else.qasm', mode='r').read(), permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"name": "if_else"})
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        ry = mocker.spy(RY, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # execute the QNode
+        context["qnode"].func()
+
+        assert x.call_count == 10
+        assert y.call_count == 6
+        assert ry.call_count == 4
+        assert rx.call_count == 4294967306 - 4294967296
