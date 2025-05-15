@@ -389,7 +389,6 @@ class ResourceControlled(ResourceOperator):
         base_op: CompressedResourceOp,
         num_ctrl_wires: int,
         num_ctrl_values: int,
-        num_work_wires: int,
         wires=None,
     ) -> None:
         if isinstance(base_op, ResourceOperator):
@@ -401,7 +400,6 @@ class ResourceControlled(ResourceOperator):
         self.base_op = base_op
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
-        self.num_work_wires = num_work_wires
 
         if wires:
             self.wires = Wires(wires)
@@ -429,7 +427,7 @@ class ResourceControlled(ResourceOperator):
 
     @classmethod
     def _resource_decomp(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -523,7 +521,7 @@ class ResourceControlled(ResourceOperator):
         """
         try:
             return base_class.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
+                num_ctrl_wires, num_ctrl_values, **base_params
             )
         except re.ResourcesNotDefined:
             pass
@@ -536,7 +534,7 @@ class ResourceControlled(ResourceOperator):
                 if isinstance(action, GateCount):
                     gate = action.gate
                     c_gate = cls.resource_rep(
-                        gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires
+                        gate.op_type, gate.params, num_ctrl_wires, 0
                     )
                     gate_lst.append(c_gate, action.count)
 
@@ -545,7 +543,7 @@ class ResourceControlled(ResourceOperator):
 
             return gate_lst
 
-        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
+        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0)
         x = re.ResourceX.resource_rep()
 
         gate_lst.append(GateCount(no_control))
@@ -575,12 +573,11 @@ class ResourceControlled(ResourceOperator):
             "base_params": base_op.params,
             "num_ctrl_wires": self.num_ctrl_wires,
             "num_ctrl_values": self.num_ctrl_values,
-            "num_work_wires": self.num_work_wires,
         }
 
     @classmethod
     def resource_rep(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -602,7 +599,6 @@ class ResourceControlled(ResourceOperator):
                 "base_params": base_params,
                 "num_ctrl_wires": num_ctrl_wires,
                 "num_ctrl_values": num_ctrl_values,
-                "num_work_wires": num_work_wires,
             },
         )
 
@@ -611,12 +607,10 @@ class ResourceControlled(ResourceOperator):
         cls,
         outer_num_ctrl_wires,
         outer_num_ctrl_values,
-        outer_num_work_wires,
         base_class,
         base_params,
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -651,16 +645,15 @@ class ResourceControlled(ResourceOperator):
                     base_params,
                     outer_num_ctrl_wires + num_ctrl_wires,
                     outer_num_ctrl_values + num_ctrl_values,
-                    outer_num_work_wires + num_work_wires,
                 )
             ),
         ]
 
     @staticmethod
-    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
+    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_class.tracking_name(**base_params)
-        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{num_work_wires})"
+        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values})"
 
 
 class ResourcePow(ResourceOperator):

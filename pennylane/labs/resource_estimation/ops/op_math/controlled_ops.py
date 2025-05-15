@@ -115,7 +115,7 @@ class ResourceCH(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -136,7 +136,7 @@ class ResourceCH(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -243,7 +243,7 @@ class ResourceCY(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -264,7 +264,7 @@ class ResourceCY(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -368,7 +368,7 @@ class ResourceCZ(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -386,13 +386,13 @@ class ResourceCZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return [GateCount(re.ResourceCCZ.resource_rep())]
 
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values,
                 )
             ),
         ]
@@ -493,7 +493,7 @@ class ResourceCSWAP(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -514,7 +514,7 @@ class ResourceCSWAP(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -618,7 +618,7 @@ class ResourceCCZ(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -639,7 +639,7 @@ class ResourceCCZ(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values, num_work_wires
+                    re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values
                 )
             ),
         ]
@@ -727,7 +727,7 @@ class ResourceCNOT(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -743,13 +743,13 @@ class ResourceCNOT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return [GateCount(re.ResourceToffoli.resource_rep())]
 
         return [
             GateCount(
                 re.ResourceMultiControlledX.resource_rep(
-                    num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -953,7 +953,6 @@ class ResourceToffoli(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         elbow=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -973,7 +972,7 @@ class ResourceToffoli(ResourceOperator):
         return [
             GateCount(
                 re.ResourceMultiControlledX.resource_rep(
-                    num_ctrl_wires + 2, num_ctrl_values, num_work_wires
+                    num_ctrl_wires + 2, num_ctrl_values
                 )
             ),
         ]
@@ -1039,10 +1038,9 @@ class ResourceMultiControlledX(ResourceOperator):
     {X: 4, CNOT: 69}
     """
 
-    def __init__(self, num_ctrl_wires, num_ctrl_values, num_work_wires, wires=None) -> None:
+    def __init__(self, num_ctrl_wires, num_ctrl_values, wires=None) -> None:
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
-        self.num_work_wires = num_work_wires
 
         self.num_wires = num_ctrl_wires + 1
         super().__init__(wires=wires)
@@ -1051,7 +1049,6 @@ class ResourceMultiControlledX(ResourceOperator):
     def _resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -1114,29 +1111,19 @@ class ResourceMultiControlledX(ResourceOperator):
             gate_lst.extend(res)
             return gate_lst
 
-        if num_work_wires >= num_ctrl_wires - 2:
-            l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
-            r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
+        l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
+        r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
 
-            gate_types[l_elbow] = num_ctrl_wires - 2
-            gate_types[r_elbow] = num_ctrl_wires - 2
-            gate_types[toffoli] = 1
+        gate_types[l_elbow] = num_ctrl_wires - 2
+        gate_types[r_elbow] = num_ctrl_wires - 2
+        gate_types[toffoli] = 1
 
-            res = [
-                AddQubits(num_ctrl_wires - 2),
-                GateCount(l_elbow, num_ctrl_wires - 2),
-                GateCount(r_elbow, num_ctrl_wires - 2),
-                GateCount(toffoli, 1),
-                CutQubits(num_ctrl_wires - 2),
-            ]
-            gate_lst.extend(res)
-            return gate_lst
-
-        gate_types[cnot] = 36 * num_ctrl_wires - 111
         res = [
-            AddQubits(1),
-            GateCount(cnot, 36 * num_ctrl_wires - 111),
-            CutQubits(1),
+            AddQubits(num_ctrl_wires - 2),
+            GateCount(l_elbow, num_ctrl_wires - 2),
+            GateCount(r_elbow, num_ctrl_wires - 2),
+            GateCount(toffoli, 1),
+            CutQubits(num_ctrl_wires - 2),
         ]
         gate_lst.extend(res)
         return gate_lst
@@ -1155,11 +1142,10 @@ class ResourceMultiControlledX(ResourceOperator):
         return {
             "num_ctrl_wires": self.num_ctrl_wires,
             "num_ctrl_values": self.num_ctrl_values,
-            "num_work_wires": self.num_work_wires,
         }
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, num_ctrl_values, num_work_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_ctrl_wires, num_ctrl_values) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1176,13 +1162,12 @@ class ResourceMultiControlledX(ResourceOperator):
             {
                 "num_ctrl_wires": num_ctrl_wires,
                 "num_ctrl_values": num_ctrl_values,
-                "num_work_wires": num_work_wires,
             },
         )
 
     @classmethod
     def adjoint_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
@@ -1199,17 +1184,15 @@ class ResourceMultiControlledX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires))]
+        return [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values))]
 
     @classmethod
     def controlled_resource_decomp(
         cls,
         outer_num_ctrl_wires,
         outer_num_ctrl_values,
-        outer_num_work_wires,
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1240,14 +1223,13 @@ class ResourceMultiControlledX(ResourceOperator):
                 cls.resource_rep(
                     outer_num_ctrl_wires + num_ctrl_wires,
                     outer_num_ctrl_values + num_ctrl_values,
-                    outer_num_work_wires + num_work_wires,
                 )
             ),
         ]
 
     @classmethod
     def pow_resource_decomp(
-        cls, z, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, z, num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
@@ -1268,7 +1250,7 @@ class ResourceMultiControlledX(ResourceOperator):
         return (
             [GateCount(re.ResourceIdentity.resource_rep())]
             if z % 2 == 0
-            else [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires))]
+            else [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values))]
         )
 
 
@@ -1362,7 +1344,6 @@ class ResourceCRX(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -1384,7 +1365,7 @@ class ResourceCRX(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceRX, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceRX, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -1496,7 +1477,6 @@ class ResourceCRY(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -1518,7 +1498,7 @@ class ResourceCRY(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceRY, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceRY, {"eps": eps}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -1630,7 +1610,6 @@ class ResourceCRZ(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -1652,7 +1631,7 @@ class ResourceCRZ(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceRZ, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceRZ, {eps}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -1782,7 +1761,7 @@ class ResourceCRot(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None
+        num_ctrl_wires, num_ctrl_values, eps=None
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1803,7 +1782,7 @@ class ResourceCRot(ResourceOperator):
         return [
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    re.ResourceRot, {eps}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
+                    re.ResourceRot, {eps}, num_ctrl_wires + 1, num_ctrl_values
                 )
             ),
         ]
@@ -1901,7 +1880,6 @@ class ResourceControlledPhaseShift(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -1927,7 +1905,6 @@ class ResourceControlledPhaseShift(ResourceOperator):
                     {eps},
                     num_ctrl_wires + 1,
                     num_ctrl_values,
-                    num_work_wires,
                 )
             ),
         ]

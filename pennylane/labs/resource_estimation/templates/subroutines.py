@@ -94,7 +94,7 @@ class ResourceMultiplexer(ResourceOperator):
                 re.ResourceControlled.resource_rep(
                     re.ResourceSemiAdder,
                     {"max_register_size": num_prec_wires},
-                    1, 0, 0,
+                    1, 0,
                 )
             )
         )
@@ -314,7 +314,7 @@ class ResourceControlledSequence(qml.ControlledSequence, ResourceOperator):
 
         """
         return {
-            re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires
+            re.ResourceControlled.resource_rep(base_class, base_params, 1, 0): 2**num_ctrl_wires
             - 1
         }
 
@@ -443,7 +443,7 @@ class ResourceSemiAdder(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires, max_register_size, **kwargs
+        cls, num_ctrl_wires, num_ctrl_values, max_register_size, **kwargs
     ):
         if (max_register_size > 2) and (num_ctrl_wires == 1):
             cnot_count = (7 * (max_register_size - 2)) + 3
@@ -769,7 +769,7 @@ class ResourceModExp(qml.ModExp, ResourceOperator):
         gate_types = {}
 
         for comp_rep, _ in mult_resources.items():
-            new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0, 0)
+            new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0)
 
             # cancel out QFTs from consecutive Multipliers
             if comp_rep._name in ("QFT", "Adjoint(QFT)"):
@@ -886,7 +886,7 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
 
         hadamard = re.ResourceHadamard.resource_rep()
         adj_qft = re.ResourceAdjoint.resource_rep(ResourceQFT, {"num_wires": num_estimation_wires})
-        ctrl_op = re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0)
+        ctrl_op = re.ResourceControlled.resource_rep(base_class, base_params, 1, 0)
 
         gate_types[hadamard] = num_estimation_wires
         gate_types[adj_qft] = 1
@@ -1126,7 +1126,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         gate_types.append(AddQubits(work_qubits))
         for cmp_rep in cmpr_ops:
-            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep.op_type, cmp_rep.params, 1, 0, 0)
+            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep.op_type, cmp_rep.params, 1, 0)
             gate_types.append(GateCount(ctrl_op))
 
         gate_types.append(GateCount(x, 2 * (num_ops - 1)))  # conjugate 0 controlled toffolis
@@ -1163,7 +1163,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
 
         for cmp_rep in cmpr_ops:
             ctrl_op = re.ResourceControlled.resource_rep(
-                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0, 0
+                cmp_rep.op_type, cmp_rep.params, num_ctrl_wires, 0,
             )
             gate_types[ctrl_op] += 1
 
@@ -1188,7 +1188,7 @@ class ResourceSelect(qml.Select, ResourceOperator):
         num_ops = len(cmpr_ops)
 
         for cmp_rep in cmpr_ops:
-            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep.op_type, cmp_rep.params, 1, 0, 0)
+            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep.op_type, cmp_rep.params, 1, 0)
             gate_types[ctrl_op] += 1
 
         gate_types[x] = 2 * (num_ops - 1)  # conjugate 0 controlled toffolis
@@ -1428,7 +1428,7 @@ class ResourceReflection(qml.Reflection, ResourceOperator):
         adj_base = re.ResourceAdjoint.resource_rep(base_class, base_params)
         ps = (
             re.ResourceControlled.resource_rep(
-                re.ResourcePhaseShift, {}, num_ref_wires - 1, num_ref_wires - 1, 0
+                re.ResourcePhaseShift, {}, num_ref_wires - 1, num_ref_wires - 1
             )
             if num_ref_wires > 1
             else re.ResourcePhaseShift.resource_rep()
@@ -1801,7 +1801,6 @@ class ResourceQROM(ResourceOperator):
         cls,
         num_ctrl_wires: int,
         num_ctrl_values: int,
-        num_work_wires: int,
         num_bitstrings,
         num_bit_flips,
         size_bitstring,
@@ -1824,11 +1823,11 @@ class ResourceQROM(ResourceOperator):
 
         gate_cost.append(AddQubits(1))
         gate_cost.append(
-            GateCount(re.ResourceMultiControlledX.resource_rep(num_ctrl_wires, 0, num_work_wires))
+            GateCount(re.ResourceMultiControlledX.resource_rep(num_ctrl_wires, 0))
         )
         gate_cost.extend(single_ctrl_cost)
         gate_cost.append(
-            GateCount(re.ResourceMultiControlledX.resource_rep(num_ctrl_wires, 0, num_work_wires))
+            GateCount(re.ResourceMultiControlledX.resource_rep(num_ctrl_wires, 0))
         )
         gate_cost.append(CutQubits(1))
         return gate_cost
@@ -2072,7 +2071,6 @@ class ResourceAmplitudeAmplification(qml.AmplitudeAmplification, ResourceOperato
             base_params=O_params,
             num_ctrl_wires=1,
             num_ctrl_values=0,
-            num_work_wires=0,
         )
         phase_shift = re.ResourcePhaseShift.resource_rep()
         hadamard = re.ResourceHadamard.resource_rep()
