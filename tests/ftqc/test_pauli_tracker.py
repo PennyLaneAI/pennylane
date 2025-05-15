@@ -20,7 +20,7 @@ from pennylane.ftqc import pauli_encode_xz, pauli_prod_to_xz
 
 
 class TestPauliTracker:
-    """Test for the xz encoding related functions."""
+    """Test for the pauli tracker related functions."""
 
     @pytest.mark.parametrize("op", [qml.I, qml.X, qml.Y, qml.Z, qml.S])
     def test_pauli_encode_xz(self, op):
@@ -74,5 +74,6 @@ class TestPauliTracker:
                 _ = pauli_prod_to_xz(ops)
         else:
             op = pauli_prod_to_xz(ops)
+            assert len(op) == 2
             assert res[0] == op[0]
             assert res[1] == op[1]
