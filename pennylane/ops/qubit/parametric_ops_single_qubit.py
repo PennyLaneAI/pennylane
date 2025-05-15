@@ -25,8 +25,8 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.decomposition import (
-    DecompositionNotApplicable,
     add_decomps,
+    register_condition,
     register_resources,
     resource_rep,
 )
@@ -777,11 +777,13 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
+def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, **__):
+    return num_control_wires == 1 or num_work_wires > 0
+
+
 def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.ControlledPhaseShift: 1}
-    if num_work_wires < 1:
-        raise DecompositionNotApplicable
     return {
         resource_rep(
             qml.MultiControlledX,
@@ -793,6 +795,7 @@ def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, **__)
     }
 
 
+@register_condition(_controlled_phaseshift_condition)
 @register_resources(_controlled_phaseshift_resource)
 def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, **__):
 
