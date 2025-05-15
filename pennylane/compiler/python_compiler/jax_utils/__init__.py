@@ -20,6 +20,8 @@ from typing import Any, Callable, TypeAlias
 import jax
 import jaxlib
 
+from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
+
 from xdsl.dialects import arith as xarith
 from xdsl.dialects import builtin as xbuiltin
 from xdsl.dialects import func as xfunc
@@ -34,13 +36,30 @@ from xdsl.context import Context as xContext
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
 
 
+def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
+    """Get the module from the jax.jitted function"""
+    return func.lower(*args, **kwargs).compiler_ir()
+
+
+def module(func: JaxJittedFunction) -> Callable[Any, jModule]:
+    """
+    Decorator for _module_inline
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> jModule:
+        return _module_inline(func, *args, **kwargs)
+
+    return wrapper
+
+
 def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:
     """
     Create the generic textual representation for the jax.jit'ed function
     """
     lowered = func.lower(*args, **kwargs)
-    module = lowered.compiler_ir()
-    return module.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
+    mod = lowered.compiler_ir()
+    return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
 
 def generic(func: JaxJittedFunction) -> Callable[Any, str]:
