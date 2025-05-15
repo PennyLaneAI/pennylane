@@ -41,7 +41,9 @@ from pennylane import (
     wires,
     ctrl,
     adjoint,
-    pow, measure, cond
+    pow,
+    measure,
+    cond
 )
 
 SINGLE_QUBIT_GATES = {
@@ -155,16 +157,16 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a switch statement.
         """
-        print("here")
         self._init_switches_scope(node, context)
+        self._init_gates_list(context)
 
         # switches need to have access to the outer context but not get called unless the condition is met
 
         # we need to keep track of each clause individually
         for i, case in enumerate(node.cases):
             context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"] = {
-                "vars": context["vars"],
-                "wires": context["wires"],
+                "vars": context["vars"] if "vars" in context else None,
+                "wires": context["wires"] if "wires" in context else None,
                 "name": f'{context["name"]}_switch_{node.span.start_line}_cond_{i}'
             }
 
@@ -175,8 +177,8 @@ class QasmInterpreter(QASMVisitor):
             )
 
         context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = {
-            "vars": context["vars"],
-            "wires": context["wires"],
+            "vars": context["vars"] if "vars" in context else None,
+            "wires": context["wires"] if "wires" in context else None,
             "name": f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
         }
 
@@ -185,6 +187,8 @@ class QasmInterpreter(QASMVisitor):
             node.default.statements,
             context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
         )
+
+        # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
 
         def switch():
             target = self.retrieve_variable(node.target.name, context)
@@ -204,7 +208,7 @@ class QasmInterpreter(QASMVisitor):
                         gate() for gate in
                         context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]["gates"]
                     ]) for j, case in
-                    enumerate(context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys()[1:-1])
+                    enumerate(list(context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys())[1:-1])
                 ]
             )()
 
@@ -311,14 +315,14 @@ class QasmInterpreter(QASMVisitor):
         # the namespace is shared with the outer scope, but we need to keep track of the gates separately
         if isinstance(node, WhileLoop):
             context["scopes"]["loops"][f"while_{node.span.start_line}"] = {
-                "vars": context["vars"],
-                "wires": context["wires"],
+                "vars": context["vars"]  if "vars" in context else None,
+                "wires": context["wires"] if "wires" in context else None,
                 "name": f'{context["name"]}_while_{node.span.start_line}'
             }
         elif isinstance(node, ForInLoop):
             context["scopes"]["loops"][f"for_{node.span.start_line}"] = {
-                "vars": context["vars"],
-                "wires": context["wires"],
+                "vars": context["vars"]  if "vars" in context else None,
+                "wires": context["wires"]  if "wires" in context else None,
                 "name": f'{context["name"]}_for_{node.span.start_line}'
             }
 
@@ -333,9 +337,10 @@ class QasmInterpreter(QASMVisitor):
         elif "subroutines" not in context["scopes"]:
             context["scopes"]["subroutines"] = dict()
 
+        # outer scope variables are available to inner scopes... but not vice versa!
         context["scopes"]["subroutines"][node.name.name] = {
-            "vars": context["vars"],  # outer scope variables are available to inner scopes... but not vice versa!
-            "wires": context["wires"],
+            "vars": context["vars"] if "vars" in context else None,
+            "wires": context["wires"] if "wires" in context else None,
             "name": f'{context["name"]}_{node.name.name}'  # names prefixed with outer scope names for specificity
         }
 
@@ -357,8 +362,8 @@ class QasmInterpreter(QASMVisitor):
             )
             for gate in inner_context["gates"]:
                 gate()  # updates vars in context... need to propagate these to outer scope
-            context["vals"] = inner_context["vals"]
-            context["wires"] = inner_context["wires"]
+            context["vals"] = inner_context["vals"] if "vals" in inner_context else None
+            context["wires"] = inner_context["wires"] if "wires" in inner_context else None
             return context
 
         context["gates"].append(loop)
@@ -397,8 +402,8 @@ class QasmInterpreter(QASMVisitor):
                 )
                 for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
                     gate()  # updates vars in sub context... need to propagate these to outer context
-                context["vals"] = inner_context["vals"]
-                context["wires"] = inner_context["wires"]
+                context["vals"] = inner_context["vals"] if "vals" in inner_context else None
+                context["wires"] = inner_context["wires"] if "wires" in inner_context else None
                 return context
 
             context["gates"].append(loop)
@@ -516,13 +521,20 @@ class QasmInterpreter(QASMVisitor):
         that give enough specificity to identify them when they are in different scopes but share the same
         name in the QASM file, for example.
         """
-        if "scopes" in curr:
+        if "scopes" in curr:  # TODO: raise warning when a variable is shadowed
             contexts = curr["scopes"]
             for context_type, typed_contexts in contexts.items():
                 for typed_context_name, typed_context in typed_contexts.items():
-                    wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
-                              for w in contexts[context_type][typed_context_name]["wires"]]
-                    wires = self._get_wires_helper(typed_context, wires)
+                    if context_type != "switches":
+                        wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
+                                  for w in contexts[context_type][typed_context_name]["wires"]]
+                        wires = self._get_wires_helper(typed_context, wires)
+                    else:
+                        # TODO: account for: we don't need new wires for scopes that don't have their own namespaces
+                        for cond in typed_context.keys():
+                            wires += [f'{typed_context[cond]["name"]}_{w}'
+                                      for w in typed_context[cond]["wires"]]
+                            wires = self._get_wires_helper(typed_context[cond], wires)
         return wires
 
     def construct_qnode(self, context: dict):
