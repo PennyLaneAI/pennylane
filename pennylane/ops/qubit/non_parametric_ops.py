@@ -31,6 +31,7 @@ from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     register_resources,
+    register_condition,
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
