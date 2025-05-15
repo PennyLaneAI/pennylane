@@ -2118,13 +2118,13 @@ add_decomps(SISWAP, _siswap_decomp)
 
 @register_condition(lambda z, **_: math.allclose(z % 8, 2))
 @register_resources(lambda **_: {qml.ISWAP: 1})
-def _pow_siswap_to_iswap(wires, z, **_):
+def _pow_siswap_to_iswap(wires, **_):
     qml.ISWAP(wires)
 
 
 @register_condition(lambda z, **_: math.allclose(z % 8, 4))
 @register_resources(lambda **_: {qml.Z: 2})
-def _pow_siswap_to_zz(wires, z, **_):
+def _pow_siswap_to_zz(wires, **_):
     qml.Z(wires=wires[0])
     qml.Z(wires=wires[1])
 

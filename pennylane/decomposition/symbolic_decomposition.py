@@ -27,6 +27,9 @@ from .resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the adjoint of a decomposition rule."""
 
+    def _condition_fn(base_class, base_params):  # pylint: disable=unused-argument
+        return base_decomposition.is_applicable(**base_params)
+
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
@@ -34,6 +37,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
+    @register_condition(_condition_fn)
     @register_resources(_resource_fn)
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
