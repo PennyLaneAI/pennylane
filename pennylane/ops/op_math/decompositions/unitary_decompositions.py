@@ -706,9 +706,8 @@ def _decompose_3_cnots(U, wires, initial_phase):
     return math.cast_like(-np.pi / 4, initial_phase)
 
 
-def _two_qubit_resource(num_wires):
+def _two_qubit_resource(**_):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    # Assume the 3-CNOT case.
     return {
         resource_rep(ops.QubitUnitary, num_wires=1): 4,
         ops.CNOT: 3,
