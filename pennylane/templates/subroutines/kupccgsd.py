@@ -35,7 +35,7 @@ def generalized_singles(wires, delta_sz):
     n = len(wires)
     sz = 0.5 * (-1) ** np.arange(n)  # alpha-beta electrons
     gen_singles_wires = []
-    for r, p in product(range(len(wires)), repeat=2):
+    for r, p in product(range(n), repeat=2):
         if sz[p] - sz[r] == delta_sz and p != r:
             if r < p:
                 gen_singles_wires.append(wires[r : p + 1])
