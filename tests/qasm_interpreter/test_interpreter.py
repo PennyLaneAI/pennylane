@@ -9,8 +9,8 @@ class TestInterpreter:
 
     qasm_programs = [
         (open("adder.qasm", mode="r").read(), 22, "adder"),
-        (open("qec.qasm", mode="r").read(), 15, "qec"),
-        (open("teleport.qasm", mode="r").read(), 19, "teleport"),
+        (open("qec.qasm", mode="r").read(), 32, "qec"),
+        (open("teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
