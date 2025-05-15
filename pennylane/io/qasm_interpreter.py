@@ -194,7 +194,7 @@ class QasmInterpreter(QASMVisitor):
             target = self.retrieve_variable(node.target.name, context)
             cond(
                 # TODO: support eval of lists, etc. to match
-                target == self.eval_expr(node.cases[0][0][0], context),
+                target["val"] == self.eval_expr(node.cases[0][0][0], context),
                 lambda: [
                     gate() for gate in
                     context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_0"]["gates"]
