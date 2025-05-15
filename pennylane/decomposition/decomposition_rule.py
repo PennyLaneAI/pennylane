@@ -488,3 +488,9 @@ def has_decomp(op_type: Type[Operator] | str) -> bool:
         op_type = op_type.__name__
     op_type = translate_op_alias(op_type)
     return op_type in _decompositions and len(_decompositions[op_type]) > 0
+
+
+@register_resources({})
+def null_decomp(*_, **__):
+    """A decomposition rule that does nothing."""
+    return
