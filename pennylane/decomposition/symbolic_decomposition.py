@@ -131,6 +131,9 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
 def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
+    def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
+        return z % period != z
+
     def _resource_fn(base_class, base_params, z):
         z_mod_period = z % period
         if z_mod_period == 0:
@@ -139,7 +142,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
             return {resource_rep(base_class, **base_params): 1}
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
-    @register_condition(lambda z, **_: z % period != z)
+    @register_condition(_condition_fn)
     @register_resources(_resource_fn)
     def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
