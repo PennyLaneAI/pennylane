@@ -35,6 +35,7 @@ class ProductFormula:
         self,
         terms: Union[Sequence[Hashable], Sequence[ProductFormula]],
         coeffs: Sequence[float] = None,
+        timestep: float = 1.0,
         exponent: float = 1.0,
         label: str = None,
         include_i: bool = True,
@@ -74,6 +75,7 @@ class ProductFormula:
         else:
             self.coeffs = [1] * len(self.terms)
 
+        self.timestep = timestep
         self.exponent = exponent
         self.label = label
 
@@ -85,16 +87,8 @@ class ProductFormula:
                 position += 1
 
     def __call__(self, t: float):
-        if self.recursive:
-            return ProductFormula(
-                [term(t) for term in self.terms], exponent=self.exponent, label=f"{self.label}({t})"
-            )
-
         ret = copy.copy(self)
-        ret.coeffs = [t * coeff for coeff in self.coeffs]
-
-        if self.label:
-            ret.label = f"{self.label}({t})"
+        ret.timestep *= t
 
         return ret
 
@@ -145,7 +139,10 @@ class ProductFormula:
         """
 
         bch = _remove_redundancies(
-            [_kth_order_terms(self.terms, self.coeffs, k) for k in range(1, max_order + 1)],
+            [
+                _kth_order_terms(self.terms, [self.timestep * coeff for coeff in self.coeffs], k)
+                for k in range(1, max_order + 1)
+            ],
             self._ordered_terms,
         )
 
@@ -158,7 +155,7 @@ class ProductFormula:
     def to_matrix(self, fragments: Dict[Hashable, Fragment], accumulator: Fragment) -> np.ndarray:
         """Returns a numpy representation of the product formula"""
         acc = copy.copy(accumulator)
-        for term, coeff in zip(self.terms, self.coeffs):
+        for term, coeff in zip(self.terms, [self.timestep * coeff for coeff in self.coeffs]):
             if isinstance(term, ProductFormula):
                 accumulator @= term.to_matrix(fragments, copy.copy(acc))
             else:

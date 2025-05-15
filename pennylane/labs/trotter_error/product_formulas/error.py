@@ -231,6 +231,6 @@ def perturbation_error(
     """
 
     eff = effective_hamiltonian(product_formula, fragments, order=order)
-    error = eff - sum(fragments.values(), _AdditiveIdentity())
+    error = eff - (product_formula.timestep * 1j) * sum(fragments.values(), _AdditiveIdentity())
 
     return [error.expectation(state, state) for state in states]
