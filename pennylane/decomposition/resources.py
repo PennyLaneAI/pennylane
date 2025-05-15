@@ -455,6 +455,7 @@ def _controlled_x_rep(
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         )
 
     # base_class is qml.MultiControlledX:
@@ -466,4 +467,5 @@ def _controlled_x_rep(
         num_control_wires=num_control_wires,
         num_zero_control_values=num_zero_control_values,
         num_work_wires=num_work_wires,
+        work_wire_type="clean",
     )

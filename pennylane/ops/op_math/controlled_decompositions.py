@@ -329,7 +329,6 @@ def _build_logn_depth_ccx_ladder(
                 anc[-ccx_n:],
             )
             assert len(ccx_x) == len(ccx_y) == len(ccx_t) == ccx_n >= 1
-            print(ccx_x, ccx_y, ccx_t)
             if ccx_t != [work_wire]:
                 gates += _n_parallel_ccx_x(ccx_x, ccx_y, ccx_t)
             else:

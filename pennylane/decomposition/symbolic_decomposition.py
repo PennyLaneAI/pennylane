@@ -230,13 +230,9 @@ def flip_zero_control(inner_decomp: DecompositionRule):
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
-        return inner_decomp.is_applicable(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
         new_params = resource_params.copy()

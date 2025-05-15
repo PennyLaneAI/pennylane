@@ -277,6 +277,7 @@ def _controlled_h_resources(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 1,
     }
 
@@ -539,6 +540,7 @@ def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_w
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 1,
     }
 
@@ -805,6 +807,7 @@ def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 1,
     }
 
@@ -1075,6 +1078,7 @@ def _controlled_z_resources(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 1,
     }
 
@@ -1756,6 +1760,7 @@ def _controlled_swap_resources(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires + 1,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 1,
     }
 
