@@ -8,9 +8,9 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 class TestInterpreter:
 
     qasm_programs = [
-        (open("tests/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
-        (open("tests/qasm_interpreter/qec.qasm", mode="r").read(), 15, "qec"),
-        (open("tests/qasm_interpreter/teleport.qasm", mode="r").read(), 19, "teleport"),
+        (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
+        (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 15, "qec"),
+        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 19, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
@@ -24,7 +24,7 @@ class TestInterpreter:
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(open("tests/qasm_interpreter/gates.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/gates.qasm", mode="r").read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
 
         # setup mocks
