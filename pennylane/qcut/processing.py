@@ -20,8 +20,9 @@ from collections.abc import Sequence
 
 from networkx import MultiDiGraph
 
-import pennylane as qml
+from pennylane import math
 from pennylane import numpy as pnp
+from pennylane import pauli
 
 from .utils import MeasureNode, PrepareNode
 
@@ -65,15 +66,11 @@ def qcut_processing_fn(
     # each tape contains only expval measurements or sample measurements, so
     # stacking won't create any ragged arrays
     results = [
-        (
-            qml.math.stack(tape_res)
-            if isinstance(tape_res, tuple)
-            else qml.math.reshape(tape_res, [-1])
-        )
+        (math.stack(tape_res) if isinstance(tape_res, tuple) else math.reshape(tape_res, [-1]))
         for tape_res in results
     ]
 
-    flat_results = qml.math.concatenate(results)
+    flat_results = math.concatenate(results)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
     result = contract_tensors(
@@ -115,7 +112,7 @@ def qcut_processing_fn_sample(
         for fragment_result, out_degree in zip(result, out_degrees):
             sample.append(fragment_result[: -out_degree or None])
         samples.append(pnp.hstack(sample))
-    return [qml.math.convert_like(pnp.array(samples), res0)]
+    return [math.convert_like(pnp.array(samples), res0)]
 
 
 def qcut_processing_fn_mc(
@@ -184,7 +181,7 @@ def qcut_processing_fn_mc(
         K = len(sample_mid)
         expvals.append(8**K * c_s * t_s)
 
-    return qml.math.convert_like(pnp.mean(expvals), res0)
+    return math.convert_like(pnp.mean(expvals), res0)
 
 
 def _reshape_results(results: Sequence, shots: int) -> list[list]:
@@ -196,11 +193,10 @@ def _reshape_results(results: Sequence, shots: int) -> list[list]:
     # each tape contains only expval measurements or sample measurements, so
     # stacking won't create any ragged arrays
     results = [
-        qml.math.stack(tape_res) if isinstance(tape_res, tuple) else tape_res
-        for tape_res in results
+        math.stack(tape_res) if isinstance(tape_res, tuple) else tape_res for tape_res in results
     ]
 
-    results = [qml.math.flatten(r) for r in results]
+    results = [math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
     results = list(map(list, zip(*results)))  # calculate list-based transpose
 
@@ -315,7 +311,7 @@ def contract_tensors(
                 "installed using:\npip install opt_einsum"
             ) from e
     else:
-        contract = qml.math.einsum
+        contract = math.einsum
         get_symbol = _get_symbol
 
     ctr = 0
@@ -355,7 +351,7 @@ def contract_tensors(
     return contract(eqn, *tensors, **kwargs)
 
 
-CHANGE_OF_BASIS = qml.math.array(
+CHANGE_OF_BASIS = math.array(
     [[1.0, 1.0, 0.0, 0.0], [-1.0, -1.0, 2.0, 0.0], [-1.0, -1.0, 0.0, 2.0], [1.0, -1.0, 0.0, 0.0]]
 )
 
@@ -387,30 +383,30 @@ def _process_tensor(results, n_prep: int, n_meas: int):
 
     # Step 1
     intermediate_shape = (4,) * n_prep + (dim_meas,)
-    intermediate_tensor = qml.math.reshape(results, intermediate_shape)
+    intermediate_tensor = math.reshape(results, intermediate_shape)
 
     # Step 2
-    grouped = qml.pauli.partition_pauli_group(n_meas)
+    grouped = pauli.partition_pauli_group(n_meas)
     grouped_flat = [term for group in grouped for term in group]
-    order = qml.math.argsort(grouped_flat)
+    order = math.argsort(grouped_flat)
 
-    if qml.math.get_interface(intermediate_tensor) == "tensorflow":
+    if math.get_interface(intermediate_tensor) == "tensorflow":
         # TensorFlow does not support slicing
-        intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
+        intermediate_tensor = math.gather(intermediate_tensor, order, axis=-1)
     else:
         sl = [slice(None)] * n_prep + [order]
         intermediate_tensor = intermediate_tensor[tuple(sl)]
 
     # Step 3
     final_shape = (4,) * n
-    final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
+    final_tensor = math.reshape(intermediate_tensor, final_shape)
 
     # Step 4
-    change_of_basis = qml.math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
+    change_of_basis = math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
 
     for i in range(n_prep):
         axes = [[1], [i]]
-        final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
+        final_tensor = math.tensordot(change_of_basis, final_tensor, axes=axes)
 
     axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
 
@@ -418,9 +414,9 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     # indices are ordered according to the uncontracted indices of the first tensor, followed
     # by the uncontracted indices of the second tensor. For example, calculating C_kj T_ij returns
     # a tensor T'_ki rather than T'_ik.
-    final_tensor = qml.math.transpose(final_tensor, axes=axes)
+    final_tensor = math.transpose(final_tensor, axes=axes)
 
-    final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
+    final_tensor *= math.power(2, -(n_meas + n_prep) / 2)
     return final_tensor
 
 

@@ -24,10 +24,11 @@ from typing import Any, Union
 import numpy as np
 from networkx import MultiDiGraph
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 
 
+# pylint: disable=too-many-positional-arguments
 def kahypar_cut(
     graph: MultiDiGraph,
     num_fragments: int,
@@ -194,7 +195,7 @@ def _graph_to_hmetis(
     wires = {w for _, _, w in edges}
 
     adj_nodes = [nodes.index(v) for ops in graph.edges(keys=False) for v in ops]
-    edge_splits = qml.math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
+    edge_splits = math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
     edge_weights = (
         edge_weights if edge_weights is not None and len(edges) == len(edge_weights) else None
     )
