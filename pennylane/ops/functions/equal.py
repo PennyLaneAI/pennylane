@@ -662,7 +662,7 @@ def _equal_measurements(
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        return equal(
+        dispatch_result = _equal(
             op1.obs,
             op2.obs,
             check_interface=check_interface,
@@ -670,6 +670,10 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+        if isinstance(dispatch_result, str):
+            return dispatch_result
+        return dispatch_result
+    return True
 
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
@@ -805,8 +809,3 @@ def _equal_prep_sel_prep(
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
     return True
-
-
-@_equal_dispatch.register(MeasurementProcess, MeasurementProcess)
-def _equal_measurement_measurement(m1, m2):
-    return qml.equal(m1, m2)
