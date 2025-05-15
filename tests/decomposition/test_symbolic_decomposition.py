@@ -253,14 +253,20 @@ class TestPowDecomposition:
         op2 = qml.pow(CustomOp(wires=[0, 1, 2]), 2)
         op3 = qml.pow(CustomOp(wires=[0, 1, 2]), 3)
         op4 = qml.pow(CustomOp(wires=[0, 1, 2]), 4)
+        op5 = qml.pow(CustomOp(wires=[0, 1, 2]), 4.5)
 
         with qml.queuing.AnnotatedQueue() as q:
             pow_involutory(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
             pow_involutory(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
             pow_involutory(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
             pow_involutory(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            pow_involutory(*op5.parameters, wires=op5.wires, **op5.hyperparameters)
 
-        assert q.queue == [CustomOp(wires=[0, 1, 2]), CustomOp(wires=[0, 1, 2])]
+        assert q.queue == [
+            CustomOp(wires=[0, 1, 2]),
+            CustomOp(wires=[0, 1, 2]),
+            qml.pow(CustomOp(wires=[0, 1, 2]), 0.5),
+        ]
         assert pow_involutory.compute_resources(**op1.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
@@ -269,6 +275,9 @@ class TestPowDecomposition:
         )
         assert pow_involutory.compute_resources(**op2.resource_params) == Resources()
         assert pow_involutory.compute_resources(**op4.resource_params) == Resources()
+        assert pow_involutory.compute_resources(**op5.resource_params) == Resources(
+            {pow_resource_rep(CustomOp, {}, 0.5): 1}
+        )
 
         assert not pow_involutory.is_applicable(CustomOp, {}, z=0.5)
 
