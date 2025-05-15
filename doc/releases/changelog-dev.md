@@ -201,7 +201,8 @@
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
 
-* Improved error messaging in `qml.assert_equal` for measurement processes by returning a descriptive explanation when      observables differ. [(#7421)](https://github.com/PennyLaneAI/pennylane/pull/7421)
+* Updated `qml.equal` dispatch for `MeasurementProcess` to return informative string messages when observables are not equal.
+ [(#7421)](https://github.com/PennyLaneAI/pennylane/pull/7421)
 
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
