@@ -206,12 +206,12 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 # TEMPLATES MODULE 
-# Once all submodules are cleaned up, uncomment the following and delete the submodules
 
-# [[modules]]
-# path = "pennylane.templates"
+[[modules]]
+path = "pennylane.templates"
+# Once all submodules are cleaned up, uncomment the following and delete the submodules
 # layer = "tertiary"
-# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.templates.embeddings"
@@ -220,11 +220,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.templates.layers"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.templates.state_preparations"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -243,7 +238,12 @@ path = "pennylane.templates.layer"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-# Must be addressed in another PR, too large of an effort
+# Bottom two must be addressed in another PR, too large of an effort
+
+# [[modules]]
+# path = "pennylane.templates.state_preparations"
+# layer = "tertiary"
+# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 # [[modules]]
 # path = "pennylane.templates.subroutines"
@@ -314,10 +314,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.decomposition"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.templates"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
