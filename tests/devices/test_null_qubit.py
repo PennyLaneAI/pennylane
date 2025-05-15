@@ -67,9 +67,8 @@ def test_resource_tracking_attribute():
     """Test NullQubit track_resources attribute"""
     # pylint: disable=protected-access
     assert NullQubit()._track_resources is False
-    assert NullQubit(track_resources=True)._track_resources is True
-
     dev = NullQubit(track_resources=True)
+    assert dev._track_resources is True
 
     def small_circ(params):
         qml.X(0)
@@ -93,41 +92,59 @@ def test_resource_tracking_attribute():
         qml.RX(params[0], wires=0)
         qml.RX(params[0] * 2, wires=1)
 
+        qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
+        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1, 1])
+
         return qml.expval(qml.PauliZ(0))
 
     qnode = qml.QNode(small_circ, dev, diff_method="backprop")
 
     inputs = qml.numpy.array([0.5])
 
+    def check_outputs():
+        written_files = list(
+            filter(
+                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FNAME_PREFIX),
+                os.listdir(os.getcwd()),
+            )
+        )
+
+        assert len(written_files) == 1
+        resources_fname = written_files[0]
+
+        assert os.path.exists(resources_fname)
+
+        with open(resources_fname, "r", encoding="utf-8") as f:
+            stats = f.read()
+
+        os.remove(resources_fname)
+
+        assert stats == json.dumps(
+            {
+                "num_wires": 3,
+                "num_gates": 11,
+                "gate_types": {
+                    "PauliX": 1,
+                    "Hadamard": 1,
+                    "C(Adj(T))": 1,
+                    "2C(S)": 1,
+                    "CNOT": 1,
+                    "C(IsingXX)": 1,
+                    "Adj(S)": 1,
+                    "RX": 2,
+                    "QubitUnitary": 1,
+                    "ControlledQubitUnitary": 1,
+                },
+            }
+        )
+
+    # Check ordinary forward computation
     qnode(inputs)
+    check_outputs()
 
-    # Check that resource tracking doesn't interfere with backprop
+    # Check backpropagation
     assert qml.grad(qnode)(inputs) == 0
-
-    RESOURCES_FNAME = "__pennylane_resources_data.json"
-    assert os.path.exists(RESOURCES_FNAME)
-
-    with open(RESOURCES_FNAME, "r") as f:
-        stats = f.read()
-
-    os.remove(RESOURCES_FNAME)
-
-    assert stats == json.dumps(
-        {
-            "num_wires": 3,
-            "num_gates": 9,
-            "gate_types": {
-                "PauliX": 1,
-                "Hadamard": 1,
-                "C(Adj(T))": 1,
-                "2C(S)": 1,
-                "CNOT": 1,
-                "C(IsingXX)": 1,
-                "Adj(S)": 1,
-                "RX": 2,
-            },
-        }
-    )
+    check_outputs()
 
 
 @pytest.mark.parametrize("shots", (None, 10))

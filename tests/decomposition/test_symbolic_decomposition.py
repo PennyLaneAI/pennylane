@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
-from pennylane.decomposition import DecompositionNotApplicable
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -35,7 +34,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
-    pow_of_self_adjoint,
+    pow_involutory,
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
@@ -212,14 +211,12 @@ class TestPowDecomposition:
             qml.capture.disable()
 
     def test_non_integer_pow_not_applicable(self):
-        """Tests that DecompositionNotApplicable is raised when z isn't a positive integer."""
+        """Tests that is_applicable returns False when z isn't a positive integer."""
 
         op = qml.pow(qml.H(0), 0.5)
-        with pytest.raises(DecompositionNotApplicable):
-            repeat_pow_base.compute_resources(**op.resource_params)
+        assert not repeat_pow_base.is_applicable(**op.resource_params)
         op = qml.pow(qml.H(0), -1)
-        with pytest.raises(DecompositionNotApplicable):
-            repeat_pow_base.compute_resources(**op.resource_params)
+        assert not repeat_pow_base.is_applicable(**op.resource_params)
 
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
@@ -262,23 +259,22 @@ class TestPowDecomposition:
         op4 = qml.pow(CustomOp(wires=[0, 1, 2]), 4)
 
         with qml.queuing.AnnotatedQueue() as q:
-            pow_of_self_adjoint(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            pow_of_self_adjoint(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            pow_of_self_adjoint(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            pow_of_self_adjoint(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            pow_involutory(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            pow_involutory(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            pow_involutory(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            pow_involutory(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
 
         assert q.queue == [CustomOp(wires=[0, 1, 2]), CustomOp(wires=[0, 1, 2])]
-        assert pow_of_self_adjoint.compute_resources(**op1.resource_params) == Resources(
+        assert pow_involutory.compute_resources(**op1.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
-        assert pow_of_self_adjoint.compute_resources(**op3.resource_params) == Resources(
+        assert pow_involutory.compute_resources(**op3.resource_params) == Resources(
             {resource_rep(CustomOp): 1}
         )
-        assert pow_of_self_adjoint.compute_resources(**op2.resource_params) == Resources()
-        assert pow_of_self_adjoint.compute_resources(**op4.resource_params) == Resources()
+        assert pow_involutory.compute_resources(**op2.resource_params) == Resources()
+        assert pow_involutory.compute_resources(**op4.resource_params) == Resources()
 
-        with pytest.raises(DecompositionNotApplicable):
-            pow_of_self_adjoint.compute_resources(CustomOp, {}, z=0.5)
+        assert not pow_involutory.is_applicable(CustomOp, {}, z=0.5)
 
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""

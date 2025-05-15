@@ -18,14 +18,11 @@ from typing import Optional
 
 from pennylane import math, ops, queuing
 from pennylane.decomposition import (
-    DecompositionNotApplicable,
     adjoint_resource_rep,
     controlled_resource_rep,
+    register_condition,
     register_resources,
     resource_rep,
-)
-from pennylane.decomposition.symbolic_decomposition import (  # pylint: disable=protected-access
-    _controlled_resource_rep,
 )
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -201,15 +198,13 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
-
+def _ctrl_decomp_bisect_condition(num_target_wires, num_control_wires, **__):
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
-    if num_target_wires > 1:
-        raise DecompositionNotApplicable
+    # Also, it is not helpful when there's only a single control wire.
+    return num_target_wires == 1 and num_control_wires > 1
 
-    # This decomposition rule is not helpful when there's only a single control wire.
-    if num_control_wires < 2:
-        raise DecompositionNotApplicable
+
+def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
@@ -217,13 +212,15 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=len_k2,
             num_work_wires=len_k1,
         ): 4,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=len_k1,
             num_work_wires=len_k2,
         ): 2,
@@ -233,6 +230,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     }
 
 
+@register_condition(_ctrl_decomp_bisect_condition)
 @register_resources(_ctrl_decomp_bisect_resources)
 def ctrl_decomp_bisect_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
@@ -256,22 +254,20 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _single_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, **__):
+def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+    return num_target_wires == 1 and num_control_wires == 1
 
-    if num_target_wires > 1:
-        raise DecompositionNotApplicable
 
-    if num_control_wires > 1:
-        raise DecompositionNotApplicable
-
+def _single_ctrl_decomp_zyz_resources(**__):
     return {
         ops.RZ: 3,
         ops.RY: 2,
         ops.CNOT: 2,
-        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=1): 1,
     }
 
 
+@register_condition(_single_ctrl_decomp_zyz_condition)
 @register_resources(_single_ctrl_decomp_zyz_resources)
 def single_ctrl_decomp_zyz_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
@@ -282,19 +278,17 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_work_wires, **__):
+def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+    return num_target_wires == 1 and num_control_wires > 1
 
-    if num_target_wires > 1:
-        raise DecompositionNotApplicable
 
-    if num_control_wires < 2:
-        raise DecompositionNotApplicable
-
+def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, **__):
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
-        _controlled_resource_rep(
-            resource_rep(ops.X),
+        controlled_resource_rep(
+            ops.X,
+            {},
             num_control_wires=num_control_wires - 1,
             num_work_wires=num_work_wires,
         ): 2,
@@ -302,6 +296,7 @@ def _multi_ctrl_decomp_zyz_resources(num_target_wires, num_control_wires, num_wo
     }
 
 
+@register_condition(_multi_ctrl_decomp_zyz_condition)
 @register_resources(_multi_ctrl_decomp_zyz_resources)
 def multi_control_decomp_zyz_rule(U, wires, work_wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
@@ -315,21 +310,22 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, **__):
 def _controlled_two_qubit_unitary_resource(
     num_target_wires, num_control_wires, num_zero_control_values, num_work_wires, **__
 ):
-
-    if num_target_wires != 2:
-        raise DecompositionNotApplicable
-
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
-
-    return {
-        ops.X: num_zero_control_values * 2,
-        **{
-            _controlled_resource_rep(base_op_rep, num_control_wires, num_work_wires): count
-            for base_op_rep, count in base_resources.gate_counts.items()
-        },
+    gate_counts = {
+        controlled_resource_rep(
+            base_class=base_op_rep.op_type,
+            base_params=base_op_rep.params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): count
+        for base_op_rep, count in base_resources.gate_counts.items()
     }
+    gate_counts[ops.X] = num_zero_control_values * 2
+    return gate_counts
 
 
+@register_condition(lambda num_target_wires, **_: num_target_wires == 2)
 @register_resources(_controlled_two_qubit_unitary_resource)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
