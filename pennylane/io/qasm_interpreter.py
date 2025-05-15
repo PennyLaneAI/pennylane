@@ -4,7 +4,6 @@ from typing import Callable
 
 from openqasm3.visitor import QASMNode, QASMVisitor
 
-import pennylane
 from pennylane import (
     CH,
     CNOT,
@@ -34,6 +33,9 @@ from pennylane import (
     T,
     Toffoli,
     device,
+    adjoint,
+    pow,
+    ctrl
 )
 
 SINGLE_QUBIT_GATES = {
@@ -111,9 +113,8 @@ class QasmInterpreter(QASMVisitor):
                 self.quantum_gate(node, context)
             # TODO: call appropriate handler methods here
             case _:
-                # TODO: turn into a NameError when we have supported all the node types we want
-                print(
-                    f"An unrecognized QASM instruction was encountered: {node.__class__.__name__}"
+                raise NotImplementedError(
+                    f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
                 )
         return context
 
@@ -132,22 +133,20 @@ class QasmInterpreter(QASMVisitor):
                 with a list of Callables that are queued into it.
         """
         super().generic_visit(node, context)
-        self.construct_qnode(context)
+        self.construct_callable(context)
         return context
 
     @staticmethod
-    def construct_qnode(context: dict):
+    def construct_callable(context: dict):
         """
-        Constructs the device and the QNode programmatically from the context, adds them to the final context.
+        Constructs a callable that can be queued into a QNode.
 
         Args:
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
         if "device" not in context:
             context["device"] = device("default.qubit", wires=len(context["wires"]))
-        context["qnode"] = QNode(
-            lambda: [gate() for gate in context["gates"]], device=context["device"]
-        )
+        context["callable"] = lambda: [gate() for gate in context["gates"]]
 
     @staticmethod
     def identifier(node: QASMNode, context: dict):
@@ -247,14 +246,14 @@ class QasmInterpreter(QASMVisitor):
         call_stack = [gate]
         for mod in node.modifiers:
             if mod.modifier.name == "inv":
-                wrapper = pennylane.adjoint
+                wrapper = adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(pennylane.pow, z=mod.argument.value)
+                    wrapper = partial(pow, z=mod.argument.value)
                 elif mod.argument.name in context["vars"]:
-                    wrapper = partial(pennylane.pow, z=context["vars"][mod.argument.name]["val"])
+                    wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
-                wrapper = partial(pennylane.ctrl, control=gate.keywords["wires"][0:-1])
+                wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
         def call():

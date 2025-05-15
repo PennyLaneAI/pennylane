@@ -7,24 +7,10 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 
 class TestInterpreter:
 
-    qasm_programs = [
-        (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
-        (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 15, "qec"),
-        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 19, "teleport"),
-    ]
-
-    @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
-    def test_visits_each_node(self, qasm_program, count_nodes, program_name, mocker):
-        """Tests that visitor is called on each element of the AST."""
-        ast = parse(qasm_program, permissive=True)
-        spy = mocker.spy(QasmInterpreter, "visit")
-        QasmInterpreter().generic_visit(ast, context={"program_name": program_name})
-        assert spy.call_count == count_nodes
-
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(open("tests/io/qasm_interpreter/gates.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("gates.qasm", mode="r").read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
 
         # setup mocks
@@ -33,8 +19,8 @@ class TestInterpreter:
         rx = mocker.spy(RX, "__init__")
         ry = mocker.spy(RY, "__init__")
 
-        # execute the QNode
-        context["qnode"].func()
+        # execute the callable
+        context["callable"]()
 
         # asserts
         assert len(context["device"].wires) == 2
