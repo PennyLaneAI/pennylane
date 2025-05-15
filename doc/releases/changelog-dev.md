@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Add `get_best_mcm_method(qnode)(*args, **kwargs)` to the `workflow` module.
+  [(#7424)](https://github.com/PennyLaneAI/pennylane/pull/7424)
+  
 * A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
