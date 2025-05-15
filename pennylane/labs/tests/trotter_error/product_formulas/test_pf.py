@@ -174,6 +174,7 @@ def test_mul(fragment_dict):
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_matrix(fragment_dict):
+    """Test that two ways of writing fourth order Trotter produce the same matrix."""
 
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]

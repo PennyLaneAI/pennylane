@@ -83,13 +83,13 @@ def test_second_order(fragments, r, delta):
     assert np.allclose(eff, actual)
 
 
-fragments = [
+fragment_list = [
     {"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))},
     {"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))},
 ]
 
 
-@pytest.mark.parametrize("fragments, t", product(fragments, [1, 0.1, 0.01]))
+@pytest.mark.parametrize("fragments, t", product(fragment_list, [1, 0.1, 0.01]))
 def test_fourth_order_norm_two_fragments(fragments, t):
     """Test against the fourth order Trotter error formula on two fragments"""
 
@@ -200,19 +200,20 @@ def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     )
 
     for i, order in enumerate(actual):
-        for commutator in order:
-            assert np.isclose(order[commutator], expected[i][commutator])
+        for comm in order:
+            assert np.isclose(order[comm], expected[i][comm])
 
 
-fragments = [
+fragment_list = [
     ({"X": np.zeros(shape=(3, 3)), "Y": np.zeros(shape=(3, 3))}),
     ({"X": np.random.random(size=(3, 3)), "Y": np.random.random(size=(3, 3))}),
     ({"X": np.ones(shape=(3, 3)), "Y": np.ones(shape=(3, 3))}),
 ]
 
 
-@pytest.mark.parametrize("fragments", fragments)
+@pytest.mark.parametrize("fragments", fragment_list)
 def test_second_order_against_matrix_log(fragments):
+    """Test that the BCH expansion converges to the matrix log"""
     t = 0.01
     second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])(t)
     ham = sum(fragments.values())
@@ -228,8 +229,9 @@ def test_second_order_against_matrix_log(fragments):
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
 
 
-@pytest.mark.parametrize("fragments", fragments)
+@pytest.mark.parametrize("fragments", fragment_list)
 def test_fourth_order_against_matrix_log(fragments):
+    """Test that the BCH expansion converges to the matrix log"""
     t = 0.007
     u = 1 / (4 - 4 ** (1 / 3))
     second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
@@ -249,8 +251,9 @@ def test_fourth_order_against_matrix_log(fragments):
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
 
 
-@pytest.mark.parametrize("fragments", fragments)
+@pytest.mark.parametrize("fragments", fragment_list)
 def test_fourth_order_against_matrix_log_2(fragments):
+    """Test that the BCH expansion converges to the matrix log"""
     t = 0.007
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
