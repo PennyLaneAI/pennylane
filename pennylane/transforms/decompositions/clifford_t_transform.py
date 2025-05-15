@@ -198,7 +198,7 @@ def _rot_decompose(op):
         return d_ops
 
     (theta,), wires = op.data, op.wires
-    if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.Adjoint):
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.X(wires))
@@ -330,7 +330,7 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
+# pylint: disable=too-many-branches
 @transform
 def clifford_t_decomposition(
     tape: QuantumScript,

@@ -24,7 +24,9 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 
-class DatasetDict(  # pylint: disable=too-many-ancestors
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=too-many-ancestors
+class DatasetDict(
     Generic[T],
     DatasetAttribute[HDF5Group, Mapping[str, T], Mapping[str, T]],
     MutableMapping[str, T],

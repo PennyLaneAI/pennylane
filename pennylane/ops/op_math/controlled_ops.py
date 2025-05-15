@@ -14,7 +14,7 @@
 """
 This submodule contains controlled operators based on the ControlledOp class.
 """
-# pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
+# pylint: disable=arguments-differ,arguments-renamed
 from collections.abc import Iterable
 from functools import lru_cache
 from typing import List, Literal, Union
@@ -34,7 +34,6 @@ from .controlled_decompositions import decompose_mcx
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
-# pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, wires)
     Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
@@ -111,7 +110,7 @@ class ControlledQubitUnitary(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(data[0], wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
-    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
+    # pylint: disable=too-many-arguments,unused-argument,too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls,
@@ -838,7 +837,7 @@ class CCZ(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1163,7 +1162,7 @@ class Toffoli(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1337,7 +1336,10 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
@@ -1364,7 +1366,6 @@ class MultiControlledX(ControlledOp):
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: WiresLike = (),
@@ -1668,9 +1669,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1875,9 +1874,7 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2093,9 +2090,7 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2300,7 +2295,7 @@ class CRot(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

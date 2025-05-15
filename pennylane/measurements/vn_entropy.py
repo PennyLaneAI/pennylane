@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+
 """
 This module contains the qml.vn_entropy measurement.
 """
@@ -98,7 +98,6 @@ class VnEntropyMP(StateMeasurement):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
         return (None, None), metadata
 
-    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         wires: Optional[Wires] = None,

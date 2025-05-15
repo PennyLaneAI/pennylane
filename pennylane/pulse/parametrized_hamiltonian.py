@@ -24,7 +24,6 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
-# pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
@@ -348,7 +347,7 @@ class ParametrizedHamiltonian:
             new_ops = ops + H.ops.copy()
             return ParametrizedHamiltonian(new_coeffs, new_ops)
 
-        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(H, qml.ops.SProd):
             new_coeffs = coeffs + [H.scalar]
             new_ops = ops + [H.base]
             return ParametrizedHamiltonian(new_coeffs, new_ops)
@@ -373,7 +372,7 @@ class ParametrizedHamiltonian:
             new_ops = H.ops.copy() + ops
             return ParametrizedHamiltonian(new_coeffs, new_ops)
 
-        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(H, qml.ops.SProd):
             new_coeffs = [H.scalar] + coeffs
             new_ops = [H.base] + ops
             return ParametrizedHamiltonian(new_coeffs, new_ops)

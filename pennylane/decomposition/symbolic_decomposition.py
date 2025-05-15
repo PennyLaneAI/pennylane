@@ -77,7 +77,7 @@ def _adjoint_adjoint_resource(*_, base_params, **__):
 
 
 @register_resources(_adjoint_adjoint_resource)
-def adjoint_adjoint_decomp(*params, wires, base):  # pylint: disable=unused-argument
+def adjoint_adjoint_decomp(*params, wires, base):
     """Decompose the adjoint of the adjoint of a gate."""
     _, [_, metadata] = base.base._flatten()  # pylint: disable=protected-access
     new_struct = wires, metadata
@@ -164,7 +164,7 @@ def pow_decomp(*_, base, z, **__):
         base._unflatten(*base._flatten())  # pylint: disable=protected-access
 
 
-def _pow_pow_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_pow_resource(base_class, base_params, z):
     """Resources of the power of the power of a gate."""
     base_class, base_params, base_z = (
         base_params["base_class"],

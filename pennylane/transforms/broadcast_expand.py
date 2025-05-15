@@ -28,7 +28,7 @@ def _split_operations(ops, num_tapes):
     of new operators with length num_tapes, with the parameters split.
     """
     # for some reason pylint thinks "qml.ops" is a set
-    # pylint: disable=no-member
+
     new_ops = [[] for _ in range(num_tapes)]
     for op in ops:
         # determine if any parameters of the operator are batched

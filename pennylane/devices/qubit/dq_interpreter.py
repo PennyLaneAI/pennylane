@@ -31,10 +31,10 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
-from .simulate import _postselection_postprocess  # pylint: disable=protected-access
+from .simulate import _postselection_postprocess
 
 
-# pylint: disable=attribute-defined-outside-init, access-member-before-definition,too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 class DefaultQubitInterpreter(FlattenedInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
@@ -230,7 +230,6 @@ def _(self, *invals, reset, postselect):
     return mcms[mp]
 
 
-# pylint: disable=unused-argument
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, n_consts, lazy=True):
     # TODO: requires jaxpr -> list of ops first

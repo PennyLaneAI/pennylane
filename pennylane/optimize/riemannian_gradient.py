@@ -276,7 +276,6 @@ class RiemannianGradientOptimizer:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
             to the step.
         """
-        # pylint: disable=not-callable
 
         cost = self.circuit()
         omegas = self.get_omegas()

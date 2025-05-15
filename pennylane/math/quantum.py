@@ -13,8 +13,6 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 import functools
-
-# pylint: disable=import-outside-toplevel
 import itertools
 from string import ascii_letters
 
@@ -1204,7 +1202,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         state1 = math.cast_like(state1, state0)
 
     if check_state:
-        # pylint: disable=expression-not-assigned
+
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 

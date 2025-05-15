@@ -15,8 +15,6 @@
 import numbers
 from collections.abc import Iterable
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.gradients.metric_tensor import metric_tensor

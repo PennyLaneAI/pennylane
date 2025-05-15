@@ -402,7 +402,7 @@ class MPSPrep(Operation):
             return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
         return cls._primitive.bind(*mps, wires=wires, id=id)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         filtered_hyperparameters = {
             key: value for key, value in self.hyperparameters.items() if key != "input_wires"
         }

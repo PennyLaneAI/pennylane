@@ -15,7 +15,7 @@
 The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-# pylint:disable=unused-argument
+
 
 import inspect
 import json
@@ -471,7 +471,8 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    # pylint: disable= unused-argument
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     def eval_jaxpr(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
     ) -> list:

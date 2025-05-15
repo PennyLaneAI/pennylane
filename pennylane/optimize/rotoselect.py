@@ -90,8 +90,6 @@ class RotoselectOptimizer:
     the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
     """
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [RX, RY, RZ]
 

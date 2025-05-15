@@ -202,7 +202,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
             return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol)
 
         if sp.sparse.issparse(a):
-            # pylint: disable=arguments-out-of-order
+
             return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=False)
         if sp.sparse.issparse(b):
             return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=True)

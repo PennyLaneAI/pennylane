@@ -17,9 +17,9 @@ works correctly an a device.
 """
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
-# pylint: disable=pointless-statement
+
 # pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=no-name-in-module
+
 from cmath import exp
 from math import cos, sin, sqrt
 
@@ -121,7 +121,7 @@ all_ops = ops.keys()
 
 # All qubit operations should be available to test in the device test suite
 # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
-all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access,no-member
+all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
@@ -592,7 +592,7 @@ class TestGatesQubit:
         res = benchmark(circuit)
 
         # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
-        basis_fn = qml.ops.qubit.special_unitary.pauli_basis_matrices  # pylint: disable=no-member
+        basis_fn = qml.ops.qubit.special_unitary.pauli_basis_matrices
         basis = basis_fn(n_wires)
         mat = qml.math.expm(1j * np.tensordot(theta_, basis, axes=[[0], [0]]))
         expected = np.abs(mat @ rnd_state) ** 2

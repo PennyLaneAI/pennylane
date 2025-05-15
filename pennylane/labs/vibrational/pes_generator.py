@@ -29,7 +29,7 @@ from pennylane.qchem.vibrational.vibrational_class import (
     _single_point,
 )
 
-# pylint: disable=too-many-arguments, too-many-function-args, too-many-branches
+# pylint: disable=too-many-arguments,too-many-function-args
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments
 
 # constants

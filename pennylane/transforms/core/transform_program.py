@@ -511,7 +511,6 @@ class TransformProgram:
             i -= 1
         return found
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _get_classical_jacobian(self, index: int, tape_idx: int):
         if self.cotransform_cache is None or not self[index].classical_cotransform:
             return None

@@ -373,7 +373,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     return sign * qml.math.exp(zne_unscaled) + asymptote
 
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments
 @transform
 def mitigate_with_zne(
     tape: QuantumScript,

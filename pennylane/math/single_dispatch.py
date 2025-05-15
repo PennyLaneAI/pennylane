@@ -13,7 +13,7 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
