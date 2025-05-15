@@ -16,19 +16,22 @@
 written using xDSL."""
 
 from dataclasses import dataclass
-from xdsl import context, passes, pattern_rewriter
 
+from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
 from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
 from xdsl.rewriter import InsertPoint
 
 import pennylane as qml
-from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.compiler.python_compiler.quantum_dialect import (
+    CustomOp,
+    ExtractOp,
+    QubitType,
+    QubitUnitaryOp,
+)
 
-from pennylane.compiler.python_compiler.quantum_dialect import CustomOp, QubitUnitaryOp, QubitType
-
-# TODO: this implementation is not complete yet.
+# Notice that this implementation has several restrictions
 
 
 # pylint: disable=unused-argument
@@ -38,6 +41,21 @@ def extract_matrix_value(op: QubitUnitaryOp):
     # TODO: This function doesn't work yet.
     # To move on, let's just return a random matrix
     return qml.numpy.random.rand(2, 2)
+
+
+def get_first_wire(op) -> int:
+    """
+    Get the first wire index of the QubitUnitaryOp.
+    This assumes that the wire has a concrete value.
+    """
+
+    while isinstance(op, (CustomOp, QubitUnitaryOp)):
+        op = op.in_qubits[0].owner
+    if isinstance(op, ExtractOp):
+        return op.idx_attr.parameters[0].data
+    if isinstance(op, ConstantOp):
+        return op.result.index
+    raise NotImplementedError(f"Cannot find the first wire index of {op}")
 
 
 class UnitaryToRotPattern(
@@ -54,13 +72,16 @@ class UnitaryToRotPattern(
             if not isinstance(op, QubitUnitaryOp):
                 continue
             matrix_value = extract_matrix_value(op)
-            extract_op = op.in_qubits[0].owner
-            wire_index = extract_op.idx_attr.parameters[0].data
+            wire_index = get_first_wire(op)
             matrix_shape = qml.math.shape(matrix_value)
             if matrix_shape == (2, 2):
-                ops = one_qubit_decomposition(matrix_value, wire_index)
+                ops = qml.ops.op_math.decompositions.one_qubit_decomposition(
+                    matrix_value, wire_index
+                )
             elif matrix_shape == (4, 4):
-                ops = two_qubit_decomposition(matrix_value, wire_index)
+                ops = qml.ops.op_math.decompositions.two_qubit_decomposition(
+                    matrix_value, wire_index
+                )
             else:
                 ops = [op]
 
@@ -69,7 +90,12 @@ class UnitaryToRotPattern(
                 wire = qml_op.wires[0]
 
                 # Right now, we know that the angle is a float.
-                angle_attr = FloatAttr(angle, Float64Type())
+                if isinstance(angle, int):
+                    angle_attr = IntegerAttr(angle, IntegerType(64))
+                elif isinstance(angle, float):
+                    angle_attr = FloatAttr(angle, Float64Type())
+                else:
+                    raise TypeError(f"Unsupported angle type: {type(angle)}")
                 angle_const_op = ConstantOp(value=angle_attr)
                 rewriter.insert_op(angle_const_op, InsertPoint.before(op))
 
