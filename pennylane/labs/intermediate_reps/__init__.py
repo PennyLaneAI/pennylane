@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,30 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+Quantum circuit intermediate representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains experimental features enabling
-advanced quantum computing research.
+Intermediate representations (IRs) are alternative representations of quantum circuits, typically offering a more efficient classical description for special classes of circuits.
 
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.intermediate_reps
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
-    trotter_error
-    intermediate_reps
+    ~parity_matrix
+    ~phase_polynomial
+
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import vibrational
-from pennylane.labs import trotter_error
-from pennylane.labs import intermediate_reps
-
-__all__ = []
+from .parity_matrix import parity_matrix
+from .phase_polynomial import phase_polynomial
