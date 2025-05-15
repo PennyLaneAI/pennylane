@@ -87,7 +87,7 @@ class ResourceIdentity(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -186,7 +186,7 @@ class ResourceGlobalPhase(ResourceOperator):
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+        cls, num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -219,7 +219,6 @@ class ResourceGlobalPhase(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
 
         return [AddQubits(1), GateCount(ps), GateCount(mcx,2), CutQubits(1)]

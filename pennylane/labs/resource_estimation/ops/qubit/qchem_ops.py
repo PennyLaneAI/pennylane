@@ -429,8 +429,8 @@ class ResourceDoubleExcitationMinus(ResourceOperator):
         """
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
-        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
 
         gate_types = {}
         gate_types[phase] = 1
@@ -507,8 +507,8 @@ class ResourceDoubleExcitationPlus(ResourceOperator):
         """
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
-        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
 
         gate_types = {}
         gate_types[phase] = 1

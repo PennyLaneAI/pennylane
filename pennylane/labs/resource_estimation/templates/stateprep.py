@@ -283,7 +283,6 @@ class ResourceSuperposition(qml.Superposition, ResourceOperator):
         multi_x = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=size_basis_state,
             num_ctrl_values=num_zero_ctrls,
-            num_work_wires=0,
         )
 
         basis_size = 2**size_basis_state

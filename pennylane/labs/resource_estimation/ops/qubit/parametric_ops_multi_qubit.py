@@ -129,7 +129,6 @@ class ResourceMultiRZ(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         num_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -162,7 +161,6 @@ class ResourceMultiRZ(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
 
             return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(ctrl_rz)]
@@ -354,7 +352,6 @@ class ResourcePauliRot(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         pauli_string,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -393,7 +390,6 @@ class ResourcePauliRot(ResourceOperator):
                 {},
                 num_ctrl_wires,
                 num_ctrl_values,
-                num_work_wires,
             )
             return [GateCount(ctrl_gp)]
 
@@ -405,7 +401,6 @@ class ResourcePauliRot(ResourceOperator):
                         {},
                         num_ctrl_wires,
                         num_ctrl_values,
-                        num_work_wires,
                     )
                 )
             ]
@@ -417,7 +412,6 @@ class ResourcePauliRot(ResourceOperator):
                         {},
                         num_ctrl_wires,
                         num_ctrl_values,
-                        num_work_wires,
                     )
                 )
             ]
@@ -429,7 +423,6 @@ class ResourcePauliRot(ResourceOperator):
                         {},
                         num_ctrl_wires,
                         num_ctrl_values,
-                        num_work_wires,
                     )
                 )
             ]
@@ -443,7 +436,6 @@ class ResourcePauliRot(ResourceOperator):
             {},
             num_ctrl_wires,
             num_ctrl_values,
-            num_work_wires,
         )
         s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
         cnot = re.ResourceCNOT.resource_rep()
@@ -589,7 +581,6 @@ class ResourceIsingXX(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -619,7 +610,6 @@ class ResourceIsingXX(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
 
             return [GateCount(cnot, 2), GateCount(ctrl_rx)]
@@ -748,7 +738,6 @@ class ResourceIsingYY(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -778,7 +767,6 @@ class ResourceIsingYY(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
 
             return [GateCount(cy, 2), GateCount(ctrl_ry)]
@@ -910,7 +898,6 @@ class ResourceIsingXY(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -941,14 +928,12 @@ class ResourceIsingXY(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
             ctrl_ry = re.ResourceControlled.resource_rep(
                 base_class=re.ResourceRY,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
 
             return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_rx), GateCount(ctrl_ry)]
@@ -1076,7 +1061,6 @@ class ResourceIsingZZ(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1106,7 +1090,6 @@ class ResourceIsingZZ(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
             return [GateCount(cnot, 2), GateCount(ctrl_rz)]
         raise re.ResourcesNotDefined
@@ -1228,7 +1211,6 @@ class ResourcePSWAP(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1258,14 +1240,12 @@ class ResourcePSWAP(ResourceOperator):
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
             ctrl_ps = re.ResourceControlled.resource_rep(
                 base_class=re.ResourcePhaseShift,
                 base_params={},
                 num_ctrl_wires=num_ctrl_wires,
                 num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
             )
 
             return [GateCount(ctrl_swap), GateCount(cnot, 2), GateCount(ctrl_ps)]

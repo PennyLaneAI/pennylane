@@ -222,13 +222,11 @@ def _(op: ControlledPhaseShift):
 @map_to_resource_op.register
 def _(op: MultiControlledX):
     num_control = len(op.hyperparameters["control_wires"])
-    num_work_wires = len(op.hyperparameters["work_wires"])
     num_control_values = len([val for val in op.hyperparameters["control_values"] if not val])
 
     params = {
         "num_ctrl_wires": num_control,
         "num_ctrl_values": num_control_values,
-        "num_work_wires": num_work_wires,
     }
     return ResourceMultiControlledX.resource_rep(**params)
 

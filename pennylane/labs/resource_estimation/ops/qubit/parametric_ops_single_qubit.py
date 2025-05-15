@@ -128,7 +128,7 @@ class ResourcePhaseShift(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -163,7 +163,6 @@ class ResourcePhaseShift(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
         return [AddQubits(1), GateCount(c_ps), GateCount(mcx, 2), CutQubits(1)]
 
@@ -277,7 +276,6 @@ class ResourceRX(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -320,7 +318,6 @@ class ResourceRX(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
 
         return [GateCount(mcx, 2), GateCount(rz, 2), GateCount(h, 2)]
@@ -436,7 +433,6 @@ class ResourceRY(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -479,7 +475,6 @@ class ResourceRY(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
 
         return [GateCount(ry, 2), GateCount(mcx, 2)]
@@ -592,7 +587,6 @@ class ResourceRZ(ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
         eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -633,7 +627,6 @@ class ResourceRZ(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
 
         return [GateCount(rz, 2), GateCount(mcx, 2)]
@@ -734,7 +727,7 @@ class ResourceRot(ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, eps=None
+        num_ctrl_wires, num_ctrl_values, eps=None
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -747,7 +740,7 @@ class ResourceRot(ResourceOperator):
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`.
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-
+g
             In the case where multiple controlled wires are provided, the resources are derived
             from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
@@ -788,7 +781,6 @@ class ResourceRot(ResourceOperator):
         mcx = re.ResourceMultiControlledX.resource_rep(
             num_ctrl_wires=num_ctrl_wires,
             num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
         )
 
         return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
