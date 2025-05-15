@@ -150,6 +150,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
+  into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
+  decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
+  that contains fewer gates than the previous decomposition.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
 
