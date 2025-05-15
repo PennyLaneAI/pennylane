@@ -23,7 +23,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionNotApplicable, add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     flip_zero_control,
@@ -1591,11 +1591,10 @@ class MultiControlledX(ControlledOp):
 def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
     if num_control_wires == 1:
         return {qml.CNOT: 1, qml.X: num_zero_control_values}
-    if num_control_wires == 2:
-        return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
-    raise DecompositionNotApplicable
+    return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
 
 
+@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
 def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     if len(wires) == 2 and not control_values[0]:

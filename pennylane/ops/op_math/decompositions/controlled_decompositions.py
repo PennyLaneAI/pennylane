@@ -342,14 +342,15 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__
         ops.PauliX(w)
 
 
-def _decompose_mcx_with_many_workers_resource(num_control_wires, num_work_wires, **__):
-    if num_control_wires < 3:
-        raise DecompositionNotApplicable
-    if num_work_wires < num_control_wires - 2:
-        raise DecompositionNotApplicable
+def _decompose_mcx_with_many_workers_condition(num_control_wires, num_work_wires, **__):
+    return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
+
+
+def _decompose_mcx_with_many_workers_resource(num_control_wires, **__):
     return {ops.Toffoli: 4 * (num_control_wires - 2)}
 
 
+@register_condition(_decompose_mcx_with_many_workers_condition)
 @register_resources(_decompose_mcx_with_many_workers_resource)
 def decompose_mcx_with_many_workers(wires, work_wires, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
@@ -377,11 +378,11 @@ def decompose_mcx_with_many_workers(wires, work_wires, **__):
     loop_down()
 
 
-def _two_workers_resource(num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires < 3:
-        raise DecompositionNotApplicable
-    if num_work_wires < 2:
-        raise DecompositionNotApplicable
+def _two_workers_condition(num_control_wires, num_work_wires, **__):
+    return num_control_wires > 2 and num_work_wires >= 2
+
+
+def _two_workers_resource(num_control_wires, work_wire_type, **__):
     if work_wire_type == "clean":
         n_ccx = 2 * num_control_wires - 3
         return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
@@ -390,6 +391,8 @@ def _two_workers_resource(num_control_wires, num_work_wires, work_wire_type, **_
     return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
 
 
+@register_condition(_two_workers_condition)
+@register_resources(_two_workers_resource)
 def decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
@@ -421,11 +424,11 @@ def decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
+def _decompose_mcx_one_worker_condition(num_control_wires, num_work_wires, work_wire_type, **__):
+    return num_control_wires > 2 and num_work_wires == 1
+
+
 def _decompose_mcx_one_worker_resource(num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires < 3:
-        raise DecompositionNotApplicable
-    if num_work_wires != 1:
-        raise DecompositionNotApplicable
     if work_wire_type == "clean":
         n_ccx = 2 * num_control_wires - 3
         return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
@@ -434,6 +437,7 @@ def _decompose_mcx_one_worker_resource(num_control_wires, num_work_wires, work_w
     return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
 
 
+@register_condition(_decompose_mcx_one_worker_condition)
 @register_resources(_decompose_mcx_one_worker_resource)
 def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **__):
     r"""
