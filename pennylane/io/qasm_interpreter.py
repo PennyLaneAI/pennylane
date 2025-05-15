@@ -278,7 +278,7 @@ class QasmInterpreter(QASMVisitor):
         Registers an alias statement.
         """
         self._init_aliases(context)
-        context["aliases"][node.target.name] = self.eval_expr(node.value, context)
+        context["aliases"][node.target.name] = self.eval_expr(node.value, context, aliasing=True)
 
     @staticmethod
     def retrieve_variable(name: str, context: dict):
@@ -303,7 +303,7 @@ class QasmInterpreter(QASMVisitor):
         else:
             _warning(context, name)
 
-    def eval_expr(self, node: QASMNode, context: dict):
+    def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
         Evaluates an expression.
         """
@@ -317,17 +317,20 @@ class QasmInterpreter(QASMVisitor):
         elif isinstance(node, UnaryExpression):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
         elif isinstance(node, IndexExpression):
-            def alias(context):
-                try:
-                    return self.retrieve_variable(node.collection.name, context)
-                except NameError:
-                    # TODO: make a warning
-                    print(f"Attempt to alias an undeclared variable {node.collection.name} in {context['name']}.")
+            if aliasing:
+                def alias(context):
+                    try:
+                        return self.retrieve_variable(node.collection.name, context)
+                    except NameError:
+                        # TODO: make a warning
+                        print(f"Attempt to alias an undeclared variable {node.collection.name} in {context['name']}.")
 
-                # if isinstance(node.index[0], RangeDefinition): TODO: support indexing here
-                #     ret = ret[node.index[0].start: node.index[0].end: node.index[0].step]
-                # return ret
-            res = alias
+                    # if isinstance(node.index[0], RangeDefinition): TODO: support indexing here
+                    #     ret = ret[node.index[0].start: node.index[0].end: node.index[0].step]
+                    # return ret
+                res = alias
+            else:
+                return self.retrieve_variable(node.collection.name, context)["val"]
         elif isinstance(node, Identifier):
             try:
                 return self.retrieve_variable(node.name, context)["val"]
