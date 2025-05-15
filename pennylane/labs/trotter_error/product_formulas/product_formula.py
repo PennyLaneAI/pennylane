@@ -137,7 +137,6 @@ class ProductFormula:
         """Returns an approximation of the BCH expansion in terms of right-nested commutators up to order `max_order`.
         This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
         """
-
         bch = _remove_redundancies(
             [
                 _kth_order_terms(self.terms, [self.timestep * coeff for coeff in self.coeffs], k)
@@ -162,6 +161,22 @@ class ProductFormula:
                 accumulator @= expm(coeff * fragments[term])
 
         return fractional_matrix_power(accumulator, self.exponent)
+
+    def ordered_fragments(self) -> Dict[Hashable, int]:
+        if not self.recursive:
+            return self._ordered_terms
+
+        ordered_fragments = {}
+        position = 0
+        for term in self.terms:
+            for fragment in term.ordered_fragments():
+                if fragment in ordered_fragments:
+                    continue
+
+                ordered_fragments[fragment] = position
+                position += 1
+
+        return ordered_fragments
 
 
 def _kth_order_terms(
@@ -231,36 +246,43 @@ def _remove_redundancies(
     3. [B, [A, [C, D]]] = [A, [B, [C, D]]]
     """
 
+    def less_than(x, y):
+        """Define an ordering on nested tuples"""
+
+        if isinstance(x, tuple) and isinstance(y, tuple):
+            if len(x) < len(y):
+                return True
+
+            for a, b in zip(x, y):
+                if a == b:
+                    continue
+
+                return less_than(a, b)
+
+            return False
+
+        if isinstance(x, tuple):
+            return False
+
+        if isinstance(y, tuple):
+            return True
+
+        return term_order[x] < term_order[y]
+
     max_order = len(term_dicts)
 
     for terms in term_dicts[1:]:
-        delete = []
-        swap = []
-
-        for commutator in terms.keys():
-            if commutator[-1] == commutator[-2]:
-                delete.append(commutator)
-            if term_order[commutator[-1]] < term_order[commutator[-2]]:
-                swap.append(commutator)
-
-        for commutator in delete:
-            del terms[commutator]
-
-        for commutator in swap:
-            new_commutator = list(commutator)
-            new_commutator[-1] = commutator[-2]
-            new_commutator[-2] = commutator[-1]
-            new_commutator = tuple(new_commutator)
-
-            terms[new_commutator] -= terms[commutator]
-            del terms[commutator]
+        _delete(terms)
+        _swap(terms, less_than)
+        _flatten(terms)
+        _swap(terms, less_than)
 
     if max_order < 4:
         return _drop_zeros(term_dicts)
 
     swap = []
     for commutator in term_dicts[3].keys():
-        if term_order[commutator[1]] < term_order[commutator[0]]:
+        if less_than(commutator[1], commutator[0]):
             swap.append(commutator)
 
     for commutator in swap:
@@ -273,6 +295,45 @@ def _remove_redundancies(
         del term_dicts[3][commutator]
 
     return _drop_zeros(term_dicts)
+
+
+def _swap(terms, less_than):
+    swap = []
+    for commutator in terms.keys():
+        if less_than(commutator[-1], commutator[-2]):
+            swap.append(commutator)
+
+    for commutator in swap:
+        new_commutator = list(commutator)
+        new_commutator[-1] = commutator[-2]
+        new_commutator[-2] = commutator[-1]
+        new_commutator = tuple(new_commutator)
+
+        terms[new_commutator] -= terms[commutator]
+        del terms[commutator]
+
+
+def _delete(terms):
+    delete = []
+    for commutator in terms.keys():
+        if commutator[-1] == commutator[-2]:
+            delete.append(commutator)
+
+    for commutator in delete:
+        del terms[commutator]
+
+
+def _flatten(terms):
+    flatten = []
+
+    for commutator in terms:
+        if isinstance(commutator[-1], tuple):
+            flatten.append(commutator)
+
+    for commutator in flatten:
+        new_commutator = commutator[:-1] + commutator[-1]
+        terms[new_commutator] += terms[commutator]
+        del terms[commutator]
 
 
 def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:

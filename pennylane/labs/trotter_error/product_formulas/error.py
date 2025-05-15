@@ -109,7 +109,7 @@ def _recursive_bch(product_formula: ProductFormula, order: int = 3):
             for j, merged in enumerate(_merge_commutators(commutator, terms, order, coeff)):
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
-    return merged_bch
+    return _remove_redundancies(merged_bch, product_formula.ordered_fragments())
 
 
 def _merge_commutators(commutator, terms, order, bch_coeff):
