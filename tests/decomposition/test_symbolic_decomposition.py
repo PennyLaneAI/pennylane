@@ -717,11 +717,7 @@ class TestControlledDecomposition:
         """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
 
         op = qml.ctrl(qml.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
-        with pytest.raises(DecompositionNotApplicable):
-            # single control wire
-            controlled_decomp_with_work_wire.compute_resources(**op.resource_params)
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
         op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
-        with pytest.raises(DecompositionNotApplicable):
-            # no work wire available
-            controlled_decomp_with_work_wire.compute_resources(**op.resource_params)
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
