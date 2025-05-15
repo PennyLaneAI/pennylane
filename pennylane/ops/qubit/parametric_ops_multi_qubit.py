@@ -1342,7 +1342,7 @@ class IsingXY(Operation):
     r"""
     Ising (XX + YY) coupling gate
 
-    .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
+    .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\phi}{4} (X \otimes X + Y \otimes Y)\right) =
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
