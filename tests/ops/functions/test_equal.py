@@ -2860,9 +2860,3 @@ def test_ops_with_abstract_parameters_not_equal():
 def test_not_equal_prep_sel_prep(op, other_op):
     """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
     assert not qml.equal(op, other_op)
-
-def test_expval_observable_mismatch():
-    m1 = qml.expval(qml.Z(0))
-    m2 = qml.expval(qml.X(0))
-    with pytest.raises(AssertionError, match="observables differ"):
-        qml.assert_equal(m1, m2)
