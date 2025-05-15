@@ -156,6 +156,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 # These modules can only import from CORE or AUXILIARY modules.
 
 [[modules]]
+path = "pennylane.qaoa"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.kernels"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
@@ -195,6 +200,11 @@ path = "pennylane.fourier"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[modules]]
+path = "pennylane.noise"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
@@ -230,10 +240,6 @@ path = "pennylane.transforms"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qaoa"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.capture"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -259,10 +265,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.qnn"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.noise"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
