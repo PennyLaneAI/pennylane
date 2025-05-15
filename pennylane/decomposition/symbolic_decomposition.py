@@ -275,3 +275,27 @@ def flip_control_adjoint(*params, wires, control_wires, control_values, work_wir
             work_wires=work_wires,
         )
     )
+
+
+def _to_controlled_qu_condition(base_class, **__):
+    return base_class.has_matrix and base_class.num_wires == 1
+
+
+def _to_controlled_qu_resource(num_control_wires, num_zero_control_values, num_work_wires, **__):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=1,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+    }
+
+
+@register_condition(_to_controlled_qu_condition)
+@register_resources(_to_controlled_qu_resource)
+def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, base, **__):
+    """Convert a controlled operator to a controlled qubit unitary."""
+    matrix = base.matrix()
+    qml.ControlledQubitUnitary(matrix, wires, control_values=control_values, work_wires=work_wires)

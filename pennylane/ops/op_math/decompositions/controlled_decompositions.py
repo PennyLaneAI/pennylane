@@ -20,8 +20,8 @@ from pennylane import math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
-    register_resources,
     register_condition,
+    register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation, Operator
