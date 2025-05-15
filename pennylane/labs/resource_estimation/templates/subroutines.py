@@ -33,6 +33,49 @@ from pennylane.labs.resource_estimation.qubit_manager import clean_qubits, tight
 
 # pylint: disable=arguments-differ, protected-access
 
+
+class ResourceOutOfPlaceSquare(ResourceOperator):
+
+    def __init__(self, register_size: int, wires=None):
+        self.register_size = register_size
+        self.num_wires = 3*register_size
+        super().__init__(wires=wires)
+    
+    @property
+    def resource_params(self):
+        return {"register_size": self.register_size}
+    
+    @classmethod
+    def resource_rep(cls, register_size):
+        return CompressedResourceOp(cls, {"register_size": register_size})
+
+    @staticmethod
+    def _resource_decomp(register_size, **kwargs):
+        gate_lst = []
+
+        # Normal 
+        # gate_lst.append(
+        #     GateCount(
+        #         ResourceSemiAdder.resource_rep(max_register_size=register_size - 1), 
+        #         register_size,
+        #     )
+        # )
+        
+        #Controlled:
+        gate_lst.append(
+            GateCount(
+                re.ResourceControlled.resource_rep(
+                    ResourceSemiAdder, {"max_register_size": register_size + 1}, 1, 0,
+                ),
+                register_size,
+            ) 
+        )
+
+        gate_lst.append(GateCount(re.ResourceCNOT.resource_rep(), register_size))
+
+        return gate_lst
+
+
 class ResourceMultiplexer(ResourceOperator):
 
     def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=None, wires=None) -> None:

@@ -33,6 +33,7 @@ from .subroutines import (
     ResourcePhaseGradient,
     ResourceMultiplexer,
     ResourceOutMultiplier,
+    ResourceOutOfPlaceSquare,
 )
 
 from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize
