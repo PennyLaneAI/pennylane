@@ -133,6 +133,22 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        .. note::
+
+            The following examples may yield different outputs depending on how the
+            workflow function is executed. For instance, the function can be run
+            directly as:
+
+            >>> arg = 2
+            >>> workflow(arg)
+
+            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            which captures the abstract computational graph and generates the abstract shapes.
+            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+
+            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+
         The following discussion applies to the experimental capture infrastructure, which can be
         turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
 
@@ -140,6 +156,7 @@ def for_loop(
         an experimental jax mode that can be turned on with:
 
         >>> import jax
+        >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
         >>> qml.capture.enable()
 
@@ -154,11 +171,12 @@ def for_loop(
 
             @qml.for_loop(3, allow_array_resizing=True)
             def f(i, x, y):
-                return jax.numpy.hstack([x, y]), 2*y
+                return jnp.hstack([x, y]), 2*y
 
             def workflow(i0):
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
+
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -177,6 +195,7 @@ def for_loop(
                 x0 = jnp.ones(i0)
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
+
 
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
@@ -252,9 +271,9 @@ def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    for_loop_prim = NonInterpPrimitive("for_loop")
+    for_loop_prim = QmlPrimitive("for_loop")
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
     register_custom_staging_rule(for_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)

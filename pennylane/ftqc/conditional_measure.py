@@ -17,9 +17,10 @@ Contains the condition transform.
 from functools import wraps
 from typing import Callable, Union
 
-import pennylane as qml
+from pennylane import capture
 from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops.op_math.condition import CondCallable, Conditional
+from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
+from pennylane.queuing import QueuingManager
 
 
 def cond_measure(
@@ -30,11 +31,6 @@ def cond_measure(
     """Perform a mid-circuit measurement where the basis of the measurement is conditional on the
     supplied expression. This conditional expression may involve the results of other mid-circuit
     qubit measurements.
-
-    .. note::
-
-        This function is currently not compatible with :func:`~.qjit`, or with
-        :func:`.pennylane.capture.enabled`.
 
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
@@ -48,7 +44,6 @@ def cond_measure(
         The mid-circuit measurements applied on the two branches must both be applied to the same
         wire, and they must have the same settings for `reset` and `postselection`. The two
         branches can differ only in regard to the measurement basis of the applied measurement.
-
 
     Returns:
         function: A new function that applies the conditional measurements. The returned
@@ -94,10 +89,8 @@ def cond_measure(
         While such statements may not result in errors, they may result in
         incorrect behaviour.
     """
-    if qml.capture.enabled():
-        raise NotImplementedError(
-            "The `cond_measure` function is not compatible with program capture"
-        )
+    if capture.enabled():
+        cond(condition, true_fn, false_fn)
 
     if not isinstance(condition, MeasurementValue):
         # The condition is not a mid-circuit measurement - we can simplify immediately
@@ -112,7 +105,7 @@ def cond_measure(
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
 
-            with qml.QueuingManager.stop_recording():
+            with QueuingManager.stop_recording():
                 true_meas_return = true_fn(*args, **kwargs)
                 false_meas_return = false_fn(*args, **kwargs)
 

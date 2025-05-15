@@ -20,8 +20,10 @@ import pennylane as qml
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    adjoint_resource_rep,
     controlled_resource_rep,
     custom_ctrl_op_to_base,
+    pow_resource_rep,
     resource_rep,
 )
 
@@ -136,6 +138,24 @@ class TestCompressedResourceOp:
         )
         assert isinstance(hash(op), int)
 
+    def test_hash_unhashable_keys(self):
+        """Tests that a CompressedResourceOp is hashable when the params contain unhashable keys."""
+
+        op = CompressedResourceOp(
+            qml.ops.Exp,
+            {
+                "base_class": qml.ops.LinearCombination,
+                "base_params": {},
+                "base_pauli_rep": qml.Hamiltonian(
+                    [1.11, 0.12, -3.4, 5],
+                    [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))],
+                ).pauli_rep,
+                "coeff": 1.2j,
+                "num_steps": 3,
+            },
+        )
+        assert isinstance(hash(op), int)
+
     def test_same_params_same_hash(self):
         """Tests that two ops with the same params have the same hash."""
 
@@ -187,6 +207,19 @@ class TestCompressedResourceOp:
 
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(foo=2, bar=1)"
+
+    @pytest.mark.parametrize(
+        "op, expected_name",
+        [
+            (resource_rep(qml.RX), "RX"),
+            (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
+            (controlled_resource_rep(qml.RX, {}, 1, 0, 0), "C(RX)"),
+            (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
+        ],
+    )
+    def test_name(self, op, expected_name):
+        """Tests the name property of a CompressedResourceOp object."""
+        assert op.name == expected_name
 
 
 @pytest.mark.unit

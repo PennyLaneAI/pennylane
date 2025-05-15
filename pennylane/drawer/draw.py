@@ -16,14 +16,21 @@
 """
 Contains the drawing function.
 """
+from __future__ import annotations
+
 import warnings
 from functools import wraps
-from typing import Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
 
-import pennylane as qml
+from pennylane import math
+from pennylane.tape import make_qscript
+from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 
 def catalyst_qjit(qnode):
@@ -42,7 +49,7 @@ def draw(
     show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
-    r"""Create a function that draws the given qnode or quantum function.
+    r"""Create a function that draws the given QNode or quantum function.
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
@@ -139,13 +146,13 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
-        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
-        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
-        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
-        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
-        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
+        >>> print(qml.draw(longer_circuit, max_length=65, level="device")(params))
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X ···
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰● ···
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X─── ···
+        0: ··· ──Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        1: ··· ─╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        2: ··· ─╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
@@ -268,7 +275,7 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -304,7 +311,7 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -333,7 +340,7 @@ def _draw_qnode(
         if show_matrices and cache["matrices"]:
             mat_str = ""
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
+                if math.requires_grad(mat) and hasattr(mat, "detach"):
                     mat = mat.detach()
                 mat_str += f"\nM{i} = \n{mat}"
             if mat_str:
@@ -345,7 +352,7 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode: Union[qml.QNode, Callable],
+    qnode: Union[QNode, Callable],
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,
@@ -373,7 +380,7 @@ def draw_mpl(
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
 
     Keyword Args:
-        max_length (Optional[int]): When there is more than ``max_length`` layers, additional plots
+        max_length (Optional[int]): When there are more than ``max_length`` layers, additional plots
             will be produced with at most ``max_length`` individual layers.
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
         fontsize (float or str): fontsize for text. Valid strings are
@@ -703,7 +710,7 @@ def draw_mpl(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        tape = make_qscript(qnode)(*args, **kwargs)
         if wire_order:
             _wire_order = wire_order
         else:
@@ -740,7 +747,7 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
+        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
         if len(tapes) > 1:
             warnings.warn(
