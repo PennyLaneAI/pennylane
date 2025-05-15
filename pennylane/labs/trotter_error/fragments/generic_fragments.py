@@ -117,7 +117,6 @@ class GenericFragment(Fragment):
 
     def expectation(self, left: Any, right: Any) -> float:
         """Compute the expectation value using the underlying object's ``__matmul__`` method."""
-
         return left @ self.fragment @ right
 
     def norm(self, params: Dict = None) -> float:
