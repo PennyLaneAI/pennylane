@@ -114,7 +114,7 @@ def _recursive_conj(dy):
     return tuple(_recursive_conj(d) for d in dy)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=abstract-method
 @pytreeify
 class ExecuteTapes(torch.autograd.Function):
@@ -140,7 +140,7 @@ class ExecuteTapes(torch.autograd.Function):
 
     """
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=arguments-differ
     @staticmethod
     def forward(ctx, kwargs, *parameters):

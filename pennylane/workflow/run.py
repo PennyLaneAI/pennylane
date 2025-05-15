@@ -298,7 +298,7 @@ def run(
             config,
             differentiable=config.derivative_order > 1,
         )
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
         # pylint: disable=unexpected-keyword-arg, too-many-function-args
         results = ml_execute(
             tapes,

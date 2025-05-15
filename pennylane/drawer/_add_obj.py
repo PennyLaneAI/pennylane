@@ -25,7 +25,7 @@ Usage:
 The `_add_obj` function is automatically invoked by the text drawer when rendering a quantum circuit. Users typically do not need to call it directly.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=unused-argument
 
 from functools import singledispatch

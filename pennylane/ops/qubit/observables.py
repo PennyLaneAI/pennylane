@@ -369,7 +369,7 @@ class SparseHamiltonian(Observable):
         return H.toarray()
 
     # pylint: disable=arguments-differ
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:

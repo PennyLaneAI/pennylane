@@ -200,7 +200,7 @@ class DefaultQutrit(QutritDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=arguments-differ
     @debug_logger
     def apply(self, operations, rotations=None, **kwargs):

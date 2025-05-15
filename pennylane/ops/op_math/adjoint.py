@@ -332,7 +332,7 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
@@ -496,7 +496,7 @@ class AdjointObs(Adjoint, Observable):
         return object.__new__(cls)
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=too-many-ancestors
 class AdjointOpObs(AdjointOperation, Observable):
     """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""

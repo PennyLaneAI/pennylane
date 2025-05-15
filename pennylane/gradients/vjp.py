@@ -120,7 +120,7 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=no-member
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -202,7 +202,7 @@ def compute_vjp_multi(dy, jac, num=None):
         return None
 
     # Single parameter
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=no-member
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []

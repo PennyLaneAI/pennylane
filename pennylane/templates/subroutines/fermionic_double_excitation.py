@@ -551,7 +551,7 @@ class FermionicDoubleExcitation(Operation):
     def num_params(self):
         return 1
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ

@@ -15,7 +15,7 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=unused-argument
 
 from collections import defaultdict
@@ -409,7 +409,7 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=no-method-argument
     def compute_matrix(*params, **hyperparams):  # pylint: disable=no-self-argument
         bloq = hyperparams["bloq"]

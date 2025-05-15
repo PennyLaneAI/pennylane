@@ -1338,7 +1338,7 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
