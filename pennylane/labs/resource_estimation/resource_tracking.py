@@ -274,7 +274,7 @@ def _counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
-    resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
+    resource_decomp = cp_rep.op_type.resource_decomp(config=config, **cp_rep.params)
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     for action in resource_decomp:
