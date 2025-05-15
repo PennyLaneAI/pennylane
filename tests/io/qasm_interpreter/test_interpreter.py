@@ -110,10 +110,57 @@ class TestInterpreter:
         cry.assert_called_with(CRY(0.1, [0, 1]), 0.1, wires=[0, 1])
 
         assert crz.call_count == 1
-        crz.assert_called_with(CRX(0.1, [0, 1]), 0.1, wires=[0, 1])
+        crz.assert_called_with(CRZ(0.1, [0, 1]), 0.1, wires=[0, 1])
 
         assert ccx.call_count == 1
         ccx.assert_called_with(Toffoli([0, 1, 2]), wires=[0, 1, 2])
 
         assert cswap.call_count == 1
         cswap.assert_called_with(CSWAP([1, 2, 0]), wires=[1, 2, 0])
+
+        assert rx.call_count == 3
+        rx.assert_called_with(RX(0.9, [0]), 0.9, wires=[0])
+
+        assert ry.call_count == 3
+        ry.assert_called_with(RY(0.8, [0]), 0.8, wires=[0])
+
+        assert rz.call_count == 3
+        rz.assert_called_with(RZ(1.1, [2]), 1.1, wires=[2])
+
+        assert p.call_count == 5
+        p.assert_called_with(PhaseShift(8, 0), 8, wires=0)
+        p.assert_called_with(PhaseShift(2.0, 1), 2.0, wires=1)
+
+        assert u1.call_count == 1
+        u1.assert_called_with(U1(3.3, 0), 3.3, wires=0)
+
+        assert u2.call_count == 1
+        u2.assert_called_with(U2(1.0, 2.0, 1), 1.0, 2.0, wires=1)
+
+        assert u3.call_count == 1
+        u3.assert_called_with(U3(1.0, 2.0, 3.0, 2), 1.0, 2.0, 3.0, wires=2)
+
+        assert id.call_count == 2
+        id.assert_called_with(Identity(0), wires=0)
+        id.assert_called_with(Identity(1), wires=1)
+
+        assert h.call_count == 4
+        h.assert_called_with(Hadamard(2), wires=2)
+
+        assert x.call_count == 5
+        x.assert_called_with(PauliX(1), wires=1)
+
+        assert y.call_count == 3
+        y.assert_called_with(PauliY(2), wires=2)
+
+        assert z.call_count == 3
+        z.assert_called_with(PauliZ(0), wires=0)
+
+        assert s.call_count == 1
+        s.assert_called_with(S(2), 2)
+
+        assert t.call_count == 2
+        t.assert_called_with(T(1), 1)
+
+        assert sx.call_count == 1
+        sx.assert_called_with(SX(1), 1)
