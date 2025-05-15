@@ -183,6 +183,9 @@ self_adjoint: DecompositionRule = decompose_to_base
 def make_controlled_decomp(base_decomposition):
     """Create a decomposition rule for the control of a decomposition rule."""
 
+    def _condition_fn(base_params, **_):
+        return base_decomposition.is_applicable(**base_params)
+
     def _resource_fn(base_params, num_control_wires, num_zero_control_values, num_work_wires, **_):
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
@@ -200,6 +203,7 @@ def make_controlled_decomp(base_decomposition):
         gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
+    @register_condition(_condition_fn)
     @register_resources(_resource_fn)
     def _impl(*params, wires, control_wires, control_values, work_wires, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
@@ -222,6 +226,15 @@ def make_controlled_decomp(base_decomposition):
 def flip_zero_control(inner_decomp):
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
+    def _condition_fn(**resource_params):
+        return inner_decomp.is_applicable(
+            base_class=resource_params["base_class"],
+            base_params=resource_params["base_params"],
+            num_control_wires=resource_params["num_control_wires"],
+            num_zero_control_values=0,  # we will flip them.
+            num_work_wires=resource_params["num_work_wires"],
+        )
+
     def _resource_fn(**resource_params):
         inner_resource = inner_decomp.compute_resources(
             base_class=resource_params["base_class"],
@@ -236,6 +249,7 @@ def flip_zero_control(inner_decomp):
         gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
         return gate_counts
 
+    @register_condition(_condition_fn)
     @register_resources(_resource_fn)
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
