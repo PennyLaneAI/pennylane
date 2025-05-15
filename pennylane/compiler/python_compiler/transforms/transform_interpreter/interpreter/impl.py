@@ -19,7 +19,6 @@ An custom implementation of the interpreter functions used for the transform dia
 import io
 from typing import Callable
 
-from catalyst.compiler import _quantum_opt
 from xdsl.context import Context
 from xdsl.dialects import transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
@@ -71,6 +70,11 @@ class TransformFunctionsExt(TransformFunctions):
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
         except:  # pylint: disable=bare-except
+            # Yes, we are importing it here because we don't want to import it
+            # and have an import time dependency on catalyst.
+            # This allows us to test without having a hard requirement on Catalyst
+            from catalyst.compiler import _quantum_opt  # pylint: disable=import-outside-toplevel
+
             buffer = io.StringIO()
 
             Printer(stream=buffer, print_generic_format=True).print(args[0])
