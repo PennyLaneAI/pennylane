@@ -20,7 +20,7 @@ import pytest
 
 xdsl = pytest.importorskip("xdsl")
 jax = pytest.importorskip("jax")
-jaxlib = pytest.importskip("jaxlib")
+jaxlib = pytest.importorskip("jaxlib")
 
 pytestmark = pytest.mark.external
 
