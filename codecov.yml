@@ -2,6 +2,7 @@ ignore:
   - "pennylane/devices/tests/*"
   - "pennylane/data/base/_lazy_modules.py"
   - "pennylane/logging/*"
+  - "pennylane/compiler/python_compiler/*"
 
 codecov:
   notify:
