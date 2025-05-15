@@ -163,6 +163,7 @@ class ProductFormula:
         return fractional_matrix_power(accumulator, self.exponent)
 
     def ordered_fragments(self) -> Dict[Hashable, int]:
+        """Return the fragment ordering used by the product formula"""
         if not self.recursive:
             return self._ordered_terms
 
