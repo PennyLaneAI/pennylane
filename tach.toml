@@ -205,6 +205,51 @@ path = "pennylane.noise"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+# TEMPLATES MODULE 
+# Once all submodules are cleaned up, uncomment the following and delete the submodules
+
+# [[modules]]
+# path = "pennylane.templates"
+# layer = "tertiary"
+# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.embeddings"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.layers"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.state_preparations"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.swapnetworks"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.tensornetworks"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.templates.layer"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+# Must be addressed in another PR, too large of an effort
+
+# [[modules]]
+# path = "pennylane.templates.subroutines"
+# layer = "tertiary"
+# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
 ## UNSORTED
 # Due to circular import problems, these modules below have incorrect dependencies 
 # and need to be parsed and fixed accordingly.
