@@ -133,6 +133,24 @@ class TestDecompositionRule:
             }
         )
 
+        def _resource_fn(**_):
+            return {qml.H: 2, qml.Toffoli: 1}
+
+        @qml.register_resources(_resource_fn)
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        def rule_3(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_3, DecompositionRule)
+        assert rule_3.is_applicable(num_wires=3)
+        assert not rule_3.is_applicable(num_wires=2)
+        assert rule_3.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
     def test_inspect_decomposition_rule(self):
         """Tests that the source code for a decomposition rule can be inspected."""
 

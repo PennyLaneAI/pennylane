@@ -269,7 +269,7 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
 
         try:
             self._source = inspect.getsource(func)
-        except OSError:
+        except OSError:  # pragma: no cover
             # OSError is raised if the source code cannot be retrieved
             self._source = ""  # pragma: no cover
 
