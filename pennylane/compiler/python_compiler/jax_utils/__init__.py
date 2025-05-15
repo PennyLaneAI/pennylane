@@ -20,7 +20,11 @@ from typing import Any, Callable, TypeAlias
 import jax
 import jaxlib
 
+
+from jax.extend import mlir as jmlir  # pylint: disable=no-name-in-module
+from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
+from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 
 from xdsl.dialects import arith as xarith
 from xdsl.dialects import builtin as xbuiltin
@@ -88,9 +92,37 @@ def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:
     return moduleOp
 
 
+def parse_generic_to_jax_module(program: str) -> jModule:
+    """Parses an MLIR program in string representation to a jax Module"""
+    with jContext() as ctx:
+        ctx.allow_unregistered_dialects = True
+        jstablehlo.register_dialect(ctx)  # pylint: disable=no-member
+        return jModule.parse(program)
+
+
+def jax_from_docstring(func: Callable) -> jModule:
+    """Parses an MLIR program in string representation located in the docstring."""
+
+    @wraps(func)
+    def wrapper(*_, **__):
+        return parse_generic_to_jax_module(func.__doc__)
+
+    return wrapper
+
+
 def _xdsl_module_inline(func: JaxJittedFunction, *args, **kwargs) -> xbuiltin.ModuleOp:
     generic_repr = _generic_inline(func, *args, **kwargs)
     return parse_generic_to_xdsl_module(generic_repr)
+
+
+def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:
+    """Parses a docstring into an xdsl module"""
+
+    @wraps(func)
+    def wrapper(*_, **__):
+        return parse_generic_to_xdsl_module(func.__doc__)
+
+    return wrapper
 
 
 def xdsl_module(func: JaxJittedFunction) -> Callable[Any, xbuiltin.ModuleOp]:
