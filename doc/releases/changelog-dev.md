@@ -302,8 +302,14 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Remove or reduce excessively expensive test cases in `tests/templates/test_subroutines/` that do not add value.
+* Remove and reduce excessively expensive test cases in `tests/templates/test_subroutines/` that do not add value.
   [(#7436)](https://github.com/PennyLaneAI/pennylane/pull/7436)
+
+* Enforce `noise` module to be a tertiary layer module.
+  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
+
+* Enforce `qaoa` module to be a tertiary layer module.
+  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
 
 * Enforce `gradients` module to be an auxiliary layer module.
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
