@@ -241,8 +241,8 @@ class TestPowDecomposition:
             }
         )
 
-    def test_pow_of_self_adjoint(self):
-        """Tests the pow_of_self_adjoint decomposition."""
+    def test_pow_involutory(self):
+        """Tests the pow_involutory decomposition."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
