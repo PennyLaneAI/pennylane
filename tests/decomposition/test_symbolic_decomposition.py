@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import queuing
-from pennylane.decomposition import DecompositionNotApplicable
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -208,14 +207,12 @@ class TestPowDecomposition:
             qml.capture.disable()
 
     def test_non_integer_pow_not_applicable(self):
-        """Tests that DecompositionNotApplicable is raised when z isn't a positive integer."""
+        """Tests that is_applicable returns False when z isn't a positive integer."""
 
         op = qml.pow(qml.H(0), 0.5)
-        with pytest.raises(DecompositionNotApplicable):
-            repeat_pow_base.compute_resources(**op.resource_params)
+        assert not repeat_pow_base.is_applicable(**op.resource_params)
         op = qml.pow(qml.H(0), -1)
-        with pytest.raises(DecompositionNotApplicable):
-            repeat_pow_base.compute_resources(**op.resource_params)
+        assert not repeat_pow_base.is_applicable(**op.resource_params)
 
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
@@ -273,8 +270,7 @@ class TestPowDecomposition:
         assert pow_involutory.compute_resources(**op2.resource_params) == Resources()
         assert pow_involutory.compute_resources(**op4.resource_params) == Resources()
 
-        with pytest.raises(DecompositionNotApplicable):
-            pow_involutory.compute_resources(CustomOp, {}, z=0.5)
+        assert not pow_involutory.is_applicable(CustomOp, {}, z=0.5)
 
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
