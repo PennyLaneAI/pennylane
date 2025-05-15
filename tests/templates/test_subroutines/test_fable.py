@@ -410,4 +410,5 @@ class TestFable:
         circuit_mat = dim * qml.matrix(circuit, wire_order=range(wires))().real[:dim, :dim]
         # Test that the matrix was encoded up to a constant
         submat = circuit_mat[: input.shape[0], : input.shape[1]]
-        assert np.allclose(input * submat[0, 0] / input[0, 0], submat)
+        factors = np.divide(submat, input, out=np.zeros_like(submat), where=np.abs(input) > 1e-8)
+        assert np.allclose(input * np.max(factors), submat)
