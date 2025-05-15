@@ -791,7 +791,7 @@ def multi_qubit_decomposition(U, wires):
     r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
 
     The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
-    unitaries (:class:`~pennylane.ops.QubitUnitary`) and three multiplexers (:class:`~pennylane.templates.SelectPauliRot`)
+    unitaries (:class:`~.QubitUnitary`) and three multiplexers (:class:`~.SelectPauliRot`)
     using the cosine-sine decomposition.
     This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
 
@@ -808,7 +808,7 @@ def multi_qubit_decomposition(U, wires):
     .. code-block:: pycon
 
         >>> matrix_target = qml.matrix(qml.QFT([0,1,2]))
-        >>> ops = multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
         >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
         >>> print([op.name for op in ops])
         ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
