@@ -168,7 +168,7 @@ class Resources:
         items += f" qubit manager: {self.qubit_manager}\n"
 
         total_gates = sum(self.clean_gate_counts.values())
-        if total_gates>999:
+        if total_gates<999:
             items += f" total # gates: {total_gates}\n"
         else:
             items += f" total # gates: {Decimal(total_gates):.3E}\n"

@@ -82,7 +82,6 @@ resource_config = {
 }
 
 
-
 @singledispatch
 def get_resources(
     obj,
