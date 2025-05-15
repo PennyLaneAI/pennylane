@@ -399,7 +399,7 @@ class TestFable:
     def test_variety_of_matrix_shapes(self, input, wires):
         """Test that FABLE runs without error for a variety of input shapes."""
         dev = qml.device("default.qubit")
-        s = int(qml.math.ceil(qml.math.log2(max(*input.shape))))
+        s = int(qml.math.ceil(qml.math.log2(max(input.shape))))
         dim = 2**s
 
         @qml.qnode(dev)

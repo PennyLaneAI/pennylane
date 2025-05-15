@@ -54,7 +54,7 @@ def test_standard_validity(k, delta_sz, init_state, wires):
 
     op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
 
-    skip_diff = k > 1
+    skip_diff = len(wires) > 4
     qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
