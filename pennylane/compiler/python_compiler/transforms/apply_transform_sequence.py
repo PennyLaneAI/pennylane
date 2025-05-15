@@ -27,7 +27,7 @@ available_passes = {}
 
 def register_pass(name, _callable):
     """Registers the passes available in the dictionary"""
-    available_passes[name] = _callable
+    available_passes[name] = _callable  # pragma: no cover
 
 
 # pylint: disable=too-few-public-methods
@@ -68,4 +68,4 @@ class ApplyTransformSequence(ModulePass):
                         if isinstance(op, builtin.ModuleOp) and op.get_attr_or_prop(
                             "transform.with_named_sequence"
                         ):
-                            block.erase_op(op)
+                            block.erase_op(op)  # pragma: no cover

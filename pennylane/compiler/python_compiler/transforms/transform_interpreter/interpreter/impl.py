@@ -43,25 +43,29 @@ class TransformFunctionsExt(TransformFunctions):
     ctx: Context
     passes: dict[str, Callable[[], type[ModulePass]]]
 
-    def __init__(self, ctx: Context, passes: dict[str, Callable[[], type[ModulePass]]]):
-        self.ctx = ctx
-        self.passes = passes
+    def __init__(
+        self, ctx: Context, passes: dict[str, Callable[[], type[ModulePass]]]
+    ):  # pragma: no cover
+
+        self.ctx = ctx  # pragma: no cover
+        self.passes = passes  # pragma: no cover
 
     @impl(transform.ApplyRegisteredPassOp)
-    def run_apply_registered_pass_op(
+    def run_apply_registered_pass_op(  # pragma: no cover
         self,
         _interpreter: Interpreter,
         op: transform.ApplyRegisteredPassOp,
         args: PythonValues,
     ) -> PythonValues:
         """Try to run the pass in xDSL, if it can't run on catalyst"""
-        # pragma: no cover
-        pass_name = op.pass_name.data
+
+        pass_name = op.pass_name.data  # pragma: no cover
         requested_by_user = PipelinePass.build_pipeline_tuples(
             self.passes, parse_pipeline.parse_pipeline(pass_name)
         )
 
         try:
+            # pragma: no cover
             schedule = tuple(
                 pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user
             )
@@ -69,6 +73,7 @@ class TransformFunctionsExt(TransformFunctions):
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
         except:  # pylint: disable=bare-except
+            # pragma: no cover
             # Yes, we are importing it here because we don't want to import it
             # and have an import time dependency on catalyst.
             # This allows us to test without having a hard requirement on Catalyst

@@ -57,21 +57,19 @@ def module(func: JaxJittedFunction) -> Callable[Any, jModule]:
     return wrapper
 
 
-def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:
+def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
     """
     Create the generic textual representation for the jax.jit'ed function
     """
-    # pragma: no cover
     lowered = func.lower(*args, **kwargs)
     mod = lowered.compiler_ir()
     return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
 
-def generic(func: JaxJittedFunction) -> Callable[Any, str]:
+def generic(func: JaxJittedFunction) -> Callable[Any, str]:  # pragma: no cover
     """
     Decorator for _generic_inline.
     """
-    # pragma: no cover
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> str:
@@ -80,9 +78,8 @@ def generic(func: JaxJittedFunction) -> Callable[Any, str]:
     return wrapper
 
 
-def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:
+def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses generic MLIR program to xDSL module"""
-    # pragma: no cover
     ctx = xContext(allow_unregistered=True)
     ctx.load_dialect(xarith.Arith)
     ctx.load_dialect(xbuiltin.Builtin)
@@ -95,18 +92,16 @@ def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:
     return moduleOp
 
 
-def parse_generic_to_jax_module(program: str) -> jModule:
+def parse_generic_to_jax_module(program: str) -> jModule:  # pragma: no cover
     """Parses an MLIR program in string representation to a jax Module"""
-    # pragma: no cover
     with jContext() as ctx:
         ctx.allow_unregistered_dialects = True
         jstablehlo.register_dialect(ctx)  # pylint: disable=no-member
         return jModule.parse(program)
 
 
-def jax_from_docstring(func: Callable) -> jModule:
+def jax_from_docstring(func: Callable) -> jModule:  # pragma: no cover
     """Parses an MLIR program in string representation located in the docstring."""
-    # pragma: no cover
 
     @wraps(func)
     def wrapper(*_, **__):
@@ -115,15 +110,15 @@ def jax_from_docstring(func: Callable) -> jModule:
     return wrapper
 
 
-def _xdsl_module_inline(func: JaxJittedFunction, *args, **kwargs) -> xbuiltin.ModuleOp:
-    # pragma: no cover
+def _xdsl_module_inline(
+    func: JaxJittedFunction, *args, **kwargs
+) -> xbuiltin.ModuleOp:  # pragma: no cover
     generic_repr = _generic_inline(func, *args, **kwargs)
     return parse_generic_to_xdsl_module(generic_repr)
 
 
-def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:
+def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses a docstring into an xdsl module"""
-    # pragma: no cover
 
     @wraps(func)
     def wrapper(*_, **__):
@@ -132,11 +127,10 @@ def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:
     return wrapper
 
 
-def xdsl_module(func: JaxJittedFunction) -> Callable[Any, xbuiltin.ModuleOp]:
+def xdsl_module(func: JaxJittedFunction) -> Callable[Any, xbuiltin.ModuleOp]:  # pragma: no cover
     """
     Decorator for _xdsl_module_inline
     """
-    # pragma: no cover
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> xbuiltin.ModuleOp:

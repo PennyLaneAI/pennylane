@@ -48,8 +48,7 @@ class TransformInterpreterPass(ModulePass):
         for op in root.walk():
             if isinstance(op, transform.NamedSequenceOp) and op.sym_name.data == entry_point:
                 return op
-        # pragma: no cover
-        raise PassFailedException(
+        raise PassFailedException(  # pragma: no cover
             f"{root} could not find a nested named sequence with name: {entry_point}"
         )
 
