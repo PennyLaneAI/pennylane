@@ -20,9 +20,8 @@ import numpy as np
 
 import pennylane as qml
 
-from .decomposition_rule import DecompositionRule, register_resources
+from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
-from .utils import DecompositionNotApplicable
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -74,14 +73,9 @@ def is_integer(x):
     return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
 
 
-def _repeat_pow_base_resource(base_class, base_params, z):
-    if (not is_integer(z)) or z < 0:
-        raise DecompositionNotApplicable
-    return {resource_rep(base_class, **base_params): z}
-
-
 # pylint: disable=protected-access,unused-argument
-@register_resources(_repeat_pow_base_resource)
+@register_condition(lambda z, **__: is_integer(z) and z >= 0)
+@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
 def repeat_pow_base(*params, wires, base, z, **__):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
@@ -130,21 +124,30 @@ def flip_pow_adjoint(*params, wires, base, z, **__):
     qml.adjoint(qml.pow(base_op, z))
 
 
-def _pow_involutory_resource(base_class, base_params, z):  # pylint: disable=unused-argument
-    if (not is_integer(z)) or z < 0:
-        raise DecompositionNotApplicable
-    return {resource_rep(base_class, **base_params): z % 2}
+def make_pow_decomp_with_period(period) -> DecompositionRule:
+    """Make a decomposition rule for the power of an op that has a period."""
+
+    def _resource_fn(base_class, base_params, z):
+        z_mod_period = z % period
+        if z_mod_period == 0:
+            return {}
+        if z_mod_period == 1:
+            return {resource_rep(base_class, **base_params): 1}
+        return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
+
+    @register_condition(lambda z, **_: z % period != z)
+    @register_resources(_resource_fn)
+    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+        z_mod_period = z % period
+        if z_mod_period == 1:
+            base._unflatten(*base._flatten())
+        elif z_mod_period > 0 and z_mod_period != period:
+            qml.pow(base, z_mod_period)
+
+    return _impl
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_pow_involutory_resource)
-def pow_involutory(*params, wires, base, z, **__):
-    """Decompose the power of an involutory operator, assumes z is an integer."""
-
-    def f():
-        base._unflatten(*base._flatten())
-
-    qml.cond(z % 2 == 1, f)()
+pow_involutory = make_pow_decomp_with_period(2)
 
 
 def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument

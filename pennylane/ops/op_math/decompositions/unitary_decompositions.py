@@ -20,9 +20,8 @@ import numpy as np
 import scipy.sparse as sp
 
 from pennylane import capture, compiler, math, ops, queuing
-from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import resource_rep
-from pennylane.decomposition.utils import DecompositionNotApplicable
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
     xzx_rotation_angles,
@@ -242,11 +241,10 @@ def two_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    def _resource_fn(num_wires):
-        if num_wires != 1:
-            raise DecompositionNotApplicable
+    def _resource_fn(num_wires):  # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
+    @register_condition(lambda num_wires: num_wires == 1)
     @register_resources(_resource_fn)
     def _impl(U, wires, **__):
         if sp.issparse(U):
@@ -709,11 +707,8 @@ def _decompose_3_cnots(U, wires, initial_phase):
     return math.cast_like(-np.pi / 4, initial_phase)
 
 
-def _two_qubit_resource(num_wires):
+def _two_qubit_resource(**_):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    if num_wires != 2:
-        raise DecompositionNotApplicable
-    # Assume the 3-CNOT case.
     return {
         resource_rep(ops.QubitUnitary, num_wires=1): 4,
         ops.CNOT: 3,
@@ -726,6 +721,7 @@ def _two_qubit_resource(num_wires):
     }
 
 
+@register_condition(lambda num_wires: num_wires == 2)
 @register_resources(_two_qubit_resource)
 def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
