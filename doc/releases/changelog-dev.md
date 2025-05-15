@@ -184,6 +184,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
+  into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
+  decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
+  that contains fewer gates than the previous decomposition.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
 
@@ -269,11 +275,17 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` function is now available
-  in :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`.
-  It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
-  It is important for CNOT routing algorithms and other quantum compilation routines.
+
+* A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
+  provides functionality to compute intermediate representations for particular circuits.
+  :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` computes
+  the parity matrix intermediate representation for CNOT circuits.
+  :func:`phase_polynomial <pennylane.labs.intermediate_reps.phase_polynomial>` computes
+  the phase polynomial intermediate representation for {CNOT, RZ} circuits.
+  These efficient intermediate representations are important
+  for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+  [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
 
 <h3>Breaking changes 💔</h3>
