@@ -102,6 +102,7 @@
   decomposition rule for when it is applicable. The condition should be a function that takes the
   resource parameters of an operator as arguments and returns `True` or `False` based on whether
   these parameters satisfy the condition for when this rule can be applied.
+  [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)
 
   ```python
   import pennylane as qml

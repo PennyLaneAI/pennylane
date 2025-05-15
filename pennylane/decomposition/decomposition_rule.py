@@ -39,7 +39,7 @@ def register_condition(
 
         This function is only relevant when the new experimental graph-based decomposition system
         (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        performing decompositions is generally more resource-efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
         declares its required resources using ``qml.register_resources``.
