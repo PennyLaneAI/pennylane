@@ -162,6 +162,56 @@ class QasmInterpreter(QASMVisitor):
         self.construct_qnode(context)
         return context
 
+    def branching_statement(self, node: QASMNode, context: dict):
+        """
+        Registers a branching statement. Like switches, uses qml.cond.
+        """
+        self._init_branches_scope(node, context)
+        self._init_gates_list(context)
+
+        # create the true body context
+        context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"] = {
+            "vars": context["vars"] if "vars" in context else None,
+            "wires": context["wires"] if "wires" in context else None,
+            "name": f'{context["name"]}_branch_{node.span.start_line}_true_body',
+        }
+
+        # process the true body
+        self.visit(
+            node.if_block,
+            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]
+        )
+
+        if hasattr(node, "else_block"):
+
+            # create the false body context
+            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] = {
+                "vars": context["vars"] if "vars" in context else None,
+                "wires": context["wires"] if "wires" in context else None,
+                "name": f'{context["name"]}_branch_{node.span.start_line}_false_body',
+            }
+
+            # process the false body
+            self.visit(
+                node.else_block,
+                context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]
+            )
+
+        def branch():
+            cond(
+                self.eval_expr(node.condition, context),
+                lambda: [
+                    gate() for gate in
+                    context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]["gates"]
+                ],
+                lambda: [
+                    gate() for gate in
+                    context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]["gates"]
+                ] if "false_body" in context["scopes"]["branches"][f"branch_{node.span.start_line}"] else None,
+            )()
+
+        context["gates"].append(branch)
+
     def switch_statement(self, node: QASMNode, context: dict):
         """
         Registers a switch statement.
@@ -260,7 +310,7 @@ class QasmInterpreter(QASMVisitor):
         res = None
         if isinstance(node, Cast):
             return self.retrieve_variable(node.argument.name, context)["val"]
-        if isinstance(node, BinaryExpression):
+        elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
             res = eval(f'{lhs}{node.op.name}{rhs}')
@@ -278,9 +328,15 @@ class QasmInterpreter(QASMVisitor):
                 #     ret = ret[node.index[0].start: node.index[0].end: node.index[0].step]
                 # return ret
             res = alias
+        elif isinstance(node, Identifier):
+            try:
+                return self.retrieve_variable(node.name, context)["val"]
+            except NameError:
+                # TODO: make a warning
+                print(f"Reference to an undeclared variable {node.name} in {context['name']}.")
         elif re.search('Literal', node.__class__.__name__):
             res = node.value
-        # TODO: include all other cases here, such as references to vars in the current scope (Identifier)
+        # TODO: include all other cases here
         return res
 
     def _init_aliases(self, context: dict):
@@ -302,6 +358,19 @@ class QasmInterpreter(QASMVisitor):
             context["scopes"]["switches"] = dict()
 
         context["scopes"]["switches"][f"switch_{node.span.start_line}"] = dict()
+
+    def _init_branches_scope(self, node: QASMNode, context: dict):
+        """
+        Inits the branches scope on the current context.
+        """
+        if not "scopes" in context:
+            context["scopes"] = {
+                "branches": dict()
+            }
+        elif "branches" not in context["scopes"]:
+            context["scopes"]["branches"] = dict()
+
+        context["scopes"]["branches"][f"branch_{node.span.start_line}"] = dict()
 
     def _init_gates_list(self, context: dict):
         """
@@ -355,7 +424,7 @@ class QasmInterpreter(QASMVisitor):
 
     def while_loop(self, node: QASMNode, context: dict):
         """
-        Registers a while loop.
+        Registers a while loop. TODO: break and continue
         """
         self._init_gates_list(context)
         self._init_loops_scope(node, context)
@@ -379,7 +448,7 @@ class QasmInterpreter(QASMVisitor):
 
     def for_in_loop(self, node: QASMNode, context: dict):
         """
-        Registers a for loop.
+        Registers a for loop.  TODO: break and continue
         """
         self._init_gates_list(context)
         self._init_loops_scope(node, context)
@@ -534,7 +603,7 @@ class QasmInterpreter(QASMVisitor):
             contexts = curr["scopes"]
             for context_type, typed_contexts in contexts.items():
                 for typed_context_name, typed_context in typed_contexts.items():
-                    if context_type != "switches":
+                    if context_type != "switches" and context_type != "branches":
                         wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
                                   for w in contexts[context_type][typed_context_name]["wires"]]
                         wires = self._get_wires_helper(typed_context, wires)

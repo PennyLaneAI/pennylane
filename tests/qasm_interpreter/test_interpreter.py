@@ -82,3 +82,21 @@ class TestInterpreter:
         assert y.call_count == 0
         assert z.call_count == 0
         assert rx.call_count == 0
+
+    def test_if_else(self, mocker):
+
+        # parse the QASM program
+        ast = parse(open('if_else.qasm', mode='r').read(), permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"name": "if_else"})
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+
+        # execute the QNode
+        context["qnode"].func()
+
+        assert x.call_count == 1
+        assert y.call_count == 1
+        assert z.call_count == 0
