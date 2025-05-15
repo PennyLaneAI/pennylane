@@ -4,7 +4,7 @@ from functools import partial
 from typing import Callable, Iterable
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop
+    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 from pennylane import (
@@ -122,12 +122,18 @@ class QasmInterpreter(QASMVisitor):
 
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
+            InterruptedError: When a QASM program is terminated by an end instruction.
         """
         # CamelCase -> snake_case
         handler_name = re.sub(r'(?<!^)(?=[A-Z])', '_', node.__class__.__name__).lower()
         if node.__class__ == list:
             for sub_node in node:
                 self.visit(sub_node, context)
+        elif node.__class__ == EndStatement:
+            raise InterruptedError(
+                f"The QASM program was terminated om line {node.span.start_line}."
+                f"There may be unprocessed QASM code."
+            )
         elif hasattr(self, handler_name):
             getattr(self, handler_name)(node, context)
         else:
@@ -149,7 +155,10 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
                 with a list of Callables that are queued into it.
         """
-        super().generic_visit(node, context)
+        try:
+            super().generic_visit(node, context)
+        except InterruptedError as e:
+            print(str(e))
         self.construct_qnode(context)
         return context
 
@@ -564,7 +573,7 @@ class QasmInterpreter(QASMVisitor):
     def qubit_declaration(node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
-        in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
+        in context["wires"]. TODO track whether a qubit was declared or just referenced in each scope.
 
         Args:
             node (QASMNode): The QubitDeclaration QASMNode.
