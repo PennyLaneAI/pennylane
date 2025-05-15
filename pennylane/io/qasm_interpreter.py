@@ -4,7 +4,7 @@ from functools import partial
 from typing import Callable, Iterable
 
 from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement
+    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement, FunctionCall
 from openqasm3.visitor import QASMVisitor, QASMNode
 
 from pennylane import (
@@ -161,6 +161,23 @@ class QasmInterpreter(QASMVisitor):
             print(str(e))
         self.construct_qnode(context)
         return context
+
+    def classical_assignment(self, node: QASMNode, context: dict):
+        """
+        Registers a classical assignment.
+        """
+        rhs = partial(self.eval_expr, node.rvalue, context)
+
+        def set_local_var():
+            name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
+            res = rhs()
+            context["vars"][name]["val"] = res
+            context["vars"][name]["line"] = node.span.start_line
+
+        # references to an unresolved value see a func for now
+        name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
+        context["vars"][name]["val"] = set_local_var
+        context["gates"].append(set_local_var)
 
     def branching_statement(self, node: QASMNode, context: dict):
         """
@@ -341,22 +358,66 @@ class QasmInterpreter(QASMVisitor):
             except NameError:
                 # TODO: make a warning
                 print(f"Reference to an undeclared variable {node.name} in {context['name']}.")
+        elif isinstance(node, FunctionCall):
+            # TODO: make subroutines from outer scopes available
+            if "scopes" in context and "subroutines" in context["scopes"] or \
+                    "outer_scopes" in context and "subroutines" in context["outer_scopes"]:
+                name = node.name if isinstance(node.name, str) else node.name.name  # str or Identifier
+                if (("scopes" in context and name not in context["scopes"]["subroutines"]) or
+                        ("outer_scopes" in context and name not in context["outer_scopes"]["subroutines"])):
+                    # TODO: make a warning
+                    print(f"Reference to an undeclared subroutine {name} in {context['name']}.")
+                else:
+                    if "scopes" in context and name in context["scopes"]["subroutines"]:
+                        func_context = context["scopes"]["subroutines"][name]
+                    else:
+                        func_context = context["outer_scopes"]["subroutines"][name]
+
+                    # bind subroutine arguments
+                    for arg in node.arguments:
+                        self._init_vars(func_context)
+                        evald_arg = self.eval_expr(arg, context)
+                        # TODO: maybe we want to have a class for classical and a class for quantum paramters
+                        if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                            func_context["vars"][arg.name] = evald_arg
+
+                    # execute the subroutine
+                    [gate() for gate in func_context["gates"]]
+
+                    # the return value
+                    return self.retrieve_variable(func_context["return"], func_context)
+
         elif re.search('Literal', node.__class__.__name__):
             res = node.value
         # TODO: include all other cases here
         return res
 
     def _init_clause_in_same_namespace(self, outer_context: dict, name: str):
+        # we want wires declared in outer scopes to be available
         outer_wires = outer_context["wires"] if "wires" in outer_context else None
         if "outer_wires" in outer_context:
             outer_wires = outer_context["outer_wires"]
         context = {
-                "vars": outer_context["vars"]  if "vars" in outer_context else None,
+                "vars": outer_context["vars"]  if "vars" in outer_context else None,  # same namespace
                 "outer_wires": outer_wires,
                 "wires": [],
                 "name": name
         }
+        # we want subroutines declared in outer scopes to be available
+        if "scopes" in outer_context and "subroutines" in outer_context["scopes"]:
+            context["outer_scopes"] = {
+                # no recursion here please! hence the filter
+                "subroutines": {k: v for k, v in outer_context["scopes"]["subroutines"].items() if k != name}
+            }
+
         return context
+
+    def _init_vars(self, context: dict):
+        """
+        Inits the vars dict on the current context.
+        """
+        if "vars" not in context:
+            context["vars"] = dict()
 
     def _init_aliases(self, context: dict):
         """
@@ -448,22 +509,22 @@ class QasmInterpreter(QASMVisitor):
         self._init_gates_list(context)
         self._init_loops_scope(node, context)
 
-        @while_loop(partial(self.eval_expr, node.while_condition, context))  # traces data dep through context
-        def loop(context):
+        @while_loop(partial(self.eval_expr, node.while_condition))  # traces data dep through context
+        def loop(loop_context):
             # we don't want to populate the gates again with every call to visit
-            context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
+            loop_context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
             # process loop body...
             inner_context = self.visit(
                 node.block,
-                context["scopes"]["loops"][f"while_{node.span.start_line}"]
+                loop_context["scopes"]["loops"][f"while_{node.span.start_line}"]
             )
             for gate in inner_context["gates"]:
                 gate()  # updates vars in context... need to propagate these to outer scope
-            context["vals"] = inner_context["vals"] if "vals" in inner_context else None
-            context["wires"] += inner_context["wires"] if "wires" in inner_context else None
-            return context
+            loop_context["vars"] = inner_context["vars"] if "vars" in inner_context else None
+            loop_context["wires"] += inner_context["wires"] if "wires" in inner_context else None
+            return loop_context
 
-        context["gates"].append(loop)
+        context["gates"].append(partial(loop, context))
 
     def for_in_loop(self, node: QASMNode, context: dict):
         """
@@ -499,7 +560,7 @@ class QasmInterpreter(QASMVisitor):
                 )
                 for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
                     gate()  # updates vars in sub context... need to propagate these to outer context
-                context["vals"] = inner_context["vals"] if "vals" in inner_context else None
+                context["vars"] = inner_context["vars"] if "vars" in inner_context else None
                 context["wires"] += inner_context["wires"] if "wires" in inner_context else None
                 return context
 
@@ -683,8 +744,7 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The ClassicalDeclaration QASMNode.
             context (dict): The current context.
         """
-        if "vars" not in context:
-            context["vars"] = {}
+        self._init_vars(context)
         if node.init_expression is not None:
             # TODO: store AST objects in context instead of these objects?
             if isinstance(node.init_expression, BitstringLiteral):
