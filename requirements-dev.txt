@@ -12,7 +12,7 @@ pytest-split
 black>=21
 tomlkit~=0.13
 isort==5.13.2
-pylint==2.7.4
+pylint
 rich>=13.7.1
 tach==0.28.5
 build
