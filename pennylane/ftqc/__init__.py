@@ -41,7 +41,8 @@ from .conditional_measure import cond_measure
 from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
-from .utils import QubitMgr, pauli_encode_xz, pauli_prod_to_xz
+from .utils import QubitMgr
+from .pauli_tracker import pauli_encode_xz, pauli_prod_to_xz
 
 __all__ = [
     "GraphStatePrep",

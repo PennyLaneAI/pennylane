@@ -17,10 +17,6 @@ This module contains utility data-structures and algorithms supporting functiona
 ftqc module.
 """
 from threading import RLock
-from typing import List, Tuple
-
-import pennylane as qml
-from pennylane import numpy as np
 
 
 class QubitMgr:
@@ -231,58 +227,3 @@ class QubitMgr:
                 raise RuntimeError(
                     f"Qubit index {idx} not found in inactive set. Execution aborted."
                 )
-
-
-_ENCODE_XZ_OPS = {
-    qml.I: (0, 0),
-    qml.X: (1, 0),
-    qml.Y: (1, 1),
-    qml.Z: (0, 1),
-}
-
-_paulis = frozenset({qml.X, qml.Y, qml.Z, qml.I})
-
-
-def pauli_encode_xz(op: qml.operation.Operator) -> Tuple[np.uint8, np.uint8]:
-    """
-    Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
-    :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
-    the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
-    :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
-
-    Args:
-        op (qml.operation.Operator): A Pauli operator.
-
-    Return:
-        A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
-    the :class:`~pennylane.Z`.
-    """
-
-    if op in _paulis:
-        return _ENCODE_XZ_OPS[op]
-    raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
-
-
-def pauli_prod_to_xz(ops: List[qml.operation.Operator]) -> Tuple[np.uint8, np.uint8]:
-    """
-    Get the result of a product of list of Pauli operators. The result is encoded with `xz` representation.
-
-    Args:
-        ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
-
-    Return:
-        A tuple of `xz` encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
-    the :class:`~pennylane.Z`.
-    """
-
-    if len(ops) == 0:
-        raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-
-    res_x, res_z = pauli_encode_xz(ops.pop())
-
-    while len(ops) > 0:
-        op_x, op_z = pauli_encode_xz(ops.pop())
-        res_x ^= op_x
-        res_z ^= op_z
-
-    return (res_x, res_z)
