@@ -17,6 +17,12 @@
 import jax
 import pytest
 
+# pylint: disable=wrong-import-position
+
+xdsl = pytest.importorskip("xdsl")
+
+pytestmark = pytest.mark.external
+
 from pennylane.compiler.python_compiler.impl import Compiler
 from pennylane.compiler.python_compiler.jax_utils import module
 
