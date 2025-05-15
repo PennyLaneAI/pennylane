@@ -247,8 +247,6 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     @register_condition(lambda num_wires: num_wires == 1)
     @register_resources(_resource_fn)
     def _impl(U, wires, **__):
-        if sp.issparse(U):
-            U = U.todense()
         U, global_phase = math.convert_to_su2(U, return_global_phase=True)
         su2_rule(U, wires=wires)
         ops.cond(math.logical_not(math.allclose(global_phase, 0)), _global_phase)(global_phase)
