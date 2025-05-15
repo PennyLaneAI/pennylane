@@ -314,7 +314,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Enforce submodules of `templates` to be tertiary modules.
+* Enforce subset of submodules of `templates` to be auxiliary modules.
   [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
 
 * Enforce `noise` module to be a tertiary layer module.
