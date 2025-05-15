@@ -10,7 +10,7 @@ class TestInterpreter:
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(open("gates.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/gates.qasm", mode="r").read(), permissive=True)
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
 
         # setup mocks
