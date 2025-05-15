@@ -15,7 +15,7 @@
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.ops import RX, RY, RZ
 
 from .qng import _flatten_np, _unflatten_np
 
@@ -93,7 +93,7 @@ class RotoselectOptimizer:
     # pylint: disable=too-few-public-methods
 
     def __init__(self, possible_generators=None):
-        self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
+        self.possible_generators = possible_generators or [RX, RY, RZ]
 
     def step_and_cost(self, objective_fn, x, generators, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding
