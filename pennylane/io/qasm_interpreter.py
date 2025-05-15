@@ -28,7 +28,6 @@ from pennylane import (
     PauliY,
     PauliZ,
     PhaseShift,
-    QNode,
     S,
     T,
     Toffoli,
@@ -49,7 +48,7 @@ SINGLE_QUBIT_GATES = {
     "SX": SX,
 }
 
-PARAMETERIZED_SIGNLE_QUBIT_GATES = {
+PARAMETERIZED_SINGLE_QUBIT_GATES = {
     "RX": RX,
     "RY": RY,
     "RZ": RZ,
@@ -65,17 +64,20 @@ TWO_QUBIT_GATES = {
     "CY": CY,
     "CZ": CZ,
     "CH": CH,
-    "SWAP": SWAP,
-    "CSWAP": CSWAP,
+    "SWAP": SWAP
+}
+
+PARAMETERIZED_TWO_QUBIT_GATES = {
     "CP": CPhase,
     "CPHASE": CPhase,
     "CRX": CRX,
     "CRY": CRY,
-    "CRZ": CRZ,
+    "CRZ": CRZ
 }
 
 MULTI_QUBIT_GATES = {
     "CCX": Toffoli,
+    "CSWAP": CSWAP,
 }
 
 
@@ -214,10 +216,12 @@ class QasmInterpreter(QASMVisitor):
             context["gates"] = []
         if node.name.name.upper() in SINGLE_QUBIT_GATES:
             gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_SIGNLE_QUBIT_GATES:
-            gate = self.param_single_qubit_gate(node, context)
+        elif node.name.name.upper() in PARAMETERIZED_SINGLE_QUBIT_GATES:
+            gate = self.parameterized_gate(PARAMETERIZED_SINGLE_QUBIT_GATES, node, context)
         elif node.name.name.upper() in TWO_QUBIT_GATES:
             gate = self.non_parameterized_gate(TWO_QUBIT_GATES, node, context)
+        elif node.name.name.upper() in PARAMETERIZED_TWO_QUBIT_GATES:
+            gate = self.parameterized_gate(PARAMETERIZED_TWO_QUBIT_GATES, node, context)
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
@@ -276,10 +280,10 @@ class QasmInterpreter(QASMVisitor):
         return call
 
     @staticmethod
-    def param_single_qubit_gate(node: QASMNode, context: dict):
+    def parameterized_gate(gates_dict: dict, node: QASMNode, context: dict):
         """
-        Registers a parameterized single qubit gate application. Builds a Callable partial
-        that can be executed when the QNode is called. The gate will be executed aat that time
+        Registers a parameterized gate application. Builds a Callable partial
+        that can be executed when the QNode is called. The gate will be executed at that time
         with the appropriate arguments.
 
         Args:
@@ -307,9 +311,16 @@ class QasmInterpreter(QASMVisitor):
                     f"encountered in QASM."
                 )
         return partial(
-            PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
+            gates_dict[node.name.name.upper()],
             *args,
-            wires=[context["wires"].index(node.qubits[0].name)],
+            wires=[
+                context["wires"].index(
+                    node.qubits[q].name
+                    if isinstance(node.qubits[q].name, str)
+                    else node.qubits[q].name.name
+                )
+                for q in range(len(node.qubits))
+            ],
         )
 
     @staticmethod
