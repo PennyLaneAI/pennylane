@@ -85,9 +85,7 @@ class TestRademacherSampler:
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
 
-    @pytest.mark.parametrize(
-        "ids, num", [([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
-    )
+    @pytest.mark.parametrize("ids, num", [([0, 2, 4], 5), ([0], 1), ([2, 3], 5)])
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
@@ -105,10 +103,10 @@ class TestRademacherSampler:
         # Test that the variance of zero entries is exactly 0, because all entries are the same
         assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
-    @pytest.mark.xfail(reason="This test failed after rng salt updated to 0.41.0 https://github.com/PennyLaneAI/pennylane/pull/7306. Further investigation required.")
-    @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5)]
+    @pytest.mark.xfail(
+        reason="This test failed after rng salt updated to 0.41.0 https://github.com/PennyLaneAI/pennylane/pull/7306. Further investigation required."
     )
+    @pytest.mark.parametrize("ids, num", [(list(range(5)), 5)])
     @pytest.mark.parametrize("N", [10000])
     def test_mean_and_var_suspicious(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
