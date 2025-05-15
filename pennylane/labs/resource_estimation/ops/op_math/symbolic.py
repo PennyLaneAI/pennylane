@@ -536,7 +536,7 @@ class ResourceControlled(ResourceOperator):
                     c_gate = cls.resource_rep(
                         gate.op_type, gate.params, num_ctrl_wires, 0
                     )
-                    gate_lst.append(c_gate, action.count)
+                    gate_lst.append(GateCount(c_gate, action.count))
 
                 else:
                     gate_lst.append(action)

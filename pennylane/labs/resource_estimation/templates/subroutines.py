@@ -18,6 +18,9 @@ from typing import Dict
 
 import pennylane as qml
 from pennylane import numpy as qnp
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
+
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 from pennylane.labs.resource_estimation.resource_operator import (
@@ -827,7 +830,7 @@ class ResourceModExp(qml.ModExp, ResourceOperator):
         )
 
 
-class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
+class ResourceQuantumPhaseEstimation(ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
@@ -863,9 +866,30 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
     """
 
+    def __init__(self, U: ResourceOperator, precision, wires=None):
+        self.queue(remove_op=U)
+        base_op = U.resource_rep_from_op()
+
+        self.base_op = base_op
+        self.estimation_wires = abs(math.floor(math.log2(precision)))
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+            self.num_wires = self.estimation_wires + U.num_wires
+
+    def queue(self, remove_op=None, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        if remove_op:
+            context.remove(remove_op)
+        context.append(self)
+        return self
+
     @staticmethod
     def _resource_decomp(
-        base_class, base_params, num_estimation_wires, **kwargs
+        base_op, num_estimation_wires, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -882,17 +906,15 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
             in (section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
             Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
         """
-        gate_types = {}
-
         hadamard = re.ResourceHadamard.resource_rep()
         adj_qft = re.ResourceAdjoint.resource_rep(ResourceQFT, {"num_wires": num_estimation_wires})
-        ctrl_op = re.ResourceControlled.resource_rep(base_class, base_params, 1, 0)
+        ctrl_op = re.ResourceControlled.resource_rep(base_op.op_type, base_op.params, 1, 0)
 
-        gate_types[hadamard] = num_estimation_wires
-        gate_types[adj_qft] = 1
-        gate_types[ctrl_op] = (2**num_estimation_wires) - 1
-
-        return gate_types
+        return [
+            GateCount(hadamard, num_estimation_wires),
+            GateCount(ctrl_op, (2**num_estimation_wires) - 1),
+            GateCount(adj_qft, 1),
+        ]
 
     @property
     def resource_params(self) -> dict:
@@ -904,26 +926,16 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
                 * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
         """
-        op = self.hyperparameters["unitary"]
-        num_estimation_wires = len(self.hyperparameters["estimation_wires"])
-
-        if not isinstance(op, ResourceOperator):
-            raise TypeError(
-                f"Can't obtain QPE resources when the base unitary {op} isn't an instance"
-                " of ResourceOperator"
-            )
 
         return {
-            "base_class": type(op),
-            "base_params": op.resource_params,
-            "num_estimation_wires": num_estimation_wires,
+            "base_op": self.base_op,
+            "num_estimation_wires": self.estimation_wires,
         }
 
     @classmethod
     def resource_rep(
         cls,
-        base_class,
-        base_params,
+        base_op,
         num_estimation_wires,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -940,16 +952,15 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {
-            "base_class": base_class,
-            "base_params": base_params,
+            "base_op": base_op,
             "num_estimation_wires": num_estimation_wires,
         }
         return CompressedResourceOp(cls, params)
 
     @staticmethod
-    def tracking_name(base_class, base_params, num_estimation_wires) -> str:
+    def tracking_name(base_op, num_estimation_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_class.tracking_name(**base_params)
+        base_name = base_op.op_type.tracking_name(**base_op.params)
         return f"QPE({base_name}, {num_estimation_wires})"
 
 

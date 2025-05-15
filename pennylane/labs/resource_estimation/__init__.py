@@ -187,7 +187,7 @@ from .resource_container import (
     mul_in_parallel,
 )
 
-from .resource_tracking import DefaultGateSet, get_resources, resource_config, new_get_resources
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 
 from .ops import (

@@ -22,15 +22,16 @@ import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import ResourceExp, ResourcesNotDefined
 from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
-from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount
 from pennylane.templates import TrotterProduct
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+from pennylane.wires import Wires
+from pennylane.queuing import QueuingManager
 
 # pylint: disable=arguments-differ
 
 
-class ResourceTrotterProduct(
-    TrotterProduct, ResourceOperator
+class ResourceTrotterProduct(ResourceOperator
 ):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
@@ -99,6 +100,28 @@ class ResourceTrotterProduct(
 
     """
 
+    def __init__(self, fragments, n, order, wires=None):
+        self.queue(fragments)
+
+        self.n = n
+        self.order = order
+        self.cmpr_fragments = tuple(op.resource_rep_from_op() for op in fragments)
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+            self.num_wires = max(op.num_wires for op in fragments)
+
+    def queue(self, remove_fragments=None, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        if remove_fragments:
+            for op in remove_fragments:
+                context.remove(op)
+        context.append(self)
+        return self
+
     @staticmethod
     def _resource_decomp(
         n, order, first_order_expansion, **kwargs
@@ -160,24 +183,24 @@ class ResourceTrotterProduct(
 
         """
         k = order // 2
-        gate_types = defaultdict(int, {})
+        gate_list = []
 
         if order == 1:
             for cp_rep in first_order_expansion:
-                gate_types[cp_rep] += n
-            return gate_types
+                gate_list.append(GateCount(cp_rep, n))
+            return gate_list
 
         cp_rep_first = first_order_expansion[0]
         cp_rep_last = first_order_expansion[-1]
         cp_rep_rest = first_order_expansion[1:-1]
 
         for cp_rep in cp_rep_rest:
-            gate_types[cp_rep] += 2 * n * (5 ** (k - 1))
+            gate_list.append(GateCount(cp_rep, 2 * n * (5 ** (k - 1))))
 
-        gate_types[cp_rep_first] += n * (5 ** (k - 1)) + 1
-        gate_types[cp_rep_last] += n * (5 ** (k - 1))
+        gate_list.append(GateCount(cp_rep_first, n * (5 ** (k - 1)) + 1))
+        gate_list.append(GateCount(cp_rep_last, n * (5 ** (k - 1))))
 
-        return gate_types
+        return gate_list
 
     @property
     def resource_params(self) -> dict:
@@ -189,23 +212,10 @@ class ResourceTrotterProduct(
                 * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
                 * first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
         """
-        n = self.hyperparameters["n"]
-        base = self.hyperparameters["base"]
-        order = self.hyperparameters["order"]
-
-        first_order_expansion = [
-            ResourceExp.resource_rep(
-                **re.ops.op_math.symbolic._extract_exp_params(  # pylint: disable=protected-access
-                    op, scalar=1j, num_steps=1
-                )
-            )
-            for op in base.operands
-        ]
-
         return {
-            "n": n,
-            "order": order,
-            "first_order_expansion": first_order_expansion,
+            "n": self.n,
+            "order": self.order,
+            "first_order_expansion": self.cmpr_fragments,
         }
 
     @classmethod
