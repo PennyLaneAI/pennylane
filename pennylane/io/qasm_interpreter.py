@@ -147,7 +147,11 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
         if "device" not in context:
-            context["device"] = device("default.qubit", wires=len(context["wires"]))
+            if "device_type" not in context:
+                ty = "default.qubit"
+            else:
+                ty = context["device_type"]
+            context["device"] = device(ty, wires=len(context["wires"]))
         context["callable"] = lambda: [gate() for gate in context["gates"]]
 
     @staticmethod

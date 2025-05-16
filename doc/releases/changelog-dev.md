@@ -4,7 +4,29 @@
 
 <h3>New features since last release</h3>
 
-* [WIP] Can queue some basic series of QASM gates into a QNode. Not a complete implementation.
+* A new function :func:`~.from_qasm_three` is provided that allows very simple circuits composed of series of basic
+  gate applications to be converted into callables that may be loaded into QNodes and executed. Most QASM 3.0 features
+  are not yet supported. [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+
+  ```python
+  import pennylane as qml
+
+  func, device = qml.io.from_qasm_three("""
+      qubit q0;
+      qubit q1;
+      float theta = 0.5;
+      x q0;
+      cx q0, q1;
+      rx(theta) q0;
+      ry(0.2) q0;
+      inv @ rx(theta) q0;
+      pow(2) @ x q0;
+      ctrl @ x q1, q0;
+      """
+  )
+  
+  qml.QNode(func, device)
+  ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
