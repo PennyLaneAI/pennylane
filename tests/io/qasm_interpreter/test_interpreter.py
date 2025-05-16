@@ -45,7 +45,10 @@ class TestInterpreter:
             permissive=True,
         )
 
-        with pytest.raises(NameError, match="Attempt to reference wires that have not been declared in uninit-qubit"):
+        with pytest.raises(
+            NameError,
+            match="Attempt to reference wires that have not been declared in uninit-qubit",
+        ):
             QasmInterpreter().generic_visit(ast, context={"name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
@@ -74,9 +77,10 @@ class TestInterpreter:
             permissive=True,
         )
 
-        with pytest.raises(TypeError, match="Missing required argument\(s\) for parameterized gate rx"):
+        with pytest.raises(
+            TypeError, match="Missing required argument\(s\) for parameterized gate rx"
+        ):
             QasmInterpreter().generic_visit(ast, context={"name": "missing-param"})
-
 
     def test_uninitialized_var(self):
         # parse the QASM program
@@ -194,9 +198,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "param-two-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
@@ -233,9 +235,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "multi-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
@@ -270,9 +270,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "param-single-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         # setup mocks
 
@@ -331,9 +329,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "single-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 

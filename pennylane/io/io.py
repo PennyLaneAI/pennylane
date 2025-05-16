@@ -27,6 +27,7 @@ from pennylane.wires import WiresLike
 has_openqasm = True
 try:
     from openqasm3.parser import parse
+
     from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
