@@ -283,6 +283,7 @@ class QasmInterpreter(QASMVisitor):
         Registers a parameterized gate application. Builds a Callable partial
         that can be executed when the QNode is called. The gate will be executed at that time
         with the appropriate arguments.
+        TODO: a robust method for retrieving vars from context will be provided in follow-up PR according to [sc-90383]
 
         Args:
             node (QASMNode): The QuantumGate QASMNode.
