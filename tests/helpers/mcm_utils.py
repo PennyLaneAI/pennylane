@@ -86,7 +86,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
     np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
 
 
-def validate_expval(shots, results1, results2, batch_size=None):
+def validate_expval(shots, results1, results2, batch_size=None, atol=0.01):
     """Compares two expval, probs or var.
 
     If the results are ``Sequence``s, validate the average of items.
@@ -112,10 +112,11 @@ def validate_expval(shots, results1, results2, batch_size=None):
         for r1, r2 in zip(results1, results2):
             validate_expval(shots, r1, r2, batch_size=None)
 
-    assert np.allclose(results1, results2, atol=0.01, rtol=0.2)
+    assert np.allclose(results1, results2, atol=atol, rtol=0.2)
 
 
-def validate_measurements(func, shots, results1, results2, batch_size=None):
+# pylint: disable=too-many-arguments
+def validate_measurements(func, shots, results1, results2, batch_size=None, atol=0.01):
     """Calls the correct validation function based on measurement type."""
     if func is qml.counts:
         validate_counts(shots, results1, results2, batch_size=batch_size)
@@ -125,4 +126,4 @@ def validate_measurements(func, shots, results1, results2, batch_size=None):
         validate_samples(shots, results1, results2, batch_size=batch_size)
         return
 
-    validate_expval(shots, results1, results2, batch_size=batch_size)
+    validate_expval(shots, results1, results2, batch_size=batch_size, atol=atol)
