@@ -229,6 +229,7 @@ class TestFromOpenQasm:
         parse.assert_called_with(circuit, permissive=True)
         visit.assert_called_once()
 
+
 class TestToOpenQasm:
     """Test the qml.to_openqasm function."""
 
