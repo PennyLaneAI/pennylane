@@ -3,11 +3,21 @@ import re
 from functools import partial
 from typing import Callable, Iterable
 
-from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-    ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement, FunctionCall
-from openqasm3.visitor import QASMVisitor, QASMNode
+from pennylane.measurements import measure
 
-from pennylane import (
+from pennylane import wires
+from pennylane.control_flow import for_loop, while_loop
+
+has_openqasm = True
+try:
+    from openqasm3.visitor import QASMNode, QASMVisitor
+    from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
+        ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement, \
+        FunctionCall
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
+
+from pennylane.ops import (
     CH,
     CNOT,
     CRX,
@@ -31,19 +41,13 @@ from pennylane import (
     PauliY,
     PauliZ,
     PhaseShift,
-    QNode,
     S,
     T,
     Toffoli,
-    device,
-    while_loop,
-    for_loop,
-    wires,
     ctrl,
     adjoint,
     pow,
-    measure,
-    cond
+    cond,
 )
 
 SINGLE_QUBIT_GATES = {
@@ -57,7 +61,7 @@ SINGLE_QUBIT_GATES = {
     "SX": SX,
 }
 
-PARAMETERIZED_SIGNLE_QUBIT_GATES = {
+PARAMETERIZED_SINGLE_QUBIT_GATES = {
     "RX": RX,
     "RY": RY,
     "RZ": RZ,
@@ -68,22 +72,13 @@ PARAMETERIZED_SIGNLE_QUBIT_GATES = {
     "U3": U3,
 }
 
-TWO_QUBIT_GATES = {
-    "CX": CNOT,
-    "CY": CY,
-    "CZ": CZ,
-    "CH": CH,
-    "SWAP": SWAP,
-    "CSWAP": CSWAP,
-    "CP": CPhase,
-    "CPHASE": CPhase,
-    "CRX": CRX,
-    "CRY": CRY,
-    "CRZ": CRZ,
-}
+TWO_QUBIT_GATES = {"CX": CNOT, "CY": CY, "CZ": CZ, "CH": CH, "SWAP": SWAP}
+
+PARAMETERIZED_TWO_QUBIT_GATES = {"CP": CPhase, "CPHASE": CPhase, "CRX": CRX, "CRY": CRY, "CRZ": CRZ}
 
 MULTI_QUBIT_GATES = {
     "CCX": Toffoli,
+    "CSWAP": CSWAP,
 }
 
 
@@ -107,6 +102,20 @@ class QasmInterpreter(QASMVisitor):
     values are dirty.
     """
 
+    def __init__(self, permissive=False):
+        """
+        Initializes a QASMInterpreter.
+
+        Args:
+            permissive (bool): whether to continue interpreting if an unsuppported node type is encountered.
+        """
+        if not has_openqasm:
+            raise ImportError("QASM interpreter requires openqasm3 to be installed")
+        else:
+            super().__init__()
+
+        self.permissive = permissive
+
     def visit(self, node: QASMNode, context: dict):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
@@ -128,17 +137,27 @@ class QasmInterpreter(QASMVisitor):
         handler_name = re.sub(r'(?<!^)(?=[A-Z])', '_', node.__class__.__name__).lower()
         if node.__class__ == list:
             for sub_node in node:
-                self.visit(sub_node, context)
+                    self.visit(sub_node, context)
         elif node.__class__ == EndStatement:
             raise InterruptedError(
                 f"The QASM program was terminated om line {node.span.start_line}."
                 f"There may be unprocessed QASM code."
             )
         elif hasattr(self, handler_name):
-            getattr(self, handler_name)(node, context)
-        else:
-            print(f"An unrecognized QASM instruction {node.__class__.__name__} "  # TODO: change to warning
+            try:
+                getattr(self, handler_name)(node, context)
+            except NotImplementedError as e:
+                if self.permissive:
+                    pass
+                else:
+                    raise NotImplementedError(str(e)) from e
+        elif self.permissive:
+            print(f"An unrecognized QASM instruction {node.__class__.__name__} "
                   f"was encountered on line {node.span.start_line}, in {context['name']}.")
+        else:
+            raise NotImplementedError(f"An unsupported QASM instruction {node.__class__.__name__} "
+                  f"was encountered on line {node.span.start_line}, in {context['name']}.")
+
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
@@ -167,7 +186,6 @@ class QasmInterpreter(QASMVisitor):
         Registers a classical assignment.
         """
         rhs = partial(self.eval_expr, node.rvalue, context)
-
         def set_local_var():
             name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
             res = rhs()
@@ -309,7 +327,7 @@ class QasmInterpreter(QASMVisitor):
                 f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
             )  # TODO: make a warning
 
-        if name in context["vars"]:
+        if "vars" in context and name in context["vars"]:
             if isinstance(context["vars"][name], Callable):
                 _warning(context, name)
             else:
@@ -704,9 +722,9 @@ class QasmInterpreter(QASMVisitor):
             curr = context
             if "scopes" in curr:
                 wires = self._get_wires_helper(curr, wires)
-            context["device"] = device("default.qubit", wires=wires)
+            context["wires"] = wires
         # TODO: pass context through gate calls during second pass
-        context["qnode"] = QNode(lambda: [gate() for gate in context["gates"]], device=context["device"])
+        context["callable"] = lambda: [gate() for gate in context["gates"]]
 
     @staticmethod
     def identifier(node: QASMNode, context: dict):
@@ -783,18 +801,19 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
-        gate = None
         self._init_gates_list(context)
         if node.name.name.upper() in SINGLE_QUBIT_GATES:
             gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_SIGNLE_QUBIT_GATES:
-            gate = self.param_single_qubit_gate(node, context)
+        elif node.name.name.upper() in PARAMETERIZED_SINGLE_QUBIT_GATES:
+            gate = self.parameterized_gate(PARAMETERIZED_SINGLE_QUBIT_GATES, node, context)
         elif node.name.name.upper() in TWO_QUBIT_GATES:
             gate = self.non_parameterized_gate(TWO_QUBIT_GATES, node, context)
+        elif node.name.name.upper() in PARAMETERIZED_TWO_QUBIT_GATES:
+            gate = self.parameterized_gate(PARAMETERIZED_TWO_QUBIT_GATES, node, context)
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
-            print(f"Unsupported gate encountered in QASM: {node.name}")  # TODO: change to warning
+            raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
         if len(node.modifiers) > 0:
             gate = self.modifiers(gate, node, context)
 
@@ -843,10 +862,25 @@ class QasmInterpreter(QASMVisitor):
 
         return call
 
-    def param_single_qubit_gate(self, node: QASMNode, context: dict):
+    def _require_wires(self, context):
         """
-        Registers a parameterized single qubit gate application. Builds a Callable partial
-        that can be executed when the QNode is called. The gate will be executed aat that time
+        Simple helper that checks if we have wires in the current context.
+
+        Args:
+            context (dict): The current context.
+
+        Raises:
+            NameError: If the context is missing a wire.
+        """
+        if "wires" not in context:
+            raise NameError(
+                f"Attempt to reference wires that have not been declared in {context['name']}"
+            )
+
+    def parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
+        """
+        Registers a parameterized gate application. Builds a Callable partial
+        that can be executed when the QNode is called. The gate will be executed at that time
         with the appropriate arguments.
 
         Args:
@@ -860,21 +894,31 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: If an argument is not found in the current context.
         """
+        self._require_wires(context)
+        if not node.arguments:
+            raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
         args = []
         for arg in node.arguments:
             if hasattr(arg, "name"):
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
                 # But what about deferred evaluations?
-                args.append(self.retrieve_variable(arg.name, context)["val"])
+                val = self.retrieve_variable(arg.name, context)["val"]
+                if val is not None:
+                    args.append(val)
+                else:
+                    raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
+
             elif re.search('Literal', arg.__class__.__name__) is not None:
                 args.append(arg.value)
         return partial(
-            PARAMETERIZED_SIGNLE_QUBIT_GATES[node.name.name.upper()],
+            gates_dict[node.name.name.upper()],
             *args,
-            wires=wires.Wires([
-                self.eval_expr(node.qubits[0], context)
-            ])
+            wires=[
+                wires.Wires([
+                    self.eval_expr(node.qubits[q], context)
+                ]) for q in range(len(node.qubits))
+            ]
         )
 
     def non_parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
@@ -890,6 +934,7 @@ class QasmInterpreter(QASMVisitor):
         Returns:
             Callable: The Callable partial that will execute the gate on the appropriate qubits.
         """
+        self._require_wires(context)
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[

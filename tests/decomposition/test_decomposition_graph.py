@@ -100,7 +100,6 @@ class TestDecompositionGraph:
         # 6 edges from ops to decompositions and 2 from decompositions to ops
         assert len(graph2._graph.edges()) == 8
 
-
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules that raise DecompositionNotApplicable are skipped."""
 
