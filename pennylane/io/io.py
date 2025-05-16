@@ -19,11 +19,11 @@ from collections import defaultdict
 from importlib import metadata
 from sys import version_info
 
-
+has_openqasm = True
 try:
     from openqasm3.parser import parse
 except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+    has_openqasm = False
 
 from pennylane.io.qasm_interpreter import QasmInterpreter
 
@@ -725,8 +725,11 @@ def from_qasm_three(quantum_circuit: str):
         Wires: the wires required to execute the QASM.
 
     """
-    # parse the QASM program
-    ast = parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+    if not has_openqasm:
+        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")
+    else:
+        # parse the QASM program
+        ast = parse(quantum_circuit, permissive=True)
+        context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
 
-    return context["callable"], context["wires"]
+        return context["callable"], context["wires"]
