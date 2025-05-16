@@ -1,8 +1,34 @@
 import pytest
 from openqasm3.parser import parse
 
-from pennylane import CNOT, RX, RY, PauliX, CH, CY, CZ, SWAP, CPhase, CRX, CRY, CRZ, Toffoli, CSWAP, RZ, PhaseShift, U1, \
-    U2, U3, Identity, Hadamard, PauliZ, PauliY, S, SX, T
+from pennylane import (
+    CH,
+    CNOT,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    RX,
+    RY,
+    RZ,
+    SWAP,
+    SX,
+    U1,
+    U2,
+    U3,
+    CPhase,
+    Hadamard,
+    Identity,
+    PauliX,
+    PauliY,
+    PauliZ,
+    PhaseShift,
+    S,
+    T,
+    Toffoli,
+)
 from pennylane.io.qasm_interpreter import QasmInterpreter
 
 
@@ -11,7 +37,8 @@ class TestInterpreter:
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;
             float theta = 0.5;
@@ -23,7 +50,7 @@ class TestInterpreter:
             pow(2) @ x q0;
             ctrl @ x q1, q0;
             """,
-            permissive=True
+            permissive=True,
         )
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
 
@@ -54,7 +81,8 @@ class TestInterpreter:
 
     def test_interprets_two_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;  
             ch q0, q1;
@@ -63,7 +91,7 @@ class TestInterpreter:
             cz q1, q0;
             swap q0, q1;
             """,
-            permissive=True
+            permissive=True,
         )
         context = QasmInterpreter().generic_visit(ast, context={"program_name": "two-qubit-gates"})
 
@@ -96,7 +124,8 @@ class TestInterpreter:
 
     def test_interprets_parameterized_two_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;  
             cp(0.4) q0, q1;
@@ -105,9 +134,11 @@ class TestInterpreter:
             cry(0.1) q0, q1;
             crz(0.3) q1, q0;
             """,
-            permissive=True
+            permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "param-two-qubit-gates"})
+        context = QasmInterpreter().generic_visit(
+            ast, context={"program_name": "param-two-qubit-gates"}
+        )
 
         # setup mocks
 
@@ -134,16 +165,19 @@ class TestInterpreter:
 
     def test_interprets_multi_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;
             qubit[1] q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,
-            permissive=True
+            permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "multi-qubit-gates"})
+        context = QasmInterpreter().generic_visit(
+            ast, context={"program_name": "multi-qubit-gates"}
+        )
 
         # setup mocks
 
@@ -162,7 +196,8 @@ class TestInterpreter:
 
     def test_interprets_parameterized_single_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;
             qubit q2;
@@ -175,9 +210,11 @@ class TestInterpreter:
             u2(1.0, 2.0) q1;
             u3(1.0, 2.0, 3.0) q2;
             """,
-            permissive=True
+            permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "param-single-qubit-gates"})
+        context = QasmInterpreter().generic_visit(
+            ast, context={"program_name": "param-single-qubit-gates"}
+        )
 
         # setup mocks
 
@@ -217,7 +254,8 @@ class TestInterpreter:
 
     def test_single_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse("""
+        ast = parse(
+            """
             qubit q0;
             qubit q1;
             qubit q2;
@@ -233,9 +271,11 @@ class TestInterpreter:
             inv @ h q2;
             pow(2) @ t q1;
             """,
-            permissive=True
+            permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "single-qubit-gates"})
+        context = QasmInterpreter().generic_visit(
+            ast, context={"program_name": "single-qubit-gates"}
+        )
 
         # setup mocks
 

@@ -18,6 +18,7 @@ PennyLane templates.
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+
 from openqasm3.parser import parse
 
 from pennylane.io.qasm_interpreter import QasmInterpreter
@@ -707,7 +708,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm_three(quantum_circuit: str, device_type: str = 'default.qubit'):
+def from_qasm_three(quantum_circuit: str, device_type: str = "default.qubit"):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
@@ -723,6 +724,8 @@ def from_qasm_three(quantum_circuit: str, device_type: str = 'default.qubit'):
     """
     # parse the QASM program
     ast = parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().generic_visit(ast, context={"name": "global", "device_type": device_type})
+    context = QasmInterpreter().generic_visit(
+        ast, context={"name": "global", "device_type": device_type}
+    )
 
     return context["callable"], context["device"]

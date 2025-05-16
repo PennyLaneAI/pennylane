@@ -31,10 +31,10 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    device,
     adjoint,
+    ctrl,
+    device,
     pow,
-    ctrl
 )
 
 SINGLE_QUBIT_GATES = {
@@ -59,21 +59,9 @@ PARAMETERIZED_SINGLE_QUBIT_GATES = {
     "U3": U3,
 }
 
-TWO_QUBIT_GATES = {
-    "CX": CNOT,
-    "CY": CY,
-    "CZ": CZ,
-    "CH": CH,
-    "SWAP": SWAP
-}
+TWO_QUBIT_GATES = {"CX": CNOT, "CY": CY, "CZ": CZ, "CH": CH, "SWAP": SWAP}
 
-PARAMETERIZED_TWO_QUBIT_GATES = {
-    "CP": CPhase,
-    "CPHASE": CPhase,
-    "CRX": CRX,
-    "CRY": CRY,
-    "CRZ": CRZ
-}
+PARAMETERIZED_TWO_QUBIT_GATES = {"CP": CPhase, "CPHASE": CPhase, "CRX": CRX, "CRY": CRY, "CRZ": CRZ}
 
 MULTI_QUBIT_GATES = {
     "CCX": Toffoli,
@@ -293,7 +281,9 @@ class QasmInterpreter(QASMVisitor):
             NameError: If the context is missing a wire.
         """
         if "wires" not in context:
-            raise NameError(f"Attempt to reference wires that have not been declared in {context['name']}")
+            raise NameError(
+                f"Attempt to reference wires that have not been declared in {context['name']}"
+            )
 
     def parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
         """

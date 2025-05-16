@@ -25,7 +25,6 @@ from pennylane.decomposition.decomposition_rule import _auto_wrap
 decompositions = defaultdict(list)
 
 
-
 def to_resources(gate_count: dict) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
     return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
