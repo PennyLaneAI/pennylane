@@ -32,17 +32,6 @@ h5py = pytest.importorskip("h5py")
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 
-def test_import_mpi4py(monkeypatch):
-    """Test if an ImportError is raised by _import_mpi4py function."""
-    # pylint: disable=protected-access
-
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "mpi4py", None)
-
-        with pytest.raises(ImportError, match="This feature requires mpi4py"):
-            pes_generator._import_mpi4py()
-
-
 @pytest.mark.parametrize(
     ("sym", "geom", "harmonic_res", "do_dipole", "exp_pes_onemode", "exp_dip_onemode"),
     # Expected results were obtained using vibrant code
@@ -378,18 +367,23 @@ def test_dipole_order_error():
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "dipole_level", "result_file"),
+    ("sym", "geom", "dipole_level", "result_file", "backend", "max_workers"),
     # Expected results were obtained using vibrant code
     [
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5"),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "serial", 1),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", "mp_pool", 2),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "cf_procpool", 2),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", "mpi4py_pool", 2),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "mpi4py_comm", 2),
     ],
 )
-def test_vibrational_pes(sym, geom, dipole_level, result_file):
+def test_vibrational_pes(sym, geom, dipole_level, result_file, backend, max_workers):
     r"""Test that vibrational_pes returns correct object."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
-    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, cubic=True)
+    vib_obj = vibrational.vibrational_pes(
+        mol, dipole_level=dipole_level, cubic=True, backend=backend, max_workers=max_workers
+    )
 
     pes_file = os.path.join(ref_dir, result_file)
     with h5py.File(pes_file, "r") as f:
