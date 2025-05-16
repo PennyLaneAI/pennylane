@@ -42,7 +42,12 @@ from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
 from .utils import QubitMgr
-from .pauli_tracker import pauli_encode_xz, pauli_prod_to_xz, apply_clifford_op
+from .pauli_tracker import (
+    pauli_encode_xz,
+    pauli_prod_to_xz,
+    apply_clifford_op,
+    get_byproduct_corrections,
+)
 
 __all__ = [
     "GraphStatePrep",
@@ -65,4 +70,5 @@ __all__ = [
     "pauli_encode_xz",
     "pauli_prod_to_xz",
     "apply_clifford_op",
+    "get_byproduct_corrections",
 ]
