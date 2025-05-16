@@ -137,7 +137,13 @@ def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
     work wires"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        decompose_mcx_with_many_workers(list(control_wires) + [target_wire], work_wires)
+        wires = list(control_wires) + [target_wire]
+        decompose_mcx_with_many_workers(
+            wires=wires,
+            control_wires=control_wires,
+            control_values=[1] * len(control_wires),
+            work_wires=work_wires,
+        )
 
     current_queue = qml.queuing.QueuingManager.active_context()
     if current_queue is not None:

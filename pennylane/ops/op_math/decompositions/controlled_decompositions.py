@@ -218,12 +218,14 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             {},
             num_control_wires=len_k2,
             num_work_wires=len_k1,
+            work_wire_type="dirty",
         ): 4,
         controlled_resource_rep(
             ops.X,
             {},
             num_control_wires=len_k1,
             num_work_wires=len_k2,
+            work_wire_type="dirty",
         ): 2,
         # we only need Hadamard for the md case, but it still needs to be accounted for.
         ops.Hadamard: 2,
@@ -414,7 +416,10 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
 
     # Apply the MCX in the middle
-    _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
+    if len(middle_ctrls) == 1:
+        ops.Toffoli([work_wires[0], wires[middle_ctrls[0]], wires[-1]])
+    else:
+        _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
@@ -423,7 +428,12 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     if work_wire_type == "dirty":
         # Perform toggle-detection of the work wire is dirty
         middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
-        _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
+        if len(middle_ctrls) == 1:
+            ops.Toffoli([work_wires[0], wires[middle_ctrls[0]], wires[-1]])
+        else:
+            _decompose_mcx_with_one_worker(
+                work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:]
+            )
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
@@ -516,16 +526,16 @@ def _ctrl_decomp_bisect_general(U, wires):
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    ops.ctrl(ops.X(wires[-1]), control=control_k2, work_wires=control_k1)
+    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    ops.ctrl(ops.X(wires[-1]), control=control_k1, work_wires=control_k2)
+    _controlled_x(wires[-1], control_k1, control_k2, "dirty")
     ops.QubitUnitary(c1, wires[-1])
-    ops.ctrl(ops.X(wires[-1]), control=control_k2, work_wires=control_k1)
+    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -550,14 +560,14 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     control_k2 = wires[mid:-1]
 
     if not skip_initial_cx:
-        ops.ctrl(ops.X(wires[-1]), control=control_k1, work_wires=control_k2)
+        _controlled_x(wires[-1], control_k1, control_k2, "dirty")
 
     ops.QubitUnitary(a, wires[-1])
-    ops.ctrl(ops.X(wires[-1]), control=control_k2, work_wires=control_k1)
+    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    ops.ctrl(ops.X(wires[-1]), control=control_k1, work_wires=control_k2)
+    _controlled_x(wires[-1], control_k1, control_k2, "dirty")
     ops.QubitUnitary(a, wires[-1])
-    ops.ctrl(ops.X(wires[-1]), control=control_k2, work_wires=control_k1)
+    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
@@ -749,6 +759,17 @@ def _Toffoli(control_wires_x, control_wires_y, target_wires):
 
 def _ctrl_global_phase(phase, control_wires):
     ops.ctrl(ops.GlobalPhase(-phase), control=control_wires)
+
+
+def _controlled_x(target_wire, control_wires, work_wires, work_wire_type):
+    if len(control_wires) == 1:
+        ops.CNOT([control_wires[0], target_wire])
+    elif len(control_wires) == 2:
+        ops.Toffoli([control_wires[0], control_wires[1], target_wire])
+    else:
+        ops.MultiControlledX(
+            control_wires + [target_wire], work_wires=work_wires, work_wire_type=work_wire_type
+        )
 
 
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
