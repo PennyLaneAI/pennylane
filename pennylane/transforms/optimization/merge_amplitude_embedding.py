@@ -19,10 +19,10 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
-from pennylane.math import flatten, reshape
+from pennylane.math import flatten, is_abstract, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import TransformError, transform
 from pennylane.typing import PostprocessingFn
 
 
@@ -47,12 +47,14 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
         def __init__(self):
             self._env = {}
+            self.dynamic_wires_encountered = False
             self.previous_ops = []
             self.state = {"visited_wires": set()}
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
             """Setup the interpreter for a new evaluation."""
+            self.dynamic_wires_encountered = False
             self.previous_ops = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
@@ -75,10 +77,22 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             so the output will not affect later equations in the circuit.
 
             """
+
             if not isinstance(op, AmplitudeEmbedding):
+                if any(is_abstract(w) for w in op.wires):
+                    if self.input_wires:
+                        self._merge_and_insert_at_the_start()
+                    self.interpret_all_previous_ops()
+                    self.dynamic_wires_encountered = True
+
                 self.previous_ops.append(op)
                 self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
                 return
+
+            if self.dynamic_wires_encountered:
+                raise TransformError(
+                    "Cannot use qml.AmplitudeEmbedding after operators with dynamic wires."
+                )
 
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
                 raise qml.DeviceError(
@@ -111,10 +125,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 else:
                     final_vector = flatten(final_vector)
 
-            # pylint: disable=protected-access
-            self.previous_ops.insert(
-                0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
-            )
+            with qml.capture.pause():
+                self.previous_ops.insert(0, qml.AmplitudeEmbedding(final_vector, wires=final_wires))
             # Clear history of amplitude embedding gates since we've merged
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
