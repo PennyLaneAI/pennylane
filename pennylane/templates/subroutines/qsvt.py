@@ -935,7 +935,9 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
             )
         except ModuleNotFoundError:
             obj_func = (
-                qml.math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
+                qml.math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(
+                    phi, grid_points, interface
+                )
                 - targets
             )
 
