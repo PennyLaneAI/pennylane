@@ -34,6 +34,50 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 
 class TestInterpreter:
 
+    def test_unsupported_gate(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            float theta = 0.5;
+            Rxx(theta) q0, q1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
+            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-gate"})
+
+    def test_missing_param(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            rx() q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(TypeError, match="Missing required argument\(s\) for parameterized gate rx"):
+            QasmInterpreter().generic_visit(ast, context={"name": "missing-param"})
+
+
+    def test_uninitialized_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            rx(theta) q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().generic_visit(ast, context={"name": "uninit-param"})
+
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
@@ -52,7 +96,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "gates"})
+        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -93,7 +137,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"program_name": "two-qubit-gates"})
+        context = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         # setup mocks
 
@@ -137,7 +181,7 @@ class TestInterpreter:
             permissive=True,
         )
         context = QasmInterpreter().generic_visit(
-            ast, context={"program_name": "param-two-qubit-gates"}
+            ast, context={"name": "param-two-qubit-gates"}
         )
 
         # setup mocks
@@ -176,7 +220,7 @@ class TestInterpreter:
             permissive=True,
         )
         context = QasmInterpreter().generic_visit(
-            ast, context={"program_name": "multi-qubit-gates"}
+            ast, context={"name": "multi-qubit-gates"}
         )
 
         # setup mocks
@@ -213,7 +257,7 @@ class TestInterpreter:
             permissive=True,
         )
         context = QasmInterpreter().generic_visit(
-            ast, context={"program_name": "param-single-qubit-gates"}
+            ast, context={"name": "param-single-qubit-gates"}
         )
 
         # setup mocks
@@ -274,7 +318,7 @@ class TestInterpreter:
             permissive=True,
         )
         context = QasmInterpreter().generic_visit(
-            ast, context={"program_name": "single-qubit-gates"}
+            ast, context={"name": "single-qubit-gates"}
         )
 
         # setup mocks

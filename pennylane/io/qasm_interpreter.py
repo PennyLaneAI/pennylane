@@ -210,7 +210,7 @@ class QasmInterpreter(QASMVisitor):
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
-            NotImplementedError(f"Unsupported gate encountered in QASM: {node.name}")
+            raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
         if len(node.modifiers) > 0:
             gate = self.modifiers(gate, node, context)
@@ -296,12 +296,17 @@ class QasmInterpreter(QASMVisitor):
             NameError: If an argument is not found in the current context.
         """
         self._require_wires(context)
+        if not node.arguments:
+            raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
         args = []
         for arg in node.arguments:
             if hasattr(arg, "name") and arg.name in context["vars"]:
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
-                args.append(context["vars"][arg.name]["val"])
+                if context["vars"][arg.name]["val"] is not None:
+                    args.append(context["vars"][arg.name]["val"])
+                else:
+                    raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
             elif re.search("Literal", arg.__class__.__name__) is not None:
                 args.append(arg.value)
             else:
