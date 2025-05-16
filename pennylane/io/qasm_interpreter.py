@@ -1,9 +1,11 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
+
 import re
 from functools import partial
 from typing import Callable
+
 from pennylane.ops import (
     CH,
     CNOT,
@@ -35,7 +37,6 @@ from pennylane.ops import (
     ctrl,
     pow,
 )
-
 
 has_openqasm = True
 try:
