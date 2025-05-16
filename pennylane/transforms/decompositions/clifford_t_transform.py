@@ -362,7 +362,7 @@ class _CachedDecompose:
 
     def cached_decompose(self, angle):
         """Decomposes the angle into a sequence of gates."""
-        seq = self.decompose_fn(qml.RZ(abs(angle), [0]), 0.1)
+        seq = self.decompose_fn(qml.RZ(abs(angle), [0]))
         if angle != abs(angle):
             adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
             return adj[1:] + adj[:1]
@@ -492,7 +492,8 @@ def clifford_t_decomposition(
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
 
-        # Every decomposition implementation should have the following shape:
+        # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
+        # where the implementation of each function should have the following signature:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
