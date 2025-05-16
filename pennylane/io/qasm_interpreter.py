@@ -2,7 +2,11 @@ import re
 from functools import partial
 from typing import Callable
 
-from openqasm3.visitor import QASMNode, QASMVisitor
+has_openqasm = True
+try:
+    from openqasm3.visitor import QASMNode, QASMVisitor
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
 
 from pennylane.ops import (
     CH,
@@ -75,6 +79,12 @@ class QasmInterpreter(QASMVisitor):
     overriden visitor function on each node.
     """
 
+    def __init__(self):
+        if not has_openqasm:
+            raise ImportError("QASM interpreter requires openqasm3 to be installed")
+        else:
+            super().__init__()
+
     def visit(self, node: QASMNode, context: dict):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
@@ -121,6 +131,7 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
                 with a list of Callables that are queued into it.
         """
+
         super().generic_visit(node, context)
         self.construct_callable(context)
         return context

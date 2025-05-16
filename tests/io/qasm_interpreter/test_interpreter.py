@@ -1,5 +1,10 @@
 import pytest
-from openqasm3.parser import parse
+
+has_openqasm = True
+try:
+    from openqasm3.parser import parse
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
 
 from pennylane import (
     CH,
@@ -33,6 +38,12 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 
 
 class TestInterpreter:
+
+    def __init__(self):
+        if not has_openqasm:
+            raise ImportError("Qasm interpreter requires openqasm to be installed.")
+        else:
+            super().__init__()
 
     def test_no_qubits(self):
         # parse the QASM program
