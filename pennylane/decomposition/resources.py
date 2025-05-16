@@ -21,8 +21,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional, Type
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 
@@ -124,9 +122,11 @@ class CompressedResourceOp:
     def name(self) -> str:
         """The name of the operator type."""
         if issubclass(self.op_type, (qml.ops.Adjoint, qml.ops.Pow)):
-            return f"{self.op_type.__name__}({self.params['base_class'].__name__})"
+            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            return f"{self.op_type.__name__}({base_rep.name})"
         if self.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            return f"C({self.params['base_class'].__name__})"
+            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            return f"C({base_rep.name})"
         return self.op_type.__name__
 
     def __hash__(self) -> int:
@@ -268,16 +268,16 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         ... )
         Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
 
-        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep` and :func:`~pennylane.decomposition.adjoint_resource_rep`
+        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
-    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-        return controlled_resource_rep(**params)
     if issubclass(op_type, qml.ops.Adjoint):
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
+    if op_type is qml.ops.ControlledOp:
+        op_type = qml.ops.Controlled
     return CompressedResourceOp(op_type, params)
 
 
@@ -288,7 +288,11 @@ def controlled_resource_rep(
     num_zero_control_values: int = 0,
     num_work_wires: int = 0,
 ):
-    """Creates a ``CompressedResourceOp`` representation of a general controlled operator.
+    """Creates a ``CompressedResourceOp`` representation of a controlled operator.
+
+    This function mirrors the custom logic in ``qml.ctrl`` which does the following:
+    - Flattens nested controlled operations.
+    - Dispatches to custom controlled operations when applicable.
 
     Args:
         base_class: the base operator type
@@ -301,32 +305,49 @@ def controlled_resource_rep(
 
     _validate_resource_rep(base_class, base_params)
 
-    # Flatten nested controlled operations
-    if base_class is qml.ops.Controlled or base_class is qml.ops.ControlledOp:
-        base_resource_rep = controlled_resource_rep(**base_params)
-        base_class = base_resource_rep.params["base_class"]
-        base_params = base_resource_rep.params["base_params"]
-        num_control_wires += base_resource_rep.params["num_control_wires"]
-        num_zero_control_values += base_resource_rep.params["num_zero_control_values"]
-        num_work_wires += base_resource_rep.params["num_work_wires"]
+    # Flattens nested controlled structures.
+    if base_class in (qml.ops.Controlled, qml.ops.ControlledOp):
+        num_control_wires += base_params["num_control_wires"]
+        num_zero_control_values += base_params["num_zero_control_values"]
+        num_work_wires += base_params["num_work_wires"]
+        return controlled_resource_rep(
+            base_class=base_params["base_class"],
+            base_params=base_params["base_params"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
 
-    elif base_class in custom_ctrl_op_to_base():
-        num_control_wires += base_class.num_wires - 1
+    custom_controlled_map = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
+    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
+    if num_zero_control_values == 0 and custom_ctrl:
+        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
+
+    # When the base class is a custom controlled op, update the base to the base of the op.
+    # For example, when the base class is `CRX`, use `RX` as the new base class.
+    if base_class in custom_ctrl_op_to_base():
+        num_control_wires = base_class.num_wires - 1 + num_control_wires
         base_class = custom_ctrl_op_to_base()[base_class]
 
-    elif base_class is qml.MultiControlledX:
-        base_class = qml.X
-        num_control_wires += base_params["num_control_wires"]
-        num_zero_control_values += base_params["num_zero_control_values"]
-        num_work_wires += base_params["num_work_wires"]
-        base_params = {}
+    # Special case for controlled qubit unitaries
+    if base_class in (qml.QubitUnitary, qml.ControlledQubitUnitary):
+        return _controlled_qubit_unitary_rep(
+            base_class,
+            base_params,
+            num_control_wires,
+            num_zero_control_values,
+            num_work_wires,
+        )
 
-    elif base_class is qml.ControlledQubitUnitary:
-        base_class = qml.QubitUnitary
-        num_control_wires += base_params["num_control_wires"]
-        num_zero_control_values += base_params["num_zero_control_values"]
-        num_work_wires += base_params["num_work_wires"]
-        base_params = base_params["base"].resource_params
+    # Special case for when the base class is X
+    if base_class in (qml.X, qml.MultiControlledX):
+        return _controlled_x_rep(
+            base_class,
+            base_params,
+            num_control_wires,
+            num_zero_control_values,
+            num_work_wires,
+        )
 
     return CompressedResourceOp(
         qml.ops.Controlled,
@@ -356,11 +377,6 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     )
 
 
-def _is_integer(x):
-    """Checks if x is an integer."""
-    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
-
-
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
@@ -370,8 +386,6 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
-        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,
@@ -397,3 +411,59 @@ def custom_ctrl_op_to_base():
         qml.CRot: qml.Rot,
         qml.ControlledPhaseShift: qml.PhaseShift,
     }
+
+
+def _controlled_qubit_unitary_rep(
+    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+) -> CompressedResourceOp:
+    """Helper function that handles the custom logic for controlled qubit unitaries."""
+
+    if base_class is qml.QubitUnitary:
+        return resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=base_params["num_wires"],
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    # base_class is qml.ControlledQubitUnitary
+    num_control_wires += base_params["num_control_wires"]
+    num_zero_control_values += base_params["num_zero_control_values"]
+    num_work_wires += base_params["num_work_wires"]
+    return resource_rep(
+        qml.ControlledQubitUnitary,
+        num_target_wires=base_params["num_target_wires"],
+        num_control_wires=num_control_wires,
+        num_zero_control_values=num_zero_control_values,
+        num_work_wires=num_work_wires,
+    )
+
+
+def _controlled_x_rep(
+    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+) -> Optional[CompressedResourceOp]:
+    """Helper function that handles custom logic for controlled X gates."""
+
+    if base_class is qml.X:
+        if num_control_wires == 1 and num_zero_control_values == 0:
+            return resource_rep(qml.CNOT)
+        if num_control_wires == 2 and num_zero_control_values == 0:
+            return resource_rep(qml.Toffoli)
+        return resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        )
+
+    # base_class is qml.MultiControlledX:
+    num_control_wires += base_params["num_control_wires"]
+    num_zero_control_values += base_params["num_zero_control_values"]
+    num_work_wires += base_params["num_work_wires"]
+    return resource_rep(
+        qml.MultiControlledX,
+        num_control_wires=num_control_wires,
+        num_zero_control_values=num_zero_control_values,
+        num_work_wires=num_work_wires,
+    )

@@ -111,6 +111,7 @@ from .interface_utils import (
     InterfaceLike,
 )
 from .grad import grad, jacobian
+from . import decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj
