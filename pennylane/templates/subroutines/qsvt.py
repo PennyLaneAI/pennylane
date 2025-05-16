@@ -847,7 +847,7 @@ def _qsp_iterate(phi, x, interface):
     return a
 
 
-def _qsp_iterates(phis, x, interface):
+def _qsp_iterate_broadcast(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
     Args:
@@ -928,14 +928,14 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
         try:
             from jax import jit, vmap
 
-            qsp_iterates = jit(_qsp_iterates, static_argnames=["interface"])
+            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
 
             obj_func = (
                 vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
             )
         except ModuleNotFoundError:
             obj_func = (
-                qml.math.vectorize(_qsp_iterates, excluded=(0, 2))(phi, grid_points, interface)
+                qml.math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
                 - targets
             )
 

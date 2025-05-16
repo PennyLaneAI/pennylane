@@ -28,7 +28,7 @@ from pennylane.templates.subroutines.qsvt import (
     _complementary_poly,
     _poly_func,
     _qsp_iterate,
-    _qsp_iterates,
+    _qsp_iterate_broadcast,
     _qsp_optimization,
     _W_of_x,
     _z_rotation,
@@ -932,7 +932,7 @@ class TestIterativeSolver:
         )
 
         assert qml.math.isclose(
-            _qsp_iterates(phis, x_point, None),
+            _qsp_iterate_broadcast(phis, x_point, None),
             _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
@@ -983,12 +983,12 @@ class TestIterativeSolver:
         list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
-    def test_qsp_iterates(self, x, degree):
-        """Test internal function _qsp_iterates"""
+    def test_qsp_iterate_broadcast(self, x, degree):
+        """Test internal function _qsp_iterate_broadcast"""
         from jax import numpy as jnp
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterates(phis, x, "jax")
+        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
