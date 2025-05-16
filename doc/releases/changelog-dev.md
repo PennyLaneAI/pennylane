@@ -187,6 +187,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)

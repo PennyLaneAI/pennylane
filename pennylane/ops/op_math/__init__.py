@@ -87,6 +87,7 @@ Decompositions
 
     ~one_qubit_decomposition
     ~two_qubit_decomposition
+    ~multi_qubit_decomposition
     ~sk_decomposition
 
 Control Decompositions
@@ -127,6 +128,7 @@ from .decompositions import (
     one_qubit_decomposition,
     sk_decomposition,
     two_qubit_decomposition,
+    multi_qubit_decomposition,
     ctrl_decomp_bisect,
     ctrl_decomp_zyz,
 )
