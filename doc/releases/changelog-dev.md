@@ -11,7 +11,7 @@
   ```python
   import pennylane as qml
 
-  func, device = qml.io.from_qasm_three("""
+  func, wires = qml.io.from_qasm_three("""
       qubit q0;
       qubit q1;
       float theta = 0.5;
@@ -25,7 +25,7 @@
       """
   )
   
-  qml.QNode(func, device)
+  qml.QNode(func, qml.device("default.qubit", wires=wires))
   ```
 
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 

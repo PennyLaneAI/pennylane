@@ -708,24 +708,21 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm_three(quantum_circuit: str, device_type: str = "default.qubit"):
+def from_qasm_three(quantum_circuit: str):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
 
     Args:
         quantum_circuit (str): a QASM string containing a simple quantum circuit.
-        device_type (str): the type of device to construct.
 
     Returns:
         function: a function created based on the QASM string that can be queued into a QNode.
-        Device: a device constructed with the appropriate number of wires to execute the circuit.
+        Wires: the wires required to execute the QASM.
 
     """
     # parse the QASM program
     ast = parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().generic_visit(
-        ast, context={"name": "global", "device_type": device_type}
-    )
+    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
 
-    return context["callable"], context["device"]
+    return context["callable"], context["wires"]

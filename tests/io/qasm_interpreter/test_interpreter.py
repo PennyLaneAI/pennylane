@@ -64,7 +64,7 @@ class TestInterpreter:
         context["callable"]()
 
         # asserts
-        assert len(context["device"].wires) == 2
+        assert len(context["wires"]) == 2
 
         assert x.call_count == 5  # RX calls PauliX under the hood
         x.assert_called_with(PauliX(0), wires=0)

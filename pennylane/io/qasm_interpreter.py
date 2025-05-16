@@ -4,7 +4,7 @@ from typing import Callable
 
 from openqasm3.visitor import QASMNode, QASMVisitor
 
-from pennylane import (
+from pennylane.ops import (
     CH,
     CNOT,
     CRX,
@@ -33,7 +33,6 @@ from pennylane import (
     Toffoli,
     adjoint,
     ctrl,
-    device,
     pow,
 )
 
@@ -134,12 +133,6 @@ class QasmInterpreter(QASMVisitor):
         Args:
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
-        if "device" not in context:
-            if "device_type" not in context:
-                ty = "default.qubit"
-            else:
-                ty = context["device_type"]
-            context["device"] = device(ty, wires=len(context["wires"]))
         context["callable"] = lambda: [gate() for gate in context["gates"]]
 
     @staticmethod
