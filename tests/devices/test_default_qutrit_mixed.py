@@ -1288,8 +1288,10 @@ class TestReadoutError:
             state = np.kron(state, state)
         if num_wires == 3:
             state = sum(
-                state[i] * reduce(np.kron, [v, state, v])
-                for i, v in enumerate([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+                [
+                    state[i] * reduce(np.kron, [v, state, v])
+                    for i, v in enumerate([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+                ]
             )
         return np.outer(state, state)
 

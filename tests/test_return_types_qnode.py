@@ -2201,12 +2201,14 @@ class TestIntegrationShotVectors:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2229,12 +2231,14 @@ class TestIntegrationShotVectors:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2291,12 +2295,14 @@ class TestIntegrationShotVectors:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2323,12 +2329,14 @@ class TestIntegrationSameMeasurementShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2360,12 +2368,14 @@ class TestIntegrationSameMeasurementShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2422,12 +2432,14 @@ class TestIntegrationSameMeasurementShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2519,12 +2531,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2570,12 +2584,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2611,12 +2627,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2664,12 +2682,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2718,12 +2738,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2776,12 +2798,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2839,12 +2863,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2908,12 +2934,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)
@@ -2966,12 +2994,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
         res = qnode(0.5)
 
         all_shots = sum(
-            shot_tuple.copies
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
+            [
+                shot_tuple.copies
+                for shot_tuple in (
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
+                )
+            ]
         )
 
         assert isinstance(res, tuple)

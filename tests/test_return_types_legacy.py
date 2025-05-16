@@ -514,7 +514,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -536,7 +536,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -562,7 +562,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -613,7 +613,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -640,7 +640,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -673,7 +673,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -728,7 +728,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -819,7 +819,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -856,7 +856,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -889,7 +889,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -926,7 +926,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -968,7 +968,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1012,7 +1012,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1062,7 +1062,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1120,7 +1120,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1165,7 +1165,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum(shot_tuple.copies for shot_tuple in dev.shot_vector)
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots

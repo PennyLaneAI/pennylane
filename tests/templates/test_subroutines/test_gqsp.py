@@ -61,7 +61,7 @@ class TestGQSP:
 
         unitary_matrix = qml.matrix(unitary)
         expected_output = sum(
-            coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)
+            [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)]
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
@@ -94,7 +94,7 @@ class TestGQSP:
 
         unitary_matrix = qml.matrix(unitary)
         expected_output = sum(
-            coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate([0.1, 0.2, 0.3])
+            [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate([0.1, 0.2, 0.3])]
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
