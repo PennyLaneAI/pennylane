@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc import pauli_encode_xz, pauli_prod_to_xz
+from pennylane.ftqc import apply_clifford_op, pauli_encode_xz, pauli_prod_to_xz
 
 
 class TestPauliTracker:
@@ -42,27 +42,27 @@ class TestPauliTracker:
         "ops, res",
         [
             ([], None),
-            ([qml.I], (0, 0)),
-            ([qml.X], (1, 0)),
-            ([qml.Y], (1, 1)),
-            ([qml.Z], (0, 1)),
-            ([qml.I, qml.I], (0, 0)),
-            ([qml.I, qml.X], (1, 0)),
-            ([qml.I, qml.Y], (1, 1)),
-            ([qml.I, qml.Z], (0, 1)),
-            ([qml.X, qml.I], (1, 0)),
-            ([qml.X, qml.X], (0, 0)),
-            ([qml.X, qml.Y], (0, 1)),
-            ([qml.X, qml.Z], (1, 1)),
-            ([qml.Y, qml.I], (1, 1)),
-            ([qml.Y, qml.X], (0, 1)),
-            ([qml.Y, qml.Y], (0, 0)),
-            ([qml.Y, qml.Z], (1, 0)),
-            ([qml.Z, qml.I], (0, 1)),
-            ([qml.Z, qml.X], (1, 1)),
-            ([qml.Z, qml.Y], (1, 0)),
-            ([qml.Z, qml.Z], (0, 0)),
-            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], (0, 1)),
+            ([qml.I], qml.I),
+            ([qml.X], qml.X),
+            ([qml.Y], qml.Y),
+            ([qml.Z], qml.Z),
+            ([qml.I, qml.I], qml.I),
+            ([qml.I, qml.X], qml.X),
+            ([qml.I, qml.Y], qml.Y),
+            ([qml.I, qml.Z], qml.Z),
+            ([qml.X, qml.I], qml.X),
+            ([qml.X, qml.X], qml.I),
+            ([qml.X, qml.Y], qml.Z),
+            ([qml.X, qml.Z], qml.Y),
+            ([qml.Y, qml.I], qml.Y),
+            ([qml.Y, qml.X], qml.Z),
+            ([qml.Y, qml.Y], qml.I),
+            ([qml.Y, qml.Z], qml.X),
+            ([qml.Z, qml.I], qml.Z),
+            ([qml.Z, qml.X], qml.Y),
+            ([qml.Z, qml.Y], qml.X),
+            ([qml.Z, qml.Z], qml.I),
+            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], qml.Z),
         ],
     )
     def test_pauli_prod_to_xz(self, ops, res):
@@ -74,6 +74,54 @@ class TestPauliTracker:
                 _ = pauli_prod_to_xz(ops)
         else:
             op = pauli_prod_to_xz(ops)
-            assert len(op) == 2
-            assert res[0] == op[0]
-            assert res[1] == op[1]
+            assert res == op
+
+    @pytest.mark.parametrize(
+        "clifford_op, pauli, res",
+        [
+            (qml.S, [qml.I], [qml.I]),
+            (qml.S, [qml.X], [qml.Y]),
+            (qml.S, [qml.Y], [qml.X]),
+            (qml.S, [qml.Z], [qml.Z]),
+            (qml.H, [qml.I], [qml.I]),
+            (qml.H, [qml.X], [qml.Z]),
+            (qml.H, [qml.Y], [qml.Y]),
+            (qml.H, [qml.Z], [qml.X]),
+            (qml.CNOT, [qml.I, qml.I], [qml.I, qml.I]),
+            (qml.CNOT, [qml.X, qml.I], [qml.X, qml.X]),
+            (qml.CNOT, [qml.Y, qml.I], [qml.Y, qml.X]),
+            (qml.CNOT, [qml.Z, qml.I], [qml.Z, qml.I]),
+            (qml.CNOT, [qml.I, qml.X], [qml.I, qml.X]),
+            (qml.CNOT, [qml.X, qml.X], [qml.X, qml.I]),
+            (qml.CNOT, [qml.Y, qml.X], [qml.Y, qml.I]),
+            (qml.CNOT, [qml.Z, qml.X], [qml.Z, qml.X]),
+            (qml.CNOT, [qml.I, qml.Y], [qml.Z, qml.Y]),
+            (qml.CNOT, [qml.X, qml.Y], [qml.Y, qml.Z]),
+            (qml.CNOT, [qml.Y, qml.Y], [qml.X, qml.Z]),
+            (qml.CNOT, [qml.Z, qml.Y], [qml.I, qml.Y]),
+            (qml.CNOT, [qml.I, qml.Z], [qml.Z, qml.Z]),
+            (qml.CNOT, [qml.X, qml.Z], [qml.Y, qml.Y]),
+            (qml.CNOT, [qml.Y, qml.Z], [qml.X, qml.Y]),
+            (qml.CNOT, [qml.Z, qml.Z], [qml.I, qml.Z]),
+        ],
+    )
+    def test_apply_clifford_ops(self, clifford_op, pauli, res):
+        new_pauli = apply_clifford_op(clifford_op, pauli)
+
+        assert new_pauli == res
+
+    @pytest.mark.parametrize("clifford_op", [qml.X, qml.RZ, qml.RX, qml.T])
+    @pytest.mark.parametrize("paulis", [[qml.I]])
+    def test_apply_clifford_ops_not_imp(self, clifford_op, paulis):
+        with pytest.raises(
+            NotImplementedError, match="Only qml.H, qml.S and qml.CNOT are supported."
+        ):
+            _ = apply_clifford_op(clifford_op, paulis)
+
+    @pytest.mark.parametrize(
+        "clifford_op, paulis",
+        [(qml.S, [qml.I, qml.I]), (qml.S, [qml.RZ]), (qml.CNOT, [qml.I])],
+    )
+    def test_apply_clifford_ops_val_err(self, clifford_op, paulis):
+        with pytest.raises(ValueError):
+            _ = apply_clifford_op(clifford_op, paulis)
