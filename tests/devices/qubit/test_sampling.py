@@ -1169,8 +1169,6 @@ class TestHamiltonianSamples:
         qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
         res = simulate(qs, rng=seed)
 
-        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-
         assert len(res) == 2
         assert isinstance(res, tuple)
 
@@ -1195,8 +1193,6 @@ class TestHamiltonianSamples:
 
         qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
         res = simulate(qs, rng=seed)
-
-        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
 
         assert len(res) == 2
         assert isinstance(res, tuple)
