@@ -34,6 +34,19 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 
 class TestInterpreter:
 
+    def test_no_qubits(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float theta;
+            rx(theta) q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(NameError, match="Attempt to reference wires that have not been declared in uninit-qubit"):
+            QasmInterpreter().generic_visit(ast, context={"name": "uninit-qubit"})
+
     def test_unsupported_gate(self):
         # parse the QASM program
         ast = parse(
