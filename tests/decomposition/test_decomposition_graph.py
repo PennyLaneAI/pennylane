@@ -32,6 +32,8 @@ from pennylane.decomposition import (
     pow_resource_rep,
 )
 
+# pylint: disable=protected-access,no-name-in-module
+
 
 @pytest.mark.unit
 @patch(

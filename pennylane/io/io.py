@@ -22,7 +22,15 @@ from importlib import metadata
 from sys import version_info
 from typing import Any, Optional
 
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
+
+has_openqasm = True
+try:
+    import openqasm3
+
+    from pennylane.io.qasm_interpreter import QasmInterpreter
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -827,3 +835,25 @@ def from_quil_file(quil_filename: str):
     """
     plugin_converter = plugin_converters["quil_file"].load()
     return plugin_converter(quil_filename)
+
+
+def from_qasm_three(quantum_circuit: str):
+    """
+    Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
+        interpreter.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a simple quantum circuit.
+
+    Returns:
+        function: a function created based on the QASM string that can be queued into a QNode.
+        Wires: the wires required to execute the QASM.
+
+    """
+    if not has_openqasm:
+        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")
+    # parse the QASM program
+    ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+
+    return context["callable"], context["wires"]
