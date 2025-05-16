@@ -125,10 +125,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 else:
                     final_vector = flatten(final_vector)
 
-            # pylint: disable=protected-access
-            self.previous_ops.insert(
-                0, qml.AmplitudeEmbedding._primitive.impl(final_vector, wires=final_wires)
-            )
+            with qml.capture.pause():
+                self.previous_ops.insert(0, qml.AmplitudeEmbedding(final_vector, wires=final_wires))
             # Clear history of amplitude embedding gates since we've merged
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
