@@ -23,3 +23,5 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 """
+
+from .qubit_manager import QubitManager, GrabWires, FreeWires

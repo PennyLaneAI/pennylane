@@ -242,6 +242,11 @@
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
 
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
+  [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
