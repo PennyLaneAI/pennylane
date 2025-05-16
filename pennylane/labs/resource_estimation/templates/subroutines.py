@@ -52,25 +52,14 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
     @staticmethod
     def _resource_decomp(register_size, **kwargs):
         gate_lst = []
-
-        # Normal 
-        # gate_lst.append(
-        #     GateCount(
-        #         ResourceSemiAdder.resource_rep(max_register_size=register_size - 1), 
-        #         register_size,
-        #     )
-        # )
-        
-        #Controlled:
         gate_lst.append(
             GateCount(
                 re.ResourceControlled.resource_rep(
-                    ResourceSemiAdder, {"max_register_size": register_size + 1}, 1, 0,
+                    ResourceSemiAdder, {"max_register_size": 2*register_size}, 1, 0,
                 ),
                 register_size,
             ) 
         )
-
         gate_lst.append(GateCount(re.ResourceCNOT.resource_rep(), register_size))
 
         return gate_lst

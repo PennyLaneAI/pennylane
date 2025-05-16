@@ -153,27 +153,22 @@ class Resources:
 
     def __str__(self):
         """String representation of the Resources object."""
-        # keys = ["wires", "gates"]
-        # vals = [self.num_wires, self.num_gates]
-        # items = "\n".join([str(i) for i in zip(keys, vals)])
-        # items = items.replace("('", "")
-        # items = items.replace("',", ":")
-        # items = items.replace(")", "")
+        total_gates = sum(self.clean_gate_counts.values())
+        total_qubits = self.qubit_manager.total_qubits
 
+        total_gates_str = str(total_gates) if total_gates < 999 else f"{Decimal(total_gates):.3E}"
+        total_qubits_str = str(total_qubits) if total_gates < 9999 else f"{Decimal(total_qubits):.3E}"
+
+        items = "--- Resources: ---\n"
+        items += f" Total qubits: {total_qubits_str}\n"
+        items += f" Total gates : {total_gates_str}\n"
+
+        items += f" Qubit breakdown:\n  {self.qubit_manager}\n"
+        
         gate_type_str = ", ".join(
             [f"'{gate_name}': {Decimal(count):.3E}" if count>999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
         )
-
-        items = "--- Resources: ---\n"
-        items += f" qubit manager: {self.qubit_manager}\n"
-
-        total_gates = sum(self.clean_gate_counts.values())
-        if total_gates<999:
-            items += f" total # gates: {total_gates}\n"
-        else:
-            items += f" total # gates: {Decimal(total_gates):.3E}\n"
-
-        items += " gate_types:\n  {" + gate_type_str + "}"
+        items += " Gate breakdown:\n  {" + gate_type_str + "}"
 
         return items
 

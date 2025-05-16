@@ -109,6 +109,10 @@ class QubitManager:
             )
 
     @property
+    def total_qubits(self):
+        return self.clean_qubits + self.dirty_qubits + self.algo_qubits
+
+    @property
     def clean_qubits(self):
         return self._clean_qubit_counts
 

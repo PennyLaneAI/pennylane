@@ -929,7 +929,7 @@ class ResourceToffoli(ResourceOperator):
     def resource_rep(cls, elbow=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {"elbow":elbow})
 
     @classmethod
     def adjoint_resource_decomp(cls, elbow=None) -> Dict[CompressedResourceOp, int]:
