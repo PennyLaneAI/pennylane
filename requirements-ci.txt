@@ -15,3 +15,5 @@ rich
 diastatic-malt
 pandas
 build
+openqasm3
+antlr4_python3_runtime

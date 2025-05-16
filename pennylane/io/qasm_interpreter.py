@@ -2,10 +2,7 @@ import re
 from functools import partial
 from typing import Callable
 
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+from openqasm3.visitor import QASMNode, QASMVisitor
 
 from pennylane.ops import (
     CH,

@@ -19,11 +19,8 @@ from collections import defaultdict
 from importlib import metadata
 from sys import version_info
 
-try:
-    from openqasm3.parser import parse
-except (ModuleNotFoundError, ImportError) as import_error:
-    pass
 
+from openqasm3.parser import parse
 
 from pennylane.io.qasm_interpreter import QasmInterpreter
 

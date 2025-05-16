@@ -29,11 +29,8 @@ from pennylane import (
     T,
     Toffoli,
 )
+from pennylane.io.qasm_interpreter import QasmInterpreter
 
-try:
-    from pennylane.io.qasm_interpreter import QasmInterpreter
-except (ModuleNotFoundError, ImportError) as import_error:
-    pass
 
 class TestInterpreter:
 
