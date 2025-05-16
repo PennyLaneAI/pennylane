@@ -32,10 +32,14 @@ from pennylane import (
     T,
     Toffoli,
 )
-from pennylane.io.qasm_interpreter import QasmInterpreter
 
 parser = pytest.importorskip("openqasm3.parser")
 
+try:
+    from openqasm3.parser import parse
+    from pennylane.io.qasm_interpreter import QasmInterpreter
+except (ModuleNotFoundError, ImportError) as import_error:
+    pass
 
 class TestInterpreter:
 
