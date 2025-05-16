@@ -27,10 +27,10 @@ from pennylane import math
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
 from pennylane.ops.op_math.controlled_decompositions import (
-    _decompose_mcx_with_many_workers,
+    _decompose_mcx_with_many_workers_old,
     _decompose_mcx_with_one_worker_b95,
     _decompose_mcx_with_one_worker_kg24,
-    _decompose_mcx_with_two_workers,
+    _decompose_mcx_with_two_workers_old,
     _decompose_multicontrolled_unitary,
     _decompose_recursive,
     decompose_mcx,
@@ -40,7 +40,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
-    decompose_mcx_with_many_workers,
+    _decompose_mcx_with_many_workers,
     decompose_mcx_with_one_worker,
 )
 from pennylane.wires import Wires
@@ -806,7 +806,7 @@ class TestMCXDecomposition:
         work_wires = [i for i in range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires)]
 
         with qml.queuing.AnnotatedQueue() as q:
-            decompose_mcx_with_many_workers(control_wires + [target_wire], work_wires)
+            _decompose_mcx_with_many_workers(control_wires + [target_wire], work_wires)
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -908,7 +908,7 @@ class TestMCXDecomposition:
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            record_from_list(_decompose_mcx_with_two_workers)(
+            record_from_list(_decompose_mcx_with_two_workers_old)(
                 control_wires, target_wire, work_wires, work_wire_type="clean"
             )
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -935,7 +935,7 @@ class TestMCXDecomposition:
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 3))
             qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            record_from_list(_decompose_mcx_with_two_workers)(
+            record_from_list(_decompose_mcx_with_two_workers_old)(
                 control_wires, target_wire, work_wires, work_wire_type="dirty"
             )
             return qml.probs(wires=range(n_ctrl_wires + 3))
@@ -995,7 +995,7 @@ class TestMCXDecomposition:
                 work_wire_type,
             )
         else:
-            expected_decomp = _decompose_mcx_with_many_workers(
+            expected_decomp = _decompose_mcx_with_many_workers_old(
                 Wires(control_wires),
                 target_wire,
                 Wires(work_wires),
@@ -1013,14 +1013,14 @@ class TestMCXDecomposition:
         computed_decomp = op.decomposition()
 
         if n_ctrl_wires > 4:
-            expected_decomp = _decompose_mcx_with_two_workers(
+            expected_decomp = _decompose_mcx_with_two_workers_old(
                 Wires(control_wires),
                 target_wire,
                 Wires(work_wires),
                 work_wire_type,
             )
         else:
-            expected_decomp = _decompose_mcx_with_many_workers(
+            expected_decomp = _decompose_mcx_with_many_workers_old(
                 Wires(control_wires),
                 target_wire,
                 Wires(work_wires),
@@ -1037,7 +1037,7 @@ class TestMCXDecomposition:
         work_wires = Wires([6])
 
         with pytest.raises(ValueError, match="At least 2 work wires are needed"):
-            _ = _decompose_mcx_with_two_workers(
+            _ = _decompose_mcx_with_two_workers_old(
                 control_wires, target_wire, work_wires, work_wire_type="clean"
             )
 
