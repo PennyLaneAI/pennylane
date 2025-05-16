@@ -22,7 +22,7 @@ from pennylane import AmplitudeEmbedding
 from pennylane.math import flatten, is_abstract, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import TransformError, transform
 from pennylane.typing import PostprocessingFn
 
 
@@ -80,7 +80,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
             if not isinstance(op, AmplitudeEmbedding):
                 if any(is_abstract(w) for w in op.wires):
-                    self._merge_and_insert_at_the_start()
+                    if self.input_wires:
+                        self._merge_and_insert_at_the_start()
                     self.interpret_all_previous_ops()
                     self.dynamic_wires_encountered = True
 
@@ -89,7 +90,9 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 return
 
             if self.dynamic_wires_encountered:
-                raise ValueError("Cannot use qml.AmplitudeEmbedding after ops on dynamic wires.")
+                raise TransformError(
+                    "Cannot use qml.AmplitudeEmbedding after operators with dynamic wires."
+                )
 
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
                 raise qml.DeviceError(

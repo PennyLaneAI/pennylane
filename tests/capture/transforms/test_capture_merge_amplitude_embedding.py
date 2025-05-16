@@ -67,17 +67,31 @@ class TestRepeatedQubitDeviceErrors:
         ):
             jax.make_jaxpr(qfunc)()
 
-    def test_repeated_traced_wire_error(self):
-        """Test that an error is raised if AmplitudeEmbedding acts on the same traced wire"""
+    def test_repeated_wire_error(self):
+        """Test that an error is raised if AmplitudeEmbedding acts on the same wire"""
 
         @MergeAmplitudeEmbeddingInterpreter()
-        def qfunc(wire):
-            qml.X(wire)
-            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=wire)
+        def qfunc():
+            qml.X(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=0)
 
         with pytest.raises(
             qml.DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+        ):
+            jax.make_jaxpr(qfunc)()
+
+    def test_repeated_traced_wire_error(self):
+        """Test that an error is raised if AmplitudeEmbedding acts on the same traced wire"""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def qfunc(w):
+            qml.X(w)
+            qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=w)
+
+        with pytest.raises(
+            qml.transforms.core.TransformError,
+            match="Cannot use qml.AmplitudeEmbedding after operators with dynamic wires.",
         ):
             jax.make_jaxpr(qfunc)(1)
 
@@ -420,6 +434,43 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         ops = collector.state["ops"]
         assert ops == expected_ops
+
+    def test_dynamic_wire_ops_before_error(self):
+        """Test that an error is raised if ops with dynamic wires are used before AmplitudeEmbedding"""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(w):
+            qml.H(w)
+            qml.AmplitudeEmbedding(jax.numpy.array([1.0, 0.0]), wires=[0])
+
+        with pytest.raises(
+            qml.transforms.core.TransformError,
+            match="Cannot use qml.AmplitudeEmbedding after " "operators with dynamic wires.",
+        ):
+            _ = jax.make_jaxpr(f)(2)
+
+    def test_dynamic_wire_embeddings(self):
+        """Test that AmplitudeEmbeddings with dynamic wires can be merged. If there is overlap,
+        an error will be raised at runtime."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def f(w):
+            qml.AmplitudeEmbedding(jax.numpy.array([1.0, 0]), [w])
+            qml.H(0)
+            qml.AmplitudeEmbedding(jax.numpy.array([1.0, 0.0]), [1])
+
+        jaxpr = jax.make_jaxpr(f)(0)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0)
+        ops = collector.state["ops"]
+        expected = [qml.AmplitudeEmbedding(qml.math.array([1.0, 0.0, 0.0, 0.0]), [0, 1]), qml.H(0)]
+
+        assert ops == expected
+
+        # If first embedding has wire 1, error will happen at runtime
+        collector = CollectOpsandMeas()
+        with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
+            collector.eval(jaxpr.jaxpr, jaxpr.consts, 1)
 
 
 def test_plxpr_to_plxpr_transform():
