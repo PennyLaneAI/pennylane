@@ -333,6 +333,45 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
+class _CachedDecompose:
+    """A class to cache the decomposition of the operators."""
+
+    def __init__(self, method, epsilon, **method_kwargs):
+
+        if method == "sk":
+            self.decompose_fn = lru_cache(maxsize=10000)(
+                partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
+            )
+        else:
+            raise NotImplementedError(
+                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
+            )
+
+        self.method = method
+        self.epsilon = epsilon
+        self.method_kwargs = method_kwargs
+        self.decompose = lru_cache(maxsize=10000)(self.cached_decompose)
+
+    def equal(self, method, epsilon, **method_kwargs):
+        """Check equality based on `method`, `epsilon` and `method_kwargs`."""
+        return (
+            self.method == method
+            and qml.math.allclose(self.epsilon, epsilon)
+            and self.method_kwargs == method_kwargs
+        )
+
+    def cached_decompose(self, angle):
+        """Decomposes the angle into a sequence of gates."""
+        seq = self.decompose_fn(qml.RZ(abs(angle), [0]), 0.1)
+        if angle != abs(angle):
+            adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
+            return adj[1:] + adj[:1]
+        return seq
+
+
+_CACHED_DECOMPOSE = None
+
+
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
@@ -457,24 +496,17 @@ def clifford_t_decomposition(
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        # Build the approximation set for Solovay-Kitaev decomposition
-        if method == "sk":
-            # Cache the decomposition function for performance
-            decompose_fn = lru_cache(maxsize=10000)(
-                partial(sk_decomposition, epsilon=epsilon, **method_kwargs, map_wires=False)
-            )
-
-        else:
-            raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
-            )
+        # Build the decomposition cache based on the method
+        global _CACHED_DECOMPOSE  # pylint: disable=global-statement
+        if _CACHED_DECOMPOSE is None or _CACHED_DECOMPOSE.equal(method, epsilon, **method_kwargs):
+            _CACHED_DECOMPOSE = _CachedDecompose(method, epsilon, **method_kwargs)
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
         for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
                 # Decompose the RZ operation with a default wire
-                clifford_ops = decompose_fn(qml.RZ(op.data[0], [0]))
+                clifford_ops = _CACHED_DECOMPOSE.decompose(op.data[0])
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires

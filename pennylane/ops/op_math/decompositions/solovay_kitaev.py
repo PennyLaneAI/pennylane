@@ -275,9 +275,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-def sk_decomposition(
-    op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10, map_wires=True
-):
+def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
@@ -299,8 +297,6 @@ def sk_decomposition(
             to the gate adjoint. Default value is ``('H', 'S', 'T')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
-        map_wires (bool): If ``True``, the wires of the returned operations are mapped to the wires of the input and queued.
-            Default is ``True``.
 
     Returns:
         list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
@@ -412,7 +408,7 @@ def sk_decomposition(
         )
 
     # Map the wires to that of the operation and queue
-    if map_wires:
+    if op.wires[0] != 0:
         [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
     # Get phase information based on the decomposition effort
