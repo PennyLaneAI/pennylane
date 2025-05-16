@@ -22,10 +22,9 @@ from sys import version_info
 has_openqasm = True
 try:
     from openqasm3.parser import parse
+    from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
-
-from pennylane.io.qasm_interpreter import QasmInterpreter
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
