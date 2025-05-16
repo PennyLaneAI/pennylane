@@ -24,10 +24,6 @@ class DecompositionError(Exception):
     """Base class for decomposition errors."""
 
 
-class DecompositionNotApplicable(Exception):
-    """Exception raised when a decomposition is not applicable to the given operator."""
-
-
 OP_NAME_ALIASES = {
     "X": "PauliX",
     "Y": "PauliY",

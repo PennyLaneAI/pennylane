@@ -33,6 +33,7 @@ import pennylane.operation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
+    register_condition,
     add_decomps,
     list_decomps,
     resource_rep,

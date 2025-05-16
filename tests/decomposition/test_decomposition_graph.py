@@ -26,7 +26,6 @@ import pennylane as qml
 from pennylane.decomposition import (
     DecompositionError,
     DecompositionGraph,
-    DecompositionNotApplicable,
     adjoint_resource_rep,
     controlled_resource_rep,
     pow_resource_rep,
@@ -99,7 +98,7 @@ class TestDecompositionGraph:
         assert len(graph2._graph.edges()) == 8
 
     def test_graph_construction_non_applicable_rules(self, _):
-        """Tests rules that raise DecompositionNotApplicable are skipped."""
+        """Tests rules which are not applicable are skipped."""
 
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             """A custom op"""
@@ -110,20 +109,15 @@ class TestDecompositionGraph:
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
 
-        def _some_resource(num_wires):
-            if num_wires > 1:
-                raise DecompositionNotApplicable
-            return {qml.RZ: 1, qml.CNOT: 1}
-
-        @qml.register_resources(_some_resource)
+        @qml.register_condition(lambda num_wires: num_wires == 1)
+        @qml.register_resources({qml.RZ: 1, qml.CNOT: 1})
         def some_rule(*_, **__):
             raise NotImplementedError
 
         def _some_other_resource(num_wires):
-            if num_wires < 2:
-                raise DecompositionNotApplicable
             return {qml.RZ: 1, qml.CNOT: num_wires - 1}
 
+        @qml.register_condition(lambda num_wires: num_wires >= 2)
         @qml.register_resources(_some_other_resource)
         def some_other_rule(*_, **__):
             raise NotImplementedError
