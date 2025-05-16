@@ -241,10 +241,10 @@ class TestCircuits:
         spec = qnode_spectrum(qnode)(*args)
         assert qnode.interface == "auto"
         assert spec.keys() == expected.keys()
-        for outer_key in spec:
-            assert spec[outer_key].keys() == expected[outer_key].keys()
-            for key in spec[outer_key]:
-                assert np.allclose(spec[outer_key][key], expected[outer_key][key])
+        for key, val in spec.items():
+            assert val.keys() == expected[key].keys()
+            for inner_key, inner_val in val.items():
+                assert np.allclose(inner_val, expected[key][inner_key])
 
     @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1), (2, 3), (4, 1)])
     def test_spectrum_grows_with_gates(self, n_layers, n_qubits):

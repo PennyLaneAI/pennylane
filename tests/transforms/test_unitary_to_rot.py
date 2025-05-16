@@ -704,7 +704,7 @@ class TestTwoQubitUnitaryDifferentiability:
         tape = qml.workflow.construct_tape(transformed_qnode)(x)
         assert len(tape.operations) == 15
 
-        original_grad = jax.grad(original_qnode, argnums=(0))(x)
-        transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)
+        original_grad = jax.grad(original_qnode, argnums=0)(x)
+        transformed_grad = jax.grad(transformed_qnode, argnums=0)(x)
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-6)

@@ -60,9 +60,10 @@ backend = "qasm_simulator"
 
 @pytest.fixture(scope="function", name="default_config")
 def default_config_fixture(tmpdir):
+    # pylint: disable=missing-function-docstring
     config_path = os.path.join(tmpdir, config_filename)
 
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         f.write(test_config)
 
     return Configuration(name=config_path)
@@ -70,9 +71,10 @@ def default_config_fixture(tmpdir):
 
 @pytest.fixture(scope="function", name="default_config_toml")
 def default_config_toml_fixture(tmpdir):
+    # pylint: disable=missing-function-docstring
     config_path = os.path.join(tmpdir, config_filename)
 
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         f.write(test_config)
 
     return toml.load(config_path), config_path
@@ -192,7 +194,7 @@ class TestProperties:
         """Test string value of the Configuration object."""
         config = Configuration("noconfig")
 
-        assert config.__str__() == ""
+        assert str(config) == ""
 
     def test_str_loaded_config(self, monkeypatch, default_config_toml):
         """Test string value of the Configuration object that has been
@@ -203,14 +205,14 @@ class TestProperties:
         monkeypatch.setenv("PENNYLANE_CONF", "")
         config = Configuration(name=config_path)
 
-        assert config.__str__() == f"{config_toml}"
+        assert str(config) == f"{config_toml}"
 
     def test_repr(self):
         """Test repr value of the Configuration object."""
         path = "noconfig"
         config = Configuration(path)
 
-        assert config.__repr__() == "PennyLane Configuration <noconfig>"
+        assert repr(config) == "PennyLane Configuration <noconfig>"
 
 
 # pylint: disable=too-few-public-methods
