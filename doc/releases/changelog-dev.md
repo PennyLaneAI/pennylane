@@ -314,6 +314,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* The shot count for a test for mid-circuit measurements has been reduced by a factor of 5, saving
+  significant computational effort in the test suite.
+  [(#7442)](https://github.com/PennyLaneAI/pennylane/pull/7442)
+
 * Enforce `noise` module to be a tertiary layer module.
   [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
 

@@ -120,7 +120,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-@pytest.mark.parametrize("shots", [None, 5500, [5500, 5501]])
+@pytest.mark.parametrize("shots", [None, 1050, [1050, 1051]])
 @pytest.mark.parametrize(
     "params",
     [
@@ -171,6 +171,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
 
     results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*params)
     results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
+    atol = 1e-8 if shots is None else 0.07
 
     measurements = (
         [qml.expval, qml.probs, qml.var, qml.expval, qml.probs, qml.var]
@@ -185,7 +186,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
         for measure_f, r1, r0 in zip(measurements, res1, res0):
             if shots is None and measure_f in [qml.expval, qml.probs] and batch_size is not None:
                 r0 = qml.math.squeeze(r0)
-            mcm_utils.validate_measurements(measure_f, shot, r1, r0, batch_size=batch_size)
+            mcm_utils.validate_measurements(measure_f, shot, r1, r0, batch_size, atol=atol)
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
