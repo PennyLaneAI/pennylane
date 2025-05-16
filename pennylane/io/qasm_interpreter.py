@@ -1,13 +1,9 @@
+"""
+This submodule contains the interpreter for QASM 3.0.
+"""
 import re
 from functools import partial
 from typing import Callable
-
-has_openqasm = True
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
-
 from pennylane.ops import (
     CH,
     CNOT,
@@ -39,6 +35,13 @@ from pennylane.ops import (
     ctrl,
     pow,
 )
+
+
+has_openqasm = True
+try:
+    from openqasm3.visitor import QASMNode, QASMVisitor
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
 
 SINGLE_QUBIT_GATES = {
     "ID": Identity,
@@ -82,8 +85,7 @@ class QasmInterpreter(QASMVisitor):
     def __init__(self):
         if not has_openqasm:
             raise ImportError("QASM interpreter requires openqasm3 to be installed")
-        else:
-            super().__init__()
+        super().__init__()
 
     def visit(self, node: QASMNode, context: dict):
         """
@@ -228,7 +230,8 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(gate)
 
-    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
+    @staticmethod
+    def modifiers(gate: Callable, node: QASMNode, context: dict):
         """
         Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
         depending on the type of modifier. We build a Callable that applies the modifier appropriately
@@ -260,7 +263,7 @@ class QasmInterpreter(QASMVisitor):
             for callable in call_stack[::-1]:
                 # if there is a control in the stack
                 if (
-                    "partial" == call_stack[0].__class__.__name__
+                    call_stack[0].__class__.__name__ == "partial"
                     and "control" in call_stack[0].keywords
                 ):
                     # if we are processing the control now
@@ -274,7 +277,8 @@ class QasmInterpreter(QASMVisitor):
 
         return call
 
-    def _require_wires(self, context):
+    @staticmethod
+    def _require_wires(context):
         """
         Simple helper that checks if we have wires in the current context.
 

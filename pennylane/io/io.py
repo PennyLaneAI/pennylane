@@ -22,12 +22,11 @@ from importlib import metadata
 from sys import version_info
 from typing import Any, Optional
 
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
 
 has_openqasm = True
 try:
     from openqasm3.parser import parse
-
     from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
@@ -852,9 +851,8 @@ def from_qasm_three(quantum_circuit: str):
     """
     if not has_openqasm:
         raise ImportWarning("QASM interpreter requires openqasm3 to be installed")
-    else:
-        # parse the QASM program
-        ast = parse(quantum_circuit, permissive=True)
-        context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+    # parse the QASM program
+    ast = parse(quantum_circuit, permissive=True)
+    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
 
-        return context["callable"], context["wires"]
+    return context["callable"], context["wires"]

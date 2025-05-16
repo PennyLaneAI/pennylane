@@ -1,7 +1,8 @@
+"""
+Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
+"""
 import pytest
-
-parser = pytest.importorskip("openqasm3.parser")
-
+from pennylane.io.qasm_interpreter import QasmInterpreter
 from pennylane import (
     CH,
     CNOT,
@@ -30,7 +31,8 @@ from pennylane import (
     T,
     Toffoli,
 )
-from pennylane.io.qasm_interpreter import QasmInterpreter
+
+parser = pytest.importorskip("openqasm3.parser")
 
 
 class TestInterpreter:
@@ -78,7 +80,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(
-            TypeError, match="Missing required argument\(s\) for parameterized gate rx"
+            TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "missing-param"})
 
@@ -146,7 +148,7 @@ class TestInterpreter:
         ast = parser.parse(
             """
             qubit q0;
-            qubit q1;  
+            qubit q1;
             ch q0, q1;
             cx q1, q0;
             cy q0, q1;
@@ -189,7 +191,7 @@ class TestInterpreter:
         ast = parser.parse(
             """
             qubit q0;
-            qubit q1;  
+            qubit q1;
             cp(0.4) q0, q1;
             cphase(0.4) q0, q1;
             crx(0.2) q0, q1;
