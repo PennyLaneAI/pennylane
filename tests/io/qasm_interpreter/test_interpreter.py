@@ -45,6 +45,64 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 class TestInterpreter:
 
+    def test_mod_with_declared_param(self, mocker):
+        # parse the QASM program
+        ast = parse(
+            """
+            int power = 2;
+            float phi = 0.2;
+            qubit q0;
+            pow(power) @ rx(phi) q0;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+
+        # setup mocks
+        rx = mocker.spy(RX, "__init__")
+
+        # execute the callable
+        context["callable"]()
+
+        assert rx.call_count == 1  # RX calls PauliX under the hood
+        rx.assert_called_with(RX(2, 0), 2, wires=0)
+
+    def test_uninitialized_param(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            rx(phi) q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NameError,
+            match="Uninitialized variable phi encountered in QASM.",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
+
+    def test_unsuppoted_node_type_raises(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            bit b;
+            qubit q0;
+            float theta = 0.2;
+            rx(theta) q0;
+            measure q0 -> b;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NotImplementedError,
+            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
+
     def test_no_qubits(self):
         # parse the QASM program
         ast = parse(

@@ -105,8 +105,6 @@ class QasmInterpreter(QASMVisitor):
             NameError: When a (so far) unsupported node type is encountered.
         """
         match node.__class__.__name__:
-            case "Identifier":
-                self.identifier(node, context)
             case "QubitDeclaration":
                 self.qubit_declaration(node, context)
             case "ClassicalDeclaration":
@@ -148,19 +146,6 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
         context["callable"] = lambda: [gate() for gate in context["gates"]]
-
-    @staticmethod
-    def identifier(node: QASMNode, context: dict):
-        """
-        Registers an identifier in the current context.
-
-        Args:
-            node (QASMNode): The Identifier QASMNode.
-            context (dict): The current context.
-        """
-        if not hasattr(context, "identifiers"):
-            context["identifiers"] = []
-        context["identifiers"].append(node.name.name)
 
     @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):
@@ -253,7 +238,7 @@ class QasmInterpreter(QASMVisitor):
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pow, z=mod.argument.value)
-                elif mod.argument.name in context["vars"]:
+                elif "vars" in context and mod.argument.name in context["vars"]:
                     wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
@@ -317,7 +302,7 @@ class QasmInterpreter(QASMVisitor):
             raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
         args = []
         for arg in node.arguments:
-            if hasattr(arg, "name") and arg.name in context["vars"]:
+            if hasattr(arg, "name") and "vars" in context and arg.name in context["vars"]:
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
                 if context["vars"][arg.name]["val"] is not None:
