@@ -757,8 +757,8 @@ def vibrational_pes(
            value is ``1``.
         backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
         max_workers (int) = 1 : the maximum number of concurrent units to use
-        
-        
+
+
 
     Returns:
        VibrationalPES object.

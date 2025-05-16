@@ -14,13 +14,12 @@
 """Utility functions related to the construction of the taylor form Hamiltonian."""
 import itertools
 from pathlib import Path
-from pennylane import concurrency
+
 import h5py
 import numpy as np
 from scipy.special import factorial
 
-
-
+from pennylane import concurrency
 
 # pylint: disable = redefined-outer-name,
 
@@ -47,22 +46,26 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial"):
 
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, freqs, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, freqs, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_onemode_kinetic, args)
 
     return _load_cform_onemode_kinetic(num_workers, nmodes, n_states)
 
+
 def _local_onemode_kinetic(rank, boscombos_on_rank, freqs, all_mode_combos):
     """Worker function to calculate the kinetic energy part of the one body integrals to correct the integrals
-    for localized modes. The result are written on hdf5 file. 
+    for localized modes. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         freqs(int): the harmonic frequencies
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
 
     local_K_mat = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
@@ -106,25 +109,27 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial"):
     executor_class = concurrency.backends.get_executor(backend)
 
     with executor_class(max_workers=num_workers) as executor:
-            boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-            args = [(rank, boscombos_on_rank, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
-            executor.starmap(_local_cform_twomode_kinetic, args)
-    
-    
+        boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
+        args = [
+            (rank, boscombos_on_rank, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
+        executor.starmap(_local_cform_twomode_kinetic, args)
 
     return _load_cform_twomode_kinetic(num_workers, nmodes, n_states)
 
+
 def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
     """Worker function to calculate the kinetic energy part of the two body integrals to correct the integrals
-    for localized modes. The result are written on hdf5 file. 
+    for localized modes. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
     local_kin_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii, jj) in enumerate(all_mode_combos):
@@ -135,22 +140,23 @@ def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
         m_const = Usum * np.sqrt(pes.freqs[ii] * pes.freqs[jj]) / 4
 
         for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
-                ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
+            ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
-                conditions = {
-                    (ki == hi + 1 and kj == hj + 1): -m_const * np.sqrt((hi + 1) * (hj + 1)),
-                    (ki == hi + 1 and kj == hj - 1): +m_const * np.sqrt((hi + 1) * hj),
-                    (ki == hi - 1 and kj == hj + 1): +m_const * np.sqrt(hi * (hj + 1)),
-                    (ki == hi - 1 and kj == hj - 1): -m_const * np.sqrt(hi * hj),
-                }
-                ind = nn * len(boscombos_on_rank) + mm
-                for condition, value in conditions.items():
-                    if condition:
-                        local_kin_cform_twobody[ind] += value
+            conditions = {
+                (ki == hi + 1 and kj == hj + 1): -m_const * np.sqrt((hi + 1) * (hj + 1)),
+                (ki == hi + 1 and kj == hj - 1): +m_const * np.sqrt((hi + 1) * hj),
+                (ki == hi - 1 and kj == hj + 1): +m_const * np.sqrt(hi * (hj + 1)),
+                (ki == hi - 1 and kj == hj - 1): -m_const * np.sqrt(hi * hj),
+            }
+            ind = nn * len(boscombos_on_rank) + mm
+            for condition, value in conditions.items():
+                if condition:
+                    local_kin_cform_twobody[ind] += value
     file_path = Path(f"cform_H2Kdata_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H2", data=local_kin_cform_twobody)
-        #return local_kin_cform_twobody
+        # return local_kin_cform_twobody
+
 
 def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
     """
@@ -166,7 +172,7 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen Hamiltonian
     """
-    
+
     nmodes = len(pes.freqs)
     all_mode_combos = [[aa] for aa in range(nmodes)]
     all_bos_combos = list(itertools.product(range(n_states), range(n_states)))
@@ -174,23 +180,28 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
     executor_class = concurrency.backends.get_executor(backend)
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_onemode, args)
-        
 
-    return _load_cform_onemode(num_workers, nmodes, n_states) + _cform_onemode_kinetic(pes.freqs, n_states)
+    return _load_cform_onemode(num_workers, nmodes, n_states) + _cform_onemode_kinetic(
+        pes.freqs, n_states
+    )
+
 
 def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculate the one body integrals. The result are written on hdf5 file. 
+    """Worker function to calculate the one body integrals. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
     local_ham_cform_onebody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
 
@@ -210,10 +221,11 @@ def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
             full_coeff = sqrt * quadrature
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_onebody[ind] += full_coeff
-    
+
     file_path = Path(f"cform_H1data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H1", data=local_ham_cform_onebody)
+
 
 def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     """
@@ -239,23 +251,27 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_onemode_dipole, args)
 
     return _load_cform_onemode_dipole(num_workers, nmodes, n_states)
 
-def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos ):
+
+def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
     """Worker function to calculates the one-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file. 
+    Christiansen dipole operator. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
     local_dipole_cform_onebody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
 
@@ -277,13 +293,10 @@ def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
                 )
                 full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
                 local_dipole_cform_onebody[ind, alpha] += full_coeff
-    
+
     file_path = Path(f"cform_D1data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("D1", data=local_dipole_cform_onebody)
-
-
-
 
 
 def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
@@ -311,30 +324,32 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
     executor_class = concurrency.backends.get_executor(backend)
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes,all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_twomode, args)
 
-
-    return _load_cform_twomode(num_workers, nmodes, n_states )
+    return _load_cform_twomode(num_workers, nmodes, n_states)
 
 
 def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
     """Worker function to calculates the two-body integrals from the given potential energy surface data for the
-    Christiansen Hamiltonian. The result are written on hdf5 file. 
+    Christiansen Hamiltonian. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii, jj) in enumerate(all_mode_combos):
-    # TODO: Skip unnecessary combinations
+        # TODO: Skip unnecessary combinations
         if jj >= ii:
             continue
 
@@ -375,7 +390,8 @@ def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
     file_path = Path(f"cform_H2data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H2", data=local_ham_cform_twobody)
-    
+
+
 def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
     """
     Calculates the two-body integrals from the given potential energy surface data for the
@@ -402,23 +418,27 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_twomode_dipole, args)
 
     return _load_cform_twomode_dipole(num_workers, nmodes, n_states)
 
+
 def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
     """Worker function to calculates the two-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file. 
+    Christiansen dipole operator. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
 
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
@@ -455,13 +475,10 @@ def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
                 )
                 full_coeff = sqrt * quadrature
                 local_dipole_cform_twobody[ind, alpha] += full_coeff
-    
+
     file_path = Path(f"cform_D2data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("D2", data=local_dipole_cform_twobody)
-
-    
-
 
 
 def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
@@ -499,30 +516,34 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
 
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_threemode, args)
 
     return _load_cform_threemode(num_workers, nmodes, n_states)
 
+
 def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
     """Worker function to calculates the three-body integrals from the given potential energy surface data for the
-    Christiansen Hamiltonian. The result are written on hdf5 file. 
+    Christiansen Hamiltonian. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
-    for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):   
+    for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
         # TODO: Skip unnecessary combinations
         if ii2 >= ii1 or ii3 >= ii2:
-                continue
+            continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), int(h1), int(h2), int(h3)
             sqrt = (
@@ -561,7 +582,6 @@ def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_comb
         f.create_dataset("H3", data=local_ham_cform_threebody)
 
 
-
 def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     """
     Calculates the three-body integrals from the given potential energy surface data for the
@@ -597,26 +617,29 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
     with executor_class(max_workers=num_workers) as executor:
         boscombos_on_ranks = np.array_split(all_bos_combos, num_workers)
-        args = [(rank, boscombos_on_rank, n_states, pes, all_mode_combos) for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)]
+        args = [
+            (rank, boscombos_on_rank, n_states, pes, all_mode_combos)
+            for rank, boscombos_on_rank in enumerate(boscombos_on_ranks)
+        ]
         executor.starmap(_local_cform_threemode_dipole, args)
-
 
     dipole_cform_threebody = _load_cform_threemode_dipole(num_workers, nmodes, n_states)
 
     return dipole_cform_threebody
 
+
 def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
     """Worker function to calculates the three-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file. 
+    Christiansen dipole operator. The result are written on hdf5 file.
 
     Args:
-        rank(int) : the rank of the process 
+        rank(int) : the rank of the process
         boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
-    
+
     """
 
     local_dipole_cform_threebody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
@@ -664,7 +687,6 @@ def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mo
         f.create_dataset("D3", data=local_dipole_cform_threebody)
 
 
-
 def _load_cform_onemode(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine pes_onemode from multiple processors.
@@ -703,6 +725,7 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
     ham_cform_onebody = ham_cform_onebody.reshape(final_shape)
 
     return ham_cform_onebody
+
 
 def _load_cform_onemode_kinetic(num_proc, nmodes, quad_order):
     """
@@ -782,6 +805,7 @@ def _load_cform_twomode(num_proc, nmodes, quad_order):
     ham_cform_twobody = ham_cform_twobody.reshape(final_shape)
 
     return ham_cform_twobody
+
 
 def _load_cform_twomode_kinetic(num_proc, nmodes, quad_order):
     """
@@ -1022,18 +1046,22 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
     ham_cform_onebody = _cform_onemode(pes, n_states, num_workers=num_workers, backend=backend)
     for path in Path.cwd().glob("cform_H1data*"):
-            path.unlink()
+        path.unlink()
 
     ham_cform_twobody = _cform_twomode(pes, n_states, num_workers=num_workers, backend=backend)
     if pes.localized:
-        ham_cform_twobody += _cform_twomode_kinetic(pes, n_states, num_workers=num_workers, backend=backend)
+        ham_cform_twobody += _cform_twomode_kinetic(
+            pes, n_states, num_workers=num_workers, backend=backend
+        )
     for path in Path.cwd().glob("cform_H2data*"):
         path.unlink()
 
     if cubic:
-        ham_cform_threebody = _cform_threemode(pes, n_states, num_workers=num_workers, backend=backend)
+        ham_cform_threebody = _cform_threemode(
+            pes, n_states, num_workers=num_workers, backend=backend
+        )
         for path in Path.cwd().glob("cform_H3data*"):
-                path.unlink()
+            path.unlink()
 
         H_arr = [ham_cform_onebody, ham_cform_twobody, ham_cform_threebody]
     else:
@@ -1055,21 +1083,26 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     Returns:
         TensorLike[float]: the integrals for the Christiansen dipole operator
     """
-    dipole_cform_onebody = _cform_onemode_dipole(pes, n_states, num_workers=num_workers, backend=backend)
+    dipole_cform_onebody = _cform_onemode_dipole(
+        pes, n_states, num_workers=num_workers, backend=backend
+    )
     for path in Path.cwd().glob("cform_D1data*"):
         path.unlink()
-    
+
     if pes.localized is True or pes.dipole_level > 1:
-        dipole_cform_twobody = _cform_twomode_dipole(pes, n_states, num_workers=num_workers, backend=backend)
+        dipole_cform_twobody = _cform_twomode_dipole(
+            pes, n_states, num_workers=num_workers, backend=backend
+        )
         for path in Path.cwd().glob("cform_D2data*"):
             path.unlink()
-        
 
     if pes.localized is True or pes.dipole_level > 2:
-        dipole_cform_threebody = _cform_threemode_dipole(pes, n_states, num_workers=num_workers, backend=backend)
+        dipole_cform_threebody = _cform_threemode_dipole(
+            pes, n_states, num_workers=num_workers, backend=backend
+        )
         for path in Path.cwd().glob("cform_D3data*"):
             path.unlink()
-    
+
         D_arr = [dipole_cform_onebody, dipole_cform_twobody, dipole_cform_threebody]
     else:
         D_arr = [dipole_cform_onebody, dipole_cform_twobody]

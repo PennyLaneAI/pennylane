@@ -141,23 +141,33 @@ def test_christiansen_integrals():
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True, num_workers=2, backend="mp_pool")
+    one, two, three = christiansen_integrals(
+        pes=pes_object_3D, n_states=4, cubic=True, num_workers=2, backend="mp_pool"
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True, num_workers=3, backend="cf_procpool")
+    one, two, three = christiansen_integrals(
+        pes=pes_object_3D, n_states=4, cubic=True, num_workers=3, backend="cf_procpool"
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True, num_workers=4, backend="cf_threadpool")
+    one, two, three = christiansen_integrals(
+        pes=pes_object_3D, n_states=4, cubic=True, num_workers=4, backend="cf_threadpool"
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True, num_workers=5, backend="mpi4py_pool")
+    one, two, three = christiansen_integrals(
+        pes=pes_object_3D, n_states=4, cubic=True, num_workers=5, backend="mpi4py_pool"
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True, num_workers=6, backend="mpi4py_comm")
+    one, two, three = christiansen_integrals(
+        pes=pes_object_3D, n_states=4, cubic=True, num_workers=6, backend="mpi4py_comm"
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
@@ -169,23 +179,33 @@ def test_christiansen_integrals_dipole():
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, num_workers=2, backend="mp_pool")
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes_object_3D, n_states=4, num_workers=2, backend="mp_pool"
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, num_workers=3, backend="cf_procpool")
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes_object_3D, n_states=4, num_workers=3, backend="cf_procpool"
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, num_workers=4, backend="cf_threadpool")
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes_object_3D, n_states=4, num_workers=4, backend="cf_threadpool"
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, num_workers=5, backend="mpi4py_pool")
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes_object_3D, n_states=4, num_workers=5, backend="mpi4py_pool"
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, num_workers=6, backend="mpi4py_comm")
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes_object_3D, n_states=4, num_workers=6, backend="mpi4py_comm"
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
@@ -195,7 +215,11 @@ def test_cform_onemode():
     """Test that _cform_onemode produces the expected one-body integral."""
     flattened_H1 = H1.ravel()
     assert np.allclose(
-        abs(flattened_H1), abs(_cform_onemode(pes=pes_object_3D, n_states=4, num_workers=2, backend="mpi4py_pool")).ravel(), atol=1e-8
+        abs(flattened_H1),
+        abs(
+            _cform_onemode(pes=pes_object_3D, n_states=4, num_workers=2, backend="mpi4py_pool")
+        ).ravel(),
+        atol=1e-8,
     )
 
 
@@ -223,7 +247,11 @@ def test_cform_threemode_dipole():
 
     assert np.allclose(
         abs(flattened_D3),
-        abs(_cform_threemode_dipole(pes=pes_object_3D, n_states=4).transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).ravel()),
+        abs(
+            _cform_threemode_dipole(pes=pes_object_3D, n_states=4)
+            .transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+            .ravel()
+        ),
         atol=1e-8,
     )
 
@@ -232,7 +260,11 @@ def test_cform_twomode():
     """Test that _cform_twomode produces the expected two-body integral."""
     flattened_H2 = H2.ravel()
     assert np.allclose(
-        abs(flattened_H2), abs(_cform_twomode(pes=pes_object_3D, n_states=4,num_workers=2, backend="mpi4py_pool")).ravel(), atol=1e-8
+        abs(flattened_H2),
+        abs(
+            _cform_twomode(pes=pes_object_3D, n_states=4, num_workers=2, backend="mpi4py_pool")
+        ).ravel(),
+        atol=1e-8,
     )
 
 
@@ -242,6 +274,12 @@ def test_cform_twomode_dipole():
 
     assert np.allclose(
         abs(flattened_D2),
-        abs(_cform_twomode_dipole(pes=pes_object_3D, n_states=4, num_workers=2, backend="cf_threadpool").transpose(1, 2, 3, 4, 5, 6, 0).ravel()),
+        abs(
+            _cform_twomode_dipole(
+                pes=pes_object_3D, n_states=4, num_workers=2, backend="cf_threadpool"
+            )
+            .transpose(1, 2, 3, 4, 5, 6, 0)
+            .ravel()
+        ),
         atol=1e-8,
     )
