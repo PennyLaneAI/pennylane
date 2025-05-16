@@ -126,27 +126,62 @@
   qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
   ```
 
-* The :func:`~.transforms.decompose` transform now supports symbolic operators (e.g., `Adjoint` and `Controlled`) specified as strings in the `gate_set` argument
-  when the new graph-based decomposition system is enabled.
-  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
-
-  ```python
-  from functools import partial
-  import pennylane as qml
+* Symbolic operator types (e.g., `Adjoint`, `Controlled`, and `Pow`) can now be specified as strings
+  in various parts of the new graph-based decomposition system, specifically:
+  * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding symbolic
+    operators in the target gate set.
+    [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+    ```python
+    from functools import partial
+    import pennylane as qml
   
-  qml.decomposition.enable_graph()
+    qml.decomposition.enable_graph()
    
-  @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.Toffoli(wires=[0, 1, 2])
-  ```
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ───────────╭●───────────╭●────╭●──T──╭●─┤  
-  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤  
-  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
-  ```
+    @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.Toffoli(wires=[0, 1, 2])
+    ```
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+    ```
+  * Symbolic operator types can now be given as strings to the `op_type` argument of :func:`~.decomposition.add_decomps`,
+    or as keys of the dictionaries passed to the `alt_decomps` and `fixed_decomps` arguments of the
+    :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
+    registered for symbolic operators.
+    [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
+    ```python
+    @qml.register_resources({qml.RY: 1})
+    def my_adjoint_ry(phi, wires, **_):
+        qml.RY(-phi, wires=wires)
+
+    @qml.register_resources({qml.RX: 1})
+    def my_adjoint_rx(phi, wires, **__):
+        qml.RX(-phi, wires)
+
+    # Registers a decomposition rule for the adjoint of RY globally
+    qml.add_decomps("Adjoint(RY)", my_adjoint_ry)
+
+    @partial(
+        qml.transforms.decompose,
+        gate_set={"RX", "RY", "CNOT"},
+        fixed_decomps={"Adjoint(RX)": my_adjoint_rx}
+    )
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.adjoint(qml.RX(0.5, wires=[0]))
+        qml.CNOT(wires=[0, 1])
+        qml.adjoint(qml.RY(0.5, wires=[1]))
+        return qml.expval(qml.Z(0))
+    ```
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ──RX(-0.50)─╭●────────────┤  <Z>
+    1: ────────────╰X──RY(-0.50)─┤
+    ```
 
 <h3>Improvements 🛠</h3>
 

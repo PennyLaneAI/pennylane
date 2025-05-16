@@ -20,11 +20,11 @@ import pennylane as qml
 from pennylane.decomposition.resources import Resources, pow_resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     AdjointDecomp,
-    adjoint_adjoint_decomp,
     adjoint_controlled_decomp,
     adjoint_pow_decomp,
-    pow_decomp,
-    pow_pow_decomp,
+    cancel_adjoint,
+    merge_powers,
+    repeat_pow_base,
     same_type_adjoint_decomp,
 )
 from tests.decomposition.conftest import to_resources
@@ -39,12 +39,10 @@ class TestAdjointDecompositionRules:
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
 
         with qml.queuing.AnnotatedQueue() as q:
-            adjoint_adjoint_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(0.5, wires=0)]
-        assert adjoint_adjoint_decomp.compute_resources(**op.resource_params) == to_resources(
-            {qml.RX: 1}
-        )
+        assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources({qml.RX: 1})
 
     @pytest.mark.jax
     def test_adjoint_adjoint_capture(self):
@@ -58,7 +56,7 @@ class TestAdjointDecompositionRules:
         qml.capture.enable()
 
         def circuit():
-            adjoint_adjoint_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
@@ -207,10 +205,10 @@ class TestPowDecomposition:
 
         op = qml.pow(qml.pow(qml.H(0), 3), 2)
         with qml.queuing.AnnotatedQueue() as q:
-            pow_pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
-        assert pow_pow_decomp.compute_resources(**op.resource_params) == to_resources(
+        assert merge_powers.compute_resources(**op.resource_params) == to_resources(
             {pow_resource_rep(qml.H, {}, 6): 1}
         )
 
@@ -219,10 +217,10 @@ class TestPowDecomposition:
 
         op = qml.pow(qml.H(0), 3)
         with qml.queuing.AnnotatedQueue() as q:
-            pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.H(0), qml.H(0), qml.H(0)]
-        assert pow_decomp.compute_resources(**op.resource_params) == to_resources({qml.H: 3})
+        assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qml.H: 3})
 
     @pytest.mark.jax
     def test_pow_general_capture(self):
@@ -236,7 +234,7 @@ class TestPowDecomposition:
         qml.capture.enable()
 
         def circuit():
-            pow_decomp(*op.parameters, wires=op.wires, **op.hyperparameters)
+            repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
@@ -251,7 +249,7 @@ class TestPowDecomposition:
 
         op = qml.pow(qml.H(0), 0.5)
         with pytest.raises(NotImplementedError, match="Non-integer or negative powers"):
-            pow_decomp.compute_resources(**op.resource_params)
+            repeat_pow_base.compute_resources(**op.resource_params)
         op = qml.pow(qml.H(0), -1)
         with pytest.raises(NotImplementedError, match="Non-integer or negative powers"):
-            pow_decomp.compute_resources(**op.resource_params)
+            repeat_pow_base.compute_resources(**op.resource_params)
