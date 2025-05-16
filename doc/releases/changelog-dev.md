@@ -304,6 +304,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated. Using
+  dynamic wires with non-native transforms can lead to incorrect transformations.
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
+
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
   has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
@@ -312,8 +316,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
-* Fix a bug where certain transforms transformed circuits incorrectly with program capture enabled (`qml.capture.enable()`)
-  when dynamic wires were present in the circuit. The affected transforms were:
+* Fix a bug where certain program capture native transforms transformed circuits incorrectly when
+  dynamic wires were present in the circuit. The affected transforms were:
   * :func:`~pennylane.transforms.cancel_inverses`
   * :func:`~pennylane.transforms.merge_rotations`
   * :func:`~pennylane.transforms.single_qubit_fusion`
