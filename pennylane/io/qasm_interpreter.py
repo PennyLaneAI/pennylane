@@ -225,8 +225,7 @@ class QasmInterpreter(QASMVisitor):
         elif node.name.name.upper() in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
-            # TODO: turn into warning when we have supported all we would like to
-            print(f"Unsupported gate encountered in QASM: {node.name}")
+            NotImplementedError(f"Unsupported gate encountered in QASM: {node.name}")
 
         if len(node.modifiers) > 0:
             gate = self.modifiers(gate, node, context)
@@ -279,8 +278,20 @@ class QasmInterpreter(QASMVisitor):
 
         return call
 
-    @staticmethod
-    def parameterized_gate(gates_dict: dict, node: QASMNode, context: dict):
+    def _require_wires(self, context):
+        """
+        Simple helper that checks if we have wires in the current context.
+
+        Args:
+            context (dict): The current context.
+
+        Raises:
+            NameError: If the context is missing a wire.
+        """
+        if "wires" not in context:
+            raise NameError(f"Attempt to reference wires that have not been declared in {context['name']}")
+
+    def parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
         """
         Registers a parameterized gate application. Builds a Callable partial
         that can be executed when the QNode is called. The gate will be executed at that time
@@ -297,6 +308,7 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: If an argument is not found in the current context.
         """
+        self._require_wires(context)
         args = []
         for arg in node.arguments:
             if hasattr(arg, "name") and arg.name in context["vars"]:
@@ -323,8 +335,7 @@ class QasmInterpreter(QASMVisitor):
             ],
         )
 
-    @staticmethod
-    def non_parameterized_gate(gates_dict: dict, node: QASMNode, context: dict):
+    def non_parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
         """
         Registers a multi qubit gate application. Builds a Callable partial that
         will execute the gate with the appropriate arguments at "runtime".
@@ -337,6 +348,7 @@ class QasmInterpreter(QASMVisitor):
         Returns:
             Callable: The Callable partial that will execute the gate on the appropriate qubits.
         """
+        self._require_wires(context)
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[
