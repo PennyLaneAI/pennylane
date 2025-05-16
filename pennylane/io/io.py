@@ -18,6 +18,9 @@ PennyLane templates.
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+from openqasm3.parser import parse
+
+from pennylane.io.qasm_interpreter import QasmInterpreter
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -704,5 +707,20 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm_three(quantum_circuit: str, measurements=None):
-    pass
+def from_qasm_three(quantum_circuit: str):
+    """
+    Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
+        interpreter.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a simple quantum circuit.
+
+    Returns:
+        function: a function created based on the QASM string that can be queued into a QNode.
+
+    """
+    # parse the QASM program
+    ast = parse(quantum_circuit, permissive=True)
+    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+
+    return context["callable"]
