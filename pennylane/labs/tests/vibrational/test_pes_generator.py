@@ -32,17 +32,6 @@ h5py = pytest.importorskip("h5py")
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 
-# def test_import_mpi4py(monkeypatch):
-# """Test if an ImportError is raised by _import_mpi4py function."""
-# pylint: disable=protected-access
-
-# with monkeypatch.context() as m:
-# m.setitem(sys.modules, "mpi4py", None)
-
-# with pytest.raises(ImportError, match="This feature requires mpi4py"):
-# pes_generator._import_mpi4py()
-
-
 @pytest.mark.parametrize(
     ("sym", "geom", "harmonic_res", "do_dipole", "exp_pes_onemode", "exp_dip_onemode"),
     # Expected results were obtained using vibrant code

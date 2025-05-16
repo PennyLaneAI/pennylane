@@ -135,76 +135,42 @@ def test_christiansen_dipole():
     )
 
 
-def test_christiansen_integrals():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    # Expected results were obtained using vibrant code
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_christiansen_integrals(pes, n_states, num_workers, backend):
     """Test that christiansen_integrals produces the expected integrals."""
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True)
-    assert np.allclose(abs(one), abs(H1), atol=1e-8)
-    assert np.allclose(abs(two), abs(H2), atol=1e-8)
-    assert np.allclose(abs(three), abs(H3), atol=1e-8)
     one, two, three = christiansen_integrals(
-        pes=pes_object_3D, n_states=4, cubic=True, num_workers=2, backend="mp_pool"
-    )
-    assert np.allclose(abs(one), abs(H1), atol=1e-8)
-    assert np.allclose(abs(two), abs(H2), atol=1e-8)
-    assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(
-        pes=pes_object_3D, n_states=4, cubic=True, num_workers=3, backend="cf_procpool"
-    )
-    assert np.allclose(abs(one), abs(H1), atol=1e-8)
-    assert np.allclose(abs(two), abs(H2), atol=1e-8)
-    assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(
-        pes=pes_object_3D, n_states=4, cubic=True, num_workers=4, backend="cf_threadpool"
-    )
-    assert np.allclose(abs(one), abs(H1), atol=1e-8)
-    assert np.allclose(abs(two), abs(H2), atol=1e-8)
-    assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(
-        pes=pes_object_3D, n_states=4, cubic=True, num_workers=5, backend="mpi4py_pool"
-    )
-    assert np.allclose(abs(one), abs(H1), atol=1e-8)
-    assert np.allclose(abs(two), abs(H2), atol=1e-8)
-    assert np.allclose(abs(three), abs(H3), atol=1e-8)
-    one, two, three = christiansen_integrals(
-        pes=pes_object_3D, n_states=4, cubic=True, num_workers=6, backend="mpi4py_comm"
+        pes=pes, n_states=n_states, cubic=True, num_workers=num_workers, backend=backend
     )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
 
 
-def test_christiansen_integrals_dipole():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    # Expected results were obtained using vibrant code
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend):
     """Test that christiansen_integrals_dipole produces the expected dipole integrals."""
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4)
-    assert np.allclose(abs(one), abs(D1), atol=1e-8)
-    assert np.allclose(abs(two), abs(D2), atol=1e-8)
-    assert np.allclose(abs(three), abs(D3), atol=1e-8)
     one, two, three = christiansen_integrals_dipole(
-        pes=pes_object_3D, n_states=4, num_workers=2, backend="mp_pool"
-    )
-    assert np.allclose(abs(one), abs(D1), atol=1e-8)
-    assert np.allclose(abs(two), abs(D2), atol=1e-8)
-    assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(
-        pes=pes_object_3D, n_states=4, num_workers=3, backend="cf_procpool"
-    )
-    assert np.allclose(abs(one), abs(D1), atol=1e-8)
-    assert np.allclose(abs(two), abs(D2), atol=1e-8)
-    assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(
-        pes=pes_object_3D, n_states=4, num_workers=4, backend="cf_threadpool"
-    )
-    assert np.allclose(abs(one), abs(D1), atol=1e-8)
-    assert np.allclose(abs(two), abs(D2), atol=1e-8)
-    assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(
-        pes=pes_object_3D, n_states=4, num_workers=5, backend="mpi4py_pool"
-    )
-    assert np.allclose(abs(one), abs(D1), atol=1e-8)
-    assert np.allclose(abs(two), abs(D2), atol=1e-8)
-    assert np.allclose(abs(three), abs(D3), atol=1e-8)
-    one, two, three = christiansen_integrals_dipole(
-        pes=pes_object_3D, n_states=4, num_workers=6, backend="mpi4py_comm"
+        pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
     )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)

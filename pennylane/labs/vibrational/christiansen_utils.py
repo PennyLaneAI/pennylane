@@ -31,9 +31,8 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial"):
     Args:
         freqs(int): the harmonic frequencies
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
     Returns:
         TensorLike[float]: the kinetic energy part of the one body integrals
     """
@@ -94,10 +93,8 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-
-    Returns:
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
         TensorLike[float]: the kinetic energy part of the two body integrals
     """
     nmodes = len(pes.freqs)
@@ -166,8 +163,8 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen Hamiltonian
@@ -235,9 +232,8 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen dipole operator
@@ -307,8 +303,8 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
 
     Returns:
@@ -400,8 +396,8 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
 
     Returns:
@@ -489,9 +485,8 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
     Returns:
         TensorLike[float]: the three-body integrals for the Christiansen Hamiltonian
@@ -590,8 +585,8 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
 
     Returns:
@@ -1036,8 +1031,8 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
 
     Returns:
@@ -1076,8 +1071,8 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int) = 1 : the number of concurrent units used for the computation
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        num_workers (int): the number of concurrent units used for the computation
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
 
 
     Returns:

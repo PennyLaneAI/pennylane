@@ -66,8 +66,8 @@ def _pes_onemode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-        max_workers (int) = 1 : the maximum number of concurrent units to use
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        max_workers (int): the maximum number of concurrent units to use
 
     Returns:
         tuple: A tuple containing the following:
@@ -247,8 +247,8 @@ def _pes_twomode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-        max_workers (int) = 1 : the maximum number of concurrent units to use
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        max_workers: the maximum number of concurrent units to use
 
     Returns:
         tuple: A tuple containing the following:
@@ -615,8 +615,8 @@ def _pes_threemode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-        max_workers (int) = 1 : the maximum number of concurrent units to use
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        max_workers: the maximum number of concurrent units to use
 
 
     Returns:
@@ -755,8 +755,8 @@ def vibrational_pes(
        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
            ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
            value is ``1``.
-        backend (string) = serial : the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-        max_workers (int) = 1 : the maximum number of concurrent units to use
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
+        max_workers (int): the maximum number of concurrent units to use
 
 
 
