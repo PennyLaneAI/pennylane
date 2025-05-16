@@ -1,10 +1,6 @@
 import pytest
 
-has_openqasm = True
-try:
-    from openqasm3.parser import parse
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
+parser = pytest.importorskip("openqasm3.parser")
 
 from pennylane import (
     CH,
@@ -39,15 +35,9 @@ from pennylane.io.qasm_interpreter import QasmInterpreter
 
 class TestInterpreter:
 
-    def __init__(self):
-        if not has_openqasm:
-            raise ImportError("Qasm interpreter requires openqasm to be installed.")
-        else:
-            super().__init__()
-
     def test_no_qubits(self):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             float theta;
             rx(theta) q0;
@@ -60,7 +50,7 @@ class TestInterpreter:
 
     def test_unsupported_gate(self):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;
@@ -75,7 +65,7 @@ class TestInterpreter:
 
     def test_missing_param(self):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             float theta;
@@ -90,7 +80,7 @@ class TestInterpreter:
 
     def test_uninitialized_var(self):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             float theta;
@@ -105,7 +95,7 @@ class TestInterpreter:
     def test_parses_simple_qasm(self, mocker):
 
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;
@@ -149,7 +139,7 @@ class TestInterpreter:
 
     def test_interprets_two_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;  
@@ -192,7 +182,7 @@ class TestInterpreter:
 
     def test_interprets_parameterized_two_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;  
@@ -233,7 +223,7 @@ class TestInterpreter:
 
     def test_interprets_multi_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;
@@ -264,7 +254,7 @@ class TestInterpreter:
 
     def test_interprets_parameterized_single_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;
@@ -322,7 +312,7 @@ class TestInterpreter:
 
     def test_single_qubit_gates(self, mocker):
         # parse the QASM program
-        ast = parse(
+        ast = parser.parse(
             """
             qubit q0;
             qubit q1;
