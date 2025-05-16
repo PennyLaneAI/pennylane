@@ -37,3 +37,4 @@ tomli~=2.0.0 # Drop once minimum Python version is 3.11
 sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
 diastatic-malt
+galois
