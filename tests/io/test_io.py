@@ -206,8 +206,10 @@ class TestLoad:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
 
-class TestFromOpenQasm:
-    """Test the qml.io.from_qasm_three function"""
+class TestOpenQasm:
+    """Test the qml.to_openqasm and qml.io.from_qasm_three functions."""
+
+    dev = qml.device("default.qubit", wires=2, shots=100)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_from_qasm_three(self, mocker):
@@ -228,12 +230,6 @@ class TestFromOpenQasm:
         # assertions
         parse.assert_called_with(circuit, permissive=True)
         visit.assert_called_once()
-
-
-class TestToOpenQasm:
-    """Test the qml.to_openqasm function."""
-
-    dev = qml.device("default.qubit", wires=2, shots=100)
 
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""
