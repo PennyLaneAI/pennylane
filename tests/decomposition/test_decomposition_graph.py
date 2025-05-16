@@ -347,8 +347,8 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        assert len(graph._graph.nodes()) == 28
-        assert len(graph._graph.edges()) == 39
+        assert len(graph._graph.nodes()) == 31
+        assert len(graph._graph.edges()) == 43
 
         # Verify the decompositions
         graph.solve()
