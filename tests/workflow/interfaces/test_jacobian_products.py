@@ -22,6 +22,7 @@ from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
@@ -85,24 +86,16 @@ def test_no_gradients():
 
     jpc = NoGradients()
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.compute_jacobian(())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.compute_vjp((), ())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.execute_and_compute_jvp((), ())
 
-    with pytest.raises(
-        qml.QuantumFunctionError, match="cannot be calculated with diff_method=None"
-    ):
+    with pytest.raises(QuantumFunctionError, match="cannot be calculated with diff_method=None"):
         jpc.execute_and_compute_jacobian(())
 
 

@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 
 from .conftest import get_legacy_capabilities
 
@@ -219,7 +220,7 @@ class TestCapabilities:
         if cap["supports_tensor_observables"]:
             circuit()
         else:
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 circuit()
 
     def test_returns_state(self, device_kwargs):
@@ -238,7 +239,7 @@ class TestCapabilities:
         if not cap.get("returns_state"):
             # If the device is not defined to return state then the
             # access_state method should raise
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 dev.access_state()
 
             try:

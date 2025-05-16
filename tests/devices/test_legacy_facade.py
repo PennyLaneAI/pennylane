@@ -28,6 +28,7 @@ from pennylane.devices.legacy_facade import (
     legacy_device_batch_transform,
     legacy_device_expand_fn,
 )
+from pennylane.exceptions import DeviceError
 
 
 class DummyDevice(qml.devices.LegacyDevice):
@@ -292,13 +293,13 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="device"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
     def test_adjoint_support(self):

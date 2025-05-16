@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
@@ -186,9 +187,7 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=[0])
 
-        with pytest.raises(
-            qml.DeviceError, match="not accepted with finite shots on default.qubit"
-        ):
+        with pytest.raises(DeviceError, match="not accepted with finite shots on default.qubit"):
             circuit(0.5)
 
     @pytest.mark.parametrize("wires", single_wires_list)

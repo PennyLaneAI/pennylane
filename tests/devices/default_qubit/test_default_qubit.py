@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
+from pennylane.exceptions import DeviceError
 
 set_start_method("spawn")
 
@@ -78,7 +79,7 @@ def test_snapshot_multiprocessing_qnode():
         return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()

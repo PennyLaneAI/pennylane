@@ -20,6 +20,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -167,7 +168,7 @@ class SampleMP(SampleMeasurement):
             if not all(
                 isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
             ) and not all(qml.math.is_abstract(o) for o in obs):
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
                     "used when collecting statistics for a sequence of mid-circuit measurements."

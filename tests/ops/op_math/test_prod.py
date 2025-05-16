@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
+from pennylane.exceptions import DeviceError
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
@@ -1464,7 +1465,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             my_circ()
 
     def test_operation_integration(self):
