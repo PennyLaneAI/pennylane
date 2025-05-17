@@ -936,29 +936,24 @@ class TestMCXDecomposition:
 
         assert qml.math.allclose(matrix, expected_matrix)
 
-    @pytest.mark.parametrize("n_ctrl_wires", range(3, 8))
-    def test_decomposition_with_no_workers(self, n_ctrl_wires):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
-        matrix-based version by checking if U^dagger U applies the identity to each basis
-        state. This test focuses on the case where there is no work wires."""
+    @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7])
+    def test_decompose_mcx_old(self, n_ctrl_wires):
+        """Test that the decompose_mcx produces the correct decomposition."""
 
-        # pylint: disable=protected-access
-        control_wires = Wires(range(n_ctrl_wires))
-        target_wire = n_ctrl_wires
+        control_wires = list(range(1, n_ctrl_wires + 1))
+        target_wire = 0
 
-        dev = qml.device("default.qubit", wires=n_ctrl_wires + 1)
+        # The MultiControlledX instance to test.
+        mcx = qml.MultiControlledX(wires=control_wires + [target_wire])
 
-        @qml.qnode(dev)
-        def f(bitstring):
-            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
-            record_from_list(decompose_mcx)(control_wires, Wires(target_wire), work_wires=Wires([]))
-            return qml.probs(wires=range(n_ctrl_wires + 1))
+        decomp = decompose_mcx(control_wires, target_wire, [])
 
-        u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
-        ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+        # Verify that the decomposition produces an equivalent matrix.
+        tape = qml.tape.QuantumScript(decomp)
+        matrix = _tape_to_matrix(tape, wire_order=mcx.wires)
+        expected_matrix = mcx.sparse_matrix()
+
+        assert qml.math.allclose(matrix, expected_matrix)
 
     @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
