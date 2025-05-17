@@ -16,6 +16,8 @@
 
 from typing import Optional
 
+import numpy as np
+
 from pennylane import control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
@@ -488,6 +490,43 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **
 
 
 decompose_mcx_with_one_worker = flip_zero_control(_decompose_mcx_with_one_worker)
+
+
+def _decompose_mcx_no_worker_resource(num_control_wires, **__):
+    len_k1 = (num_control_wires + 1) // 2
+    len_k2 = num_control_wires - len_k1
+    return {
+        ops.Hadamard: 2,
+        resource_rep(ops.QubitUnitary, num_wires=1): 2,
+        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k2,
+            num_work_wires=len_k1,
+            work_wire_type="dirty",
+        ): 2,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k1,
+            num_work_wires=len_k2,
+            work_wire_type="dirty",
+        ): 2,
+        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+    }
+
+
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(_decompose_mcx_no_worker_resource)
+def _decompose_mcx_with_no_worker(wires, **_):
+    """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
+    U = ops.RX.compute_matrix(np.pi)
+    _ctrl_decomp_bisect_md(U, wires)
+    ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
+
+
+decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker)
 
 ####################
 # Helper Functions #

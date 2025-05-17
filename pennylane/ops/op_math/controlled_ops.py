@@ -41,6 +41,7 @@ from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
     decompose_mcx_with_many_workers,
+    decompose_mcx_with_no_worker,
     decompose_mcx_with_one_worker,
     decompose_mcx_with_two_workers,
     multi_control_decomp_zyz_rule,
@@ -1619,6 +1620,7 @@ add_decomps(
     decompose_mcx_with_many_workers,
     decompose_mcx_with_two_workers,
     decompose_mcx_with_one_worker,
+    decompose_mcx_with_no_worker,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
