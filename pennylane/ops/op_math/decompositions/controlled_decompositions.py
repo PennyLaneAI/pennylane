@@ -354,6 +354,7 @@ def _decompose_mcx_with_many_workers_resource(num_control_wires, **__):
     return {ops.Toffoli: 4 * (num_control_wires - 2)}
 
 
+# pylint: disable=no-value-for-parameter
 @register_condition(_decompose_mcx_with_many_workers_condition)
 @register_resources(_decompose_mcx_with_many_workers_resource)
 def _decompose_mcx_with_many_workers(wires, work_wires, **__):
@@ -813,6 +814,7 @@ def _controlled_x(target_wire, control_wires, work_wires, work_wire_type):
         )
 
 
+# pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
     Construct a quantum circuit for creating n-condionally clean ancillae using 3n qubits. This
