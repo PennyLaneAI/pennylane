@@ -390,10 +390,10 @@ def _two_workers_condition(num_control_wires, num_work_wires, **__):
 def _two_workers_resource(num_control_wires, work_wire_type, **__):
     if work_wire_type == "clean":
         n_ccx = 2 * num_control_wires - 3
-        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3}
+        return {ops.Toffoli: n_ccx, ops.X: n_ccx - 3 if num_control_wires < 6 else n_ccx - 5}
     # Otherwise, we assume the work wires are dirty
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4}
+    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if num_control_wires < 6 else n_ccx - 8}
 
 
 @register_condition(_two_workers_condition)
@@ -413,13 +413,14 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
 
     # First use the work wire to prepare the first two control wires as conditionally clean.
     ops.Toffoli([wires[0], wires[1], work_wires[0]])
-    middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
+    middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
 
     # Apply the MCX in the middle
-    if len(middle_ctrls) == 1:
-        ops.Toffoli([work_wires[0], wires[middle_ctrls[0]], wires[-1]])
+    if len(middle_ctrl_indices) == 1:
+        ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
     else:
-        _decompose_mcx_with_one_worker(work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:])
+        middle_wires = [wires[i] for i in middle_ctrl_indices]
+        _decompose_mcx_with_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
@@ -427,12 +428,13 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
 
     if work_wire_type == "dirty":
         # Perform toggle-detection of the work wire is dirty
-        middle_ctrls = _build_log_n_depth_ccx_ladder(wires[:-1])
-        if len(middle_ctrls) == 1:
-            ops.Toffoli([work_wires[0], wires[middle_ctrls[0]], wires[-1]])
+        middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
+        if len(middle_ctrl_indices) == 1:
+            ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
         else:
+            middle_wires = [wires[i] for i in middle_ctrl_indices]
             _decompose_mcx_with_one_worker(
-                work_wires[:1] + middle_ctrls + wires[-1:], work_wires[1:]
+                work_wires[:1] + middle_wires + wires[-1:], work_wires[1:]
             )
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
@@ -473,15 +475,15 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **
     if len(wires) == 3:
         return
 
-    final_ctrl = _build_linear_depth_ladder(wires[:-1])
-    ops.Toffoli([work_wires[0], wires[final_ctrl], wires[-1]])
+    final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
+    ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
     ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
     if work_wire_type == "dirty":
         # Perform toggle-detection of the work wire is dirty
         _build_linear_depth_ladder(wires[:-1])
-        ops.Toffoli([work_wires[0], wires[final_ctrl], wires[-1]])
+        ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
