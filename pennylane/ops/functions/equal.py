@@ -662,7 +662,7 @@ def _equal_measurements(
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        return equal(
+        dispatch_result = _equal(
             op1.obs,
             op2.obs,
             check_interface=check_interface,
@@ -670,13 +670,22 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+        if isinstance(dispatch_result, str):
+            return dispatch_result
+        return dispatch_result
+    return True
 
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
-            return qml.equal(op1.mv, op2.mv)
+            mv_equal = qml.equal(op1.mv, op2.mv)
+            if isinstance(mv_equal, str):
+                return mv_equal
+            return mv_equal
 
         if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
-            return op1.mv is op2.mv
+            if op1.mv is op2.mv:
+                return True
+            return "Abstract MeasurementValue objects are not the same instance"
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):
