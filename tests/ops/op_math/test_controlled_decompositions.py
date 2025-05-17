@@ -801,10 +801,10 @@ class TestMCXDecomposition:
     def test_decomposition_with_many_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate produces the correct matrix."""
 
-        control_wires = [range(1, n_ctrl_wires + 1)]
+        control_wires = list(range(1, n_ctrl_wires + 1))
         target_wire = 0
         num_work_wires = n_ctrl_wires - 2
-        work_wires = [range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires)]
+        work_wires = list(range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires))
 
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_many_workers(control_wires + [target_wire], work_wires)
@@ -853,7 +853,7 @@ class TestMCXDecomposition:
     def test_decomposition_with_one_worker(self, n_ctrl_wires, work_wire_type):
         """Test that the decompose_mcx_with_one_worker is correct."""
 
-        control_wires = [range(1, n_ctrl_wires + 1)]
+        control_wires = list(range(1, n_ctrl_wires + 1))
         target_wire = 0
         work_wire = n_ctrl_wires + 1
 
@@ -897,7 +897,7 @@ class TestMCXDecomposition:
     def test_decomposition_with_two_workers(self, n_ctrl_wires, work_wire_type):
         """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
 
-        control_wires = [range(1, n_ctrl_wires + 1)]
+        control_wires = list(range(1, n_ctrl_wires + 1))
         target_wire = 0
         work_wires = [n_ctrl_wires + 1, n_ctrl_wires + 2]
 
