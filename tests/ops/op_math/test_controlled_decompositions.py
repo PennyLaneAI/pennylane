@@ -41,6 +41,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_many_workers,
+    _decompose_mcx_with_no_worker,
     _decompose_mcx_with_two_workers,
     decompose_mcx_with_one_worker,
 )
@@ -933,6 +934,36 @@ class TestMCXDecomposition:
         if work_wire_type == "clean":
             equivalent_op @= qml.Projector([0, 0], wires=work_wires)
         expected_matrix = equivalent_op.sparse_matrix(wire_order=all_wires)
+
+        assert qml.math.allclose(matrix, expected_matrix)
+
+    @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
+    def test_decomposition_with_no_workers(self, n_ctrl_wires):
+        """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
+
+        control_wires = list(range(1, n_ctrl_wires + 1))
+        target_wire = 0
+
+        # The MultiControlledX instance to test.
+        mcx = qml.MultiControlledX(wires=control_wires + [target_wire])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _decompose_mcx_with_no_worker(mcx.wires)
+
+        # Verify that the resource estimate is correct.
+        resource = _decompose_mcx_with_no_worker.compute_resources(**mcx.resource_params)
+        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
+        actual_gate_counts = defaultdict(int)
+        for _op in q.queue:
+            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+            actual_gate_counts[resource_rep] += 1
+        assert actual_gate_counts == expected_gate_counts
+
+        # Verify that the decomposition produces an equivalent matrix.
+        tape = qml.tape.QuantumScript.from_queue(q)
+        matrix = _tape_to_matrix(tape, wire_order=mcx.wires)
+
+        expected_matrix = mcx.sparse_matrix()
 
         assert qml.math.allclose(matrix, expected_matrix)
 
