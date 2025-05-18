@@ -212,31 +212,42 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
     # this is a general overestimate based on the resource requirement of the general case.
-    gate_counts = {
+    if len_k1 == len_k2:
+        return {
+            resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
+            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+            controlled_resource_rep(
+                ops.X,
+                {},
+                num_control_wires=len_k2,
+                num_work_wires=len_k1,
+                work_wire_type="dirty",
+            ): 6,
+            # we only need Hadamard for the md case, but it still needs to be accounted for.
+            ops.Hadamard: 2,
+            controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+        }
+    return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k2,
+            num_work_wires=len_k1,
+            work_wire_type="dirty",
+        ): 4,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k1,
+            num_work_wires=len_k2,
+            work_wire_type="dirty",
+        ): 2,
         # we only need Hadamard for the md case, but it still needs to be accounted for.
         ops.Hadamard: 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
-    # cx_1 and cx_2 may come out to be the same thing
-    cx_1 = controlled_resource_rep(
-        ops.X,
-        {},
-        num_control_wires=len_k2,
-        num_work_wires=len_k1,
-        work_wire_type="dirty",
-    )
-    cx_2 = controlled_resource_rep(
-        ops.X,
-        {},
-        num_control_wires=len_k1,
-        num_work_wires=len_k2,
-        work_wire_type="dirty",
-    )
-    gate_counts[cx_1] = 4
-    gate_counts[cx_2] = gate_counts.get(cx_2, 0) + 2
-    return gate_counts
 
 
 @register_condition(_ctrl_decomp_bisect_condition)
@@ -500,30 +511,40 @@ decompose_mcx_with_one_worker = flip_zero_control(_decompose_mcx_with_one_worker
 def _decompose_mcx_no_worker_resource(num_control_wires, **__):
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
-    gate_counts = {
+    if len_k1 == len_k2:
+        return {
+            ops.Hadamard: 2,
+            resource_rep(ops.QubitUnitary, num_wires=1): 2,
+            controlled_resource_rep(
+                ops.X,
+                {},
+                num_control_wires=len_k2,
+                num_work_wires=len_k1,
+                work_wire_type="dirty",
+            ): 4,
+            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+            controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+        }
+    return {
         ops.Hadamard: 2,
         resource_rep(ops.QubitUnitary, num_wires=1): 2,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k2,
+            num_work_wires=len_k1,
+            work_wire_type="dirty",
+        ): 2,
+        controlled_resource_rep(
+            ops.X,
+            {},
+            num_control_wires=len_k1,
+            num_work_wires=len_k2,
+            work_wire_type="dirty",
+        ): 2,
         adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
-    # cx_1 and cx_2 may come out to be the same thing
-    cx_1 = controlled_resource_rep(
-        ops.X,
-        {},
-        num_control_wires=len_k2,
-        num_work_wires=len_k1,
-        work_wire_type="dirty",
-    )
-    cx_2 = controlled_resource_rep(
-        ops.X,
-        {},
-        num_control_wires=len_k1,
-        num_work_wires=len_k2,
-        work_wire_type="dirty",
-    )
-    gate_counts[cx_1] = 2
-    gate_counts[cx_2] = gate_counts.get(cx_2, 0) + 2
-    return gate_counts
 
 
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
