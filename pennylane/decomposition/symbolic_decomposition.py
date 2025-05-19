@@ -279,11 +279,10 @@ def _flip_control_adjoint_resource(
 
 
 @register_resources(_flip_control_adjoint_resource)
-def flip_control_adjoint(*params, wires, control_wires, control_values, work_wires, base, **__):
+def flip_control_adjoint(*_, wires, control_wires, control_values, work_wires, base, **__):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    _, struct = base.base._flatten()
-    base_op = base.base._unflatten(params, struct)
+    base_op = base.base._unflatten(*base.base._flatten())
     qml.adjoint(
         qml.ctrl(
             base_op,
