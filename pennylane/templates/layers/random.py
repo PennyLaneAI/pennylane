@@ -18,8 +18,10 @@ Contains the RandomLayers template.
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops import CNOT, RX, RY, RZ
+from pennylane.wires import Wires
 
 
 class RandomLayers(Operation):
@@ -179,14 +181,14 @@ class RandomLayers(Operation):
         seed=42,
         id=None,
     ):
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self._hyperparameters = {
             "ratio_imprim": ratio_imprim,
-            "imprimitive": imprimitive or qml.CNOT,
-            "rotations": tuple(rotations) if rotations else (qml.RX, qml.RY, qml.RZ),
+            "imprimitive": imprimitive or CNOT,
+            "rotations": tuple(rotations) if rotations else (RX, RY, RZ),
             "seed": seed,
         }
 
@@ -231,11 +233,11 @@ class RandomLayers(Operation):
          CNOT(wires=['b', 'a']),
          RX(tensor(1.4000), wires=['a'])]
         """
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
         rng = np.random.default_rng(seed)
 
-        shape = qml.math.shape(weights)
-        n_layers = qml.math.shape(weights)[0]
+        shape = math.shape(weights)
+        n_layers = math.shape(weights)[0]
         op_list = []
 
         for l in range(n_layers):
