@@ -105,6 +105,7 @@
   decomposition rule for when it is applicable. The condition should be a function that takes the
   resource parameters of an operator as arguments and returns `True` or `False` based on whether
   these parameters satisfy the condition for when this rule can be applied.
+  [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)
 
   ```python
   import pennylane as qml
@@ -195,6 +196,12 @@
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+ 
+* An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
+  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
+  [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -206,11 +213,6 @@
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
-* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
-  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
-  but it is coded in Python instead of C++.
-  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
-  
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -353,6 +355,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Enforce subset of submodules in `templates` to be auxiliary layer modules.
+  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
 
 * Enforce `noise` module to be a tertiary layer module.
   [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
