@@ -253,6 +253,9 @@
   for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
+  
+* Refactoring of `pennylane.labs.vibrational` : In the files `pes_generator.py` and `christiansen_utils.py`, the use of `mpi4py` has been replaced by the new module `concurrency` from pennylane. The function's UI of these files now allow the users to choose the number of process and the backends they want to use for their computation. [(#7401)](https://github.com/PennyLaneAI/pennylane/pull/7401)
+
 
 
 <h3>Breaking changes 💔</h3>
@@ -468,5 +471,6 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Kalman Szenes,
+Marc Vandelle
 David Wierichs,
 Jake Zaia
