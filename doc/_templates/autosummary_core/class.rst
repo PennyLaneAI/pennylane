@@ -38,6 +38,7 @@
 
    .. autosummary::
       :nosignatures:
+      :no-index:
    {% for item in attributes %}
       ~{{ name }}.{{ item }}
    {%- endfor %}
