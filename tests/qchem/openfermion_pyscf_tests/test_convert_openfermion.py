@@ -258,6 +258,10 @@ class TestToOpenFermion:
             ),
         ),
         (
+            (0.2 * qml.Y(2) + 0.25 * qml.X(1)),
+            (0.25 * openfermion.QubitOperator("X1") + 0.2 * openfermion.QubitOperator("Y2")),
+        ),
+        (
             (qml.ops.Sum(qml.Y(1) @ qml.X(0), qml.X(0) @ qml.Z(2))),
             (openfermion.QubitOperator("Y1 X0") + openfermion.QubitOperator("X0 Z2")),
         ),

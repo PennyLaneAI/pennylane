@@ -41,7 +41,7 @@ WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive
 RUN pip install wheel && pip install -r requirements.txt
-RUN python3 setup.py install
+RUN python3 -m pip install .
 RUN pip install -r requirements-dev.txt
 RUN pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade
 # hotfix, remove when pyscf 2.1 is released (currently no wheel for python3.10)
