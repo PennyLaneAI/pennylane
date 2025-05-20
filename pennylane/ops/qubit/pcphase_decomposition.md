@@ -44,7 +44,7 @@ gates, we may also use subtraction when decomposing $\Pi$.
 
 This decomposition of $\Pi$ is based on decomposing the integer $d$ into sums
 and differences of powers of two, which is detailed in 
-`pennylane.math.decomp_int_to_powers_of_two.md`. Such a decomposition reads
+`pennylane/math/decomp_int_to_powers_of_two.md`. Such a decomposition reads
 
 $$
 d = \sum_{i=0}^{n-1} c_i 2^{n-1-i}, \quad c_i\in\{-1, 0, 1\}.
@@ -108,7 +108,7 @@ implies a change of the subspace acted on in step 1 above, and a change of the c
 value in step 2 above, both via Boolean negation, i.e., $x\mapsto 1-x$.
 
 To conclude, note that the control structure above, together with the information of
-the subspace we want ot add projectors to/subtract projectors from, allows us to
+the subspace we want to add projectors to/subtract projectors from, allows us to
 collect (multi-controlled) phase shift gates as the gate decomposition.
 The sign of all phases is multiplied by $2\sigma$ to realize the first term of
 $G=\sigma(2\Pi -\mathbb{I}_N)$, and a global phase with angle multiplied by
