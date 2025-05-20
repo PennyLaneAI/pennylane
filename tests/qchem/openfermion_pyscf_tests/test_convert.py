@@ -897,15 +897,21 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
 
-    mapping = {
-        "rcisd": {"myhf": pyscf.scf.RHF, "solver": pyscf.ci.cisd.RCISD},
-        "ucisd": {"myhf": pyscf.scf.UHF, "solver": pyscf.ci.ucisd.UCISD},
-        "rccsd": {"myhf": pyscf.scf.RHF, "solver": pyscf.cc.rccsd.RCCSD},
-        "uccsd": {"myhf": pyscf.scf.UHF, "solver": pyscf.cc.uccsd.UCCSD},
-    }
+    if method == "rcisd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.ci.cisd.RCISD(myhf).run()
+    elif method == "ucisd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.ci.ucisd.UCISD(myhf).run()
+    elif method == "rccsd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.cc.rccsd.RCCSD(myhf).run()
+    elif method == "uccsd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.cc.uccsd.UCCSD(myhf).run()
+    else:
+        assert False, "Invalid method"
 
-    myhf = mapping[method]["myhf"](mol).run()
-    solver = mapping[method]["solver"](myhf).run()
     wf_comp = qchem.convert.import_state(solver)
 
     # overall sign could be different in each PySCF run
