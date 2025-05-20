@@ -330,7 +330,6 @@ class TestSampling:
         with pytest.raises(NotImplementedError):
             f()
 
-    @pytest.mark.skip("Temporary")
     def test_mcms_not_all_same_key(self, seed):
         """Test that each mid circuit measurement has a different key."""
 

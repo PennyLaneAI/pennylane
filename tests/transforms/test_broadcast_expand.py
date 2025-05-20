@@ -124,7 +124,6 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    @pytest.mark.skip(reason="Temporarily disabled until we can fix the issue")
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
