@@ -476,7 +476,7 @@ def test_cancel_inverses_plxpr_to_plxpr():
 
     jaxpr = jax.make_jaxpr(circuit)()
     transformed_jaxpr = cancel_inverses_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 2
     assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
     assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive

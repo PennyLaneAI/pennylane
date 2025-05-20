@@ -24,7 +24,7 @@ from typing import Union
 import networkx as nx
 import rustworkx as rx
 
-import pennylane as qml
+from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
 from pennylane.wires import Wires
 
 
@@ -61,9 +61,9 @@ def x_mixer(wires: Union[Iterable, Wires]):
     wires = Wires(wires)
 
     coeffs = [1 for w in wires]
-    obs = [qml.X(w) for w in wires]
+    obs = [X(w) for w in wires]
 
-    H = qml.Hamiltonian(coeffs, obs)
+    H = LinearCombination(coeffs, obs)
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
     return H
@@ -131,10 +131,10 @@ def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.X(get_nvalue(node1)) @ qml.X(get_nvalue(node2)))
-        obs.append(qml.Y(get_nvalue(node1)) @ qml.Y(get_nvalue(node2)))
+        obs.append(X(get_nvalue(node1)) @ X(get_nvalue(node2)))
+        obs.append(Y(get_nvalue(node1)) @ Y(get_nvalue(node2)))
 
-    return qml.Hamiltonian(coeffs, obs)
+    return LinearCombination(coeffs, obs)
 
 
 def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
@@ -226,12 +226,12 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.X(get_nvalue(i))]] + [
-            [qml.Identity(get_nvalue(n)), qml.Z(get_nvalue(n))] for n in neighbours
+        n_terms = [[X(get_nvalue(i))]] + [
+            [Identity(get_nvalue(n)), Z(get_nvalue(n))] for n in neighbours
         ]
         n_coeffs = [[1, sign] for _ in neighbours]
 
-        final_terms = [qml.prod(*list(m)).simplify() for m in itertools.product(*n_terms)]
+        final_terms = [prod(*list(m)).simplify() for m in itertools.product(*n_terms)]
 
         final_coeffs = [
             (0.5**degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
@@ -241,4 +241,4 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         coeffs.extend(final_coeffs)
         terms.extend(final_terms)
 
-    return qml.Hamiltonian(coeffs, terms)
+    return LinearCombination(coeffs, terms)

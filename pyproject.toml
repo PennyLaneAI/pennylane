@@ -1,3 +1,91 @@
+[build-system]
+requires = ["setuptools>=75.8.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Pennylane"
+description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
+readme = "README.md"
+license =  "Apache-2.0"
+requires-python = ">=3.10"
+dynamic = ["version"]
+dependencies = [
+    "scipy",
+    "networkx",
+    "rustworkx>=0.14.0",
+    "autograd",
+    "appdirs",
+    "autoray>=0.6.11",
+    "cachetools",
+    "pennylane-lightning>=0.41",
+    "requests",
+    "tomlkit",
+    "typing_extensions",
+    "packaging",
+    "diastatic-malt",
+    "numpy"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+[[project.maintainers]]
+name = "Xanadu Quantum Technologies Inc."
+email = "software@xanadu.ai"
+
+[project.urls]
+repository = "https://github.com/PennyLaneAI/pennylane"
+
+[project.optional-dependencies]
+kernels = ["cvxpy", "cvxopt"]
+
+[project.scripts]
+pl-device-test = "pennylane.devices.tests:cli"
+
+# TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+# This requires a rename in the setup file of all devices, and is best done during another refactor
+[project.entry-points."pennylane.plugins"]
+"default.qubit" = "pennylane.devices:DefaultQubit"
+"default.gaussian" = "pennylane.devices:DefaultGaussian"
+"default.mixed" = "pennylane.devices.default_mixed:DefaultMixed"
+"reference.qubit" = "pennylane.devices.reference_qubit:ReferenceQubit"
+"null.qubit" = "pennylane.devices.null_qubit:NullQubit"
+"default.qutrit" = "pennylane.devices.default_qutrit:DefaultQutrit"
+"default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
+"default.qutrit.mixed" = "pennylane.devices.default_qutrit_mixed:DefaultQutritMixed"
+"default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
+
+[project.entry-points."console_scripts"]
+"pl-device-test" = "pennylane.devices.tests:cli"
+
+[tool.setuptools]
+include-package-data = true
+py-modules = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = {attr = "pennylane._version.__version__"} 
+
+[tool.setuptools_scm]
+
+[tool.setuptools.package-data]
+pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
+
 [tool.black]
 line-length = 100
 include = '\.pyi?$'
