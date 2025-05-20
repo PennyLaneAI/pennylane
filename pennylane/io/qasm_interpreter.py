@@ -3,6 +3,7 @@ This submodule contains the interpreter for QASM 3.0.
 """
 
 import re
+from pennylane import ops
 
 from functools import partial
 from typing import Callable, Iterable
@@ -18,77 +19,38 @@ try:
     from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
         ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement, \
         FunctionCall
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
-
-from pennylane.ops import (
-    CH,
-    CNOT,
-    CRX,
-    CRY,
-    CRZ,
-    CSWAP,
-    CY,
-    CZ,
-    RX,
-    RY,
-    RZ,
-    SWAP,
-    SX,
-    U1,
-    U2,
-    U3,
-    CPhase,
-    Hadamard,
-    Identity,
-    PauliX,
-    PauliY,
-    PauliZ,
-    PhaseShift,
-    S,
-    T,
-    Toffoli,
-    ctrl,
-    adjoint,
-    pow,
-    cond,
-)
-
-has_openqasm = True
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
 SINGLE_QUBIT_GATES = {
-    "ID": Identity,
-    "H": Hadamard,
-    "X": PauliX,
-    "Y": PauliY,
-    "Z": PauliZ,
-    "S": S,
-    "T": T,
-    "SX": SX,
+    "ID": ops.Identity,
+    "H": ops.Hadamard,
+    "X": ops.PauliX,
+    "Y": ops.PauliY,
+    "Z": ops.PauliZ,
+    "S": ops.S,
+    "T": ops.T,
+    "SX": ops.SX,
 }
 
 PARAMETERIZED_SINGLE_QUBIT_GATES = {
-    "RX": RX,
-    "RY": RY,
-    "RZ": RZ,
-    "P": PhaseShift,
-    "PHASE": PhaseShift,
-    "U1": U1,
-    "U2": U2,
-    "U3": U3,
+    "RX": ops.RX,
+    "RY": ops.RY,
+    "RZ": ops.RZ,
+    "P": ops.PhaseShift,
+    "PHASE": ops.PhaseShift,
+    "U1": ops.U1,
+    "U2": ops.U2,
+    "U3": ops.U3,
 }
 
-TWO_QUBIT_GATES = {"CX": CNOT, "CY": CY, "CZ": CZ, "CH": CH, "SWAP": SWAP}
+TWO_QUBIT_GATES = {"CX": ops.CNOT, "CY": ops.CY, "CZ": ops.CZ, "CH": ops.CH, "SWAP": ops.SWAP}
 
-PARAMETERIZED_TWO_QUBIT_GATES = {"CP": CPhase, "CPHASE": CPhase, "CRX": CRX, "CRY": CRY, "CRZ": CRZ}
+PARAMETERIZED_TWO_QUBIT_GATES = {"CP": ops.CPhase, "CPHASE": ops.CPhase, "CRX": ops.CRX, "CRY": ops.CRY, "CRZ": ops.CRZ}
 
 MULTI_QUBIT_GATES = {
-    "CCX": Toffoli,
-    "CSWAP": CSWAP,
+    "CCX": ops.Toffoli,
+    "CSWAP": ops.CSWAP,
 }
 
 
@@ -247,7 +209,7 @@ class QasmInterpreter(QASMVisitor):
             )
 
         def branch():
-            cond(
+            ops.cond(
                 self.eval_expr(node.condition, context),
                 lambda: [
                     gate() for gate in
@@ -300,7 +262,7 @@ class QasmInterpreter(QASMVisitor):
 
         def switch():
             target = self.retrieve_variable(node.target.name, context)
-            cond(
+            ops.cond(
                 # TODO: support eval of lists, etc. to match
                 target["val"] == self.eval_expr(node.cases[0][0][0], context),
                 lambda: [
@@ -819,8 +781,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(gate)
 
-    @staticmethod
-    def modifiers(gate: Callable, node: QASMNode, context: dict):
+    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
         """
         Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
         depending on the type of modifier. We build a Callable that applies the modifier appropriately
@@ -837,14 +798,14 @@ class QasmInterpreter(QASMVisitor):
         call_stack = [gate]
         for mod in node.modifiers:
             if mod.modifier.name == "inv":
-                wrapper = adjoint
+                wrapper = ops.adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pow, z=mod.argument.value)
                 elif "vars" in context and mod.argument.name in context["vars"]:
                     wrapper = partial(pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
             elif mod.modifier.name == 'ctrl':
-                wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
+                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
         def call():

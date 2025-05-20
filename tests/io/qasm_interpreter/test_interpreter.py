@@ -1,8 +1,10 @@
 """
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
+from functools import partial
 
 import pytest
+from pennylane.wires import Wires
 
 from pennylane import (
     CH,
@@ -47,7 +49,7 @@ class TestInterpreter:
     qasm_programs = [
         (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
         (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 32, "qec"),
-        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
+        (open("tests/io/interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
@@ -61,6 +63,32 @@ class TestInterpreter:
         spy = mocker.spy(QasmInterpreter, "visit")
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
+
+    def test_if_else(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+        from pennylane import ops
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        cond = mocker.spy(ops, "cond")
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
+        context['callable']()
+
+        assert cond.call_count == 2
+        assert x.call_count == 1
+        x.assert_called_with(PauliX(Wires(['q0'])), Wires(['q0']))
+        assert y.call_count == 1
+        y.assert_called_with(PauliY(Wires(['q0'])), Wires(['q0']))
+        assert z.call_count == 0
+
 
     def test_mod_with_declared_param(self, mocker):
         from openqasm3.parser import parse
