@@ -115,10 +115,7 @@ class SelectPauliRot(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {
-            "rot_axis": self.hyperparameters["rot_axis"],
-            "num_wires": len(self.hyperparameters["control_wires"]) + 1,
-        }
+        return {"rot_axis": self.hyperparameters["rot_axis"], "num_wires": len(self.wires)}
 
     def map_wires(self, wire_map: dict):
         """Map the control and target wires using the provided wire map."""
