@@ -13,7 +13,6 @@ BoseWord and BoseSentence
 .. currentmodule:: pennylane.bose
 
 .. autosummary::
-    :no-index:
     :toctree: api
 
     ~BoseWord
