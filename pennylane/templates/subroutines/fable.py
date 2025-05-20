@@ -137,7 +137,6 @@ class FABLE(Operation):
         Returns:
             list[.Operator]: list of gates for efficient circuit
         """
-        op_list = []
         alphas = qml.math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)
 
@@ -150,8 +149,7 @@ class FABLE(Operation):
 
         wire_map = dict(enumerate(wires_j + wires_i))
 
-        for w in wires_i:
-            op_list.append(qml.Hadamard(w))
+        op_list = [qml.Hadamard(w) for w in wires_i]
 
         nots = {}
         for theta, control_index in zip(thetas, control_wires):
