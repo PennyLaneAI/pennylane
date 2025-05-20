@@ -10,10 +10,10 @@
 
   ```python
   import pennylane as qml
-  from pennylane import device
+  from pennylane import device, wires
   from pennylane.io import from_qasm3
 
-  dev = device("default.qubit", wires=2)
+  dev = device("default.qubit", wires=[wires.Wires('q0'), wires.Wires('q1'), 0])
   
   @qml.qnode(dev)
   def my_circuit(y, p):
@@ -33,8 +33,14 @@
       execute_qasm()
       return qml.expval(qml.Z(0))
   
-  my_circuit(y=0.2, p=2)
+  print(qml.draw(my_circuit)(0.2, 2))
   ```
+  
+  ```pycon
+  Wires(['q0']): ──X─╭●──RX(0.50)──RY(0.20)──RX(0.50)†──X²─╭X─┤     
+  Wires(['q1']): ────╰X────────────────────────────────────╰●─┤     
+              0: ─────────────────────────────────────────────┤  <Z>
+ ```
   
 * A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
