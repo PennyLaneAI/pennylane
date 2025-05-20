@@ -27,6 +27,74 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 
 
 @overload
+def register_condition(condition: Callable) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def register_condition(condition: Callable, qfunc: Callable) -> DecompositionRule: ...
+def register_condition(
+    condition: Callable[..., bool], qfunc: Optional[Callable] = None
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
+    """Binds a condition to a decomposition rule for when it is applicable.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        performing decompositions is generally more resource-efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~.register_resources`.
+
+    Args:
+        condition (Callable): a function which takes the resource parameters of an operator as
+            arguments and returns ``True`` or ``False`` based on whether the decomposition rule
+            is applicable to an operator with the given resource parameters.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Returns:
+        DecompositionRule:
+            a data structure that represents a decomposition rule, which contains a PennyLane
+            quantum function representing the decomposition, and its resource function.
+
+    **Example**
+
+    This function can be used as a decorator to bind a condition function to a quantum function
+    that implements a decomposition rule.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.math.decomposition import zyz_rotation_angles
+
+        # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
+        def _zyz_condition(num_wires):
+            return num_wires == 1
+
+        @qml.register_condition(_zyz_condition)
+        @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
+        def zyz_decomposition(U, wires, **__):
+            # Assumes that U is a 2x2 unitary matrix
+            phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+            qml.RZ(phi, wires=wires[0])
+            qml.RY(theta, wires=wires[0])
+            qml.RZ(omega, wires=wires[0])
+            qml.GlobalPhase(-phase)
+
+        # This decomposition will be ignored for `QubitUnitary` on more than one wire.
+        qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
+
+    """
+
+    def _decorator(_qfunc) -> DecompositionRule:
+        if isinstance(_qfunc, DecompositionRule):
+            _qfunc.set_condition(condition)
+            return _qfunc
+        return DecompositionRule(_qfunc, condition=condition)
+
+    return _decorator(qfunc) if qfunc else _decorator
+
+
+@overload
 def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
@@ -178,7 +246,10 @@ def register_resources(
     """
 
     def _decorator(_qfunc) -> DecompositionRule:
-        return DecompositionRule(_qfunc, resources)
+        if isinstance(_qfunc, DecompositionRule):
+            _qfunc.set_resources(resources)
+            return _qfunc
+        return DecompositionRule(_qfunc, resources=resources)
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -186,17 +257,31 @@ def register_resources(
 class DecompositionRule:  # pylint: disable=too-few-public-methods
     """Represents a decomposition rule for an operator."""
 
-    def __init__(self, func: Callable, resources: Callable | dict):
+    def __init__(
+        self,
+        func: Callable,
+        resources: Optional[Callable | dict] = None,
+        condition: Optional[Callable[..., bool]] = None,
+    ):
+
         self._impl = func
-        self._source = inspect.getsource(func)
+
+        try:
+            self._source = inspect.getsource(func)
+        except OSError:  # pragma: no cover
+            # OSError is raised if the source code cannot be retrieved
+            self._source = ""  # pragma: no cover
+
         if isinstance(resources, dict):
 
-            def resource_fn():
+            def resource_fn(*_, **__):
                 return resources
 
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
+
+        self._condition = condition
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -212,6 +297,28 @@ class DecompositionRule:  # pylint: disable=too-few-public-methods
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
         gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
         return Resources(gate_counts)
+
+    def is_applicable(self, *args, **kwargs) -> bool:
+        """Checks whether this decomposition rule is applicable."""
+        if self._condition is None:
+            return True
+        return self._condition(*args, **kwargs)
+
+    def set_condition(self, condition: Callable[..., bool]) -> None:
+        """Sets the condition for this decomposition rule."""
+        self._condition = condition
+
+    def set_resources(self, resources: Callable | dict) -> None:
+        """Sets the resources for this decomposition rule."""
+
+        if isinstance(resources, dict):
+
+            def resource_fn(*_, **__):
+                return resources
+
+            self._compute_resources = resource_fn
+        else:
+            self._compute_resources = resources
 
 
 def _auto_wrap(op_type):
