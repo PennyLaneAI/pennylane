@@ -29,8 +29,8 @@ try:
     import openqasm3
 
     from pennylane.io.qasm_interpreter import QasmInterpreter
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -850,6 +850,8 @@ def from_qasm_three(quantum_circuit: str):
         Wires: the wires required to execute the QASM.
 
     """
+    if not has_openqasm:  # pragma: no cover
+        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
     context = QasmInterpreter().generic_visit(ast, context={"name": "global"})

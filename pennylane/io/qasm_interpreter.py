@@ -41,8 +41,8 @@ from pennylane.ops import (
 has_openqasm = True
 try:
     from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 SINGLE_QUBIT_GATES = {
     "ID": Identity,
@@ -82,6 +82,17 @@ class QasmInterpreter(QASMVisitor):
     top level node of the AST as a parameter and recursively descends the AST, calling the
     overriden visitor function on each node.
     """
+
+    def __init__(self):
+        """
+        Checks that the openqasm3 package is available, otherwise raises an error.
+
+        Raises:
+            ImportError: if the openqasm3 package is not available.
+        """
+        if not has_openqasm:  # pragma: no cover
+            raise ImportError("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
+        super().__init__()
 
     def visit(self, node: QASMNode, context: dict):
         """
