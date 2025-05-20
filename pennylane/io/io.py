@@ -843,11 +843,11 @@ def from_qasm3(quantum_circuit: str):
         interpreter.
 
     >>> execute_qasm, wires = from_qasm3("qubit q0; ry(0.2) q0; pow(2) @ x q0;")
-    >>> dev = device("default.qubit", wires=wires)
+    >>> dev = device("default.qubit", wires=[qml.wires.Wires(w) for w in wires] + [0])
     >>> @qml.qnode(dev)
     >>> def my_circuit():
     >>>   execute_qasm()
-    >>>   return qml.expval(qml.Z(0))
+    >>>   return qml.expval(qml.Z(wires[0]))
     >>> my_circuit()
 
     Args:
