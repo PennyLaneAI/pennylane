@@ -315,7 +315,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Fix subset of latest pylint errors in the `tests` folder.
+* Fix subset of `pylint` errors in the `tests` folder.
   [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
 
 * Enforce subset of submodules in `templates` to be auxiliary layer modules.
