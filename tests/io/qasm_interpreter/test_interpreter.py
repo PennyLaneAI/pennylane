@@ -33,6 +33,7 @@ from pennylane import (
     Toffoli,
 )
 
+
 @pytest.fixture
 def skip_if_no_openqasm_support():
     """Fixture to skip if openqasm3 is not available"""
@@ -44,6 +45,7 @@ class TestInterpreter:
 
     def test_mod_with_declared_param(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -70,6 +72,7 @@ class TestInterpreter:
 
     def test_uninitialized_param(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -89,6 +92,7 @@ class TestInterpreter:
 
     def test_unsuppoted_node_type_raises(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -111,6 +115,7 @@ class TestInterpreter:
 
     def test_no_qubits(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -130,6 +135,7 @@ class TestInterpreter:
 
     def test_unsupported_gate(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -148,6 +154,7 @@ class TestInterpreter:
 
     def test_missing_param(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -167,6 +174,7 @@ class TestInterpreter:
 
     def test_uninitialized_var(self):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -184,6 +192,7 @@ class TestInterpreter:
 
     def test_parses_simple_qasm(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -231,6 +240,7 @@ class TestInterpreter:
 
     def test_interprets_two_qubit_gates(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -277,6 +287,7 @@ class TestInterpreter:
 
     def test_interprets_parameterized_two_qubit_gates(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -319,6 +330,7 @@ class TestInterpreter:
 
     def test_interprets_multi_qubit_gates(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -351,6 +363,7 @@ class TestInterpreter:
 
     def test_interprets_parameterized_single_qubit_gates(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
@@ -410,6 +423,7 @@ class TestInterpreter:
 
     def test_single_qubit_gates(self, mocker):
         from openqasm3.parser import parse
+
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
