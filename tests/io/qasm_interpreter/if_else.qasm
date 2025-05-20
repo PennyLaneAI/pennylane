@@ -10,3 +10,7 @@ if (target == bits[0]) {
 } else {
     z q0;
 }
+
+if (target != bits[0]) {
+    z q0;
+}

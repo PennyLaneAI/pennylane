@@ -218,7 +218,7 @@ class QasmInterpreter(QASMVisitor):
                 lambda: [
                     gate() for gate in
                     context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]["gates"]
-                ] if "false_body" in context["scopes"]["branches"][f"branch_{node.span.start_line}"] else None,
+                ] if "gates" in context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] else None
             )()
 
         context["gates"].append(branch)

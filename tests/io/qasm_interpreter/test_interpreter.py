@@ -49,7 +49,7 @@ class TestInterpreter:
     qasm_programs = [
         (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
         (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 32, "qec"),
-        (open("tests/io/interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
+        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
@@ -82,13 +82,12 @@ class TestInterpreter:
         context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
         context['callable']()
 
-        assert cond.call_count == 2
+        assert cond.call_count == 3
         assert x.call_count == 1
         x.assert_called_with(PauliX(Wires(['q0'])), Wires(['q0']))
         assert y.call_count == 1
         y.assert_called_with(PauliY(Wires(['q0'])), Wires(['q0']))
         assert z.call_count == 0
-
 
     def test_mod_with_declared_param(self, mocker):
         from openqasm3.parser import parse
