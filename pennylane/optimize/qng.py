@@ -19,6 +19,7 @@ from collections.abc import Iterable
 # pylint: disable=too-many-arguments
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.compiler import compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.wires import Wires
 from pennylane.workflow import QNode
@@ -173,6 +174,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
+        self.active_compiler = compiler.active_compiler()
+
     def step_and_cost(
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
@@ -264,6 +267,37 @@ class QNGOptimizer(GradientDescentOptimizer):
         return new_args
 
     def apply_grad(self, grad, args):
+        r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
+        unflattens the inputs to maintain nested iterables as the parameters of the optimization.
+
+        Args:
+            grad (array): The gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+            args (array): the current value of the variables :math:`x^{(t)}`
+
+        Returns:
+            array: the new values :math:`x^{(t+1)}`
+        """
+        if self.active_compiler == "catalyst":
+            args_new = self._apply_grad_jax(grad=grad, args=args)
+        else:
+            args_new = self._apply_grad(grad=grad, args=args)
+
+        return args_new
+
+    def _apply_grad_jax(self, grad, args):
+        """TODO"""
+        import jax
+
+        mt = self.metric_tensor
+
+        grad_flat, _unravel_array = jax.flatten_util.ravel_pytree(grad)
+        update = jax.numpy.linalg.pinv(mt) @ grad_flat
+        new_arg = args[0] - self.stepsize * _unravel_array(update)
+
+        return (new_arg,)
+
+    def _apply_grad(self, grad, args):
         r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
         unflattens the inputs to maintain nested iterables as the parameters of the optimization.
 
