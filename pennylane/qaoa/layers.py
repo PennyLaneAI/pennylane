@@ -14,7 +14,9 @@
 """
 Methods that define cost and mixer layers for use in QAOA workflows.
 """
-import pennylane as qml
+
+from pennylane.ops import Prod
+from pennylane.templates import ApproxTimeEvolution
 
 
 def _diagonal_terms(hamiltonian):
@@ -29,7 +31,7 @@ def _diagonal_terms(hamiltonian):
     """
 
     for op in hamiltonian.terms()[1]:
-        if isinstance(op, qml.ops.Prod):
+        if isinstance(op, Prod):
             obs = op.operands
         else:
             obs = [op]
@@ -93,8 +95,8 @@ def cost_layer(gamma, hamiltonian):
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    # NOTE: op is defined explicitely as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
-    op = qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
+    # NOTE: op is defined explicitly as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
+    op = ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
     return op
@@ -151,4 +153,4 @@ def mixer_layer(alpha, hamiltonian):
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    return qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
+    return ApproxTimeEvolution(hamiltonian, alpha, 1)

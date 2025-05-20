@@ -19,8 +19,10 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices(wires, n_block_wires):
@@ -176,7 +178,7 @@ class TTN(Operation):
     ):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
-        shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
+        shape = math.shape(template_weights)  # (n_params_block, n_blocks)
         n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
 
         if shape == ():
@@ -218,7 +220,7 @@ class TTN(Operation):
             list[.Operator]: decomposition of the operator
         """
         op_list = []
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
                 op_list += block_gen(*weights[idx], wires=w)
@@ -229,7 +231,7 @@ class TTN(Operation):
             for w in ind_gates:
                 op_list += block_gen(wires=w)
 
-        return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
+        return [apply(op) for op in op_list] if QueuingManager.recording() else op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):

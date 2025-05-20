@@ -11,22 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-Quantum circuit intermediate representations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Intermediate representations (IRs) are alternative representations of quantum circuits, typically offering a more efficient classical description for special classes of circuits.
+"""Public API"""
 
-.. currentmodule:: pennylane.labs.intermediate_reps
+from .impl import TransformFunctionsExt
 
-.. autosummary::
-    :toctree: api
-
-    ~parity_matrix
-    ~phase_polynomial
-
-
-"""
-
-from .parity_matrix import parity_matrix
-from .phase_polynomial import phase_polynomial
+__all__ = ["TransformFunctionsExt"]

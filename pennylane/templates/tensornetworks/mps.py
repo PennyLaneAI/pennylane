@@ -17,8 +17,10 @@ Contains the MPS template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):
@@ -206,7 +208,7 @@ class MPS(Operation):
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
         if template_weights is not None:
-            shape = qml.math.shape(template_weights)  # (n_blocks, n_params_block)
+            shape = math.shape(template_weights)  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
@@ -251,7 +253,7 @@ class MPS(Operation):
         """
         decomp = []
         itrweights = iter([]) if weights is None else iter(weights)
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         for w in ind_gates:
             weight = next(itrweights, None)
             decomp += (
@@ -259,7 +261,7 @@ class MPS(Operation):
                 if weight is None
                 else block_gen(weights=weight, wires=w, **kwargs)
             )
-        return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
+        return [apply(op) for op in decomp] if QueuingManager.recording() else decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires, offset=None):
