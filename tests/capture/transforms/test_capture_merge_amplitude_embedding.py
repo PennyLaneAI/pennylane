@@ -435,6 +435,27 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         ops = collector.state["ops"]
         assert ops == expected_ops
 
+    def test_amplitude_embedding_before_dynamic_wires_op(self):
+        """Test that AmplitudeEmbeddings are merged and applied
+        before ops with dynamic wires."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(w):
+            qml.AmplitudeEmbedding(jax.numpy.array([1.0, 0.0]), wires=0)
+            qml.AmplitudeEmbedding(jax.numpy.array([1.0, 0.0]), wires=1)
+            qml.H(w)
+
+        jaxpr = jax.make_jaxpr(circuit)(0)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0)
+
+        ops = collector.state["ops"]
+        expected_ops = [
+            qml.AmplitudeEmbedding(qml.math.array([1.0, 0.0, 0.0, 0.0]), wires=[0, 1]),
+            qml.H(0),
+        ]
+        assert ops == expected_ops
+
     def test_dynamic_wire_ops_before_error(self):
         """Test that an error is raised if ops with dynamic wires are used before AmplitudeEmbedding"""
 
