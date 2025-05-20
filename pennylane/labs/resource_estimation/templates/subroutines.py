@@ -482,7 +482,7 @@ class ResourceSemiAdder(ResourceOperator):
     ):
         if (max_register_size > 2) and (num_ctrl_wires == 1):
             cnot_count = (7 * (max_register_size - 2)) + 3
-            elbow_count = max_register_size
+            elbow_count = 2 * max_register_size
 
             x = re.ResourceX.resource_rep()
             cnot = re.ResourceCNOT.resource_rep()
