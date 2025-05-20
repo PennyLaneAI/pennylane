@@ -113,26 +113,25 @@ class ResourceAdjoint(ResourceOperator):
 
     """
 
-    resource_keys = {"base_cmpr_op", "base_resources"}
+    resource_keys = {"base_cmpr_op"}
 
     def __init__(self, base_op: ResourceOperator, wires=None) -> None:
         self.queue(remove_op=base_op)
-        base_op = base_op.resource_rep_from_op()
+        base_cmpr_op = base_op.resource_rep_from_op()
         self.queue()
 
-        self.base_op = base_op
+        self.base_op = base_cmpr_op
 
         if wires:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = None
+            self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
 
-    def queue(self, remove_op=None, context: QueuingManager = QueuingManager):
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
-        if remove_op:
-            context.remove(remove_op)
+        context.remove(remove_op)
         context.append(self)
         return self
 
@@ -146,10 +145,24 @@ class ResourceAdjoint(ResourceOperator):
                 * base_params (dict): the resource parameters required to extract the cost of the base operator
 
         """
-        return {"base_cmpr_op": self.base_op, "base_resources": None}
+        return {"base_cmpr_op": self.base_op}
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, base_resources, **kwargs):
+    def resource_rep(cls, base_cmpr_op) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op})
+
+    @classmethod
+    def default_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -222,41 +235,19 @@ class ResourceAdjoint(ResourceOperator):
             >>> re.ResourceAdjoint.resources(CustomZ, {})
             {CustomZ: 1}
         """
-        if base_cmpr_op:  # we have a base compressed op
-            base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-            try:
-                return base_class.adjoint_resource_decomp(**base_params)
-            except ResourcesNotDefined:
-                gate_lst = []
-                decomp = base_class.resource_decomp(**base_params, **kwargs)
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        try:
+            return base_class.adjoint_resource_decomp(**base_params)
+        except ResourcesNotDefined:
+            gate_lst = []
+            decomp = base_class.resource_decomp(**base_params, **kwargs)
 
-                for gate in decomp[::-1]:  # reverse the order
-                    gate_lst.append(_apply_adj(gate))
-                return gate_lst
-        
-        if base_resources:
-            for cmpr_op, count in base_resources.gate_types.items():
-                adj_cmpr_op = cls.resource_rep(base_cmpr_op=cmpr_op)
-                gate_lst.append(GateCount(adj_cmpr_op, count))
-        
-        raise ResourcesNotDefined
-
-    @classmethod
-    def resource_rep(cls, base_cmpr_op=None, base_resources=None) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "base_resources": base_resources})
+            for gate in decomp[::-1]:  # reverse the order
+                gate_lst.append(_apply_adj(gate))
+            return gate_lst
 
     @staticmethod
-    def default_adjoint_resource_decomp(base_cmpr_op, base_resources):
+    def default_adjoint_resource_decomp(base_cmpr_op: CompressedResourceOp):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
@@ -271,22 +262,13 @@ class ResourceAdjoint(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if base_cmpr_op:
-            return [GateCount(base_cmpr_op)]
-
-        gate_lst = []
-        for cmpr_op, count in base_resources.gate_types.items():
-            adj_cmpr_op = re.ResourceAdjoint.resource_rep(base_cmpr_op=cmpr_op)
-            gate_lst.append(GateCount(adj_cmpr_op, count))
-        return gate_lst
+        return [GateCount(base_cmpr_op)]
 
     @staticmethod
-    def tracking_name(base_cmpr_op, base_resources) -> str:
+    def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        if base_cmpr_op:
-            base_name = base_cmpr_op.op_type.tracking_name(**base_cmpr_op.params)
-            return f"Adjoint({base_name})"
-        return f"Adjoint({base_resources})"
+        base_name = base_cmpr_op.name
+        return f"Adjoint({base_name})"
 
 
 class ResourceControlled(ResourceOperator):
@@ -392,7 +374,7 @@ class ResourceControlled(ResourceOperator):
 
     """
 
-    resource_keys = {"base_cmpr_op", "base_resources", "num_ctrl_wires", "num_ctrl_values"}
+    resource_keys = {"base_cmpr_op", "num_ctrl_wires", "num_ctrl_values"}
 
     def __init__(
         self,
@@ -412,14 +394,13 @@ class ResourceControlled(ResourceOperator):
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = None
-            base_wires = base_op.num_wires
-            self.num_wires = num_ctrl_wires + base_wires
+            self.wires = None or base_op.wires
+            num_base_wires = base_op.num_wires
+            self.num_wires = num_ctrl_wires + num_base_wires
 
-    def queue(self, remove_base_op=None, context: QueuingManager = QueuingManager):
+    def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
-        if remove_base_op:
-            context.remove(remove_base_op)
+        context.remove(remove_base_op)
         context.append(self)
         return self
 
@@ -437,15 +418,14 @@ class ResourceControlled(ResourceOperator):
         """
 
         return {
+            "base_cmpr_op": self.base_op,
             "num_ctrl_wires": self.num_ctrl_wires,
             "num_ctrl_values": self.num_ctrl_values,
-            "base_cmpr_op": self.base_op,
-            "base_resources": None,
         }
 
     @classmethod
     def resource_rep(
-        cls, num_ctrl_wires, num_ctrl_values, base_cmpr_op=None, base_resources=None,
+        cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -463,16 +443,15 @@ class ResourceControlled(ResourceOperator):
         return CompressedResourceOp(
             cls,
             {
+                "base_cmpr_op": base_cmpr_op,
                 "num_ctrl_wires": num_ctrl_wires,
                 "num_ctrl_values": num_ctrl_values,
-                "base_cmpr_op": base_cmpr_op,
-                "base_resources": base_resources,
             },
         )
 
     @classmethod
     def default_resource_decomp(
-        cls, base_cmpr_op, base_resources, num_ctrl_wires, num_ctrl_values, **kwargs
+        cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -565,50 +544,41 @@ class ResourceControlled(ResourceOperator):
 
         """
         
-        if base_cmpr_op:
-            base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-            try:
-                return base_class.controlled_resource_decomp(
-                    ctrl_num_ctrl_wires = num_ctrl_wires, ctrl_num_ctrl_values = num_ctrl_values, **base_params
-                )
-            except re.ResourcesNotDefined:
-                pass
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        try:
+            return base_class.controlled_resource_decomp(
+                ctrl_num_ctrl_wires = num_ctrl_wires, ctrl_num_ctrl_values = num_ctrl_values, **base_params
+            )
+        except re.ResourcesNotDefined:
+            pass
 
-            gate_lst = []
-
-            if num_ctrl_values == 0:
-                decomp = base_class.resource_decomp(**base_params, **kwargs)
-                for action in decomp:
-                    if isinstance(action, GateCount):
-                        gate = action.gate
-                        c_gate = cls.resource_rep(
-                            num_ctrl_wires, num_ctrl_values, base_cmpr_op=gate,
-                        )
-                        gate_lst.append(GateCount(c_gate, action.count))
-
-                    else:
-                        gate_lst.append(action)
-
-                return gate_lst
-
-            no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
-            x = re.ResourceX.resource_rep()
-
-            gate_lst.append(GateCount(no_control))
+        gate_lst = []
+        if num_ctrl_values != 0:
+            x = re.resource_rep(re.ResourceX, {})
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
-            return gate_lst
+
+        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        for action in decomp:
+            if isinstance(action, GateCount):
+                gate = action.gate
+                c_gate = cls.resource_rep(
+                    gate, num_ctrl_wires, num_ctrl_values,
+                )
+                gate_lst.append(GateCount(c_gate, action.count))
+
+            else:
+                gate_lst.append(action)
+
+        return gate_lst
 
     @classmethod
-    def controlled_resource_decomp(
+    def default_controlled_resource_decomp(
         cls,
-        outer_num_ctrl_wires,
-        outer_num_ctrl_values,
-        outer_num_work_wires,
-        base_class,
-        base_params,
+        ctrl_num_ctrl_wires, 
+        ctrl_num_ctrl_values,
+        base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
-        num_work_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -639,23 +609,20 @@ class ResourceControlled(ResourceOperator):
         return [
             GateCount(
                 cls.resource_rep(
-                    base_class,
-                    base_params,
-                    outer_num_ctrl_wires + num_ctrl_wires,
-                    outer_num_ctrl_values + num_ctrl_values,
-                    outer_num_work_wires + num_work_wires,
+                    base_cmpr_op,
+                    ctrl_num_ctrl_wires + num_ctrl_wires,
+                    ctrl_num_ctrl_values + num_ctrl_values,
                 )
             ),
         ]
 
     @staticmethod
-    def tracking_name(num_ctrl_wires, num_ctrl_values, base_cmpr_op, base_resources):
+    def tracking_name(
+        base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_ctrl_values: int,
+    ):
         r"""Returns the tracking name built with the operator's parameters."""
-        if base_cmpr_op:
-            base_name = base_cmpr_op.op_type.tracking_name(**base_cmpr_op.params)
-            return f"C({base_name},{num_ctrl_wires},{num_ctrl_values})"
-        
-        return f"C({base_resources},{num_ctrl_wires},{num_ctrl_values})"
+        base_name = base_cmpr_op.name
+        return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_ctrl_values={num_ctrl_values})"
 
 
 class ResourcePow(ResourceOperator):
@@ -743,40 +710,63 @@ class ResourcePow(ResourceOperator):
 
     """
 
-    def __init__(self, base_op: CompressedResourceOp, z: int, wires=None) -> None:
-        if isinstance(base_op, ResourceOperator):
-            self.queue(base_op)
-            base_op = base_op.resource_rep_from_op()
-        else:
-            self.queue()
+    resource_keys = {"base_cmpr_op", "z"}
+
+    def __init__(self, base_op: ResourceOperator, z: int, wires=None) -> None:
+        self.queue(remove_op=base_op)
+        base_cmpr_op = base_op.resource_rep_from_op()
 
         self.z = z
-        self.base_op = base_op
+        self.base_op = base_cmpr_op
 
         if wires:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = None
-            if isinstance(base_op, ResourceOperator):
-                self.num_wires = base_op.num_wires
-            else:
-                self.num_wires = (
-                    base_op.params["num_wires"]
-                    if "num_wires" in base_op.params
-                    else base_op.op_type.num_wires
-                )
+            self.wires = None or base_op.wires
+            self.num_wires = base_op.num_wires
 
-    def queue(self, base_op=None, context: QueuingManager = QueuingManager):
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
-        if base_op:
-            context.remove(base_op)
+        context.remove(remove_op)
         context.append(self)
         return self
 
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+                * z (int): the power that the operator is being raised to
+        """
+        return {
+            "base_cmpr_op": self.base_op,
+            "z": self.z,
+        }
+
     @classmethod
-    def _resource_decomp(
-        cls, base_class, base_params, z, **kwargs
+    def resource_rep(cls, base_cmpr_op, z) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+            base_params (dict): the resource parameters required to extract the cost of the base operator
+            z (int): the power that the operator is being raised to
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(
+            cls, {"base_cmpr_op": base_cmpr_op, "z": z}
+        )
+
+    @classmethod
+    def default_resource_decomp(
+        cls, base_cmpr_op, z, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
@@ -854,14 +844,16 @@ class ResourcePow(ResourceOperator):
             {CustomZ: 1}
 
         """
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        
         if z == 0:
             return [GateCount(re.ResourceIdentity.resource_rep())]
 
         if z == 1:
-            return [GateCount(base_class.resource_rep(**base_params))]
+            return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(z, **base_params)
+            return base_class.pow_resource_decomp(pow_z=z, **base_params)
         except re.ResourcesNotDefined:
             pass
 
@@ -871,7 +863,7 @@ class ResourcePow(ResourceOperator):
             for action in decomp:
                 if isinstance(action, GateCount):
                     gate = action.gate
-                    pow_gate = cls.resource_rep(gate.op_type, gate.params, z)
+                    pow_gate = cls.resource_rep(gate, z)
                     gate_lst.append(pow_gate, action.count)
                 else:
                     gate_lst.append(action)
@@ -881,43 +873,10 @@ class ResourcePow(ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        return [GateCount(base_class.resource_rep(**base_params), z)]
-
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
-                * z (int): the power that the operator is being raised to
-        """
-        return {
-            "base_class": self.base_op.op_type,
-            "base_params": self.base_op.params,
-            "z": self.z,
-        }
+        return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, z) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            z (int): the power that the operator is being raised to
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        return CompressedResourceOp(
-            cls, {"base_class": base_class, "base_params": base_params, "z": z}
-        )
-
-    @classmethod
-    def pow_resource_decomp(cls, z0, base_class, base_params, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z):
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -935,12 +894,12 @@ class ResourcePow(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return [GateCount(cls.resource_rep(base_class, base_params, z0 * z))]
+        return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
 
     @staticmethod
-    def tracking_name(base_class, base_params, z) -> str:
+    def tracking_name(base_cmpr_op: CompressedResourceOp, z: int) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_class.tracking_name(**base_params)
+        base_name = base_cmpr_op.name
         return f"Pow({base_name}, {z})"
 
 
@@ -978,7 +937,7 @@ class ResourceProd(ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(cmpr_factors, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(cmpr_factors, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 

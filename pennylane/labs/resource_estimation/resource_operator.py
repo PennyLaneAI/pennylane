@@ -58,6 +58,10 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         self._hashable_params = _make_hashable(params) if params else ()
         self._name = name or op_type.tracking_name(**self.params)
 
+    @property
+    def name(self):
+        return self._name
+
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))
 
