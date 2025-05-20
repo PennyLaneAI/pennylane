@@ -26,7 +26,7 @@ has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.io import from_qasm_three
+    from pennylane.io.io import from_qasm3
     from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
@@ -208,12 +208,12 @@ class TestLoad:
 
 @pytest.mark.external
 class TestOpenQasm:
-    """Test the qml.to_openqasm and qml.io.from_qasm_three functions."""
+    """Test the qml.to_openqasm and qml.io.from_qasm3 functions."""
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
-    def test_from_qasm_three(self, mocker):
+    def test_from_qasm3(self, mocker):
         circuit = """\
             OPENQASM 3.0;
             qubit q0;
@@ -226,7 +226,7 @@ class TestOpenQasm:
         visit = mocker.spy(QasmInterpreter, "generic_visit")
 
         # call the method
-        from_qasm_three(circuit)
+        from_qasm3(circuit)
 
         # assertions
         parse.assert_called_with(circuit, permissive=True)

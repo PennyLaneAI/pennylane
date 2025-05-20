@@ -837,12 +837,12 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm_three(quantum_circuit: str):
+def from_qasm3(quantum_circuit: str):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
 
-    >>> execute_qasm, wires = from_qasm_three("qubit q0; ry(0.2) q0; pow(2) @ x q0;")
+    >>> execute_qasm, wires = from_qasm3("qubit q0; ry(0.2) q0; pow(2) @ x q0;")
     >>> dev = device("default.qubit", wires=wires)
     >>> @qml.qnode(dev)
     >>> def my_circuit():
