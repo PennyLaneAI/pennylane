@@ -512,9 +512,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # trace out every qubit except the first
             num_remaining_qubits = num_dev_qubits - active_qubit
-            conj_state_first_qubit = ABC[num_remaining_qubits]
-            stacked_dim = ABC[num_remaining_qubits + 1]
-            remaining_dim = ABC[:num_remaining_qubits]
+            conj_state_first_qubit = ascii_letters[num_remaining_qubits]
+            stacked_dim = ascii_letters[num_remaining_qubits + 1]
+            remaining_dim = ascii_letters[:num_remaining_qubits]
             traced_dim = remaining_dim[1:]
 
             state_str = f"{stacked_dim}{remaining_dim}"
@@ -538,9 +538,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # index labeling:
             # (s, vL, a) (s, a, ..., b, ...) (s, b, vR) -> (s, vL, ..., vR, ...)
-            v_dim_left = ABC[num_remaining_qubits + 2]
-            v_dim_right = ABC[num_remaining_qubits + 3]
-            a_dagger_dim = ABC[num_remaining_qubits + 4]
+            v_dim_left = ascii_letters[num_remaining_qubits + 2]
+            v_dim_right = ascii_letters[num_remaining_qubits + 3]
+            a_dagger_dim = ascii_letters[num_remaining_qubits + 4]
 
             U_str = f"{stacked_dim}{v_dim_left}a"
             rho_str = f"{stacked_dim}a{traced_dim}{a_dagger_dim}..."
