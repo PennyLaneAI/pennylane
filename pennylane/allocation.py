@@ -1,4 +1,3 @@
-from enum import Enum
 from collections import deque
 from functools import lru_cache, partial
 from itertools import chain
@@ -14,21 +13,6 @@ from pennylane.measurements import measure
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
 from pennylane.wires import Wires
-
-
-class RegisterTypes(Enum):
-
-    ZEROED = (True, True)
-    BURNABLE = (True, False)
-    BORROWABLE = (False, True)
-    GARBAGE = (False, False)
-    REQUIRES_RESET = "requires_reset"
-
-
-ZEROED = RegisterTypes.ZEROED
-BURNABLE = RegisterTypes.BURNABLE
-BORROWABLE = RegisterTypes.BORROWABLE
-GARBAGE = RegisterTypes.GARBAGE
 
 
 class DynamicWire:
@@ -140,113 +124,44 @@ class allocate_ctx:
 
 class WireManager:
 
-    def __init__(self, zeroed=(), burnable=(), borrowable=(), garbage=(), min_integer=None, style="stack"):
+    def __init__(self, zeroed=(), dirty=(), min_integer=None, style="stack"):
         self.style = style
         reg_class = deque if style == "queue" else list
-        self._registers = {
-            ZEROED: reg_class(zeroed),
-            BURNABLE: reg_class(burnable),
-            BORROWABLE: reg_class(borrowable),
-            GARBAGE: reg_class(garbage),
-        }
-        self._loaned = {}  # wire to register type
+        self._zeroed = reg_class(zeroed)
+        self._dirty = reg_class(dirty)
+        self._loaned = {}  # wire to final register type
         self.min_integer = min_integer
 
-    def _get(self, register):
-        if self.style == "queue":
-            return self._registers[register].popleft()
-        return self._registers[register].pop()
-        
-    def _get_burnable(self):
-        if self._registers[BURNABLE]:
-            wire = self._get(BURNABLE)
-            self._loaned[wire] = GARBAGE
-            return [], wire
-        if self._registers[GARBAGE]:
-            wire = self._get(GARBAGE)
-            m = measure(wire, reset=True)
-            self._loaned[wire] = GARBAGE
-            return m.measurements, wire
-        if self._registers[ZEROED]:
-            wire = self._get(ZEROED)
-            self._loaned[wire] = RegisterTypes.REQUIRES_RESET
-            return [], wire
-        if self.min_integer is not None:
-            wire = self.min_integer
-            self._loaned[wire] = GARBAGE
-            self.min_integer += 1
-            return [], wire
-        raise ValueError("no available burnable, garbage, or zeroed wires.")
-
-    def _get_zeroed(self):
-        for reg in [ZEROED, BURNABLE]:
-            if self._registers[reg]:
-                wire = self._get(reg)
-                self._loaned[wire] = reg
-                return [], wire
-        if self._registers[GARBAGE]:
-            wire = self._get(GARBAGE)
-            m = measure(wire, reset=True)
-            self._loaned[wire] = BURNABLE
-            return m.measurements, wire
-        if self.min_integer is not None:
-            wire = self.min_integer
-            self._loaned[wire] = ZEROED
-            self.min_integer += 1
-            return [], wire
-        raise ValueError("no available burnable, garbage, or zeroed wires.")
-
-    def _get_garbage(self):
-        for reg in [GARBAGE, BURNABLE]:
-            if self._registers[reg]:
-                wire = self._get(reg)
-                self._loaned[wire] = GARBAGE
-                return [], wire
-        if self._registers[ZEROED]:
-            wire = self._get(ZEROED)
-            self._loaned[wire] = RegisterTypes.REQUIRES_RESET
-            return [], wire
-        if self.min_integer is not None:
-            wire = self.min_integer
-            self._loaned[wire] = GARBAGE
-            self.min_integer += 1
-            return [], wire
-        raise ValueError("no available burnable, garbage, or zeroed wires.")
-
-    def _get_borrowable(self):
-        for reg in [GARBAGE, BORROWABLE, BURNABLE, ZEROED]:
-            if self._registers[reg]:
-                wire = self._get(reg)
-                self._loaned[wire] = reg
-                return [], wire
-        if self.min_integer is not None:
-            wire = self.min_integer
-            self._loaned[wire] = ZEROED
-            self.min_integer += 1
-            return [], wire
-        raise ValueError("no available burnable, garbage, borrowable, or zeroed wires.")
-
     def get_wire(self, require_zeros, reset_to_original):
-        reg_type = RegisterTypes((require_zeros, reset_to_original))
-        match reg_type:
-            case RegisterTypes.BURNABLE:
-                return self._get_burnable()
-            case RegisterTypes.ZEROED:
-                return self._get_zeroed()
-            case RegisterTypes.GARBAGE:
-                return self._get_garbage()
-            case RegisterTypes.BORROWABLE:
-                return self._get_borrowable()
-            case _:
-                raise ValueError("something went wrong")
+        if not self._zeroed and not self._dirty:
+            if self.min_integer is None:
+                raise ValueError("no wires left to allocate.")
+            self.min_integer += 1
+            self._zeroed.append(self.min_integer)
+        if require_zeros:
+            if self._zeroed:
+                w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
+                self._loaned[w] = "zeroed" if reset_to_original else "dirty"
+                return w, []
+            w = self._dirty.popleft() if self.style == "queue" else self._dirty.pop()
+            self._loaned[w] = "dirty"
+            m = measure(w, reset=True)
+            return w, m.measurements
+
+        if self._dirty:
+            w = self._dirty.popleft() if self.style == "queue" else self._dirty.pop()
+            self._loaned[w] = "dirty"
+            return w, []
+        w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
+        self._loaned[w] = "zeroed" if reset_to_original else "dirty"
+        return w, []
 
     def return_wire(self, wire):
         reg_type = self._loaned.pop(wire)
-        if reg_type == RegisterTypes.REQUIRES_RESET:
-            self._registers[ZEROED].append(wire)
-            return [measure(wire, reset=True)]
-        self._registers[reg_type].append(wire)
-        return []
+        if reg_type == "dirty":
+            self._dirty.append(wire)
+        else:
+            self._zeroed.append(wire)
 
     def return_all(self):
         return list(chain(self.return_wire(w) for w in self._loaned))
@@ -301,18 +216,9 @@ resolve_dynamic_wires_plxpr_to_plxpr = _get_plxpr_resolve_dynamic_wires()
 
 
 @partial(transform, plxpr_transform=resolve_dynamic_wires_plxpr_to_plxpr)
-def resolve_dynamic_wires(
-    tape, zeroed=(), burnable=(), borrowable=(), garbage=(), min_integer=None, style="stack"
-):
+def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="stack"):
 
-    manager = WireManager(
-        zeroed=zeroed,
-        burnable=burnable,
-        borrowable=borrowable,
-        garbage=garbage,
-        min_integer=min_integer,
-        style=style
-    )
+    manager = WireManager(zeroed=zeroed, dirty=dirty, min_integer=min_integer, style=style)
 
     wire_map = {}
 
@@ -320,12 +226,12 @@ def resolve_dynamic_wires(
     for op in tape.operations:
         if isinstance(op, Allocate):
             for w in op.wires:
-                ops, wire = manager.get_wire(**op.hyperparameters)
+                wire, ops = manager.get_wire(**op.hyperparameters)
                 new_ops += ops
                 wire_map[w] = wire
         elif isinstance(op, Deallocate):
             for w in op.wires:
-                new_ops += manager.return_wire(wire_map.pop(w))
+                manager.return_wire(wire_map.pop(w))
         elif isinstance(op, DeallocateAll):
             new_ops += manager.return_all()
         else:
@@ -340,5 +246,5 @@ def device_resolve_dynamic_wires(tape, device_wires):
     if not device_wires:
         max_wire_int = max([0, *(w for w in tape.wires if isinstance(w, int))]) + 1
         return resolve_dynamic_wires(tape, min_integer=max_wire_int)
-    burnable = set(device_wires) - set(tape.wires)
-    return resolve_dynamic_wires(tape, burnable=burnable)
+    zeroed = set(device_wires) - set(tape.wires)
+    return resolve_dynamic_wires(tape, zeroed=zeroed)
