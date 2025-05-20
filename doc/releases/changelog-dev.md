@@ -318,6 +318,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove and reduce excessively expensive test cases in `tests/templates/test_subroutines/` that do not add value.
+  [(#7436)](https://github.com/PennyLaneAI/pennylane/pull/7436)
+
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
 
