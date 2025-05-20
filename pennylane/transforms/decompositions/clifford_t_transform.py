@@ -333,24 +333,30 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
-class _CachedDecompose:
-    """A class to cache the decomposition of the operators."""
+class _CachedCallable:
+    """A class to cache the decomposition of the operators.
+
+    Args:
+        method (str): The method to be used for decomposition.
+        epsilon (float): The maximum permissible operator norm error for the decomposition.
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
+    """
 
     def __init__(self, method, epsilon, **method_kwargs):
-
-        if method == "sk":
-            self.decompose_fn = lru_cache(maxsize=10000)(
-                partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
-            )
-        else:
-            raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
-            )
+        match method:
+            case "sk":
+                self.decompose_fn = lru_cache(maxsize=10000)(
+                    partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
+                )
 
         self.method = method
         self.epsilon = epsilon
         self.method_kwargs = method_kwargs
-        self.decompose = lru_cache(maxsize=10000)(self.cached_decompose)
+        self.query = lru_cache(maxsize=10000)(self.cached_decompose)
 
     def equal(self, method, epsilon, **method_kwargs):
         """Check equality based on `method`, `epsilon` and `method_kwargs`."""
@@ -369,7 +375,7 @@ class _CachedDecompose:
         return seq
 
 
-_CACHED_DECOMPOSE = None
+_CLIFFORD_T_CACHE = None
 
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
@@ -498,16 +504,16 @@ def clifford_t_decomposition(
         # note: the last operator in the decomposition must be a GlobalPhase
 
         # Build the decomposition cache based on the method
-        global _CACHED_DECOMPOSE  # pylint: disable=global-statement
-        if _CACHED_DECOMPOSE is None or _CACHED_DECOMPOSE.equal(method, epsilon, **method_kwargs):
-            _CACHED_DECOMPOSE = _CachedDecompose(method, epsilon, **method_kwargs)
+        global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
+        if _CLIFFORD_T_CACHE is None or _CLIFFORD_T_CACHE.equal(method, epsilon, **method_kwargs):
+            _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, **method_kwargs)
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
         for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
                 # Decompose the RZ operation with a default wire
-                clifford_ops = _CACHED_DECOMPOSE.decompose(op.data[0])
+                clifford_ops = _CLIFFORD_T_CACHE.query(op.data[0])
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
