@@ -204,11 +204,11 @@ def _(
     return out
 
 
-def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
 

@@ -114,33 +114,35 @@ def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
-        if kwarg == "expansion_strategy":
-            raise ValueError(
-                "'expansion_strategy' is no longer a valid keyword argument to QNode."
-                " To inspect the circuit at a given stage in the transform program, please"
-                " use qml.workflow.construct_batch instead."
-            )
-
-        if kwarg == "max_expansion":
-            raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
-        if kwarg in ["gradient_fn", "grad_method"]:
-            warnings.warn(
-                "It appears you may be trying to set the method of differentiation via the "
-                f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                "backpropogation. Use diff_method instead."
-            )
-        elif kwarg == "shots":
-            raise ValueError(
-                "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
-                "argument 'shots' or if you want to set the number of shots with which the "
-                "QNode is executed, pass it to the QNode call, not its definition."
-            )
-        elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-            warnings.warn(
-                f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
-                "the gradient_kwargs argument as a dictionary."
-            )
+        match kwarg:
+            case "expansion_strategy":
+                raise ValueError(
+                    "'expansion_strategy' is no longer a valid keyword argument to QNode."
+                    " To inspect the circuit at a given stage in the transform program, please"
+                    " use qml.workflow.construct_batch instead."
+                )
+            case "max_expansion":
+                raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
+            case "gradient_fn" | "grad_method":
+                warnings.warn(
+                    "It appears you may be trying to set the method of differentiation via the "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                    "backpropogation. Use diff_method instead."
+                )
+            case "shots":
+                raise ValueError(
+                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                    "argument 'shots' or if you want to set the number of shots with which the "
+                    "QNode is executed, pass it to the QNode call, not its definition."
+                )
+            case _:
+                if kwarg in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                    continue
+                warnings.warn(
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                    "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                    "the gradient_kwargs argument as a dictionary."
+                )
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
@@ -611,7 +613,6 @@ class QNode:
         self._interface = get_canonical_interface_name(interface)
         if self._interface in (Interface.JAX, Interface.JAX_JIT):
             _validate_jax_version()
-
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
         cache = (max_diff > 1) if cache == "auto" else cache
