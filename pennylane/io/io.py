@@ -850,8 +850,6 @@ def from_qasm_three(quantum_circuit: str):
         Wires: the wires required to execute the QASM.
 
     """
-    if not has_openqasm:
-        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
     context = QasmInterpreter().generic_visit(ast, context={"name": "global"})

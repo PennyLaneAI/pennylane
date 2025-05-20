@@ -83,11 +83,6 @@ class QasmInterpreter(QASMVisitor):
     overriden visitor function on each node.
     """
 
-    def __init__(self):
-        if not has_openqasm:
-            raise ImportError("QASM interpreter requires openqasm3 to be installed")
-        super().__init__()
-
     def visit(self, node: QASMNode, context: dict):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
