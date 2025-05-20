@@ -238,18 +238,20 @@ class TestProcessDensityMatrix:
         assert res.dtype == np.int8
 
         # test that the bits are either 0 and 1
-        assert set(res[0]).issubset({0, 1})
+        assert set(res[0].ravel()).issubset({0, 1})
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert set(res[1]).issubset({0, 1, 2})
+        assert set(res[1].ravel()).issubset({0, 1, 2})
 
-    def test_wire_order(self):
+    def test_wire_order(self, seed):
         """Test that the wire order is respected"""
         state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
         dm = np.outer(state, state).reshape((2,) * 4)
 
         mp = qml.classical_shadow(wires=[0, 1])
-        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=1000)
+        res = mp.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=seed
+        )
 
         assert res.shape == (2, 1000, 2)
         assert res.dtype == np.int8
@@ -287,10 +289,10 @@ class TestProcessDensityMatrix:
         assert res.dtype == np.int8
 
         # test that the bits are either 0 and 1
-        assert set(res[0]).issubset({0, 1})
+        assert set(res[0].ravel()).issubset({0, 1})
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert set(res[1]).issubset({0, 1, 2})
+        assert set(res[1].ravel()).issubset({0, 1, 2})
 
     def test_same_rng(self):
         """Test results when the rng is the same"""
