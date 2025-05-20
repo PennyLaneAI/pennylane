@@ -59,8 +59,7 @@ def _get_deallocate_prim():
 
 class Allocate(Operator):
 
-    def __init__(self, num_wires, require_zeros=True, reset_to_original=False):
-        wires = tuple(DynamicWire() for _ in range(num_wires))
+    def __init__(self, wires, require_zeros=True, reset_to_original=False):
         super().__init__(wires=wires)
         self._hyperparameters = {
             "require_zeros": require_zeros,
@@ -91,8 +90,9 @@ def allocate(num_wires, require_zeros=True, reset_to_original=False):
         return _get_allocate_prim().bind(
             num_wires=num_wires, require_zeros=require_zeros, reset_to_original=reset_to_original
         )
-    op = Allocate(num_wires, require_zeros=require_zeros, reset_to_original=reset_to_original)
-    return op.wires
+    wires = tuple(DynamicWire() for _ in range(num_wires))
+    Allocate(wires, require_zeros=require_zeros, reset_to_original=reset_to_original)
+    return wires
 
 
 def deallocate(obj):
