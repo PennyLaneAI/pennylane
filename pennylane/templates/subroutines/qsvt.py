@@ -794,7 +794,7 @@ def _poly_func(coeffs, parity, x):
     """
 
     ind = qml.math.arange(len(coeffs))
-    return sum([coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind])
+    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
 
 
 def _z_rotation(phi, interface):
@@ -1243,15 +1243,19 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         if angle_solver == "iterative":
             return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
 
-        raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
+        raise AssertionError(
+            "Invalid angle solver method. We currently support 'root-finding' and 'iterative'"
+        )
 
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         if angle_solver == "iterative":
             return _compute_qsp_angles_iteratively(poly)
-        raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+        raise AssertionError(
+            "Invalid angle solver method. Valid value is 'root-finding' and 'iterative'"
+        )
 
     if routine == "GQSP":
         return _compute_gqsp_angles(poly)
-    raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
+    raise AssertionError("Invalid routine. Valid values are 'GQSP', 'QSP' and 'QSVT'")
