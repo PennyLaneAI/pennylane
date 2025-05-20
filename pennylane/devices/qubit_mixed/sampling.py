@@ -186,16 +186,12 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None, is_state_ba
             Second row: Pauli basis recipe (0=X, 1=Y, 2=Z).
     """
     if isinstance(mp, ShadowExpvalMP):
-        classical_shadow = ClassicalShadowMP(wires=mp.wires, seed=mp.seed)
-        bits, recipes = process_state_with_shots(
-            classical_shadow,
+        return mp.process_density_matrix_with_shots(
             state,
             wire_order,
             shots,
             rng=rng,
         )
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=mp.wires.tolist())
-        return shadow.expval(mp.H, mp.k)
     wire_map = {w: i for i, w in enumerate(wire_order)}
     wires = mp.wires
     mapped_wires = [wire_map[w] for w in wires]
