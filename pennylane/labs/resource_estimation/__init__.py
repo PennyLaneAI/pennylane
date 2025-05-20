@@ -30,6 +30,7 @@ from .resource_operator import (
     CompressedResourceOp,
     ResourceOperator,
     ResourcesNotDefined,
+    resource_rep,
     set_adj_decomp,
     set_ctrl_decomp,
     set_decomp,

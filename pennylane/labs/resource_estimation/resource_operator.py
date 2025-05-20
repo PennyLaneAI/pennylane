@@ -17,7 +17,7 @@ from __future__ import annotations
 from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type, Optional, Hashable
+from typing import Callable, List, Type, Optional, Hashable, Dict, Union
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
@@ -376,3 +376,19 @@ class GateCount:
 
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"
+
+
+def resource_rep(
+    resource_op: Type[ResourceOperator], resource_params: Dict,
+) -> CompressedResourceOp:
+    r"""Produce a compressed representation of the resource operator to be used when
+    tracking resources.
+
+    Args:
+        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify 
+        resource_params (Dict): The required set of parameters to specify the operator
+
+    Returns:
+        CompressedResourceOp: A compressed representation of a resource operator
+    """
+    return resource_op.resource_rep(**resource_params)
