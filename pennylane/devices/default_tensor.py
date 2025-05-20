@@ -41,7 +41,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
@@ -1044,7 +1044,7 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 
 
 @singledispatch
-def expval_core(obs: Observable, device) -> float:
+def expval_core(obs: Operator, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
 

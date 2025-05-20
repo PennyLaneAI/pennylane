@@ -16,11 +16,12 @@ Contains the k-UpCCGSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import copy
+from itertools import product
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -31,17 +32,15 @@ def generalized_singles(wires, delta_sz):
         \hat{T_1} = \sum_{pq} t_{p}^{q} \hat{c}^{\dagger}_{q} \hat{c}_{p}
 
     """
-    sz = np.array(
-        [0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))]
-    )  # alpha-beta electrons
+    n = len(wires)
+    sz = 0.5 * (-1) ** np.arange(n)  # alpha-beta electrons
     gen_singles_wires = []
-    for r in range(len(wires)):
-        for p in range(len(wires)):
-            if sz[p] - sz[r] == delta_sz and p != r:
-                if r < p:
-                    gen_singles_wires.append(wires[r : p + 1])
-                else:
-                    gen_singles_wires.append(wires[p : r + 1][::-1])
+    for r, p in product(range(n), repeat=2):
+        if sz[p] - sz[r] == delta_sz and p != r:
+            if r < p:
+                gen_singles_wires.append(wires[r : p + 1])
+            else:
+                gen_singles_wires.append(wires[p : r + 1][::-1])
     return gen_singles_wires
 
 
@@ -54,12 +53,9 @@ def generalized_pair_doubles(wires):
 
     """
     pair_gen_doubles_wires = [
-        [
-            wires[r : r + 2],
-            wires[p : p + 2],
-        ]  # wires for [wires[r], wires[r+1], wires[p], wires[p+1]] terms
-        for r in range(0, len(wires) - 1, 2)
-        for p in range(0, len(wires) - 1, 2)
+        # wires for [wires[r], wires[r+1], wires[p], wires[p+1]] terms
+        [wires[r : r + 2], wires[p : p + 2]]
+        for r, p in product(range(0, len(wires) - 1, 2), repeat=2)
         if p != r  # remove redundant terms
     ]
     return pair_gen_doubles_wires
@@ -125,14 +121,14 @@ class kUpCCGSD(Operation):
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
             coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-            H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+            H, wires = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
-            ref_state = qml.qchem.hf_state(electrons, qubits)
+            ref_state = qml.qchem.hf_state(electrons, wires)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qml.device('default.qubit', wires=wires)
 
             # Define the ansatz
             @qml.qnode(dev)
@@ -144,7 +140,7 @@ class kUpCCGSD(Operation):
             # Get the shape of the weights for this template
             layers = 1
             shape = qml.kUpCCGSD.shape(k=layers,
-                                n_wires=qubits, delta_sz=0)
+                                n_wires=wires, delta_sz=0)
 
             # Initialize the weight tensors
             np.random.seed(24)
@@ -204,7 +200,6 @@ class kUpCCGSD(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -231,12 +226,9 @@ class kUpCCGSD(Operation):
         d_wires = generalized_pair_doubles(list(wires))
 
         shape = qml.math.shape(weights)
-        if shape != (
-            k,
-            len(s_wires) + len(d_wires),
-        ):
+        if shape != (k, len(s_wires) + len(d_wires)):
             raise ValueError(
-                f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires),)}; got {shape}."
+                f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires))}; got {shape}."
             )
 
         init_state = qml.math.toarray(init_state)
@@ -320,7 +312,7 @@ class kUpCCGSD(Operation):
         r"""Returns the shape of the weight tensor required for this template.
         Args:
             k (int): Number of layers
-            n_wires (int): Number of qubits
+            n_wires (int): Number of wires
             delta_sz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz``
             for the spin-projection ``sz`` of the orbitals involved in the single excitations.
             ``delta_sz`` can take the values :math:`0` and :math:`\pm 1`.
@@ -330,12 +322,12 @@ class kUpCCGSD(Operation):
 
         if n_wires < 4:
             raise ValueError(
-                f"This template requires the number of qubits to be greater than four; got 'n_wires' = {n_wires}"
+                f"This template requires the number of wires to be greater than four; got 'n_wires' = {n_wires}"
             )
 
         if n_wires % 2:
             raise ValueError(
-                f"This template requires an even number of qubits; got 'n_wires' = {n_wires}"
+                f"This template requires an even number of wires; got 'n_wires' = {n_wires}"
             )
 
         s_wires = generalized_singles(range(n_wires), delta_sz)

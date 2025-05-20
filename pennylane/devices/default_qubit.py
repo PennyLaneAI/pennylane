@@ -15,7 +15,6 @@
 The default.qubit device is PennyLane's standard qubit-based device.
 """
 
-import concurrent.futures
 import logging
 import warnings
 from dataclasses import replace
@@ -27,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.allocation import device_resolve_dynamic_wires
+from pennylane import math
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -65,7 +65,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
     if op.name == "FromBloq" and len(op.wires) > 3:
         return False
@@ -222,7 +222,7 @@ def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
-        or not qml.operation.is_trainable(op)
+        or not any(math.requires_grad(d) for d in op.data)
         or (op.num_params == 1 and op.has_generator)
     )
 
@@ -297,7 +297,7 @@ class DefaultQubit(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
+        max_workers (int): A `:class:~.qml.concurrency.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
@@ -379,7 +379,7 @@ class DefaultQubit(Device):
 
 
     .. details::
-        :title: Accelerate calculations with multiprocessing
+        :title: Accelerate calculations with concurrent executors
 
         Suppose one has a processor with 5 cores or more, these scripts can be executed in
         parallel as follows
@@ -406,7 +406,7 @@ class DefaultQubit(Device):
 
         .. warning::
 
-            Multiprocessing may fail depending on your platform and environment (Python shell,
+            Concurrent executors using the multiprocessing backend (default) may fail depending on your platform and environment (Python shell,
             script with a protected entry point, Jupyter notebook, etc.) This may be solved
             changing the so-called start method. The supported start methods are the following:
 
@@ -562,11 +562,12 @@ class DefaultQubit(Device):
 
         if config.interface == qml.math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
-        transform_program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
         )
+        # validate_device_wires needs to be after defer_measurement has added more wires.
+        transform_program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -750,7 +751,7 @@ class DefaultQubit(Device):
             for _rng, _key in zip(seeds, prng_keys)
         ]
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
             results = tuple(exec_map)
 
@@ -770,7 +771,8 @@ class DefaultQubit(Device):
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
             res = tuple(exec_map)
 
@@ -792,7 +794,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_jac_wrapper,
@@ -834,7 +836,7 @@ class DefaultQubit(Device):
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
         # reset _rng to mimic serial behaviour
@@ -859,7 +861,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_jvp_wrapper,
@@ -950,7 +952,7 @@ class DefaultQubit(Device):
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with execution_config.executor_backend(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
         # reset _rng to mimic serial behaviour
@@ -975,7 +977,7 @@ class DefaultQubit(Device):
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            with execution_config.executor_backend(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_vjp_wrapper,
@@ -989,7 +991,7 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel, unused-argument
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -1017,10 +1019,10 @@ class DefaultQubit(Device):
 
         def _make_zero(tan, arg):
             return (
-                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, jax.interpreters.ad.Zero)
+                else tan
             )
-
-        tangents = tuple(map(_make_zero, tangents, args))
 
         def eval_wrapper(*inner_args):
             n_consts = len(jaxpr.constvars)
@@ -1029,6 +1031,8 @@ class DefaultQubit(Device):
             return self.eval_jaxpr(
                 jaxpr, consts, *non_const_args, execution_config=execution_config
             )
+
+        tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
 

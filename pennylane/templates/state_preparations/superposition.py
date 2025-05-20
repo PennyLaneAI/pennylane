@@ -16,7 +16,7 @@ Contains the Superposition template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def _assign_states(basis_list):
@@ -205,7 +205,6 @@ class Superposition(Operation):
         with the number of qubits.
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 

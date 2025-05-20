@@ -58,6 +58,7 @@ Defining Decomposition Rules
     :toctree: api
 
     ~register_resources
+    ~register_condition
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
@@ -218,7 +219,7 @@ operator towards a target gate set.
     op = qml.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
     graph.solve()
 
@@ -243,13 +244,11 @@ Utility Classes
     :toctree: api
 
     ~DecompositionError
-    ~DecompositionNotApplicable
 
 """
 
 from .utils import (
     DecompositionError,
-    DecompositionNotApplicable,
     enable_graph,
     disable_graph,
     enabled_graph,
@@ -265,6 +264,7 @@ from .resources import (
 )
 from .decomposition_rule import (
     register_resources,
+    register_condition,
     DecompositionRule,
     add_decomps,
     list_decomps,
