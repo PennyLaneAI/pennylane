@@ -335,5 +335,6 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
 
 suppress_warnings = [
-    "autosummary"
+    "autosummary",
+    "autodoc"
 ]
