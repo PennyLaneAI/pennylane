@@ -191,9 +191,9 @@ def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    adjoint_prim = NonInterpPrimitive("adjoint_transform")
+    adjoint_prim = QmlPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
     adjoint_prim.prim_type = "higher_order"
 
