@@ -73,7 +73,7 @@ class TestFromBloq:
 
         op = qml.FromBloq(cbloq, wires=range(24))
 
-        qml.ops.functions.assert_valid(op, True, True)
+        qml.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
 
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
