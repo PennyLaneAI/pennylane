@@ -17,7 +17,7 @@
   
   @qml.qnode(dev)
   def my_circuit(y, p):
-      from_qasm_three(f"""
+      execute_qasm, _ = from_qasm_three(f"""
           qubit q0;
           qubit q1;
           float theta = 0.5;
@@ -30,6 +30,7 @@
           ctrl @ x q1, q0;
           """
       )
+      execute_qasm()
       return qml.expval(qml.Z(0))
   
   my_circuit(y=0.2, p=2)
