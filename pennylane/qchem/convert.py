@@ -209,7 +209,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
-            accepted. If None, will map sorted wires from all `ops` to consecutive int.
+            accepted. If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): whether to keep the imaginary part of the coefficients if they are smaller
             than the provided tolerance.
 
@@ -248,7 +248,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
-        qubit_indexed_wires = all_wires
+        qubit_indexed_wires = qml.wires.Wires(range(max(all_wires) + 1))
 
     coeffs = np.array(coeffs)
     if (np.abs(coeffs.imag) < tol).all():

@@ -17,6 +17,7 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
+from copy import copy
 from functools import lru_cache
 from typing import Iterable, Optional, Union
 
@@ -48,9 +49,9 @@ def _create_parametrized_mid_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    measure_in_basis_p = NonInterpPrimitive("measure_in_basis")
+    measure_in_basis_p = QmlPrimitive("measure_in_basis")
 
     @measure_in_basis_p.def_impl
     def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
@@ -783,6 +784,16 @@ def diagonalize_mcms(tape):
             new_operations.append(op)
 
         curr_idx += 1
+
+    new_measurements = []
+    for mp in tape.measurements:
+        if mp.mv is None:
+            new_measurements.append(mp)
+        else:
+            new_mp = copy(mp)
+            mps = [mps_mapping.get(m, m) for m in mp.mv.measurements]
+            new_mp.mv.measurements = mps
+            new_measurements.append(new_mp)
 
     new_tape = tape.copy(operations=new_operations)
 
