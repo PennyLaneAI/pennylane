@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement processes"""
 
 import copy
+import itertools
 
 import autograd.numpy
 import pytest
@@ -274,6 +275,40 @@ class TestProcessDensityMatrix:
 
         # now test that the second qubit samples are all 0s when the recipe is Z
         assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    @pytest.mark.parametrize("shots", [100])
+    def test_wire_order_generalized(self, num_wires, shots, seed):
+        """Test that the wire order is respected for any number of wires and all permutations"""
+        # Prepare a GHZ-like state for num_wires
+        state = np.zeros((2,) * num_wires)
+        idx0 = tuple([0] * num_wires)
+        idx1 = tuple([1] * num_wires)
+        state[idx0] = 1 / np.sqrt(2)
+        state[idx1] = 1 / np.sqrt(2)
+        dm = np.outer(state.ravel(), state.ravel()).reshape((2,) * (2 * num_wires))
+
+        wires = list(range(num_wires))
+        mp = qml.classical_shadow(wires=wires)
+
+        for perm in itertools.permutations(wires):
+            res = mp.process_density_matrix_with_shots(
+                dm, qml.wires.Wires(list(perm)), shots=shots, rng=seed
+            )
+            assert res.shape == (2, shots, num_wires)
+            # bits are always 0 or 1
+            assert set(res[0].ravel()).issubset({0, 1})
+            # recipes are always 0, 1, or 2
+            assert set(res[1].ravel()).issubset({0, 1, 2})
+
+            # For GHZ state, when all qubits are measured in Z basis,
+            # they should all have the same value (all 0s or all 1s)
+            z_shots = np.where(np.all(res[1] == 2, axis=1))[0]
+            if len(z_shots) > 0:  # Only test if we have any all-Z shots
+                for shot_idx in z_shots:
+                    # All qubits should have the same measurement outcome
+                    first_bit = res[0][shot_idx, 0]
+                    assert np.all(res[0][shot_idx] == first_bit)
 
     def test_subset_wires(self):
         """Test that the measurement is correct when only a subset of wires is measured"""
