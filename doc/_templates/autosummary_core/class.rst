@@ -9,6 +9,11 @@
 	{% set mod = "qml" %}
 {% endif %}
 
+{% set no_index_classes = [
+    "pennylane.bose.bosonic.BoseSentence",
+    "pennylane.bose.bosonic.BoseWord"
+] %}
+
 {{ mod }}.{{ objname }}
 ={% for i in range(mod|length) %}={% endfor %}{{ underline }}
 
@@ -16,7 +21,10 @@
 
 .. autoclass:: {{ objname }}
    :show-inheritance:
-
+   {%- if module ~ '.' ~ objname in no_index_classes %}
+   :no-index:
+   {%- endif %}
+   
    {% if '__init__' in methods %}
      {% set caught_result = methods.remove('__init__') %}
    {% endif %}
