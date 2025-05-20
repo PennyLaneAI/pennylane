@@ -28,7 +28,7 @@ from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import _get_num_wires, apply_operation
-from .measure import _reshape_state_as_matrix, measure
+from .measure import measure
 
 
 def _apply_diagonalizing_gates(
