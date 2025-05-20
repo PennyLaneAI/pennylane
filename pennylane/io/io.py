@@ -22,14 +22,15 @@ from importlib import metadata
 from sys import version_info
 from typing import Any, Optional
 
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
 
 has_openqasm = True
 try:
-    from openqasm3.parser import parse
+    import openqasm3
+
     from pennylane.io.qasm_interpreter import QasmInterpreter
-except (ModuleNotFoundError, ImportError) as import_error:
-    has_openqasm = False
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -836,10 +837,18 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm_three(quantum_circuit: str):
+def from_qasm3(quantum_circuit: str):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
+
+    >>> execute_qasm, wires = from_qasm3("qubit q0; ry(0.2) q0; pow(2) @ x q0;")
+    >>> dev = device("default.qubit", wires=wires)
+    >>> @qml.qnode(dev)
+    >>> def my_circuit():
+    >>>   execute_qasm()
+    >>>   return qml.expval(qml.Z(0))
+    >>> my_circuit()
 
     Args:
         quantum_circuit (str): a QASM string containing a simple quantum circuit.
@@ -849,11 +858,12 @@ def from_qasm_three(quantum_circuit: str):
         Wires: the wires required to execute the QASM.
 
     """
-    if not has_openqasm:
-        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")
-    else:
-        # parse the QASM program
-        ast = parse(quantum_circuit, permissive=True)
-        context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+    if not has_openqasm:  # pragma: no cover
+        raise ImportWarning(
+            "QASM interpreter requires openqasm3 to be installed"
+        )  # pragma: no cover
+    # parse the QASM program
+    ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
 
-        return context["callable"], context["wires"]
+    return context["callable"], context["wires"]

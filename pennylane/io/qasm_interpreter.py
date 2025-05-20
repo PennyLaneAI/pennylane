@@ -1,3 +1,7 @@
+"""
+This submodule contains the interpreter for QASM 3.0.
+"""
+
 import re
 
 from functools import partial
@@ -49,6 +53,12 @@ from pennylane.ops import (
     pow,
     cond,
 )
+
+has_openqasm = True
+try:
+    from openqasm3.visitor import QASMNode, QASMVisitor
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 SINGLE_QUBIT_GATES = {
     "ID": Identity,
@@ -108,9 +118,12 @@ class QasmInterpreter(QASMVisitor):
 
         Args:
             permissive (bool): whether to continue interpreting if an unsuppported node type is encountered.
+
+        Raises:
+            ImportError: if the openqasm3 package is not available.
         """
-        if not has_openqasm:
-            raise ImportError("QASM interpreter requires openqasm3 to be installed")
+        if not has_openqasm:  # pragma: no cover
+            raise ImportError("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
         else:
             super().__init__()
 
@@ -727,19 +740,6 @@ class QasmInterpreter(QASMVisitor):
         context["callable"] = lambda: [gate() for gate in context["gates"]]
 
     @staticmethod
-    def identifier(node: QASMNode, context: dict):
-        """
-        Registers an identifier in the current context.
-
-        Args:
-            node (QASMNode): The Identifier QASMNode.
-            context (dict): The current context.
-        """
-        if not hasattr(context, "identifiers"):
-            context["identifiers"] = []
-        context["identifiers"].append(node.name.name)
-
-    @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
@@ -819,7 +819,8 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(gate)
 
-    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
+    @staticmethod
+    def modifiers(gate: Callable, node: QASMNode, context: dict):
         """
         Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
         depending on the type of modifier. We build a Callable that applies the modifier appropriately
@@ -840,7 +841,7 @@ class QasmInterpreter(QASMVisitor):
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pow, z=mod.argument.value)
-                elif mod.argument.name in context["vars"]:
+                elif "vars" in context and mod.argument.name in context["vars"]:
                     wrapper = partial(pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
             elif mod.modifier.name == 'ctrl':
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
@@ -849,11 +850,14 @@ class QasmInterpreter(QASMVisitor):
         def call():
             res = None
             for callable in call_stack[::-1]:
-                # checks there is a control in the stack
-                if ('partial' == call_stack[0].__class__.__name__ and 'control' in call_stack[0].keywords):
-                    # checks we are processing the control now
-                    if 'control' in callable.keywords:
-                        res.keywords["wires"] = [res.keywords["wires"][-1]]  # ctrl on all wires but the target
+                # if there is a control in the stack
+                if (
+                    call_stack[0].__class__.__name__ == "partial"
+                    and "control" in call_stack[0].keywords
+                ):
+                    # if we are processing the control now
+                    if "control" in callable.keywords:
+                        res.keywords["wires"] = [res.keywords["wires"][-1]]
                     # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
                     res = callable(res.func)(**res.keywords) if res is not None else callable
                 else:
@@ -862,7 +866,8 @@ class QasmInterpreter(QASMVisitor):
 
         return call
 
-    def _require_wires(self, context):
+    @staticmethod
+    def _require_wires(context):
         """
         Simple helper that checks if we have wires in the current context.
 
@@ -899,7 +904,7 @@ class QasmInterpreter(QASMVisitor):
             raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
         args = []
         for arg in node.arguments:
-            if hasattr(arg, "name"):
+            if hasattr(arg, "name") and "vars" in context and arg.name in context["vars"]:
                 # the context at this point should reflect the states of the
                 # variables as evaluated in the correct (current) scope.
                 # But what about deferred evaluations?

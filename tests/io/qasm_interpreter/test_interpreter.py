@@ -1,6 +1,8 @@
-import pytest
+"""
+Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
+"""
 
-parser = pytest.importorskip("openqasm3.parser")
+import pytest
 
 from pennylane import (
     CH,
@@ -30,28 +32,113 @@ from pennylane import (
     T,
     Toffoli,
 )
-from pennylane.io.qasm_interpreter import QasmInterpreter
 
 
+@pytest.fixture
+def skip_if_no_openqasm_support():
+    """Fixture to skip if openqasm3 is not available"""
+    pytest.importorskip("openqasm3.parser")
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_openqasm_support")
 class TestInterpreter:
 
     qasm_programs = [
-        (open("adder.qasm", mode="r").read(), 22, "adder"),
-        (open("qec.qasm", mode="r").read(), 32, "qec"),
-        (open("teleport.qasm", mode="r").read(), 25, "teleport"),
+        (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
+        (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 32, "qec"),
+        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
     def test_visits_each_node(self, qasm_program, count_nodes, program_name, mocker):
         """Tests that visitor is called on each element of the AST."""
-        ast = parser.parse(qasm_program, permissive=True)
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        ast = parse(qasm_program, permissive=True)
         spy = mocker.spy(QasmInterpreter, "visit")
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
-    def test_no_qubits(self):
+    def test_mod_with_declared_param(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
+            """
+            int power = 2;
+            float phi = 0.2;
+            qubit q0;
+            pow(power) @ rx(phi) q0;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+
+        # setup mocks
+        rx = mocker.spy(RX, "__init__")
+
+        # execute the callable
+        context["callable"]()
+
+        assert rx.call_count == 1  # RX calls PauliX under the hood
+        rx.assert_called_with(RX(2, 0), 2, wires=0)
+
+    def test_uninitialized_param(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            rx(phi) q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NameError,
+            match="Uninitialized variable phi encountered in QASM.",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
+
+    def test_unsuppoted_node_type_raises(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM program
+        ast = parse(
+            """
+            bit b;
+            qubit q0;
+            float theta = 0.2;
+            rx(theta) q0;
+            measure q0 -> b;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NotImplementedError,
+            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
+
+    def test_no_qubits(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM program
+        ast = parse(
             """
             float theta;
             rx(theta) q0;
@@ -63,8 +150,12 @@ class TestInterpreter:
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             qubit q1;
@@ -78,8 +169,12 @@ class TestInterpreter:
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "unsupported-gate"})
 
     def test_missing_param(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             float theta;
@@ -88,12 +183,17 @@ class TestInterpreter:
             permissive=True,
         )
 
-        with pytest.raises(TypeError, match="Missing required argument\(s\) for parameterized gate rx"):
+        with pytest.raises(TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"):
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "missing-param"})
 
+
     def test_uninitialized_var(self):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             float theta;
@@ -106,9 +206,12 @@ class TestInterpreter:
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-param"})
 
     def test_parses_simple_qasm(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             qubit q1;
@@ -151,11 +254,15 @@ class TestInterpreter:
         ry.assert_called_with(RY(0.2, [0]), 0.2, wires=[0])
 
     def test_interprets_two_qubit_gates(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
-            qubit q1;  
+            qubit q1;
             ch q0, q1;
             cx q1, q0;
             cy q0, q1;
@@ -194,11 +301,15 @@ class TestInterpreter:
         swap.assert_called_with(SWAP([0, 1]), [0, 1])
 
     def test_interprets_parameterized_two_qubit_gates(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
-            qubit q1;  
+            qubit q1;
             cp(0.4) q0, q1;
             cphase(0.4) q0, q1;
             crx(0.2) q0, q1;
@@ -207,9 +318,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "param-two-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
@@ -235,8 +344,12 @@ class TestInterpreter:
         crz.assert_called_with(CRZ(0.1, [0, 1]), 0.1, wires=[0, 1])
 
     def test_interprets_multi_qubit_gates(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             qubit q1;
@@ -246,9 +359,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "multi-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
@@ -266,8 +377,12 @@ class TestInterpreter:
         cswap.assert_called_with(CSWAP([1, 2, 0]), wires=[1, 2, 0])
 
     def test_interprets_parameterized_single_qubit_gates(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             qubit q1;
@@ -283,9 +398,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "param-single-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         # setup mocks
 
@@ -324,8 +437,12 @@ class TestInterpreter:
         u3.assert_called_with(U3(1.0, 2.0, 3.0, 2), 1.0, 2.0, 3.0, wires=2)
 
     def test_single_qubit_gates(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
         # parse the QASM program
-        ast = parser.parse(
+        ast = parse(
             """
             qubit q0;
             qubit q1;
@@ -344,9 +461,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(
-            ast, context={"name": "single-qubit-gates"}
-        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
