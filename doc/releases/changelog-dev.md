@@ -471,6 +471,6 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 Kalman Szenes,
-Marc Vandelle
+Marc Vandelle,
 David Wierichs,
 Jake Zaia
