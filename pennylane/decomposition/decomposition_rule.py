@@ -43,7 +43,7 @@ def register_condition(
         performing decompositions is generally more resource-efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``.
+        declares its required resources using :func:`~.register_resources`.
 
     Args:
         condition (Callable): a function which takes the resource parameters of an operator as
