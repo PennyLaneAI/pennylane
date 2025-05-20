@@ -18,8 +18,9 @@ Contains the IQPEmbedding template.
 import copy
 from itertools import combinations
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops import RZ, H, MultiRZ
 from pennylane.wires import Wires
 
 
@@ -168,7 +169,7 @@ class IQPEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
-        shape = qml.math.shape(features)
+        shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
             raise ValueError(
@@ -237,22 +238,22 @@ class IQPEmbedding(Operation):
          H(2), RZ(tensor(3.), wires=[2]),
          MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
         """
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
         op_list = []
-        if qml.math.ndim(features) > 1:
+        if math.ndim(features) > 1:
             # If broadcasting is used, we want to iterate over the wires axis of the features,
             # not over the broadcasting dimension. The latter is passed on to the rotations.
-            features = qml.math.T(features)
+            features = math.T(features)
 
         for _ in range(n_repeats):
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(qml.Hadamard(wires=wires[i]))
-                op_list.append(qml.RZ(features[i], wires=wires[i]))
+                op_list.append(H(wires=wires[i]))
+                op_list.append(RZ(features[i], wires=wires[i]))
 
             for wire_pair in pattern:
                 # get the position of the wire indices in the array
                 idx1, idx2 = wires.indices(wire_pair)
                 # apply product of two features as entangler
-                op_list.append(qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
+                op_list.append(MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
 
         return op_list
