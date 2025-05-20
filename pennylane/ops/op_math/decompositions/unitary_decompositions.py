@@ -434,6 +434,52 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
 
 
+def _multi_qubit_decomp_resource(num_wires):
+    return {
+        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
+        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
+        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
+    }
+
+
+@register_condition(lambda num_wires: num_wires > 2)
+@register_resources(_multi_qubit_decomp_resource)
+def multi_qubit_decomp_rule(U, wires, **__):
+
+    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+    p = 2 ** (len(wires) - 1)
+
+    (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
+
+    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+    u11, diag_u, u12 = _compute_udv(u1, u2)
+
+    ops.QubitUnitary(v12_dagg, wires=wires[1:])
+
+    templates.SelectPauliRot(
+        -2 * math.angle(diag_v),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Z",
+    )
+
+    ops.QubitUnitary(v11_dagg, wires=wires[1:])
+
+    templates.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
+
+    ops.QubitUnitary(u12, wires=wires[1:])
+
+    templates.SelectPauliRot(
+        -2 * math.angle(diag_u),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Z",
+    )
+
+    ops.QubitUnitary(u11, wires=wires[1:])
+
+
 ####################
 # Helper Functions #
 ####################

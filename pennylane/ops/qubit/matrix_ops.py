@@ -31,6 +31,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    multi_qubit_decomp_rule,
     rot_decomp_rule,
     two_qubit_decomp_rule,
     xyx_decomp_rule,
@@ -347,6 +348,7 @@ add_decomps(
     xyx_decomp_rule,
     rot_decomp_rule,
     two_qubit_decomp_rule,
+    multi_qubit_decomp_rule,
 )
 
 
