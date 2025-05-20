@@ -851,7 +851,9 @@ def from_qasm_three(quantum_circuit: str):
 
     """
     if not has_openqasm:  # pragma: no cover
-        raise ImportWarning("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
+        raise ImportWarning(
+            "QASM interpreter requires openqasm3 to be installed"
+        )  # pragma: no cover
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
     context = QasmInterpreter().generic_visit(ast, context={"name": "global"})

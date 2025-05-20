@@ -40,6 +40,7 @@ def skip_if_no_openqasm_support():
     pytest.importorskip("openqasm3.parser")
 
 
+@pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_openqasm_support")
 class TestInterpreter:
 

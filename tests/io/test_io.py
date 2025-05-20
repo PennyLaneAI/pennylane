@@ -206,6 +206,7 @@ class TestLoad:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
 
+@pytest.mark.external
 class TestOpenQasm:
     """Test the qml.to_openqasm and qml.io.from_qasm_three functions."""
 

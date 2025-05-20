@@ -91,7 +91,9 @@ class QasmInterpreter(QASMVisitor):
             ImportError: if the openqasm3 package is not available.
         """
         if not has_openqasm:  # pragma: no cover
-            raise ImportError("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
+            raise ImportError(
+                "QASM interpreter requires openqasm3 to be installed"
+            )  # pragma: no cover
         super().__init__()
 
     def visit(self, node: QASMNode, context: dict):
