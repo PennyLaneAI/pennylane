@@ -64,9 +64,9 @@
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
-* Added new method `process_density_matrix_with_shots` for `ClassicalShadowMP`. This new method
-  uses iterative algorithm similar to `process_state_with_shots` and gains much more performance
-  than `process`.
+* Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
+  iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
+  matrices much more performant.
   [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
 
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal

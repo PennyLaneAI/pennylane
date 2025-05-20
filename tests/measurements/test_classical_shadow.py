@@ -224,7 +224,7 @@ class TestProcessState:
 
 
 class TestProcessDensityMatrix:
-    """Unit tests for process_state_with_shots for the classical_shadow
+    """Unit tests for process_density_matrix_with_shots for the classical_shadow
     and shadow_expval measurements"""
 
     def test_shape_and_dtype(self):
@@ -238,10 +238,10 @@ class TestProcessDensityMatrix:
         assert res.dtype == np.int8
 
         # test that the bits are either 0 and 1
-        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+        assert set(res[0]).issubset({0, 1})
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+        assert set(res[1]).issubset({0, 1, 2})
 
     def test_wire_order(self):
         """Test that the wire order is respected"""
@@ -287,10 +287,10 @@ class TestProcessDensityMatrix:
         assert res.dtype == np.int8
 
         # test that the bits are either 0 and 1
-        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+        assert set(res[0]).issubset({0, 1})
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+        assert set(res[1]).issubset({0, 1, 2})
 
     def test_same_rng(self):
         """Test results when the rng is the same"""

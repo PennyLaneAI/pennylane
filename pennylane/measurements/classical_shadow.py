@@ -475,22 +475,18 @@ class ClassicalShadowMP(MeasurementTransform):
 
         bit_rng = np.random.default_rng(rng)
 
-        obs_list = np.stack(
-            [
-                qml.X.compute_matrix(),
-                qml.Y.compute_matrix(),
-                qml.Z.compute_matrix(),
-            ]
-        )
+        obs_list = np.array([
+            [[0, 1], [1, 0]],
+            [[0, -1j], [1j, 0]],
+            [[1, 0], [0, -1]],
+        ])
 
         # the diagonalizing matrices corresponding to the Pauli observables above
-        diag_list = np.stack(
-            [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
-            ]
-        )
+        diag_list = np.array([
+            [[1 / np.sqrt(2), 1 / np.sqrt(2)], [1 / np.sqrt(2), -1 / np.sqrt(2)]],
+            [[0.5 + 0.5j, 0.5-0.5j], [0.5 + 0.5j, -0.5+0.5j]],
+            [[1, 0], [0, 1]],
+        ])
         obs = obs_list[recipes]
         diagonalizers = diag_list[recipes]
 
