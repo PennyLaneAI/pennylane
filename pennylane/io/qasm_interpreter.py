@@ -166,10 +166,12 @@ class QasmInterpreter(QASMVisitor):
             res = rhs()
             context["vars"][name]["val"] = res
             context["vars"][name]["line"] = node.span.start_line
+            return res
 
         # references to an unresolved value see a func for now
         name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
         context["vars"][name]["val"] = set_local_var
+        # TODO: check if var is referred to since its last set, etc.
         context["gates"].append(set_local_var)
 
     def branching_statement(self, node: QASMNode, context: dict):
@@ -246,25 +248,26 @@ class QasmInterpreter(QASMVisitor):
                 context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"]
             )
 
-        context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = \
-            self._init_clause_in_same_namespace(
-                context,
-                f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
-            )
+        if hasattr(node, "default") and node.default is not None:
+            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = \
+                self._init_clause_in_same_namespace(
+                    context,
+                    f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
+                )
 
-        # process the default case
-        self.visit(
-            node.default.statements,
-            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
-        )
+            # process the default case
+            self.visit(
+                node.default.statements,
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
+            )
 
         # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
 
         def switch():
-            target = self.retrieve_variable(node.target.name, context)
+            target = self.eval_expr(node.target, context)
             ops.cond(
                 # TODO: support eval of lists, etc. to match
-                target["val"] == self.eval_expr(node.cases[0][0][0], context),
+                target == self.eval_expr(node.cases[0][0][0], context),
                 lambda: [
                     gate() for gate in
                     context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_0"]["gates"]
@@ -272,9 +275,9 @@ class QasmInterpreter(QASMVisitor):
                 lambda: [
                     gate() for gate in
                     context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]["gates"]
-                ],
+                ] if f"cond_{i + 1}" in context["scopes"]["switches"][f"switch_{node.span.start_line}"] else None,
                 [
-                    (target == self.eval_expr(node.cases[j][0][0], context), lambda: [
+                    (target == self.eval_expr(node.cases[j + 1][0][0], context), lambda: [
                         gate() for gate in
                         context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]["gates"]
                     ]) for j, case in
@@ -302,15 +305,15 @@ class QasmInterpreter(QASMVisitor):
                 f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
             )  # TODO: make a warning
 
-        if "vars" in context and name in context["vars"]:
+        if "vars" in context and context["vars"] is not None and name in context["vars"]:
             if isinstance(context["vars"][name], Callable):
                 _warning(context, name)
             else:
                 return context["vars"][name]
-        elif "wires" in context and name in context["wires"] \
+        elif "wires" in context and context["wires"] is not None and name in context["wires"] \
                 or "outer_wires" in context and name in context["outer_wires"]:
             return name
-        elif "aliases" in context and name in context["aliases"]:
+        elif "aliases" in context and context["wires"] is not None and name in context["aliases"]:
             return context["aliases"][name](context)  # evaluate the alias and de-reference
         else:
             _warning(context, name)
@@ -379,7 +382,8 @@ class QasmInterpreter(QASMVisitor):
 
                     # the return value
                     return self.retrieve_variable(func_context["return"], func_context)
-
+        elif isinstance(node, Callable):
+            res = node()
         elif re.search('Literal', node.__class__.__name__):
             res = node.value
         # TODO: include all other cases here
@@ -610,6 +614,7 @@ class QasmInterpreter(QASMVisitor):
             res = meas()
             context["vars"][name]["val"] = res
             context["vars"][name]["line"] = node.span.start_line
+            return res
 
         # references to an unresolved value see a func for now
         name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier

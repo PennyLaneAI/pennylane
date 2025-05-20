@@ -1,6 +1,7 @@
+int i = 1;
 qubit[1] q0;
 
-switch (1) {
+switch (i) {
     case 1 {
         x q0;
     }
@@ -15,7 +16,9 @@ switch (1) {
     }
 }
 
-switch (2) {
+i = 2;
+
+switch (i) {
     case 1 {
         x q0;
     }
@@ -27,7 +30,9 @@ switch (2) {
     }
 }
 
-switch (0) {
+i = 0;
+
+switch (i) {
     case 1 {
         x q0;
     }

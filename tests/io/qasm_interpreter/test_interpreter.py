@@ -64,6 +64,31 @@ class TestInterpreter:
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
+    def test_switch(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+        from pennylane import ops
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # run the program
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'switch'})
+        context['callable']()
+
+        # assertions
+        assert x.call_count == 1
+        assert y.call_count == 1
+        assert rx.call_count == 1
+        assert z.call_count == 0
+
     def test_if_else(self, mocker):
         from openqasm3.parser import parse
 
@@ -79,9 +104,11 @@ class TestInterpreter:
         y = mocker.spy(PauliY, "__init__")
         z = mocker.spy(PauliZ, "__init__")
 
+        # run the program
         context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
         context['callable']()
 
+        # assertions
         assert cond.call_count == 3
         assert x.call_count == 1
         x.assert_called_with(PauliX(Wires(['q0'])), Wires(['q0']))
