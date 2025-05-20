@@ -262,7 +262,9 @@ class TestProcessDensityMatrix:
         # test that the second qubit samples contain 1s when the recipe is Z
         assert np.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
 
-        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([1, 0]), shots=1000)
+        res = mp.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([1, 0]), shots=1000, rng=seed
+        )
 
         assert res.shape == (2, 1000, 2)
         assert res.dtype == np.int8
