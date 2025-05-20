@@ -21,7 +21,8 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -129,8 +130,10 @@ class QFT(Operation):
             [1 0 1 0]
     """
 
-    num_wires = AnyWires
     grad_method = None
+    resource_keys = {
+        "num_wires",
+    }
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)
@@ -202,6 +205,10 @@ class QFT(Operation):
 
         return decomp_ops
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
     # pylint:disable = no-value-for-parameter
     @staticmethod
     def compute_qfunc_decomposition(*wires, n_wires):  # pylint: disable=arguments-differ
@@ -214,11 +221,13 @@ class QFT(Operation):
         def outer_loop(i):
             qml.Hadamard(wires[i])
 
-            @qml.for_loop(shift_len - i)
-            def cphaseshift_loop(j):
-                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+            if n_wires > 1:
 
-            cphaseshift_loop()
+                @qml.for_loop(shift_len - i)
+                def cphaseshift_loop(j):
+                    qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+
+                cphaseshift_loop()
 
         outer_loop()
 
@@ -227,3 +236,45 @@ class QFT(Operation):
             qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
 
         swaps()
+
+
+def _qft_decomposition_resources(num_wires):
+    return {
+        qml.Hadamard: num_wires,
+        qml.SWAP: num_wires // 2,
+        qml.ControlledPhaseShift: num_wires * (num_wires - 1) // 2,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_qft_decomposition_resources)
+def _qft_decomposition(wires: WiresLike, n_wires, **__):
+
+    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    if qml.capture.enabled():
+        shifts = qml.math.array(shifts, like="jax")
+
+    shift_len = len(shifts)
+
+    @qml.for_loop(n_wires)
+    def outer_loop(i):
+        qml.Hadamard(wires[i])
+
+        if n_wires > 1:
+
+            @qml.for_loop(shift_len - i)
+            def cphaseshift_loop(j):
+                qml.ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
+
+            cphaseshift_loop()
+
+    outer_loop()
+
+    @qml.for_loop(n_wires // 2)
+    def swaps(i):
+        qml.SWAP(wires=[wires[i], wires[n_wires - i - 1]])
+
+    swaps()
+
+
+add_decomps(QFT, _qft_decomposition)

@@ -253,7 +253,7 @@ class TestExecutionFiniteShots:
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
         dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(5432)
         )
         config = create_execution_config(postselect_mode="hw-like")
 
@@ -339,7 +339,7 @@ class TestExecutionFiniteShots:
         """Test that sampling is performed using the correct pipeline with postselection."""
         num_wires = 4
         dev = qml.device(
-            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(1234)
+            "default.qubit", wires=num_wires, shots=1000, seed=jax.random.PRNGKey(5432)
         )
         config = create_execution_config(postselect_mode=postselect_mode)
 
@@ -383,3 +383,40 @@ class TestExecutionFiniteShots:
                 atol=5 + 2 * n_postselects,
                 rtol=0,
             )
+
+    @pytest.mark.parametrize("postselect_mode", ["fill-shots", "hw-like"])
+    @pytest.mark.parametrize("n_iters", [1, 2, 3])
+    def test_mcm_samples_shape(self, postselect_mode, n_iters):
+        """Test that returning samples of mcms has the correct shape."""
+        num_wires = 4
+        dev = qml.device("default.qubit", wires=num_wires, shots=100, seed=jax.random.PRNGKey(1234))
+        config = create_execution_config(postselect_mode=postselect_mode)
+
+        @DeferMeasurementsInterpreter(num_wires=num_wires)
+        def f():
+            ms = []
+            for _ in range(n_iters):
+                qml.Hadamard(0)
+                ms.append(qml.measure(0, postselect=1))
+
+            return qml.sample(op=ms)
+
+        jaxpr = jax.make_jaxpr(f)()
+        res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
+
+        if postselect_mode == "fill-shots":
+            if n_iters == 1:
+                assert qml.math.shape(res[0]) == (100,)
+            else:
+                assert qml.math.shape(res[0]) == (100, n_iters)
+
+        if postselect_mode == "hw-like":
+            shape = qml.math.shape(res[0])
+            # Other tests have verified that the _number_ of samples
+            # will be consisent with the expected behaviour of hw-like
+            # execution, so we only verify the n_mcms dimension
+            if n_iters == 1:
+                assert len(shape) == 1
+            else:
+                assert len(shape) == 2
+                assert shape[1] == n_iters

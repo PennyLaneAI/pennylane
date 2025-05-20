@@ -29,20 +29,7 @@ Resource Estimation Base Classes:
     :toctree: api
 
     ~Resources
-    ~CompressedResourceOp
     ~ResourceOperator
-
-Resource Object Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~add_in_series
-    ~add_in_parallel
-    ~mul_in_series
-    ~mul_in_parallel
-    ~substitute
 
 Operators
 ~~~~~~~~~
@@ -74,10 +61,7 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
-    ~ResourceMultiControlledX
     ~ResourceOrbitalRotation
-    ~ResourcePauliRot
-    ~ResourcePhaseShift
     ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePSWAP
@@ -114,17 +98,34 @@ Templates
 .. autosummary::
     :toctree: api
 
+    ~ResourceAmplitudeAmplification
     ~ResourceBasisRotation
     ~ResourcePrepSelPrep
     ~ResourceQFT
     ~ResourceQPE
+    ~ResourceQuantumPhaseEstimation
     ~ResourceQubitization
+    ~ResourceQROM
     ~ResourceReflection
     ~ResourceSelect
-    ~ResourceStatePrep
     ~ResourceTrotterProduct
     ~ResourceTrotterizedQfunc
     ~resource_trotterize
+    ~ResourceControlledSequence
+    ~ResourceModExp
+    ~ResourceMultiplier
+    ~ResourcePhaseAdder
+
+State Preparation Templates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceBasisState
+    ~ResourceStatePrep
+    ~ResourceSuperposition
+    ~ResourceMottonenStatePreparation
 
 Tracking Resources
 ~~~~~~~~~~~~~~~~~~
@@ -134,13 +135,17 @@ Tracking Resources
 
     ~get_resources
 
-Exceptions
-~~~~~~~~~~
+Resource Object Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourcesNotDefined
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
@@ -207,16 +212,25 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
     ResourceBasisRotation,
     ResourcePrepSelPrep,
     ResourceQFT,
     ResourceQPE,
     ResourceQuantumPhaseEstimation,
     ResourceQubitization,
+    ResourceQROM,
     ResourceReflection,
     ResourceSelect,
     ResourceStatePrep,
     ResourceTrotterProduct,
     ResourceTrotterizedQfunc,
     resource_trotterize,
+    ResourceMottonenStatePreparation,
+    ResourceSuperposition,
+    ResourceAmplitudeAmplification,
+    ResourceBasisState,
 )

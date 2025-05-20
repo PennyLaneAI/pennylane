@@ -16,7 +16,7 @@ This module contains the qml.classical_shadow measurement.
 """
 import copy
 from collections.abc import Iterable, Sequence
-from string import ascii_letters as ABC
+from string import ascii_letters
 from typing import Optional, Union
 
 import numpy as np
@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform
 
 
 def shadow_expval(H, k=1, seed=None):
@@ -226,7 +226,7 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    _shortname = Shadow  #! Note: deprecated. Change the value to "shadow" in v0.42
+    _shortname = "shadow"
 
     def __init__(
         self,
@@ -407,11 +407,13 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # trace out every qubit except the first
             num_remaining_qubits = num_dev_qubits - active_qubit
-            conj_state_first_qubit = ABC[num_remaining_qubits]
-            stacked_dim = ABC[num_remaining_qubits + 1]
+            conj_state_first_qubit = ascii_letters[num_remaining_qubits]
+            stacked_dim = ascii_letters[num_remaining_qubits + 1]
 
-            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
-            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            state_str = f"{stacked_dim}{ascii_letters[:num_remaining_qubits]}"
+            conj_state_str = (
+                f"{stacked_dim}{conj_state_first_qubit}{ascii_letters[1:num_remaining_qubits]}"
+            )
             target_str = f"{stacked_dim}a{conj_state_first_qubit}"
 
             first_qubit_state = np.einsum(
@@ -616,7 +618,7 @@ class ShadowExpvalMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    _shortname = ShadowExpval  #! Note: deprecated. Change the value to "shadowexpval" in v0.42
+    _shortname = "shadowexpval"
 
     def _flatten(self):
         metadata = (

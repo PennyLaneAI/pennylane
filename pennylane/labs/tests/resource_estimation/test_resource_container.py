@@ -33,25 +33,26 @@ from pennylane.labs.resource_estimation.resource_container import (
     substitute,
 )
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+from pennylane.operation import Operator
 
 
-class ResourceDummyX(ResourceOperator):
+class ResourceDummyX(Operator, ResourceOperator):
     """Dummy testing class representing X gate"""
 
 
-class ResourceDummyQFT(ResourceOperator):
+class ResourceDummyQFT(Operator, ResourceOperator):
     """Dummy testing class representing QFT gate"""
 
 
-class ResourceDummyQSVT(ResourceOperator):
+class ResourceDummyQSVT(Operator, ResourceOperator):
     """Dummy testing class representing QSVT gate"""
 
 
-class ResourceDummyTrotterProduct(ResourceOperator):
+class ResourceDummyTrotterProduct(Operator, ResourceOperator):
     """Dummy testing class representing TrotterProduct gate"""
 
 
-class ResourceDummyAdjoint(ResourceOperator):
+class ResourceDummyAdjoint(Operator, ResourceOperator):
     """Dummy testing class representing the Adjoint symbolic operator"""
 
 
@@ -88,7 +89,7 @@ class TestCompressedResourceOp:
         assert cr_op._name == name
         assert cr_op.op_type is op_type
         assert cr_op.params == parameters
-        assert cr_op._hashable_params == tuple(parameters.items())
+        assert cr_op._hashable_params == tuple(sorted((str(k), v) for k, v in parameters.items()))
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""

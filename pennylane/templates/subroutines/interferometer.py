@@ -17,7 +17,7 @@ Contains the ``Interferometer`` template.
 from itertools import product
 
 import pennylane as qml
-from pennylane.operation import AnyWires, CVOperation
+from pennylane.operation import CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
@@ -159,7 +159,6 @@ class Interferometer(CVOperation):
             ──╰BS(0.20,0.00)──R(0.62)─┤
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(

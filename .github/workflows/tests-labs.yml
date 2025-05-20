@@ -23,7 +23,7 @@ jobs:
         
       - name: Assess changed files
         id: changed-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v46
         with:
           files: pennylane/labs/**
 
@@ -38,6 +38,7 @@ jobs:
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
+      force_large_runner: ${{ github.event_name == 'merge_group' }}
   
   default-dependency-versions:
     needs:

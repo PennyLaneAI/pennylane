@@ -198,12 +198,12 @@ class TestDynamicDecomposition:
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("n_wires", [4, 5])
-    @pytest.mark.parametrize("wires", [[0, 1, 2], [0, 1, 2, 3]])
+    @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
     @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])
     def test_qft(
         self, max_expansion, gate_set, n_wires, wires, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that QFT gives correct result after dynamic decomposition."""
 
         from functools import partial
@@ -232,3 +232,30 @@ class TestDynamicDecomposition:
             result_comparison = circuit_comparison()
 
         assert qml.math.allclose(*result, result_comparison)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
+    def test_qft_new_decomposition(self, wires):
+        """Test that QFT gives the correct decomposition in the graph-based system."""
+
+        import jax
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.transforms.decompose import DecomposeInterpreter
+
+        @DecomposeInterpreter(gate_set={"GlobalPhase", "RX", "RZ", "CNOT"})
+        def circuit():
+            qml.QFT(wires=wires)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+
+        graph = qml.decomposition.DecompositionGraph(
+            operations=[qml.QFT(wires=wires)],
+            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
+        )
+        graph.solve()
+        expected_resources = graph.resource_estimate(qml.QFT(wires=wires))
+
+        assert len(collector.state["ops"]) == expected_resources.num_gates

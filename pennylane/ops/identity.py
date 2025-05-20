@@ -21,13 +21,7 @@ from typing import Sequence
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import (
-    AllWires,
-    AnyWires,
-    CVObservable,
-    Operation,
-    SparseMatrixUndefinedError,
-)
+from pennylane.operation import CVObservable, Operation, SparseMatrixUndefinedError
 from pennylane.wires import WiresLike
 
 
@@ -52,8 +46,6 @@ class Identity(CVObservable, Operation):
     """
 
     num_params = 0
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -215,6 +207,10 @@ class Identity(CVObservable, Operation):
     def pow(self, z):
         return [I(wires=self.wires)]
 
+    def queue(self, context=qml.QueuingManager):
+        context.append(self)
+        return self
+
 
 I = Identity
 r"""The Identity operator
@@ -299,9 +295,6 @@ class GlobalPhase(Operation):
 
     """
 
-    num_wires = AllWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -309,6 +302,8 @@ class GlobalPhase(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
+
+    resource_keys = set()
 
     @classmethod
     def _primitive_bind_call(
@@ -318,6 +313,10 @@ class GlobalPhase(Operation):
 
     def __init__(self, phi, wires: WiresLike = (), id=None):
         super().__init__(phi, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ

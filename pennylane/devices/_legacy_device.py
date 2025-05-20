@@ -35,11 +35,13 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation, Operator, StatePrepBase
+from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
+
+from .tracker import Tracker
 
 
 def _local_tape_expand(tape, depth, stop_at):
@@ -155,7 +157,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = qml.Tracker()
+        self.tracker = Tracker()
         self.custom_expand_fn = None
 
     def __repr__(self):
@@ -423,7 +425,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            observables (Iterable[~.operation.Observable]): observables to measure and return
+            observables (Iterable[~.operation.Operator]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
@@ -856,7 +858,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             ValueError: if outside of the execution context
 
         Returns:
-            list[~.operation.Observable]
+            list[~.operation.Operator]
         """
         if self._obs_queue is None:
             raise ValueError(
@@ -949,18 +951,18 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             observable (type or str): observable to be checked
 
         Raises:
-            ValueError: if `observable` is not a :class:`~.Observable` class or string
+            ValueError: if `observable` is not a :class:`~.Operator` class or string
 
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
-        if isinstance(observable, type) and issubclass(observable, Observable):
+        if isinstance(observable, type) and issubclass(observable, Operator):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
             return observable in self.observables
 
         raise ValueError(
-            "The given observable must either be a pennylane.Observable class or a string."
+            "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
     def check_validity(self, queue, observables):
@@ -969,7 +971,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            observables (Iterable[~.operation.Observable]): observables which are intended
+            observables (Iterable[~.operation.Operator]): observables which are intended
                 to be evaluated on the device
 
         Raises:

@@ -14,19 +14,17 @@
 """Tests for pennylane/labs/dla/variational_kak.py functionality"""
 import numpy as np
 
-# pylint: disable=too-few-public-methods, protected-access, no-self-use
+# pylint: disable=too-few-public-methods, protected-access, no-self-use, import-outside-toplevel
 import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import (
+from pennylane.labs.dla import orthonormalize, run_opt, validate_kak, variational_kak_adj
+from pennylane.liealg import (
     cartan_decomp,
-    cartan_subalgebra,
     check_cartan_decomp,
     concurrence_involution,
-    orthonormalize,
-    validate_kak,
-    variational_kak_adj,
+    horizontal_cartan_subalgebra,
 )
 
 
@@ -55,7 +53,7 @@ def test_kak_Ising(n, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
     kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
@@ -93,7 +91,7 @@ def test_kak_Heisenberg(n, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
     kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
@@ -133,8 +131,8 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
         g = np.vstack([k, m])
         adj = qml.structure_constants(g, matrix=True, is_orthogonal=is_orthogonal)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(
-        g, k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal
+    g, k, mtilde, h, adj = horizontal_cartan_subalgebra(
+        k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal
     )
 
     dims = (len(k), len(mtilde), len(h))
@@ -145,3 +143,24 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     assert kak_res[1].shape == (len(k),)
     assert kak_res[1].dtype == np.float64
     assert validate_kak(H, g, k, kak_res, n, 1e-6)
+
+
+@pytest.mark.jax
+def test_run_opt_with_other_optimizer():
+    """Test that run_opt works with alternate optimizer"""
+    import jax
+    import jax.numpy as jnp
+
+    jax.config.update("jax_enable_x64", True)
+    import optax
+
+    def cost(x):
+        return x**2
+
+    x0 = jnp.array(0.4)
+
+    optimizer = optax.lbfgs(learning_rate=0.1, memory_size=1000)
+    thetas, energy, _ = run_opt(cost, x0, optimizer=optimizer)
+
+    assert np.isclose(thetas[-1], 0)
+    assert np.isclose(energy[-1], 0)

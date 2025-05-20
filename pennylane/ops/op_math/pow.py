@@ -21,10 +21,10 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
+from pennylane._deprecated_observable import Observable
 from pennylane.operation import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
-    Observable,
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
@@ -131,6 +131,8 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params", "z"}
+
     def _flatten(self):
         return (self.base, self.z), tuple()
 
@@ -196,6 +198,14 @@ class Pow(ScalarSymbolicOp):
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
 
     @property
     def z(self):

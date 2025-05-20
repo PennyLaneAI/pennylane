@@ -14,9 +14,13 @@
 r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
+from pennylane import math
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
+from pennylane.ops import CNOT, CRX, RZ
+
+from ..embeddings import BasisEmbedding
 
 
 def u2_ex_gate(phi, wires=None):
@@ -42,7 +46,7 @@ def u2_ex_gate(phi, wires=None):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
-    return [qml.CNOT(wires=wires), qml.CRX(2 * phi, wires=wires[::-1]), qml.CNOT(wires=wires)]
+    return [CNOT(wires=wires), CRX(2 * phi, wires=wires[::-1]), CNOT(wires=wires)]
 
 
 class ParticleConservingU2(Operation):
@@ -151,7 +155,6 @@ class ParticleConservingU2(Operation):
             params = np.random.random(size=shape)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, id=None):
@@ -161,7 +164,7 @@ class ParticleConservingU2(Operation):
                 f"got a wire sequence with {len(wires)} elements"
             )
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
 
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
@@ -215,12 +218,12 @@ class ParticleConservingU2(Operation):
         """
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
-        n_layers = qml.math.shape(weights)[0]
-        op_list = [qml.BasisEmbedding(init_state, wires=wires)]
+        n_layers = math.shape(weights)[0]
+        op_list = [BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
             for j, wires_ in enumerate(wires):
-                op_list.append(qml.RZ(weights[l, j], wires=wires_))
+                op_list.append(RZ(weights[l, j], wires=wires_))
 
             for i, wires_ in enumerate(nm_wires):
                 op_list.extend(u2_ex_gate(weights[l, len(wires) + i], wires=wires_))

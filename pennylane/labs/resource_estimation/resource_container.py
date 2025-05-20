@@ -15,14 +15,15 @@ r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
 
+from pennylane.decomposition.resources import CompressedResourceOp as _CompressedResourceOp
 from pennylane.labs.resource_estimation import ResourceOperator
 
 
-class CompressedResourceOp:
+class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
     Args:
-        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        op_type (Type): the class object of an operation which inherits from :class:`~.ResourceOperator`
         params (dict): a dictionary containing the minimal pairs of parameter names and values
                     required to compute the resources for the given operator
 
@@ -41,7 +42,7 @@ class CompressedResourceOp:
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
-            op_type (Type): the class object for an operation which inherits from '~.ResourceOperator'
+            op_type (Type): the class object for an operation which inherits from :class:`~.ResourceOperator`
             params (dict): a dictionary containing the minimal pairs of parameter names and values
                         required to compute the resources for the given operator
 
@@ -58,16 +59,8 @@ class CompressedResourceOp:
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
 
-        self.op_type = op_type
-        self.params = params
-        self._hashable_params = _make_hashable(params)
+        super().__init__(op_type, params)
         self._name = name or op_type.tracking_name(**params)
-
-    def __hash__(self) -> int:
-        return hash((self._name, self._hashable_params))
-
-    def __eq__(self, other: object) -> bool:
-        return (self.op_type == other.op_type) and (self.params == other.params)
 
     def __repr__(self) -> str:
         return self._name
@@ -86,7 +79,7 @@ class Resources:
     .. details::
 
         The resources being tracked can be accessed as class attributes.
-        Additionally, the :code:`Resources` instance can be nicely displayed in the console.
+        Additionally, the :class:`~.Resources` instance can be nicely displayed in the console.
 
         **Example**
 
@@ -261,13 +254,15 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
 def substitute(
     initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
 ) -> Resources:
-    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
+    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of
+    another :class:`~.resource.Resources` object.
 
     Args:
         initial_resources (Resources): the resources to be modified
         gate_name (str): the name of the operation to be replaced
         replacement (Resources): the resources to be substituted instead of the gate
-        in_place (bool): determines if the initial resources are modified in place or if a new copy is created
+        in_place (bool): determines if the initial resources are modified in place or if a new copy is
+            created
 
     Returns:
         Resources: the updated :class:`~.Resources` after substitution
@@ -276,7 +271,7 @@ def substitute(
 
         **Example**
 
-        In this example we replace the resources for the :code:`RX` gate. First we build the :class:`~.Resources`:
+        In this example we replace the resources for the :code:`RX` gate:
 
         .. code-block:: python3
 
@@ -350,9 +345,3 @@ def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
         combined_dict[k] *= scalar
 
     return combined_dict
-
-
-def _make_hashable(d) -> tuple:
-    if isinstance(d, dict):
-        return tuple((name, _make_hashable(value)) for name, value in d.items())
-    return d

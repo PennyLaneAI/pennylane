@@ -333,7 +333,7 @@ class ConstAdder(PlxprInterpreter):
     that consts propagate through higher order primitives correctly."""
 
 
-add_3 = jax.core.Primitive("add_3")
+add_3 = jax.extend.core.Primitive("add_3")
 scalar = jnp.array(3)
 
 
@@ -350,7 +350,7 @@ def add_3_aval(_):
 @ConstAdder.register_primitive(add_3)
 def handle_add_3(self, x):  # pylint: disable=unused-argument
     """This custom registration adds a closure variable to the input to register it as
-    a const rather than a jax.core.Literal."""
+    a const rather than a jax.extend.core.Literal."""
     return x + scalar
 
 
@@ -795,3 +795,18 @@ class TestDynamicShapes:
         assert len(output) == 2  # shape and array
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
+
+    @pytest.mark.xfail  # v0.5.3 broke the ability to capture this
+    def test_hstack(self):
+        """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
+        which currently does not work with dynamic shapes."""
+
+        def f(i):
+            x = jnp.zeros(i, int)
+            y = jnp.ones(i, int)
+            return jnp.hstack((x, y))
+
+        jaxpr = jax.make_jaxpr(f)(2)
+        [shape, res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4)
+        assert qml.math.allclose(shape, 8)
+        assert qml.math.allclose(res, jnp.hstack((jnp.zeros(4), jnp.ones(4))))

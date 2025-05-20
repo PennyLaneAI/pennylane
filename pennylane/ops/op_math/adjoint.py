@@ -18,9 +18,10 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
+from pennylane._deprecated_observable import Observable
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
 
 from .symbolicop import SymbolicOp
@@ -190,9 +191,9 @@ def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    adjoint_prim = NonInterpPrimitive("adjoint_transform")
+    adjoint_prim = QmlPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
     adjoint_prim.prim_type = "higher_order"
 
@@ -323,6 +324,8 @@ class Adjoint(SymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params"}
+
     def _flatten(self):
         return (self.base,), tuple()
 
@@ -363,6 +366,10 @@ class Adjoint(SymbolicOp):
 
     def __repr__(self):
         return f"Adjoint({self.base})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property
     def ndim_params(self):

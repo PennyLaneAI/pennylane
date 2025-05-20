@@ -334,12 +334,10 @@ class TestDeferMeasurementsInterpreter:
             mp_class(wires=Wires([7, 8]), eigvals=jnp.array([0.0, 2.5, -1.0, 1.5])),
         ]
         if mp_fn not in (qml.expval, qml.var):
-            expected_measurements.append(
-                mp_class(wires=Wires([9, 8, 7]), eigvals=qml.math.arange(0, 2**3))
-            )
+            expected_measurements.append(mp_class(wires=Wires([9, 8, 7]), eigvals=None))
         if mp_fn == qml.counts:
             expected_measurements.append(
-                mp_class(wires=Wires([9]), eigvals=jnp.arange(0, 2), all_outcomes=True)
+                mp_class(wires=Wires([9]), eigvals=jnp.arange(2), all_outcomes=True)
             )
         assert measurements == expected_measurements
 
@@ -696,7 +694,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         expected_measurements = [
             qml.expval(qml.Z(0)),
             qml.probs(wires=[0, 1, 2]),
-            qml.measurements.SampleMP(wires=[9, 8], eigvals=jnp.arange(0, 2**2)),
+            qml.measurements.SampleMP(wires=[9, 8], eigvals=None),
             qml.measurements.SampleMP(wires=[8, 9], eigvals=qml.math.array([0.0, 1.0, -4.0, -3.0])),
         ]
         assert measurements == expected_measurements
@@ -721,7 +719,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             return qml.expval(qml.PauliZ(0))
 
         x = 1.5
-        transformed_fn = DeferMeasurementsInterpreter(num_wires=10)(diff_fn(circuit))
+        transformed_fn = DeferMeasurementsInterpreter(num_wires=4)(diff_fn(circuit))
         jaxpr = jax.make_jaxpr(transformed_fn)(x)
         assert jaxpr.eqns[0].primitive == diff_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
@@ -732,7 +730,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         collector.eval(qfunc_jaxpr, jaxpr.consts, x)
 
         ops = collector.state["ops"]
-        expected_ops = [qml.RX(x, 0), qml.CNOT([0, 9]), qml.CRX(x, [9, 0])]
+        expected_ops = [qml.RX(x, 0), qml.CNOT([0, 3]), qml.CRX(x, [3, 0])]
         if postselect is not None:
             expected_ops.insert(1, qml.Projector(qml.math.array([postselect]), 0))
         assert ops == expected_ops

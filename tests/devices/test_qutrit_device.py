@@ -25,18 +25,12 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.measurements import (
-    Counts,
     CountsMP,
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
-    Probability,
     ProbabilityMP,
-    Sample,
     SampleMP,
-    State,
     StateMP,
-    Variance,
     VarianceMP,
 )
 from pennylane.tape import QuantumScript
@@ -280,7 +274,8 @@ class TestObservables:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
             with pytest.raises(
-                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                qml.QuantumFunctionError,
+                match="Unsupported return type specified for observable",
             ):
                 dev.execute(tape)
 
@@ -333,7 +328,8 @@ class TestExtractStatistics:
             dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
-                qml.QuantumFunctionError, match="The state is not available in the current"
+                qml.QuantumFunctionError,
+                match="The state is not available in the current",
             ):
                 dev.statistics(qscript)
 
@@ -357,7 +353,15 @@ class TestExtractStatistics:
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
+        assert returntype not in [
+            "Expectation",
+            "Variance",
+            "Sample",
+            "Probability",
+            "State",
+            "Counts",
+            None,
+        ]
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
@@ -430,9 +434,8 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 2]])
 
-        class SomeObservable(qml.operation.Observable):
+        class SomeObservable(qml.operation.Operator):
             num_wires = 1
-            return_type = Sample
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
@@ -701,7 +704,7 @@ class TestExpval:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -762,7 +765,7 @@ class TestVar:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
