@@ -150,6 +150,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
+  into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
+  decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
+  that contains fewer gates than the previous decomposition.
+  [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+ 
+* An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
+  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
+  [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
+
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
 
@@ -160,11 +172,6 @@
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
-* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
-  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
-  but it is coded in Python instead of C++.
-  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
-  
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -235,11 +242,17 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` function is now available
-  in :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`.
-  It allows computation of the parity matrix of a CNOT circuit; an efficient intermediate representation.
-  It is important for CNOT routing algorithms and other quantum compilation routines.
+
+* A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
+  provides functionality to compute intermediate representations for particular circuits.
+  :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` computes
+  the parity matrix intermediate representation for CNOT circuits.
+  :func:`phase_polynomial <pennylane.labs.intermediate_reps.phase_polynomial>` computes
+  the phase polynomial intermediate representation for {CNOT, RZ} circuits.
+  These efficient intermediate representations are important
+  for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
+  [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
 
 <h3>Breaking changes 💔</h3>
@@ -301,6 +314,18 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
+  [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
+
+* Enforce subset of submodules in `templates` to be auxiliary layer modules.
+  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
+
+* Enforce `noise` module to be a tertiary layer module.
+  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
+
+* Enforce `qaoa` module to be a tertiary layer module.
+  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
 
 * Enforce `gradients` module to be an auxiliary layer module.
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
