@@ -400,6 +400,7 @@ class TestFable:
         """Test that FABLE runs without error for a variety of input shapes."""
         dev = qml.device("default.qubit")
         s = int(qml.math.ceil(qml.math.log2(max(input.shape))))
+        s = max(s, 1)
         dim = 2**s
 
         @qml.qnode(dev)
@@ -410,5 +411,4 @@ class TestFable:
         circuit_mat = dim * qml.matrix(circuit, wire_order=range(wires))().real[:dim, :dim]
         # Test that the matrix was encoded up to a constant
         submat = circuit_mat[: input.shape[0], : input.shape[1]]
-        factors = np.divide(submat, input, out=np.zeros_like(submat), where=np.abs(input) > 1e-8)
-        assert np.allclose(input * np.max(factors), submat)
+        assert np.allclose(input, submat)
