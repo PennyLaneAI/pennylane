@@ -23,6 +23,7 @@ from pennylane.typing import TensorLike
 class BoseWord(dict):
     r"""
     .. :no-index:
+    
     Dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
 
@@ -421,6 +422,7 @@ class BoseWord(dict):
 class BoseSentence(dict):
     r"""
     .. :no-index:
+
     Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 

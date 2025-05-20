@@ -739,6 +739,7 @@ def _to_string(fermi_op, of=False):
 class FermiC(FermiWord):
     r"""
     .. :no-index:
+    
     FermiC(orbital)
     The fermionic creation operator :math:`a^{\dagger}`
 
