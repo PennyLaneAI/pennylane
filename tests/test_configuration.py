@@ -60,7 +60,6 @@ backend = "qasm_simulator"
 
 @pytest.fixture(scope="function", name="default_config")
 def default_config_fixture(tmpdir):
-    # pylint: disable=missing-function-docstring
     config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w", encoding="utf-8") as f:
@@ -71,7 +70,6 @@ def default_config_fixture(tmpdir):
 
 @pytest.fixture(scope="function", name="default_config_toml")
 def default_config_toml_fixture(tmpdir):
-    # pylint: disable=missing-function-docstring
     config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w", encoding="utf-8") as f:
