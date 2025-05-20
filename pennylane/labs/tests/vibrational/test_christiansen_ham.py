@@ -187,12 +187,10 @@ def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend):
 )
 def test_cform_onemode(pes, n_states, num_workers, backend):
     """Test that _cform_onemode produces the expected one-body integral."""
-    flattened_H1 = H1.ravel()
+    flattened_H1 = H1
     assert np.allclose(
         abs(flattened_H1),
-        abs(
-            _cform_onemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)
-        ).ravel(),
+        abs(_cform_onemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
         atol=1e-8,
     )
 
@@ -209,15 +207,13 @@ def test_cform_onemode(pes, n_states, num_workers, backend):
 )
 def test_cform_onemode_dipole(pes, n_states, num_workers, backend):
     """Test that _cform_onemode_dipole produces the expected one-body dipole integral."""
-    flattened_D1 = D1.transpose(1, 2, 3, 0).ravel()
+    flattened_D1 = D1
     assert np.allclose(
         abs(flattened_D1),
         abs(
             _cform_onemode_dipole(
                 pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
             )
-            .transpose(1, 2, 3, 0)
-            .ravel()
         ),
         atol=1e-8,
     )
@@ -235,12 +231,10 @@ def test_cform_onemode_dipole(pes, n_states, num_workers, backend):
 )
 def test_cform_threemode(pes, n_states, num_workers, backend):
     """Test that _cform_threemode produces the expected three-body integral."""
-    flattened_H3 = H3.ravel()
+    flattened_H3 = H3
     assert np.allclose(
         abs(flattened_H3),
-        abs(
-            _cform_threemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)
-        ).ravel(),
+        abs(_cform_threemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
         atol=1e-8,
     )
 
@@ -257,7 +251,7 @@ def test_cform_threemode(pes, n_states, num_workers, backend):
 )
 def test_cform_threemode_dipole(pes, n_states, num_workers, backend):
     """Test that _cform_threemode_dipole produces the expected three-body dipole integral."""
-    flattened_D3 = D3.transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).ravel()
+    flattened_D3 = D3
 
     assert np.allclose(
         abs(flattened_D3),
@@ -265,8 +259,6 @@ def test_cform_threemode_dipole(pes, n_states, num_workers, backend):
             _cform_threemode_dipole(
                 pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
             )
-            .transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
-            .ravel()
         ),
         atol=1e-8,
     )
@@ -284,12 +276,10 @@ def test_cform_threemode_dipole(pes, n_states, num_workers, backend):
 )
 def test_cform_twomode(pes, n_states, num_workers, backend):
     """Test that _cform_twomode produces the expected two-body integral."""
-    flattened_H2 = H2.ravel()
+    flattened_H2 = H2
     assert np.allclose(
         abs(flattened_H2),
-        abs(
-            _cform_twomode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)
-        ).ravel(),
+        abs(_cform_twomode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
         atol=1e-8,
     )
 
@@ -306,7 +296,7 @@ def test_cform_twomode(pes, n_states, num_workers, backend):
 )
 def test_cform_twomode_dipole(pes, n_states, num_workers, backend):
     """Test that _cform_twomode_dipole produces the expected two-body dipole integral."""
-    flattened_D2 = D2.transpose(1, 2, 3, 4, 5, 6, 0).ravel()
+    flattened_D2 = D2
 
     assert np.allclose(
         abs(flattened_D2),
@@ -314,8 +304,6 @@ def test_cform_twomode_dipole(pes, n_states, num_workers, backend):
             _cform_twomode_dipole(
                 pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
             )
-            .transpose(1, 2, 3, 4, 5, 6, 0)
-            .ravel()
         ),
         atol=1e-8,
     )

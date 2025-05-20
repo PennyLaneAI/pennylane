@@ -52,8 +52,8 @@ def _pes_onemode(
     grid,
     method="rhf",
     dipole=False,
+    num_workers=1,
     backend="serial",
-    max_workers=1,
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
@@ -66,9 +66,9 @@ def _pes_onemode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
-        max_workers (int): the maximum number of concurrent units to use
-
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
     Returns:
         tuple: A tuple containing the following:
          - TensorLike[float]: one-mode potential energy surface
@@ -78,7 +78,7 @@ def _pes_onemode(
     """
     quad_order = len(grid)
     all_jobs = range(quad_order)
-    jobs_on_rank = np.array_split(all_jobs, max_workers)
+    jobs_on_rank = np.array_split(all_jobs, num_workers)
 
     arguments = [
         (j, i, molecule, scf_result, freqs, vectors, grid, method, dipole)
@@ -86,13 +86,13 @@ def _pes_onemode(
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=max_workers)
+    executor = executor_class(max_workers=num_workers)
     executor.starmap(_local_pes_onemode, arguments)
 
     pes_onebody = None
     dipole_onebody = None
     pes_onebody, dipole_onebody = _load_pes_onemode(
-        max_workers, len(freqs), len(grid), dipole=dipole
+        num_workers, len(freqs), len(grid), dipole=dipole
     )
     current_directory = Path.cwd()
     for file_path in current_directory.glob("v1data*"):
@@ -230,8 +230,8 @@ def _pes_twomode(
     dipole_onebody,
     method="rhf",
     dipole=False,
+    num_workers=1,
     backend="serial",
-    max_workers=1,
 ):
     r"""Computes the two-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -247,8 +247,9 @@ def _pes_twomode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
-        max_workers: the maximum number of concurrent units to use
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
         tuple: A tuple containing the following:
@@ -262,21 +263,21 @@ def _pes_twomode(
         for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
     ]
 
-    jobs_on_rank = np.array_split(all_jobs, max_workers)
+    jobs_on_rank = np.array_split(all_jobs, num_workers)
     arguments = [
         (j, i, molecule, scf_result, freqs, vectors, pes_onebody, dipole_onebody, method, dipole)
         for j, i in enumerate(jobs_on_rank)
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=max_workers)
+    executor = executor_class(max_workers=num_workers)
     executor.starmap(_local_pes_twomode, arguments)
 
     pes_twobody = None
     dipole_twobody = None
 
     pes_twobody, dipole_twobody = _load_pes_twomode(
-        max_workers, len(freqs), len(grid), dipole=dipole
+        num_workers, len(freqs), len(grid), dipole=dipole
     )
     current_directory = Path.cwd()
     for file_path in current_directory.glob("v2data*"):
@@ -596,8 +597,8 @@ def _pes_threemode(
     dipole_twobody,
     method="rhf",
     dipole=False,
+    num_workers=1,
     backend="serial",
-    max_workers=1,
 ):
     r"""Computes the three-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -615,8 +616,9 @@ def _pes_threemode(
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
-        max_workers: the maximum number of concurrent units to use
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
@@ -632,7 +634,7 @@ def _pes_threemode(
             enumerate(grid), repeat=3
         )
     ]
-    jobs_on_rank = np.array_split(all_jobs, max_workers)
+    jobs_on_rank = np.array_split(all_jobs, num_workers)
     arguments = [
         (
             j,
@@ -652,13 +654,13 @@ def _pes_threemode(
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=max_workers)
+    executor = executor_class(max_workers=num_workers)
     executor.starmap(_local_pes_threemode, arguments)
 
     pes_threebody = None
 
     pes_threebody, dipole_threebody = _load_pes_threemode(
-        max_workers, len(freqs), len(grid), dipole
+        num_workers, len(freqs), len(grid), dipole
     )
     current_directory = Path.cwd()
     for file_path in current_directory.glob("v3data*"):
@@ -738,8 +740,8 @@ def vibrational_pes(
     bins=None,
     cubic=False,
     dipole_level=1,
+    num_workers=1,
     backend="serial",
-    max_workers=1,
 ):
     r"""Computes potential energy surfaces along vibrational normal modes.
 
@@ -755,8 +757,9 @@ def vibrational_pes(
        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
            ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
            value is ``1``.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency for more detail see : https://github.com/PennyLaneAI/pennylane/blob/master/pennylane/concurrency/executors/backends.py
-        max_workers (int): the maximum number of concurrent units to use
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
 
@@ -819,8 +822,8 @@ def vibrational_pes(
         grid,
         method=method,
         dipole=dipole,
+        num_workers=num_workers,
         backend=backend,
-        max_workers=max_workers,
     )
 
     # build PES -- two-body
@@ -837,8 +840,8 @@ def vibrational_pes(
         dipole_onebody,
         method=method,
         dipole=dipole,
+        num_workers=num_workers,
         backend=backend,
-        max_workers=max_workers,
     )
 
     pes_data = [pes_onebody, pes_twobody]
@@ -860,8 +863,8 @@ def vibrational_pes(
             dipole_twobody,
             method=method,
             dipole=dipole,
+            num_workers=num_workers,
             backend=backend,
-            max_workers=max_workers,
         )
 
         pes_data = [pes_onebody, pes_twobody, pes_threebody]

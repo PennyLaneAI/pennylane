@@ -367,14 +367,14 @@ def test_dipole_order_error():
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "dipole_level", "result_file", "backend", "max_workers"),
+    ("sym", "geom", "dipole_level", "result_file", "max_workers", "backend"),
     # Expected results were obtained using vibrant code
     [
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "serial", 1),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", "mp_pool", 2),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "cf_procpool", 2),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", "mpi4py_pool", 2),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", "mpi4py_comm", 2),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 1, "serial"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", 2, "mp_pool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "cf_procpool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", 2, "mpi4py_pool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "mpi4py_comm"),
     ],
 )
 def test_vibrational_pes(sym, geom, dipole_level, result_file, backend, max_workers):
@@ -382,7 +382,7 @@ def test_vibrational_pes(sym, geom, dipole_level, result_file, backend, max_work
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     vib_obj = vibrational.vibrational_pes(
-        mol, dipole_level=dipole_level, cubic=True, backend=backend, max_workers=max_workers
+        mol, dipole_level=dipole_level, cubic=True, num_workers=max_workers, backend=backend
     )
 
     pes_file = os.path.join(ref_dir, result_file)

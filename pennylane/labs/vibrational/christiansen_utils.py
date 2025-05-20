@@ -31,8 +31,9 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial"):
     Args:
         freqs(int): the harmonic frequencies
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
     Returns:
         TensorLike[float]: the kinetic energy part of the one body integrals
     """
@@ -93,8 +94,11 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
+        TensorLike[float]: the kinetic energy part of the two body integrals
+    Returns:
         TensorLike[float]: the kinetic energy part of the two body integrals
     """
     nmodes = len(pes.freqs)
@@ -118,7 +122,7 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial"):
 
 def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
     """Worker function to calculate the kinetic energy part of the two body integrals to correct the integrals
-    for localized modes. The result are written on hdf5 file.
+    for localized modes. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -163,8 +167,9 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen Hamiltonian
@@ -189,7 +194,7 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculate the one body integrals. The result are written on hdf5 file.
+    """Worker function to calculate the one body integrals. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -232,8 +237,9 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen dipole operator
@@ -257,8 +263,8 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculates the one-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file.
+    """Worker function to calculate the one-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -303,8 +309,9 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
@@ -330,8 +337,8 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculates the two-body integrals from the given potential energy surface data for the
-    Christiansen Hamiltonian. The result are written on hdf5 file.
+    """Worker function to calculate the two-body integrals from the given potential energy surface data for the
+    Christiansen Hamiltonian. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -396,8 +403,9 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
@@ -424,8 +432,8 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculates the two-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file.
+    """Worker function to calculate the two-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -485,8 +493,9 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
         TensorLike[float]: the three-body integrals for the Christiansen Hamiltonian
@@ -521,8 +530,8 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculates the three-body integrals from the given potential energy surface data for the
-    Christiansen Hamiltonian. The result are written on hdf5 file.
+    """Worker function to calculate the three-body integrals from the given potential energy surface data for the
+    Christiansen Hamiltonian. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -585,8 +594,9 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
@@ -624,8 +634,8 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
 
 
 def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode_combos):
-    """Worker function to calculates the three-body integrals from the given potential energy surface data for the
-    Christiansen dipole operator. The result are written on hdf5 file.
+    """Worker function to calculate the three-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
@@ -1031,8 +1041,9 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
@@ -1071,8 +1082,9 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency
+        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
+        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
     Returns:
