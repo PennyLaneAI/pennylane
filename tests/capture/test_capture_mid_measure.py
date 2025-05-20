@@ -307,7 +307,7 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    @pytest.mark.skip("Temporary")
+    @pytest.mark.local_salt(6)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
@@ -351,7 +351,7 @@ class TestMidMeasureExecute:
         else:
             assert compare_with_capture_disabled(f, phi)
 
-    @pytest.mark.skip("Temporary")
+    @pytest.mark.local_salt(6)
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(
