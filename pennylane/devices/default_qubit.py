@@ -989,7 +989,7 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel, unused-argument
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -1017,10 +1017,10 @@ class DefaultQubit(Device):
 
         def _make_zero(tan, arg):
             return (
-                jax.lax.zeros_like_array(arg) if isinstance(tan, jax.interpreters.ad.Zero) else tan
+                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, jax.interpreters.ad.Zero)
+                else tan
             )
-
-        tangents = tuple(map(_make_zero, tangents, args))
 
         def eval_wrapper(*inner_args):
             n_consts = len(jaxpr.constvars)
@@ -1029,6 +1029,8 @@ class DefaultQubit(Device):
             return self.eval_jaxpr(
                 jaxpr, consts, *non_const_args, execution_config=execution_config
             )
+
+        tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
 

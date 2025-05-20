@@ -145,13 +145,9 @@ class FABLE(Operation):
         wires_i = wires[1 : 1 + len(wires) // 2][::-1]
         wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
-        code = gray_code((2 * qml.math.log2(len(input_matrix))))
-        n_selections = len(code)
+        code = gray_code(int((2 * qml.math.log2(len(input_matrix)))))
+        control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
 
-        control_wires = [
-            int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
-            for i in range(n_selections)
-        ]
         wire_map = dict(enumerate(wires_j + wires_i))
 
         for w in wires_i:

@@ -327,8 +327,12 @@ def _check_capture(op):
 
     qml.capture.enable()
     try:
-        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
-        data, _ = jax.tree_util.tree_flatten(op)
+        data, struct = jax.tree_util.tree_flatten(op)
+
+        def test_fn(*args):
+            return jax.tree_util.tree_unflatten(struct, args)
+
+        jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
         assert op == new_op
     except Exception as e:
