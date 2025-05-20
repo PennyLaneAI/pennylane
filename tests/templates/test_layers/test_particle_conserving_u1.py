@@ -121,10 +121,8 @@ class TestDecomposition:
                             exp_params = [-phi, np.pi, phi]
                         elif j > idx_CRot:
                             exp_params = [phi, np.pi, -phi]
-                        elif j == idx_CRot:
-                            exp_params = [0, 2 * theta, 0]
                         else:
-                            assert False, "Impossible index"
+                            exp_params = [0, 2 * theta, 0]
 
                         assert queue[idx].parameters == exp_params
 
