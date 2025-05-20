@@ -268,45 +268,16 @@ def multi_qubit_decomposition(U, wires):
         True
     """
 
-    ops_list = []
+    with queuing.AnnotatedQueue() as q:
+        multi_qubit_decomp_rule(U, wires)
 
-    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
-    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
-    p = 2 ** (len(wires) - 1)
+    # If there is an active queuing context, queue the decomposition so that expand works
+    current_queue = queuing.QueuingManager.active_context()
+    if current_queue is not None:
+        for op in q.queue:  # pragma: no cover
+            queuing.apply(op, context=current_queue)
 
-    (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
-
-    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
-    u11, diag_u, u12 = _compute_udv(u1, u2)
-
-    ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
-    ops_list.append(
-        templates.SelectPauliRot(
-            -2 * math.angle(diag_v),
-            target_wire=wires[0],
-            control_wires=wires[1:],
-            rot_axis="Z",
-        )
-    )
-    ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
-
-    ops_list.append(
-        templates.SelectPauliRot(
-            2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
-        )
-    )
-
-    ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
-    ops_list.append(
-        templates.SelectPauliRot(
-            -2 * math.angle(diag_u),
-            target_wire=wires[0],
-            control_wires=wires[1:],
-            rot_axis="Z",
-        )
-    )
-    ops_list += [ops.QubitUnitary(u11, wires=wires[1:])]
-    return ops_list
+    return q.queue
 
 
 #######################
