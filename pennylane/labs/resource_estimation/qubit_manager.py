@@ -20,7 +20,8 @@ from pennylane.queuing import QueuingManager
 
 
 class QubitManager:
-    r"""Contains attributes which help track how auxilliary qubits are used in a circuit
+
+    r"""Contains attributes which help track how auxiliary qubits are used in a circuit
     Args:
         work_wires (int or dict): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All work_wires are assumed to be clean when
