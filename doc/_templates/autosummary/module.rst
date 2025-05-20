@@ -1,7 +1,8 @@
 {{ fullname | replace("pennylane", "qml") | escape | underline}}
 
 .. automodule:: {{ fullname }}
-
+   :noindexentry:
+   
    {% block classes %}
    {% if classes %}
    .. rubric:: Classes
