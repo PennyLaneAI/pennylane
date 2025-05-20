@@ -19,7 +19,7 @@ dependencies = [
     "cachetools",
     "pennylane-lightning>=0.41",
     "requests",
-    "tomli",
+    "tomlkit",
     "typing_extensions",
     "packaging",
     "diastatic-malt",
@@ -68,9 +68,15 @@ pl-device-test = "pennylane.devices.tests:cli"
 "default.qutrit.mixed" = "pennylane.devices.default_qutrit_mixed:DefaultQutritMixed"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
 
+[project.entry-points."console_scripts"]
+"pl-device-test" = "pennylane.devices.tests:cli"
+
 [tool.setuptools]
 include-package-data = true
 py-modules = []
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.setuptools.dynamic]
 version = {attr = "pennylane._version.__version__"} 
