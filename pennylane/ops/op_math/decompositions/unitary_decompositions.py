@@ -239,6 +239,81 @@ def two_qubit_decomposition(U, wires):
     return q.queue
 
 
+def multi_qubit_decomposition(U, wires):
+    r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
+
+    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
+    unitaries (:class:`~.QubitUnitary`) and three multiplexers (:class:`~.SelectPauliRot`)
+    using the cosine-sine decomposition.
+    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
+
+    Args:
+        U (tensor): A :math:`2^n \times 2^n` unitary matrix with :math:`n > 1`.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
+
+    **Example**
+
+    .. code-block:: pycon
+
+        >>> matrix_target = qml.matrix(qml.QFT([0,1,2]))
+        >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
+        >>> print([op.name for op in ops])
+        ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
+        >>> print(np.allclose(matrix_decomposition, matrix_target))
+        True
+    """
+
+    ops_list = []
+
+    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+    p = 2 ** (len(wires) - 1)
+
+    (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
+
+    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+    u11, diag_u, u12 = _compute_udv(u1, u2)
+
+    ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
+    ops_list.append(
+        templates.SelectPauliRot(
+            -2 * math.angle(diag_v),
+            target_wire=wires[0],
+            control_wires=wires[1:],
+            rot_axis="Z",
+        )
+    )
+    ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
+
+    ops_list.append(
+        templates.SelectPauliRot(
+            2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
+        )
+    )
+
+    ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
+    ops_list.append(
+        templates.SelectPauliRot(
+            -2 * math.angle(diag_u),
+            target_wire=wires[0],
+            control_wires=wires[1:],
+            rot_axis="Z",
+        )
+    )
+    ops_list += [ops.QubitUnitary(u11, wires=wires[1:])]
+    return ops_list
+
+
+#######################
+# Decomposition Rules #
+#######################
+
+
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
@@ -323,6 +398,46 @@ zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz
 xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource)
 xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource)
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource)
+
+
+def _two_qubit_resource(**_):
+    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
+    return {
+        resource_rep(ops.QubitUnitary, num_wires=1): 4,
+        ops.CNOT: 3,
+        ops.RZ: 1,
+        ops.RY: 2,
+        # The three-CNOT case does not involve an RX, but an RX must be accounted
+        # for in case the two-CNOT case is chosen at runtime.
+        ops.RX: 1,
+        ops.GlobalPhase: 1,
+    }
+
+
+@register_condition(lambda num_wires: num_wires == 2)
+@register_resources(_two_qubit_resource)
+def two_qubit_decomp_rule(U, wires, **__):
+    """The decomposition rule for a two-qubit unitary."""
+
+    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
+    num_cnots = _compute_num_cnots(U)
+    additional_phase = ops.cond(
+        num_cnots == 0,
+        _decompose_0_cnots,
+        _decompose_3_cnots,
+        elifs=[
+            (num_cnots == 1, _decompose_1_cnot),
+            (num_cnots == 2, _decompose_2_cnots),
+        ],
+    )(U, wires, initial_phase)
+    total_phase = initial_phase + additional_phase
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
+
+
+####################
+# Helper Functions #
+####################
+
 
 ###################################################################################
 # Developer notes:
@@ -706,110 +821,6 @@ def _decompose_3_cnots(U, wires, initial_phase):
     ops.QubitUnitary(B, wires[0])
 
     return math.cast_like(-np.pi / 4, initial_phase)
-
-
-def _two_qubit_resource(**_):
-    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    return {
-        resource_rep(ops.QubitUnitary, num_wires=1): 4,
-        ops.CNOT: 3,
-        ops.RZ: 1,
-        ops.RY: 2,
-        # The three-CNOT case does not involve an RX, but an RX must be accounted
-        # for in case the two-CNOT case is chosen at runtime.
-        ops.RX: 1,
-        ops.GlobalPhase: 1,
-    }
-
-
-@register_condition(lambda num_wires: num_wires == 2)
-@register_resources(_two_qubit_resource)
-def two_qubit_decomp_rule(U, wires, **__):
-    """The decomposition rule for a two-qubit unitary."""
-
-    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
-    num_cnots = _compute_num_cnots(U)
-    additional_phase = ops.cond(
-        num_cnots == 0,
-        _decompose_0_cnots,
-        _decompose_3_cnots,
-        elifs=[
-            (num_cnots == 1, _decompose_1_cnot),
-            (num_cnots == 2, _decompose_2_cnots),
-        ],
-    )(U, wires, initial_phase)
-    total_phase = initial_phase + additional_phase
-    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
-
-
-def multi_qubit_decomposition(U, wires):
-    r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
-
-    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
-    unitaries (:class:`~.QubitUnitary`) and three multiplexers (:class:`~.SelectPauliRot`)
-    using the cosine-sine decomposition.
-    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
-
-    Args:
-        U (tensor): A :math:`2^n \times 2^n` unitary matrix with :math:`n > 1`.
-        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
-
-    Returns:
-        list[Operation]: A list of operations that represent the decomposition
-        of the matrix U.
-
-    **Example**
-
-    .. code-block:: pycon
-
-        >>> matrix_target = qml.matrix(qml.QFT([0,1,2]))
-        >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
-        >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
-        >>> print([op.name for op in ops])
-        ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
-        >>> print(np.allclose(matrix_decomposition, matrix_target))
-        True
-    """
-
-    ops_list = []
-
-    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
-    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
-    p = 2 ** (len(wires) - 1)
-
-    (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
-
-    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
-    u11, diag_u, u12 = _compute_udv(u1, u2)
-
-    ops_list += [ops.QubitUnitary(v12_dagg, wires=wires[1:])]
-    ops_list.append(
-        templates.SelectPauliRot(
-            -2 * math.angle(diag_v),
-            target_wire=wires[0],
-            control_wires=wires[1:],
-            rot_axis="Z",
-        )
-    )
-    ops_list += [ops.QubitUnitary(v11_dagg, wires=wires[1:])]
-
-    ops_list.append(
-        templates.SelectPauliRot(
-            2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y"
-        )
-    )
-
-    ops_list += [ops.QubitUnitary(u12, wires=wires[1:])]
-    ops_list.append(
-        templates.SelectPauliRot(
-            -2 * math.angle(diag_u),
-            target_wire=wires[0],
-            control_wires=wires[1:],
-            rot_axis="Z",
-        )
-    )
-    ops_list += [ops.QubitUnitary(u11, wires=wires[1:])]
-    return ops_list
 
 
 def _compute_udv(a, b):
