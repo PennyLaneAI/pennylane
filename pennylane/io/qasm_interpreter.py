@@ -187,12 +187,13 @@ class QasmInterpreter(QASMVisitor):
         """
         Registers a classical assignment.
         """
-        rhs = partial(self.eval_expr, node.rvalue, context)
         def set_local_var(execution_context: dict):
+            rhs = partial(self.eval_expr, node.rvalue, execution_context)
             name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
             res = rhs()
             execution_context["vars"][name]["val"] = res
             execution_context["vars"][name]["line"] = node.span.start_line
+            execution_context["vars"][name]["dirty"] = True
             return res
 
         # references to an unresolved value see a func for now
@@ -377,7 +378,13 @@ class QasmInterpreter(QASMVisitor):
         elif isinstance(node, Identifier):
             try:
                 var = self.retrieve_variable(node.name, context)
-                return var["val"] if isinstance(var, dict) and "val" in var else var  # could be var or qubit
+                value = var["val"] if isinstance(var, dict) and "val" in var else var
+                if isinstance(value, Callable):
+                    var["val"] = value(context) if not self._all_context_bound(value) else value()
+                    var["line"] = node.span.start_line
+                    var["dirty"] = True
+                    value = var["val"]
+                return value
             except NameError:
                 # TODO: make a warning
                 print(f"Reference to an undeclared variable {node.name} in {context['name']}.")
@@ -598,6 +605,7 @@ class QasmInterpreter(QASMVisitor):
                     'ty': i.__class__.__name__,
                     'val': i,
                     'line': node.span.start_line,
+                    'dirty': True
                 }
                 # we don't want to populate the gates again with every call to visit
                 context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
@@ -628,6 +636,7 @@ class QasmInterpreter(QASMVisitor):
                         'ty': i.__class__.__name__,
                         'val': i,
                         'line': node.span.start_line,
+                        'dirty': True
                     }
                     context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                     # visit the nodes once per loop iteration
@@ -671,6 +680,7 @@ class QasmInterpreter(QASMVisitor):
             res = meas()
             execution_context["vars"][name]["val"] = res
             execution_context["vars"][name]["line"] = node.span.start_line
+            execution_context["vars"][name]["dirty"] = True
             return res
 
         # references to an unresolved value see a func for now
@@ -715,7 +725,8 @@ class QasmInterpreter(QASMVisitor):
                 context["scopes"]["subroutines"][node.name.name]["vars"][param.name.name] = {
                     'ty': param.__class__.__name__,
                     'val': None,
-                    'line': param.span.start_line
+                    'line': param.span.start_line,
+                    'dirty': False
                 }
             else:
                 context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
@@ -806,26 +817,30 @@ class QasmInterpreter(QASMVisitor):
                     'ty': node.type.__class__.__name__,
                     'val': self.eval_expr(node.init_expression, context),
                     'size': node.init_expression.width,
-                    'line': node.init_expression.span.start_line
+                    'line': node.init_expression.span.start_line,
+                    'dirty': False
                 }
             elif not isinstance(node.init_expression, ArrayLiteral):
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
                     'val': self.eval_expr(node.init_expression, context),
-                    'line': node.init_expression.span.start_line
+                    'line': node.init_expression.span.start_line,
+                    'dirty': False
                 }
             else:
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
                     'val': [self.eval_expr(literal, context) for literal in node.init_expression.values],
-                    'line': node.init_expression.span.start_line
+                    'line': node.init_expression.span.start_line,
+                    'dirty': False
                 }
         else:
             # the var is declared but uninitialized
             context["vars"][node.identifier.name] = {
                 'ty': node.type.__class__.__name__,
                 'val': None,
-                'line': node.span.start_line
+                'line': node.span.start_line,
+                'dirty': False
             }
 
         # runtime Callable

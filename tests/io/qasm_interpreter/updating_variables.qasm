@@ -41,10 +41,3 @@ switch (i) {
     }
 }
 
-// int stop = 20;
-
-// For loop with changing iterable
-// for int i in [0:2:stop] {
-//    s q0;
-//    stop = stop - 2;
-// }
