@@ -68,6 +68,7 @@
   iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
   matrices much more performant.
   [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
+  [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
 
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
