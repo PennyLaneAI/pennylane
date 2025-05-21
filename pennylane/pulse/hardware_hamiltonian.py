@@ -362,7 +362,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
 
-        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(other, qml.ops.SProd):
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
             return HardwareHamiltonian(

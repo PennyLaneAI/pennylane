@@ -17,7 +17,7 @@ device by checking expectation values.
 """
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
-# pylint: disable=pointless-statement
+
 from math import pi, sqrt
 
 import numpy as np

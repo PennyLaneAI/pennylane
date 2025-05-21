@@ -108,7 +108,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
-    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+    def __new__(cls, *args, **__):
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
@@ -137,7 +137,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         final_transform=False,
         use_argnum_in_expand=False,
         plxpr_transform=None,
-    ):  # pylint:disable=redefined-outer-name
+    ):
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -475,7 +475,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return tuple(execution_tapes), processing_fn
 
 
-class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
+class TransformContainer:  # pylint: disable=too-many-instance-attributes
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
 
@@ -498,7 +498,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         is_informative=False,
         final_transform=False,
         use_argnum=False,
-    ):  # pylint:disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
