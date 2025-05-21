@@ -40,9 +40,9 @@ _DECODE_XZ = {
 _PAULIS = frozenset({X, Y, Z, I})
 
 
-def pauli_encode_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
+def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     """
-    Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
+    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
     the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
@@ -60,9 +60,9 @@ def pauli_encode_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
 
 
-def xz_decode_pauli(x: np.uint8, z: np.uint8) -> Operator:
+def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
-    Decode a x, z to a Pauli operator.
+    Convert x, z to a Pauli operator.
     Args:
         x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
         z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
@@ -88,11 +88,11 @@ def pauli_prod(ops: List[Operator]) -> Operator:
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
 
-    res_x, res_z = pauli_encode_xz(ops.pop())
+    res_x, res_z = pauli_to_xz(ops.pop())
 
     while len(ops) > 0:
-        x, z = pauli_encode_xz(ops.pop())
+        x, z = pauli_to_xz(ops.pop())
         res_x ^= x
         res_z ^= z
 
-    return xz_decode_pauli(res_x, res_z)
+    return xz_to_pauli(res_x, res_z)

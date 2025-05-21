@@ -16,15 +16,15 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc.pauli_tracker import pauli_encode_xz, pauli_prod, xz_decode_pauli
+from pennylane.ftqc.pauli_tracker import pauli_to_xz, pauli_prod, xz_to_pauli
 
 
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 
     @pytest.mark.parametrize("op", [qml.I, qml.X, qml.Y, qml.Z])
-    def test_pauli_encode_xz(self, op):
-        x, z = pauli_encode_xz(op)
+    def test_pauli_to_xz(self, op):
+        x, z = pauli_to_xz(op)
         assert x in [0, 1]
         assert z in [0, 1]
 
@@ -35,21 +35,21 @@ class TestPauliTracker:
         assert z == z_res
 
     @pytest.mark.parametrize("op", [qml.S, qml.CNOT, qml.H])
-    def test_unsuppored_ops_pauli_encode_xz(self, op):
+    def test_unsuppored_ops_pauli_to_xz(self, op):
         with pytest.raises(NotImplementedError):
-            _ = pauli_encode_xz(op)
+            _ = pauli_to_xz(op)
 
     @pytest.mark.parametrize(
         "x, z, res", [(0, 0, qml.I), (1, 0, qml.X), (1, 1, qml.Y), (0, 1, qml.Z)]
     )
-    def test_xz_decode_pauli(self, x, z, res):
-        op = xz_decode_pauli(x, z)
+    def test_xz_to_pauli(self, x, z, res):
+        op = xz_to_pauli(x, z)
         assert op == res
 
     @pytest.mark.parametrize("x, z", [(0, -1), (-1, 0), (-1, -1)])
     def test_xz_decode_pauli_unsupported_error(self, x, z):
         with pytest.raises(ValueError):
-            _ = xz_decode_pauli(x, z)
+            _ = xz_to_pauli(x, z)
 
     @pytest.mark.parametrize(
         "ops, res",
