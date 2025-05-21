@@ -512,6 +512,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The documentation of `qml.pulse.drive` has been updated and corrected.
+  [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
+
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
 
